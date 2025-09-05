@@ -1,13 +1,11 @@
 // ---------------------------------------------------------------------------
 // includes
 
-#include <crtdbg.h> // To check for memory leaks
+#include <crtdbg.h> // To check for memory leaks mainmerged.cpp
 #include "AEEngine.h"
+#include "GSM.hpp"
+#include "Utils.hpp"
 
-
-
-// ---------------------------------------------------------------------------
-// main
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -15,49 +13,56 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_ int       nCmdShow)
 {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	//_CrtSetBreakAlloc(882);
 
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+	//_CrtSetBreakAlloc(3461);
 
-
-	int gGameRunning = 1;
-
-	// Initialization of your own variables go here
-
-	// Using custom window procedure
-	AESysInit(hInstance, nCmdShow, 1600, 900, 1, 60, false, NULL);
+	// System Initialize
+	AESysInit(hInstance, nCmdShow, static_cast<s32>(WINDOW_WIDTH), static_cast<s32>(WINDOW_HEIGHT), 1, 60, true, NULL);
 
 	// Changing the window title
-	AESysSetWindowTitle("My New Demo!");
+	AESysSetWindowTitle("Solo Project!");
 
-	// reset the system modules
-	AESysReset();
+	// Game State Management Initialize
+	GSM_Initialize(GS_LEVEL1);
 
-	printf("Hello World\n");
-
-	// Game Loop
-	while (gGameRunning)
+	// Game State Manager Loop
+	while (current != GS_QUIT)
 	{
-		// Informing the system about the loop's start
-		AESysFrameStart();
+		if (current != GS_RESTART) {
+			GSM_Update();
+			fpLoad();
+		}
+		else {
+			next = previous;
+			current = previous;
+		}
 
-		// Basic way to trigger exiting the application
-		// when ESCAPE is hit or when the window is closed
-		if (AEInputCheckTriggered(AEVK_ESCAPE) || 0 == AESysDoesWindowExist())
-			gGameRunning = 0;
+		fpInitialize();
 
-		// Your own update logic goes here
+		while (next == current) {
+			AESysFrameStart();
+			fpUpdate();
+			fpDraw();
 
+			if (0 == AESysDoesWindowExist()) {
+				next = GS_QUIT;
+			}
 
-		// Your own rendering logic goes here
+			AESysFrameEnd();
+		}
+		fpFree();
+		if (next != GS_RESTART) {
+			fpUnload();
+		}
 
-
-		// Informing the system about the loop's end
-		AESysFrameEnd();
-
+		previous = current;
+		current = next;
 	}
 
-
-	// free the system
+	// System Exit (terminate)
 	AESysExit();
+	return 0;
 }
