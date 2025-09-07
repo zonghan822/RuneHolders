@@ -433,3 +433,16 @@ void DrawPath() {
 
 
 #pragma endregion
+
+#pragma region Physics
+
+//void applyGravity(Entity* thisGuy);
+
+
+
+
+
+
+
+
+#pragma endregion

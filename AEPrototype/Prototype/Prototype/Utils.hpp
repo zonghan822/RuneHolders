@@ -43,7 +43,7 @@ public:
 
 
 
-
+#pragma region A* Pathfinding
 //Implementation of A* Pathfinding
 extern std::vector<std::vector<int>> BinaryMap;
 void loadMap(const std::string& filename);
@@ -63,3 +63,26 @@ void printNeighbours(Node* node);
 void runAStar();
 void printPath();
 void DrawPath();
+#pragma endregion
+
+#pragma region Physics
+/*
+
+collision checks / apply collision on objects?
+
+
+
+
+void applyGravity(Entity* thisGuy);
+
+void entityJump(Entity* thisGuy);			//maybe member function?
+
+void applyAcceleration(Entity* thisGuy); 
+
+void applyVelocity(Entity* thisGuy); 
+
+*/
+
+
+
+#pragma endregion
