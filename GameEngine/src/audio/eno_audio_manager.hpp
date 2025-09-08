@@ -207,7 +207,7 @@ namespace Sound
 		std::map<std::string, FMOD::Sound*> sounds;
 
 		// Path to music repo
-		const std::string path = "sounds/";
+		const std::string path = "../../assets/sounds/";
 
 
 		template <typename CH>
