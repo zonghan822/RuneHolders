@@ -9,6 +9,19 @@
 void Level1_Load()
 {
 	create_all_meshes();
+	loadMap("../Prototype/BinaryMap.txt");
+
+	printMap();
+	std::cout << "\n\n";
+
+	generateNodeGrid();
+	printNodeGrid();
+	std::cout << "\n\n";
+
+	runAStar();
+	printPath();
+	std::cout << "Loaded\n";	
+
 }
 
 void Level1_Init()
@@ -40,7 +53,7 @@ void Level1_Draw() {
 	draw_p1();
 
 	
-
+	DrawPath();
 }
 
 void Level1_Free()
