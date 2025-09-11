@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\audio\audio_events.hpp" />
     <ClInclude Include="..\..\src\audio\eno_audio_manager.hpp" />
     <ClInclude Include="..\..\src\component\componentRegistry.hpp" />
     <ClInclude Include="..\..\src\component\components\layer.hpp" />
@@ -26,6 +27,8 @@
     <ClInclude Include="..\..\src\ecs\tagRegistry.hpp" />
     <ClInclude Include="..\..\src\engine\eno_engine.hpp" />
     <ClInclude Include="..\..\src\event\signals.hpp" />
+    <ClInclude Include="..\..\src\input\eno_input.hpp" />
+    <ClInclude Include="..\..\src\math\math.hpp" />
     <ClInclude Include="..\..\src\resources\eno_loader.hpp" />
     <ClInclude Include="..\..\src\window\eno_window.hpp" />
   </ItemGroup>

@@ -10,10 +10,8 @@
 
 namespace ECS
 {
-	///
-	/// Defined by a collection of components
-	/// created at any point in time
-	///
+	// Defined by a collection of components
+	// created at any point in time
 	struct Archetype
 	{
 		std::vector<std::unique_ptr<Chunk>> chunks_;					// Storing of the component data for the archetype
@@ -29,7 +27,7 @@ namespace ECS
 			uint32_t localIndex{};
 			for (const auto& type : types_)
 			{
-				uint32_t registryID = ECSComponents::ComponentRegistry::componentMap()[type];
+				uint32_t registryID = ECSComponents::ComponentRegistry::ComponentMap()[type].id;
 				typeIdxMap_[registryID] = localIndex;
 				++localIndex;
 			}
@@ -104,9 +102,10 @@ namespace ECS
 		}
 
 		// Transfer data between 2 archetypes
-		void transferData(const Archetype& src, const Archetype& dst,
-			const size_t& srcECIdx, const size_t& dstECIdx,
-			const size_t& srcChnkIdx, const size_t& dstChnkIdx)
+		void transferData(
+			const Archetype& src, const Archetype& dst,						// Archetypes
+			const size_t& srcECIdx, const size_t& dstECIdx,					// Entity index in chunk
+			const size_t& srcChnkIdx, const size_t& dstChnkIdx)				// Chunk index
 		{
 			const auto& srcChunk = src.chunks_[srcChnkIdx];
 			const auto& dstChunk = dst.chunks_[dstChnkIdx];
@@ -117,7 +116,7 @@ namespace ECS
 				// Use the global type ID from the registry to
 				// find the local ID of the component within the chunk
 				const auto& type = dst.types_[i];
-				uint32_t registryID = ECSComponents::ComponentRegistry::componentMap()[type];
+				uint32_t registryID = ECSComponents::ComponentRegistry::ComponentMap()[type].id;
 
 				// Verify that the destination archetype has the same type
 				// If type does not coexist in the source, this is likely
@@ -131,11 +130,28 @@ namespace ECS
 				uint8_t* srcCompStart = static_cast<uint8_t*>(srcChunk->pComponent[it->second]);
 				uint8_t* dstCompStart = static_cast<uint8_t*>(dstChunk->pComponent[i]);
 
-				// Offset with size and copy the memory over
 				std::memcpy(dstCompStart + (dstECIdx * size),
-					srcCompStart + (srcECIdx * size),
-					size);
+							srcCompStart + (srcECIdx * size),
+							size);
 			}
+		}
+
+		// Retrieve raw data of an entity
+		std::vector<std::byte*> retrieveData(
+			const Archetype& src, 
+			const size_t& srcECIdx, 
+			const size_t& srcChnkIdx)
+		{
+			const auto& chunk = src.chunks_[srcChnkIdx];
+
+			std::vector<std::byte*> completeData;
+			for (size_t c = 0; c < src.types_.size(); ++c)
+			{
+				std::byte* component = static_cast<std::byte*>(chunk->pComponent[c]) + srcECIdx * chunk->componentSizes[c];
+				completeData.push_back(component);
+			}
+
+			return completeData;
 		}
 
 		// Remove an existing archetype

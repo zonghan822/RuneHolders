@@ -1,12 +1,12 @@
 #pragma once
 
-
-//#define GLFW_INCLUDE_VULKAN
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 
 // stds
-#include "iostream"
+#include <iostream>
+#include <utility>
 
 
 namespace Window
@@ -14,15 +14,15 @@ namespace Window
 	class EnoWindow
 	{
 	public:
-		EnoWindow();
+		EnoWindow(std::pair<int, int>);
 
 		void init();
 
 		GLFWwindow* getWindow() const;
 
 	private:
-		static constexpr int WIDTH = 800;
-		static constexpr int HEIGHT = 600;
+		int width_;
+		int height_;
 
 		GLFWwindow* window_;
 	};

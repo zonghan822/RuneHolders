@@ -46,11 +46,14 @@
     <Filter Include="Source Files\shaders">
       <UniqueIdentifier>{01af48ee-c580-490b-b3ac-92f0ad63e775}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\math">
+      <UniqueIdentifier>{f06ba9df-23cf-4886-83f1-33b938496b0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\input">
+      <UniqueIdentifier>{c7a07b77-8784-4dd9-9d36-315e36df01f9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\audio\eno_audio_manager.hpp">
-      <Filter>Header Files\audio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\component\componentRegistry.hpp">
       <Filter>Header Files\components</Filter>
     </ClInclude>
@@ -98,6 +101,18 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ecs\tagRegistry.hpp">
       <Filter>Header Files\components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\eno_audio_manager.hpp">
+      <Filter>Header Files\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\audio_events.hpp">
+      <Filter>Header Files\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\math\math.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\input\eno_input.hpp">
+      <Filter>Header Files\input</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

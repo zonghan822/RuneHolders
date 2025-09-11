@@ -48,7 +48,7 @@ namespace ECS
 			{
 				pComponent.push_back(data.get() + offset);
 				componentSizes.push_back(size);
-				offset += size;
+				offset += size * capacity;
 			}
 		}
 
