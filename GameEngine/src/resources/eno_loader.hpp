@@ -25,23 +25,23 @@ namespace Resources
 	{
 	private:
 		// Sounds
-		static constexpr std::string_view musicPath_ = "assets/sound/music/";
-		static constexpr std::string_view sfxPath_ = "assets/sound/sfx/";
+		static constexpr std::string_view musicPath_ = "../../assets/sound/music/";
+		static constexpr std::string_view sfxPath_ = "../../assets/sound/sfx/";
 		static constexpr std::array<std::string_view, 2> soundExtensions_ = { ".wav", ".mp3" };
 
 		std::map<std::string, FMOD::Sound*> sounds_;
 
 		// Images
-		static constexpr std::string_view imagePath_ = "assets/art/";
+		static constexpr std::string_view imagePath_ = "../../assets/art/";
 
 		// Shaders
-		static constexpr std::string_view shaderPath_ = "shaders/";
+		static constexpr std::string_view shaderPath_ = "../../shaders/";
 
 		std::unordered_map<std::string, std::string> vertShaders_;
 		std::unordered_map<std::string, std::string> fragShaders_;
 
 		// ECS Entities
-		static constexpr std::string_view entityPath_ = "saves/ecs_save_data.txt";
+		static constexpr std::string_view entityPath_ = "../../saves/ecs_save_data.txt";
 
 		// Bus
 		Event::EnoEventBus& bus_;
