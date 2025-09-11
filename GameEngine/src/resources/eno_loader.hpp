@@ -27,6 +27,6 @@ namespace Resources
 		}
 
 	private:
-		std::string musicPath = "sounds/";
+		std::string musicPath = "../../assets/sounds/";
 	};
 }
