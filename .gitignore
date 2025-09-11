@@ -15,7 +15,7 @@
 *.ipdb
 *.vsidx
 .vs/
-bin
+#bin
 Debug
 Release
 
