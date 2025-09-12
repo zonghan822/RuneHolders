@@ -1,7 +1,8 @@
 #pragma once
 
-// fmod
-#include "fmod.hpp"
+// Events
+#include "../event/eventBus.hpp"
+#include "audio_events.hpp"
 
 //stds
 #include <cstdint>
@@ -11,11 +12,8 @@
 #include <vector>
 #include <map>
 
-// tbd
-#include <filesystem>
 
-
-namespace Sound
+namespace Audio
 {
 	struct Reverb
 	{
@@ -42,8 +40,6 @@ namespace Sound
 		float pitch;
 		float pan;
 
-		//Fade fade;
-
 		Reverb reverb;
 		EQ eq;
 	};
@@ -51,7 +47,7 @@ namespace Sound
 	class EnoAudioManager
 	{
 	public:
-		EnoAudioManager()
+		EnoAudioManager(Event::EnoEventBus& bus) : bus_ { bus }
 		{
 			init();
 		}
@@ -59,7 +55,7 @@ namespace Sound
 		~EnoAudioManager()
 		{
 			// Release sounds loaded
-			for (auto& pair : sounds)
+			for (auto& pair : sounds_)
 			{
 				if (pair.second)
 				{
@@ -76,54 +72,19 @@ namespace Sound
 			// System initialization for FMOD
 			FMOD::System_Create(&system);
 			system->init(512, FMOD_INIT_NORMAL, nullptr);
-
-			load();					//tbd
 		}
 
-		// ***** Delegate this function to loader please *****
-		// 
-		// 
-		// Load all sound files located in the
-		// folder specified by the path
-		void load()
-		{
-			// Iterate through a folder through the given path
-			for (const auto& entry : std::filesystem::directory_iterator(path))
-			{
-				if (!entry.is_regular_file()) 
-					continue;
-
-				// Find files with the WAV or MP3 extensions
-				if (entry.path().extension().string() == ".wav" ||
-					entry.path().extension().string() == ".mp3")
-				{
-					// Retrieve sound from file
-					FMOD::Sound* sound = nullptr;
-					FMOD_RESULT result = system->createSound(
-						entry.path().string().c_str(), FMOD_DEFAULT, nullptr, &sound);
-
-					if (result != FMOD_OK)
-					{
-						throw std::runtime_error("Failed to create a sound from a WAV/MP3 file!");
-					}
-					else
-					{
-						// Record the sound onto the map, 
-						// with the filename extension stripped from the name
-						sounds[entry.path().filename().stem().string()] = sound;
-					}
-				}
-			}
-		}
+		FMOD::System* getSystem() const { return system; }
+		std::map<std::string, FMOD::Sound*>& getSounds() { return sounds_; }
 
 		// Play all loaded sounds
 		void playAll()
 		{
-			for (const auto& s : sounds)
+			for (const auto& s : sounds_)
 			{
 				FMOD::Channel* channel{ nullptr };
 				system->playSound(s.second, nullptr, false, &channel);
-				channels.push_back(channel);
+				channels_.push_back(channel);
 			}
 
 			// Play sound
@@ -134,17 +95,36 @@ namespace Sound
 		void playByGroup(const std::string& soundName, const std::string& groupName)
 		{
 			// Fetch the sound and channel group
-			auto sound = sounds.find(soundName);
-			auto group = channelGroups.find(groupName);
+			auto sound = sounds_.find(soundName);
+			auto group = channelGroups_.find(groupName);
 
-			if (sound == sounds.end() || group == channelGroups.end())
+			if (sound == sounds_.end() || group == channelGroups_.end())
 			{
 				throw std::runtime_error("Failed to find a sound or group by name!");
 			}
 
 			FMOD::Channel* channel{ nullptr };
 			system->playSound(sound->second, group->second, false, &channel);
-			channels.push_back(channel);
+			channels_.push_back(channel);
+
+			// Play sound
+			system->update();
+		}
+
+		// Play sounds from a channel group
+		void playByGroup(FMOD::Sound* sound, const std::string& groupName)
+		{
+			// Fetch the sound and channel group
+			auto group = channelGroups_.find(groupName);
+
+			if (group == channelGroups_.end())
+			{
+				throw std::runtime_error("Failed to find a sound or group by name!");
+			}
+
+			FMOD::Channel* channel{ nullptr };
+			system->playSound(sound, group->second, false, &channel);
+			channels_.push_back(channel);
 
 			// Play sound
 			system->update();
@@ -154,7 +134,7 @@ namespace Sound
 		// for all channels
 		void modifyGlobal(const SoundParameters& parameters)
 		{
-			for (FMOD::Channel* channel : channels)
+			for (FMOD::Channel* channel : channels_)
 			{
 				modify(channel, parameters);
 			}
@@ -164,8 +144,8 @@ namespace Sound
 		// for a specific channel group
 		void modifyChannelGroup(const std::string& group, const SoundParameters& parameters)
 		{
-			auto it = channelGroups.find(group);
-			if (it == channelGroups.end())
+			auto it = channelGroups_.find(group);
+			if (it == channelGroups_.end())
 			{
 				throw std::runtime_error("Failed to find a channel group by name!");
 			}
@@ -179,39 +159,56 @@ namespace Sound
 			FMOD::ChannelGroup* group{ nullptr };
 			system->createChannelGroup(groupName.c_str(), &group);
 
-			channelGroups[groupName] = group;
+			channelGroups_[groupName] = group;
 		}
 
 		// Get a channel group by name
 		FMOD::ChannelGroup* getChannelGroup(const std::string& groupName) const
 		{
-			auto it = channelGroups.find(groupName);
-			if (it == channelGroups.end())
+			auto it = channelGroups_.find(groupName);
+			if (it == channelGroups_.end())
 			{
 				throw std::runtime_error("Failed to get a channel group by its name!");
 			}
 			
 			return it->second;
 		}
+		
+		// ---------------------- Events ----------------------
+		
+		// Publish request for a sound by name
+		void publishSoundRequest(const std::string& soundName)
+		{
+			bus_.publish(RequestSound{ soundName });
+		}
+
+		// Receive sound post-request
+		void onSoundReceived(const LoadSound& event)
+		{
+			// Storing sound
+			sounds_[event.soundName_] = event.sound_;
+		}
 
 	private:
+
+		// FMOD System
 		FMOD::System* system;
-		
+
 		// Channels
-		std::vector<FMOD::Channel*> channels;
+		std::vector<FMOD::Channel*> channels_;
 
 		// Channel Groups
-		std::map<std::string, FMOD::ChannelGroup*> channelGroups;
+		std::map<std::string, FMOD::ChannelGroup*> channelGroups_;
 
 		// Sounds
-		std::map<std::string, FMOD::Sound*> sounds;
+		std::map<std::string, FMOD::Sound*> sounds_;
 
-		// Path to music repo
-		const std::string path = "../../assets/sounds/";
+		// Event bus
+		Event::EnoEventBus& bus_;
 
 
-		template <typename CH>
 		// Helper for modifying a channel or channel group
+		template <typename CH>
 		void modify(CH* ch, const SoundParameters& parameters)
 		{
 			// Basic

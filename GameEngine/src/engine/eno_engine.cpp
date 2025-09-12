@@ -5,15 +5,22 @@ namespace Engine
 {
 	void EnoEngine::setup()
 	{
-		// Needs to be changed to remove this block in the future
-		compReg_.RegisterComponent<ECSComponents::NameComponent>();
-		compReg_.RegisterComponent<ECSComponents::LayerComponent>();
-		compReg_.RegisterComponent<ECSComponents::TagComponent>();
-		compReg_.RegisterComponent<ECSComponents::TransformComponent>();
-		compReg_.RegisterComponent<ECSComponents::ModulationComponent>();
-		compReg_.RegisterComponent<ECSComponents::VisibilityComponent>();
+		// Loading sound assets from two directories
+		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getMusicPath());
+		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getSFXPath());
 
-		compReg_.printIDs();
+		// Loading image assets
+		
+		
+		// Loading shader assets
+		loader_.loadShaders(loader_.getShaderPath());
+
+		// Getting Shaders
+		auto vert = loader_.getVertShader("shader");
+		auto frag = loader_.getFragShader("shader");
+
+		// Print all registered component IDs
+		compReg_.PrintIDs();
 
 		run();
 	}
@@ -24,7 +31,7 @@ namespace Engine
 		std::cout << std::endl;
 		ECS::EntityManager ent{ compReg_ };
 
-		// Initializing the entities
+		// ECS Demonstration
 		
 		// EXAMPLES
 		
@@ -47,10 +54,6 @@ namespace Engine
 		std::cout << "enemy's z_layer: " << enemyZIdx.z_index << std::endl;
 		std::cout << std::boolalpha << "enemy visible?: " << enemyZIdx.visible << std::endl;
 
-		// checking tag addition
-		auto& enemyTag = enemy.get<ECSComponents::TagComponent>();
-		std::cout << "enemy's tag: " << enemyTag.tag << std::endl;
-		
 		// checking if the entity has a specific component
 		bool hasName = enemy.hasComponent<ECSComponents::NameComponent>();
 		bool hasTag = enemy.hasComponent<ECSComponents::TagComponent>();
@@ -59,8 +62,30 @@ namespace Engine
 		std::cout << "Does enemy have a tag: " << hasTag << std::endl;
 		std::cout << std::endl;
 
+		// Clone the enemy into the hero and the hero
+		// will receive the same components and component values
+		ECS::Entity hero = enemy.clone();
+		ECS::Entity widow = enemy.clone();
+		
+		enemy.print();
+		hero.print();
+		widow.print();
+
+		//checking tag addition
+		auto& heroVisibility = hero.get<ECSComponents::VisibilityComponent>();
+		std::cout << "hero's tag: " << heroVisibility.z_index << std::endl;
+
+		auto& enemyVisibility = enemy.get<ECSComponents::VisibilityComponent>();
+		std::cout << "enemy's tag: " << enemyVisibility.z_index << std::endl;
+
+		// Creating an entity with presets
+		//ECS::Entity villager = ent.presetCreate();
+
 		// checking if an entity is destroyed properly
 		enemy.destroy();
+
+		// Save entities which are still alive
+		ent.save();
 
 		// creating a signal
 		Events::Signal<int> signal;
@@ -77,25 +102,69 @@ namespace Engine
 			});
 		signal2.emit();
 
-		// audio
+		// Audio
 		audioMng_.setChannelGroup("BGM");
 
 		// Modifying the audio
 		audioMng_.modifyChannelGroup(
 			"BGM", 
-			Sound::SoundParameters{ 
+			Audio::SoundParameters{ 
 				0.01f, 1.f, 0.5f, 
-			Sound::Reverb{ FMOD_DSP_TYPE_SFXREVERB, 1.f, 1.f, 1.f, 1.f },
-			Sound::EQ{ FMOD_DSP_TYPE_PARAMEQ, 1.f, 1.f, 1.f } 
+			Audio::Reverb{ FMOD_DSP_TYPE_SFXREVERB, 1.f, 1.f, 1.f, 1.f },
+			Audio::EQ{ FMOD_DSP_TYPE_PARAMEQ, 1.f, 1.f, 1.f }
 			});
 
-		// This should be the game loop or the window loop
-		// something to keep the function executing
-		//bool looping{ true };
-		//while (looping)
-		//{
-		//	audioMng_.playByGroup("Close_To_The_End", "BGM");
-		//}
+		// Math demonstration
+		Math::eVec3 vec{ 1, 2, 3 };
+		Math::eVec3 vec2{ 4, 5, 6 };
+		vec += vec2;
+		std::cout << "vec v1: " << vec.v1 << std::endl;
+		std::cout << "vec v2: " << vec.v2 << std::endl;
+		std::cout << "vec v3: " << vec.v3 << std::endl;
+
+		// vec += 3.5f; not allowed!! because vec is made out of ints
+		vec += 3;
+
+		std::cout << "vec v1: " << vec.v1 << std::endl;
+		std::cout << "vec v2: " << vec.v2 << std::endl;
+		std::cout << "vec v3: " << vec.v3 << std::endl;
+
+		// Event bus demonstration
+		// 
+		// Explanation:
+		// [&](const Audio::RequestSound& event
+		// is a lambda, which is just a callable object
+		// This lambda (callable object) is being passed in to subscribe.
+		// 
+		// The subscribe param is of type std::function<void(const Event&)>
+		// Here, we pass an object of std::function<void(const Audio::RequestSound&)>
+		// which would later be wrapped into a type-erased lambda
+		// so the object stored in the map is a std::function<void(const void*)>
+		// 
+		// [&] is a capture list, which we use a simple & to capture loader_ for
+		// the onSoundRequest to call when we publish the request from audio manager
+		bus_.subscribe<Audio::RequestSound>
+		(
+			[&](const Audio::RequestSound& event){loader_.onSoundRequest(event);}
+		);
+
+		bus_.subscribe<Audio::LoadSound>([&](const Audio::LoadSound& event)
+			{
+				audioMng_.onSoundReceived(event);
+			});
+
+		// Publish the sound request for these two sounds and 
+		// process them in the audioMng_
+		audioMng_.publishSoundRequest("Close_To_The_End");
+		audioMng_.publishSoundRequest("Simulacrum");
+
+		// Window loop
+		while (!glfwWindowShouldClose(window_.getWindow()))
+		{
+			glfwPollEvents();
+
+			audioMng_.playByGroup("Close_To_The_End", "BGM");
+		}
 
 		//enemy.set<ECSComponents::NameComponent>({ "Cynthia" });
 

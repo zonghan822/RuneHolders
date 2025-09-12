@@ -9,6 +9,7 @@
 #include <iostream>
 #include <algorithm>
 #include <tuple>
+#include <fstream>
 
 
 namespace ECS
@@ -19,24 +20,6 @@ namespace ECS
 	/// 
 	class Entity;
 	
-	struct EntityID
-	{
-		uint32_t id;
-
-		bool operator==(const EntityID& other) const
-		{
-			return id == other.id;
-		}
-	};
-
-	struct EntityIDHasher
-	{
-		size_t operator()(const EntityID& id) const noexcept
-		{
-			return static_cast<size_t>(id.id);
-		}
-	};
-
 	struct EntityLoc
 	{
 		Archetype* archetype;
@@ -54,8 +37,9 @@ namespace ECS
 		{}
 
 		static uint32_t id;
+		static uint32_t save_id;
 
-		std::unordered_map<EntityID, EntityLoc, EntityIDHasher>& getMap() { return entityMap_; }
+		std::unordered_map<uint32_t, EntityLoc>& getMap() { return entityMap_; }
 
 		// Create and return a new entity based on
 		// components passed in
@@ -73,8 +57,8 @@ namespace ECS
 
 			std::sort(typeSizePairs.begin(), typeSizePairs.end(), [](const auto& a, const auto& b)
 				{
-					auto& map = ComponentRegistry::componentMap();
-					return map[a.first] < map[b.first];
+					auto& map = ComponentRegistry::ComponentMap();
+					return map[a.first].id < map[b.first].id;
 				});
 
 			// Sort types and sizes
@@ -91,49 +75,13 @@ namespace ECS
 			Archetype* archetype = archetypeMng_.getOrCreateArch(types, sizes);
 
 			// Find chunk with available space
-			size_t openChunkIndex = static_cast<size_t>(-1);
-			for (size_t i = 0; i < archetype->chunks_.size(); ++i)
-			{
-				if (archetype->chunks_[i].get()->current < archetype->chunks_[i].get()->capacity)
-				{
-					openChunkIndex = i;
-					++archetype->chunks_[i].get()->current;
-
-					break;
-				}
-			}
-
-			// All chunks in this archetype have no available space,
-			// expand archetype chunk count
-			if (openChunkIndex == -1)
-			{
-				archetype->createChunk(archetype->entityCount_, types, sizes);
-				
-				openChunkIndex = archetype->chunks_.size() - 1;
-				++archetype->chunks_[openChunkIndex].get()->current;
-			}
+			size_t openChunkIndex = findOpenChunk(archetype);
 			
 			// Map entity to a location
 			// Prioritize using destroyed entity ids over new ids
-			uint32_t curID{};
-			EntityID entID{};
-			if (destroyedEntityIDs_.empty())
-			{
-				curID = id;
-				entID = EntityID{ id };
+			uint32_t curID{ assignID() };
 
-				id++;
-			}
-			else
-			{
-				uint32_t prevEntID = destroyedEntityIDs_.back();
-				destroyedEntityIDs_.pop_back();
-
-				curID = prevEntID;
-				entID = EntityID{ prevEntID };
-			}
-
-			entityMap_[entID] = EntityLoc{ archetype, openChunkIndex, archetype->chunks_[openChunkIndex].get()->current - 1 };
+			entityMap_[curID] = EntityLoc{ archetype, openChunkIndex, archetype->chunks_[openChunkIndex].get()->current - 1 };
 
 			// Unpack values
 			auto values = std::forward_as_tuple(val...);
@@ -143,7 +91,7 @@ namespace ECS
 			if (sizeof...(Values) != 0)
 			{
 				// Insert values into chunks
-				auto it = entityMap_.find(entID);
+				auto it = entityMap_.find(curID);
 				EntityLoc& loc = it->second;
 				size_t entIndex = loc.archetype->chunks_[openChunkIndex]->current - 1;
 				auto* chunk = loc.archetype->chunks_[openChunkIndex].get();
@@ -167,15 +115,50 @@ namespace ECS
 			return create<Components...>();
 		}
 
+		// Cloning an existing entity
+		uint32_t clone(const uint32_t& progenitorID)
+		{
+			// Using the cloned entity's id to clone the new entity
+
+			// Get progenitor types
+			auto it = entityMap_.find(progenitorID);
+			if (it == entityMap_.end())
+			{
+				throw std::runtime_error("Failed to find the id of the entity!");
+			}
+
+			// Get/Create archetype and return it
+			Archetype* archetype = archetypeMng_.getOrCreateArch(it->second.archetype->types_, it->second.archetype->typeSizes_);
+
+			// Find chunk with available space
+			size_t openChunkIndex = findOpenChunk(archetype);
+
+			// Get a new id for the clone
+			// Map entity to a location
+			// Prioritize using destroyed entity ids over new ids
+			uint32_t curID{ assignID() };
+
+			size_t entityIndexInChunk = it->second.archetype->chunks_[openChunkIndex].get()->current - 1;
+			entityMap_[curID] = EntityLoc{ it->second.archetype, openChunkIndex, entityIndexInChunk };
+
+			// Transfer the values from the progenitor entity to the clone
+			archetypeMng_.transferData(
+				*it->second.archetype, *archetype,
+				it->second.entityIndexInChunk, entityIndexInChunk,
+				it->second.chunkIndex, openChunkIndex);
+
+			return curID;
+		}
+
 		// Move an entity to a new archetype
 		void shift(
 			const uint32_t& entityID, 
 			const std::vector<std::type_index>& types,
 			const std::vector<size_t>& sizes)
 		{
-			Archetype* oldArchetype = entityMap_.find(EntityID{ entityID })->second.archetype;
-			size_t srcEntityChnkIdx = entityMap_.find(EntityID{ entityID })->second.entityIndexInChunk;
-			size_t srcChnkIdx = entityMap_.find(EntityID{ entityID })->second.chunkIndex;
+			Archetype* oldArchetype = entityMap_.find(entityID)->second.archetype;
+			size_t srcEntityChnkIdx = entityMap_.find(entityID)->second.entityIndexInChunk;
+			size_t srcChnkIdx = entityMap_.find(entityID)->second.chunkIndex;
 
 			// Counter keeping
 			--oldArchetype->chunks_[srcChnkIdx].get()->current;
@@ -184,38 +167,20 @@ namespace ECS
 			Archetype* newArchetype = archetypeMng_.getOrCreateArch(types, sizes);
 
 			// Find chunk with available space
-			size_t openChunkIndex = static_cast<size_t>(-1);
-			for (size_t i = 0; i < newArchetype->chunks_.size(); ++i)
-			{
-				if (newArchetype->chunks_[i].get()->current < newArchetype->chunks_[i].get()->capacity)
-				{
-					openChunkIndex = i;
-					++newArchetype->chunks_[i].get()->current;
+			size_t openChunkIndex = findOpenChunk(newArchetype);
 
-					break;
-				}
-			}
-
-			// All chunks in this archetype have no available space,
-			// expand archetype chunk count
-			if (openChunkIndex == -1)
-			{
-				newArchetype->createChunk(newArchetype->entityCount_, types, sizes);
-
-				openChunkIndex = newArchetype->chunks_.size() - 1;
-				++newArchetype->chunks_[openChunkIndex].get()->current;
-			}
-
-			size_t dstEntityChnkIdx = entityMap_.find(EntityID{ entityID })->second.entityIndexInChunk;
-			size_t dstChnkIdx = entityMap_.find(EntityID{ entityID })->second.chunkIndex;
+			size_t dstEntityChnkIdx = entityMap_.find(entityID)->second.entityIndexInChunk;
+			size_t dstChnkIdx = entityMap_.find(entityID)->second.chunkIndex;
 
 			// Map entity to new location
-			EntityID entID{ entityID };
 			size_t entityIndexInChunk = newArchetype->chunks_[openChunkIndex].get()->current - 1;
-			entityMap_[entID] = EntityLoc{ newArchetype, openChunkIndex, entityIndexInChunk };
+			entityMap_[entityID] = EntityLoc{ newArchetype, openChunkIndex, entityIndexInChunk };
 
-			archetypeMng_.transferData(*oldArchetype, *newArchetype, srcEntityChnkIdx, openChunkIndex, srcChnkIdx, entityIndexInChunk);
-
+			archetypeMng_.transferData(
+				*oldArchetype, *newArchetype, 
+				srcEntityChnkIdx, entityIndexInChunk,
+				srcChnkIdx, openChunkIndex);
+			
 			// Cleanup chunk and archetype memory
 			cleanup(oldArchetype, srcChnkIdx);
 		}
@@ -223,9 +188,14 @@ namespace ECS
 		// Prints all entity IDs and their associated types
 		void viewMap()
 		{
+			// Print total Entity count
+			std::cout << "Total Entity Count: " << getEntCount() << std::endl <<
+						 "____________________________________" << std::endl;
+
+			// Print entities and their types
 			for (const auto& [key, value] : entityMap_)
 			{
-				std::cout << "ID: " << key.id << "\n";
+				std::cout << "ID: " << key << "\n";
 
 				for (size_t i = 0; i < value.archetype->types_.size(); i++)
 				{
@@ -240,25 +210,146 @@ namespace ECS
 		void destroyEntity(const uint32_t& entityID)
 		{
 			// Clean up archetype and related chunks
-			EntityLoc loc = entityMap_.find(EntityID{ entityID })->second;
+			EntityLoc loc = entityMap_.find(entityID)->second;
 			--loc.archetype->chunks_[loc.chunkIndex]->current;
 			cleanup(loc.archetype, loc.chunkIndex);
 
 			// Clean up destroyed entity in entity map
-			entityMap_.erase(EntityID{ entityID });
+			entityMap_.erase(entityID);
 
 			// Acquire destroyed entity id
 			destroyedEntityIDs_.push_back(entityID);
 		}
 
+		// Saving entity data
+		void save()
+		{
+			std::string filename = "ecs_save_data";
+			filename += save_id;
+
+			std::ofstream out(filename, std::ios::binary);
+			if (!out)
+			{
+				throw std::runtime_error("Failed to open the file to write entity save data!");
+			}
+
+			// Writing to the file the following data respectively:
+			// 
+			// Header
+			// Total Entity Count
+			// Entity Information
+			//		EntityID
+			//		Component Count
+			//		Component Types
+			//			Component Registered IDs
+			//			Component Sizes
+			//		Component Data
+
+			// Header
+			const char header[8] = "EnoECS";
+			out.write(header, sizeof(header));
+
+			// Total Entity count
+			uint32_t entCount = getEntCount();
+			out.write(reinterpret_cast<const char*>(&entCount), sizeof(entCount));
+
+			for (const auto& ent : entityMap_)
+			{
+				// Entity ID
+				uint32_t id = ent.first;
+				out.write(reinterpret_cast<const char*>(&id), sizeof(id));
+
+				// Component Count
+				size_t comCount = ent.second.archetype->types_.size();
+				out.write(reinterpret_cast<const char*>(&comCount), sizeof(comCount));
+
+				// Component Types
+				std::vector<std::type_index> types = ent.second.archetype->types_;
+				std::vector<std::size_t> sizes = ent.second.archetype->typeSizes_;
+				for (size_t i = 0; i < types.size(); ++i)
+				{
+					// Write the id of the type
+					uint32_t id = ComponentRegistry().GetComponentID(types[i]);
+					out.write(reinterpret_cast<const char*>(&id), sizeof(id));
+				}
+
+				// Component Data
+				std::vector<std::byte*> componentData = archetypeMng_.retrieveData(
+					*ent.second.archetype, ent.second.entityIndexInChunk, ent.second.chunkIndex);
+
+				for (size_t i = 0; i < componentData.size(); i++)
+				{
+					size_t componentSize = ent.second.archetype->typeSizes_[i];
+					out.write(reinterpret_cast<const char*>(componentData[i]), componentSize);
+				}
+			}
+		}
+
+		// Loading entity data
+		void load(const char* file)
+		{
+			std::ifstream in(file, std::ios::binary);
+			if (!in)
+			{
+				throw std::runtime_error("Failed to open the ECS data file!");
+			}
+
+			// Verify header
+			char header[8]{};
+			in.read(header, sizeof(header));
+			if (std::string_view(header, 6) != "EnoECS")
+			{
+				throw std::runtime_error("Opened file is not an ECS data file for the EnoEngine!");
+			}
+
+			// Entity Count
+			size_t entCount{};
+			in.read(reinterpret_cast<char*>(&entCount), sizeof(entCount));
+			std::cout << "Total Entities: " << entCount << std::endl;
+
+			// Load entity data
+			for (size_t i = 0; i < entCount; ++i)
+			{
+				// Retrieve individual entity ids and
+				// map them back onto the map
+				uint32_t id{};
+				in.read(reinterpret_cast<char*>(&entCount), sizeof(entCount));
+				std::cout << "Current Entity ID pulled: " << id;
+
+				// Component Count
+				size_t compCount{};
+				in.read(reinterpret_cast<char*>(&compCount), sizeof(compCount));
+
+				// Component Types
+				std::vector<std::type_index> types;
+				std::vector<std::size_t> sizes;
+				for (size_t i = 0; i < compCount; i++)
+				{
+					// Read in the component id
+					uint32_t id;
+					in.read(reinterpret_cast<char*>(&id), sizeof(id));
+
+					// Record type & size
+					std::type_index type = ComponentRegistry().FindComponent(id);
+					types.push_back(type);
+					sizes.push_back(ComponentRegistry().GetComponentSize(type));
+
+					// Instantiate archetypes based on retrieved types & sizes
+					Archetype* archetype = archetypeMng_.getOrCreateArch(types, sizes);
+				}
+
+				// Component Data
+			}
+		}
+
 	private:
 		ArchetypeManager archetypeMng_;
 
-		std::unordered_map<EntityID, EntityLoc, EntityIDHasher> entityMap_;
+		std::unordered_map<uint32_t, EntityLoc> entityMap_;
 
 		ECSComponents::ComponentRegistry& compReg_;
 
-		std::vector<uint32_t> destroyedEntityIDs_;								// For the purpose of reusing ids
+		std::vector<uint32_t> destroyedEntityIDs_;									// For the purpose of reusing ids
 
 		template <typename... Components, typename Tuple, size_t... I>
 		void modifyComponentsImpl(
@@ -271,6 +362,58 @@ namespace ECS
 				entIndex,
 				Components(std::get<I>(std::forward<Tuple>(values)))
 			), ...);
+		}
+
+		// Helper for finding a chunk in an archetype which has available space
+		size_t findOpenChunk(Archetype* archetype)
+		{
+			// Find chunk with available space
+			size_t openChunkIndex = static_cast<size_t>(-1);
+			for (size_t i = 0; i < archetype->chunks_.size(); ++i)
+			{
+				if (archetype->chunks_[i].get()->current < archetype->chunks_[i].get()->capacity)
+				{
+					openChunkIndex = i;
+					++archetype->chunks_[i].get()->current;
+
+					break;
+				}
+			}
+
+			// All chunks in this archetype have no available space,
+			// expand archetype chunk count
+			if (openChunkIndex == -1)
+			{
+				archetype->createChunk(
+					archetype->entityCount_, 
+					archetype->types_, 
+					archetype->typeSizes_);
+
+				// Assign newest chunk
+				openChunkIndex = archetype->chunks_.size() - 1;
+				++archetype->chunks_[openChunkIndex].get()->current;
+			}
+
+			return openChunkIndex;
+		}
+
+		// Helper for assigning an id to an entity
+		uint32_t assignID()
+		{
+			uint32_t curID;
+			if (destroyedEntityIDs_.empty())
+			{
+				curID = id++;
+			}
+			else
+			{
+				uint32_t prevEntID = destroyedEntityIDs_.back();
+				destroyedEntityIDs_.pop_back();
+
+				curID = prevEntID;
+			}
+
+			return curID;
 		}
 
 		// Clean up archetype chunks and the archetype after an operation
@@ -295,6 +438,12 @@ namespace ECS
 			{
 				archetypeMng_.cleanup(oldArchetype);
 			}
+		}
+
+		// Retrieve total number of entities
+		uint32_t getEntCount()
+		{
+			return static_cast<uint32_t>(entityMap_.size());
 		}
 	};
 
@@ -382,30 +531,30 @@ namespace ECS
 				// adding them and changing entity archetype
 
 				// Create and sort for the new archetype
-				std::vector<std::type_index> combinedTypes;
-				combinedTypes.insert(combinedTypes.end(), types.begin(), types.end());
-				(combinedTypes.push_back(std::type_index(typeid(Components))), ...);
-
-				std::vector<std::size_t> combinedSizes;
-				combinedSizes.insert(combinedSizes.end(), sizes.begin(), sizes.end());
-				(combinedSizes.push_back(std::size_t(sizeof(Components))), ...);
-
+				// Store current types/sizes
 				std::vector<std::pair<std::type_index, std::size_t>> typeSizePairs;
-				for (size_t i = 0; i < combinedTypes.size(); i++)
+				for (size_t i = 0; i < types.size(); i++)
 				{
-					typeSizePairs.push_back(std::make_pair(combinedTypes[i], combinedSizes[i]));
+					typeSizePairs.emplace_back(types[i], sizes[i]);
 				}
+
+				// Add new types/sizes
+				((typeSizePairs.emplace_back(std::type_index(typeid(Components)), sizeof(Components))), ...);
 
 				std::sort(typeSizePairs.begin(), typeSizePairs.end(), [](const auto& a, const auto& b)
 					{
-						auto& map = ComponentRegistry::componentMap();
-						return map[a.first] < map[b.first];
+						auto& map = ComponentRegistry::ComponentMap();
+						return map[a.first].id < map[b.first].id;
 					});
 
-				combinedSizes.clear();
-				combinedTypes.clear();
+				// Split back into separate vectors for the archetype
+				std::vector<std::type_index> combinedTypes;
+				std::vector<std::size_t> combinedSizes;
 
-				for (const auto& [type, size] : typeSizePairs)
+				combinedTypes.reserve(typeSizePairs.size());
+				combinedSizes.reserve(typeSizePairs.size());
+
+				for (auto& [type, size] : typeSizePairs) 
 				{
 					combinedTypes.push_back(type);
 					combinedSizes.push_back(size);
@@ -426,56 +575,56 @@ namespace ECS
 		{
 			// Verify that the entity owns these components
 			auto types = findEntity(id_).archetype->types_;
+			auto sizes = findEntity(id_).archetype->typeSizes_;
 			bool exists = ((std::find(types.begin(), types.end(), std::type_index(typeid(Components))) != types.end()) && ...);
 
 			if (exists)
 			{
-				// Find types which only exist in the entity
-				std::vector<std::type_index> remainingTypes;
-				for (auto& type : types)
-				{
-					// Check against each type in Components
-					bool isIn = ((type == std::type_index(typeid(Components))) || ...);
-
-					if (!isIn)
-						remainingTypes.push_back(type);
-				}
-
-				std::vector<size_t> remainingTypeSizes;
-				for (std::type_index type : types)
-				{
-					remainingTypeSizes.push_back(sizeof(type));
-				}
-
+				// Collect types and sizes that are not in Components...
 				std::vector<std::pair<std::type_index, std::size_t>> typeSizePairs;
-				for (size_t i = 0; i < remainingTypes.size(); i++)
-				{
-					typeSizePairs.push_back(std::make_pair(remainingTypes[i], remainingTypeSizes[i]));
+
+				for (size_t i = 0; i < types.size(); ++i) {
+					auto type = types[i];
+					bool isIn = ((type == std::type_index(typeid(Components))) || ...);
+					if (!isIn) {
+						typeSizePairs.emplace_back(type, sizes[i]);
+					}
 				}
 
+				// Sort the types 
 				std::sort(typeSizePairs.begin(), typeSizePairs.end(), [](const auto& a, const auto& b)
 					{
-						auto& map = ComponentRegistry::componentMap();
-						return map[a.first] < map[b.first];
+						auto& map = ComponentRegistry::ComponentMap();
+						return map[a.first].id < map[b.first].id;
 					});
 
-				remainingTypes.clear();
-				remainingTypeSizes.clear();
+				// Split into separate vectors for archetype
+				std::vector<std::type_index> remainingTypes;
+				std::vector<std::size_t> remainingSizes;
 
-				for (const auto& [type, size] : typeSizePairs)
+				remainingTypes.reserve(typeSizePairs.size());
+				remainingSizes.reserve(typeSizePairs.size());
+
+				for (auto& [type, size] : typeSizePairs) 
 				{
 					remainingTypes.push_back(type);
-					remainingTypeSizes.push_back(size);
+					remainingSizes.push_back(size);
 				}
 
 				// Change entity archetype
-				entityManager_.shift(id_, remainingTypes, remainingTypeSizes);
+				entityManager_.shift(id_, remainingTypes, remainingSizes);
 			}
 			else
 			{
 				// Component(s) to remove do not exist in this entity
 				throw std::runtime_error("Component(s) to remove in this entity do not exist!");
 			}
+		}
+
+		// Replicate the current entity's data onto a new entity
+		Entity clone()
+		{
+			return { entityManager_.clone(id_), entityManager_ };
 		}
 
 		// Check if an entity consists of the given component(s)
@@ -488,6 +637,7 @@ namespace ECS
 				std::type_index(typeid(Components))) != findEntity(id_).archetype->types_.end()));
 		}
 
+
 	private:
 		uint32_t id_;
 		EntityManager& entityManager_;
@@ -495,7 +645,7 @@ namespace ECS
 		// Find and return the location of the entity in the map
 		EntityLoc& findEntity(const uint32_t& id)
 		{
-			auto it = entityManager_.getMap().find(EntityID{ id });
+			auto it = entityManager_.getMap().find(id);
 			if (it == entityManager_.getMap().end())
 			{
 				throw std::runtime_error("Failed to find this entity in the Entity Map!");
