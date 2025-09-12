@@ -1,9 +1,5 @@
 #include "Utils.hpp"
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <iostream>
-#include <algorithm>
+
 
 
 f32 const WINDOW_WIDTH{ 1600 }, WINDOW_HEIGHT{ 900 };
@@ -17,6 +13,8 @@ s32 mX{}, mY{};
 AEVec2 mPos{};																		//holds mouse position in a x,y vector
 float Node::radius = 0.0f;
 
+
+#pragma region Basic Functions
 
 void mouse_to_world() {								
 	AEInputGetCursorPosition(&mX, &mY);
@@ -136,6 +134,8 @@ void draw_rect(f32 x, f32 y, f32 length, f32 width, f32 alpha) {
 
 
 }
+
+#pragma endregion
 
 
 /*

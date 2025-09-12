@@ -2,6 +2,12 @@
 #include "AEEngine.h"
 #include <string>
 #include <vector>
+
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <iostream>
+#include <algorithm>
 													//include utils to access
 extern const f32 WINDOW_WIDTH, WINDOW_HEIGHT;			//	Window Width & Height
 extern float dt;										//	delta time (between frames)

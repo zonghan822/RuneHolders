@@ -110,6 +110,9 @@ xcopy "$(SolutionDir)Extern\AlphaEngine\lib\fmod.dll" "$(OutDir)" /s /r /y /q</C
     <ClInclude Include="player.hpp" />
     <ClInclude Include="Utils.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="BinaryMap.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
