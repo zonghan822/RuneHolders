@@ -1,0 +1,60 @@
+MACRO(SETUP_APP APP_NAME ENGINE_NAME)
+
+# Project name
+project(${APP_NAME} VERSION 1.0.0 LANGUAGES CXX)
+
+# Specify the C++ standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# Add the executable
+file(GLOB_RECURSE ${APP_NAME}_source_files 
+    ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.[ch]pp
+    ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.[ch]
+)
+
+GROUP_FILES_BY_FOLDER(${APP_NAME}_source_files)
+
+add_executable(${APP_NAME} 
+    ${${APP_NAME}_source_files} 
+)
+
+set_property(TARGET ${APP_NAME}  PROPERTY CXX_STANDARD 20) 
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(${APP_NAME} PRIVATE -Wall ${DisableWarnings})
+elseif (MSVC)
+    target_compile_options(${APP_NAME} PRIVATE /W3 /WX-)
+endif()
+
+# target_include_directories(${APP_NAME} PUBLIC
+#     ${Vulkan_INCLUDE_DIRS}
+# )
+
+# add_custom_command(TARGET ${APP_NAME} POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#         "${CMAKE_SOURCE_DIR}/lib/fmod/core/lib/x64/fmodL.dll"
+#         "$<TARGET_FILE_DIR:${APP_NAME}>/fmodL.dll"
+# )
+
+# add_custom_command(TARGET ${APP_NAME} POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#         "${CMAKE_SOURCE_DIR}/lib/fmod/studio/lib/x64/fmodstudioL.dll"
+#         "$<TARGET_FILE_DIR:${APP_NAME}>/fmodstudioL.dll"
+# )
+
+# Set common include directories
+target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
+target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/${ENGINE_NAME})
+target_compile_definitions(${APP_NAME} PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/")
+message(STATUS "Using Engine lib from build directory....")
+
+# Link the library to the executable using the CMake target
+target_link_libraries(${APP_NAME} PRIVATE 
+    ${ENGINE_NAME}
+    glfw
+    libglew_static
+    imgui
+    ${Vulkan_LIBRARY}
+)
+
+ENDMACRO(SETUP_APP)
