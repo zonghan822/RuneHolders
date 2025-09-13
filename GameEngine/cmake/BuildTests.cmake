@@ -55,6 +55,10 @@ target_link_libraries(${APP_NAME} PRIVATE
     libglew_static
     imgui
     ${Vulkan_LIBRARY}
+    fmod::core 
+    fmod::studio
 )
+
+_fmod_copy_dll(${APP_NAME})
 
 ENDMACRO(SETUP_APP)

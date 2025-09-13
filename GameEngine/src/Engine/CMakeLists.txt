@@ -27,14 +27,19 @@ elseif (MSVC)
 endif()
 
 target_include_directories(${ENGINE_NAME} SYSTEM PUBLIC ${PROJECT_SOURCE_DIR})
-
 target_include_directories(${ENGINE_NAME} PUBLIC
     ${Vulkan_INCLUDE_DIRS}
 )
 
 target_link_libraries(${ENGINE_NAME} 
+    glfw
+    libglew_static
+    imgui
     ${Vulkan_LIBRARY}
+    fmod::core 
+    fmod::studio
 )
+_fmod_copy_dll(${ENGINE_NAME})
 
 # BUILD_SHADERS(Shaders)
 

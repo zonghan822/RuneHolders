@@ -14,7 +14,7 @@ namespace EngineConfiguration
 	class EnoConfigManager
 	{
 	private:
-		std::string cfgFileName_ = "assets/settings/config.txt";
+		std::string cfgFileName_ = "../../../assets/settings/config.txt";
 
 		// Map for storing setting strings
 		std::unordered_map<std::string, int> configMap_ =
