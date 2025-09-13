@@ -5,21 +5,20 @@
 #include "player.hpp"
 #include "Utils.hpp"
 
-
 void Level1_Load()
 {
 	create_all_meshes();
-	loadMap("../Prototype/BinaryMap.txt");
+	//loadMap("../Prototype/BinaryMap.txt");
 
-	printMap();
-	std::cout << "\n\n";
+	//printMap();
+	//std::cout << "\n\n";
 
-	generateNodeGrid();
-	printNodeGrid();
-	std::cout << "\n\n";
+	//generateNodeGrid();
+	//printNodeGrid();
+	//std::cout << "\n\n";
 
-	runAStar();
-	printPath();
+	//runAStar();
+	//printPath();
 	std::cout << "Loaded\n";	
 
 }
@@ -52,8 +51,10 @@ void Level1_Draw() {
 
 	draw_p1();
 
+	vecAngle({0,0}, mPos);
+	draw_rect(150, 150, 100, 100, 80.f, 1);
 	
-	DrawPath();
+	//DrawPath();
 }
 
 void Level1_Free()

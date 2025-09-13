@@ -43,17 +43,6 @@ void update_p1Movement() {
 	}
 }
 
-	//previous code takes in normalised movements
-	/*	
-	if (!(moveDirection.x == 0 && moveDirection.y == 0))
-			AEVec2Normalize(&moveDirection, &moveDirection);
-		AEVec2Scale(&moveDirection, &moveDirection, player.speed * dt);
-		AEVec2Add(&(player.pos), &(player.pos), &moveDirection);
-	}
-	*/
-
-
-
 	void draw_p1() {
 		AEGfxSetColorToAdd(0, 1, 0, 0);
 		AEGfxSetColorToMultiply(1, 1, 1, 1);
