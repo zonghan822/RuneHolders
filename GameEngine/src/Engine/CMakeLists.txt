@@ -7,7 +7,7 @@ file(GLOB_RECURSE ENGINE_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 
 set(ALL_FILES
     ${ENGINE_SRC_FILES} 
-    # ${VULKAN_SRC_FILES}
+    ${VULKAN_SRC_FILES}
 )
 
 # Call the macro to group files by folder
@@ -30,6 +30,7 @@ target_include_directories(${ENGINE_NAME} SYSTEM PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories(${ENGINE_NAME} PUBLIC
     ${Vulkan_INCLUDE_DIRS}
 )
+target_compile_definitions(${ENGINE_NAME} PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/")
 
 target_link_libraries(${ENGINE_NAME} 
     glfw

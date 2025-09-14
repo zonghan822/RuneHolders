@@ -18,30 +18,29 @@
 #include <array>
 #include <unordered_map>
 
-
 namespace Resources
 {
 	class EnoLoader
 	{
 	private:
 		// Sounds
-		static constexpr std::string_view musicPath_ = "../../../assets/sound/music/";
-		static constexpr std::string_view sfxPath_ = "../../../assets/sound/sfx/";
+		static constexpr std::string_view musicPath_ = ASSETS_DIR_PATH "sound/music/";
+		static constexpr std::string_view sfxPath_ = ASSETS_DIR_PATH "sound/sfx/";
 		static constexpr std::array<std::string_view, 2> soundExtensions_ = { ".wav", ".mp3" };
 
 		std::map<std::string, FMOD::Sound*> sounds_;
 
 		// Images
-		static constexpr std::string_view imagePath_ = "../../../assets/art/";
+		static constexpr std::string_view imagePath_ = ASSETS_DIR_PATH "art/";
 
 		// Shaders
-		static constexpr std::string_view shaderPath_ = "../../../assets/shaders/";
+		static constexpr std::string_view shaderPath_ = ASSETS_DIR_PATH "shaders/";
 
 		std::unordered_map<std::string, std::string> vertShaders_;
 		std::unordered_map<std::string, std::string> fragShaders_;
 
 		// ECS Entities
-		static constexpr std::string_view entityPath_ = "../../../assets/saves/ecs_save_data.txt";
+		static constexpr std::string_view entityPath_ = ASSETS_DIR_PATH "saves/ecs_save_data.txt";
 
 		// Bus
 		Event::EnoEventBus& bus_;

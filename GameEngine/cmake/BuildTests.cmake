@@ -26,21 +26,9 @@ elseif (MSVC)
     target_compile_options(${APP_NAME} PRIVATE /W3 /WX-)
 endif()
 
-# target_include_directories(${APP_NAME} PUBLIC
-#     ${Vulkan_INCLUDE_DIRS}
-# )
-
-# add_custom_command(TARGET ${APP_NAME} POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#         "${CMAKE_SOURCE_DIR}/lib/fmod/core/lib/x64/fmodL.dll"
-#         "$<TARGET_FILE_DIR:${APP_NAME}>/fmodL.dll"
-# )
-
-# add_custom_command(TARGET ${APP_NAME} POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#         "${CMAKE_SOURCE_DIR}/lib/fmod/studio/lib/x64/fmodstudioL.dll"
-#         "$<TARGET_FILE_DIR:${APP_NAME}>/fmodstudioL.dll"
-# )
+target_include_directories(${APP_NAME} PUBLIC
+    ${Vulkan_INCLUDE_DIRS}
+)
 
 # Set common include directories
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
