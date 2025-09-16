@@ -7,7 +7,7 @@ file(GLOB_RECURSE ENGINE_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 
 set(ALL_FILES
     ${ENGINE_SRC_FILES} 
-    # ${VULKAN_SRC_FILES}
+    ${VULKAN_SRC_FILES}
 )
 
 # Call the macro to group files by folder
@@ -27,14 +27,20 @@ elseif (MSVC)
 endif()
 
 target_include_directories(${ENGINE_NAME} SYSTEM PUBLIC ${PROJECT_SOURCE_DIR})
-
 target_include_directories(${ENGINE_NAME} PUBLIC
     ${Vulkan_INCLUDE_DIRS}
 )
+target_compile_definitions(${ENGINE_NAME} PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/")
 
 target_link_libraries(${ENGINE_NAME} 
+    glfw
+    libglew_static
+    imgui
     ${Vulkan_LIBRARY}
+    fmod::core 
+    fmod::studio
 )
+_fmod_copy_dll(${ENGINE_NAME})
 
 # BUILD_SHADERS(Shaders)
 

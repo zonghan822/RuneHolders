@@ -157,6 +157,57 @@ macro(import_vma)
     endif()
 endmacro()
 
+# ---------------------------------------------------------
+# FMOD
+# ---------------------------------------------------------
+macro(import_fmod)
+    if (NOT TARGET fmod::core)
+        set(FMOD_DIR "${PROJECT_SOURCE_DIR}/lib/fmod")
+
+        # FMOD include directories
+        set(FMOD_INCLUDE_DIRS
+            ${FMOD_DIR}/core/inc
+            ${FMOD_DIR}/studio/inc
+        )
+
+        # FMOD library paths (different for Debug/Release)
+        set(FMOD_CORE_DEBUG_LIB    ${FMOD_DIR}/core/lib/x64/fmodL_vc.lib)
+        set(FMOD_CORE_RELEASE_LIB  ${FMOD_DIR}/core/lib/x64/fmod_vc.lib)
+        set(FMOD_STUDIO_DEBUG_LIB  ${FMOD_DIR}/studio/lib/x64/fmodstudioL_vc.lib)
+        set(FMOD_STUDIO_RELEASE_LIB ${FMOD_DIR}/studio/lib/x64/fmodstudio_vc.lib)
+
+        # Create interface targets for easier linking
+        add_library(fmod::core INTERFACE IMPORTED)
+        target_include_directories(fmod::core INTERFACE ${FMOD_INCLUDE_DIRS})
+        target_link_libraries(fmod::core INTERFACE
+            debug ${FMOD_CORE_DEBUG_LIB} optimized ${FMOD_CORE_RELEASE_LIB}
+        )
+
+        add_library(fmod::studio INTERFACE IMPORTED)
+        target_include_directories(fmod::studio INTERFACE ${FMOD_INCLUDE_DIRS})
+        target_link_libraries(fmod::studio INTERFACE
+            debug ${FMOD_STUDIO_DEBUG_LIB} optimized ${FMOD_STUDIO_RELEASE_LIB}
+        )
+
+        # Post-build step to copy DLLs depending on configuration
+        function(_fmod_copy_dll TARGET)
+            add_custom_command(TARGET ${TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<$<CONFIG:Debug>:${FMOD_DIR}/core/lib/x64/fmodL.dll>"
+                    "$<$<CONFIG:Release>:${FMOD_DIR}/core/lib/x64/fmod.dll>"
+                    "$<TARGET_FILE_DIR:${TARGET}>"
+            )
+            add_custom_command(TARGET ${TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<$<CONFIG:Debug>:${FMOD_DIR}/studio/lib/x64/fmodstudioL.dll>"
+                    "$<$<CONFIG:Release>:${FMOD_DIR}/studio/lib/x64/fmodstudio.dll>"
+                    "$<TARGET_FILE_DIR:${TARGET}>"
+            )
+        endfunction()
+
+    endif()
+endmacro()
+
 # Macro to import all dependencies
 macro(importDependencies)
 message(STATUS "Starting to import dependencies...")
@@ -184,6 +235,10 @@ message(STATUS "Starting to import dependencies...")
     message(STATUS "Importing Vulkan VMA...")
     import_vma()
     message(STATUS "Vulkan VMA imported successfully.")
+
+    message(STATUS "Importing FMOD...")
+    import_fmod()
+    message(STATUS "FMOD imported successfully.")
 
     message(STATUS "All dependencies have been imported successfully.")
     

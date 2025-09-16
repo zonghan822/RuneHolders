@@ -16,8 +16,6 @@ include(Utilities)
 importDependencies()
 
 add_definitions(-DGLEW_STATIC)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/lib/fmod/core/inc)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/lib/fmod/studio/inc)
 
 ADD_SUBDIRECTORY(src/Engine ${CMAKE_BINARY_DIR}/projects/Engine)
 
