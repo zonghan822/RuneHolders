@@ -9,7 +9,7 @@ static void init();
 
 int main() {
 	init();
-	// Game State Management Initialize
+
 	GSM_Initialize(GS_LEVEL1);
 
 
