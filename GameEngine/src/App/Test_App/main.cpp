@@ -5,6 +5,7 @@
 static void draw();
 static void update();
 static void init();
+static void gameLoop();
 
 
 int main() {
@@ -12,7 +13,15 @@ int main() {
 
 	GSM_Initialize(GS_LEVEL1);
 
+	gameLoop();
 
+
+	GLApp::cleanup();
+}
+
+
+
+static void gameLoop() {
 	while (current != GS_QUIT)
 	{
 		if (current != GS_RESTART) {
@@ -48,8 +57,6 @@ int main() {
 		previous = current;
 		current = next;
 	}
-
-	GLApp::cleanup();
 }
 
 
