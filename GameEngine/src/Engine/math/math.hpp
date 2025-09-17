@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <concepts>
+#include <math.h>
 
 
 namespace Math
@@ -124,7 +125,78 @@ namespace Math
 
 			return { v1 / other.v1, v2 / other.v2 };
 		}
+
+		// ------------------------------ Unary ------------------------------
+		// this negates the vector
+		eVec2 operator-() const
+		{
+			this->v1 = -this->v1;
+			this->v2 = -this->v2;
+			return *this;
+		}
+
 	};
+
+	// --------------------- Friend functions for eVec2 ---------------------------
+
+	//eVec2Normalize takes a const &eVec2 vec to normalize and puts the unit vector into result
+	template <typename Type>
+	void eVec2Normalize(eVec2 &result, const eVec2& vec)
+	{
+		//normalized outward normal of a vector = n/||n||
+		result = vec / eVec2Length(vec);
+
+	}
+
+	//eVec2Length returns the length of the vector
+	template <typename Type>
+	Type eVec2Length(const eVec2& vec)
+	{
+		//length = sqrt(x^2 + y^2)
+		return sqrt(eVec2SquaredLength(vec));
+
+	}
+
+	//eVec2SquaredLength returns the squared length of the vector
+	template <typename Type>
+	Type eVec2SquaredLength(const eVec2& vec)
+	{
+		//sq length = (x^2 + y^2)
+		return ((vec.v1 * vec.v1) + (vec.v2 * vec.v2));
+
+	}
+
+
+	//eVec2Distance returns the distance between two vectors
+	//They are considered as the distance between any 2 points along the vector
+	template <typename Type>
+	Type eVec2Distance(const eVec2& vec1, const eVec2& vec2)
+	{
+		//distance = sqrt((x1 - x2)^2, (y1-y2)^2)
+		return sqrt(eVec2SquaredDistance(vec1, vec2));
+
+	}
+
+	//eVec2SquaredDistance returns the squared distance between two vectors
+	template <typename T>
+	Type eVec2SquaredDistance(const eVec2& vec1, const eVec2& vec2)
+	{
+		//sq distance = ((x1 - x2)^2, (y1-y2)^2)
+		return (((vec1.v1 - vec2.v1) * (vec1.v1 - vec2.v1)) + ((vec1.v2 - vec2.v2) * (vec1.v2 - vec2.v2)));
+
+	}
+
+	//eVec2DotProduct returns the dot product between 2 vectors
+	template<typename T>
+	Type eVec2DotProduct(const eVec2& vec1, const eVec2& vec2)
+	{
+		//Dot product = x1 * x2 + y1*y2
+		return (vec1.v1*vec2.v1) + (vec1.v2*vec2.v2);
+	}
+
+
+	// -------------------------------- 3x3 MATRICES ------------------------------
+
 
 	template <typename Type>
 		requires std::is_arithmetic_v<Type>
@@ -274,6 +346,33 @@ namespace Math
 			 v4, v5, v6, 
 			 v7, v8, v9;
 
+		// -------------------- Constructors ---------------------
+		template <typename Type>
+			requires std::is_arithmetic_v<Type>
+		eMtx3x3	
+		(Type _00, Type _01, Type _02,
+		 Type _10, Type _11, Type _12,
+		 Type _20, Type _21, Type _22) :
+
+		 
+		 v1(_00),	v2(_01),	v3(_02),
+		 v4(_10),	v5(_11),	v6(_12),
+		 v7(_20),	v8(_21),	v9(_22) {}
+
+		//copy constructor
+		eMtx3x3(const eMtx3x3& other) = default;
+
+		//Assignment operator
+		template <typename T>
+			requires std::is_arithmetic_v<Type>
+		eMtx3x3& operator=(const &eMtx3x3 other)
+		{
+			v1 = other.v1; v2 = other.v2; v3 = other.v3;
+			v4 = other.v4; v5 = other.v5; v6 = other.v6;
+			v7 = other.v7; v8 = other.v8; v9 = other.v9;
+
+			return *this;
+		}
 
 		// ------------------------ Multiplication ----------------------------
 		eMtx3x3& operator*=(const eMtx3x3& other)
@@ -294,7 +393,7 @@ namespace Math
 			temp.v9 = (v7 * rhs.v3) + (v8 * rhs.v6) + (v9 * rhs.v9);
 
 			// Assign the computed matrix back to this
-			*this = temp; 
+			*this = temp;
 
 			return *this;
 
