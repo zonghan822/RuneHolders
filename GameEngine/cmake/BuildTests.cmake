@@ -1,5 +1,7 @@
 MACRO(SETUP_APP APP_NAME ENGINE_NAME)
 
+set(APP_NAME ${APP_NAME})
+
 # Project name
 project(${APP_NAME} VERSION 1.0.0 LANGUAGES CXX)
 
@@ -7,14 +9,15 @@ project(${APP_NAME} VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Add the executable
-file(GLOB_RECURSE ${APP_NAME}_source_files 
+file(GLOB_RECURSE ${APP_NAME}_source_files
     ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.[ch]pp
     ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.[ch]
 )
 
-GROUP_FILES_BY_FOLDER(${APP_NAME}_source_files)
+# Group files
+GROUP_FILES_BY_FOLDER(${${APP_NAME}_source_files})
 
+# Add the executable
 add_executable(${APP_NAME} 
     ${${APP_NAME}_source_files} 
 )

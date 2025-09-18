@@ -4,9 +4,9 @@ REM Windows Build and Run Script
 REM ===============================================
 
 echo.
-echo ===============================================
-echo   Minimal C++ Console Application - Windows
-echo ===============================================
+echo ============================================================================
+echo   Configuring RuneHolders for Visual Studio (Skip Importing Dependencies)
+echo ============================================================================
 echo.
 
 REM Check if CMake is available
@@ -26,25 +26,14 @@ if %errorlevel% neq 0 (
     echo.
 )
 
-REM Clean previous build
-echo [1/4] Cleaning previous build...
-if exist build (
-    rmdir /s /q build
-    echo    Previous build directory removed
-) else (
-    echo    No previous build found
-)
-
 REM Create build directory
-echo [2/4] Creating build directory...
-mkdir build
+if not exist build mkdir build
 cd build
 
 REM Configure with CMake
-echo [3/4] Configuring project with CMake...
-cmake .. -G "Visual Studio 17 2022" -A x64
+cmake .. -G "Visual Studio 17 2022" -A x64 -DIMPORT_DEPS=FALSE
 if %errorlevel% neq 0 (
-    echo ERROR: CMake configuration failed
+    echo ERROR: CMake configuration failed!
     cd ..
     pause
     exit /b 1
@@ -53,22 +42,6 @@ if %errorlevel% neq 0 (
 echo.
 echo ===============================================
 echo   CMake configuration completed successfully!
-echo ===============================================
-echo.
-
-REM Build the project
-echo [4/4] Building project...
-cmake --build . --config Debug
-if %errorlevel% neq 0 (
-    echo ERROR: Build failed
-    cd ..
-    pause
-    exit /b 1
-)
-
-echo.
-echo ===============================================
-echo   Build completed successfully!
 echo ===============================================
 echo.
 
