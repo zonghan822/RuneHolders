@@ -9,7 +9,15 @@ namespace ECSComponents
 {
 	struct LayerComponent
 	{
-		char layer[16] = "NULL";
+		LayerComponent() = default;
+
+		LayerComponent(const char* l)
+		{
+			strncpy_s(layer, l, sizeof(layer) - 1);
+			layer[sizeof(layer) - 1] = '\0';
+		}
+
+		char layer[32] = "NULL";
 	};
 
 	inline std::ostream& operator<<(std::ostream& os, const LayerComponent& n)

@@ -3,11 +3,12 @@
 // FMOD
 #include "fmod.hpp"
 
-// Engine Component(s)
-#include "../event/eventBus.hpp"
+// Interface
+#include "../system_interface/sys_interface.hpp"
 
 // Events
 #include "../audio/audio_events.hpp"
+#include "../event/eventBus.hpp"
 
 // stds
 #include <iostream>
@@ -18,9 +19,10 @@
 #include <array>
 #include <unordered_map>
 
+
 namespace Resources
 {
-	class EnoLoader
+	class EnoLoader : public Sys::ISystem
 	{
 	private:
 		// Sounds
@@ -42,14 +44,15 @@ namespace Resources
 		// ECS Entities
 		static constexpr std::string_view entityPath_ = ASSETS_DIR_PATH "saves/ecs_save_data.txt";
 
-		// Bus
+		// Event Bus
 		Event::EnoEventBus& bus_;
 
 	public:
 
-		EnoLoader(Event::EnoEventBus& bus) : 
+		EnoLoader(Event::EnoEventBus& bus) :
 			bus_{ bus }
-		{}
+		{
+		}
 
 		// Sound getters
 		const std::string& getMusicPath() const
@@ -64,8 +67,6 @@ namespace Resources
 		}
 		std::array<std::string_view, 2> getSoundExtensions() const { return soundExtensions_; }
 
-		// Image getters
-
 		// Shader getters
 		const std::string& getShaderPath() const
 		{
@@ -76,23 +77,25 @@ namespace Resources
 		const std::string& getFragShader(const std::string& name) const { return fragShaders_.at(name); }
 
 		// Engine data getters
-		const std::string& getECSSavePath() const 
-		{ 
+		const std::string& getECSSavePath() const
+		{
 			static const std::string path{ entityPath_.data(), entityPath_.size() };
-			return path; 
+			return path;
 		}
+
+		void Update() {}
 
 		// Load Sound files (mp3 | wav)
 		// and store it in a container that is passed in
 		template <typename Container>
 		void loadSound(
-			FMOD::System* system, 
-			const Container& extensions, 
+			FMOD::System* system,
+			const Container& extensions,
 			const std::string& path)
 		{
 			if (!std::filesystem::exists(path))
 			{
-				throw std::runtime_error("Specified sound path does not exist!");
+				throw std::runtime_error("Specified path does not exist!");
 			}
 
 			// Iterate through a folder through the given path
@@ -110,16 +113,11 @@ namespace Resources
 					FMOD_RESULT result = system->createSound(
 						entry.path().string().c_str(), FMOD_DEFAULT, nullptr, &sound);
 
-					if (result != FMOD_OK)
-					{
-						throw std::runtime_error("Failed to create a sound from a loaded mp3/.wav");
-					}
-
 					if (result == FMOD_OK)
 					{
 						// Store the sound obtained
 						sounds_[entry.path().filename().stem().string()] = sound;
-						std::cout << entry.path().stem().string() << " was retrieved!" << std::endl;
+						std::cout << entry.path().filename().stem().string() << " was retrieved!" << std::endl;
 					}
 					else
 					{
@@ -181,12 +179,9 @@ namespace Resources
 			}
 		}
 
-		// ---------------------- Events ----------------------
-		
-		// Resolve requests for a sound
 		void onSoundRequest(const Audio::RequestSound& event)
 		{
-			std::cout << "Sound requested is: " << event.sound_ << std::endl;
+			std::cout << "Sound Requested: " << event.sound_ << std::endl;
 
 			// Look for sound requested in the map
 			auto it = sounds_.find(event.sound_);

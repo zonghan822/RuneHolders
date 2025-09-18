@@ -2,7 +2,7 @@
 
 // Engine Component(s)
 #include "../ecs/archetype_presets.hpp"
-#include "../component/componentid.hpp"
+#include "../component/componentID.hpp"
 
 // stds
 #include <cstdint>
@@ -13,9 +13,10 @@
 
 namespace ECSComponents
 {
-	class ComponentRegistry
+	class EnoComponentRegistry
 	{
 	public:
+		using regID = RegistryInfo::ComponentID;
 
 		struct ComponentInfo
 		{
@@ -27,13 +28,13 @@ namespace ECSComponents
 		{
 			static std::unordered_map<std::type_index, ComponentInfo> map =
 			{
-				{ std::type_index(typeid(NameComponent)),			{ ComponentID::NAME,		sizeof(NameComponent)		}},
-				{ std::type_index(typeid(TagComponent)),			{ ComponentID::TAG,			sizeof(TagComponent)		}},
-				{ std::type_index(typeid(VisibilityComponent)),		{ ComponentID::VISBILITY,	sizeof(VisibilityComponent)	}},
-				{ std::type_index(typeid(TransformComponent)),		{ ComponentID::TRANSFORM,	sizeof(TransformComponent)	}},
-				{ std::type_index(typeid(LayerComponent)),			{ ComponentID::LAYER,		sizeof(LayerComponent)		}},
-				{ std::type_index(typeid(ModulationComponent)),		{ ComponentID::MODULATION,  sizeof(ModulationComponent) }}
+				{ std::type_index(typeid(NameComponent)),			{ regID::NAME,			sizeof(NameComponent)		}},
+				{ std::type_index(typeid(VisibilityComponent)),		{ regID::VISBILITY,		sizeof(VisibilityComponent)	}},
+				{ std::type_index(typeid(TransformComponent)),		{ regID::TRANSFORM,		sizeof(TransformComponent)	}},
+				{ std::type_index(typeid(LayerComponent)),			{ regID::LAYER,			sizeof(LayerComponent)		}},
+				{ std::type_index(typeid(ModulationComponent)),		{ regID::MODULATION,	sizeof(ModulationComponent) }}
 			};
+
 			return map;
 		}
 
@@ -59,7 +60,7 @@ namespace ECSComponents
 		{
 			std::vector<std::pair<std::type_index, ComponentInfo>> cont{
 				ComponentMap().begin(), ComponentMap().end() };
-			
+
 			// Sort components based on their id (ascending order)
 			std::sort(cont.begin(), cont.end(), [](auto& a, auto& b) { return a.second.id < b.second.id; });
 
@@ -67,7 +68,7 @@ namespace ECSComponents
 			for (const auto& pair : cont)
 			{
 				std::cout << "Component: " << pair.first.name() << '\n'
-						  << "ID: "		   << pair.second.id << '\n';
+					<< "ID: " << pair.second.id << '\n';
 			}
 		}
 
@@ -87,8 +88,8 @@ namespace ECSComponents
 		static std::type_index FindComponent(const std::size_t& id)
 		{
 			auto it = std::find_if(
-				ComponentMap().begin(), 
-				ComponentMap().end(), 
+				ComponentMap().begin(),
+				ComponentMap().end(),
 				[id](const std::pair<std::type_index, ComponentInfo>& pair)
 				{
 					return pair.second.id == id;

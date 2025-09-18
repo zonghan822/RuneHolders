@@ -13,6 +13,7 @@ namespace ECS
 {
 	///
 	/// Chunks are memory blocks that contain entities of a single archetype
+	/// in a SoA format. 
 	///
 	struct Chunk
 	{
@@ -64,7 +65,20 @@ namespace ECS
 
 		// Set a value in a specified component
 		template <typename T>
-		void set(const size_t& componentIndex, const size_t& entityIndex, const T& value)
+		void set(const size_t& componentIndex, const size_t& entityIndex)
+		{
+			assert(componentIndex < pComponent.size());
+
+			// Cast back to a pointer and look for component
+			char* p = search(componentIndex, entityIndex);
+
+			// Construct component into memory
+			new (p) T();
+		}
+
+		// Set a value in a specified component
+		template <typename T>
+		void setWithVal(const size_t& componentIndex, const size_t& entityIndex, const T& value)
 		{
 			assert(componentIndex < pComponent.size());
 

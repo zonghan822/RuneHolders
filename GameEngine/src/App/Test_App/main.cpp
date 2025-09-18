@@ -1,5 +1,18 @@
-#include "glapp.h"
-#include "GSM.hpp"
+/*!
+@file    	main.cpp
+@author  	pghali@digipen.edu
+@co-author  parminder.singh@digipen.edu
+@date    	17/04/2024
+
+This file uses functionality defined in type GLApp to initialize an OpenGL
+context and implement a game loop.
+
+*//*__________________________________________________________________________*/
+
+/*                                                                   includes
+----------------------------------------------------------------------------- */
+// Extension loader library's header must be included before GLFW's header!!!
+#include "GLApp/glapp.h"
 #include <iostream>
 
 static void draw();

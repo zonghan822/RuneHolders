@@ -18,7 +18,7 @@ namespace Events
 		{
 			slots_.push_back(std::move(slot));
 		}
-		
+
 		// Value to broadcast when signal has been triggered
 		void emit(Type... values)
 		{

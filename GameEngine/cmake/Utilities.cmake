@@ -1,19 +1,19 @@
 # Define a macro to group source and header files by directory
-macro(GROUP_FILES_BY_FOLDER all_files)
-    foreach(FILE ${ALL_FILES}) 
+macro(GROUP_FILES_BY_FOLDER)
+    foreach(FILE ${ARGV}) 
+        # Make path relative to project root
+        if(DEFINED APP_NAME)
+            file(RELATIVE_PATH REL_FILE "${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}" "${FILE}")
+        else()
+            file(RELATIVE_PATH REL_FILE "${CMAKE_CURRENT_LIST_DIR}" "${FILE}")
+        endif()
+        
         # Get the directory of the file
-        get_filename_component(PARENT_DIR "${FILE}" PATH)
+        get_filename_component(PARENT_DIR "${REL_FILE}" DIRECTORY)
 
         # Replace '/' with '\' for Visual Studio group formatting
         string(REPLACE "/" "\\" GROUP "${PARENT_DIR}")
-
-        # Classify files into Source or Header groups based on their extension
-        if ("${FILE}" MATCHES ".*\\.cpp")
-        set(GROUP "Source Files\\${GROUP}")
-        elseif("${FILE}" MATCHES ".*\\.(hpp|h)")
-        set(GROUP "Header Files\\${GROUP}")
-        endif()
-
+        
         # Add the file to the corresponding source group
         source_group("${GROUP}" FILES "${FILE}")
     endforeach()
@@ -52,43 +52,52 @@ function(COPY_FOLDER_IF_DIFFERENT PROJECT_NAME source_dir dest_dir)
     endforeach()
 endfunction()
 
-function(BUILD_SHADERS TARGET_NAME)
-    find_program(GLSL_VALIDATOR glslangValidator HINTS 
-    ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} 
-      /usr/bin 
-      /usr/local/bin 
-      ${VULKAN_SDK_PATH}/Bin
-      ${VULKAN_SDK_PATH}/Bin32
-      $ENV{VULKAN_SDK}/Bin/ 
-      $ENV{VULKAN_SDK}/Bin32/
-    )
+# ---------------------------------------------------------
+# FMOD (extern)
+# ---------------------------------------------------------
+macro(set_fmod)
+    if (NOT TARGET fmod::core)
+        set(FMOD_DIR "${PROJECT_SOURCE_DIR}/lib/fmod")
 
-    file(GLOB_RECURSE SHADER_SOURCES
-    "${PROJECT_SOURCE_DIR}/src/Engine/shaders/*.frag"
-    "${PROJECT_SOURCE_DIR}/src/Engine/shaders/*.vert"
-    )
+        # FMOD include directories
+        set(FMOD_INCLUDE_DIRS
+            ${FMOD_DIR}/core/inc
+            ${FMOD_DIR}/studio/inc
+        )
 
-    foreach(GLSL ${SHADER_SOURCES})
-    get_filename_component(FILE_NAME ${GLSL} NAME)
-    set(SPIRV "${PROJECT_SOURCE_DIR}/src/Engine/shaders/${FILE_NAME}.spv")
-    add_custom_command(
-        OUTPUT ${SPIRV}
-        COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
-        DEPENDS ${GLSL})
-    list(APPEND SPIRV_BINARY_FILES ${SPIRV})
-    endforeach(GLSL)
-    add_custom_target(
-        ${TARGET_NAME}
-        SOURCES ${SHADER_SOURCES}
-        DEPENDS ${SPIRV_BINARY_FILES}
-    )
+        # FMOD library paths (different for Debug/Release)
+        set(FMOD_CORE_DEBUG_LIB    ${FMOD_DIR}/core/lib/x64/fmodL_vc.lib)
+        set(FMOD_CORE_RELEASE_LIB  ${FMOD_DIR}/core/lib/x64/fmod_vc.lib)
+        set(FMOD_STUDIO_DEBUG_LIB  ${FMOD_DIR}/studio/lib/x64/fmodstudioL_vc.lib)
+        set(FMOD_STUDIO_RELEASE_LIB ${FMOD_DIR}/studio/lib/x64/fmodstudio_vc.lib)
 
-    # Define your shaders directory
-    set(SHADER_SOURCE_DIR "${CMAKE_SOURCE_DIR}/src/Engine/shaders")
+        # Create interface targets for easier linking
+        add_library(fmod::core INTERFACE IMPORTED)
+        target_include_directories(fmod::core INTERFACE ${FMOD_INCLUDE_DIRS})
+        target_link_libraries(fmod::core INTERFACE
+            debug ${FMOD_CORE_DEBUG_LIB} optimized ${FMOD_CORE_RELEASE_LIB}
+        )
 
-    # Define where your executables are built
-    set(SHADER_DEST_DIR "${CMAKE_BINARY_DIR}/assets/shaders")
-    
-    # Call the function to copy shaders
-    COPY_FOLDER_IF_DIFFERENT(${TARGET_NAME} ${SHADER_SOURCE_DIR} ${SHADER_DEST_DIR})
-endfunction()
+        add_library(fmod::studio INTERFACE IMPORTED)
+        target_include_directories(fmod::studio INTERFACE ${FMOD_INCLUDE_DIRS})
+        target_link_libraries(fmod::studio INTERFACE
+            debug ${FMOD_STUDIO_DEBUG_LIB} optimized ${FMOD_STUDIO_RELEASE_LIB}
+        )
+
+        # Post-build step to copy DLLs depending on configuration
+        function(_fmod_copy_dll TARGET)
+            add_custom_command(TARGET ${TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<$<CONFIG:Debug>:${FMOD_DIR}/core/lib/x64/fmodL.dll>"
+                    "$<$<CONFIG:Release>:${FMOD_DIR}/core/lib/x64/fmod.dll>"
+                    "$<TARGET_FILE_DIR:${TARGET}>"
+            )
+            add_custom_command(TARGET ${TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<$<CONFIG:Debug>:${FMOD_DIR}/studio/lib/x64/fmodstudioL.dll>"
+                    "$<$<CONFIG:Release>:${FMOD_DIR}/studio/lib/x64/fmodstudio.dll>"
+                    "$<TARGET_FILE_DIR:${TARGET}>"
+            )
+        endfunction()
+    endif()
+endmacro()

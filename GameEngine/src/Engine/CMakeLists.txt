@@ -1,13 +1,12 @@
 set(ENGINE_NAME Engine)
 
-file(GLOB_RECURSE ENGINE_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
+file(GLOB_RECURSE ENGINE_SRC_FILES
     ${CMAKE_CURRENT_LIST_DIR}/*.[ch]pp
     ${CMAKE_CURRENT_LIST_DIR}/*.[ch]
 )
 
 set(ALL_FILES
     ${ENGINE_SRC_FILES} 
-    ${VULKAN_SRC_FILES}
 )
 
 # Call the macro to group files by folder
@@ -28,21 +27,26 @@ endif()
 
 target_include_directories(${ENGINE_NAME} SYSTEM PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories(${ENGINE_NAME} PUBLIC
-    ${Vulkan_INCLUDE_DIRS}
+    ${glm_SOURCE_DIR} 
+    ${GLFW_SOURCE_DIR}/include
+    ${glew_SOURCE_DIR}/include
+    ${imgui_SOURCE_DIR}
+    ${imgui_SOURCE_DIR}/backends
+    ${FMOD_INCLUDE_DIRS}
 )
-target_compile_definitions(${ENGINE_NAME} PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/")
+target_compile_definitions(${ENGINE_NAME} 
+    PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
+    -DGLEW_STATIC
+)
 
 target_link_libraries(${ENGINE_NAME} 
     glfw
     libglew_static
     imgui
-    ${Vulkan_LIBRARY}
     fmod::core 
     fmod::studio
 )
 _fmod_copy_dll(${ENGINE_NAME})
-
-# BUILD_SHADERS(Shaders)
 
 # Call the function to copy assets
 set(ASSETS_SOURCE_DIR "${CMAKE_SOURCE_DIR}/assets")

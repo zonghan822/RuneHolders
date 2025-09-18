@@ -1,5 +1,8 @@
 #pragma once
 
+// Interface
+#include "../system_interface/sys_interface.hpp"
+
 // stds
 #include <utility>
 #include <fstream>
@@ -7,11 +10,11 @@
 #include <string>
 #include <iostream>
 #include <unordered_map>
-
+#include "../math/math.hpp"
 
 namespace EngineConfiguration
 {
-	class EnoConfigManager
+	class EnoConfigManager : public Sys::ISystem
 	{
 	private:
 		std::string cfgFileName_ = ASSETS_DIR_PATH "settings/config.txt";
@@ -32,6 +35,8 @@ namespace EngineConfiguration
 			retrieveSettings();
 		}
 
+		void Update() {}
+
 		std::pair<int, int> getWindowDim()
 		{
 			auto it = configMap_.find("Window Width");
@@ -51,7 +56,7 @@ namespace EngineConfiguration
 			read();
 		}
 
-		// Read and extract from config.txt
+		// Read the local config.txt file
 		void read()
 		{
 			if (std::filesystem::exists(cfgFileName_))
