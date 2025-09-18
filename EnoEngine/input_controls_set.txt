@@ -1,0 +1,3 @@
+F5: run selected scene
+F7: pause running scene
+F8: stop running scene
