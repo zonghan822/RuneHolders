@@ -14,6 +14,8 @@ context and implement a game loop.
 // Extension loader library's header must be included before GLFW's header!!!
 #include "GLApp/glapp.h"
 #include <iostream>
+#include "GSM.hpp"
+
 
 static void draw();
 static void update();
