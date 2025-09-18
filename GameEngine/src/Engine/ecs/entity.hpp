@@ -434,7 +434,7 @@ namespace ECS
 			(loc.archetype->chunks_[openChunkIndex].get()->setWithVal<Components>(
 				loc.archetype->findComponentIndex<Components>(),
 				entIndex,
-				Components(std::get<I>(std::forward<Tuple>(values)))
+				std::get<I>(std::forward<Tuple>(values))
 			), ...);
 		}
 
@@ -767,7 +767,7 @@ namespace ECS
 		template <typename... Components, typename Tuple, std::size_t... I>
 		void addImpl(Tuple&& t, std::index_sequence<I...>)
 		{
-			(setInitial<Components>(Components(std::get<I>(std::forward<Tuple>(t)))), ...);
+			(setInitial<Components>(std::get<I>(std::forward<Tuple>(t))), ...);
 		}
 	};
 }
