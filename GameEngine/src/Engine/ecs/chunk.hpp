@@ -77,8 +77,8 @@ namespace ECS
 		}
 
 		// Set a value in a specified component
-		template <typename T>
-		void setWithVal(const size_t& componentIndex, const size_t& entityIndex, const T& value)
+		template <typename T, typename U>
+		void setWithVal(const size_t& componentIndex, const size_t& entityIndex, U&& value)
 		{
 			assert(componentIndex < pComponent.size());
 
@@ -86,12 +86,12 @@ namespace ECS
 			char* p = search(componentIndex, entityIndex);
 
 			// Construct component into memory
-			new (p) T{ value };
+			new (p) T{ std::forward<U>(value) };
 		}
 
 		// Modify a value in a specified component
-		template <typename T>
-		void modify(const size_t& componentIndex, const size_t& entityIndex, const T& value)
+		template <typename T, typename U>
+		void modify(const size_t& componentIndex, const size_t& entityIndex, U&& value)
 		{
 			assert(componentIndex < pComponent.size());
 
@@ -103,7 +103,7 @@ namespace ECS
 			reinterpret_cast<T*>(p)->~T();
 
 			// Construct component into memory
-			new (p) T{ value };
+			new (p) T{ std::forward<U>(value) };
 		}
 
 		// Identify the location of the component of a given entity
