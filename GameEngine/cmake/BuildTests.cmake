@@ -29,27 +29,15 @@ elseif (MSVC)
     target_compile_options(${APP_NAME} PRIVATE /W3 /WX-)
 endif()
 
-target_include_directories(${APP_NAME} PUBLIC
-    ${Vulkan_INCLUDE_DIRS}
-)
-
 # Set common include directories
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/${ENGINE_NAME})
 target_compile_definitions(${APP_NAME} PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/")
-message(STATUS "Using Engine lib from build directory....")
 
 # Link the library to the executable using the CMake target
-target_link_libraries(${APP_NAME} PRIVATE 
+target_link_libraries(${APP_NAME} PUBLIC
     ${ENGINE_NAME}
-    glfw
-    libglew_static
-    imgui
-    ${Vulkan_LIBRARY}
-    fmod::core 
-    fmod::studio
 )
-
 _fmod_copy_dll(${APP_NAME})
 
 ENDMACRO(SETUP_APP)
