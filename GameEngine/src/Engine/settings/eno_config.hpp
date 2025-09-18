@@ -10,14 +10,14 @@
 #include <string>
 #include <iostream>
 #include <unordered_map>
-
+#include "../math/math.hpp"
 
 namespace EngineConfiguration
 {
 	class EnoConfigManager : public Sys::ISystem
 	{
 	private:
-		std::string cfgFileName_ = "config/config.txt";
+		std::string cfgFileName_ = ASSETS_DIR_PATH "settings/config.txt";
 
 		// Map for storing setting strings
 		std::unordered_map<std::string, int> configMap_ =
