@@ -15,7 +15,6 @@ int main() {
 
 	gameLoop();
 
-
 	GLApp::cleanup();
 }
 

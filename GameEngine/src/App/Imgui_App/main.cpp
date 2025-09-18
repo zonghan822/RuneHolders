@@ -86,7 +86,7 @@ private:
 class GLApp {
 public:
     GLApp(int p_width, int p_height, const char* p_title) : m_angleOfRotation(0.0f),
-        m_rotationSpeed(0.01f),
+        m_rotationSpeed(0.001f),
         m_window(nullptr), 
         m_cube(std::make_shared<Cube>())
     {
@@ -145,6 +145,15 @@ public:
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        //Yunqi test
+        ImGui::Begin("New Window");
+        ImGui::Text("This is a test to see if I get 2 windows");
+        ImGui::Button("First Button", { 2,1 });
+        static float value = 0.0f;
+        ImGui::DragFloat("Value", &value);
+        ImGui::End();
+
 
         // Create ImGui window
         ImGui::Begin("OpenGL 3.3 Demo");
