@@ -9,6 +9,8 @@
 #include "../event/signals.hpp"
 #include "../audio/eno_audio_manager.hpp"
 #include "../math/math.hpp"
+#include "../tag/tagRegistry.hpp"
+#include "../game_instance/eno_game_instance.hpp"
 
 // stds
 #include <functional>
@@ -23,6 +25,7 @@ namespace Engine
 		void setup();
 		void run();
 		void run(std::function<void()> gameUpdateCallback); // Overloaded version
+		void createGameInstance();
 
 		// Provide access to engine systems for game code
 		ECS::EntityManager& getEntityManager();
@@ -41,10 +44,13 @@ namespace Engine
 		// Private member shii / was here before i edited
 		EngineConfiguration::EnoConfigManager configMng_;
 		Window::EnoWindow window_{ configMng_.getWindowDim() };
-		Input::EnoInputManager input_{ window_.getWindow() };
 		Event::EnoEventBus bus_;
 		Resources::EnoLoader loader_{ bus_ };
-		ECSComponents::ComponentRegistry compReg_;
+		Input::EnoInputManager input_{ window_.getWindow(), bus_ };
+		ECSComponents::EnoComponentRegistry compReg_;
+		Tag::EnoTagRegistry tagReg_;
 		Audio::EnoAudioManager audioMng_{ bus_ };
+		// Game Instance
+		std::unique_ptr<GameInstance::EnoGameInstance> gameInstance_;
 	};
 }

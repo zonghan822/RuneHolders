@@ -10,8 +10,10 @@
 
 namespace ECS
 {
-	// Defined by a collection of components
-	// created at any point in time
+	///
+	/// Defined by a collection of components
+	/// created at any point in time
+	///
 	struct Archetype
 	{
 		std::vector<std::unique_ptr<Chunk>> chunks_;					// Storing of the component data for the archetype
@@ -19,7 +21,7 @@ namespace ECS
 		std::vector<size_t> typeSizes_;									// Size of each component stored
 		std::unordered_map<uint32_t, size_t> typeIdxMap_;				// Maps a local ID to each type within the archetype
 
-		const uint32_t entityCount_	{ 2 };								// Number of entities stored in a chunk
+		const uint32_t entityCount_{ 2 };								// Number of entities stored in a chunk
 
 		Archetype(std::vector<std::type_index> t, std::vector<size_t> sizes)
 			: types_(std::move(t)), typeSizes_(std::move(sizes))
@@ -27,7 +29,7 @@ namespace ECS
 			uint32_t localIndex{};
 			for (const auto& type : types_)
 			{
-				uint32_t registryID = ECSComponents::ComponentRegistry::ComponentMap()[type].id;
+				uint32_t registryID = ECSComponents::EnoComponentRegistry::ComponentMap()[type].id;
 				typeIdxMap_[registryID] = localIndex;
 				++localIndex;
 			}
@@ -45,8 +47,8 @@ namespace ECS
 
 		// Instantiate a new chunk
 		void createChunk(
-			const uint32_t& entityCount, 
-			std::vector<std::type_index> types, 
+			const uint32_t& entityCount,
+			std::vector<std::type_index> types,
 			std::vector<size_t> typeSizes)
 		{
 			chunks_.push_back(std::make_unique<Chunk>(entityCount, types, typeSizes));
@@ -96,9 +98,15 @@ namespace ECS
 			// creating a new archetype
 			auto archetype = std::make_unique<Archetype>(types, sizes);
 			Archetype* pArche = archetype.get();
-			archetypeMap[key] = std::move(archetype); 
+			archetypeMap[key] = std::move(archetype);
 
 			return pArche;
+		}
+
+		// Get archetype manager map
+		std::unordered_map<ArchetypeKey, std::unique_ptr<Archetype>, ArchetypeKeyHash>& getArchetypes()
+		{
+			return archetypeMap;
 		}
 
 		// Transfer data between 2 archetypes
@@ -116,7 +124,7 @@ namespace ECS
 				// Use the global type ID from the registry to
 				// find the local ID of the component within the chunk
 				const auto& type = dst.types_[i];
-				uint32_t registryID = ECSComponents::ComponentRegistry::ComponentMap()[type].id;
+				uint32_t registryID = ECSComponents::EnoComponentRegistry::ComponentMap()[type].id;
 
 				// Verify that the destination archetype has the same type
 				// If type does not coexist in the source, this is likely
@@ -131,15 +139,15 @@ namespace ECS
 				uint8_t* dstCompStart = static_cast<uint8_t*>(dstChunk->pComponent[i]);
 
 				std::memcpy(dstCompStart + (dstECIdx * size),
-							srcCompStart + (srcECIdx * size),
-							size);
+					srcCompStart + (srcECIdx * size),
+					size);
 			}
 		}
 
 		// Retrieve raw data of an entity
 		std::vector<std::byte*> retrieveData(
-			const Archetype& src, 
-			const size_t& srcECIdx, 
+			const Archetype& src,
+			const size_t& srcECIdx,
 			const size_t& srcChnkIdx)
 		{
 			const auto& chunk = src.chunks_[srcChnkIdx];
@@ -153,6 +161,7 @@ namespace ECS
 
 			return completeData;
 		}
+
 
 		// Remove an existing archetype
 		void cleanup(Archetype* archetype)
@@ -173,8 +182,8 @@ namespace ECS
 			for (const auto& [key, archPtr] : archetypeMap)
 			{
 				std::cout << "Archetype with " << archPtr->chunks_.size() << " Chunks" << std::endl <<
-							"_______________________________" << std::endl;
-				
+					"_______________________________" << std::endl;
+
 				for (const auto& type : key.types)
 				{
 					std::cout << type.name() << std::endl;

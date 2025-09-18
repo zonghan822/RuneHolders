@@ -1,14 +1,13 @@
 #pragma once
 
-namespace ECSComponents
+namespace RegistryInfo
 {
 	enum ComponentID : uint32_t
 	{
-		NAME							= 0,
-		TAG								= 1,
-		VISBILITY						= 2,
-		TRANSFORM						= 3,
-		LAYER							= 4,
-		MODULATION						= 5
+		NAME = 0,
+		VISBILITY = 1,
+		TRANSFORM = 2,
+		LAYER = 3,
+		MODULATION = 4
 	};
 }

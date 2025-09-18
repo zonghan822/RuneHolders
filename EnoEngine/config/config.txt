@@ -1,2 +1,0 @@
-Window Width: 800
-Window Height: 600

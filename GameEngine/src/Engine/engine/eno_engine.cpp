@@ -66,9 +66,15 @@ namespace Engine
 				audioMng_.onSoundReceived(event);
 			});
 
-		//bus_.subscribe<Tag::RecordTag>
-		//setup f5, f7, f8 (game running,game pausing, game stop)
+		
 
+	}
+
+	// Create a game instance
+	void EnoEngine::createGameInstance()
+	{
+		// Initialization of game instance
+		gameInstance_ = std::make_unique<GameInstance::EnoGameInstance>(bus_);
 	}
 
 	// Function added for future use**
