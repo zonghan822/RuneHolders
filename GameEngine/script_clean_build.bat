@@ -40,11 +40,11 @@ echo [2/4] Creating build directory...
 mkdir build
 cd build
 
-REM Configure with CMake
-echo [3/4] Configuring project with CMake...
-cmake .. -G "Visual Studio 17 2022" -A x64
+REM Importing Dependencies
+cmake .. -G "Visual Studio 17 2022" -A x64 -DIMPORT_DEPS=TRUE
+echo [3/4] Configuring Visual Studio with CMake...
 if %errorlevel% neq 0 (
-    echo ERROR: CMake configuration failed
+    echo ERROR: CMake configuration failed!
     cd ..
     pause
     exit /b 1
@@ -53,6 +53,22 @@ if %errorlevel% neq 0 (
 echo.
 echo ===============================================
 echo   CMake configuration completed successfully!
+echo ===============================================
+echo.
+
+REM Build the project
+echo [4/4] Building project...
+cmake --build . --config Debug
+if %errorlevel% neq 0 (
+    echo ERROR: Build failed
+    cd ..
+    pause
+    exit /b 1
+)
+
+echo.
+echo ===============================================
+echo   Build completed successfully!
 echo ===============================================
 echo.
 

@@ -12,7 +12,7 @@ context and implement a game loop.
 /*                                                                   includes
 ----------------------------------------------------------------------------- */
 // Extension loader library's header must be included before GLFW's header!!!
-#include "glapp.h"
+#include "GLApp/glapp.h"
 #include <iostream>
 
 /*                                                   type declarations

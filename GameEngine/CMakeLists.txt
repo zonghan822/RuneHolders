@@ -10,14 +10,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set the directory where your custom modules are located
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-include(ImportDependencies)
+
+if(IMPORT_DEPS)
+    include(ImportDependencies)
+    importDependencies()
+endif()
+
 include(Utilities)
-
-importDependencies()
-
-add_definitions(-DGLEW_STATIC)
-
+include_fmod()
 ADD_SUBDIRECTORY(src/Engine ${CMAKE_BINARY_DIR}/projects/Engine)
 
 include(BuildTests)
 ADD_SUBDIRECTORY(src/App ${CMAKE_BINARY_DIR}/projects/App)
+
+
