@@ -11,16 +11,19 @@ namespace Event
 	{
 	public:
 		template <typename Event>
-		void subscribe(std::function<void(const Event&)> handler)
+		uint32_t subscribe(std::function<void(const Event&)> handler)
 		{
 			// When the handler is inserted into the map
 			// wrap it in a lambda that accepts const void* e and store
 			//
 			// Inside the lambda, cast e back to its original event type
-			subscribers_[std::type_index(typeid(Event))].push_back([handler](const void* e)
+			auto id = subscriberCount_++;
+			subscribers_[std::type_index(typeid(Event))].push_back({ id, [handler](const void* e)
 				{
 					handler(*static_cast<const Event*>(e));
-				});
+				} });
+
+			return id;
 		}
 
 		template <typename Event>
@@ -37,18 +40,38 @@ namespace Event
 				//	handler(*static_cast<const Event*>(e));
 				// }
 				// Using the Event type, we can call the original lambda
-				for (auto& handler : it->second)
+				for (auto& h : it->second)
 				{
-					handler(&event);
+					h.handler_(&event);
 				}
 			}
 		}
 
+		template <typename Event>
+		void unsubscribe(uint32_t id)
+		{
+			auto it = subscribers_.find(std::type_index(typeid(Event)));
+			if (it != subscribers_.end())
+			{
+				auto& vec = it->second;
+				vec.erase(std::remove_if(vec.begin(), vec.end(), [id](const Subscriber& subscriber)
+					{
+						return subscriber.id_ == id;
+					}), vec.end());
+			}
+		}
+
 	private:
-		using Handler = std::function<void(const void*)>;
+		struct Subscriber
+		{
+			uint32_t id_;
+			std::function<void(const void*)> handler_;
+		};
 
 		// Store type-erased Handler as a common type to wrap
 		// across any unique event type
-		std::unordered_map<std::type_index, std::vector<Handler>> subscribers_;
+		std::unordered_map<std::type_index, std::vector<Subscriber>> subscribers_;
+
+		uint32_t subscriberCount_{ 0 };
 	};
 }

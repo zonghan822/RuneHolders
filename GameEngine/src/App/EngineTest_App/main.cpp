@@ -1,16 +1,20 @@
-#include <engine/eno_engine.hpp>
+#include "game_logic.hpp"
 
-int main()
-{
-	Engine::EnoEngine engine;
+int main() {
+    try {
+        // Create game instance
+        GameApplication game;
 
-	try
-	{
-		engine.setup();
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << e.what() << std::endl;
-		return EXIT_FAILURE;
-	}
+        // Initialize all game systems
+        game.initialize();
+
+        // Run the game
+        game.run();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Game error: " << e.what() << std::endl;
+        return -1;
+    }
+
+    return 0;
 }
