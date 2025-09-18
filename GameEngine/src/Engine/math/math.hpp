@@ -24,8 +24,7 @@ namespace Math
 			return *this;
 		}
 
-		template <typename Type>
-			requires std::is_arithmetic_v<Type>
+
 		eVec2& operator+=(const Type& other)
 		{
 			this->v1 += other;
@@ -48,8 +47,7 @@ namespace Math
 			return *this;
 		}
 
-		template <typename Type>
-			requires std::is_arithmetic_v<Type>
+
 		eVec2& operator-=(const Type& other)
 		{
 			this->v1 -= other;
@@ -72,8 +70,7 @@ namespace Math
 			return *this;
 		}
 
-		template <typename Type>
-			requires std::is_arithmetic_v<Type>
+
 		eVec2& operator*=(const Type& other)
 		{
 			this->v1 *= other;
@@ -102,8 +99,7 @@ namespace Math
 			return *this;
 		}
 
-		template <typename Type>
-			requires std::is_arithmetic_v<Type>
+
 		eVec2& operator/=(const Type& other)
 		{
 			if (other == 0)
@@ -225,8 +221,6 @@ namespace Math
 			return *this;
 		}
 
-		//template <typename Type>
-			//requires std::is_arithmetic_v<Type>
 		eVec3& operator+=(const Type& other)
 		{
 			this->v1 += other;
@@ -251,8 +245,6 @@ namespace Math
 			return *this;
 		}
 
-		//template <typename Type>
-			//requires std::is_arithmetic_v<Type>
 		eVec3& operator-=(const Type& other)
 		{
 			this->v1 -= other;
@@ -277,8 +269,6 @@ namespace Math
 			return *this;
 		}
 
-		//template <typename Type>
-			//requires std::is_arithmetic_v<Type>
 		eVec3& operator*=(const Type& other)
 		{
 			this->v1 *= other;
@@ -310,8 +300,7 @@ namespace Math
 			return *this;
 		}
 
-		//template <typename Type>
-			//requires std::is_arithmetic_v<Type>
+
 		eVec3& operator/=(const Type& other)
 		{
 			if (other == 0)
@@ -358,14 +347,12 @@ namespace Math
 			 v7, v8, v9;
 
 		// -------------------- Constructors ---------------------
-		//template <typename Type>
-			//requires std::is_arithmetic_v<Type>
+
 		eMtx3x3	
 		(Type _00, Type _01, Type _02,
 		 Type _10, Type _11, Type _12,
 		 Type _20, Type _21, Type _22) :
 
-		 
 		 v1(_00),	v2(_01),	v3(_02),
 		 v4(_10),	v5(_11),	v6(_12),
 		 v7(_20),	v8(_21),	v9(_22) {}
@@ -374,8 +361,6 @@ namespace Math
 		eMtx3x3(const eMtx3x3& other) = default;
 
 		//Assignment operator
-		//template <typename T>
-			//requires std::is_arithmetic_v<Type>
 		eMtx3x3& operator=(const eMtx3x3& other) = default;
 		// ------------------------ Multiplication ----------------------------
 		eMtx3x3& operator*=(const eMtx3x3& rhs)
@@ -406,8 +391,6 @@ namespace Math
 		// ----------------------- Member functions ----------------------
 
 		//eMtx3x3Translate stores the translate vector about a 2D plane
-		template <typename Type>
-			requires std::is_arithmetic_v(Type)
 		void eMtx3x3Translate(eMtx3x3& result, Type x, Type y)
 		{
 			//translate vector is stored inside the last column
@@ -417,7 +400,6 @@ namespace Math
 
 		}
 
-		template <typename Type>
 		void eMtx3x3Scale(eMtx3x3<Type> result, Type x, Type y)
 		{
 			//scale is stored in the x and y identity
@@ -426,7 +408,6 @@ namespace Math
 			result.v7 = 0.f;	result.v8 = 0.f;	result.v9 = 1.f;
 		}
 
-		template <typename Type>
 		void eMtx3x3RotRad(eMtx3x3& result, Type angle)
 		{
 
@@ -440,7 +421,6 @@ namespace Math
 
 		}
 
-		template <typename Type>
 		void eMtx3x3RotDeg(eMtx3x3 &result, Type angle)
 		{
 
@@ -469,23 +449,6 @@ namespace Math
 		}
 
 	};
-
-	template<typename Type>
-	eMtx3x3 operator*(const eMtx3x3<Type>& lhs, const eMtx3x3<Type>& rhs) {
-		return eMtx3x3<Type>(
-			(lhs.v1 * rhs.v1) + (lhs.v2 * rhs.v4) + (lhs.v3 * rhs.v7),
-			(lhs.v1 * rhs.v2) + (lhs.v2 * rhs.v5) + (lhs.v3 * rhs.v8),
-			(lhs.v1 * rhs.v3) + (lhs.v2 * rhs.v6) + (lhs.v3 * rhs.v9),
-
-			(lhs.v4 * rhs.v1) + (lhs.v5 * rhs.v4) + (lhs.v6 * rhs.v7),
-			(lhs.v4 * rhs.v2) + (lhs.v5 * rhs.v5) + (lhs.v6 * rhs.v8),
-			(lhs.v4 * rhs.v3) + (lhs.v5 * rhs.v6) + (lhs.v6 * rhs.v9),
-
-			(lhs.v7 * rhs.v1) + (lhs.v8 * rhs.v4) + (lhs.v9 * rhs.v7),
-			(lhs.v7 * rhs.v2) + (lhs.v8 * rhs.v5) + (lhs.v9 * rhs.v8),
-			(lhs.v7 * rhs.v3) + (lhs.v8 * rhs.v6) + (lhs.v9 * rhs.v9)
-		);
-	}
 
 	template <typename Type>
 		requires std::is_arithmetic_v<Type>
