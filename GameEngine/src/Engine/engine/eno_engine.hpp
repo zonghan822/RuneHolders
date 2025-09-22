@@ -1,5 +1,6 @@
 #pragma once
 // Engine component(s)
+#include "../graphics/graphics.hpp"
 #include "../settings/eno_config.hpp"
 #include "../resources/eno_loader.hpp"
 #include "../window/eno_window.hpp"
@@ -11,6 +12,7 @@
 #include "../math/math.hpp"
 #include "../tag/tagRegistry.hpp"
 #include "../game_instance/eno_game_instance.hpp"
+
 
 // stds
 #include <functional>
@@ -30,6 +32,7 @@ namespace Engine
 		// Provide access to engine systems for game code
 		ECS::EntityManager& getEntityManager();
 		Audio::EnoAudioManager& getAudioManager() { return audioMng_; }
+		Graphics::EnoGraphicsManager& getGraphicsManager() { return *graphicsMng_; }
 		Event::EnoEventBus& getEventBus() { return bus_; }
 		Resources::EnoLoader& getResourceLoader() { return loader_; }
 		EngineConfiguration::EnoConfigManager& getConfigManager() { return configMng_; }
@@ -39,6 +42,7 @@ namespace Engine
 		// Functions added for future use**
 		void setupResourceLoading();
 		void setupEventSystem();
+		void setupGraphicsSystem();
 		void updateEngineSystems();
 
 		// Private member shii / was here before i edited
@@ -51,6 +55,7 @@ namespace Engine
 		Tag::EnoTagRegistry tagReg_;
 		Audio::EnoAudioManager audioMng_{ bus_ };
 		// Game Instance
+		std::unique_ptr<Graphics::EnoGraphicsManager> graphicsMng_;
 		std::unique_ptr<GameInstance::EnoGameInstance> gameInstance_;
 	};
 }

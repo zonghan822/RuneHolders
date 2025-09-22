@@ -2,7 +2,7 @@
 
 #include <utility>
 #include <concepts>
-
+#include <stdexcept>
 
 namespace Math
 {
