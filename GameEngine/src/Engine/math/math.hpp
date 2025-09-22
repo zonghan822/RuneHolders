@@ -183,4 +183,7 @@ namespace Math
 
 
 	};
+
 }
+
+#include "math.tpp"
