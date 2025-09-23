@@ -1,8 +1,23 @@
 #include "game_logic.hpp"
 
+
 void GameApplication::initialize() {
     // Setup engine systems first
     engine_.setup();
+
+
+    // Setup ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    ImGui::StyleColorsDark();
+
+    GLFWwindow* window = engine_.getWindow().getWindow();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
 
     // Setup all game content
     setupGameEntities();
