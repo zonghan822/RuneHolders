@@ -5,25 +5,12 @@ void GameApplication::initialize() {
     // Setup engine systems first
     engine_.setup();
 
-
-    // Setup ImGui
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
-    ImGui::StyleColorsDark();
-
-    GLFWwindow* window = engine_.getWindow().getWindow();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
-
-
     // Setup all game content
     setupGameEntities();
     setupGameAudio();
     setupGameEvents();
     setupGameMath();
+    setupImGui();
 
     std::cout << "Game initialized successfully!" << std::endl;
 }
@@ -35,6 +22,13 @@ void GameApplication::run() {
     engine_.run([this]() {
         updateGameLogic();  // This gets called every frame
         });
+    
+    //------------------------------------HARDCODED TERMINATE OF IMGUI FUNCTIONS------------------------------------
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    //------------------------------------END OF HARDCODED TERMINATE OF IMGUI FUNCTIONS-----------------------------
+
 }
 
 void GameApplication::setupGameEntities() {
@@ -53,6 +47,20 @@ void GameApplication::setupGameMath() {
     // math lib and maybe collision
 }
 
+void GameApplication::setupImGui() {
+    //------------------------------------------HARDCODED SETUP OF IMGUI-------------------------------------------
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    ImGui::StyleColorsDark();
+    GLFWwindow* window = engine_.getWindow().getWindow();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+    //----------------------------------------END OF HARDCODED SETUP FOR IMGUI------------------------------------- 
+}
+
 void GameApplication::demonstrateSignals() {
     // signalling code
 }
@@ -61,7 +69,7 @@ void GameApplication::updateGameLogic() {
     // This is called every frame (replaces your while loop in eno_engine.cpp run())
     updateEntities();
     updateAudio();
-
+    updateImGui();
     // Add any other per-frame game logic here
     drawShapes();
 }
@@ -75,9 +83,26 @@ void GameApplication::updateAudio() {
     // audio update
 }
 
+void GameApplication::updateImGui() {
+    // Start ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    //Yunqi test
+    ImGui::Begin("New Window");
+    ImGui::Text("This is a test to see if I get 2 windows");
+    static float value = 0.0f;
+    ImGui::DragFloat("Value", &value);
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+
 void GameApplication::drawShapes() { // For testing
     auto& graphics = engine_.getGraphicsManager();
-
     // Draw red rect
     graphics.drawRect(
         Math::eVec2<float>{100.0f, 100.0f},  // Position

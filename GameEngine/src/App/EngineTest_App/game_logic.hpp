@@ -34,11 +34,13 @@ private:
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
     void setupGameMath();       // math demonstration code
+    void setupImGui();
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
     void updateAudio();         // Update audio per frame
+    void updateImGui();
 
     void drawShapes(); // jsut to test
 
