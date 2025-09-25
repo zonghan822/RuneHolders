@@ -16,6 +16,10 @@ private:
     bool gameRunning_ = true;
     bool musicStarted_ = false;
 
+    float scalex = 200.0f;
+    float scaley = 150.0f;
+
+
 public:
     // Constructors
     GameApplication() = default;

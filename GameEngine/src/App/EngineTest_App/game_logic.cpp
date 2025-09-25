@@ -56,7 +56,6 @@ void GameApplication::setupGameMath() {
 }
 
 void GameApplication::setupImGui() {
-    //------------------------------------------HARDCODED SETUP OF IMGUI-------------------------------------------
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -65,8 +64,7 @@ void GameApplication::setupImGui() {
     ImGui::StyleColorsDark();
     GLFWwindow* window = engine_.getWindow().getWindow();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
-    //----------------------------------------END OF HARDCODED SETUP FOR IMGUI------------------------------------- 
+    ImGui_ImplOpenGL3_Init("#version 330"); 
 }
 
 void GameApplication::demonstrateSignals() {
@@ -95,26 +93,36 @@ void GameApplication::updateImGui() {
     // Start ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
+
+    static float shown_fps = 0.0f;
+    static double next_update = 0.0;         // next time we refresh the text
+    double now = ImGui::GetTime();           // imgui monotonic time (seconds)
+
+    ImGuiIO& io = ImGui::GetIO();
+    if (now >= next_update) {
+        shown_fps = io.Framerate;            // sample current FPS
+        next_update = now + 0.5;             // update every 0.5s (tune this)
+    }
+
     ImGui::NewFrame();
-
-    //Yunqi test
-    ImGui::Begin("New Window");
-    ImGui::Text("This is a test to see if I get 2 windows");
+    ImGui::Begin("IMGUI CHECKLIST");
+    ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
+    ImGui::Text("Frame (%.1f FPS)", shown_fps);
     static float value = 0.0f;
-    ImGui::DragFloat("Value", &value);
+    ImGui::DragFloat("Size Width", &scalex);
+    ImGui::DragFloat("Size Height", &scaley);
     ImGui::End();
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 
 void GameApplication::drawShapes() { // For testing
     auto& graphics = engine_.getGraphicsManager();
+
+
     // Draw red rect
     graphics.drawRect(
         Math::eVec2<float>{100.0f, 100.0f},  // Position
-        Math::eVec2<float>{200.0f, 150.0f},  // Size 200 wide 150 tall
+        Math::eVec2<float>{scalex, scaley},  // Size 200 wide 150 tall
         Graphics::Color::Red,                 // Colour
         true                                 // Filled
     );
@@ -136,4 +144,8 @@ void GameApplication::drawShapes() { // For testing
         Graphics::Color::Blue,               // Colour
         true                                 // Filled
     );
+
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
