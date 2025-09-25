@@ -94,7 +94,8 @@ namespace Collision
 		CollisionComponent(
 			float radius,
 			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f },
-			bool trigger = false);
+			bool trigger = false
+		);
 
 		/*
 		@brief create a RECTANGLE collider
@@ -103,14 +104,20 @@ namespace Collision
 		@param colliderOffset - offset from the entity's transform position
 		@param trigger - if TRUE, this collider, won't block movement but will detect overlaps
 		*/
-		CollisionComponent(float width, float height, Math::eVec2<float> colliderOffset = { 0.0f, 0.0f, }, bool trigger = false);
+		CollisionComponent(
+			float width, 
+			float height, 
+			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f, }, 
+			bool trigger = false);
 
 		/*
 		@brief create a point collider (e.g., bullets, mouse clicks, etc.)
 		@param colliderOffset - offset from the entity's transform position
 		@param trigger - if TRUE, this collider won't block movement but will detect overlaps
 		*/
-		static CollisionComponent CreatePointCollider(Math::eVec2<float> colliderOffset = { 0.0f, 0.0f }, bool trigger = false);
+		static CollisionComponent CreatePointCollider(
+			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f }, 
+			bool trigger = false);
 
 		//*****************************************
 		// UTILITY functions
@@ -163,6 +170,11 @@ namespace Collision
 	@return Reference to the output stream
 	*/
 	std::ostream& operator<<(std::ostream& os, const CollisionComponent& collision);
+
+
+	// =============================================================================
+	// COLLISION DETECTION
+	// =============================================================================
 
 	/*
 	@brief result of a collision detection check
@@ -307,7 +319,7 @@ namespace Collision
 	};
 
 	//======================================================================================
-	// COLLISION EVENTS
+	// COLLISION SYSTEM
 	//======================================================================================
 	
 	/*
@@ -361,5 +373,74 @@ namespace Collision
 		void ClearCallbacks();
 
 	private:
+		// -------------------------------------------------------------------------
+		// PRIVATE MEMBER VARIABLES
+		// -------------------------------------------------------------------------
+
+		Event::EnoEventBus& eventBus_;
+		// event bus for publishing collision events
+		std::vector<std::function<void(const CollisionEvent&)>> collisionCallbacks_; // direct callback functions
+
+		// -------------------------------------------------------------------------
+		// PRIVATE HELPER FUNCTIONS
+		// -------------------------------------------------------------------------
+
+		/*
+		* @brief check if an entity has the required components for collisions
+		* @param entityLoc - entity location information
+		* @return True if entity has both transform and collision components
+		*/
+		bool HasRequiredComponents(const ECS::EntityLoc& entityLoc);
+
+		/*
+		* @brief Check collision between 2 specific entities
+		* @param entityA_ID - ID of first entity
+		* @param entityA_Loc - location info of first entity
+		* @param entityB_ID - ID of second entity
+		* @param entityB_Loc - location info of second entity
+		*/
+		void CheckEntityCollision(
+			uint32_t entityA_ID, const ECS::EntityLoc& entityA_Loc,
+			uint32_t entityB_ID, const ECS::EntityLoc& entityB_Loc);
+
+		/*
+		* @brief handle a collision that has been deteced
+		* @param entityA_ID - ID of first entity
+		* @param entityB_ID - ID of second entity
+		* @param collisionA - collision component of first entity
+		* @param collisionB - collision component of second entity
+		* @param result - collision detection result
+		*/
+		void HandleCollision(
+			uint32_t entityA_ID, uint32_t entityB_ID,
+			const CollisionComponent& collisionA, const CollisionComponent& collisionB,
+			const CollisionResult& result);
+
+		/*
+		* @brief get transform component from entity location
+		* @param entityLoc - entity location information
+		* @return reference to entity's transform component
+		*/
+		ECSComponents::TransformComponent& GetTransformComponent(const ECS::EntityLoc& entityLoc);
+
+		/*
+		* @brief get collision component from entity location
+		* @param entityLoc - entity location information
+		* @return reference to the entity's collision component
+		*/
+		CollisionComponent& GetCollisionComponent(const ECS::EntityLoc& entityLoc);
 	};
-}
+
+	// -------------------------------------------------------------------------
+	// UTILITY FUNCTION
+	// -------------------------------------------------------------------------
+
+	/*
+	* @brief run a collision test (for debugging)
+	* 
+	* creates test entities and shows collision detections
+	* call this function to verify if the collision system is working
+	*/
+	void RunBasicCollisionTest();
+
+} // namespace Collision
