@@ -119,16 +119,18 @@ void GameApplication::updateImGui() {
     if (ImGui::Button("Spawn Entity")) {
 
         //ECS::Entity e =  engine_.getEntityManager().create<Component Type goes in here>(value for comp type);
-        ECS::Entity e =  engine_.getEntityManager().create();
-
+        ECS::Entity e =  engine_.getEntityManager().create<ECSComponents::NameComponent>("Animal");
+        //e.add(ECSComponents::NameComponent("Human"));
         std::cout << "Spawning New Entity\n";
+        auto name = e.get<ECSComponents::NameComponent>().name;
+        std::cout << name << '\n';
+        
+        
     }
     //Clone Button
     if (ImGui::Button("Clone Entity")) {
         std::cout << "Clone Last Entity\n";
     }
-
-
     ImGui::End();
 }
 
