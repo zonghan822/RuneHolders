@@ -16,6 +16,9 @@ private:
     bool gameRunning_ = true;
     bool musicStarted_ = false;
 
+
+
+    //THIS IS JUST FOR DEBUGGING IMGUI'S SCALE SCROLLER
     float scalex = 200.0f;
     float scaley = 150.0f;
 

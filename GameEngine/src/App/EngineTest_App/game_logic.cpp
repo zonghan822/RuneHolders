@@ -94,6 +94,10 @@ void GameApplication::updateImGui() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
 
+    ImGui::NewFrame();
+    ImGui::Begin("IMGUI CHECKLIST");
+
+    //FPS and Time Staggering for Displaying FPS
     static float shown_fps = 0.0f;
     static double next_update = 0.0;         // next time we refresh the text
     double now = ImGui::GetTime();           // imgui monotonic time (seconds)
@@ -103,14 +107,28 @@ void GameApplication::updateImGui() {
         shown_fps = io.Framerate;            // sample current FPS
         next_update = now + 0.5;             // update every 0.5s (tune this)
     }
-
-    ImGui::NewFrame();
-    ImGui::Begin("IMGUI CHECKLIST");
     ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
     ImGui::Text("Frame (%.1f FPS)", shown_fps);
+
+    //Changing Entity Values
     static float value = 0.0f;
     ImGui::DragFloat("Size Width", &scalex);
     ImGui::DragFloat("Size Height", &scaley);
+
+    //Spawn Button
+    if (ImGui::Button("Spawn Entity")) {
+
+        //ECS::Entity e =  engine_.getEntityManager().create<Component Type goes in here>(value for comp type);
+        ECS::Entity e =  engine_.getEntityManager().create();
+
+        std::cout << "Spawning New Entity\n";
+    }
+    //Clone Button
+    if (ImGui::Button("Clone Entity")) {
+        std::cout << "Clone Last Entity\n";
+    }
+
+
     ImGui::End();
 }
 
