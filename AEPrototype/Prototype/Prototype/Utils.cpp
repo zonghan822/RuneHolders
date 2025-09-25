@@ -185,8 +185,10 @@ float vecToVecAngleDeg(AEVec2 varA, AEVec2 varB) {
 }
 
 
-
-
+float dot(const AEVec2& a, const AEVec2& b) { return a.x * b.x + a.y * b.y; }
+float len2(const AEVec2& v) { return dot(v, v); }
+float len(const AEVec2& v) { return std::sqrt(len2(v)); }
+AEVec2  normalise(const AEVec2& v) { float L = len(v); return (L > 0.f) ? AEVec2{ v.x / L, v.y / L } : AEVec2{ 0,0 }; }
 
 
 /*
@@ -493,7 +495,19 @@ void DrawPath() {
 //void applyGravity(Entity* thisGuy);
 
 
+/*
+void UserAppliedForces() {}
+*/
 
+
+void setAcceleration(float accelerationVal) {
+
+
+}
+
+void setSpeed() {
+
+}
 
 
 
