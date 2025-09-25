@@ -1,4 +1,5 @@
 #include "game_logic.hpp"
+#include "math/math.hpp"
 
 
 void GameApplication::initialize() {
@@ -45,6 +46,13 @@ void GameApplication::setupGameEvents() {
 
 void GameApplication::setupGameMath() {
     // math lib and maybe collision
+    std::cout << "Calling math function\n";
+    Math::eVec2 vec{ 1.1f, 1.2f };
+    Math::eVec2 vec2{ 1.3f, 2.f };
+    vec += vec2;
+    std::cout << "vector : " << vec.v1 << ", " << vec.v2 << std::endl;
+
+
 }
 
 void GameApplication::setupImGui() {
