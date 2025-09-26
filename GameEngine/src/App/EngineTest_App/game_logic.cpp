@@ -170,6 +170,19 @@ void GameApplication::drawShapes() { // For testing
     auto& entityManager = engine_.getEntityManager();
 
     //thinking here i do for each drawable entity: draw.
+    std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
+
+    for (ECS::Entity& entity : EntityList) {
+        if (entity.has<ECSComponents::DrawInfoComponent>()) {
+            graphics.drawRect(Math::eVec2<float>{entity.get<ECSComponents::DrawInfoComponent>().xPos, entity.get<ECSComponents::DrawInfoComponent>().yPos},
+                Math::eVec2<float>{entity.get<ECSComponents::DrawInfoComponent>().width, entity.get<ECSComponents::DrawInfoComponent>().width},
+                entity.get<ECSComponents::DrawInfoComponent>().color,
+                true
+            );
+        }
+    }
+
+
 
     // Draw red rect
     graphics.drawRect(
