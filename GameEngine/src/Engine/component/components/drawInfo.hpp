@@ -49,12 +49,11 @@ namespace ECSComponents
 	inline std::ostream& operator<<(std::ostream& os, const DrawInfoComponent& draw)
 	{
 		
-	
 		auto& shape   = draw.shape;
 		auto& xPos    = draw.xPos;
 		auto& yPos    = draw.yPos;
-		auto & width  = draw.width;
-		auto & height = draw.height;
+		auto& width   = draw.width;
+		auto& height  = draw.height;
 
 		std::cout 
 		<< "SHAPE: "	<< shape  << '\n'
