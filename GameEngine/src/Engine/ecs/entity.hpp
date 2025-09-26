@@ -434,7 +434,7 @@ namespace ECS
 			(loc.archetype->chunks_[openChunkIndex].get()->setWithVal<Components>(
 				loc.archetype->findComponentIndex<Components>(),
 				entIndex,
-				std::get<I>(std::forward<Tuple>(values))
+				Components(std::get<I>(std::forward<Tuple>(values)))
 			), ...);
 		}
 
@@ -610,8 +610,6 @@ namespace ECS
 		template <typename... Components, typename... Values>
 		void add(Values&&... val)
 		{
-			//static_assert(sizeof...(Components) == sizeof...(Values), "Mismatch detected in components and value counts!");
-
 			// Check if any of the added components
 			// is already appended onto the entity
 			auto types = findEntity(id_).archetype->types_;
@@ -661,8 +659,17 @@ namespace ECS
 				entityManager_.shift(id_, combinedTypes, combinedSizes);
 
 				// Assign values to the new components
-				auto values = std::forward_as_tuple(val...);
-				addImpl<Components...>(values, std::index_sequence_for<Components...>{});
+				if (sizeof...(Values) == 0)
+				{
+					// No values have been passed
+					setInitialNoValue<Components...>();
+				}
+				else
+				{
+					// Values have been passed
+					auto values = std::forward_as_tuple(val...);
+					addImpl<Components...>(values, std::index_sequence_for<Components...>{});
+				}
 			}
 		}
 
@@ -760,13 +767,26 @@ namespace ECS
 			size_t entIndex = loc.entityIndexInChunk;
 			size_t typeIndex = loc.archetype->findComponentIndex<CompType>();
 
-			loc.archetype->chunks_[chkIndex].get()->set<CompType>(typeIndex, entIndex, value);
+			loc.archetype->chunks_[chkIndex].get()->setWithVal<CompType>(typeIndex, entIndex, value);
+		}
+
+		template <typename CompType>
+		void setInitialNoValue()
+		{
+			// Search for entity in entityMap
+			// Retrieve entity position in map and retrieve component value
+			EntityLoc& loc = findEntity(id_);
+			size_t chkIndex = loc.chunkIndex;
+			size_t entIndex = loc.entityIndexInChunk;
+			size_t typeIndex = loc.archetype->findComponentIndex<CompType>();
+
+			loc.archetype->chunks_[chkIndex].get()->set<CompType>(typeIndex, entIndex);
 		}
 
 		template <typename... Components, typename Tuple, std::size_t... I>
 		void addImpl(Tuple&& t, std::index_sequence<I...>)
 		{
-			(setInitial<Components>(std::get<I>(std::forward<Tuple>(t))), ...);
+			(setInitial<Components>(Components(std::get<I>(std::forward<Tuple>(t)))), ...);
 		}
 	};
 }
