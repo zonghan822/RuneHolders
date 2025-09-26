@@ -117,15 +117,36 @@ void GameApplication::updateImGui() {
 
     //Spawn Button
     if (ImGui::Button("Spawn Entity")) {
-
         //ECS::Entity e =  engine_.getEntityManager().create<Component Type goes in here>(value for comp type);
-        ECS::Entity e =  engine_.getEntityManager().create<ECSComponents::NameComponent>("Animal");
-        //e.add(ECSComponents::NameComponent("Human"));
-        std::cout << "Spawning New Entity\n";
-        auto name = e.get<ECSComponents::NameComponent>().name;
-        std::cout << name << '\n';
+
+        //ECS::Entity e =  engine_.getEntityManager().create<ECSComponents::NameComponent>("Animal");
+        ECS::Entity f =  engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>("Circle");
+        //ECS::Entity g =  engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>("Nothing");
+        //ECS::Entity e =  engine_.getEntityManager().create();
+
+        //e.set(ECSComponents::NameComponent("Human"));
+        //f.set(ECSComponents::DrawInfoComponent("Square"));
+        //f.set<ECSComponents::DrawInfoComponent>("Square");
+
+        //f.add<ECSComponents::NameComponent>(ECSComponents::NameComponent{ "Jonathan Smelly" });
+
+        //error
+        //g.add<ECSComponents::DrawInfoComponent>("Triangle");
         
+        //ECSComponents::NameComponent name = e.get<ECSComponents::NameComponent>().name;
+        ECSComponents::NameComponent shape = f.get<ECSComponents::DrawInfoComponent>().shape;
+
+
+        //std::cout << name << '\n';
+        std::cout << shape << '\n';
         
+        //ECSComponents::NameComponent shapes = 
+
+        //e.add<ECSComponents::DrawInfoComponent>("Circle"); THIS IS SOMEHOW WRONG
+        //std::cout << e.get<ECSComponents::DrawInfoComponent>() << '\n';
+
+
+        //std::cout << "Spawning New Entity\n";
     }
     //Clone Button
     if (ImGui::Button("Clone Entity")) {

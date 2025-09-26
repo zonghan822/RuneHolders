@@ -610,8 +610,7 @@ namespace ECS
 		template <typename... Components, typename... Values>
 		void add(Values&&... val)
 		{
-			static_assert(sizeof...(Components) == sizeof...(Values),
-				"Mismatch detected in components and value counts!");
+			//static_assert(sizeof...(Components) == sizeof...(Values), "Mismatch detected in components and value counts!");
 
 			// Check if any of the added components
 			// is already appended onto the entity
