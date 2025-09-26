@@ -2,8 +2,19 @@
 
 #include <iostream>
 #include <string>
-//would i be able to add the math library here? -YunQi
 
+//i would want to add the math and graphics library here
+#include "../../graphics/graphics.hpp"
+
+
+enum Shapes {
+	Circle = 0,
+	Rectangle = 1
+};
+enum Color {
+	Green = 0,
+	Red = 1
+};
 
 namespace ECSComponents
 {
@@ -11,19 +22,46 @@ namespace ECSComponents
 	{
 		DrawInfoComponent() = default;
 
-		DrawInfoComponent(const char* n)
+		DrawInfoComponent(float xPosition, float yPosition, float w, float h, const char* n, int c):
+			xPos{ xPosition }, yPos{ yPosition }, width{w}, height{h}
 		{
 			strncpy_s(shape, n, sizeof(shape) - 1);
 			shape[sizeof(shape) - 1] = '\0';
+
+			if (c == Color::Green) {
+				color = Graphics::Color::Green;
+			}
+			else if (c == Color::Red) {
+				color = Graphics::Color::Red;
+			}
+			else {
+				color = Graphics::Color::Blue;
+			}
+
 		}
 
+		float xPos, yPos, width, height;
 		char shape[32] = "Rectangle";
+		Graphics::Color color = Graphics::Color::Blue;
 		
 	};
 
 	inline std::ostream& operator<<(std::ostream& os, const DrawInfoComponent& draw)
 	{
-		std::cout << "Shape to draw: (" << draw.shape << ')' << std::endl;
+		
+	
+		auto& shape   = draw.shape;
+		auto& xPos    = draw.xPos;
+		auto& yPos    = draw.yPos;
+		auto & width  = draw.width;
+		auto & height = draw.height;
+
+		std::cout 
+		<< "SHAPE: "	<< shape  << '\n'
+		<< "x: "		<< xPos   << '\n'
+		<< "y: "		<< yPos   << '\n'
+		<< "width: "	<< width  << '\n'
+		<< "height: "	<< height << '\n';
 
 		return os;
 	}

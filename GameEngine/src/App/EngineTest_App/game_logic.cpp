@@ -94,6 +94,19 @@ void GameApplication::updateImGui() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
 
+    //Option Menu
+    const char* shapes[] = {"Circle" , "Rectangle"};
+    const char* colors[] = {"Green"  ,     "Red"  };
+
+    //Values to set for entities
+    static float           eCoordX          = 0;
+    static float           eCoordY          = 0;
+    static float           eWidth           = 0;
+    static float           eHeight          = 0;
+    static int             eColor           = Color::Green;
+    static int             eShapeIndex      = Shapes::Circle;
+
+
     ImGui::NewFrame();
     ImGui::Begin("IMGUI CHECKLIST");
 
@@ -111,42 +124,37 @@ void GameApplication::updateImGui() {
     ImGui::Text("Frame (%.1f FPS)", shown_fps);
 
     //Changing Entity Values
-    static float value = 0.0f;
     ImGui::DragFloat("Size Width", &scalex);
     ImGui::DragFloat("Size Height", &scaley);
 
+    //Button Options
+    ImGui::DragFloat("New Entity X Pos",  &eCoordX);
+    ImGui::DragFloat("New Entity Y Pos",  &eCoordY);
+    ImGui::DragFloat("New Entity Width",  &eWidth);
+    ImGui::DragFloat("New Entity Height", &eHeight);
+    
+
+    //Dropdown Menu
+    ImGui::Combo("Shape: ", &eShapeIndex, shapes, IM_ARRAYSIZE(shapes));
+    ImGui::Combo("Color: ", &eColor,      colors, IM_ARRAYSIZE(colors));
+
+
+
     //Spawn Button
     if (ImGui::Button("Spawn Entity")) {
-        //ECS::Entity e =  engine_.getEntityManager().create<Component Type goes in here>(value for comp type);
 
-        //ECS::Entity e =  engine_.getEntityManager().create<ECSComponents::NameComponent>("Animal");
-        ECS::Entity f =  engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>("Circle");
-        //ECS::Entity g =  engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>("Nothing");
-        //ECS::Entity e =  engine_.getEntityManager().create();
-
-        //e.set(ECSComponents::NameComponent("Human"));
-        //f.set(ECSComponents::DrawInfoComponent("Square"));
-        //f.set<ECSComponents::DrawInfoComponent>("Square");
-
-        //f.add<ECSComponents::NameComponent>(ECSComponents::NameComponent{ "Jonathan Smelly" });
-
-        //error
-        //g.add<ECSComponents::DrawInfoComponent>("Triangle");
+        //e.set(ECSComponents::DrawInfoComponent("Square"));
+        //e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent{ "NAME" });
         
-        //ECSComponents::NameComponent name = e.get<ECSComponents::NameComponent>().name;
-        ECSComponents::NameComponent shape = f.get<ECSComponents::DrawInfoComponent>().shape;
 
 
-        //std::cout << name << '\n';
-        std::cout << shape << '\n';
-        
-        //ECSComponents::NameComponent shapes = 
 
-        //e.add<ECSComponents::DrawInfoComponent>("Circle"); THIS IS SOMEHOW WRONG
-        //std::cout << e.get<ECSComponents::DrawInfoComponent>() << '\n';
+        //SAMPLE DRAWINFOCOMPONENT LOOKS LIKE THIS: DrawInfoComponent(float xPosition, float yPosition, float w, float h, const char* n, int c)
+        ECSComponents::DrawInfoComponent DIC {eCoordX, eCoordY, eWidth, eHeight, shapes[eShapeIndex], eColor};
+        ECS::Entity e =  engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
 
-
-        //std::cout << "Spawning New Entity\n";
+        std::cout << e.get<ECSComponents::DrawInfoComponent>();
+        std::cout << "Spawning New Entity\n";
     }
     //Clone Button
     if (ImGui::Button("Clone Entity")) {
@@ -159,6 +167,9 @@ void GameApplication::updateImGui() {
 void GameApplication::drawShapes() { // For testing
     auto& graphics = engine_.getGraphicsManager();
 
+    auto& entityManager = engine_.getEntityManager();
+
+    //thinking here i do for each drawable entity: draw.
 
     // Draw red rect
     graphics.drawRect(
