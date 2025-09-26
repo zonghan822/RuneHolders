@@ -78,7 +78,7 @@ namespace ECS
 
 		// Set a value in a specified component
 		template <typename T, typename U>
-		void setWithVal(const size_t& componentIndex, const size_t& entityIndex, U&& value)
+		void setVal(const size_t& componentIndex, const size_t& entityIndex, U&& value)
 		{
 			assert(componentIndex < pComponent.size());
 

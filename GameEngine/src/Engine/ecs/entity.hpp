@@ -398,6 +398,66 @@ namespace ECS
 			}
 		}
 
+		// Find and return entities based on their
+		// components or optionally, their components and associated values
+		template <typename... Components, typename... Values>
+		std::vector<Entity> findEntity(Values... values)
+		{
+			static_assert(
+				sizeof...(Values) == 0|| 
+				sizeof...(Components) == sizeof...(Values),
+				"Mismatch detected in components and value counts!");
+
+			std::vector<Entity> entities;
+			auto valueTup = std::make_tuple(values...);
+
+			// Find an entity based on their component type and value
+			for (const auto& [id, loc] : entityMap_)
+			{
+				Entity ent{ id, *this };
+				if (ent.template has<Components...>())
+				{
+					if constexpr (!sizeof...(Values))
+					{
+						// No values passed
+						entities.push_back(ent);
+					}
+					else
+					{
+						// Values were passed and
+						// are now being compared
+						bool match = std::apply([&](auto&&... vals)
+							{
+								return ((ent.template get<Components>() == vals) && ...);
+							}, valueTup);
+
+						if (match)
+							entities.push_back(ent);
+					}
+				}
+			}
+
+			return entities;
+		}
+
+		template <typename... Components>
+		std::vector<Entity> findEntitybyType()
+		{
+			std::vector<Entity> entities;
+
+			// Find an entity based on their component type and value
+			for (const auto& [id, loc] : entityMap_)
+			{
+				Entity ent{ id, *this };
+				if (ent.template has<Components...>())
+				{
+					entities.push_back(ent);
+				}
+			}
+
+			return entities;
+		}
+
 	private:
 		ArchetypeManager archetypeMng_;
 
@@ -431,7 +491,7 @@ namespace ECS
 			const size_t& openChunkIndex, const size_t& entIndex,
 			Tuple&& values, std::index_sequence<I...>)
 		{
-			(loc.archetype->chunks_[openChunkIndex].get()->setWithVal<Components>(
+			(loc.archetype->chunks_[openChunkIndex].get()->setVal<Components>(
 				loc.archetype->findComponentIndex<Components>(),
 				entIndex,
 				Components(std::get<I>(std::forward<Tuple>(values)))
@@ -445,7 +505,8 @@ namespace ECS
 			size_t openChunkIndex = static_cast<size_t>(-1);
 			for (size_t i = 0; i < archetype->chunks_.size(); ++i)
 			{
-				if (archetype->chunks_[i].get()->current < archetype->chunks_[i].get()->capacity)
+				if (archetype->chunks_[i].get()->current < 
+					archetype->chunks_[i].get()->capacity)
 				{
 					openChunkIndex = i;
 					++archetype->chunks_[i].get()->current;
@@ -659,10 +720,10 @@ namespace ECS
 				entityManager_.shift(id_, combinedTypes, combinedSizes);
 
 				// Assign values to the new components
-				if (sizeof...(Values) == 0)
+				if constexpr (!sizeof...(Values))
 				{
 					// No values have been passed
-					setInitialNoValue<Components...>();
+					(setInitialEmpty<Components>(), ...);
 				}
 				else
 				{
@@ -733,12 +794,11 @@ namespace ECS
 
 		// Check if an entity consists of the given component(s)
 		template <typename... Components>
-		bool hasComponent()
+		bool has()
 		{
-			return (... && (std::find(
-				findEntity(id_).archetype->types_.begin(),
-				findEntity(id_).archetype->types_.end(),
-				std::type_index(typeid(Components))) != findEntity(id_).archetype->types_.end()));
+			return (... && (std::find(findEntity(id_).archetype->types_.begin(), 
+					findEntity(id_).archetype->types_.end(), 
+					std::type_index(typeid(Components))) != findEntity(id_).archetype->types_.end()));
 		}
 
 	private:
@@ -757,6 +817,7 @@ namespace ECS
 			return it->second;
 		}
 
+		// Helper for the adding a new component with values
 		template <typename CompType>
 		void setInitial(const CompType& value)
 		{
@@ -767,11 +828,12 @@ namespace ECS
 			size_t entIndex = loc.entityIndexInChunk;
 			size_t typeIndex = loc.archetype->findComponentIndex<CompType>();
 
-			loc.archetype->chunks_[chkIndex].get()->setWithVal<CompType>(typeIndex, entIndex, value);
+			loc.archetype->chunks_[chkIndex].get()->setVal<CompType>(typeIndex, entIndex, value);
 		}
 
+		// Helper for the adding a new component without values
 		template <typename CompType>
-		void setInitialNoValue()
+		void setInitialEmpty()
 		{
 			// Search for entity in entityMap
 			// Retrieve entity position in map and retrieve component value

@@ -52,5 +52,10 @@ namespace Engine
 		Audio::EnoAudioManager audioMng_{ bus_ };
 		// Game Instance
 		std::unique_ptr<GameInstance::EnoGameInstance> gameInstance_;
+
+
+		// TBD Demo for playing sounds
+		void soundSetup();
+		void soundPlaying();
 	};
 }
