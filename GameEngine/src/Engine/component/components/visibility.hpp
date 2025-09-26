@@ -8,7 +8,7 @@ namespace ECSComponents
 {
 	struct VisibilityComponent
 	{
-		uint32_t z_index = 0;
+		uint32_t z_index = 3;
 		bool visible = false;
 	};
 
