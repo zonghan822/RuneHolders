@@ -7,6 +7,7 @@ namespace Engine
 		// Engine init
 		setupResourceLoading();
 		setupEventSystem();
+		setupGraphicsSystem();
 
 		// For debugging
 		compReg_.PrintIDs();
@@ -35,6 +36,20 @@ namespace Engine
 		{
 			glfwPollEvents();
 
+			// Handle window resize for graphics system
+			int width, height;
+			glfwGetFramebufferSize(window_.getWindow(), &width, &height);
+			if (width > 0 && height > 0) 
+			{
+				graphicsMng_->setProjectionMatrix(width, height);
+			}
+
+			// Begin graphics frame
+			if (graphicsMng_ && graphicsMng_->isInitialized())
+			{
+				graphicsMng_->beginFrame(Graphics::Color::Black);  // Clear to black
+			}
+
 			// Call game logic if provided
 			if (gameUpdateCallback) {
 				gameUpdateCallback();
@@ -42,6 +57,12 @@ namespace Engine
 
 			// Update engine systems
 			updateEngineSystems();
+
+			// End graphics frame and present
+			if (graphicsMng_ && graphicsMng_->isInitialized())
+			{
+				graphicsMng_->endFrame();
+			}
 		}
 	}
 
@@ -72,6 +93,28 @@ namespace Engine
 			{
 				audioMng_.onSoundReceived(event);
 			});
+
+		bus_.subscribe<Graphics::Events::WindowResized>(
+			[&](const Graphics::Events::WindowResized& event) {
+				if (graphicsMng_ && graphicsMng_->isInitialized())
+				{
+					graphicsMng_->setProjectionMatrix(event.width, event.height);
+				}
+			});
+	}
+
+	void EnoEngine::setupGraphicsSystem()
+	{
+		// Create graphics manager
+		graphicsMng_ = std::make_unique<Graphics::EnoGraphicsManager>(bus_, window_.getWindow());
+
+		// Initialize the graphics system
+		if (!graphicsMng_->initialize())
+		{
+			throw std::runtime_error("Failed to initialize graphics system!");
+		}
+
+		std::cout << "Graphics system setup complete!" << std::endl;
 	}
 
 	// Create a game instance
@@ -85,7 +128,14 @@ namespace Engine
 	void EnoEngine::updateEngineSystems()
 	{
 		// Update engine systems each frame
-		// Add any per-frame engine updates here
+		audioMng_.Update();
+
+		// Graphics update is handled in the main loop (beginFrame/endFrame)
+		// but we call Update() here for consistency with the system interface
+		if (graphicsMng_)
+		{
+			graphicsMng_->Update();
+		}
 	}
 
 	// Not sure if we need it
