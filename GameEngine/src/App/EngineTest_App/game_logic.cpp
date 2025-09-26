@@ -120,7 +120,7 @@ void GameApplication::updateImGui() {
 
         //ECS::Entity e =  engine_.getEntityManager().create<Component Type goes in here>(value for comp type);
         ECS::Entity e =  engine_.getEntityManager().create<ECSComponents::NameComponent>("Animal");
-        //e.add(ECSComponents::NameComponent("Human"));
+        e.set(ECSComponents::NameComponent("Human"));
         std::cout << "Spawning New Entity\n";
         auto name = e.get<ECSComponents::NameComponent>().name;
         std::cout << name << '\n';
