@@ -24,6 +24,13 @@ namespace Engine
 	// Thats why i added a callback version
 	void EnoEngine::run(std::function<void()> gameUpdateCallback)
 	{
+		ECS::Entity f = getEntityManager().create<ECSComponents::NameComponent>("Circle");
+		f.add<ECSComponents::VisibilityComponent>(ECSComponents::VisibilityComponent{5, true});
+		//f.add<ECSComponents::VisibilityComponent>();
+
+		auto& index = f.get<ECSComponents::VisibilityComponent>().z_index;
+		std::cout << "Index: " << index << std::endl;
+
 		while (!glfwWindowShouldClose(window_.getWindow()))
 		{
 			glfwPollEvents();
@@ -65,9 +72,6 @@ namespace Engine
 			{
 				audioMng_.onSoundReceived(event);
 			});
-
-		
-
 	}
 
 	// Create a game instance
