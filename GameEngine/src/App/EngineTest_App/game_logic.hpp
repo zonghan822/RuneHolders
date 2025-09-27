@@ -36,6 +36,8 @@ private:
     void updateEntities();      // Update entity logic per frame
     void updateAudio();         // Update audio per frame
 
+    void drawShapes(); // jsut to test
+
     // Demonstration methods
     void demonstrateSignals();
 };
