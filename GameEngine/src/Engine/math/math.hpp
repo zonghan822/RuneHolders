@@ -145,6 +145,8 @@ namespace Math
 
 		// -------------------- Constructors ---------------------
 
+		eMtx3x3() = default;
+
 		eMtx3x3
 		(Type _00, Type _01, Type _02,
 		 Type _10, Type _11, Type _12,

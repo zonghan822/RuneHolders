@@ -1,6 +1,6 @@
 #include "game_logic.hpp"
 #include "math/math.hpp"
-
+#include "math/movementTest.hpp"
 
 void GameApplication::initialize() {
     // Setup engine systems first
@@ -12,6 +12,8 @@ void GameApplication::initialize() {
     setupGameEvents();
     setupGameMath();
     setupImGui();
+
+    createTestObject(engine_.getEntityManager());
 
     std::cout << "Game initialized successfully!" << std::endl;
 }
