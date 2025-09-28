@@ -33,6 +33,7 @@ target_include_directories(${ENGINE_NAME} PUBLIC
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
     ${FMOD_INCLUDE_DIRS}
+    ${PROJECT_SOURCE_DIR}/lib/stb_image
 )
 target_compile_definitions(${ENGINE_NAME} 
     PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
