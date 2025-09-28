@@ -21,26 +21,36 @@ namespace Math
 
 		// ------------------------------- Addition -------------------------------
 		eVec2& operator+=(const eVec2& other);
+
+
 		eVec2& operator+=(const Type& other);
-		eVec2 operator+(const eVec2& other) const;
-		eVec2 operator+(const Type& other) const;
+
+		eVec2 operator+(const eVec2& other);
 
 		// ------------------------------ Subtraction ------------------------------
 		eVec2& operator-=(const eVec2& other);
+
+
 		eVec2& operator-=(const Type& other);
-		eVec2 operator-(const eVec2& other) const;
-		eVec2 operator-(const Type& other) const;
+
+		eVec2 operator-(const eVec2& other);
 
 		// ----------------------------- Multiplication -----------------------------
 		eVec2& operator*=(const eVec2& other);
+
+
 		eVec2& operator*=(const Type& other);
-		eVec2 operator*(const eVec2& other) const;
-		eVec2 operator*(const Type& other) const;
+
+		eVec2 operator*(const eVec2& other);
 
 		// ------------------------------ Division ------------------------------
 		eVec2& operator/=(const eVec2& other);
+
+
 		eVec2& operator/=(const Type& other);
-		eVec2 operator/(const eVec2& other) const;
+
+		eVec2 operator/(const eVec2& other);
+
 		eVec2 operator/(Type val) const;
 
 		// ------------------------------ Unary ------------------------------
@@ -56,12 +66,13 @@ namespace Math
 	void eVec2Normalize(eVec2<Type>& result, const eVec2<Type>& vec);
 
 	//eVec2Length returns the length of the vector
-	template <Arithmetic Type>
+	template <typename Type>
 	Type eVec2Length(const eVec2<Type>& vec);
 
 	//eVec2SquaredLength returns the squared length of the vector
 	template <Arithmetic Type>
 	Type eVec2SquaredLength(const eVec2<Type>& vec);
+
 
 	//eVec2Distance returns the distance between two vectors
 	//They are considered as the distance between any 2 points along the vector
@@ -73,7 +84,7 @@ namespace Math
 	Type eVec2SquaredDistance(const eVec2<Type>& vec1, const eVec2<Type>& vec2);
 
 	//eVec2DotProduct returns the dot product between 2 vectors
-	template<Arithmetic Type>
+	template<typename Type>
 	Type eVec2DotProduct(const eVec2<Type>& vec1, const eVec2<Type>& vec2);
 
 
@@ -84,59 +95,60 @@ namespace Math
 	struct eVec3
 	{
 		Type v1, v2, v3;
-		
+
 		// ------------------------------- Addition -------------------------------
 		eVec3& operator+=(const eVec3& other);
+
 		eVec3& operator+=(const Type& other);
-		eVec3 operator+(const eVec3& other) const;
-		eVec3 operator+(const Type& other) const;
+
+		eVec3 operator+(const eVec3& other);
 
 		// ------------------------------ Subtraction ------------------------------
 		eVec3& operator-=(const eVec3& other);
+
 		eVec3& operator-=(const Type& other);
-		eVec3 operator-(const eVec3& other) const;
-		eVec3 operator-(const Type& other) const;
+
+		eVec3 operator-(const eVec3& other);
 
 		// ----------------------------- Multiplication -----------------------------
 		eVec3& operator*=(const eVec3& other);
+
 		eVec3& operator*=(const Type& other);
-		eVec3 operator*(const eVec3& other) const;
-		eVec3 operator*(const Type& other) const;
+
+		eVec3 operator*(const eVec3& other);
 
 		// ------------------------------ Division ------------------------------
 		eVec3& operator/=(const eVec3& other);
-		eVec3& operator/=(const Type& other);
-		eVec3 operator/(const eVec3& other) const;
-		eVec3 operator/(const Type& other) const;
 
-		// ------------------------------ Unary ------------------------------
-		eVec3 operator-() const;
+		eVec3& operator/=(const Type& other);
+
+		eVec3 operator/(const eVec3& other);
 	};
 
 #if 0
 	template <Arithmetic Type>
 	struct eMtx2x2
 	{
-		Type v1, v2, 
-			 v3, v4;
+		Type v1, v2,
+			v3, v4;
 
 
 	};
 #endif
-	// -------------------------------- 3x3 MATRICES ------------------------------
+
 	template <Arithmetic Type>
 	struct eMtx3x3
 	{
-		Type v1, v2, v3, 
-			 v4, v5, v6, 
-			 v7, v8, v9;
+		Type v1, v2, v3,
+			v4, v5, v6,
+			v7, v8, v9;
 
 		// -------------------- Constructors ---------------------
 
 		eMtx3x3
 		(Type _00, Type _01, Type _02,
-		 Type _10, Type _11, Type _12,
-		 Type _20, Type _21, Type _22);
+			Type _10, Type _11, Type _12,
+			Type _20, Type _21, Type _22);
 
 		//copy constructor
 		eMtx3x3(const eMtx3x3& other);
@@ -151,9 +163,13 @@ namespace Math
 
 		//eMtx3x3Translate stores the translate vector about a 2D plane
 		void eMtx3x3Translate(eMtx3x3<Type>& result, Type x, Type y);
+
 		void eMtx3x3Scale(eMtx3x3<Type> result, Type x, Type y);
+
 		void eMtx3x3RotRad(eMtx3x3<Type>& result, Type angle);
+
 		void eMtx3x3RotDeg(eMtx3x3<Type>& result, Type angle);
+
 		void eMtx3x3Transpose(eMtx3x3<Type>& result, const eMtx3x3<Type>& mtx);
 
 	};
@@ -161,9 +177,9 @@ namespace Math
 	template <Arithmetic Type>
 	struct eMtx4x4
 	{
-		Type v1, v2, v3, v4, 
-			 v5, v6, v7, v8, 
-			 v9, v10, v11, v12;
+		Type v1, v2, v3, v4,
+			v5, v6, v7, v8,
+			v9, v10, v11, v12;
 
 
 	};
