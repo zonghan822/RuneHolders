@@ -58,6 +58,12 @@ namespace Math
 		return { v1 - other.v1, v2 - other.v2 };
 	}
 
+	template <Arithmetic Type>
+	eVec2<Type> eVec2<Type>::operator-(const Type& other) const
+	{
+		return { v1 - other, v2 - other };
+	}
+
 	// ----------------------------- Multiplication -----------------------------
 	template <Arithmetic Type>
 	eVec2<Type>& eVec2<Type>::operator*=(const eVec2<Type>& other)
@@ -81,6 +87,12 @@ namespace Math
 	eVec2<Type> eVec2<Type>::operator*(const eVec2<Type>& other)
 	{
 		return { v1 * other.v1, v2 * other.v2 };
+	}
+
+	template <Arithmetic Type>
+	eVec2<Type> eVec2<Type>::operator*(const Type& other) const
+	{
+		return { v1 * other, v2 * other };
 	}
 
 	// ------------------------------ Division ------------------------------
@@ -144,8 +156,6 @@ namespace Math
 	{
 		return { -v1, -v2 };
 	}
-
-
 
 	// --------------------- Friend functions for eVec2 ---------------------------
 
@@ -261,6 +271,12 @@ namespace Math
 		return { v1 - other.v1, v2 - other.v2, v3 - other.v3 };
 	}
 
+	template <Arithmetic Type>
+	eVec3<Type> eVec3<Type>::operator-(const Type& other) const
+	{
+		return { v1 - other, v2 - other, v3 - other };
+	}
+
 	// ----------------------------- Multiplication -----------------------------
 	template <Arithmetic Type>
 	eVec3<Type>& eVec3<Type>::operator*=(const eVec3<Type>& other)
@@ -286,6 +302,12 @@ namespace Math
 	eVec3<Type> eVec3<Type>::operator*(const eVec3<Type>& other)
 	{
 		return { v1 * other.v1, v2 * other.v2, v3 * other.v3 };
+	}
+
+	template <Arithmetic Type>
+	eVec3<Type> eVec3<Type>::operator*(const Type& other) const
+	{
+		return { v1 * other, v2 * other, v3 * other };
 	}
 
 	// ------------------------------ Division ------------------------------
@@ -332,6 +354,13 @@ namespace Math
 		}
 
 		return { v1 / other.v1, v2 / other.v2, v3 / other.v3 };
+	}
+
+	// ------------------------------ Unary ------------------------------
+	template <Arithmetic Type>
+	eVec3<Type> eVec3<Type>::operator-() const
+	{
+		return { -v1, -v2, -v3 };
 	}
 	
 	// -------------------- 3 x 3 Matrix -----------------------

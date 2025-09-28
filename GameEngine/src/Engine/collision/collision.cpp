@@ -530,16 +530,140 @@ namespace Collision {
 		return hasTransform && hasCollision;
 	}
 
-	void CollisionSystem::CheckEntityCollision(uint32_t entityA_ID, const ECS::EntityLoc& entityA_Loc,
-		uint32_t entityB_ID, const ECS::EntityLoc& entityB_Loc)
+ void CollisionSystem::CheckEntityCollision(
+        uint32_t entityA_ID, const ECS::EntityLoc& entityA_Loc,
+        uint32_t entityB_ID, const ECS::EntityLoc& entityB_Loc)
+    {
+        try
+        {
+            // Get the required components from both entities
+            auto& transformA = GetTransformComponent(entityA_Loc);
+            auto& transformB = GetTransformComponent(entityB_Loc);
+            auto& collisionA = GetCollisionComponent(entityA_Loc);
+            auto& collisionB = GetCollisionComponent(entityB_Loc);
+
+            // Perform the actual collision detection
+            CollisionResult result = CollisionDetection::CheckCollision(
+                collisionA, transformA,
+                collisionB, transformB
+            );
+
+            // If a collision was detected, handle it
+            if (result.hasCollision)
+            {
+                HandleCollision(entityA_ID, entityB_ID, collisionA, collisionB, result);
+            }
+        }
+        catch (const std::exception& e)
+        {
+            // Log errors but don't crash the game
+            std::cerr << "Error in collision detection between entities " 
+                      << entityA_ID << " and " << entityB_ID 
+                      << ": " << e.what() << std::endl;
+        }
+    }
+
+
+	void CollisionSystem::HandleCollision(
+		uint32_t entityA_ID, uint32_t entityB_ID,
+		const CollisionComponent& collisionA, const CollisionComponent& collisionB,
+		const CollisionResult& result)
 	{
-		try
+		// create and populate the collision event
+		CollisionEvent event;
+		event.entityA_ID = entityA_ID;
+		event.entityB_ID = entityB_ID;
+		event.result = result;
+		event.isEntityA_Trigger = collisionA.isTrigger;
+		event.isEntityB_Trigger = collisionB.isTrigger;
+
+		// publish the event to the event bus for other systems to handle 
+		eventBus_.publish(event);
+
+		// call all registered callbacks
+		for (auto& callback : collisionCallbacks_)
 		{
-			// get the required components from both entities
-			auto& transformA = GetTransformComponent(entityA_Loc);
-			auto& transformB = GetTransformComponent(entityB_Loc);
-			auto& collisionA = GetTransformComponent(entityA_Loc);
-			auto& collisionB = GetTransformComponent(entityB_Loc);
+			try
+			{
+				callback(event);
+			}
+			catch (const std::exception& e) {
+				std::cerr << "Error in collision callback: " << e.what() << std::endl;
+			}
 		}
+
+		// Debug logging (only in debug builds to avoid performance impact)
+#ifdef _DEBUG
+		std::cout << "Collision detected between Entity " << entityA_ID
+			<< " and Entity " << entityB_ID
+			<< " | Penetration Depth: " << result.penetrationDepth
+			<< " | Trigger: " << (event.isEntityA_Trigger || event.isEntityB_Trigger ? "Yes" : "No")
+			<< std::endl;
+#endif	
 	}
+
+	ECSComponents::TransformComponent& CollisionSystem::GetTransformComponent(const ECS::EntityLoc& entityLoc)
+	{
+		// Find the Transform component's index in this entity's archetype
+		size_t transformIndex = entityLoc.archetype->findComponentIndex<ECSComponents::TransformComponent>();
+
+		// Retrieve the component from the appropriate chunk
+		return entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::TransformComponent>(
+			transformIndex, entityLoc.entityIndexInChunk);
+	}
+
+	CollisionComponent& CollisionSystem::GetCollisionComponent(const ECS::EntityLoc& entityLoc)
+	{
+		// Find the Collision component's index in this entity's archetype
+		size_t collisionIndex = entityLoc.archetype->findComponentIndex<CollisionComponent>();
+
+		// Retrieve the component from the appropriate chunk
+		return entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<CollisionComponent>(
+			collisionIndex, entityLoc.entityIndexInChunk);
+	}
+
+	// =============================================================================
+	// UTILITY FUNCTIONS IMPLEMENTATION
+	// =============================================================================
+
+	void RunBasicCollisionTest()
+	{
+		std::cout << "=== Basic Collision System Test ===" << std::endl;
+
+		// This is a simple test to verify collision detection works
+		// In a real game, you'd create entities through the entity manager
+
+		// Test 1: Circle vs Circle collision
+		std::cout << "\nTest 1: Circle vs Circle" << std::endl;
+		CollisionComponent circleA(1.0f);  // Radius 1.0 at origin
+		CollisionComponent circleB(1.0f);  // Radius 1.0
+
+		ECSComponents::TransformComponent transformA{ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} };
+		ECSComponents::TransformComponent transformB{ {1.5f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} };
+
+		CollisionResult result1 = CollisionDetection::CheckCollision(circleA, transformA, circleB, transformB);
+		std::cout << "Collision detected: " << (result1.hasCollision ? "Yes" : "No") << std::endl;
+		if (result1.hasCollision) {
+			std::cout << "Penetration depth: " << result1.penetrationDepth << std::endl;
+		}
+
+		// Test 2: Rectangle vs Rectangle collision
+		std::cout << "\nTest 2: Rectangle vs Rectangle" << std::endl;
+		CollisionComponent rectA(2.0f, 2.0f);  // 2x2 rectangle
+		CollisionComponent rectB(2.0f, 2.0f);  // 2x2 rectangle
+
+		ECSComponents::TransformComponent transformC{ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} };
+		ECSComponents::TransformComponent transformD{ {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} };
+
+		CollisionResult result2 = CollisionDetection::CheckCollision(rectA, transformC, rectB, transformD);
+		std::cout << "Collision detected: " << (result2.hasCollision ? "Yes" : "No") << std::endl;
+		if (result2.hasCollision) {
+			std::cout << "Penetration depth: " << result2.penetrationDepth << std::endl;
+		}
+
+		std::cout << "\n=== Test Complete ===" << std::endl;
+	}
+
+
+
 } // namespace Collision
