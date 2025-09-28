@@ -13,6 +13,7 @@ context and implement a game loop.
 ----------------------------------------------------------------------------- */
 // Extension loader library's header must be included before GLFW's header!!!
 #include "GLApp/glapp.h"
+#include "../Engine/collision/collision.hpp" // kim testing collision
 #include <iostream>
 
 /*                                                   type declarations
@@ -52,6 +53,10 @@ int main() {
     draw();
     update();
   }
+
+  std::cout << "Testing Collision System..." << std::endl;
+  // Call the built-in test function
+  Collision::RunBasicCollisionTest();
   
   GLApp::cleanup();
 }

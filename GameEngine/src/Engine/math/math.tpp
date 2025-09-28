@@ -58,12 +58,6 @@ namespace Math
 		return { v1 - other.v1, v2 - other.v2 };
 	}
 
-	template <Arithmetic Type>
-	eVec2<Type> eVec2<Type>::operator-(const Type& other) const
-	{
-		return { v1 - other, v2 - other };
-	}
-
 	// ----------------------------- Multiplication -----------------------------
 	template <Arithmetic Type>
 	eVec2<Type>& eVec2<Type>::operator*=(const eVec2<Type>& other)
@@ -90,9 +84,10 @@ namespace Math
 	}
 
 	template <Arithmetic Type>
-	eVec2<Type> eVec2<Type>::operator*(const Type& other) const
+	eVec2<Type> eVec2<Type>::operator*(Type other) const
 	{
-		return { v1 * other, v2 * other };
+		return {v1 * other, v2*other};
+	
 	}
 
 	// ------------------------------ Division ------------------------------
@@ -157,7 +152,25 @@ namespace Math
 		return { -v1, -v2 };
 	}
 
+
+
 	// --------------------- Friend functions for eVec2 ---------------------------
+
+	template <Arithmetic Type>
+	eVec2<Type> operator+(const eVec2<Type>& lhs, const eVec2<Type>&rhs)
+	{
+		eVec2<Type> tmp {lhs};
+		tmp += rhs;
+		return tmp;
+	}
+
+	template <Arithmetic Type>
+	eVec2<Type> operator-(const eVec2<Type>& lhs, const eVec2<Type>&rhs)
+	{
+		eVec2<Type> tmp {lhs};
+		tmp -= rhs;
+		return tmp;
+	}
 
 	//eVec2Normalize takes a const &eVec2 vec to normalize and puts the unit vector into result
 	template <Arithmetic Type>
@@ -173,7 +186,7 @@ namespace Math
 	Type eVec2Length(const eVec2<Type>& vec)
 	{
 		//length = sqrt(x^2 + y^2)
-		return std::sqrt(eVec2<Type>::eVec2SquaredLength(vec));
+		return std::sqrt(eVec2SquaredLength(vec));
 
 	}
 
@@ -271,12 +284,6 @@ namespace Math
 		return { v1 - other.v1, v2 - other.v2, v3 - other.v3 };
 	}
 
-	template <Arithmetic Type>
-	eVec3<Type> eVec3<Type>::operator-(const Type& other) const
-	{
-		return { v1 - other, v2 - other, v3 - other };
-	}
-
 	// ----------------------------- Multiplication -----------------------------
 	template <Arithmetic Type>
 	eVec3<Type>& eVec3<Type>::operator*=(const eVec3<Type>& other)
@@ -302,12 +309,6 @@ namespace Math
 	eVec3<Type> eVec3<Type>::operator*(const eVec3<Type>& other)
 	{
 		return { v1 * other.v1, v2 * other.v2, v3 * other.v3 };
-	}
-
-	template <Arithmetic Type>
-	eVec3<Type> eVec3<Type>::operator*(const Type& other) const
-	{
-		return { v1 * other, v2 * other, v3 * other };
 	}
 
 	// ------------------------------ Division ------------------------------
@@ -354,13 +355,6 @@ namespace Math
 		}
 
 		return { v1 / other.v1, v2 / other.v2, v3 / other.v3 };
-	}
-
-	// ------------------------------ Unary ------------------------------
-	template <Arithmetic Type>
-	eVec3<Type> eVec3<Type>::operator-() const
-	{
-		return { -v1, -v2, -v3 };
 	}
 	
 	// -------------------- 3 x 3 Matrix -----------------------

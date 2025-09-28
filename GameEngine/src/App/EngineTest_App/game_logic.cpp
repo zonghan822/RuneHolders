@@ -1,5 +1,6 @@
 #include "game_logic.hpp"
 #include "math/math.hpp"
+#include "../Engine/collision/collision.hpp"
 
 void GameApplication::initialize() {
     // Setup engine systems first
@@ -43,7 +44,7 @@ void GameApplication::setupGameMath() {
     vec += vec2;
     std::cout << "vector : " << vec.v1 << ", " << vec.v2 << std::endl;
 
-
+    Collision::RunBasicCollisionTest();
 }
 
 void GameApplication::demonstrateSignals() {
@@ -57,6 +58,7 @@ void GameApplication::updateGameLogic() {
 
     // Add any other per-frame game logic here
     drawShapes();
+    
 }
 
 void GameApplication::updateEntities() {

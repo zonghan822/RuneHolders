@@ -38,10 +38,11 @@ namespace Math
 		// ----------------------------- Multiplication -----------------------------
 		eVec2& operator*=(const eVec2& other);
 
-
 		eVec2& operator*=(const Type& other);
 
 		eVec2 operator*(const eVec2& other);
+
+		eVec2 operator*(Type val) const;
 
 		// ------------------------------ Division ------------------------------
 		eVec2& operator/=(const eVec2& other);
@@ -60,6 +61,12 @@ namespace Math
 	};
 
 	// --------------------- Friend functions for eVec2 ---------------------------
+
+	template <Arithmetic Type>
+	eVec2<Type> operator+(const eVec2<Type>& lhs, const eVec2<Type>& rhs);
+
+	template <Arithmetic Type>
+	eVec2<Type> operator-(const eVec2<Type>& lhs, const eVec2<Type>& rhs);
 
 	//eVec2Normalize takes a const &eVec2 vec to normalize and puts the unit vector into result
 	template <Arithmetic Type>
@@ -144,6 +151,8 @@ namespace Math
 			v7, v8, v9;
 
 		// -------------------- Constructors ---------------------
+
+		eMtx3x3() = default;
 
 		eMtx3x3
 		(Type _00, Type _01, Type _02,
