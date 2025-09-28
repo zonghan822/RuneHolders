@@ -2,6 +2,14 @@
 #include "AEEngine.h"
 #include <string>
 #include <vector>
+
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <iostream>
+#include <algorithm>
+#include <cmath>
+
 													//include utils to access
 extern const f32 WINDOW_WIDTH, WINDOW_HEIGHT;			//	Window Width & Height
 extern float dt;										//	delta time (between frames)
@@ -17,7 +25,13 @@ void create_all_meshes();
 void destroy_all_meshes();
 
 void draw_circle(f32 x, f32 y, f32 radius, f32 alpha);
-void draw_rect(f32 x, f32 y, f32 length, f32 width, f32 alpha);
+void draw_rect(f32 x, f32 y, f32 length, f32 width, f32 degree, f32 alpha); //yunqi: using this to check how the rotation works. can delete
+
+//
+float vecAngle(AEVec2 pointA, AEVec2 pointB);
+
+//
+float vecToVecAngleDeg(AEVec2 varA, AEVec2 varB);
 
 
 double rk4_step(double (*f)(double, double),
@@ -43,7 +57,7 @@ public:
 
 
 
-
+#pragma region A* Pathfinding
 //Implementation of A* Pathfinding
 extern std::vector<std::vector<int>> BinaryMap;
 void loadMap(const std::string& filename);
@@ -63,3 +77,26 @@ void printNeighbours(Node* node);
 void runAStar();
 void printPath();
 void DrawPath();
+#pragma endregion
+
+#pragma region Physics
+/*
+
+collision checks / apply collision on objects?
+
+
+
+
+void applyGravity(Entity* thisGuy);
+
+void entityJump(Entity* thisGuy);			//maybe member function?
+
+void applyAcceleration(Entity* thisGuy); 
+
+void applyVelocity(Entity* thisGuy); 
+
+*/
+
+
+
+#pragma endregion

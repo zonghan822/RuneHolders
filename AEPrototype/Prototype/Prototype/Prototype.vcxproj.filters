@@ -41,5 +41,13 @@
     <ClInclude Include="player.hpp">
       <Filter>Resource Files</Filter>
     </ClInclude>
+    <ClInclude Include="math.hpp">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="BinaryMap.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>

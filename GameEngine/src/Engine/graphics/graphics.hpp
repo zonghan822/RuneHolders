@@ -27,7 +27,7 @@ namespace Graphics
     class EnoRenderer;
     class EnoShader;
     class EnoVertexBuffer;
-
+    
     // Color struct for drawing functions, basic colours alr added
     struct Color
     {

@@ -1,18 +1,3 @@
-/*!
-@file       glapp.cpp
-@author     pghali@digipen.edu
-@co-author  parminder.singh@digipen.edu
-@date       05/05/2025
-
-This file implements functionality useful and necessary to build OpenGL
-applications including use of external APIs such as GLFW to create a
-window and start up an OpenGL context and to extract function pointers
-to OpenGL implementations.
-
-*//*__________________________________________________________________________*/
-
-/*                                                                   includes
------------------------------------------------------------------------------ */
 #include "glapp.h"
 #include <glm/glm.hpp>
 #include <iostream>
