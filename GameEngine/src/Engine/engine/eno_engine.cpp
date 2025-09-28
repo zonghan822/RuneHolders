@@ -19,8 +19,6 @@ namespace Engine
 	// Simpler run not sure how to build on but yeah
 	void EnoEngine::run()
 	{
-
-
 		run(nullptr);
 	}
 
@@ -65,7 +63,6 @@ namespace Engine
 			}
 		}
 
-		audioMng_.process();
 	}
 
 	// Function added for future use**
@@ -130,7 +127,14 @@ namespace Engine
 	{
 		// Update engine systems each frame
 		// Add any per-frame engine updates here
-		//soundPlaying();
+		static bool scheduled{ false };
+		if (!scheduled)
+		{
+			soundPlaying();
+			scheduled = true;
+		}
+
+		audioMng_.process();
 	}
 
 	// Not sure if we need it
@@ -168,11 +172,11 @@ namespace Engine
 	void EnoEngine::soundPlaying()
 	{
 		FMOD::Channel* channel = audioMng_.playByGroup("Close_To_The_End", "BGM", true);
-		FMOD::Channel* channel2 = audioMng_.playByGroup("Simulacrum", "BGM", true);
+		//FMOD::Channel* channel2 = audioMng_.playByGroup("Simulacrum", "BGM", true);
 
 		audioMng_.scheduleGroupFade("BGM", 5.0f, 5.0f, audioMng_.getSoundDurSec("Close_To_The_End"));
 
 		audioMng_.setPauseChannel(channel, false);
-		audioMng_.setPauseChannel(channel2, false);
+		//audioMng_.setPauseChannel(channel2, false);
 	}
 }
