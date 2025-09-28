@@ -2,6 +2,18 @@
 #include "math/math.hpp"
 
 
+
+//for testing purposes
+#include <random>
+static std::mt19937 rng(std::random_device{}());
+// returns a random float between min and max
+float randomFloat(float min, float max) {
+    std::uniform_real_distribution<float> dist(min, max);
+    return dist(rng);
+}
+
+//throw std::runtime_error("error logging");
+
 void GameApplication::initialize() {
     // Setup engine systems first
     engine_.setup();
@@ -99,12 +111,12 @@ void GameApplication::updateImGui() {
     const char* colors[] = {"Green"  ,     "Red"  };
 
     //Values to set for entities
-    static float           eCoordX          = 0;
-    static float           eCoordY          = 0;
-    static float           eWidth           = 0;
-    static float           eHeight          = 0;
+    static float           eCoordX          = 600;
+    static float           eCoordY          = 425;
+    static float           eWidth           = 10;
+    static float           eHeight          = 10;
     static int             eColor           = Color::Green;
-    static int             eShapeIndex      = Shapes::Circle;
+    static int             eShapeIndex      = Shapes::Rectangle;
 
 
     ImGui::NewFrame();
@@ -140,14 +152,21 @@ void GameApplication::updateImGui() {
 
 
 
+
+    auto& graphics = engine_.getGraphicsManager();
+    //Red indicator rectangle that shows where the entity will be spawned.  
+    graphics.drawRect(
+        Math::eVec2<float>{eCoordX, eCoordY},  // Position
+        Math::eVec2<float>{10, 10},            // Size 10 wide 10 tall
+        Graphics::Color::Red,                 //  Colour
+        true                                  //  True
+    );
+
     //Spawn Button
     if (ImGui::Button("Spawn Entity")) {
 
         //e.set(ECSComponents::DrawInfoComponent("Square"));
         //e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent{ "NAME" });
-        
-
-
 
         //SAMPLE DRAWINFOCOMPONENT LOOKS LIKE THIS: DrawInfoComponent(float xPosition, float yPosition, float w, float h, const char* n, int c)
         ECSComponents::DrawInfoComponent DIC {eCoordX, eCoordY, eWidth, eHeight, shapes[eShapeIndex], eColor};
@@ -156,9 +175,25 @@ void GameApplication::updateImGui() {
         std::cout << e.get<ECSComponents::DrawInfoComponent>();
         std::cout << "Spawning New Entity\n";
     }
+
+    //Delete Button?
+
+
+
+
     //Clone Button
-    if (ImGui::Button("Clone Entity")) {
-        std::cout << "Clone Last Entity\n";
+    if (ImGui::Button("Clone 50 Entities")) {
+        static size_t counter = 0;
+        for (size_t i = 0; i < 50; i++) {
+            float randX = randomFloat(0.0f, 1200.0f); //screen width
+            float randY = randomFloat(0.0f, 900.0f); // screen height
+            //HARDCODED(COPIED) SPAWN CODE INTO HERE
+            ECSComponents::DrawInfoComponent DIC{ randX, randY, eWidth, eHeight, shapes[eShapeIndex], eColor };
+            ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
+        }
+        counter += 50;
+
+        std::cout << "Cloned "<< counter <<  " Entity\n";
     }
     ImGui::End();
 }
@@ -169,14 +204,20 @@ void GameApplication::drawShapes() { // For testing
 
     auto& entityManager = engine_.getEntityManager();
 
+    using drawInfo = ECSComponents::DrawInfoComponent;
+
     //thinking here i do for each drawable entity: draw.
     std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
 
+
+
+
     for (ECS::Entity& entity : EntityList) {
         if (entity.has<ECSComponents::DrawInfoComponent>()) {
-            graphics.drawRect(Math::eVec2<float>{entity.get<ECSComponents::DrawInfoComponent>().xPos, entity.get<ECSComponents::DrawInfoComponent>().yPos},
-                Math::eVec2<float>{entity.get<ECSComponents::DrawInfoComponent>().width, entity.get<ECSComponents::DrawInfoComponent>().width},
-                entity.get<ECSComponents::DrawInfoComponent>().color,
+            graphics.drawRect(
+                Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+                Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
+                entity.get<drawInfo>().color,
                 true
             );
         }
@@ -184,31 +225,34 @@ void GameApplication::drawShapes() { // For testing
 
 
 
-    // Draw red rect
-    graphics.drawRect(
-        Math::eVec2<float>{100.0f, 100.0f},  // Position
-        Math::eVec2<float>{scalex, scaley},  // Size 200 wide 150 tall
-        Graphics::Color::Red,                 // Colour
-        true                                 // Filled
-    );
+    //// Draw red rect
+    //graphics.drawRect(
+    //    Math::eVec2<float>{100.0f, 100.0f},  // Position
+    //    Math::eVec2<float>{scalex, scaley},  // Size 200 wide 150 tall
+    //    Graphics::Color::Red,                 // Colour
+    //    true                                 // Filled
+    //);
+
+
+
 
     // Draw green circ
-    graphics.drawCircle(
-        Math::eVec2<float>{500.0f, 200.0f},  // Center
-        75.0f,                               // Radius
-        Graphics::Color::Green,              // Colour
-        true,                                // Filled
-        32                                   // Segments
-    );
+    //graphics.drawCircle(
+    //    Math::eVec2<float>{500.0f, 200.0f},  // Center
+    //    75.0f,                               // Radius
+    //    Graphics::Color::Green,              // Colour
+    //    true,                                // Filled
+    //    32                                   // Segments
+    //);
 
-    // Draw blue tri
-    graphics.drawTriangle(
-        Math::eVec2<float>{300.0f, 400.0f},  // Bot left
-        Math::eVec2<float>{450.0f, 300.0f},  // Top
-        Math::eVec2<float>{600.0f, 400.0f},  // Bot right
-        Graphics::Color::Blue,               // Colour
-        true                                 // Filled
-    );
+    //// Draw blue tri
+    //graphics.drawTriangle(
+    //    Math::eVec2<float>{300.0f, 400.0f},  // Bot left
+    //    Math::eVec2<float>{450.0f, 300.0f},  // Top
+    //    Math::eVec2<float>{600.0f, 400.0f},  // Bot right
+    //    Graphics::Color::Blue,               // Colour
+    //    true                                 // Filled
+    //);
 
 
     ImGui::Render();

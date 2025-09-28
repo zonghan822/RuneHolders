@@ -130,7 +130,7 @@ namespace Engine
 	{
 		// Update engine systems each frame
 		// Add any per-frame engine updates here
-		soundPlaying();
+		//soundPlaying();
 	}
 
 	// Not sure if we need it
