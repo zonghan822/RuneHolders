@@ -26,9 +26,6 @@ namespace Engine
 	{
 		soundSetup();
 
-		//audioMng_.publishSoundRequest("Close_To_The_End");
-		//audioMng_.publishSoundRequest("Simulacrum");
-
 		while (!glfwWindowShouldClose(window_.getWindow()))
 		{
 			glfwPollEvents();
