@@ -57,5 +57,10 @@ namespace Engine
 		// Game Instance
 		std::unique_ptr<Graphics::EnoGraphicsManager> graphicsMng_;
 		std::unique_ptr<GameInstance::EnoGameInstance> gameInstance_;
+
+
+		// TBD Demo for playing sounds
+		void soundSetup();
+		void soundPlaying();
 	};
 }

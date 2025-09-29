@@ -2,6 +2,10 @@
 
 #include "engine/eno_engine.hpp"
 #include <iostream>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h> 
+
 
 class GameApplication {
 private:
@@ -11,6 +15,13 @@ private:
     // Game state variables
     bool gameRunning_ = true;
     bool musicStarted_ = false;
+
+
+
+    //THIS IS JUST FOR DEBUGGING IMGUI'S SCALE SCROLLER
+    float scalex = 200.0f;
+    float scaley = 150.0f;
+
 
 public:
     // Constructors
@@ -30,11 +41,13 @@ private:
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
     void setupGameMath();       // math demonstration code
+    void setupImGui();
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
     void updateAudio();         // Update audio per frame
+    void updateImGui();
 
     void drawShapes(); // jsut to test
 

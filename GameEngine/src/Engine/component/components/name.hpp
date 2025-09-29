@@ -20,6 +20,11 @@ namespace ECSComponents
 		char name[32] = "DefaultName";
 	};
 
+	inline bool operator==(const NameComponent& lhs, const NameComponent& rhs)
+	{
+		return strcmp(lhs.name, rhs.name) == 0;
+	}
+
 	inline std::ostream& operator<<(std::ostream& os, const NameComponent& n)
 	{
 		std::cout << n.name << std::endl;

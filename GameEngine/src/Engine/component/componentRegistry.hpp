@@ -32,7 +32,8 @@ namespace ECSComponents
 				{ std::type_index(typeid(VisibilityComponent)),		{ regID::VISBILITY,		sizeof(VisibilityComponent)	}},
 				{ std::type_index(typeid(TransformComponent)),		{ regID::TRANSFORM,		sizeof(TransformComponent)	}},
 				{ std::type_index(typeid(LayerComponent)),			{ regID::LAYER,			sizeof(LayerComponent)		}},
-				{ std::type_index(typeid(ModulationComponent)),		{ regID::MODULATION,	sizeof(ModulationComponent) }}
+				{ std::type_index(typeid(ModulationComponent)),		{ regID::MODULATION,	sizeof(ModulationComponent) }},
+				{ std::type_index(typeid(DrawInfoComponent)),		{ regID::DRAWINFO,		sizeof(DrawInfoComponent)   }}
 			};
 
 			return map;

@@ -1,9 +1,4 @@
 #include "Utils.hpp"
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <iostream>
-#include <algorithm>
 
 
 f32 const WINDOW_WIDTH{ 1600 }, WINDOW_HEIGHT{ 900 };
@@ -17,6 +12,8 @@ s32 mX{}, mY{};
 AEVec2 mPos{};																		//holds mouse position in a x,y vector
 float Node::radius = 0.0f;
 
+
+#pragma region Basic Functions
 
 void mouse_to_world() {								
 	AEInputGetCursorPosition(&mX, &mY);
@@ -118,24 +115,80 @@ void draw_circle(f32 x, f32 y, f32 radius, f32 alpha) {	//perhaps i could add co
 }
 
 
-void draw_rect(f32 x, f32 y, f32 length, f32 width, f32 alpha) {
+//can probably do option for corner/middle and colour options
+void draw_rect(f32 x, f32 y, f32 length, f32 width, f32 degree, f32 alpha) {
 	AEMtx33 scale = { 0 };
 	AEMtx33Scale(&scale, width, length);
+
+	AEMtx33 rot = { 0 };
+	AEMtx33RotDeg(&rot, degree);
 
 	AEMtx33 translate = { 0 };
 	AEMtx33Trans(&translate, x, y);
 
 	AEMtx33 transform = { 0 };
-	AEMtx33Concat(&transform, &translate, &scale);
+	AEMtx33Concat(&transform, &rot, &scale);
+	AEMtx33Concat(&transform, &translate, &transform);
 
+	AEGfxSetColorToAdd(1.0f, 0.0f, 0.0f, 1.0f);
 	AEGfxSetTransform(transform.m);
-
-	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
 	AEGfxSetTransparency(alpha);
 	AEGfxMeshDraw(cRectMesh, AE_GFX_MDM_TRIANGLES);
+}
+#pragma endregion
+
+
+
+
+#pragma region Math
+
+//this returns value in cosine formation(-180,180) therefore not v useful. 
+//float vecAngle(AEVec2 pointA, AEVec2 pointB) {	
+//	AEVec2 VectorAB{0,0};
+//	VectorAB.x = pointB.x - pointA.x;
+//	VectorAB.y = pointB.y - pointA.y;
+//	
+//	//normalise
+//	VectorAB.x /= sqrt((VectorAB.x * VectorAB.x) + (VectorAB.y * VectorAB.y));
+//	VectorAB.y /= sqrt((VectorAB.x * VectorAB.x) + (VectorAB.y * VectorAB.y));
+//
+//	float dotProd = (VectorAB.x * 1) + (VectorAB.y * 0);
+//
+//	float radians = std::acos(dotProd);
+//	//currently this returns the correct value in (-180, 180)
+//	float degree = radians * 180.f / PI;
+//
+//	return degree;
+//}
+
+float vecAngle(AEVec2 pointA, AEVec2 pointB) {
+	AEVec2 VectorAB{ 0,0 };
+	VectorAB.x = pointB.x - pointA.x;
+	VectorAB.y = pointB.y - pointA.y;
+
+	float deg = std::atan2(-VectorAB.y, VectorAB.x) * 180.0f / PI; // (-180,180]
+	if (deg < 0) deg += 360.0f;                                          // [0,360)
+	//std::cout << deg << '\n';
+	return deg;
+}
+
+
+
+float vecToVecAngleDeg(AEVec2 varA, AEVec2 varB) {
+	float dotProduct = varA.x * varB.x + varA.y * varB.y;
+	float lenA = std::hypot(varA.x, varA.y);
+	float lenB = std::hypot(varB.x, varB.y);
+
+	return 1.0f;
 
 
 }
+
+
+float dot(const AEVec2& a, const AEVec2& b) { return a.x * b.x + a.y * b.y; }
+float len2(const AEVec2& v) { return dot(v, v); }
+float len(const AEVec2& v) { return std::sqrt(len2(v)); }
+AEVec2  normalise(const AEVec2& v) { float L = len(v); return (L > 0.f) ? AEVec2{ v.x / L, v.y / L } : AEVec2{ 0,0 }; }
 
 
 /*
@@ -159,6 +212,9 @@ double rk4_step(double (*f)(double, double), double t, double y, double h)
 	double k4 = f(t + h, y + h * k3);
 	return y + (h / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4);
 }
+
+
+#pragma endregion
 
 
 #pragma region A*PathFinding
@@ -403,7 +459,7 @@ void DrawPath() {
 	Node::radius = (pathW / NodeGrid.size()) / 2;	//this returns radius downwards(y radius). if wanna do square need to do Nodegrid[0].size() for x radius
 
 	AEGfxSetColorToAdd(0, 0, 1, 0);
-	draw_rect(-300, -300, pathW, pathH, 0.2);
+	draw_rect(-300, -300, pathW, pathH, 0 ,0.2);
 
 
 	for (int y = 0; y < NodeGrid.size(); y++) {
@@ -428,6 +484,31 @@ void DrawPath() {
 		current = current->parent;
 	}
 }
+
+
+
+
+#pragma endregion
+
+#pragma region Physics
+
+//void applyGravity(Entity* thisGuy);
+
+
+/*
+void UserAppliedForces() {}
+*/
+
+
+void setAcceleration(float accelerationVal) {
+
+
+}
+
+void setSpeed() {
+
+}
+
 
 
 

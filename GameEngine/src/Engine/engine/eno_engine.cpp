@@ -25,12 +25,10 @@ namespace Engine
 	// Thats why i added a callback version
 	void EnoEngine::run(std::function<void()> gameUpdateCallback)
 	{
-		ECS::Entity f = getEntityManager().create<ECSComponents::NameComponent>("Circle");
-		f.add<ECSComponents::VisibilityComponent>(ECSComponents::VisibilityComponent{5, true});
-		//f.add<ECSComponents::VisibilityComponent>();
+		soundSetup();
 
-		auto& index = f.get<ECSComponents::VisibilityComponent>().z_index;
-		std::cout << "Index: " << index << std::endl;
+		//audioMng_.publishSoundRequest("Close_To_The_End");
+		//audioMng_.publishSoundRequest("Simulacrum");
 
 		while (!glfwWindowShouldClose(window_.getWindow()))
 		{
@@ -64,6 +62,7 @@ namespace Engine
 				graphicsMng_->endFrame();
 			}
 		}
+
 	}
 
 	// Function added for future use**
@@ -77,7 +76,6 @@ namespace Engine
 		// Shaders for future graphics use
 		auto vert = loader_.getVertShader("shader");//might need to change the name on this
 		auto frag = loader_.getFragShader("shader");
-		
 	}
 
 	// Function added for future use**
@@ -128,14 +126,15 @@ namespace Engine
 	void EnoEngine::updateEngineSystems()
 	{
 		// Update engine systems each frame
-		audioMng_.Update();
-
-		// Graphics update is handled in the main loop (beginFrame/endFrame)
-		// but we call Update() here for consistency with the system interface
-		if (graphicsMng_)
+		// Add any per-frame engine updates here
+		static bool scheduled{ false };
+		if (!scheduled)
 		{
-			graphicsMng_->Update();
+			//soundPlaying();
+			scheduled = true;
 		}
+
+		audioMng_.process();
 	}
 
 	// Not sure if we need it
@@ -143,5 +142,41 @@ namespace Engine
 	{
 		static ECS::EntityManager manager(compReg_);
 		return manager;
+	}
+
+
+	/// <summary>
+	///  TBD: for sound demoing!!!
+	/// </summary>
+	void EnoEngine::soundSetup()
+	{
+		audioMng_.setChannelGroup("BGM");
+
+		Audio::SoundParameters sound;
+		Audio::ParamEQ eq;
+		Audio::SFXReverb reverb;
+		eq = Audio::ParamEQ{ 3.f, 1000.f, 1.f };
+		sound.volume = 0.1f;
+		sound.eq = Audio::EQ{};
+		sound.eq->type = FMOD_DSP_TYPE_PARAMEQ;
+		sound.eq->paramEQ = eq;
+		sound.reverb = Audio::Reverb{};
+		sound.reverb->type = FMOD_DSP_TYPE_SFXREVERB;
+		sound.reverb->sfx = reverb;
+		audioMng_.modifyChannelGroup("BGM", sound);
+
+		audioMng_.publishSoundRequest("Close_To_The_End");
+		audioMng_.publishSoundRequest("Simulacrum");
+	}
+
+	void EnoEngine::soundPlaying()
+	{
+		FMOD::Channel* channel = audioMng_.playByGroup("Close_To_The_End", "BGM", true);
+		//FMOD::Channel* channel2 = audioMng_.playByGroup("Simulacrum", "BGM", true);
+
+		audioMng_.scheduleGroupFade("BGM", 5.0f, 5.0f, audioMng_.getSoundDurSec("Close_To_The_End"));
+
+		audioMng_.setPauseChannel(channel, false);
+		//audioMng_.setPauseChannel(channel2, false);
 	}
 }

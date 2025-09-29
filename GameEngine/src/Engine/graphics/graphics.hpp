@@ -27,7 +27,7 @@ namespace Graphics
     class EnoRenderer;
     class EnoShader;
     class EnoVertexBuffer;
-
+    
     // Color struct for drawing functions, basic colours alr added
     struct Color
     {
@@ -163,7 +163,7 @@ namespace Graphics
 
         // Batch rendering (still testing)
         std::vector<Vertex> batchVertices_;
-        static constexpr size_t MAX_BATCH_SIZE = 10000;
+        static constexpr size_t MAX_BATCH_SIZE = 50000;
 
         // Projection matrix for 2D rendering
         std::array<float, 16> projectionMatrix_;
