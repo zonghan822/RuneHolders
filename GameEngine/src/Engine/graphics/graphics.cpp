@@ -361,22 +361,12 @@ namespace Graphics
 
     void EnoGraphicsManager::endFrame()
     {
-        // Flush any remaining batched primitives
         if (!batchVertices_.empty())
         {
-            // Determine primitive type based on vertex count
-            // Simple tracking
-            GLenum primitiveType = GL_POINTS;
-            if (batchVertices_.size() >= 2) primitiveType = GL_LINES;
-            if (batchVertices_.size() >= 3) primitiveType = GL_TRIANGLES;
-
-            flushBatch(primitiveType);
+            flushBatch(currentBatchPrimitiveType_);  // Use tracked type
         }
 
-        // Swap buffers to display the rendered frame
         glfwSwapBuffers(window_);
-
-        // Publish frame end event
         bus_.publish(Events::RenderFrameEnd{});
     }
 
@@ -408,9 +398,18 @@ namespace Graphics
 
     void EnoGraphicsManager::drawTriangle(const Math::eVec2<float>& p1, const Math::eVec2<float>& p2, const Math::eVec2<float>& p3, const Color& color, bool filled)
     {
+        GLenum primitiveType = filled ? GL_TRIANGLES : GL_LINES;
+
+        // Flush if primitive type changes
+        if (!batchVertices_.empty() && currentBatchPrimitiveType_ != primitiveType)
+        {
+            flushBatch(currentBatchPrimitiveType_);
+        }
+
+        currentBatchPrimitiveType_ = primitiveType;
+
         if (filled)
         {
-            // Add triangle vertices for filled triangle
             addVertexToBatch(Vertex(p1, color));
             addVertexToBatch(Vertex(p2, color));
             addVertexToBatch(Vertex(p3, color));
@@ -418,14 +417,29 @@ namespace Graphics
         else
         {
             // Draw outline as three lines
-            drawLine(p1, p2, color);
-            drawLine(p2, p3, color);
-            drawLine(p3, p1, color);
+            addVertexToBatch(Vertex(p1, color));
+            addVertexToBatch(Vertex(p2, color));
+
+            addVertexToBatch(Vertex(p2, color));
+            addVertexToBatch(Vertex(p3, color));
+
+            addVertexToBatch(Vertex(p3, color));
+            addVertexToBatch(Vertex(p1, color));
         }
     }
 
     void EnoGraphicsManager::drawRect(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled)
     {
+        GLenum primitiveType = filled ? GL_TRIANGLES : GL_LINES;
+
+        // Flush if primitive type changes
+        if (!batchVertices_.empty() && currentBatchPrimitiveType_ != primitiveType)
+        {
+            flushBatch(currentBatchPrimitiveType_);
+        }
+
+        currentBatchPrimitiveType_ = primitiveType;
+
         auto vertices = generateRectVertices(position, size, color, filled);
         for (const auto& vertex : vertices)
         {
@@ -435,6 +449,16 @@ namespace Graphics
 
     void EnoGraphicsManager::drawCircle(const Math::eVec2<float>& center, float radius, const Color& color, bool filled, int segments)
     {
+        GLenum primitiveType = filled ? GL_TRIANGLES : GL_LINES;
+
+        // Flush if primitive type changes
+        if (!batchVertices_.empty() && currentBatchPrimitiveType_ != primitiveType)
+        {
+            flushBatch(currentBatchPrimitiveType_);
+        }
+
+        currentBatchPrimitiveType_ = primitiveType;
+
         auto vertices = generateCircleVertices(center, radius, color, segments, filled);
         for (const auto& vertex : vertices)
         {
@@ -517,7 +541,6 @@ namespace Graphics
     {
         if (batchVertices_.empty()) return;
 
-        // Upload vertices to GPU and render
         vertexBuffer_->uploadData(batchVertices_);
 
         defaultShader_->use();
@@ -527,8 +550,8 @@ namespace Graphics
 
         defaultShader_->unuse();
 
-        // Clear batch for next set of primitives
         batchVertices_.clear();
+        currentBatchPrimitiveType_ = primitiveType;  // Track what we just flushed
     }
 
     void EnoGraphicsManager::addVertexToBatch(const Vertex& vertex)
@@ -548,22 +571,30 @@ namespace Graphics
 
         if (filled)
         {
-            // Generate triangle fan for filled circle
-            vertices.push_back(Vertex(center, color));  // Center vertex
-
-            for (int i = 0; i <= segments; ++i)
+            // Generate triangles (not triangle fan) for batching
+            for (int i = 0; i < segments; ++i)
             {
-                float angle = 2.0f * M_PI * i / segments;
-                Math::eVec2<float> point{
-                    center.v1 + radius * cos(angle),
-                    center.v2 + radius * sin(angle)
+                float angle1 = 2.0f * M_PI * i / segments;
+                float angle2 = 2.0f * M_PI * (i + 1) / segments;
+
+                Math::eVec2<float> point1{
+                    center.v1 + radius * cos(angle1),
+                    center.v2 + radius * sin(angle1)
                 };
-                vertices.push_back(Vertex(point, color));
+                Math::eVec2<float> point2{
+                    center.v1 + radius * cos(angle2),
+                    center.v2 + radius * sin(angle2)
+                };
+
+                // Create triangle: center -> point1 -> point2
+                vertices.push_back(Vertex(center, color));
+                vertices.push_back(Vertex(point1, color));
+                vertices.push_back(Vertex(point2, color));
             }
         }
         else
         {
-            // Generate line loop for circle outline
+            // Outline code is correct
             for (int i = 0; i < segments; ++i)
             {
                 float angle1 = 2.0f * M_PI * i / segments;
