@@ -525,7 +525,47 @@ namespace Collision {
 
 			// calculate world position
 			Math::eVec2<float> worldPos = {
-				transform.pos.x + collision.isTrigger ?
+				transform.pos.x + collision.offset.v1,
+				transform.pos.y + collision.offset.v2
+			};
+
+			// choose color based on trigger status
+			Graphics::Color color = collision.isTrigger ? Graphics::Color::Red : Graphics::Color::Green;
+
+			// draw based on collider type
+			switch (collision.type)
+			{
+				case ColliderType::CIRCLE:graphics.drawCircle(
+					worldPos,
+					collision.data.circle.radius,
+					color,
+					false, // not filled, jst outlined
+					32
+				);
+					break;
+
+				case ColliderType::RECTANGLE:
+				{
+					// calculate top-left corner (drawRect uses top-left pos)
+					Math::eVec2<float> topLeft = {
+						worldPos.v1 - (collision.data.rectangle.width * 0.5f),
+						worldPos.v2 - (collision.data.rectangle.height * 0.5f)
+					};
+
+					graphics.drawRect(
+						topLeft,
+						Math::eVec2<float>{collision.data.rectangle.width, collision.data.rectangle.height},
+						color,
+						false // not filled, just outline
+					);
+
+					break;
+				}
+
+				case ColliderType::POINT:
+					graphics.drawPoint(worldPos, color, 5.0f);
+					break;
+
 			}
 
 		}

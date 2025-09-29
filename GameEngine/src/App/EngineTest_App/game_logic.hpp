@@ -1,10 +1,12 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
+#include "../Engine/collision/collision.hpp"
 #include <iostream>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h> 
+#include <memory>  
 
 
 class GameApplication {
@@ -21,6 +23,15 @@ private:
     //THIS IS JUST FOR DEBUGGING IMGUI'S SCALE SCROLLER
     float scalex = 200.0f;
     float scaley = 150.0f;
+
+    // indicator control variables
+    float indicatorX_ = 600.0f;
+    float indicatorY_ = 425.0f;
+    float moveSpeed_ = 200.0f; // pixels per second
+
+    //collision system
+    std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
+    bool showColliders_ = true;
 
 
 public:
