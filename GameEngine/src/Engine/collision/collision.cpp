@@ -504,6 +504,33 @@ namespace Collision {
 		collisionCallbacks_.push_back(callback);
 	}
 
+	void CollisionSystem::VisualizeColliders(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager)
+	{
+		auto& entityMap = entityManager.getMap(); 
+
+		// iterate through all entities
+		for (auto& [entityID, entityLoc] : entityMap)
+		{
+			// check if entity has required components
+			if (!HasRequiredComponents(entityLoc))
+				continue;
+
+			// get transform and collision components
+			auto& transform = GetTransformComponent(entityLoc);
+			auto& collision = GetCollisionComponent(entityLoc);
+
+			// skip if collider is inactive
+			if (!collision.isActive)
+				continue;
+
+			// calculate world position
+			Math::eVec2<float> worldPos = {
+				transform.pos.x + collision.isTrigger ?
+			}
+
+		}
+	}
+
 	void CollisionSystem::ClearCallbacks()
 	{
 		collisionCallbacks_.clear(); 

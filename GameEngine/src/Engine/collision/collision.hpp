@@ -368,6 +368,13 @@ namespace Collision
 		void AddCollisionCallback(std::function<void(const CollisionEvent&)> callback);
 
 		/*
+		* @brief visualize all active colliders in the scene
+		* @param graphics - reference to graphics manager for drawing
+		* @param entityManager 0 reference to entity manager
+		*/
+		void VisualizeColliders(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager);
+
+		/*
 		* @brief Remove all collision callbacks
 		*/
 		void ClearCallbacks();
