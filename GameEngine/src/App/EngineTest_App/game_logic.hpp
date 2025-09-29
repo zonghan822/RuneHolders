@@ -1,6 +1,7 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
+#include "../../Engine/resources/animation.hpp"
 #include <iostream>
 
 class GameApplication {
@@ -11,6 +12,9 @@ private:
     // Game state variables
     bool gameRunning_ = true;
     bool musicStarted_ = false;
+
+    // Test texture for demonstrating textured rendering
+    std::shared_ptr<Graphics::EnoTexture> testTexture_;
 
 public:
     // Constructors
@@ -40,4 +44,6 @@ private:
 
     // Demonstration methods
     void demonstrateSignals();
+    void demonstrateTextures();  // For testing textures
+    void demonstrateAnimations(); // For testing animations
 };

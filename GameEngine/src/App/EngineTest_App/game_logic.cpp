@@ -10,6 +10,20 @@ void GameApplication::initialize() {
     setupGameEvents();
     setupGameMath();
 
+    // DEBUG: Print the path
+    std::cout << "Art folder path: " << engine_.getResourceLoader().getImagePath() << std::endl;
+
+    testTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Animation-Sheet-Attack");
+
+    if (testTexture_)
+    {
+        std::cout << "Test texture loaded successfully!" << std::endl;
+    }
+    else
+    {
+        std::cout << "Warning: Test texture not found. Make sure you have 'test.png' in your art folder." << std::endl;
+    }
+
     std::cout << "Game initialized successfully!" << std::endl;
 }
 
@@ -63,7 +77,7 @@ void GameApplication::updateAudio() {
 void GameApplication::drawShapes() { // For testing
     auto& graphics = engine_.getGraphicsManager();
 
-    // Draw red rect
+    // Draw red rect (primitive shape test)
     graphics.drawRect(
         Math::eVec2<float>{100.0f, 100.0f},  // Position
         Math::eVec2<float>{200.0f, 150.0f},  // Size 200 wide 150 tall
@@ -71,7 +85,7 @@ void GameApplication::drawShapes() { // For testing
         false                                 // Filled
     );
 
-    // Draw green circ
+    // Draw green circ (primitive shape test)
     graphics.drawCircle(
         Math::eVec2<float>{500.0f, 200.0f},  // Center
         75.0f,                               // Radius
@@ -80,7 +94,7 @@ void GameApplication::drawShapes() { // For testing
         32                                   // Segments
     );
 
-    // Draw blue tri
+    // Draw blue tri (primitive shape test)
     graphics.drawTriangle(
         Math::eVec2<float>{300.0f, 400.0f},  // Bot left
         Math::eVec2<float>{450.0f, 300.0f},  // Top
@@ -88,4 +102,30 @@ void GameApplication::drawShapes() { // For testing
         Graphics::Color::Blue,               // Colour
         false                                // Filled
     );
+
+    // TEXTURE TEST: Draw a textured rectangle
+    if (testTexture_ && testTexture_->isValid())
+    {
+        graphics.drawTexturedQuad(
+            Math::eVec2<float>{400.0f, 100.0f},  // Position
+            Math::eVec2<float>{150.0f, 150.0f},  // Size (width x height)
+            testTexture_,
+            Graphics::Color::White                // White = no tint, shows original colors
+        );
+
+        
+        graphics.drawTexturedQuad(
+            Math::eVec2<float>{600.0f, 100.0f},  // Different position
+            Math::eVec2<float>{150.0f, 150.0f},
+            testTexture_,
+            Graphics::Color::Red                  // Red tint
+        );
+
+        graphics.drawTexturedQuad(
+            Math::eVec2<float>{400.0f, 300.0f},  // Different position
+            Math::eVec2<float>{150.0f, 150.0f},
+            testTexture_,
+            Graphics::Color::Green                // Green tint
+        );
+    }
 }
