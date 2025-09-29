@@ -163,7 +163,8 @@ namespace Graphics
 
         // Batch rendering (still testing)
         std::vector<Vertex> batchVertices_;
-        static constexpr size_t MAX_BATCH_SIZE = 10000;
+        static constexpr size_t MAX_BATCH_SIZE = 50000;
+        GLenum currentBatchPrimitiveType_ = GL_TRIANGLES;
 
         // Projection matrix for 2D rendering
         std::array<float, 16> projectionMatrix_;

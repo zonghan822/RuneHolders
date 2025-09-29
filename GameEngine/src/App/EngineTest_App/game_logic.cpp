@@ -68,7 +68,7 @@ void GameApplication::drawShapes() { // For testing
         Math::eVec2<float>{100.0f, 100.0f},  // Position
         Math::eVec2<float>{200.0f, 150.0f},  // Size 200 wide 150 tall
         Graphics::Color::Red,                 // Colour
-        true                                 // Filled
+        false                                 // Filled
     );
 
     // Draw green circ
@@ -76,7 +76,7 @@ void GameApplication::drawShapes() { // For testing
         Math::eVec2<float>{500.0f, 200.0f},  // Center
         75.0f,                               // Radius
         Graphics::Color::Green,              // Colour
-        true,                                // Filled
+        false,                                // Filled
         32                                   // Segments
     );
 
@@ -86,6 +86,6 @@ void GameApplication::drawShapes() { // For testing
         Math::eVec2<float>{450.0f, 300.0f},  // Top
         Math::eVec2<float>{600.0f, 400.0f},  // Bot right
         Graphics::Color::Blue,               // Colour
-        true                                 // Filled
+        false                                // Filled
     );
 }
