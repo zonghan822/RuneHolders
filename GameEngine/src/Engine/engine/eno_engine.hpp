@@ -12,6 +12,7 @@
 #include "../math/math.hpp"
 #include "../tag/tagRegistry.hpp"
 #include "../game_instance/eno_game_instance.hpp"
+#include "../collision/collision.hpp"
 
 
 // stds

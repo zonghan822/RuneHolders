@@ -12,13 +12,18 @@ float randomFloat(float min, float max) {
     std::uniform_real_distribution<float> dist(min, max);
     return dist(rng);
 }
+using Clock = std::chrono::high_resolution_clock;
+std::unordered_map<std::string, double> systemTimes_;
+//throttle timing for systemTimes_
+std::unordered_map<std::string, double> throttledTimes_;
+
 
 //throw std::runtime_error("error logging");
 
 void GameApplication::initialize() {
     // Setup engine systems first
     engine_.setup();
-
+    
     // Setup all game content
     setupGameEntities();
     setupGameAudio();
@@ -81,6 +86,7 @@ void GameApplication::setupImGui() {
     GLFWwindow* window = engine_.getWindow().getWindow();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330"); 
+
 }
 
 void GameApplication::demonstrateSignals() {
@@ -88,30 +94,37 @@ void GameApplication::demonstrateSignals() {
 }
 
 void GameApplication::updateGameLogic() {
-    // This is called every frame (replaces your while loop in eno_engine.cpp run())
     updateEntities();
     updateAudio();
     updateImGui();
-    // Add any other per-frame game logic here
     drawShapes();
-    
 }
 
 void GameApplication::updateEntities() {
     // Update game entities each frame
+    auto start = Clock::now();
     // Add entity movement, AI, collision detection etc here
 
     // update collision system every frame
     if (collisionSystem_) {
         collisionSystem_->Update(engine_.getEntityManager());
     }
+    auto end = Clock::now();
+    systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
 void GameApplication::updateAudio() {
     // audio update
+    auto start = Clock::now();
+    
+    auto end = Clock::now();
+    systemTimes_["Audio"] = std::chrono::duration<double, std::micro>(end - start).count();
+
 }
 
 void GameApplication::updateImGui() {
+    auto start = Clock::now();
+
     // Start ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -141,8 +154,8 @@ void GameApplication::updateImGui() {
     static float           eWidth           = 10;
     static float           eHeight          = 10;
     static int             eColor           = Color::Green;
-    //static int             eShapeIndex      = Shapes::Rectangle;
-    static int             eShapeIndex      = 0;         // 0 = circle, 1 = Rectangle
+    static int             eShapeIndex      = Shapes::Rectangle;
+    //static int             eShapeIndex      = 0;         // 0 = circle, 1 = Rectangle
     static int             selectedCollider = 0;         // for the newly spawned entity
     static float           colliderWidth    = 10.0f;
     static float           colliderHeight   = 10.0f;
@@ -152,16 +165,27 @@ void GameApplication::updateImGui() {
     ImGui::Begin("IMGUI CHECKLIST");
 
     //FPS and Time Staggering for Displaying FPS
+
+    //ImGui::Text("Total game time: %.2f sec", totalSystemTimer);
     static float shown_fps = 0.0f;
     static double next_update = 0.0;         // next time we refresh the text
     double now = ImGui::GetTime();           // imgui monotonic time (seconds)
 
     if (now >= next_update) {
         shown_fps = io.Framerate;            // sample current FPS
+        throttledTimes_ = systemTimes_;
         next_update = now + 0.5;             // update every 0.5s (tune this)
     }
+
+
     ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
     ImGui::Text("Frame (%.1f FPS)", shown_fps);
+    ImGui::Text("Per-System Timings:");
+    for (auto& time : throttledTimes_) {
+        ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);
+        // divide by 1000 to show microseconds as milliseconds
+    }
+
 
     ImGui::Separator();
     ImGui::Text("Indicator Controls (WASD)");
@@ -169,15 +193,6 @@ void GameApplication::updateImGui() {
     ImGui::DragFloat("Move Speeed", &moveSpeed_, 10.0f, 50.0f, 500.0f);
 
     ImGui::Separator();
-
-    //Changing Entity Values
-    
-    //ImGui::DragFloat("Size Width", &scalex);
-    //ImGui::DragFloat("Size Height", &scaley);
-
-    //Button Options
-    //ImGui::DragFloat("New Entity X Pos",  &eCoordX);
-    //ImGui::DragFloat("New Entity Y Pos",  &eCoordY);
 
     // entity spawn settings
     ImGui::Text("Entity Spawn Settings");
@@ -201,8 +216,8 @@ void GameApplication::updateImGui() {
         ImGui::DragFloat("Collider Height", &colliderHeight, 0.5f, 1.0f, 100.0f);
     }
 
-    ImGui::Separator();
     
+    ImGui::Separator();
     auto& graphics = engine_.getGraphicsManager();
     //Red indicator rectangle that shows where the entity will be spawned.  
     graphics.drawRect(
@@ -276,10 +291,15 @@ void GameApplication::updateImGui() {
     ImGui::Checkbox("Show Colliders", &showColliders_);
 
     ImGui::End();
+    auto end = Clock::now();
+    systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
 
 void GameApplication::drawShapes() { // For testing
+    auto start = Clock::now();
+
+
     auto& graphics = engine_.getGraphicsManager();
 
     auto& entityManager = engine_.getEntityManager();
@@ -309,4 +329,6 @@ void GameApplication::drawShapes() { // For testing
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    auto end = Clock::now();
+    systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();
 }

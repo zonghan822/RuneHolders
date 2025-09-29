@@ -1,13 +1,15 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
-#include "../Engine/collision/collision.hpp"
 #include <iostream>
+#include <memory>  
+
+
+//yunqi testing
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h> 
-#include <memory>  
-
+#include <chrono>
 
 class GameApplication {
 private:
@@ -19,11 +21,6 @@ private:
     bool musicStarted_ = false;
 
 
-
-    //THIS IS JUST FOR DEBUGGING IMGUI'S SCALE SCROLLER
-    float scalex = 200.0f;
-    float scaley = 150.0f;
-
     // indicator control variables
     float indicatorX_ = 600.0f;
     float indicatorY_ = 425.0f;
@@ -32,6 +29,7 @@ private:
     //collision system
     std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
     bool showColliders_ = true;
+
 
 
 public:
@@ -45,6 +43,7 @@ public:
     // Main game methods
     void initialize();  // Called once at start
     void run();         // Starts the game loop
+
 
 private:
     // Setup (called during initialize())
