@@ -38,12 +38,16 @@ namespace Engine
 		EngineConfiguration::EnoConfigManager& getConfigManager() { return configMng_; }
 		Window::EnoWindow& getWindow() { return window_; }
 
+		double GetDeltaTime() const { return dt; }
+		double GetFPS() const { return fps; }
+
 	private:
 		// Functions added for future use**
 		void setupResourceLoading();
 		void setupEventSystem();
 		void setupGraphicsSystem();
 		void updateEngineSystems();
+		void update_time(double fpsCalcInt = 1.0);
 
 		// Private member shii / was here before i edited
 		EngineConfiguration::EnoConfigManager configMng_;
@@ -62,5 +66,9 @@ namespace Engine
 		// TBD Demo for playing sounds
 		void soundSetup();
 		void soundPlaying();
+
+		// Time
+		double dt = 0.0f;
+		double fps = 0;
 	};
 }
