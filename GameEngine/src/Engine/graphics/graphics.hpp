@@ -205,7 +205,7 @@ namespace Graphics
         std::vector<std::shared_ptr<EnoTexture>> boundTextures_;
         static constexpr size_t MAX_TEXTURE_SLOTS = 32;
 
-        // Batch rendering (still testing)
+        // Batch rendering (WORKS HALLELUJAH)
         std::vector<Vertex> batchVertices_;
         static constexpr size_t MAX_BATCH_SIZE = 50000;
         GLenum currentBatchPrimitiveType_ = GL_TRIANGLES;

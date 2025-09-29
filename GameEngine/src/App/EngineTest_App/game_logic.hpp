@@ -15,6 +15,10 @@ private:
 
     // Test texture for demonstrating textured rendering
     std::shared_ptr<Graphics::EnoTexture> testTexture_;
+    Animation::AnimationController animController_;
+
+    // For delta time calculation
+    float lastFrameTime_ = 0.0f;  
 
 public:
     // Constructors
@@ -34,6 +38,7 @@ private:
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
     void setupGameMath();       // math demonstration code
+    void setupAnimations();
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
@@ -41,9 +46,8 @@ private:
     void updateAudio();         // Update audio per frame
 
     void drawShapes(); // jsut to test
+    void drawAnimatedSprite();
 
     // Demonstration methods
     void demonstrateSignals();
-    void demonstrateTextures();  // For testing textures
-    void demonstrateAnimations(); // For testing animations
 };

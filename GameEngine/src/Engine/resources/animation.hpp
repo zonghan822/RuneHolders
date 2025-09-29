@@ -169,16 +169,20 @@ namespace Animation
 
         int framesPerRow = sheetWidth / frameWidth;
 
+        // Add padding to prevent sampling adjacent frames
+        float paddingPixels = 1.f;  // 1 pixel padding 
+
         for (int i = 0; i < frameCount; ++i)
         {
             int frameIndex = startFrame + i;
             int row = frameIndex / framesPerRow;
             int col = frameIndex % framesPerRow;
 
-            float uvStartX = static_cast<float>(col * frameWidth) / static_cast<float>(sheetWidth);
-            float uvStartY = static_cast<float>(row * frameHeight) / static_cast<float>(sheetHeight);
-            float uvEndX = static_cast<float>((col + 1) * frameWidth) / static_cast<float>(sheetWidth);
-            float uvEndY = static_cast<float>((row + 1) * frameHeight) / static_cast<float>(sheetHeight);
+            // Add padding to UV coordinates to avoid bleeding
+            float uvStartX = (static_cast<float>(col * frameWidth) + paddingPixels) / static_cast<float>(sheetWidth);
+            float uvStartY = (static_cast<float>(row * frameHeight) + paddingPixels) / static_cast<float>(sheetHeight);
+            float uvEndX = (static_cast<float>((col + 1) * frameWidth) - paddingPixels) / static_cast<float>(sheetWidth);
+            float uvEndY = (static_cast<float>((row + 1) * frameHeight) - paddingPixels) / static_cast<float>(sheetHeight);
 
             AnimationFrame frame(
                 { uvStartX, uvStartY },

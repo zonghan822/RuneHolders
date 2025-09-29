@@ -47,7 +47,7 @@ namespace Graphics
         std::cout << "File exists, attempting stbi_load..." << std::endl;
 
         // Load image using stb_image
-        //stbi_set_flip_vertically_on_load(true);
+        stbi_set_flip_vertically_on_load(false);
         unsigned char* data = stbi_load(filepath.c_str(), &width_, &height_, &channels_, 0);
 
         std::cout << "stbi_load returned, checking data..." << std::endl;
@@ -69,12 +69,12 @@ namespace Graphics
 
         glBindTexture(GL_TEXTURE_2D, textureID_);
 
-        // Set texture parameters
+        // CRITICAL: Set texture parameters for sprite sheets
         std::cout << "Setting texture parameters..." << std::endl;
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // Prevent wrapping
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);  // Prevent wrapping
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);    // No interpolation
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);    // No interpolation
 
         // Determine format based on channels
         std::cout << "Determining texture format..." << std::endl;
@@ -88,44 +88,18 @@ namespace Graphics
 
         std::cout << "Format determined (format=" << format << "), uploading texture data..." << std::endl;
 
-        // Check for OpenGL errors before upload
-        GLenum error = glGetError();
-        if (error != GL_NO_ERROR)
-        {
-            std::cerr << "OpenGL error before texture upload: " << error << std::endl;
-        }
-
         // Upload texture data
         glTexImage2D(GL_TEXTURE_2D, 0, format, width_, height_, 0, format, GL_UNSIGNED_BYTE, data);
 
-        // Check for OpenGL errors after upload
-        error = glGetError();
-        if (error != GL_NO_ERROR)
-        {
-            std::cerr << "OpenGL error after texture upload: " << error << std::endl;
-        }
-
-        std::cout << "Generating mipmaps..." << std::endl;
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        // Check for OpenGL errors after mipmap
-        error = glGetError();
-        if (error != GL_NO_ERROR)
-        {
-            std::cerr << "OpenGL error after mipmap generation: " << error << std::endl;
-        }
+        // DO NOT generate mipmaps for sprite sheets - this causes bleeding!
+        // glGenerateMipmap(GL_TEXTURE_2D);  // KEEP THIS COMMENTED OUT
 
         std::cout << "Freeing image data..." << std::endl;
 
-        // Check if data pointer is valid before freeing
         if (data != nullptr)
         {
             stbi_image_free(data);
             std::cout << "Image data freed successfully" << std::endl;
-        }
-        else
-        {
-            std::cerr << "WARNING: data pointer is null, skipping free" << std::endl;
         }
 
         std::cout << "Unbinding texture..." << std::endl;
