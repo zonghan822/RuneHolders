@@ -1,6 +1,7 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
+#include "player/player.hpp"
 #include <iostream>
 #include <memory>  
 
@@ -28,8 +29,12 @@ private:
 
     //collision system
     std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
+    std::unique_ptr<Player::PlayerSystem> playerSystem_;   
     bool showColliders_ = true;
 
+    // player entity ID (to track the player)
+    uint32_t playerEntityID_ = 0;
+    bool playerSpawned_ = false;
 
 
 public:

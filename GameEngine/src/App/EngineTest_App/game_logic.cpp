@@ -75,6 +75,9 @@ void GameApplication::setupGameMath() {
 
 	//initialize collision system
 	collisionSystem_ = std::make_unique<Collision::CollisionSystem>(engine_.getEventBus());
+
+	// initialize player system
+	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 }
 
 void GameApplication::setupImGui() {
@@ -106,6 +109,16 @@ void GameApplication::updateEntities() {
 	auto start = Clock::now();
 	// Add entity movement, AI, collision detection etc here
 
+	// delta time for movement
+	ImGuiIO& io = ImGui::GetIO();
+	float deltaTime = io.DeltaTime;
+	GLFWwindow* window = engine_.getWindow().getWindow();
+
+	// update player movement with collision
+	if (playerSystem_ && playerSpawned_) {
+		playerSystem_->Update(engine_.getEntityManager(), window, deltaTime);
+	}
+
 	// update collision system every frame
 	if (collisionSystem_) {
 		collisionSystem_->Update(engine_.getEntityManager());
@@ -126,28 +139,18 @@ void GameApplication::updateAudio() {
 void GameApplication::updateImGui() {
 	auto start = Clock::now();
 
-
-
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-
-
 	// (kim) get delta time for smooth movement
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
 
-	// (kim) WASD movement for indicator (always active, no need to focus on ImGui)
-	GLFWwindow* window = engine_.getWindow().getWindow();
-	float moveDelta = moveSpeed_ * deltaTime;
-
-	/* (kim added WASD Keys!) */
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) indicatorY_ -= moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) indicatorY_ += moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) indicatorX_ -= moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) indicatorX_ += moveDelta;
+	// (kim) note: WASD movement is now handled by PlayerSystem in updateEntities()
+	// the indicator (red square) no longer moves with WASD
+	// only the player (blue square) moves with WASD after spawning
 
 	//Option Menu
 	const char* shapes[] = { "Circle" , "Rectangle" };
@@ -155,13 +158,10 @@ void GameApplication::updateImGui() {
 	const char* colliderShapes[] = { "None", "Circle", "Rectangle" };
 
 	//Values to set for entities
-	//static float           eCoordX          = 600;
-	//static float           eCoordY          = 425;
 	static float           eWidth = 10;
 	static float           eHeight = 10;
 	static int             eColor = Color::Green;
 	static int             eShapeIndex = Shapes::Rectangle;
-	//static int             eShapeIndex      = 0;         // 0 = circle, 1 = Rectangle
 	static int             selectedCollider = 0;         // for the newly spawned entity
 	static float           colliderWidth = 10.0f;
 	static float           colliderHeight = 10.0f;
@@ -177,8 +177,6 @@ void GameApplication::updateImGui() {
 		next_update = now + 0.5;             // update every 0.5s (tune this)
 	}
 
-
-
 	if (ImGui::Button("Main"))     activeWindow = WindowID::Main;
 	if (ImGui::Button("Delete"))   activeWindow = WindowID::Delete;
 	if (ImGui::Button("FPS"))      activeWindow = WindowID::FPS;
@@ -186,16 +184,75 @@ void GameApplication::updateImGui() {
 
 	if (activeWindow == WindowID::Main) {
 		ImGui::Begin("Main");
+		ImGui::Separator();
+
+		//=======================PLAYER CONTROLS =======================
+		// (kim added) add player spawn section
+		ImGui::Text("=== PLAYER CONTROLS ===");
+		ImGui::Text("WASD to move player");
+
+		if (!playerSpawned_) {
+			if (ImGui::Button("Spawn Player")) {
+				// create player entity at indicator position
+				ECSComponents::TransformComponent transform{
+					{indicatorX_, indicatorY_, 0.0f},
+					{0.0f, 0.0f, 0.0f},
+					{1.0f, 1.0f, 1.0f}
+				};
+
+				// create player with rectangle collider (can change to circle if u want)
+				Collision::CollisionComponent playerCollider(10.0f, 10.0f); // 10x10 rectangle
+
+				// for circle: (uncomment if u want circle!)
+				// Collision::CollisionComponent playerCollider(5.0f); // radius 5.0
+
+				Player::PlayerComponent playerComp(moveSpeed_);
+
+				// Create entity with TransformComponent first
+				ECS::Entity entity = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
+
+				// Store ID by finding the last created entity in the map
+				// Get the entity map and find the most recent entity
+				auto& entityMap = engine_.getEntityManager().getMap();
+				uint32_t lastID = 0;
+				for (auto& [id, loc] : entityMap) {
+					if (id > lastID) lastID = id;
+				}
+				playerEntityID_ = lastID;
+
+				// Then add CollisionComponent
+				entity.add<Collision::CollisionComponent>(playerCollider);
+
+				// Then add PlayerComponent
+				entity.add<Player::PlayerComponent>(playerComp);
+
+				playerSpawned_ = true;
+
+				std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")\n";
+			}
+		}
+		else {
+			ImGui::Text("Player Active (ID: %u)", playerEntityID_);
+			if (ImGui::Button("Destroy Player")) {
+				engine_.getEntityManager().destroyEntity(playerEntityID_);				
+				playerSpawned_ = false;
+				std::cout << "Player destroyed\n";
+			}
+		}
 
 		ImGui::Separator();
-		ImGui::Text("Indicator Controls (WASD)");
+
+		// ==================== SPAWN POSITION INDICATOR ====================
+		ImGui::Text("=== SPAWN POSITION INDICATOR ===");
 		ImGui::Text("Position (%.1f, %.1f)", indicatorX_, indicatorY_);
-		ImGui::DragFloat("Move Speeed", &moveSpeed_, 10.0f, 50.0f, 500.0f);
-		//collision visualization toggle
+		ImGui::DragFloat("Move Speed", &moveSpeed_, 10.0f, 50.0f, 500.0f);
 		ImGui::Checkbox("Show Colliders", &showColliders_);
 
-		// entity spawn settings
-		ImGui::Text("Entity Spawn Settings");
+		ImGui::Separator();
+
+
+		// ==================== ENTITY SPAWN SETTINGS ====================		
+		ImGui::Text("=== Entity Spawn Settings ===");
 		ImGui::DragFloat("Entity Width", &eWidth, 0.5f, 1.0f, 100.0f);
 		ImGui::DragFloat("Entity Height", &eHeight, 0.5f, 1.0f, 100.0f);
 		//dropdoawn menu
@@ -219,9 +276,6 @@ void GameApplication::updateImGui() {
 
 		//Spawn Button (with optional collider)
 		if (ImGui::Button("Spawn Entity")) {
-			//e.set(ECSComponents::DrawInfoComponent("Square"));
-			//e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent{ "NAME" });
-			//SAMPLE DRAWINFOCOMPONENT LOOKS LIKE THIS: DrawInfoComponent(float xPosition, float yPosition, float w, float h, const char* n, int c)
 			ECSComponents::DrawInfoComponent DIC{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor };
 			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
 
@@ -237,7 +291,7 @@ void GameApplication::updateImGui() {
 				e.add<ECSComponents::TransformComponent>(transform);
 
 				// then add appropriate collider
-				if (selectedCollider == 1) {//circle
+				if (selectedCollider == 1) { //circle
 					e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderRadius));
 
 				}
@@ -297,13 +351,36 @@ void GameApplication::updateImGui() {
 		ImGui::End();
 	}
 	auto& graphics = engine_.getGraphicsManager();
-	//Red indicator rectangle that shows where the entity will be spawned.  
+	
+	// ==================== DRAW PLAYER (BLUE) ====================
+	if (playerSpawned_) {
+		try {
+			auto& entityMap = engine_.getEntityManager().getMap();
+			auto it = entityMap.find(playerEntityID_);
+			if (it != entityMap.end()) {
+				auto& transform = playerSystem_->GetTransform(it->second);
+				graphics.drawRect(
+					Math::eVec2<float>{transform.pos.x, transform.pos.y},
+					Math::eVec2<float>{10, 10},
+					Graphics::Color::Blue,  // Player is BLUE
+					true
+				);
+			}
+		}
+		catch (...) {
+			// Player entity might be invalid
+		}
+	}
+
+	// ==================== DRAW SPAWN POSITION INDICATOR (RED) ===================
+	// Red indicator rectangle that shows where entities will spawn
 	graphics.drawRect(
 		Math::eVec2<float>{indicatorX_, indicatorY_},  // Position
 		Math::eVec2<float>{10, 10},            // Size 10 wide 10 tall
 		Graphics::Color::Red,                 //  Colour
 		true                                  //  True
 	);
+
 	auto end = Clock::now();
 	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
 }

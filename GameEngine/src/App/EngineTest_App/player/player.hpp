@@ -1,32 +1,125 @@
 /*************************************************
 * @file player.hpp
-* @brief Player controller with collision resolution
-* @author Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio)
+* @brief Player component and system for character control
+* @author Your Team
 *
-* This file contains the player controller that handles:
-*   - Player entity management
-*   - WASD movement input
-*   - Collision detection and resolution
-*   - Player state management
+* This file contains:
+*   - Player component (marks an entity as the player)
+*   - Player system (handles movement with collision response)
 *
 * USAGE:
-*   1. Create Player object with entity manager reference
-*   2. Call Initialize() to create the player entity
-*   3. Call Update(deltaTime) each frame
-*   4. Call Render(graphics) to draw the player
+*   1. Create entity with Player, Transform, and Collision components
+*   2. Create PlayerSystem and call Update() each frame
+*   3. Player will move with WASD but respect collisions
 **************************************************/
 
 #pragma once
 
-// egnine includes
-#include "../Engine/ecs/entity.hpp"
+#include "../Engine/math/math.hpp"
 #include "../Engine/component/components/transform.hpp"
 #include "../Engine/collision/collision.hpp"
-#include "../Engine/graphics/graphics.hpp"
-#include "../Engine/math/math.hpp"
+#include "../Engine/ecs/entity.hpp"
+#include <GLFW/glfw3.h>
 
-//GLFW for input
-#include <cstdint>
-#include <unordered_map>
+namespace Player
+{
+    //======================================================================================
+    // PLAYER COMPONENT
+    //======================================================================================
 
+    /*
+    * @brief Component that marks an entity as the player character
+    *
+    * Attach this to an entity to designate it as the player.
+    * The entity should also have Transform and Collision components.
+    */
+    struct PlayerComponent
+    {
+        float moveSpeed;        // movement speed in pixels per second
+        bool canMove;           // can the player move? (for stun effects, etc)
 
+        /*
+        * @brief Constructor with default values
+        * @param speed - movement speed (default: 200.0f pixels/sec)
+        */
+        PlayerComponent(float speed = 200.0f)
+            : moveSpeed(speed)
+            , canMove(true)
+        {
+        }
+    };
+
+    //======================================================================================
+    // PLAYER SYSTEM
+    //======================================================================================
+
+    /*
+    * @brief System that handles player movement with collision response
+    *
+    * This system:
+    *   - Reads WASD input for movement
+    *   - Calculates desired position
+    *   - Checks for collisions at new position
+    *   - Only moves if no collision (collision response)
+    *
+    * Usage:
+    *   PlayerSystem playerSystem;
+    *   playerSystem.Update(entityManager, window, deltaTime);
+    */
+    class PlayerSystem
+    {
+    public:
+        /*
+        * @brief Constructor
+        */
+        PlayerSystem() = default;
+
+        /*
+        * @brief Main update function - call every frame
+        *
+        * Handles player input and movement with collision checking
+        *
+        * @param entityManager - reference to entity manager
+        * @param window - GLFW window for input
+        * @param deltaTime - time since last frame (seconds)
+        */
+        void Update(ECS::EntityManager& entityManager, GLFWwindow* window, float deltaTime);
+
+        /*
+        * @brief Helper to get transform component from entity (made public for game_logic access)
+        */
+        ECSComponents::TransformComponent& GetTransform(const ECS::EntityLoc& entityLoc);
+
+    private:
+        /*
+        * @brief Get movement input from WASD keys
+        * @param window - GLFW window
+        * @return normalized movement vector
+        */
+        Math::eVec2<float> GetMovementInput(GLFWwindow* window);
+
+        /*
+        * @brief Check if player can move to a new position
+        *
+        * Tests if the player's collider would overlap with any
+        * solid colliders at the target position
+        *
+        * @param playerEntity - the player entity location
+        * @param playerCollider - player's collision component
+        * @param targetPos - desired new position
+        * @param entityManager - entity manager
+        * @return true if position is valid (no collisions)
+        */
+        bool CanMoveTo(
+            const ECS::EntityLoc& playerEntity,
+            const Collision::CollisionComponent& playerCollider,
+            const Math::eVec2<float>& targetPos,
+            ECS::EntityManager& entityManager);
+
+        /*
+        * @brief Helper to get collision component from entity
+        */
+        Collision::CollisionComponent& GetCollision(const ECS::EntityLoc& entityLoc);
+    };
+
+} // namespace Player

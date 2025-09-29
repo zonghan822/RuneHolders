@@ -177,7 +177,7 @@ namespace Math
 	void eVec2Normalize(eVec2<Type>& result, const eVec2<Type>& vec)
 	{
 		//normalized outward normal of a vector = n/||n||
-		result = vec / eVec2<Type>::eVec2Length(vec);
+		result = vec / eVec2Length(vec);
 
 	}
 
