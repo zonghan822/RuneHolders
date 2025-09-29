@@ -83,6 +83,13 @@ namespace Math
 		return { v1 * other.v1, v2 * other.v2 };
 	}
 
+	template <Arithmetic Type>
+	eVec2<Type> eVec2<Type>::operator*(Type other) const
+	{
+		return {v1 * other, v2*other};
+	
+	}
+
 	// ------------------------------ Division ------------------------------
 	template <Arithmetic Type>
 	eVec2<Type>& eVec2<Type>::operator/=(const eVec2<Type>& other)
@@ -148,6 +155,22 @@ namespace Math
 
 
 	// --------------------- Friend functions for eVec2 ---------------------------
+
+	template <Arithmetic Type>
+	eVec2<Type> operator+(const eVec2<Type>& lhs, const eVec2<Type>&rhs)
+	{
+		eVec2<Type> tmp {lhs};
+		tmp += rhs;
+		return tmp;
+	}
+
+	template <Arithmetic Type>
+	eVec2<Type> operator-(const eVec2<Type>& lhs, const eVec2<Type>&rhs)
+	{
+		eVec2<Type> tmp {lhs};
+		tmp -= rhs;
+		return tmp;
+	}
 
 	//eVec2Normalize takes a const &eVec2 vec to normalize and puts the unit vector into result
 	template <Arithmetic Type>
