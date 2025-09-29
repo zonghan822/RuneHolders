@@ -38,8 +38,8 @@ namespace Engine
 		EngineConfiguration::EnoConfigManager& getConfigManager() { return configMng_; }
 		Window::EnoWindow& getWindow() { return window_; }
 
-		float GetDeltaTime() const { return dt; }
-		int   GetFPS() const { return fps; }
+		double GetDeltaTime() const { return dt; }
+		double GetFPS() const { return fps; }
 
 	private:
 		// Functions added for future use**
