@@ -243,6 +243,7 @@ namespace ECS
 		{
 			// Clean up archetype and related chunks
 			EntityLoc loc = entityMap_.find(entityID)->second;
+
 			--loc.archetype->chunks_[loc.chunkIndex]->current;
 			cleanup(loc.archetype, loc.chunkIndex);
 
@@ -404,7 +405,7 @@ namespace ECS
 		std::vector<Entity> findEntity(Values... values)
 		{
 			static_assert(
-				sizeof...(Values) == 0|| 
+				sizeof...(Values) == 0 ||
 				sizeof...(Components) == sizeof...(Values),
 				"Mismatch detected in components and value counts!");
 
@@ -505,7 +506,7 @@ namespace ECS
 			size_t openChunkIndex = static_cast<size_t>(-1);
 			for (size_t i = 0; i < archetype->chunks_.size(); ++i)
 			{
-				if (archetype->chunks_[i].get()->current < 
+				if (archetype->chunks_[i].get()->current <
 					archetype->chunks_[i].get()->capacity)
 				{
 					openChunkIndex = i;
@@ -552,26 +553,76 @@ namespace ECS
 		}
 
 		// Clean up archetype chunks and the archetype after an operation
-		void cleanup(Archetype* oldArchetype, const size_t& srcChnkIdx)
+		void cleanup(Archetype* archetype, const size_t& srcChnkIdx)
 		{
+			bool freed{ false };
+
 			// Cleanup chunk and archetype memory
-			if (oldArchetype->chunks_[srcChnkIdx].get()->current == 0)
+			if (archetype->chunks_[srcChnkIdx].get()->current == 0)
 			{
 				// No entities in the chunk,
 				// release associated memory
-				oldArchetype->chunks_[srcChnkIdx].reset();
+				archetype->chunks_[srcChnkIdx].reset();
+				freed = true;
 			}
 
-			// Remove empty chunks
-			oldArchetype->chunks_.erase(
-				std::remove(oldArchetype->chunks_.begin(),
-					oldArchetype->chunks_.end(), nullptr),
-				oldArchetype->chunks_.end());
+			// Adjust existing entity chunk indices
+			// when a chunk has become empty
+			if (freed)
+			{
+				// Use SIZE_MAX as a sentinel value for nullptr chunks
+				std::vector<size_t> remap(archetype->chunks_.size(), SIZE_MAX);
+
+				size_t newIndex{ 0 };
+				for (size_t i = 0; i < archetype->chunks_.size(); ++i)
+				{
+					// Map entities in active chunks
+					// to new source chunk indices
+					if (archetype->chunks_[i] != nullptr)
+					{
+						remap[i] = newIndex++;
+					}
+				}
+
+				// Remove empty chunks and displace existing ones
+				archetype->chunks_.erase(
+					std::remove(
+						archetype->chunks_.begin(),
+						archetype->chunks_.end(), nullptr),
+					archetype->chunks_.end());
+
+				// For entities of the affected archetype
+				// set the updated source chunk index to their loc
+				for (auto& [id, loc] : entityMap_)
+				{
+					if (loc.archetype == archetype)
+					{
+						if (remap[loc.chunkIndex] != SIZE_MAX)
+						{
+							loc.chunkIndex = remap[loc.chunkIndex];
+						}
+					}
+				}
+			}
 
 			// No entities associated with old archetype
-			if (oldArchetype->chunks_.size() == 0)
+			if (archetype->chunks_.size() == 0)
 			{
-				archetypeMng_.cleanup(oldArchetype);
+				archetypeMng_.cleanup(archetype);
+			}
+		}
+
+		void remap(Archetype* archetype)
+		{
+			size_t newIndex{};
+			size_t curIndex{};
+			for (auto& [key, value] : entityMap_)
+			{
+				if (value.archetype == archetype)
+				{
+					curIndex = value.chunkIndex;
+
+				}
 			}
 		}
 
@@ -796,9 +847,9 @@ namespace ECS
 		template <typename... Components>
 		bool has()
 		{
-			return (... && (std::find(findEntity(id_).archetype->types_.begin(), 
-					findEntity(id_).archetype->types_.end(), 
-					std::type_index(typeid(Components))) != findEntity(id_).archetype->types_.end()));
+			return (... && (std::find(findEntity(id_).archetype->types_.begin(),
+				findEntity(id_).archetype->types_.end(),
+				std::type_index(typeid(Components))) != findEntity(id_).archetype->types_.end()));
 		}
 
 	private:
