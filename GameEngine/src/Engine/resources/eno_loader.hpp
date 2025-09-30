@@ -1,6 +1,6 @@
 #pragma once
 // STB_IMAGE
-#include "../../../lib/stb_image/stb_image.h"
+#include "stb_image.h"
 
 // FMOD
 #include "fmod.hpp"
