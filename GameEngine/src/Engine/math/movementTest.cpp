@@ -32,7 +32,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 	{
 		for (auto& entity : rect)
 		{
-			std::cout << "object found: " << entity.get<ECSComponents::NameComponent>() << std::endl;
+			//std::cout << "object found: " << entity.get<ECSComponents::NameComponent>() << std::endl;
 			//i have yet to decide where i want to store this value 
 			//(transform component? what if some objects have transform component but no movement?)
 
