@@ -33,8 +33,6 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 		for (auto& entity : rect)
 		{
 			std::cout << "object found: " << entity.get<ECSComponents::NameComponent>() << std::endl;
-
-
 			//i have yet to decide where i want to store this value 
 			//(transform component? what if some objects have transform component but no movement?)
 
@@ -48,7 +46,6 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 		}
 		
 	}
-
 
 }
 
@@ -107,7 +104,7 @@ void testMovement(const Engine::EnoEngine& eng, ECSComponents::eVec2TransformCom
 	//i can check for collision here...
 
 
-	//if no collision, update new position in transform component and drawinfo component
+	//if no collision, update new position in transform component
 	transform.pos = nextPos;
 
 
