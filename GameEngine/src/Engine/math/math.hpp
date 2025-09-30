@@ -102,7 +102,7 @@ namespace Math
 	struct eVec3
 	{
 		Type v1, v2, v3;
-		
+
 		// ------------------------------- Addition -------------------------------
 		eVec3& operator+=(const eVec3& other);
 
@@ -136,8 +136,8 @@ namespace Math
 	template <Arithmetic Type>
 	struct eMtx2x2
 	{
-		Type v1, v2, 
-			 v3, v4;
+		Type v1, v2,
+			v3, v4;
 
 
 	};
@@ -146,9 +146,9 @@ namespace Math
 	template <Arithmetic Type>
 	struct eMtx3x3
 	{
-		Type v1, v2, v3, 
-			 v4, v5, v6, 
-			 v7, v8, v9;
+		Type v1, v2, v3,
+			v4, v5, v6,
+			v7, v8, v9;
 
 		// -------------------- Constructors ---------------------
 
@@ -156,8 +156,8 @@ namespace Math
 
 		eMtx3x3
 		(Type _00, Type _01, Type _02,
-		 Type _10, Type _11, Type _12,
-		 Type _20, Type _21, Type _22);
+			Type _10, Type _11, Type _12,
+			Type _20, Type _21, Type _22);
 
 		//copy constructor
 		eMtx3x3(const eMtx3x3& other);
@@ -186,9 +186,9 @@ namespace Math
 	template <Arithmetic Type>
 	struct eMtx4x4
 	{
-		Type v1, v2, v3, v4, 
-			 v5, v6, v7, v8, 
-			 v9, v10, v11, v12;
+		Type v1, v2, v3, v4,
+			v5, v6, v7, v8,
+			v9, v10, v11, v12;
 
 
 	};

@@ -13,6 +13,7 @@ context and implement a game loop.
 ----------------------------------------------------------------------------- */
 // Extension loader library's header must be included before GLFW's header!!!
 #include "GLApp/glapp.h"
+#include "../Engine/collision/collision.hpp" // kim testing collision
 #include <iostream>
 #include "GSM.hpp"
 
@@ -26,6 +27,15 @@ static void gameLoop();
 int main() {
 	init();
 
+  // window's close flag is set by clicking close widget or Alt+F4
+  while (!glfwWindowShouldClose(GLApp::ptr_window)) {
+    draw();
+    update();
+  }
+
+  std::cout << "Testing Collision System..." << std::endl;
+  // Call the built-in test function
+  Collision::RunBasicCollisionTest();
 	GSM_Initialize(GS_LEVEL1);
 
 	gameLoop();

@@ -1,10 +1,9 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
+#include "../../Engine/resources/animation.hpp"
 #include <iostream>
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h> 
+#include <memory>  
 
 
 class GameApplication {
@@ -16,12 +15,12 @@ private:
     bool gameRunning_ = true;
     bool musicStarted_ = false;
 
+    // Test texture for demonstrating textured rendering
+    std::shared_ptr<Graphics::EnoTexture> testTexture_;
+    Animation::AnimationController animController_;
 
-
-    //THIS IS JUST FOR DEBUGGING IMGUI'S SCALE SCROLLER
-    float scalex = 200.0f;
-    float scaley = 150.0f;
-
+    // For delta time calculation
+    float lastFrameTime_ = 0.0f;  
 
 public:
     // Constructors
@@ -35,21 +34,24 @@ public:
     void initialize();  // Called once at start
     void run();         // Starts the game loop
 
+
 private:
     // Setup (called during initialize())
     void setupGameEntities();   // ECS code
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
     void setupGameMath();       // math demonstration code
-    void setupImGui();
+    void setupImGui();          // setup ImGui code
+    void setupAnimations();
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
     void updateAudio();         // Update audio per frame
-    void updateImGui();
+    void updateImGui();         // Update code for imGui
 
     void drawShapes(); // jsut to test
+    void drawAnimatedSprite();
 
     // Demonstration methods
     void demonstrateSignals();

@@ -1,14 +1,19 @@
 #pragma once
+// STB_IMAGE
+#include "../../../lib/stb_image/stb_image.h"
 
 // FMOD
 #include "fmod.hpp"
 
 // Interface
-#include "../system_interface/sys_interface.hpp"
+#include "../interface/system.hpp"
 
 // Events
 #include "../audio/audio_events.hpp"
 #include "../event/eventBus.hpp"
+
+// Graphics
+#include "../graphics/graphics.hpp"
 
 // stds
 #include <iostream>
@@ -18,6 +23,7 @@
 #include <map>
 #include <array>
 #include <unordered_map>
+#include <memory>
 
 
 namespace Resources
@@ -34,6 +40,7 @@ namespace Resources
 
 		// Images
 		static constexpr std::string_view imagePath_ = ASSETS_DIR_PATH "art/";
+		std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>> textures_;
 
 		// Shaders
 		static constexpr std::string_view shaderPath_ = ASSETS_DIR_PATH "shaders/";
@@ -66,6 +73,24 @@ namespace Resources
 			return path;
 		}
 		std::array<std::string_view, 2> getSoundExtensions() const { return soundExtensions_; }
+
+		// Texture getters
+		const std::string& getImagePath() const
+		{
+			static const std::string path{ imagePath_.data(), imagePath_.size() };
+			return path;
+		}
+
+		std::shared_ptr<Graphics::EnoTexture> getTexture(const std::string& name)
+		{
+			auto it = textures_.find(name);
+			if (it != textures_.end())
+			{
+				return it->second;
+			}
+			std::cerr << "Texture not found: " << name << std::endl;
+			return nullptr;
+		}
 
 		// Shader getters
 		const std::string& getShaderPath() const
@@ -128,8 +153,14 @@ namespace Resources
 		}
 
 		// Load Images (png | jpg)
-		void loadImages(const std::string_view& path)
+		void loadImages(const std::string& path)
 		{
+			if (!std::filesystem::exists(path))
+			{
+				std::cerr << "Image path does not exist: " << path << std::endl;
+				return;
+			}
+
 			// Iterate through a folder through the given path
 			for (const auto& entry : std::filesystem::directory_iterator(path))
 			{
@@ -140,7 +171,16 @@ namespace Resources
 				if (entry.path().extension().string() == ".png" ||
 					entry.path().extension().string() == ".jpg")
 				{
-					//sounds_[entry.path().filename().stem().string()] = sound;
+					auto texture = std::make_shared<Graphics::EnoTexture>();
+					if (texture->loadFromFile(entry.path().string()))
+					{
+						textures_[entry.path().stem().string()] = texture;
+						std::cout << "Loaded texture: " << entry.path().stem().string() << std::endl;
+					}
+					else
+					{
+						std::cerr << "Failed to load texture: " << entry.path().string() << std::endl;
+					}
 				}
 			}
 		}

@@ -12,6 +12,7 @@
 #include "../math/math.hpp"
 #include "../tag/tagRegistry.hpp"
 #include "../game_instance/eno_game_instance.hpp"
+#include "../collision/collision.hpp"
 
 
 // stds
@@ -37,6 +38,7 @@ namespace Engine
 		Resources::EnoLoader& getResourceLoader() { return loader_; }
 		EngineConfiguration::EnoConfigManager& getConfigManager() { return configMng_; }
 		Window::EnoWindow& getWindow() { return window_; }
+		Input::EnoInputManager& getInputManager() { return input_; }
 
 		double GetDeltaTime() const { return dt; }
 		double GetFPS() const { return fps; }

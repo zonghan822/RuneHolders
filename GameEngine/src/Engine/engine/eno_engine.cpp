@@ -8,7 +8,7 @@ namespace Engine
 		setupResourceLoading();
 		setupEventSystem();
 		setupGraphicsSystem();
-
+		loader_.loadImages(loader_.getImagePath());
 		// For debugging
 		compReg_.PrintIDs();
 
@@ -26,9 +26,6 @@ namespace Engine
 	void EnoEngine::run(std::function<void()> gameUpdateCallback)
 	{
 		soundSetup();
-
-		//audioMng_.publishSoundRequest("Close_To_The_End");
-		//audioMng_.publishSoundRequest("Simulacrum");
 
 		while (!glfwWindowShouldClose(window_.getWindow()))
 		{
@@ -134,7 +131,7 @@ namespace Engine
 		static bool scheduled{ false };
 		if (!scheduled)
 		{
-			soundPlaying();
+			//soundPlaying();
 			scheduled = true;
 		}
 
@@ -172,6 +169,7 @@ namespace Engine
 			start_time = curr_time;
 			count = 0.0;
 		}
+		input_.endFrame();
 	}
 
 	// Not sure if we need it

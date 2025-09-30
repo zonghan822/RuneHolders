@@ -40,11 +40,11 @@ namespace ECSComponents
 		}
 
 		// Register a new component into the componentMap
-		template <typename T>
+		template <typename Component>
 		static void RegisterComponent()
 		{
 			// Verify that component has not already been added
-			auto index = std::type_index(typeid(T));
+			auto index = std::type_index(typeid(Component));
 			auto it = ComponentMap().find(index);
 
 			if (it != ComponentMap().end())
@@ -53,7 +53,9 @@ namespace ECSComponents
 			}
 
 			size_t id = ComponentMap().size();
-			ComponentMap()[index].id = static_cast<uint32_t>(id);
+			ComponentMap().emplace(
+				index, 
+				ComponentInfo{ static_cast<uint32_t>(id), sizeof(Component) });
 		}
 
 		//  Sort and print each component and their corresponding id within the map
@@ -63,7 +65,8 @@ namespace ECSComponents
 				ComponentMap().begin(), ComponentMap().end() };
 
 			// Sort components based on their id (ascending order)
-			std::sort(cont.begin(), cont.end(), [](auto& a, auto& b) { return a.second.id < b.second.id; });
+			std::sort(cont.begin(), cont.end(), [](auto& a, auto& b) 
+				{ return a.second.id < b.second.id; });
 
 			// Print
 			for (const auto& pair : cont)
