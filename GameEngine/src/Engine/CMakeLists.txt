@@ -46,6 +46,7 @@ target_link_libraries(${ENGINE_NAME}
     imgui
     fmod::core 
     fmod::studio
+    nlohmann_json
 )
 _fmod_copy_dll(${ENGINE_NAME})
 

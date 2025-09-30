@@ -47,8 +47,8 @@ void imGuiDisplay(GLFWwindow* window, Engine::EnoEngine& engine_);
 
 void imGuiTerminate();
 
-
-void static prefabs();
+//prefabs
+void static instantiatePrefab(char const* name);
 
 void static crashLogging();
 

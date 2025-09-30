@@ -313,11 +313,16 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 }
 
 
+void static instantiatePrefab(char const* name) {
 
 
 
-void static prefabs() {
 
+}
+
+
+void static makePrefab(char const* name){
+	
 
 
 }

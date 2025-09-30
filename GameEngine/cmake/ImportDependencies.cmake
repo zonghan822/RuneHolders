@@ -111,6 +111,22 @@ set_property(TARGET imgui PROPERTY CXX_STANDARD_REQUIRED ON)
     endif()
 endmacro()
 
+# ---------------------------------------------------------
+# nlohmann_json
+# ---------------------------------------------------------
+macro(import_nlohmann_json)
+    if(NOT TARGET nlohmann_json)  # Guard to prevent multiple inclusion
+        include(FetchContent)
+
+        FetchContent_Declare(
+            nlohmann_json
+            GIT_REPOSITORY https://github.com/nlohmann/json.git
+            GIT_TAG v3.11.3  # Stable release, change as needed
+        )
+        FetchContent_MakeAvailable(nlohmann_json)
+        set_library_folder(nlohmann_json)
+    endif()
+endmacro()
 
 # Macro to import all dependencies
 macro(importDependencies)
@@ -131,6 +147,10 @@ message(STATUS "Starting to import dependencies...")
     message(STATUS "Importing ImGui...")
     import_imgui()
     message(STATUS "ImGui imported successfully.")
+
+    message(STATUS "Importing nlohmann/json...")
+    import_nlohmann_json()
+    message(STATUS "nlohmann/json imported successfully.")
 
     message(STATUS "All dependencies have been imported successfully.")
     
