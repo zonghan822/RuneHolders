@@ -51,12 +51,5 @@ namespace Tag
 		{
 			tagMap_[event.tag_] = event.scope_;
 		}
-
-	private:
-
-		std::string printPadding(const std::string& str, int width)
-		{
-
-		}
 	};
 }
