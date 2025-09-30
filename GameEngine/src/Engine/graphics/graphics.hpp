@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 
 // Engine components
-#include "../system_interface/sys_interface.hpp"
+#include "../interface/system.hpp"
 #include "../event/eventBus.hpp"
 #include "../math/math.hpp"
 
