@@ -508,6 +508,27 @@ namespace Graphics
         bus_.publish(Events::RenderFrameEnd{});
     }
 
+    Math::eVec2<float> rotatePoint(const Math::eVec2<float>& point,
+        const Math::eVec2<float>& center,
+        float rotation)
+    {
+        if (rotation == 0.0f) return point;
+
+        float cosR = cos(rotation);
+        float sinR = sin(rotation);
+
+        // Translate to origin
+        float x = point.v1 - center.v1;
+        float y = point.v2 - center.v2;
+
+        // Rotate
+        float xNew = x * cosR - y * sinR;
+        float yNew = x * sinR + y * cosR;
+
+        // Translate back
+        return Math::eVec2<float>{xNew + center.v1, yNew + center.v2};
+    }
+
     void EnoGraphicsManager::drawPoint(const Math::eVec2<float>& position, const Color& color, float size)
     {
         // Flush immediately
@@ -566,11 +587,10 @@ namespace Graphics
         }
     }
 
-    void EnoGraphicsManager::drawRect(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled)
+    void EnoGraphicsManager::drawRect(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled, float rotation)
     {
         GLenum primitiveType = filled ? GL_TRIANGLES : GL_LINES;
 
-        // Flush if primitive type changes
         if (!batchVertices_.empty() && currentBatchPrimitiveType_ != primitiveType)
         {
             flushBatch(currentBatchPrimitiveType_);
@@ -578,7 +598,7 @@ namespace Graphics
 
         currentBatchPrimitiveType_ = primitiveType;
 
-        auto vertices = generateRectVertices(position, size, color, filled);
+        auto vertices = generateRectVertices(position, size, color, filled, rotation);
         for (const auto& vertex : vertices)
         {
             addVertexToBatch(vertex);
@@ -607,9 +627,10 @@ namespace Graphics
     void EnoGraphicsManager::drawTexturedQuad(const Math::eVec2<float>& position,
         const Math::eVec2<float>& size,
         std::shared_ptr<EnoTexture> texture,
-        const Color& tint)
+        const Color& tint,
+        float rotation)
     {
-        drawTexturedQuadUV(position, size, texture, { 0.0f, 0.0f }, { 1.0f, 1.0f }, tint);
+        drawTexturedQuadUV(position, size, texture, { 0.0f, 0.0f }, { 1.0f, 1.0f }, tint, rotation);
     }
 
     void EnoGraphicsManager::drawTexturedQuadUV(const Math::eVec2<float>& position,
@@ -617,7 +638,8 @@ namespace Graphics
         std::shared_ptr<EnoTexture> texture,
         const Math::eVec2<float>& uvStart,
         const Math::eVec2<float>& uvEnd,
-        const Color& tint)
+        const Color& tint,
+        float rotation)
     {
         if (!texture || !texture->isValid())
         {
@@ -625,7 +647,6 @@ namespace Graphics
             return;
         }
 
-        // Flush if we're switching to textured rendering or primitive type changes
         if (!batchVertices_.empty() && currentBatchPrimitiveType_ != GL_TRIANGLES)
         {
             flushBatch(currentBatchPrimitiveType_);
@@ -633,11 +654,9 @@ namespace Graphics
 
         currentBatchPrimitiveType_ = GL_TRIANGLES;
 
-        // Get or assign texture slot
         int texSlot = getTextureSlot(texture);
 
-        // Generate textured quad vertices
-        auto vertices = generateTexturedQuadVertices(position, size, tint, static_cast<float>(texSlot), uvStart, uvEnd);
+        auto vertices = generateTexturedQuadVertices(position, size, tint, static_cast<float>(texSlot), uvStart, uvEnd, rotation);
         for (const auto& vertex : vertices)
         {
             addVertexToBatch(vertex);
@@ -869,31 +888,43 @@ namespace Graphics
         return vertices;
     }
 
-    std::vector<Vertex> EnoGraphicsManager::generateRectVertices(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled)
+    std::vector<Vertex> EnoGraphicsManager::generateRectVertices(const Math::eVec2<float>& position,
+        const Math::eVec2<float>& size,
+        const Color& color,
+        bool filled,
+        float rotation)
     {
         std::vector<Vertex> vertices;
+
+        // Calculate center for rotation
+        Math::eVec2<float> center = { position.v1 + size.v1 * 0.5f, position.v2 + size.v2 * 0.5f };
 
         Math::eVec2<float> topLeft = position;
         Math::eVec2<float> topRight = { position.v1 + size.v1, position.v2 };
         Math::eVec2<float> bottomRight = { position.v1 + size.v1, position.v2 + size.v2 };
         Math::eVec2<float> bottomLeft = { position.v1, position.v2 + size.v2 };
 
+        // Apply rotation if needed
+        if (rotation != 0.0f)
+        {
+            topLeft = rotatePoint(topLeft, center, rotation);
+            topRight = rotatePoint(topRight, center, rotation);
+            bottomRight = rotatePoint(bottomRight, center, rotation);
+            bottomLeft = rotatePoint(bottomLeft, center, rotation);
+        }
+
         if (filled)
         {
-            // Two triangles to form a filled rectangle
-            // Triangle 1: top-left, top-right, bottom-left
             vertices.push_back(Vertex(topLeft, color));
             vertices.push_back(Vertex(topRight, color));
             vertices.push_back(Vertex(bottomLeft, color));
 
-            // Triangle 2: top-right, bottom-right, bottom-left
             vertices.push_back(Vertex(topRight, color));
             vertices.push_back(Vertex(bottomRight, color));
             vertices.push_back(Vertex(bottomLeft, color));
         }
         else
         {
-            // Four lines for rectangle outline
             vertices.push_back(Vertex(topLeft, color));
             vertices.push_back(Vertex(topRight, color));
 
@@ -916,27 +947,38 @@ namespace Graphics
         const Color& tint,
         float texID,
         const Math::eVec2<float>& uvStart,
-        const Math::eVec2<float>& uvEnd)
+        const Math::eVec2<float>& uvEnd,
+        float rotation)
     {
         std::vector<Vertex> vertices;
+
+        // Calculate center for rotation
+        Math::eVec2<float> center = { position.v1 + size.v1 * 0.5f, position.v2 + size.v2 * 0.5f };
 
         Math::eVec2<float> topLeft = position;
         Math::eVec2<float> topRight = { position.v1 + size.v1, position.v2 };
         Math::eVec2<float> bottomRight = { position.v1 + size.v1, position.v2 + size.v2 };
         Math::eVec2<float> bottomLeft = { position.v1, position.v2 + size.v2 };
 
-        // UV coordinates
+        // Apply rotation if needed
+        if (rotation != 0.0f)
+        {
+            topLeft = rotatePoint(topLeft, center, rotation);
+            topRight = rotatePoint(topRight, center, rotation);
+            bottomRight = rotatePoint(bottomRight, center, rotation);
+            bottomLeft = rotatePoint(bottomLeft, center, rotation);
+        }
+
+        // UV coordinates (unchanged)
         Math::eVec2<float> uvTopLeft = { uvStart.v1, uvStart.v2 };
         Math::eVec2<float> uvTopRight = { uvEnd.v1, uvStart.v2 };
         Math::eVec2<float> uvBottomRight = { uvEnd.v1, uvEnd.v2 };
         Math::eVec2<float> uvBottomLeft = { uvStart.v1, uvEnd.v2 };
 
-        // Triangle 1: top-left, top-right, bottom-left
         vertices.push_back(Vertex(topLeft, tint, uvTopLeft, texID));
         vertices.push_back(Vertex(topRight, tint, uvTopRight, texID));
         vertices.push_back(Vertex(bottomLeft, tint, uvBottomLeft, texID));
 
-        // Triangle 2: top-right, bottom-right, bottom-left
         vertices.push_back(Vertex(topRight, tint, uvTopRight, texID));
         vertices.push_back(Vertex(bottomRight, tint, uvBottomRight, texID));
         vertices.push_back(Vertex(bottomLeft, tint, uvBottomLeft, texID));

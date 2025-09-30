@@ -115,22 +115,29 @@ void GameApplication::updateAudio() {
 void GameApplication::drawShapes() { // For testing
     auto& graphics = engine_.getGraphicsManager();
 
-    // Draw red rect (primitive shape test)
+    // Draw rotated red rect (primitive shape test)
     graphics.drawRect(
         Math::eVec2<float>{100.0f, 100.0f},  // Position
         Math::eVec2<float>{200.0f, 150.0f},  // Size 200 wide 150 tall
         Graphics::Color::Red,                 // Colour
-        false                                 // Filled
+        true,                                 // Filled
+        M_PI/2.f                             // Rotation in PI
+    );
+    graphics.drawRect(
+        Math::eVec2<float>{100.0f, 300.0f},  // Position
+        Math::eVec2<float>{200.0f, 150.0f},  // Size 200 wide 150 tall
+        Graphics::Color::Red,                 // Colour
+        true                                 // Filled
     );
 
     // Draw green circ (primitive shape test)
-    graphics.drawCircle(
-        Math::eVec2<float>{500.0f, 200.0f},  // Center
-        75.0f,                               // Radius
-        Graphics::Color::Green,              // Colour
-        false,                                // Filled
-        32                                   // Segments
-    );
+    //graphics.drawCircle(
+    //    Math::eVec2<float>{500.0f, 200.0f},  // Center
+    //    75.0f,                               // Radius
+    //    Graphics::Color::Green,              // Colour
+    //    false,                                // Filled
+    //    32                                   // Segments
+    //);
 
     //// Draw blue tri (primitive shape test)
     //graphics.drawTriangle(

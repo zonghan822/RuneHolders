@@ -168,21 +168,23 @@ namespace Graphics
         void drawPoint(const Math::eVec2<float>& position, const Color& color = Color::White, float size = 1.0f);
         void drawLine(const Math::eVec2<float>& start, const Math::eVec2<float>& end, const Color& color = Color::White, float thickness = 1.0f);
         void drawTriangle(const Math::eVec2<float>& p1, const Math::eVec2<float>& p2, const Math::eVec2<float>& p3, const Color& color = Color::White, bool filled = true);
-        void drawRect(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color = Color::White, bool filled = true);
+        void drawRect(const Math::eVec2<float>& position,const Math::eVec2<float>& size,const Color& color = Color::White, bool filled = true, float rotation = 0.0f);
         void drawCircle(const Math::eVec2<float>& center, float radius, const Color& color = Color::White, bool filled = true, int segments = 32);
 
         // Textured drawing functions
         void drawTexturedQuad(const Math::eVec2<float>& position,
             const Math::eVec2<float>& size,
             std::shared_ptr<EnoTexture> texture,
-            const Color& tint = Color::White);
+            const Color& tint = Color::White,
+            float rotation = 0.0f);
 
         void drawTexturedQuadUV(const Math::eVec2<float>& position,
             const Math::eVec2<float>& size,
             std::shared_ptr<EnoTexture> texture,
             const Math::eVec2<float>& uvStart,
             const Math::eVec2<float>& uvEnd,
-            const Color& tint = Color::White);
+            const Color& tint = Color::White,
+            float rotation = 0.0f);
 
         // Camera/projection management
         void setProjectionMatrix(int windowWidth, int windowHeight);
@@ -223,13 +225,14 @@ namespace Graphics
 
         // Math helpers functiosn for shape generation
         std::vector<Vertex> generateCircleVertices(const Math::eVec2<float>& center, float radius, const Color& color, int segments, bool filled);
-        std::vector<Vertex> generateRectVertices(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled);
+        std::vector<Vertex> generateRectVertices(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled, float rotation = 0.0f);
         std::vector<Vertex> generateTexturedQuadVertices(const Math::eVec2<float>& position,
             const Math::eVec2<float>& size,
             const Color& tint,
             float texID,
             const Math::eVec2<float>& uvStart = { 0.0f, 0.0f },
-            const Math::eVec2<float>& uvEnd = { 1.0f, 1.0f });
+            const Math::eVec2<float>& uvEnd = { 1.0f, 1.0f },
+            float rotation = 0.0f);
     };
 
     // Graphics events
