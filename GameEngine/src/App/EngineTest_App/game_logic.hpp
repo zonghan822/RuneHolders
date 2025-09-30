@@ -21,7 +21,9 @@ private:
     // Texture and anim loading
     std::shared_ptr<Graphics::EnoTexture> playerTexture_;
     std::shared_ptr<Graphics::EnoTexture> backgroundTexture_;
+    std::shared_ptr<Graphics::EnoTexture> playerWalkTexture_;
     Animation::AnimationController playerAnimController_;
+    int playerFacingDirection_ = 1;
 
 public:
     // Constructors

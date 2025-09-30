@@ -77,6 +77,7 @@ void GameApplication::setupAnimations() {
     // Load the sprite sheet texture
 	backgroundTexture_ = engine_.getResourceLoader().getTexture("Background");
 	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
+	playerWalkTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Walk-Sheet");
 
 	if (!playerTexture_)
 	{
@@ -97,6 +98,19 @@ void GameApplication::setupAnimations() {
 
 	playerIdleAnim.setLooping(true);
 	playerAnimController_.addAnimation("idle", playerIdleAnim);
+
+	auto playerWalkAnim = Animation::createSpriteSheetAnimation(
+		96,    // Frame width
+		96,    // Frame height
+		384,  // Sheet width
+		96,    // Sheet height
+		0,     // Start frame
+		4,    // Frame count
+		0.08f  // Faster duration for walking
+	);
+	playerWalkAnim.setLooping(true);
+	playerAnimController_.addAnimation("walk", playerWalkAnim);
+
 	playerAnimController_.setAnimation("idle");
 
 	std::cout << "Player animation setup complete!" << std::endl;
@@ -158,33 +172,51 @@ void GameApplication::updateGameLogic() {
 }
 
 void GameApplication::updateEntities() {
-	// start timing
 	auto start = Clock::now();
 
-	// Update game entities each frame
-	// Add entity movement, AI, collision detection etc here
-
-	//caven's test object
 	updateTestObject(engine_.getEntityManager(), engine_);
 
-	// delta time for movement
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
-	GLFWwindow* window = engine_.getWindow().getWindow();
-
-	// UPDATED: Pass the input manager instead of window
-	// Get input manager from engine
 	auto& inputManager = engine_.getInputManager();
 
-	// update player movement with collision using the input manager
+	// Check if player is moving and switch animation accordingly
 	if (playerSystem_ && playerSpawned_) {
+		// Check for WASD input
+		bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+			inputManager.isKeyPressed(GLFW_KEY_A) ||
+			inputManager.isKeyPressed(GLFW_KEY_S) ||
+			inputManager.isKeyPressed(GLFW_KEY_D);
+
+		// Update facing direction based on A/D keys
+		if (inputManager.isKeyPressed(GLFW_KEY_D)) {
+			playerFacingDirection_ = -1;  // Face right
+		}
+		else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
+			playerFacingDirection_ = 1;  // Face left
+		}
+
+		// Switch animation based on movement
+		if (isMoving) {
+			if (playerAnimController_.getCurrentAnimationName() != "walk") {
+				playerAnimController_.setAnimation("walk");
+			}
+		}
+		else {
+			if (playerAnimController_.getCurrentAnimationName() != "idle") {
+				playerAnimController_.setAnimation("idle");
+			}
+		}
+
+		// Update player movement
 		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
 
-	// update collision system every frame
+	// Update collision system
 	if (collisionSystem_) {
 		collisionSystem_->Update(engine_.getEntityManager());
 	}
+
 	auto end = Clock::now();
 	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
@@ -209,18 +241,40 @@ void GameApplication::drawPlayerAndIndicator() {
 			if (it != entityMap.end()) {
 				auto& transform = playerSystem_->GetTransform(it->second);
 
-				if (playerTexture_ && playerTexture_->isValid()) {
-					auto frame = playerAnimController_.getCurrentFrame();
+				// Get the current animation frame
+				auto frame = playerAnimController_.getCurrentFrame();
+
+				// Select the correct texture based on current animation
+				std::shared_ptr<Graphics::EnoTexture> currentTexture;
+				if (playerAnimController_.getCurrentAnimationName() == "walk") {
+					currentTexture = playerWalkTexture_;
+				}
+				else {
+					currentTexture = playerTexture_;
+				}
+
+				// Flip UV coordinates based on facing direction
+				Math::eVec2<float> uvStart = frame.uvStart;
+				Math::eVec2<float> uvEnd = frame.uvEnd;
+
+				if (playerFacingDirection_ == -1) {
+					// Swap horizontal UV coordinates to flip the sprite
+					std::swap(uvStart.v1, uvEnd.v1);
+				}
+
+				// Draw with the correct texture
+				if (currentTexture && currentTexture->isValid()) {
 					graphics.drawTexturedQuadUV(
 						Math::eVec2<float>{transform.pos.x, transform.pos.y},
 						Math::eVec2<float>{48.0f, 48.0f},
-						playerTexture_,
-						frame.uvStart,
-						frame.uvEnd,
+						currentTexture,
+						uvStart,  // Use potentially flipped UV coords
+						uvEnd,    // Use potentially flipped UV coords
 						Graphics::Color::White
 					);
 				}
 				else {
+					// Fallback to colored rect if texture invalid
 					graphics.drawRect(
 						Math::eVec2<float>{transform.pos.x, transform.pos.y},
 						Math::eVec2<float>{10, 10},
