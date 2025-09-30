@@ -42,7 +42,7 @@ void GameApplication::setupGameMath() {
 
 void GameApplication::setupAnimations() {
     // Load the sprite sheet texture
-    testTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Animation-Sheet-Attack");
+    testTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
 
     if (!testTexture_)
     {
@@ -61,10 +61,10 @@ void GameApplication::setupAnimations() {
     auto attackAnim = Animation::createSpriteSheetAnimation(
         96,          // Frame width
         96,          // Frame height
-        576,         // Sheet width
+        2304,         // Sheet width
         96,          // Sheet height
         0,           // Start frame
-        6,           // Number of frames
+        24,           // Number of frames
         0.1f         // Duration per frame (seconds)
     );
 
@@ -115,22 +115,22 @@ void GameApplication::updateAudio() {
 void GameApplication::drawShapes() { // For testing
     auto& graphics = engine_.getGraphicsManager();
 
-    //// Draw red rect (primitive shape test)
-    //graphics.drawRect(
-    //    Math::eVec2<float>{100.0f, 100.0f},  // Position
-    //    Math::eVec2<float>{200.0f, 150.0f},  // Size 200 wide 150 tall
-    //    Graphics::Color::Red,                 // Colour
-    //    false                                 // Filled
-    //);
+    // Draw red rect (primitive shape test)
+    graphics.drawRect(
+        Math::eVec2<float>{100.0f, 100.0f},  // Position
+        Math::eVec2<float>{200.0f, 150.0f},  // Size 200 wide 150 tall
+        Graphics::Color::Red,                 // Colour
+        false                                 // Filled
+    );
 
-    //// Draw green circ (primitive shape test)
-    //graphics.drawCircle(
-    //    Math::eVec2<float>{500.0f, 200.0f},  // Center
-    //    75.0f,                               // Radius
-    //    Graphics::Color::Green,              // Colour
-    //    false,                                // Filled
-    //    32                                   // Segments
-    //);
+    // Draw green circ (primitive shape test)
+    graphics.drawCircle(
+        Math::eVec2<float>{500.0f, 200.0f},  // Center
+        75.0f,                               // Radius
+        Graphics::Color::Green,              // Colour
+        false,                                // Filled
+        32                                   // Segments
+    );
 
     //// Draw blue tri (primitive shape test)
     //graphics.drawTriangle(
