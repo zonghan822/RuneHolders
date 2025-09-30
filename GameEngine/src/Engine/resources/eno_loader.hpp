@@ -10,7 +10,7 @@
 
 // Events
 #include "../audio/audio_events.hpp"
-#include "../event/eventBus.hpp"
+#include "../event/event_bus.hpp"
 
 // Graphics
 #include "../graphics/graphics.hpp"

@@ -2,7 +2,7 @@
 
 // Engine Component(s)
 #include "chunk.hpp"
-#include "../component/componentRegistry.hpp"
+#include "../component/component_registry.hpp"
 
 // stds
 #include <unordered_map>

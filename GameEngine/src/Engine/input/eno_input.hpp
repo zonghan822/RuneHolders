@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 
 // Engine Component(s)
-#include "../event/eventBus.hpp"
+#include "../event/event_bus.hpp"
 
 // Utility
 #include "../utility/eno_bimap.hpp"
