@@ -132,6 +132,7 @@ namespace Engine
 		}
 
 		audioMng_.process();
+		input_.endFrame();
 	}
 
 	// Not sure if we need it

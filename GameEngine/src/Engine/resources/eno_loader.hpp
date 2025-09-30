@@ -6,7 +6,7 @@
 #include "fmod.hpp"
 
 // Interface
-#include "../system_interface/sys_interface.hpp"
+#include "../interface/system.hpp"
 
 // Events
 #include "../audio/audio_events.hpp"
