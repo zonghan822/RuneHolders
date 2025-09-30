@@ -2,7 +2,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "../system_interface/sys_interface.hpp"
+#include "../interface/system.hpp"
 
 // Events
 #include "../game_instance/game_instance_events.hpp"

@@ -61,6 +61,19 @@ void GameApplication::updateGameLogic() {
 void GameApplication::updateEntities() {
     // Update your game entities each frame
     // Add entity movement, AI, collision detection, etc. here
+
+    // test input
+    if (engine_.getInputManager().isKeyPressed(GLFW_KEY_W)) {
+        std::cout << "W is pressed!" << std::endl;
+    }
+
+    if (engine_.getInputManager().isMousePressed(GLFW_MOUSE_BUTTON_LEFT)) {
+        std::cout << "LMB is pressed!" << std::endl;
+    }
+
+    auto mousePos = engine_.getInputManager().getMousePosition();
+    std::cout << "Mouse x: " << mousePos.first << ", Mouse y: " << mousePos.second << std::endl;
+        
 }
 
 void GameApplication::updateAudio() {

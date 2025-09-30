@@ -12,6 +12,9 @@
 // Events
 #include "../game_instance/game_instance_events.hpp"
 
+// System Interface
+#include "../interface/system.hpp"
+
 // stds
 #include <iostream>
 #include <unordered_map>
@@ -53,60 +56,91 @@ namespace Input
 		}
 	};
 
-	class EnoInputManager
+	class EnoInputManager: public Sys::ISystem
 	{
 	public:
-		EnoInputManager(GLFWwindow* window, Event::EnoEventBus& bus) : bus_{ bus }
-		{
-			glfwSetWindowUserPointer(window, this);
-
-			glfwSetKeyCallback(window, KeyCallback);
-		}
+		EnoInputManager(GLFWwindow* window, Event::EnoEventBus& bus);
 
 		// Set up a key in the input map
-		void setupKey(const std::string& inputName, int key = 0, int scancode = 0, int action = 0, int mods = 0)
-		{
-			inputMap_.insert(inputName, KeyBinding{ key, scancode, action, mods });
-		}
+		void setupKey(const std::string& inputName, int key = 0, int scancode = 0, int action = 0, int mods = 0);
 
 		template <typename EventType>
-		void setupEvent(const std::string& inputName)
-		{
-			eventMap_[inputName] = [this]() { bus_.publish(EventType{}); };
-		}
+		void setupEvent(const std::string& inputName);
+
+		void Update() {};
+
+		void endFrame();
+
+		/****************************************************
+		* Keyboard											*
+		*****************************************************/
+		bool isKeyPressed(int key) const;
+
+		bool isKeyDown(int key) const;
+
+		bool isKeyUp(int key) const;
+
+		bool isModifierActive(int mod) const;
+
+		bool isKeyComboPressed(int key, int requiredMods) const;
+
+		/****************************************************
+		* Mouse												*
+		*****************************************************/
+		bool isMousePressed(int button) const;
+
+		bool isMouseDown(int button) const;
+
+		bool isMouseUp(int button) const;
+
+		bool isMouseCombo(int button, int requiredMods) const;
+
+		// Mouse position
+		std::pair<double, double> getMousePosition() const;
+
+		// Mouse delta since last frame
+		std::pair<double, double> getMouseDelta() const;
+
+		// Scroll offsets (reset each frame)
+		std::pair<double, double> getScrollOffset() const;
+		
 
 	private:
 		Event::EnoEventBus& bus_;
 
 		Utility::EnoBiMap<
 			std::string, KeyBinding,
-			std::hash<std::string>, std::equal_to<std::string>,
-			KeyBindingHasher, std::equal_to<KeyBinding>> inputMap_;
+			std::hash<std::string>, 
+			std::equal_to<std::string>,
+			KeyBindingHasher,
+			std::equal_to<KeyBinding>
+		> inputMap_;
 
 		std::unordered_map<std::string, std::function<void()>> eventMap_;
 
-		static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-		{
-			// Delegate to a non-static function to handle input
-			auto mgr = static_cast<EnoInputManager*>(glfwGetWindowUserPointer(window));
-			mgr->handleKey(key, scancode, action, mods);
-		}
+		// Keyboard state tracking
+		std::unordered_map<int, bool> keyStates_;
+		std::unordered_map<int, bool> prevKeyStates_;
+		int modsState_ = 0;
+
+		// Mouse state tracking
+		std::unordered_map<int, bool> mouseButtonStates_;
+		std::unordered_map<int, bool> prevMouseButtonStates_;
+		double mouseX_ = 0.0, mouseY_ = 0.0;
+		double prevMouseX_ = 0.0, prevMouseY_ = 0.0;
+		double scrollX_ = 0.0, scrollY_ = 0.0;
+
+		static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+		static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+		static void MousePosCallback(GLFWwindow* window, double xpos, double ypos);
+		static void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
 
 		// Handle key inputs
-		void handleKey(int key, int scancode, int action, int mods)
-		{
-			auto name = inputMap_.findk(KeyBinding{ key, scancode, action, mods });
-			if (name.has_value())
-			{
-				// Handle publishing events
-				auto it = eventMap_.find(name.value());
-				if (it == eventMap_.end())
-				{
-					throw std::runtime_error("No Event is associated with this input!");
-				}
+		void handleKey(int key, int scancode, int action, int mods);
+		void handleMouseButton(int button, int action, int mods);
+		void handleMouseCursor(double xpos, double ypos);
+		void handleMouseScroll(double xoffset, double yoffset);
 
-				it->second();
-			}
-		}
 	};
 }

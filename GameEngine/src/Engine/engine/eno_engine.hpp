@@ -34,6 +34,7 @@ namespace Engine
 		Resources::EnoLoader& getResourceLoader() { return loader_; }
 		EngineConfiguration::EnoConfigManager& getConfigManager() { return configMng_; }
 		Window::EnoWindow& getWindow() { return window_; }
+		Input::EnoInputManager& getInputManager() { return input_; }
 
 	private:
 		// Functions added for future use**
