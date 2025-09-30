@@ -37,7 +37,7 @@ namespace ECS
 		{
 		}
 
-		static uint32_t id;
+		inline static uint32_t id = 0;
 
 		std::unordered_map<uint32_t, EntityLoc>& getMap() { return entityMap_; }
 
