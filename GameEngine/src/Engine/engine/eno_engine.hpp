@@ -14,6 +14,7 @@
 #include "../game_instance/eno_game_instance.hpp"
 #include "../collision/collision.hpp"
 #include "../prefab/prefab.hpp"
+#include "../crashlog/crashlogger.hpp"
 
 
 // stds

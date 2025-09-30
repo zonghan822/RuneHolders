@@ -30,8 +30,6 @@ PrefabData loadPrefab(const std::string& filename) {
     file >> prefab.hasCollider;
     return prefab;
 }
-//After Loading, can use this to call
-//prefabRegistry[prefab.name] = prefab;
 
 
 void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {

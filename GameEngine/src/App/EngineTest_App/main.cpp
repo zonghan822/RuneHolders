@@ -15,7 +15,11 @@ int main() {
     }
     catch (const std::exception& e) {
         std::cerr << "Game error: " << e.what() << std::endl;
+        CrashLogger::logError(e.what());
         return -1;
+    }
+    catch (...) {
+        CrashLogger::logError("Unknown Error");
     }
 
     

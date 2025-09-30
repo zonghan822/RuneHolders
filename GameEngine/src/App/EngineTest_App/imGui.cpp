@@ -78,8 +78,6 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-
-
 	// (kim) get delta time for smooth movement
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
@@ -321,7 +319,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
-	#pragma region IMGUI Prefabs
+	#pragma region IMGUI Prefabs and Serialization
 	//to use, do your settings on main tab. then enter prefabs tab to save your file
 	//1. Enter file/prefab name
 	//2. Load from the name tab
@@ -353,6 +351,16 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 				instantiatePrefab(prefabRegistry[prefab.name], engine_);
 			}
 		}
+
+		//if (ImGui::Button("Save All Entities")) {
+		//	for (auto& ent : engine_.getEntityManager().findEntity<>()) {
+		//		//ent.save();
+		//	}
+		//}
+
+		//if (ImGui::Button("Load All Entities")) {
+
+		//}
 	
 		ImGui::End();
 	}
