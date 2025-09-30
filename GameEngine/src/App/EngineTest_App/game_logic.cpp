@@ -2,7 +2,6 @@
 #include <GLFW/glfw3.h>
 #include "imGui.hpp"
 #include "math/math.hpp"
-#include "../Engine/collision/collision.hpp"
 
 using Clock = std::chrono::high_resolution_clock;
 //throw std::runtime_error("error logging");
@@ -174,12 +173,9 @@ void GameApplication::updateAudio() {
 void GameApplication::updateImGui() {
 	auto start = Clock::now();
 
-
 	imGuiDisplay(engine_.getWindow().getWindow(),engine_);
-
-
 	auto& graphics = engine_.getGraphicsManager();
-	
+
 	// ==================== DRAW PLAYER (BLUE) ====================
 	if (playerSpawned_) {
 		try {

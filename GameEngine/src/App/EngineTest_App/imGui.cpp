@@ -44,8 +44,6 @@ static double next_update = 0.0;         // next time we refresh the text
 //entity counter
 size_t entity_count{};
 
-
-
 float randomFloat(float min, float max) {
 	std::uniform_real_distribution<float> dist(min, max);
 	return dist(rng);
@@ -303,7 +301,8 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	}
 #pragma endregion
 
-
+#pragma region IMGUI Prefabs
+#pragma endregion
 
 
 
@@ -314,7 +313,6 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 
 void static instantiatePrefab(char const* name) {
-
 
 
 

@@ -1,0 +1,15 @@
+{
+  "name": "Player",
+  "components": {
+    "Transform": { "x": 100, "y": 200 },
+    "Shape": {"Rectangle"}
+  }
+}
+
+{
+  "name": "Enemy",
+  "components":{
+    "Transform": { "x": 200, "y": 300 },
+    "Shape": {"Rectangle"}
+  }
+}
