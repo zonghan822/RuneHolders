@@ -21,7 +21,7 @@ namespace ECS
 		std::vector<size_t> typeSizes_;									// Size of each component stored
 		std::unordered_map<uint32_t, size_t> typeIdxMap_;				// Maps a local ID to each type within the archetype
 
-		const uint32_t entityCount_{ 2 };								// Number of entities stored in a chunk
+		const uint32_t entityCount_{ 50 };								// Number of entities stored in a chunk
 
 		Archetype(std::vector<std::type_index> t, std::vector<size_t> sizes)
 			: types_(std::move(t)), typeSizes_(std::move(sizes))
