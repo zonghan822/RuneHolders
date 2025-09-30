@@ -5,12 +5,6 @@
 #include <memory>  
 
 
-//yunqi testing
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h> 
-#include <chrono>
-
 class GameApplication {
 private:
     // Engine instance
@@ -19,17 +13,6 @@ private:
     // Game state variables
     bool gameRunning_ = true;
     bool musicStarted_ = false;
-
-
-    // indicator control variables
-    float indicatorX_ = 600.0f;
-    float indicatorY_ = 425.0f;
-    float moveSpeed_ = 200.0f; // pixels per second
-
-    //collision system
-    std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
-    bool showColliders_ = true;
-
 
 
 public:
@@ -51,13 +34,13 @@ private:
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
     void setupGameMath();       // math demonstration code
-    void setupImGui();
+    void setupImGui();          // setup ImGui code
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
     void updateAudio();         // Update audio per frame
-    void updateImGui();
+    void updateImGui();         // Update code for imGui
 
     void drawShapes(); // jsut to test
 

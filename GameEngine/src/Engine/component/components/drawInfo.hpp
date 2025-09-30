@@ -6,7 +6,7 @@
 //i would want to add the math and graphics library here
 #include "../../graphics/graphics.hpp"
 
-enum WindowID { Main, Delete, FPS };
+enum WindowID { Main, Edit, FPS };
 static WindowID activeWindow = WindowID::Main;
 
 enum Shapes {
@@ -16,6 +16,13 @@ enum Shapes {
 enum Color {
 	Green = 0,
 	Red = 1
+};
+
+//supposed to be in edit but i'll put here for now -yunqi
+enum Filters{ 
+	Name = 0, 
+	Type = 1, 
+	ID   = 2
 };
 
 namespace ECSComponents
