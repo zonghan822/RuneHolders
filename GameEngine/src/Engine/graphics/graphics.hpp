@@ -27,6 +27,7 @@ namespace Graphics
     class EnoRenderer;
     class EnoShader;
     class EnoVertexBuffer;
+    class EnoTexture;
 
     // Color struct for drawing functions, basic colours alr added
     struct Color
@@ -44,16 +45,40 @@ namespace Graphics
         static const Color Blue;
     };
 
-    // Vertex struct for rendering
+    // Vertex struct for rendering with texture support
     struct Vertex
     {
         Math::eVec2<float> position;
         Color color;
+        Math::eVec2<float> texCoords;
+        float texID;
 
         Vertex() = default;
-        Vertex(const Math::eVec2<float>& pos, const Color& col = Color::White)
-            : position(pos), color(col) {
+        Vertex(const Math::eVec2<float>& pos, const Color& col = Color::White,
+            const Math::eVec2<float>& tex = { 0.0f, 0.0f }, float texId = 0.0f)
+            : position(pos), color(col), texCoords(tex), texID(texId) {
         }
+    };
+
+    // Texture class for loading and managing textures
+    class EnoTexture
+    {
+    public:
+        EnoTexture();
+        ~EnoTexture();
+
+        bool loadFromFile(const std::string& filepath);
+        void bind(unsigned int slot = 0) const;
+        void unbind() const;
+
+        int getWidth() const { return width_; }
+        int getHeight() const { return height_; }
+        GLuint getID() const { return textureID_; }
+        bool isValid() const { return textureID_ != 0; }
+
+    private:
+        GLuint textureID_;
+        int width_, height_, channels_;
     };
 
     // Low-level OpenGL wrapper for managing render state
@@ -86,6 +111,8 @@ namespace Graphics
         void setVector2(const std::string& name, float x, float y) const;
         void setColor(const std::string& name, const Color& color) const;
         void setFloat(const std::string& name, float value) const;
+        void setInt(const std::string& name, int value) const;
+        void setIntArray(const std::string& name, int* values, int count) const;
 
         bool isValid() const { return programID_ != 0; }
 
@@ -141,8 +168,23 @@ namespace Graphics
         void drawPoint(const Math::eVec2<float>& position, const Color& color = Color::White, float size = 1.0f);
         void drawLine(const Math::eVec2<float>& start, const Math::eVec2<float>& end, const Color& color = Color::White, float thickness = 1.0f);
         void drawTriangle(const Math::eVec2<float>& p1, const Math::eVec2<float>& p2, const Math::eVec2<float>& p3, const Color& color = Color::White, bool filled = true);
-        void drawRect(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color = Color::White, bool filled = true);
+        void drawRect(const Math::eVec2<float>& position,const Math::eVec2<float>& size,const Color& color = Color::White, bool filled = true, float rotation = 0.0f);
         void drawCircle(const Math::eVec2<float>& center, float radius, const Color& color = Color::White, bool filled = true, int segments = 32);
+
+        // Textured drawing functions
+        void drawTexturedQuad(const Math::eVec2<float>& position,
+            const Math::eVec2<float>& size,
+            std::shared_ptr<EnoTexture> texture,
+            const Color& tint = Color::White,
+            float rotation = 0.0f);
+
+        void drawTexturedQuadUV(const Math::eVec2<float>& position,
+            const Math::eVec2<float>& size,
+            std::shared_ptr<EnoTexture> texture,
+            const Math::eVec2<float>& uvStart,
+            const Math::eVec2<float>& uvEnd,
+            const Color& tint = Color::White,
+            float rotation = 0.0f);
 
         // Camera/projection management
         void setProjectionMatrix(int windowWidth, int windowHeight);
@@ -161,7 +203,11 @@ namespace Graphics
         std::unique_ptr<EnoShader> defaultShader_;
         std::unique_ptr<EnoVertexBuffer> vertexBuffer_;
 
-        // Batch rendering (still testing)
+        // Texture management
+        std::vector<std::shared_ptr<EnoTexture>> boundTextures_;
+        static constexpr size_t MAX_TEXTURE_SLOTS = 32;
+
+        // Batch rendering (WORKS HALLELUJAH)
         std::vector<Vertex> batchVertices_;
         static constexpr size_t MAX_BATCH_SIZE = 50000;
         GLenum currentBatchPrimitiveType_ = GL_TRIANGLES;
@@ -174,10 +220,19 @@ namespace Graphics
         void setupProjectionMatrix(int width, int height);
         void flushBatch(GLenum primitiveType);
         void addVertexToBatch(const Vertex& vertex);
+        int getTextureSlot(std::shared_ptr<EnoTexture> texture);
+        void bindTextures();
 
         // Math helpers functiosn for shape generation
         std::vector<Vertex> generateCircleVertices(const Math::eVec2<float>& center, float radius, const Color& color, int segments, bool filled);
-        std::vector<Vertex> generateRectVertices(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled);
+        std::vector<Vertex> generateRectVertices(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled, float rotation = 0.0f);
+        std::vector<Vertex> generateTexturedQuadVertices(const Math::eVec2<float>& position,
+            const Math::eVec2<float>& size,
+            const Color& tint,
+            float texID,
+            const Math::eVec2<float>& uvStart = { 0.0f, 0.0f },
+            const Math::eVec2<float>& uvEnd = { 1.0f, 1.0f },
+            float rotation = 0.0f);
     };
 
     // Graphics events

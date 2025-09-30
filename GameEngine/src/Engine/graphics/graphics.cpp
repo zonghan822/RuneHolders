@@ -1,6 +1,10 @@
+#define STB_IMAGE_IMPLEMENTATION
+#include "../../../lib/stb_image/stb_image.h"
+
 #include "graphics.hpp"
 #include <iostream>
 #include <cmath>
+#include <fstream>
 
 namespace Graphics
 {
@@ -10,6 +14,111 @@ namespace Graphics
     const Color Color::Red(1.0f, 0.0f, 0.0f, 1.0f);
     const Color Color::Green(0.0f, 1.0f, 0.0f, 1.0f);
     const Color Color::Blue(0.0f, 0.0f, 1.0f, 1.0f);
+
+    // =============================================================================
+    // EnoTexture Implementation - Texture loading and management
+    // =============================================================================
+
+    EnoTexture::EnoTexture() : textureID_(0), width_(0), height_(0), channels_(0)
+    {
+    }
+
+    EnoTexture::~EnoTexture()
+    {
+        if (textureID_ != 0)
+        {
+            glDeleteTextures(1, &textureID_);
+        }
+    }
+
+    bool EnoTexture::loadFromFile(const std::string& filepath)
+    {
+        std::cout << "Attempting to load texture from: " << filepath << std::endl;
+
+        // Check if file exists first
+        std::ifstream fileCheck(filepath);
+        if (!fileCheck.good())
+        {
+            std::cerr << "File does not exist or cannot be opened: " << filepath << std::endl;
+            return false;
+        }
+        fileCheck.close();
+
+        std::cout << "File exists, attempting stbi_load..." << std::endl;
+
+        // Load image using stb_image
+        stbi_set_flip_vertically_on_load(false);
+        unsigned char* data = stbi_load(filepath.c_str(), &width_, &height_, &channels_, 0);
+
+        std::cout << "stbi_load returned, checking data..." << std::endl;
+
+        if (!data)
+        {
+            const char* reason = stbi_failure_reason();
+            std::cerr << "Failed to load texture: " << filepath << std::endl;
+            std::cerr << "STB Image Error: " << (reason ? reason : "Unknown error") << std::endl;
+            return false;
+        }
+
+        std::cout << "Data loaded successfully: " << width_ << "x" << height_ << " with " << channels_ << " channels" << std::endl;
+
+        // Generate OpenGL texture
+        std::cout << "Generating OpenGL texture..." << std::endl;
+        glGenTextures(1, &textureID_);
+        std::cout << "Texture ID: " << textureID_ << std::endl;
+
+        glBindTexture(GL_TEXTURE_2D, textureID_);
+
+        // CRITICAL: Set texture parameters for sprite sheets
+        std::cout << "Setting texture parameters..." << std::endl;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // Prevent wrapping
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);  // Prevent wrapping
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);    // No interpolation
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);    // No interpolation
+
+        // Determine format based on channels
+        std::cout << "Determining texture format..." << std::endl;
+        GLenum format = GL_RGB;
+        if (channels_ == 1)
+            format = GL_RED;
+        else if (channels_ == 3)
+            format = GL_RGB;
+        else if (channels_ == 4)
+            format = GL_RGBA;
+
+        std::cout << "Format determined (format=" << format << "), uploading texture data..." << std::endl;
+
+        // Upload texture data
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width_, height_, 0, format, GL_UNSIGNED_BYTE, data);
+
+        // DO NOT generate mipmaps for sprite sheets - this causes bleeding!
+        // glGenerateMipmap(GL_TEXTURE_2D);  // KEEP THIS COMMENTED OUT
+
+        std::cout << "Freeing image data..." << std::endl;
+
+        if (data != nullptr)
+        {
+            stbi_image_free(data);
+            std::cout << "Image data freed successfully" << std::endl;
+        }
+
+        std::cout << "Unbinding texture..." << std::endl;
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        std::cout << "Loaded texture successfully: " << filepath << " (" << width_ << "x" << height_ << ", " << channels_ << " channels)" << std::endl;
+        return true;
+    }
+
+    void EnoTexture::bind(unsigned int slot) const
+    {
+        glActiveTexture(GL_TEXTURE0 + slot);
+        glBindTexture(GL_TEXTURE_2D, textureID_);
+    }
+
+    void EnoTexture::unbind() const
+    {
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
     // =============================================================================
     // EnoGLContext Implementation - Low-level OpenGL state management
@@ -168,6 +277,24 @@ namespace Graphics
         }
     }
 
+    void EnoShader::setInt(const std::string& name, int value) const
+    {
+        GLint location = getUniformLocation(name);
+        if (location != -1)
+        {
+            glUniform1i(location, value);
+        }
+    }
+
+    void EnoShader::setIntArray(const std::string& name, int* values, int count) const
+    {
+        GLint location = getUniformLocation(name);
+        if (location != -1)
+        {
+            glUniform1iv(location, count, values);
+        }
+    }
+
     GLuint EnoShader::compileShader(const std::string& source, GLenum shaderType) const
     {
         GLuint shader = glCreateShader(shaderType);
@@ -281,6 +408,14 @@ namespace Graphics
         glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
         glEnableVertexAttribArray(1);
 
+        // TexCoords attribute (location 2)
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoords));
+        glEnableVertexAttribArray(2);
+
+        // TexID attribute (location 3)
+        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texID));
+        glEnableVertexAttribArray(3);
+
         unbind();
     }
 
@@ -293,6 +428,7 @@ namespace Graphics
     {
         // Reserve space for batch rendering
         batchVertices_.reserve(MAX_BATCH_SIZE);
+        boundTextures_.reserve(MAX_TEXTURE_SLOTS);
 
         // Initialize projection matrix as identity
         projectionMatrix_.fill(0.0f);
@@ -344,6 +480,7 @@ namespace Graphics
     {
         defaultShader_.reset();
         vertexBuffer_.reset();
+        boundTextures_.clear();
         initialized_ = false;
     }
 
@@ -354,6 +491,7 @@ namespace Graphics
 
         // Clear batch for new frame
         batchVertices_.clear();
+        boundTextures_.clear();
 
         // Publish frame begin event
         bus_.publish(Events::RenderFrameBegin{});
@@ -368,6 +506,27 @@ namespace Graphics
 
         glfwSwapBuffers(window_);
         bus_.publish(Events::RenderFrameEnd{});
+    }
+
+    Math::eVec2<float> rotatePoint(const Math::eVec2<float>& point,
+        const Math::eVec2<float>& center,
+        float rotation)
+    {
+        if (rotation == 0.0f) return point;
+
+        float cosR = cos(rotation);
+        float sinR = sin(rotation);
+
+        // Translate to origin
+        float x = point.v1 - center.v1;
+        float y = point.v2 - center.v2;
+
+        // Rotate
+        float xNew = x * cosR - y * sinR;
+        float yNew = x * sinR + y * cosR;
+
+        // Translate back
+        return Math::eVec2<float>{xNew + center.v1, yNew + center.v2};
     }
 
     void EnoGraphicsManager::drawPoint(const Math::eVec2<float>& position, const Color& color, float size)
@@ -428,11 +587,10 @@ namespace Graphics
         }
     }
 
-    void EnoGraphicsManager::drawRect(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled)
+    void EnoGraphicsManager::drawRect(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled, float rotation)
     {
         GLenum primitiveType = filled ? GL_TRIANGLES : GL_LINES;
 
-        // Flush if primitive type changes
         if (!batchVertices_.empty() && currentBatchPrimitiveType_ != primitiveType)
         {
             flushBatch(currentBatchPrimitiveType_);
@@ -440,7 +598,7 @@ namespace Graphics
 
         currentBatchPrimitiveType_ = primitiveType;
 
-        auto vertices = generateRectVertices(position, size, color, filled);
+        auto vertices = generateRectVertices(position, size, color, filled, rotation);
         for (const auto& vertex : vertices)
         {
             addVertexToBatch(vertex);
@@ -466,6 +624,45 @@ namespace Graphics
         }
     }
 
+    void EnoGraphicsManager::drawTexturedQuad(const Math::eVec2<float>& position,
+        const Math::eVec2<float>& size,
+        std::shared_ptr<EnoTexture> texture,
+        const Color& tint,
+        float rotation)
+    {
+        drawTexturedQuadUV(position, size, texture, { 0.0f, 0.0f }, { 1.0f, 1.0f }, tint, rotation);
+    }
+
+    void EnoGraphicsManager::drawTexturedQuadUV(const Math::eVec2<float>& position,
+        const Math::eVec2<float>& size,
+        std::shared_ptr<EnoTexture> texture,
+        const Math::eVec2<float>& uvStart,
+        const Math::eVec2<float>& uvEnd,
+        const Color& tint,
+        float rotation)
+    {
+        if (!texture || !texture->isValid())
+        {
+            std::cerr << "Invalid texture provided to drawTexturedQuad!" << std::endl;
+            return;
+        }
+
+        if (!batchVertices_.empty() && currentBatchPrimitiveType_ != GL_TRIANGLES)
+        {
+            flushBatch(currentBatchPrimitiveType_);
+        }
+
+        currentBatchPrimitiveType_ = GL_TRIANGLES;
+
+        int texSlot = getTextureSlot(texture);
+
+        auto vertices = generateTexturedQuadVertices(position, size, tint, static_cast<float>(texSlot), uvStart, uvEnd, rotation);
+        for (const auto& vertex : vertices)
+        {
+            addVertexToBatch(vertex);
+        }
+    }
+
     void EnoGraphicsManager::setProjectionMatrix(int windowWidth, int windowHeight)
     {
         setupProjectionMatrix(windowWidth, windowHeight);
@@ -478,41 +675,78 @@ namespace Graphics
 
     bool EnoGraphicsManager::createDefaultShader()
     {
-        // Simple 2D vertex shader
+        // Vertex shader with texture support
         std::string vertexShaderSource = R"(
             #version 330 core
             
             layout (location = 0) in vec2 a_position;
             layout (location = 1) in vec4 a_color;
+            layout (location = 2) in vec2 a_texCoords;
+            layout (location = 3) in float a_texID;
             
             uniform mat4 u_projection;
             uniform float u_pointSize = 1.0;
             
             out vec4 v_color;
+            out vec2 v_texCoords;
+            out float v_texID;
             
             void main()
             {
                 gl_Position = u_projection * vec4(a_position, 0.0, 1.0);
                 gl_PointSize = u_pointSize;
                 v_color = a_color;
+                v_texCoords = a_texCoords;
+                v_texID = a_texID;
             }
         )";
 
-        // Simple fragment shader
+        // Fragment shader with texture support
         std::string fragmentShaderSource = R"(
             #version 330 core
             
             in vec4 v_color;
+            in vec2 v_texCoords;
+            in float v_texID;
+            
+            uniform sampler2D u_textures[32];
+            
             out vec4 FragColor;
             
             void main()
             {
-                FragColor = v_color;
+                int texIndex = int(v_texID);
+                
+                // If texID is 0 and texCoords are 0, it's a non-textured primitive
+                if (v_texID < 0.5 && length(v_texCoords) < 0.01)
+                {
+                    FragColor = v_color;
+                }
+                else
+                {
+                    vec4 texColor = texture(u_textures[texIndex], v_texCoords);
+                    FragColor = texColor * v_color;
+                }
             }
         )";
 
         defaultShader_ = std::make_unique<EnoShader>();
-        return defaultShader_->loadFromStrings(vertexShaderSource, fragmentShaderSource);
+        if (!defaultShader_->loadFromStrings(vertexShaderSource, fragmentShaderSource))
+        {
+            return false;
+        }
+
+        // Set up texture samplers
+        defaultShader_->use();
+        int samplers[MAX_TEXTURE_SLOTS];
+        for (int i = 0; i < MAX_TEXTURE_SLOTS; ++i)
+        {
+            samplers[i] = i;
+        }
+        defaultShader_->setIntArray("u_textures", samplers, MAX_TEXTURE_SLOTS);
+        defaultShader_->unuse();
+
+        return true;
     }
 
     void EnoGraphicsManager::setupProjectionMatrix(int width, int height)
@@ -536,10 +770,13 @@ namespace Graphics
         projectionMatrix_[14] = -(far + near) / (far - near);
         projectionMatrix_[15] = 1.0f;
     }
-    // heheheha
+
     void EnoGraphicsManager::flushBatch(GLenum primitiveType)
     {
         if (batchVertices_.empty()) return;
+
+        // Bind all textures
+        bindTextures();
 
         vertexBuffer_->uploadData(batchVertices_);
 
@@ -551,7 +788,7 @@ namespace Graphics
         defaultShader_->unuse();
 
         batchVertices_.clear();
-        currentBatchPrimitiveType_ = primitiveType;  // Track what we just flushed
+        currentBatchPrimitiveType_ = primitiveType;
     }
 
     void EnoGraphicsManager::addVertexToBatch(const Vertex& vertex)
@@ -559,9 +796,43 @@ namespace Graphics
         batchVertices_.push_back(vertex);
 
         // Auto-flush if we're approaching batch size limit
-        if (batchVertices_.size() >= MAX_BATCH_SIZE - 3)  // Leave room for a triangle
+        if (batchVertices_.size() >= MAX_BATCH_SIZE - 6)  // Leave room for a quad
         {
-            flushBatch(GL_TRIANGLES);
+            flushBatch(currentBatchPrimitiveType_);
+        }
+    }
+
+    int EnoGraphicsManager::getTextureSlot(std::shared_ptr<EnoTexture> texture)
+    {
+        // Check if texture is already bound
+        for (size_t i = 0; i < boundTextures_.size(); ++i)
+        {
+            if (boundTextures_[i] == texture)
+            {
+                return static_cast<int>(i);
+            }
+        }
+
+        // If we've reached max slots, flush and reset
+        if (boundTextures_.size() >= MAX_TEXTURE_SLOTS)
+        {
+            flushBatch(currentBatchPrimitiveType_);
+            boundTextures_.clear();
+        }
+
+        // Add texture to bound list
+        boundTextures_.push_back(texture);
+        return static_cast<int>(boundTextures_.size() - 1);
+    }
+
+    void EnoGraphicsManager::bindTextures()
+    {
+        for (size_t i = 0; i < boundTextures_.size(); ++i)
+        {
+            if (boundTextures_[i] && boundTextures_[i]->isValid())
+            {
+                boundTextures_[i]->bind(static_cast<unsigned int>(i));
+            }
         }
     }
 
@@ -617,31 +888,43 @@ namespace Graphics
         return vertices;
     }
 
-    std::vector<Vertex> EnoGraphicsManager::generateRectVertices(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color, bool filled)
+    std::vector<Vertex> EnoGraphicsManager::generateRectVertices(const Math::eVec2<float>& position,
+        const Math::eVec2<float>& size,
+        const Color& color,
+        bool filled,
+        float rotation)
     {
         std::vector<Vertex> vertices;
+
+        // Calculate center for rotation
+        Math::eVec2<float> center = { position.v1 + size.v1 * 0.5f, position.v2 + size.v2 * 0.5f };
 
         Math::eVec2<float> topLeft = position;
         Math::eVec2<float> topRight = { position.v1 + size.v1, position.v2 };
         Math::eVec2<float> bottomRight = { position.v1 + size.v1, position.v2 + size.v2 };
         Math::eVec2<float> bottomLeft = { position.v1, position.v2 + size.v2 };
 
+        // Apply rotation if needed
+        if (rotation != 0.0f)
+        {
+            topLeft = rotatePoint(topLeft, center, rotation);
+            topRight = rotatePoint(topRight, center, rotation);
+            bottomRight = rotatePoint(bottomRight, center, rotation);
+            bottomLeft = rotatePoint(bottomLeft, center, rotation);
+        }
+
         if (filled)
         {
-            // Two triangles to form a filled rectangle
-            // Triangle 1: top-left, top-right, bottom-left
             vertices.push_back(Vertex(topLeft, color));
             vertices.push_back(Vertex(topRight, color));
             vertices.push_back(Vertex(bottomLeft, color));
 
-            // Triangle 2: top-right, bottom-right, bottom-left
             vertices.push_back(Vertex(topRight, color));
             vertices.push_back(Vertex(bottomRight, color));
             vertices.push_back(Vertex(bottomLeft, color));
         }
         else
         {
-            // Four lines for rectangle outline
             vertices.push_back(Vertex(topLeft, color));
             vertices.push_back(Vertex(topRight, color));
 
@@ -654,6 +937,51 @@ namespace Graphics
             vertices.push_back(Vertex(bottomLeft, color));
             vertices.push_back(Vertex(topLeft, color));
         }
+
+        return vertices;
+    }
+
+    std::vector<Vertex> EnoGraphicsManager::generateTexturedQuadVertices(
+        const Math::eVec2<float>& position,
+        const Math::eVec2<float>& size,
+        const Color& tint,
+        float texID,
+        const Math::eVec2<float>& uvStart,
+        const Math::eVec2<float>& uvEnd,
+        float rotation)
+    {
+        std::vector<Vertex> vertices;
+
+        // Calculate center for rotation
+        Math::eVec2<float> center = { position.v1 + size.v1 * 0.5f, position.v2 + size.v2 * 0.5f };
+
+        Math::eVec2<float> topLeft = position;
+        Math::eVec2<float> topRight = { position.v1 + size.v1, position.v2 };
+        Math::eVec2<float> bottomRight = { position.v1 + size.v1, position.v2 + size.v2 };
+        Math::eVec2<float> bottomLeft = { position.v1, position.v2 + size.v2 };
+
+        // Apply rotation if needed
+        if (rotation != 0.0f)
+        {
+            topLeft = rotatePoint(topLeft, center, rotation);
+            topRight = rotatePoint(topRight, center, rotation);
+            bottomRight = rotatePoint(bottomRight, center, rotation);
+            bottomLeft = rotatePoint(bottomLeft, center, rotation);
+        }
+
+        // UV coordinates (unchanged)
+        Math::eVec2<float> uvTopLeft = { uvStart.v1, uvStart.v2 };
+        Math::eVec2<float> uvTopRight = { uvEnd.v1, uvStart.v2 };
+        Math::eVec2<float> uvBottomRight = { uvEnd.v1, uvEnd.v2 };
+        Math::eVec2<float> uvBottomLeft = { uvStart.v1, uvEnd.v2 };
+
+        vertices.push_back(Vertex(topLeft, tint, uvTopLeft, texID));
+        vertices.push_back(Vertex(topRight, tint, uvTopRight, texID));
+        vertices.push_back(Vertex(bottomLeft, tint, uvBottomLeft, texID));
+
+        vertices.push_back(Vertex(topRight, tint, uvTopRight, texID));
+        vertices.push_back(Vertex(bottomRight, tint, uvBottomRight, texID));
+        vertices.push_back(Vertex(bottomLeft, tint, uvBottomLeft, texID));
 
         return vertices;
     }

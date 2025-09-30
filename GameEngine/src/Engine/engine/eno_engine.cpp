@@ -8,7 +8,7 @@ namespace Engine
 		setupResourceLoading();
 		setupEventSystem();
 		setupGraphicsSystem();
-
+		loader_.loadImages(loader_.getImagePath());
 		// For debugging
 		compReg_.PrintIDs();
 

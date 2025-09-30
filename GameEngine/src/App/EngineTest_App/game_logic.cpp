@@ -1,4 +1,5 @@
 #include "game_logic.hpp"
+#include <GLFW/glfw3.h>
 #include "imGui.hpp"
 #include "math/math.hpp"
 #include "../Engine/collision/collision.hpp"
@@ -16,6 +17,12 @@ void GameApplication::initialize() {
 	setupGameEvents();
 	setupGameMath();
 	setupImGui();
+    // Setup all game content
+    setupGameEntities();
+    setupGameAudio();
+    setupGameEvents();
+    setupGameMath();
+    setupAnimations();
 
 	std::cout << "Game initialized successfully!" << std::endl;
 }
@@ -61,6 +68,43 @@ void GameApplication::setupGameMath() {
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 }
 
+void GameApplication::setupAnimations() {
+    // Load the sprite sheet texture
+    testTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
+
+    if (!testTexture_)
+    {
+        std::cout << "Warning: Could not load animation sprite sheet!" << std::endl;
+        return;
+    }
+
+    // Create attack animation
+    // Adjust these values based on YOUR sprite sheet:
+    // - Frame size: 89x89 pixels (your frames appear to be square based on height)
+    // - Sheet size: 502x89 pixels
+    // - Start frame: 0
+    // - Frame count: 5 (502 / 89 = 5.6, so probably 5 frames)
+    // - Duration: 0.1 seconds per frame
+
+    auto attackAnim = Animation::createSpriteSheetAnimation(
+        96,          // Frame width
+        96,          // Frame height
+        2304,         // Sheet width
+        96,          // Sheet height
+        0,           // Start frame
+        24,           // Number of frames
+        0.1f         // Duration per frame (seconds)
+    );
+
+    attackAnim.setLooping(true);
+    animController_.addAnimation("attack", attackAnim);
+
+    // Set the initial animation
+    animController_.setAnimation("attack");
+
+    std::cout << "Animation setup complete!" << std::endl;
+}
+
 void GameApplication::setupImGui() {
 	GLFWwindow* window = engine_.getWindow().getWindow();
 	imGuiInit(window);
@@ -71,10 +115,28 @@ void GameApplication::demonstrateSignals() {
 }
 
 void GameApplication::updateGameLogic() {
+    // This is called every frame (replaces your while loop in eno_engine.cpp run())
+
+    // Calculate delta time
+    float currentTime = static_cast<float>(glfwGetTime());
+    float deltaTime = currentTime - lastFrameTime_;
+    lastFrameTime_ = currentTime;
+
+    // Update animation with delta time
+    if (testTexture_)
+    {
+        animController_.update(deltaTime);
+    }
+
+    updateEntities();
+    updateAudio();
+
+    // Add any other per-frame game logic here
+    drawShapes();
+    drawAnimatedSprite();
 	updateEntities();
 	updateAudio();
 	updateImGui();
-	drawShapes();
 }
 
 void GameApplication::updateEntities() {
@@ -187,4 +249,30 @@ void GameApplication::drawShapes() { // For testing
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	auto end = Clock::now();
 	systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();
+}
+
+
+
+void GameApplication::drawAnimatedSprite() {
+    if (!testTexture_ || !testTexture_->isValid())
+        return;
+
+    auto& graphics = engine_.getGraphicsManager();
+
+    // Get the current frame from the animation
+    auto frame = animController_.getCurrentFrame();
+
+    // CRITICAL: Round to whole pixels to prevent sub-pixel jittering
+    float xPos = std::floor(400.0f);
+    float yPos = std::floor(300.0f);
+
+    // Draw the animated sprite
+    graphics.drawTexturedQuadUV(
+        Math::eVec2<float>{xPos, yPos},
+        Math::eVec2<float>{192.0f, 192.0f},  // Size (2x scale for visibility)
+        testTexture_,
+        frame.uvStart,  // UV start from current frame
+        frame.uvEnd,    // UV end from current frame
+        Graphics::Color::White
+    );
 }

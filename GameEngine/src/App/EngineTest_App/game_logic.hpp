@@ -1,6 +1,7 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
+#include "../../Engine/resources/animation.hpp"
 #include <iostream>
 #include <memory>  
 
@@ -14,6 +15,12 @@ private:
     bool gameRunning_ = true;
     bool musicStarted_ = false;
 
+    // Test texture for demonstrating textured rendering
+    std::shared_ptr<Graphics::EnoTexture> testTexture_;
+    Animation::AnimationController animController_;
+
+    // For delta time calculation
+    float lastFrameTime_ = 0.0f;  
 
 public:
     // Constructors
@@ -35,6 +42,7 @@ private:
     void setupGameEvents();     // event bus setup code
     void setupGameMath();       // math demonstration code
     void setupImGui();          // setup ImGui code
+    void setupAnimations();
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
@@ -43,6 +51,7 @@ private:
     void updateImGui();         // Update code for imGui
 
     void drawShapes(); // jsut to test
+    void drawAnimatedSprite();
 
     // Demonstration methods
     void demonstrateSignals();
