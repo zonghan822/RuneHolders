@@ -13,7 +13,9 @@ void GameApplication::initialize() {
     setupGameMath();
     setupImGui();
 
+    //this is for caven's movement test object
     createTestObject(engine_.getEntityManager());
+    
 
     std::cout << "Game initialized successfully!" << std::endl;
 }
@@ -85,6 +87,11 @@ void GameApplication::updateGameLogic() {
 void GameApplication::updateEntities() {
     // Update game entities each frame
     // Add entity movement, AI, collision detection etc here
+
+    //caven's test object
+    updateTestObject(engine_.getEntityManager(),engine_);
+
+
 }
 
 void GameApplication::updateAudio() {
