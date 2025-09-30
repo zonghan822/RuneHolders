@@ -5,6 +5,7 @@
 #include <chrono>
 #include <random>
 #include <unordered_map>
+#include "player/player.hpp"
 
 //trying to access GameApplication
 #include "game_logic.hpp"
@@ -12,7 +13,13 @@
 //variables
 static std::mt19937 rng(std::random_device{}());
 extern std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
+extern std::unique_ptr<Player::PlayerSystem> playerSystem_;
+//extern std::unique_ptr<Player::PlayerSystem> playerSystem_;
 extern bool showColliders_;
+
+// player entity ID (to track the player)
+extern uint32_t playerEntityID_;
+extern bool playerSpawned_;
 
 //containers
 extern std::unordered_map<std::string, double> systemTimes_; //actual system time

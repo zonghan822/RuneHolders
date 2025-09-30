@@ -5,7 +5,13 @@ extern GameApplication game;
 
 //collision system
 std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
+std::unique_ptr<Player::PlayerSystem> playerSystem_;
 bool showColliders_ = true;
+
+// player entity ID (to track the player)
+uint32_t playerEntityID_ = 0;
+bool playerSpawned_ = false;
+
 std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
@@ -97,8 +103,75 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	if (ImGui::Button("FPS"))      activeWindow = WindowID::FPS;
 	//FPS and Time Staggering for Displaying FPS
 
+
+
+
 	if (activeWindow == WindowID::Main) {
 		ImGui::Begin("Main");
+
+		//=======================PLAYER CONTROLS =======================
+// (kim added) add player spawn section
+		ImGui::Text("=== PLAYER CONTROLS ===");
+		ImGui::Text("WASD to move player");
+
+		if (!playerSpawned_) {
+			if (ImGui::Button("Spawn Player")) {
+				// create player entity at indicator position
+				ECSComponents::TransformComponent transform{
+					{indicatorX_, indicatorY_, 0.0f},
+					{0.0f, 0.0f, 0.0f},
+					{1.0f, 1.0f, 1.0f}
+				};
+
+				// create player with rectangle collider (can change to circle if u want)
+				Collision::CollisionComponent playerCollider(10.0f, 10.0f); // 10x10 rectangle
+
+				// for circle: (uncomment if u want circle!)
+				// Collision::CollisionComponent playerCollider(5.0f); // radius 5.0
+
+				Player::PlayerComponent playerComp(moveSpeed_);
+
+				// Create entity with TransformComponent first
+				ECS::Entity entity = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
+
+				// Store ID by finding the last created entity in the map
+				// Get the entity map and find the most recent entity
+				auto& entityMap = engine_.getEntityManager().getMap();
+				uint32_t lastID = 0;
+				for (auto& [id, loc] : entityMap) {
+					if (id > lastID) lastID = id;
+				}
+				playerEntityID_ = lastID;
+
+				// Then add CollisionComponent
+				entity.add<Collision::CollisionComponent>(playerCollider);
+
+				// Then add PlayerComponent
+				entity.add<Player::PlayerComponent>(playerComp);
+
+				playerSpawned_ = true;
+
+				std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")\n";
+			}
+		}
+		else {
+			ImGui::Text("Player Active (ID: %u)", playerEntityID_);
+			if (ImGui::Button("Destroy Player")) {
+				engine_.getEntityManager().destroyEntity(playerEntityID_);
+				playerSpawned_ = false;
+				std::cout << "Player destroyed\n";
+			}
+		}
+
+		ImGui::Separator();
+
+		// ==================== SPAWN POSITION INDICATOR ====================
+		ImGui::Text("=== SPAWN POSITION INDICATOR ===");
+		ImGui::Text("Position (%.1f, %.1f)", indicatorX_, indicatorY_);
+		ImGui::DragFloat("Move Speed", &moveSpeed_, 10.0f, 50.0f, 500.0f);
+		ImGui::Checkbox("Show Colliders", &showColliders_);
+
+
 
 		ImGui::Separator();
 		ImGui::Text("Indicator Controls (WASD)");
