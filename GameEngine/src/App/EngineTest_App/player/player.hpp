@@ -19,6 +19,7 @@
 #include "../Engine/component/components/transform.hpp"
 #include "../Engine/collision/collision.hpp"
 #include "../Engine/ecs/entity.hpp"
+#include "../Engine/input/eno_input.hpp"
 #include <GLFW/glfw3.h>
 
 namespace Player
@@ -80,11 +81,10 @@ namespace Player
         * Handles player input and movement with collision checking
         *
         * @param entityManager - reference to entity manager
-        * @param window - GLFW window for input
+        * @param inputManager - reference to input manager for reading controls
         * @param deltaTime - time since last frame (seconds)
         */
-        void Update(ECS::EntityManager& entityManager, GLFWwindow* window, float deltaTime);
-
+        void Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime);
         /*
         * @brief Helper to get transform component from entity (made public for game_logic access)
         */
@@ -92,11 +92,11 @@ namespace Player
 
     private:
         /*
-        * @brief Get movement input from WASD keys
-        * @param window - GLFW window
+        * @brief Get movement input from WASD keys using EnoInputManager
+        * @param inputManager - reference to the input manager
         * @return normalized movement vector
         */
-        Math::eVec2<float> GetMovementInput(GLFWwindow* window);
+        Math::eVec2<float> GetMovementInput(Input::EnoInputManager& inputManager);
 
         /*
         * @brief Check if player can move to a new position

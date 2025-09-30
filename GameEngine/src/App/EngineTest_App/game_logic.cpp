@@ -23,7 +23,11 @@ void GameApplication::initialize() {
     setupGameMath();
     setupAnimations();
 
-	std::cout << "Game initialized successfully!" << std::endl;
+    //this is for caven's movement test object
+    createTestObject(engine_.getEntityManager());
+    
+
+    std::cout << "Game initialized successfully!" << std::endl;
 }
 
 void GameApplication::run() {
@@ -69,39 +73,45 @@ void GameApplication::setupGameMath() {
 
 void GameApplication::setupAnimations() {
     // Load the sprite sheet texture
-    testTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
+	backgroundTexture_ = engine_.getResourceLoader().getTexture("Background");
+	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
+	playerWalkTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Walk-Sheet");
 
-    if (!testTexture_)
-    {
-        std::cout << "Warning: Could not load animation sprite sheet!" << std::endl;
-        return;
-    }
+	if (!playerTexture_)
+	{
+		std::cout << "Warning: Could not load player sprite sheet!" << std::endl;
+		return;
+	}
 
-    // Create attack animation
-    // Adjust these values based on YOUR sprite sheet:
-    // - Frame size: 89x89 pixels (your frames appear to be square based on height)
-    // - Sheet size: 502x89 pixels
-    // - Start frame: 0
-    // - Frame count: 5 (502 / 89 = 5.6, so probably 5 frames)
-    // - Duration: 0.1 seconds per frame
+	// Create player idle animation (same sprite sheet as test)
+	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
+		96,    // Frame width
+		96,    // Frame height
+		2304,  // Sheet width
+		96,    // Sheet height
+		0,     // Start frame
+		24,    // Frame count
+		0.1f   // Duration per frame
+	);
 
-    auto attackAnim = Animation::createSpriteSheetAnimation(
-        96,          // Frame width
-        96,          // Frame height
-        2304,         // Sheet width
-        96,          // Sheet height
-        0,           // Start frame
-        24,           // Number of frames
-        0.1f         // Duration per frame (seconds)
-    );
+	playerIdleAnim.setLooping(true);
+	playerAnimController_.addAnimation("idle", playerIdleAnim);
 
-    attackAnim.setLooping(true);
-    animController_.addAnimation("attack", attackAnim);
+	auto playerWalkAnim = Animation::createSpriteSheetAnimation(
+		96,    // Frame width
+		96,    // Frame height
+		384,  // Sheet width
+		96,    // Sheet height
+		0,     // Start frame
+		4,    // Frame count
+		0.08f  // Faster duration for walking
+	);
+	playerWalkAnim.setLooping(true);
+	playerAnimController_.addAnimation("walk", playerWalkAnim);
 
-    // Set the initial animation
-    animController_.setAnimation("attack");
+	playerAnimController_.setAnimation("idle");
 
-    std::cout << "Animation setup complete!" << std::endl;
+	std::cout << "Player animation setup complete!" << std::endl;
 }
 
 void GameApplication::setupImGui() {
@@ -121,42 +131,82 @@ void GameApplication::updateGameLogic() {
     float deltaTime = currentTime - lastFrameTime_;
     lastFrameTime_ = currentTime;
 
-    // Update animation with delta time
-    if (testTexture_)
-    {
-        animController_.update(deltaTime);
-    }
+	// Draw background before everything else
+	if (backgroundTexture_ && backgroundTexture_->isValid()) {
+		auto& graphics = engine_.getGraphicsManager();
+
+		// Get window dimensions from config
+		auto windowDim = engine_.getConfigManager().getWindowDim();
+		Math::eVec2<float> windowSize{
+			static_cast<float>(windowDim.first),
+			static_cast<float>(windowDim.second)
+		};
+
+	}
+
+	// ===== UPDATE PLAYER ANIMATION =====
+	if (playerTexture_ && playerSpawned_)
+	{
+		playerAnimController_.update(deltaTime);
+	}
 
     updateEntities();
     updateAudio();
-
-    // Add any other per-frame game logic here
     drawShapes();
-    drawAnimatedSprite();
-	updateEntities();
-	updateAudio();
+	drawPlayerAndIndicator();
+
+	auto& graphics = engine_.getGraphicsManager();
+	engine_.getGraphicsManager().flush();
+
 	updateImGui();
 }
 
 void GameApplication::updateEntities() {
-	// Update game entities each frame
 	auto start = Clock::now();
-	// Add entity movement, AI, collision detection etc here
 
-	// delta time for movement
+	updateTestObject(engine_.getEntityManager(), engine_);
+
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
-	GLFWwindow* window = engine_.getWindow().getWindow();
+	auto& inputManager = engine_.getInputManager();
 
-	// update player movement with collision
+	// Check if player is moving and switch animation accordingly
 	if (playerSystem_ && playerSpawned_) {
-		playerSystem_->Update(engine_.getEntityManager(), window, deltaTime);
+		// Check for WASD input
+		bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+			inputManager.isKeyPressed(GLFW_KEY_A) ||
+			inputManager.isKeyPressed(GLFW_KEY_S) ||
+			inputManager.isKeyPressed(GLFW_KEY_D);
+
+		// Update facing direction based on A/D keys
+		if (inputManager.isKeyPressed(GLFW_KEY_D)) {
+			playerFacingDirection_ = -1;  // Face right
+		}
+		else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
+			playerFacingDirection_ = 1;  // Face left
+		}
+
+		// Switch animation based on movement
+		if (isMoving) {
+			if (playerAnimController_.getCurrentAnimationName() != "walk") {
+				playerAnimController_.setAnimation("walk");
+			}
+		}
+		else {
+			if (playerAnimController_.getCurrentAnimationName() != "idle") {
+				playerAnimController_.setAnimation("idle");
+			}
+		}
+
+		// Update player movement
+		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
 
-	// update collision system every frame
+	// Update collision system
 	if (collisionSystem_) {
 		collisionSystem_->Update(engine_.getEntityManager());
 	}
+
 	auto end = Clock::now();
 	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
@@ -170,45 +220,80 @@ void GameApplication::updateAudio() {
 
 }
 
-void GameApplication::updateImGui() {
-	auto start = Clock::now();
-
-	imGuiDisplay(engine_.getWindow().getWindow(),engine_);
+void GameApplication::drawPlayerAndIndicator() {
 	auto& graphics = engine_.getGraphicsManager();
 
-	// ==================== DRAW PLAYER (BLUE) ====================
+	// Draw player sprite
 	if (playerSpawned_) {
 		try {
 			auto& entityMap = engine_.getEntityManager().getMap();
 			auto it = entityMap.find(playerEntityID_);
 			if (it != entityMap.end()) {
 				auto& transform = playerSystem_->GetTransform(it->second);
-				graphics.drawRect(
-					Math::eVec2<float>{transform.pos.x, transform.pos.y},
-					Math::eVec2<float>{10, 10},
-					Graphics::Color::Blue,  // Player is BLUE
-					true
-				);
+
+				// Get the current animation frame
+				auto frame = playerAnimController_.getCurrentFrame();
+
+				// Select the correct texture based on current animation
+				std::shared_ptr<Graphics::EnoTexture> currentTexture;
+				if (playerAnimController_.getCurrentAnimationName() == "walk") {
+					currentTexture = playerWalkTexture_;
+				}
+				else {
+					currentTexture = playerTexture_;
+				}
+
+				// Flip UV coordinates based on facing direction
+				Math::eVec2<float> uvStart = frame.uvStart;
+				Math::eVec2<float> uvEnd = frame.uvEnd;
+
+				if (playerFacingDirection_ == -1) {
+					// Swap horizontal UV coordinates to flip the sprite
+					std::swap(uvStart.v1, uvEnd.v1);
+				}
+
+				// Draw with the correct texture
+				if (currentTexture && currentTexture->isValid()) {
+					graphics.drawTexturedQuadUV(
+						Math::eVec2<float>{transform.pos.x, transform.pos.y},
+						Math::eVec2<float>{48.0f, 48.0f},
+						currentTexture,
+						uvStart,  // Use potentially flipped UV coords
+						uvEnd,    // Use potentially flipped UV coords
+						Graphics::Color::White
+					);
+				}
+				else {
+					// Fallback to colored rect if texture invalid
+					graphics.drawRect(
+						Math::eVec2<float>{transform.pos.x, transform.pos.y},
+						Math::eVec2<float>{10, 10},
+						Graphics::Color::Blue,
+						true
+					);
+				}
 			}
 		}
-		catch (...) {
-			// Player entity might be invalid
-		}
+		catch (...) {}
 	}
 
-	// ==================== DRAW SPAWN POSITION INDICATOR (RED) ===================
-	// Red indicator rectangle that shows where entities will spawn
+	// Draw red indicator
 	graphics.drawRect(
-		Math::eVec2<float>{indicatorX_, indicatorY_},  // Position
-		Math::eVec2<float>{10, 10},                    // Size 10 wide 10 tall
-		Graphics::Color::Red,						   //  Colour
-		true										   //  True
+		Math::eVec2<float>{indicatorX_, indicatorY_},
+		Math::eVec2<float>{10, 10},
+		Graphics::Color::Red,
+		true
 	);
+}
+
+void GameApplication::updateImGui() {
+	auto start = Clock::now();
+
+	imGuiDisplay(engine_.getWindow().getWindow(), engine_);
 
 	auto end = Clock::now();
 	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
-
 
 void GameApplication::drawShapes() { // For testing
 	auto start = Clock::now();
@@ -243,30 +328,4 @@ void GameApplication::drawShapes() { // For testing
 
 	auto end = Clock::now();
 	systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();
-}
-
-
-
-void GameApplication::drawAnimatedSprite() {
-    if (!testTexture_ || !testTexture_->isValid())
-        return;
-
-    auto& graphics = engine_.getGraphicsManager();
-
-    // Get the current frame from the animation
-    auto frame = animController_.getCurrentFrame();
-
-    // CRITICAL: Round to whole pixels to prevent sub-pixel jittering
-    float xPos = std::floor(400.0f);
-    float yPos = std::floor(300.0f);
-
-    // Draw the animated sprite
-    graphics.drawTexturedQuadUV(
-        Math::eVec2<float>{xPos, yPos},
-        Math::eVec2<float>{192.0f, 192.0f},  // Size (2x scale for visibility)
-        testTexture_,
-        frame.uvStart,  // UV start from current frame
-        frame.uvEnd,    // UV end from current frame
-        Graphics::Color::White
-    );
 }

@@ -29,7 +29,11 @@ namespace Engine
 
 		while (!glfwWindowShouldClose(window_.getWindow()))
 		{
+
+
 			glfwPollEvents();
+
+			update_time(1.0);
 
 			// Handle window resize for graphics system
 			int width, height;
@@ -132,6 +136,39 @@ namespace Engine
 		}
 
 		audioMng_.process();
+		audioMng_.Update();
+
+		// Graphics update is handled in the main loop (beginFrame/endFrame)
+		// but we call Update() here for consistency with the system interface
+		if (graphicsMng_)
+		{
+			graphicsMng_->Update();
+		}
+	}
+
+	void EnoEngine::update_time(double fps_calc_interval) {
+		// get elapsed time (in seconds) between previous and current frames
+		static double prev_time = glfwGetTime();
+		double curr_time = glfwGetTime();
+		dt = curr_time - prev_time;
+		prev_time = curr_time;
+
+		// fps calculations
+		static double count = 0.0; // number of game loop iterations
+		static double start_time = glfwGetTime();
+		// get elapsed time since very beginning (in seconds) ...
+		double elapsed_time = curr_time - start_time;
+
+		++count;
+
+		// update fps at least every 10 seconds ...
+		fps_calc_interval = (fps_calc_interval < 0.0) ? 0.0 : fps_calc_interval;
+		fps_calc_interval = (fps_calc_interval > 10.0) ? 10.0 : fps_calc_interval;
+		if (elapsed_time > fps_calc_interval) {
+			fps = count / elapsed_time;
+			start_time = curr_time;
+			count = 0.0;
+		}
 		input_.endFrame();
 	}
 
