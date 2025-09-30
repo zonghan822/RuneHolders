@@ -316,10 +316,12 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 			ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);
 			// divide by 1000 to show microseconds as milliseconds
 		}
-
-
 		ImGui::End();
 	}
+
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 
