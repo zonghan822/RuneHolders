@@ -73,7 +73,22 @@ namespace Player
                 transform.pos.x = targetPos.v1;
                 transform.pos.y = targetPos.v2;
             }
-            // else: collision detected - don't move (stay at current position)
+            else {
+                // collision detected - try sliding along walls
+                // try X movement only
+                Math::eVec2<float> xOnlyPos = { targetPos.v1, transform.pos.y };
+                if (CanMoveTo(entityLoc, collision, xOnlyPos, entityManager))
+                {
+                    transform.pos.x = xOnlyPos.v1;
+                }
+
+                // try Y movement only
+                Math::eVec2<float> yOnlyPos = { transform.pos.x, targetPos.v2 };
+                if (CanMoveTo(entityLoc, collision, yOnlyPos, entityManager))
+                {
+                    transform.pos.y = yOnlyPos.v2;
+                }
+            }
         }
     }
 
@@ -115,7 +130,7 @@ namespace Player
         testTransform.pos.x = targetPos.v1;
         testTransform.pos.y = targetPos.v2;
         testTransform.pos.z = 0.0f;
-        testTransform.rot = { 0.0f, 0.0f, 0.0f };  // FIXED: rot not rotation
+        testTransform.rot = { 0.0f, 0.0f, 0.0f };
         testTransform.scale = { 1.0f, 1.0f, 1.0f };
 
         // Check collision with all other entities
@@ -150,15 +165,36 @@ namespace Player
             if (!otherCollider.isActive || otherCollider.isTrigger)
                 continue;
 
+            // DEBUG: Print positions before collision check
+            std::cout << "[COLLISION CHECK]" << std::endl;
+            std::cout << "  Player target pos: (" << targetPos.v1 << ", " << targetPos.v2 << ")" << std::endl;
+            std::cout << "  Player collider: " << playerCollider.data.rectangle.width << "x" << playerCollider.data.rectangle.height << std::endl;
+            std::cout << "  Entity " << otherID << " pos: (" << otherTransform.pos.x << ", " << otherTransform.pos.y << ")" << std::endl;
+            std::cout << "  Entity collider: " << otherCollider.data.rectangle.width << "x" << otherCollider.data.rectangle.height << std::endl;
+
             // Perform collision test at target position
             Collision::CollisionResult result = Collision::CollisionDetection::CheckCollision(
                 playerCollider, testTransform,
                 otherCollider, otherTransform
             );
 
+
+
             // If collision detected, can't move there
-            if (result.hasCollision)
+            if (result.hasCollision) {
+                std::cout << "  >>> COLLISION DETECTED! <<<" << std::endl;
+                std::cout << "  Penetration depth: " << result.penetrationDepth << std::endl;
+                std::cout << "  Penetration vector: (" << result.penetrationVector.v1 << ", " << result.penetrationVector.v2 << ")" << std::endl;
+                std::cout << "  Contact point: (" << result.contactPoint.v1 << ", " << result.contactPoint.v2 << ")" << std::endl;
+                std::cout << std::endl;
                 return false;
+            }
+            else
+            {
+                std::cout << "  No collision" << std::endl;
+                std::cout << std::endl;
+            }
+               
         }
 
         // No collisions - movement is valid

@@ -16,6 +16,7 @@ namespace Collision {
 		data.circle.radius = 1.0f;
 	}
 
+	//circle
 	CollisionComponent::CollisionComponent(float radius, Math::eVec2<float> colliderOffset, bool trigger)
 		: type(ColliderType::CIRCLE)
 		, offset(colliderOffset)
@@ -25,6 +26,7 @@ namespace Collision {
 		data.circle.radius = radius;
 	}
 
+	// rectangle
 	CollisionComponent::CollisionComponent(float width, float height, Math::eVec2<float> colliderOffset, bool trigger)
 		: type(ColliderType::RECTANGLE)
 		, offset(colliderOffset)
@@ -35,6 +37,7 @@ namespace Collision {
 		data.rectangle.height = height;
 	}
 
+	// point
 	CollisionComponent CollisionComponent::CreatePointCollider(Math::eVec2<float> colliderOffset, bool trigger) {
 		CollisionComponent comp;
 		comp.type = ColliderType::POINT;
@@ -44,6 +47,7 @@ namespace Collision {
 		return comp;
 	}
 
+	// circle
 	void CollisionComponent::SetRadius(float radius)
 	{
 		if (type == ColliderType::CIRCLE)
