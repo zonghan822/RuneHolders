@@ -8,6 +8,7 @@ namespace RegistryInfo
 		VISBILITY = 1,
 		TRANSFORM = 2,
 		LAYER = 3,
-		MODULATION = 4
+		MODULATION = 4,
+		DRAWINFO = 5
 	};
 }

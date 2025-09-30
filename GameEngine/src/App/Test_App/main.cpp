@@ -13,86 +13,102 @@ context and implement a game loop.
 ----------------------------------------------------------------------------- */
 // Extension loader library's header must be included before GLFW's header!!!
 #include "GLApp/glapp.h"
+#include "../Engine/collision/collision.hpp" // kim testing collision
 #include <iostream>
+#include "GSM.hpp"
 
-/*                                                   type declarations
------------------------------------------------------------------------------ */
 
-/*                                                      function declarations
------------------------------------------------------------------------------ */
 static void draw();
 static void update();
 static void init();
+static void gameLoop();
 
-/*                                                   objects with file scope
------------------------------------------------------------------------------ */
 
-/*                                                      function definitions
------------------------------------------------------------------------------ */
-/*  _________________________________________________________________________ */
-/*! main
-
-@param none
-
-@return int
-
-Indicates how the program existed. Normal exit is signaled by a return value of
-0. Abnormal termination is signaled by a non-zero return value.
-Note that the C++ compiler will insert a return 0 statement if one is missing.
-*/
 int main() {
-  // start with a 16:9 aspect ratio
-  if (!GLApp::init(2400, 1350, "Tutorial 0 | Setting up OpenGL 4.5")) {
-      std::cout << "Unable to create OpenGL context" << std::endl;
-    std::exit(EXIT_FAILURE);
-  }
+	init();
 
   // window's close flag is set by clicking close widget or Alt+F4
   while (!glfwWindowShouldClose(GLApp::ptr_window)) {
     draw();
     update();
   }
-  
-  GLApp::cleanup();
+
+  std::cout << "Testing Collision System..." << std::endl;
+  // Call the built-in test function
+  Collision::RunBasicCollisionTest();
+	GSM_Initialize(GS_LEVEL1);
+
+	gameLoop();
+
+	GLApp::cleanup();
 }
 
-/*  _________________________________________________________________________ */
-/*! draw
 
-@param none
 
-@return none
+static void gameLoop() {
+	while (current != GS_QUIT)
+	{
+		if (current != GS_RESTART) {
+			GSM_Update();
+			fpLoad();
+		}
+		else {
+			next = previous;
+			current = previous;
+		}
 
-Call application to draw and then swap front and back frame buffers ...
-Uses GLHelper::GLFWWindow* to get handle to OpenGL context.
-*/
+		fpInitialize();
+
+		while (next == current) {
+			//AESysFrameStart();
+			fpUpdate();
+			fpDraw();
+
+			if (glfwWindowShouldClose(GLApp::ptr_window)) {
+				next = GS_QUIT;
+			}
+			update();
+			draw();
+
+			//AESysFrameEnd();
+		}
+
+		fpFree();
+		if (next != GS_RESTART) {
+			fpUnload();
+		}
+
+		previous = current;
+		current = next;
+	}
+}
+
+
+
+static void init() {
+	// start with a 16:9 aspect ratio
+	if (!GLApp::init(2400, 1350, "Tutorial 0 | Setting up OpenGL 4.5")) {
+		std::cout << "Unable to create OpenGL context" << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+}
+
 static void draw() {
-  // render scene
-  GLApp::draw();
+	// render scene
+	GLApp::draw();
 
-  // swap buffers: front <-> back
-  // GLApp::ptr_window is handle to window that defines the OpenGL context
-  glfwSwapBuffers(GLApp::ptr_window); 
+	// swap buffers: front <-> back
+	// GLApp::ptr_window is handle to window that defines the OpenGL context
+	glfwSwapBuffers(GLApp::ptr_window);
 }
 
-/*  _________________________________________________________________________ */
-/*! update
-
-@param none
-
-@return none
-
-Make sure callbacks are invoked when state changes in input devices occur.
-Ensure time per frame and FPS are recorded.
-Let application update state changes (such as animation).
-*/
 static void update() {
-  // process events if any associated with input devices
-  glfwPollEvents();
+	// process events if any associated with input devices
+	glfwPollEvents();
 
-  // main loop computes fps and other time related stuff once for all apps ...
-  GLApp::update_time(1.0);
+	// main loop computes fps and other time related stuff once for all apps ...
+	GLApp::update_time(1.0);
 
-  // animate scene
-  GLApp::update();
+	// animate scene
+	GLApp::update();
 }

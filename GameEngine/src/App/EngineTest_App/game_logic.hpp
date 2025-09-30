@@ -1,7 +1,10 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
+#include "../../Engine/resources/animation.hpp"
 #include <iostream>
+#include <memory>  
+
 
 class GameApplication {
 private:
@@ -11,6 +14,16 @@ private:
     // Game state variables
     bool gameRunning_ = true;
     bool musicStarted_ = false;
+
+    // Test texture for demonstrating textured rendering
+    std::shared_ptr<Graphics::EnoTexture> testTexture_;
+    Animation::AnimationController animController_;
+
+    // For delta time calculation
+    float lastFrameTime_ = 0.0f;  
+
+    std::shared_ptr<Graphics::EnoTexture> playerTexture_;
+    Animation::AnimationController playerAnimController_;
 
 public:
     // Constructors
@@ -24,17 +37,24 @@ public:
     void initialize();  // Called once at start
     void run();         // Starts the game loop
 
+
 private:
     // Setup (called during initialize())
     void setupGameEntities();   // ECS code
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
     void setupGameMath();       // math demonstration code
+    void setupImGui();          // setup ImGui code
+    void setupAnimations();
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
     void updateAudio();         // Update audio per frame
+    void updateImGui();         // Update code for imGui
+
+    void drawShapes(); // jsut to test
+    void drawAnimatedSprite();
 
     // Demonstration methods
     void demonstrateSignals();

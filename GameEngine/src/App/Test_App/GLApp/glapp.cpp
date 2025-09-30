@@ -1,18 +1,3 @@
-/*!
-@file       glapp.cpp
-@author     pghali@digipen.edu
-@co-author  parminder.singh@digipen.edu
-@date       05/05/2025
-
-This file implements functionality useful and necessary to build OpenGL
-applications including use of external APIs such as GLFW to create a
-window and start up an OpenGL context and to extract function pointers
-to OpenGL implementations.
-
-*//*__________________________________________________________________________*/
-
-/*                                                                   includes
------------------------------------------------------------------------------ */
 #include "glapp.h"
 #include <glm/glm.hpp>
 #include <iostream>
@@ -332,7 +317,7 @@ relative to the top-left corner of the window client area.
 */
 void GLApp::mousepos_cb(GLFWwindow *pwin, double xpos, double ypos) {
 #ifdef _DEBUG
-  std::cout << "Mouse cursor position: (" << xpos << ", " << ypos << ")" << std::endl;
+  //std::cout << "Mouse cursor position: (" << xpos << ", " << ypos << ")" << std::endl;
 #endif
 }
 

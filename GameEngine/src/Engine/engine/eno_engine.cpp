@@ -7,7 +7,8 @@ namespace Engine
 		// Engine init
 		setupResourceLoading();
 		setupEventSystem();
-
+		setupGraphicsSystem();
+		loader_.loadImages(loader_.getImagePath());
 		// For debugging
 		compReg_.PrintIDs();
 
@@ -28,7 +29,25 @@ namespace Engine
 
 		while (!glfwWindowShouldClose(window_.getWindow()))
 		{
+
+
 			glfwPollEvents();
+
+			update_time(1.0);
+
+			// Handle window resize for graphics system
+			int width, height;
+			glfwGetFramebufferSize(window_.getWindow(), &width, &height);
+			if (width > 0 && height > 0) 
+			{
+				graphicsMng_->setProjectionMatrix(width, height);
+			}
+
+			// Begin graphics frame
+			if (graphicsMng_ && graphicsMng_->isInitialized())
+			{
+				graphicsMng_->beginFrame(Graphics::Color::Black);  // Clear to black
+			}
 
 			// Call game logic if provided
 			if (gameUpdateCallback) {
@@ -37,6 +56,12 @@ namespace Engine
 
 			// Update engine systems
 			updateEngineSystems();
+
+			// End graphics frame and present
+			if (graphicsMng_ && graphicsMng_->isInitialized())
+			{
+				graphicsMng_->endFrame();
+			}
 		}
 
 	}
@@ -67,6 +92,28 @@ namespace Engine
 			{
 				audioMng_.onSoundReceived(event);
 			});
+
+		bus_.subscribe<Graphics::Events::WindowResized>(
+			[&](const Graphics::Events::WindowResized& event) {
+				if (graphicsMng_ && graphicsMng_->isInitialized())
+				{
+					graphicsMng_->setProjectionMatrix(event.width, event.height);
+				}
+			});
+	}
+
+	void EnoEngine::setupGraphicsSystem()
+	{
+		// Create graphics manager
+		graphicsMng_ = std::make_unique<Graphics::EnoGraphicsManager>(bus_, window_.getWindow());
+
+		// Initialize the graphics system
+		if (!graphicsMng_->initialize())
+		{
+			throw std::runtime_error("Failed to initialize graphics system!");
+		}
+
+		std::cout << "Graphics system setup complete!" << std::endl;
 	}
 
 	// Create a game instance
@@ -84,11 +131,45 @@ namespace Engine
 		static bool scheduled{ false };
 		if (!scheduled)
 		{
-			soundPlaying();
+			//soundPlaying();
 			scheduled = true;
 		}
 
 		audioMng_.process();
+		audioMng_.Update();
+
+		// Graphics update is handled in the main loop (beginFrame/endFrame)
+		// but we call Update() here for consistency with the system interface
+		if (graphicsMng_)
+		{
+			graphicsMng_->Update();
+		}
+	}
+
+	void EnoEngine::update_time(double fps_calc_interval) {
+		// get elapsed time (in seconds) between previous and current frames
+		static double prev_time = glfwGetTime();
+		double curr_time = glfwGetTime();
+		dt = curr_time - prev_time;
+		prev_time = curr_time;
+
+		// fps calculations
+		static double count = 0.0; // number of game loop iterations
+		static double start_time = glfwGetTime();
+		// get elapsed time since very beginning (in seconds) ...
+		double elapsed_time = curr_time - start_time;
+
+		++count;
+
+		// update fps at least every 10 seconds ...
+		fps_calc_interval = (fps_calc_interval < 0.0) ? 0.0 : fps_calc_interval;
+		fps_calc_interval = (fps_calc_interval > 10.0) ? 10.0 : fps_calc_interval;
+		if (elapsed_time > fps_calc_interval) {
+			fps = count / elapsed_time;
+			start_time = curr_time;
+			count = 0.0;
+		}
+		input_.endFrame();
 	}
 
 	// Not sure if we need it

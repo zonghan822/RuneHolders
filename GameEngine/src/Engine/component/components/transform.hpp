@@ -4,6 +4,7 @@
 // GLM
 #include <glm/glm.hpp>
 #include <iostream>
+#include "../../math/math.hpp"
 
 
 namespace ECSComponents
@@ -24,4 +25,20 @@ namespace ECSComponents
 
 		return os;
 	}
+
+	//im creating a transform componenent for 2d objects
+	struct eVec2TransformComponent
+	{
+		Math::eVec2<float> pos;
+		float rot;
+		Math::eVec2<float> scale;
+
+		Math::eMtx3x3<float> transform;
+
+		eVec2TransformComponent(float x, float y, float w, float h, float r = 0.f) : pos{ x,y }, scale{ w,h }, rot{ r }, transform {} {};
+
+	};
+
+
+
 }

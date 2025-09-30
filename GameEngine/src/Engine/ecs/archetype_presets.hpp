@@ -6,6 +6,7 @@
 #include "../component/components/transform.hpp"
 #include "../component/components/modulation.hpp"
 #include "../component/components/visibility.hpp"
+#include "../component/components/drawInfo.hpp"
 
 //stds
 #include <tuple>

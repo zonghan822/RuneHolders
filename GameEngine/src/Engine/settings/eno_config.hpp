@@ -1,7 +1,7 @@
 #pragma once
 
 // Interface
-#include "../system_interface/sys_interface.hpp"
+#include "../interface/system.hpp"
 
 // stds
 #include <utility>
