@@ -7,7 +7,7 @@
 
 // Engine components
 #include "../interface/system.hpp"
-#include "../event/eventBus.hpp"
+#include "../event/event_bus.hpp"
 #include "../math/math.hpp"
 
 // Standard libraries

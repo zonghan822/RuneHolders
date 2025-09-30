@@ -22,7 +22,7 @@
 #include "../math/math.hpp"
 #include "../component/components/transform.hpp"
 #include "../ecs/entity.hpp"
-#include "../event/eventBus.hpp"
+#include "../event/event_bus.hpp"
 
 // standard library includes
 #include <iostream>
@@ -332,7 +332,7 @@ namespace Collision
 	*	- managing collision callbacks
 	* 
 	* usage in game loop:
-	*	1. create the system: CollisionSystem collisionSystem(eventBus);
+	*	1. create the system: CollisionSystem collisionSystem(event_bus);
 	*	2. each frame call: collisionSystem.Update(entityManager);
 	*	3. subscribe to CollisionEvent to handle specific collision responses
 	*/
@@ -341,9 +341,9 @@ namespace Collision
 	public:
 		/*
 		* @brief Constrcutor
-		* @param eventBus - reference to the engine's event bus for publishing collision events
+		* @param event_bus - reference to the engine's event bus for publishing collision events
 		*/
-		CollisionSystem(Event::EnoEventBus& eventBus);
+		CollisionSystem(Event::EnoEventBus& event_bus);
 
 		/*
 		* @brief Main update function - call this every frame
