@@ -54,11 +54,11 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	// (kim) WASD movement for indicator (always active, no need to focus on ImGui)
 	float moveDelta = moveSpeed_ * deltaTime;
 
-	/* (kim added WASD Keys!) */
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) indicatorY_ -= moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) indicatorY_ += moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) indicatorX_ -= moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) indicatorX_ += moveDelta;
+	/* (kim) changed to ARROW KEYS for indicator control */
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) indicatorY_ -= moveDelta;
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) indicatorY_ += moveDelta;
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) indicatorX_ -= moveDelta;
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) indicatorX_ += moveDelta;
 
 	//Option Menu
 	const char* shapes[] = { "Circle" , "Rectangle" };

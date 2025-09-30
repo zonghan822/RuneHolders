@@ -22,6 +22,9 @@ private:
     // For delta time calculation
     float lastFrameTime_ = 0.0f;  
 
+    std::shared_ptr<Graphics::EnoTexture> playerTexture_;
+    Animation::AnimationController playerAnimController_;
+
 public:
     // Constructors
     GameApplication() = default;

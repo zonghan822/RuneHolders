@@ -108,6 +108,32 @@ void GameApplication::setupAnimations() {
     animController_.setAnimation("attack");
 
     std::cout << "Animation setup complete!" << std::endl;
+
+	// (kim added)
+	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
+
+	if (!playerTexture_)
+	{
+		std::cout << "Warning: Could not load player sprite sheet!" << std::endl;
+		return;
+	}
+
+	// Create player idle animation (same sprite sheet as test)
+	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
+		96,    // Frame width
+		96,    // Frame height
+		2304,  // Sheet width
+		96,    // Sheet height
+		0,     // Start frame
+		24,    // Frame count
+		0.1f   // Duration per frame
+	);
+
+	playerIdleAnim.setLooping(true);
+	playerAnimController_.addAnimation("idle", playerIdleAnim);
+	playerAnimController_.setAnimation("idle");
+
+	std::cout << "Player animation setup complete!" << std::endl;
 }
 
 void GameApplication::setupImGui() {
@@ -133,37 +159,45 @@ void GameApplication::updateGameLogic() {
         animController_.update(deltaTime);
     }
 
+	// ===== UPDATE PLAYER ANIMATION =====
+	if (playerTexture_ && playerSpawned_)
+	{
+		playerAnimController_.update(deltaTime);
+	}
+
     updateEntities();
     updateAudio();
 
     // Add any other per-frame game logic here
     drawShapes();
-    drawAnimatedSprite();
+    //drawAnimatedSprite();
 	updateEntities();
 	updateAudio();
 	updateImGui();
 }
 
 void GameApplication::updateEntities() {
-    // Update game entities each frame
-    // Add entity movement, AI, collision detection etc here
-
-    //caven's test object
-    updateTestObject(engine_.getEntityManager(),engine_);
-
+	// start timing
+	auto start = Clock::now();
 
 	// Update game entities each frame
-	auto start = Clock::now();
 	// Add entity movement, AI, collision detection etc here
+
+	//caven's test object
+	updateTestObject(engine_.getEntityManager(), engine_);
 
 	// delta time for movement
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
 	GLFWwindow* window = engine_.getWindow().getWindow();
 
-	// update player movement with collision
+	// UPDATED: Pass the input manager instead of window
+	// Get input manager from engine
+	auto& inputManager = engine_.getInputManager();
+
+	// update player movement with collision using the input manager
 	if (playerSystem_ && playerSpawned_) {
-		playerSystem_->Update(engine_.getEntityManager(), window, deltaTime);
+		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
 
 	// update collision system every frame
@@ -192,19 +226,38 @@ void GameApplication::updateImGui() {
 
 	auto& graphics = engine_.getGraphicsManager();
 	
-	// ==================== DRAW PLAYER (BLUE) ====================
+	// ==================== DRAW PLAYER (ANIMATED SPRITE) ====================
 	if (playerSpawned_) {
 		try {
 			auto& entityMap = engine_.getEntityManager().getMap();
 			auto it = entityMap.find(playerEntityID_);
 			if (it != entityMap.end()) {
 				auto& transform = playerSystem_->GetTransform(it->second);
-				graphics.drawRect(
-					Math::eVec2<float>{transform.pos.x, transform.pos.y},
-					Math::eVec2<float>{10, 10},
-					Graphics::Color::Blue,  // Player is BLUE
-					true
-				);
+				
+				// draw aniamted player sprite if texture is loaded
+				if (playerTexture_ && playerTexture_->isValid()) {
+					// get the current animation frame
+					auto frame = playerAnimController_.getCurrentFrame();
+
+					// draw using raziq's DrawTextureQuadUV function
+					graphics.drawTexturedQuadUV(
+						Math::eVec2<float>{transform.pos.x, transform.pos.y}, //player pos
+						Math::eVec2<float>{48.0f, 48.0f},				      // size on screen
+						playerTexture_,										// sprite sheet
+						frame.uvStart, // current frame UV start
+						frame.uvEnd, // current frame UV end
+						Graphics::Color::White // no tint (white = original colors)
+					);
+				}
+				else {
+					//fallback: draw blue rectangle if texture not loaded
+					graphics.drawRect(
+						Math::eVec2<float>{transform.pos.x, transform.pos.y},
+						Math::eVec2<float>{10, 10},
+						Graphics::Color::Blue,  // Player is BLUE
+						true
+					);
+				}
 			}
 		}
 		catch (...) {
@@ -272,6 +325,7 @@ void GameApplication::drawAnimatedSprite() {
     // Get the current frame from the animation
     auto frame = animController_.getCurrentFrame();
 
+	// delete this line
     // CRITICAL: Round to whole pixels to prevent sub-pixel jittering
     float xPos = std::floor(400.0f);
     float yPos = std::floor(300.0f);
