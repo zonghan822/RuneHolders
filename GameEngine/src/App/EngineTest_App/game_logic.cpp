@@ -56,6 +56,9 @@ void GameApplication::setupGameMath() {
 
 	//initialize collision system
 	collisionSystem_ = std::make_unique<Collision::CollisionSystem>(engine_.getEventBus());
+
+	// initialize player system
+	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 }
 
 void GameApplication::setupImGui() {
@@ -78,6 +81,16 @@ void GameApplication::updateEntities() {
 	// Update game entities each frame
 	auto start = Clock::now();
 	// Add entity movement, AI, collision detection etc here
+
+	// delta time for movement
+	ImGuiIO& io = ImGui::GetIO();
+	float deltaTime = io.DeltaTime;
+	GLFWwindow* window = engine_.getWindow().getWindow();
+
+	// update player movement with collision
+	if (playerSystem_ && playerSpawned_) {
+		playerSystem_->Update(engine_.getEntityManager(), window, deltaTime);
+	}
 
 	// update collision system every frame
 	if (collisionSystem_) {
@@ -104,13 +117,36 @@ void GameApplication::updateImGui() {
 
 
 	auto& graphics = engine_.getGraphicsManager();
-	//Red indicator rectangle that shows where the entity will be spawned.  
+	
+	// ==================== DRAW PLAYER (BLUE) ====================
+	if (playerSpawned_) {
+		try {
+			auto& entityMap = engine_.getEntityManager().getMap();
+			auto it = entityMap.find(playerEntityID_);
+			if (it != entityMap.end()) {
+				auto& transform = playerSystem_->GetTransform(it->second);
+				graphics.drawRect(
+					Math::eVec2<float>{transform.pos.x, transform.pos.y},
+					Math::eVec2<float>{10, 10},
+					Graphics::Color::Blue,  // Player is BLUE
+					true
+				);
+			}
+		}
+		catch (...) {
+			// Player entity might be invalid
+		}
+	}
+
+	// ==================== DRAW SPAWN POSITION INDICATOR (RED) ===================
+	// Red indicator rectangle that shows where entities will spawn
 	graphics.drawRect(
 		Math::eVec2<float>{indicatorX_, indicatorY_},  // Position
 		Math::eVec2<float>{10, 10},                    // Size 10 wide 10 tall
 		Graphics::Color::Red,						   //  Colour
 		true										   //  True
 	);
+
 	auto end = Clock::now();
 	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
