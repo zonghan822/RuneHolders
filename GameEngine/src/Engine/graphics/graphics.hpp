@@ -163,6 +163,11 @@ namespace Graphics
         // Frame management
         void beginFrame(const Color& clearColor = Color::Black);
         void endFrame();
+        void flush() {
+            if (!batchVertices_.empty()) {
+                flushBatch(currentBatchPrimitiveType_);
+            }
+        }
 
         // Immediate mode drawing functions
         void drawPoint(const Math::eVec2<float>& position, const Color& color = Color::White, float size = 1.0f);

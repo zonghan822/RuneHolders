@@ -15,14 +15,12 @@ private:
     bool gameRunning_ = true;
     bool musicStarted_ = false;
 
-    // Test texture for demonstrating textured rendering
-    std::shared_ptr<Graphics::EnoTexture> testTexture_;
-    Animation::AnimationController animController_;
-
     // For delta time calculation
     float lastFrameTime_ = 0.0f;  
 
+    // Texture and anim loading
     std::shared_ptr<Graphics::EnoTexture> playerTexture_;
+    std::shared_ptr<Graphics::EnoTexture> backgroundTexture_;
     Animation::AnimationController playerAnimController_;
 
 public:
@@ -53,8 +51,9 @@ private:
     void updateAudio();         // Update audio per frame
     void updateImGui();         // Update code for imGui
 
+    void drawPlayerAndIndicator();
+
     void drawShapes(); // jsut to test
-    void drawAnimatedSprite();
 
     // Demonstration methods
     void demonstrateSignals();

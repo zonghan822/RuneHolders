@@ -75,41 +75,7 @@ void GameApplication::setupGameMath() {
 
 void GameApplication::setupAnimations() {
     // Load the sprite sheet texture
-    testTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
-
-    if (!testTexture_)
-    {
-        std::cout << "Warning: Could not load animation sprite sheet!" << std::endl;
-        return;
-    }
-
-    // Create attack animation
-    // Adjust these values based on YOUR sprite sheet:
-    // - Frame size: 89x89 pixels (your frames appear to be square based on height)
-    // - Sheet size: 502x89 pixels
-    // - Start frame: 0
-    // - Frame count: 5 (502 / 89 = 5.6, so probably 5 frames)
-    // - Duration: 0.1 seconds per frame
-
-    auto attackAnim = Animation::createSpriteSheetAnimation(
-        96,          // Frame width
-        96,          // Frame height
-        2304,         // Sheet width
-        96,          // Sheet height
-        0,           // Start frame
-        24,           // Number of frames
-        0.1f         // Duration per frame (seconds)
-    );
-
-    attackAnim.setLooping(true);
-    animController_.addAnimation("attack", attackAnim);
-
-    // Set the initial animation
-    animController_.setAnimation("attack");
-
-    std::cout << "Animation setup complete!" << std::endl;
-
-	// (kim added)
+	backgroundTexture_ = engine_.getResourceLoader().getTexture("Background");
 	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
 
 	if (!playerTexture_)
@@ -153,11 +119,26 @@ void GameApplication::updateGameLogic() {
     float deltaTime = currentTime - lastFrameTime_;
     lastFrameTime_ = currentTime;
 
-    // Update animation with delta time
-    if (testTexture_)
-    {
-        animController_.update(deltaTime);
-    }
+	// Draw background before everything else
+	if (backgroundTexture_ && backgroundTexture_->isValid()) {
+		auto& graphics = engine_.getGraphicsManager();
+
+		// Get window dimensions from config
+		auto windowDim = engine_.getConfigManager().getWindowDim();
+		Math::eVec2<float> windowSize{
+			static_cast<float>(windowDim.first),
+			static_cast<float>(windowDim.second)
+		};
+
+		graphics.drawTexturedQuadUV(
+			Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
+			windowSize,                                // Full screen size from config
+			backgroundTexture_,
+			Math::eVec2<float>{0.0f, 0.0f},           // UV start
+			Math::eVec2<float>{1.0f, 1.0f},           // UV end
+			Graphics::Color::White
+		);
+	}
 
 	// ===== UPDATE PLAYER ANIMATION =====
 	if (playerTexture_ && playerSpawned_)
@@ -167,12 +148,12 @@ void GameApplication::updateGameLogic() {
 
     updateEntities();
     updateAudio();
-
-    // Add any other per-frame game logic here
     drawShapes();
-    //drawAnimatedSprite();
-	updateEntities();
-	updateAudio();
+	drawPlayerAndIndicator();
+
+	auto& graphics = engine_.getGraphicsManager();
+	engine_.getGraphicsManager().flush();
+
 	updateImGui();
 }
 
@@ -217,67 +198,58 @@ void GameApplication::updateAudio() {
 
 }
 
-void GameApplication::updateImGui() {
-	auto start = Clock::now();
-
-
-	imGuiDisplay(engine_.getWindow().getWindow(),engine_);
-
-
+void GameApplication::drawPlayerAndIndicator() {
 	auto& graphics = engine_.getGraphicsManager();
-	
-	// ==================== DRAW PLAYER (ANIMATED SPRITE) ====================
+
+	// Draw player sprite
 	if (playerSpawned_) {
 		try {
 			auto& entityMap = engine_.getEntityManager().getMap();
 			auto it = entityMap.find(playerEntityID_);
 			if (it != entityMap.end()) {
 				auto& transform = playerSystem_->GetTransform(it->second);
-				
-				// draw aniamted player sprite if texture is loaded
-				if (playerTexture_ && playerTexture_->isValid()) {
-					// get the current animation frame
-					auto frame = playerAnimController_.getCurrentFrame();
 
-					// draw using raziq's DrawTextureQuadUV function
+				if (playerTexture_ && playerTexture_->isValid()) {
+					auto frame = playerAnimController_.getCurrentFrame();
 					graphics.drawTexturedQuadUV(
-						Math::eVec2<float>{transform.pos.x, transform.pos.y}, //player pos
-						Math::eVec2<float>{48.0f, 48.0f},				      // size on screen
-						playerTexture_,										// sprite sheet
-						frame.uvStart, // current frame UV start
-						frame.uvEnd, // current frame UV end
-						Graphics::Color::White // no tint (white = original colors)
+						Math::eVec2<float>{transform.pos.x, transform.pos.y},
+						Math::eVec2<float>{48.0f, 48.0f},
+						playerTexture_,
+						frame.uvStart,
+						frame.uvEnd,
+						Graphics::Color::White
 					);
 				}
 				else {
-					//fallback: draw blue rectangle if texture not loaded
 					graphics.drawRect(
 						Math::eVec2<float>{transform.pos.x, transform.pos.y},
 						Math::eVec2<float>{10, 10},
-						Graphics::Color::Blue,  // Player is BLUE
+						Graphics::Color::Blue,
 						true
 					);
 				}
 			}
 		}
-		catch (...) {
-			// Player entity might be invalid
-		}
+		catch (...) {}
 	}
 
-	// ==================== DRAW SPAWN POSITION INDICATOR (RED) ===================
-	// Red indicator rectangle that shows where entities will spawn
+	// Draw red indicator
 	graphics.drawRect(
-		Math::eVec2<float>{indicatorX_, indicatorY_},  // Position
-		Math::eVec2<float>{10, 10},                    // Size 10 wide 10 tall
-		Graphics::Color::Red,						   //  Colour
-		true										   //  True
+		Math::eVec2<float>{indicatorX_, indicatorY_},
+		Math::eVec2<float>{10, 10},
+		Graphics::Color::Red,
+		true
 	);
+}
+
+void GameApplication::updateImGui() {
+	auto start = Clock::now();
+
+	imGuiDisplay(engine_.getWindow().getWindow(), engine_);
 
 	auto end = Clock::now();
 	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
-
 
 void GameApplication::drawShapes() { // For testing
 	auto start = Clock::now();
@@ -312,31 +284,4 @@ void GameApplication::drawShapes() { // For testing
 
 	auto end = Clock::now();
 	systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();
-}
-
-
-
-void GameApplication::drawAnimatedSprite() {
-    if (!testTexture_ || !testTexture_->isValid())
-        return;
-
-    auto& graphics = engine_.getGraphicsManager();
-
-    // Get the current frame from the animation
-    auto frame = animController_.getCurrentFrame();
-
-	// delete this line
-    // CRITICAL: Round to whole pixels to prevent sub-pixel jittering
-    float xPos = std::floor(400.0f);
-    float yPos = std::floor(300.0f);
-
-    // Draw the animated sprite
-    graphics.drawTexturedQuadUV(
-        Math::eVec2<float>{xPos, yPos},
-        Math::eVec2<float>{192.0f, 192.0f},  // Size (2x scale for visibility)
-        testTexture_,
-        frame.uvStart,  // UV start from current frame
-        frame.uvEnd,    // UV end from current frame
-        Graphics::Color::White
-    );
 }
