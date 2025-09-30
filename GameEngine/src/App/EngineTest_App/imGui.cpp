@@ -1,6 +1,8 @@
 #include "imGui.hpp"
 #include "game_logic.hpp"
 
+#pragma region Game Variables
+
 extern GameApplication game;
 
 //collision system
@@ -44,6 +46,14 @@ static double next_update = 0.0;         // next time we refresh the text
 //entity counter
 size_t entity_count{};
 
+//prefabs
+static PrefabData prefab;
+static char nameSetter[50] = "";
+
+
+
+#pragma endregion
+
 float randomFloat(float min, float max) {
 	std::uniform_real_distribution<float> dist(min, max);
 	return dist(rng);
@@ -68,6 +78,8 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
+
+
 	// (kim) get delta time for smooth movement
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
@@ -82,8 +94,16 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) indicatorX_ += moveDelta;
 
 
-	double now = ImGui::GetTime();           // imgui monotonic time (seconds)
+	prefab.x = indicatorX_;
+	prefab.y = indicatorY_;
+	prefab.width = eWidth;
+	prefab.height = eHeight;
+	prefab.color = eColor;
+	prefab.shape = eShapeIndex;
+	prefab.hasCollider = (selectedCollider != 0);
 
+
+	double now = ImGui::GetTime();           // imgui monotonic time (seconds)
 	if (now >= next_update) {
 		shown_fps = io.Framerate;            // sample current FPS
 		throttledTimes_ = systemTimes_;
@@ -93,8 +113,9 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	if (ImGui::Button("Main"))     activeWindow = WindowID::Main;
 	if (ImGui::Button("Edit"))     activeWindow = WindowID::Edit;
 	if (ImGui::Button("FPS"))      activeWindow = WindowID::FPS;
+	if (ImGui::Button("Prefabs"))  activeWindow = WindowID::Prefabs;
 	//FPS and Time Staggering for Displaying FPS
-#pragma region IMGUI Main
+	#pragma region IMGUI Main
 	if (activeWindow == WindowID::Main) {
 		ImGui::Begin("Main");
 
@@ -241,7 +262,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
-#pragma region IMGUI Edit
+	#pragma region IMGUI Edit
 
 	if (activeWindow == WindowID::Edit) {
 		ImGui::Begin("Edit");
@@ -283,7 +304,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
-#pragma region IMGUI FPS
+	#pragma region IMGUI FPS
 	if (activeWindow == WindowID::FPS) {
 		ImGui::Begin("FPS");
 		ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
@@ -300,33 +321,52 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
+	#pragma region IMGUI Prefabs
+	//to use, do your settings on main tab. then enter prefabs tab to save your file
+	//1. Enter file/prefab name
+	//2. Load from the name tab
+	//3. Spawn from your prefabs
 
-#pragma region IMGUI Prefabs
+	if (activeWindow == WindowID::Prefabs) {
+		ImGui::Begin("Prefabs");
+
+
+		if ( ImGui::InputText("Name for Prefab", nameSetter,sizeof(nameSetter)) ) {
+			prefab.name = static_cast<std::string>(nameSetter);
+		}
+
+		if (ImGui::Button("Save Prefab")) {
+			//this will save to assets/saves/..
+			savePrefab(prefab);
+		}		
+
+		if (ImGui::Button("Load Prefab")) {
+			std::string fileStr = "../../../assets/saves/" + static_cast<std::string>(nameSetter) + ".txt";
+
+			//PrefabData loaded = loadPrefab("../../../assets/saves/prefabs.txt");
+			PrefabData loaded = loadPrefab(fileStr);
+			prefabRegistry[loaded.name] = loaded;
+		}		
+
+		if (ImGui::Button("Spawn Prefab")) {
+			if (prefabRegistry.count(prefab.name)) {
+				instantiatePrefab(prefabRegistry[prefab.name], engine_);
+			}
+		}
+	
+		ImGui::End();
+	}
 #pragma endregion
-
-
-
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 
-void static instantiatePrefab(char const* name) {
-
-
-
-}
-
-
-void static makePrefab(char const* name){
-	
-
-
-}
-
 void static crashLogging() {
-
+	//open file
+	//write to it
+	//called after catch i guess... this should prolly not be part of imgui
 }
 
 void static displayEntityCount(Engine::EnoEngine& engine_) {

@@ -4,9 +4,9 @@
 std::unordered_map<std::string, PrefabData> prefabRegistry;
 
 void savePrefab(const PrefabData& prefab) {
-    std::ofstream file(prefab.name + ".txt");
+    std::ofstream file( "../../../assets/saves/" + prefab.name + ".txt");
     if (!file){
-        throw std::runtime_error("file no open!!!");
+        throw std::runtime_error("file no open for write!!!");
     }
 
     file << prefab.name << "\n";
@@ -19,6 +19,10 @@ void savePrefab(const PrefabData& prefab) {
 PrefabData loadPrefab(const std::string& filename) {
     PrefabData prefab;
     std::ifstream file(filename);
+    if (!file) {
+        throw std::runtime_error("file no open for read!!!");
+    }
+
     file >> prefab.name;
     file >> prefab.x >> prefab.y;
     file >> prefab.width >> prefab.height;
@@ -33,6 +37,17 @@ PrefabData loadPrefab(const std::string& filename) {
 void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
 
     ECS::Entity e = engine.getEntityManager().create<>();
+
+    char name[50]{};
+    size_t counter{};
+    for (const char& a : prefab.name) {
+        name[counter] = a;
+        counter++;
+    }
+
+    e.add<ECSComponents::NameComponent>(static_cast<const char*>(name));
+    //std::cout << "name of this entity: " << e.get<ECSComponents::NameComponent>().name << "\n";
+
 
     // add transform
     ECSComponents::TransformComponent t{
@@ -51,6 +66,7 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
     };
     e.add<ECSComponents::DrawInfoComponent>(DIC);
 
+    //add collider
     if (prefab.hasCollider) {
         e.add<Collision::CollisionComponent>(
             Collision::CollisionComponent(prefab.width, prefab.height)
