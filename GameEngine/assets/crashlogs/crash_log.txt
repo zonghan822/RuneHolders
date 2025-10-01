@@ -1,3 +1,13 @@
 [2025-10-01 04:12:26] file no open for read!!!
 [2025-10-01 04:31:25] file no open for read!!!
 [2025-10-01 04:32:11] file no open for read!!!
+[2025-10-01 18:26:32] bad allocation
+[2025-10-01 18:27:46] bad allocation
+[2025-10-01 18:34:09] bad allocation
+[2025-10-01 18:40:58] bad allocation
+[2025-10-01 18:41:22] bad allocation
+[2025-10-01 18:51:19] bad allocation
+[2025-10-01 21:34:55] Opened file is not an ECS data file for the EnoEngine!
+[2025-10-01 21:36:28] bad allocation
+[2025-10-01 22:19:22] Failed to find a component in the registry based on id!
+[2025-10-01 22:21:35] bad allocation

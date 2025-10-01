@@ -10,7 +10,7 @@ namespace Engine
 		setupGraphicsSystem();
 		loader_.loadImages(loader_.getImagePath());
 		// For debugging
-		compReg_.PrintIDs();
+		compReg_.DisplayReg();
 
 		// Removed all your previous game codes like math and shi
 		
@@ -25,12 +25,19 @@ namespace Engine
 	// Thats why i added a callback version
 	void EnoEngine::run(std::function<void()> gameUpdateCallback)
 	{
+		//getEntityManager().create<ECSComponents::NameComponent>("Melody");
+		//getEntityManager().create<ECSComponents::NameComponent>("Osily");
+		//getEntityManager().save(loader_.getECSSavePath());
+
+		getEntityManager().viewMap();
+		getEntityManager().destroyEntity(0);
+		getEntityManager().load(loader_.getECSSavePath());
+		getEntityManager().viewMap();
+
 		soundSetup();
 
 		while (!glfwWindowShouldClose(window_.getWindow()))
 		{
-
-
 			glfwPollEvents();
 
 			update_time(1.0);
@@ -83,9 +90,9 @@ namespace Engine
 	void EnoEngine::setupEventSystem()
 	{
 		// Setup core engine event handlers
-		bus_.subscribe<Audio::RequestSound>
-			(
-				[&](const Audio::RequestSound& event) {loader_.onSoundRequest(event);}
+		bus_.subscribe<Audio::RequestSound>([&](const Audio::RequestSound& event) 
+			{
+				loader_.onSoundRequest(event);}
 			);
 
 		bus_.subscribe<Audio::LoadSound>([&](const Audio::LoadSound& event)

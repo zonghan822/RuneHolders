@@ -10,20 +10,28 @@
 #include <string>
 #include <iostream>
 #include <unordered_map>
+
+// lib
 #include "../math/math.hpp"
+
+#define ENGINE_VER_SIZE 8
+
 
 namespace EngineConfiguration
 {
+	inline char engine_version[ENGINE_VER_SIZE];
+
 	class EnoConfigManager : public Sys::ISystem
 	{
 	private:
 		std::string cfgFileName_ = ASSETS_DIR_PATH "settings/config.txt";
 
 		// Map for storing setting strings
-		std::unordered_map<std::string, int> configMap_ =
+		std::unordered_map<std::string, std::string> configMap_ =
 		{
-			{"Window Width", 0},
-			{"Window Height", 0},
+			{ "Engine Version", "0"},
+			{ "Window Width",	"0"},
+			{ "Window Height",	"0"},
 		};
 
 		static constexpr uint8_t COLON_OFFSET = 2;
@@ -46,7 +54,7 @@ namespace EngineConfiguration
 				throw std::runtime_error("Failed to retrieve window width and/or height value!");
 			}
 
-			return { it->second, it2->second };
+			return { std::stoi(it->second), std::stoi(it2->second) };
 		}
 
 		// Read the local Settings file and
@@ -54,6 +62,8 @@ namespace EngineConfiguration
 		void retrieveSettings()
 		{
 			read();
+
+			setEngineVer();
 		}
 
 		// Read the local config.txt file
@@ -78,7 +88,7 @@ namespace EngineConfiguration
 						if (input.find(pair.first) != std::string::npos)
 						{
 							std::size_t pos = input.find(pair.first);
-							pair.second = std::stoi(input.substr(pos + std::string(pair.first).size() + COLON_OFFSET));
+							pair.second = input.substr(pos + std::string(pair.first).size() + COLON_OFFSET);
 						}
 					}
 				}
@@ -87,6 +97,20 @@ namespace EngineConfiguration
 			{
 				throw std::runtime_error("Settings file does not exist!");
 			}
+		}
+
+		// Set engine version
+		void setEngineVer()
+		{
+			auto it = configMap_.find("Engine Version");
+			if (it == configMap_.end())
+			{
+				throw std::runtime_error("Engine version not found!");
+			}
+
+			// Copy into 
+			std::strncpy(engine_version, it->second.c_str(), sizeof(engine_version) - 1);
+			engine_version[sizeof(engine_version) - 1] = '\0';
 		}
 	};
 }
