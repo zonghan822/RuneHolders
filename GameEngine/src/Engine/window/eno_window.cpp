@@ -1,13 +1,19 @@
 #include "eno_window.hpp"
 
-
 namespace Window
 {
+
+	EnoWindow::EnoWindow(Event::EnoEventBus& bus) : bus_{ bus } { /*empty by design*/ }
+
+	EnoWindow::~EnoWindow() { shutdown(); }
+
 	void EnoWindow::initialize(const std::string& title, int width, int height,
 		int glMajor, int glMinor) {
 		if (!glfwInit()) {
 			throw std::runtime_error("GLFW initialization failed");
 		}
+
+		glfwSetErrorCallback(ErrorCallback);
 
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glMajor);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glMinor);
@@ -25,12 +31,12 @@ namespace Window
 			glfwTerminate();
 			throw std::runtime_error("GLFW window creation failed");
 		}
+		glfwSetWindowUserPointer(window_, this);
 
 		// Make context current
 		glfwMakeContextCurrent(window_);
 
-		// this is the default setting ...
-		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		setupEventCallbacks();
 
 		// Part 2: Initialize entry points to OpenGL functions and extensions
 		GLenum err = glewInit();
@@ -71,12 +77,74 @@ namespace Window
 
 		// Default swap interval 1 (vsync on)
 		glfwSwapInterval(1);
-
-
 	}
 
+	void EnoWindow::shutdown() {
+		if (window_) {
+			glfwDestroyWindow(window_);
+			window_ = nullptr;
+		}
+		glfwTerminate();
+	}
 
 	GLFWwindow* EnoWindow::getWindow() const { return window_; }
 
+	void EnoWindow::pollEvents() const { if (window_) glfwPollEvents(); }
+
+	void EnoWindow::swapBuffers() const { if (window_) glfwSwapBuffers(window_); }
+	
+	bool EnoWindow::shouldClose() const { return window_ == nullptr ? true : glfwWindowShouldClose(window_); }
+	
+	void EnoWindow::setShouldClose(bool value) { if (window_) glfwSetWindowShouldClose(window_, value ? GLFW_TRUE : GLFW_FALSE); }
+
+	std::pair<int, int> EnoWindow::getWindowSize() const {
+		int w = 0, h = 0;
+		if (window_) glfwGetWindowSize(window_, &w, &h);
+		return { w,h };
+	}
+
+	void EnoWindow::setVSync(bool enabled) const { 
+		if (enabled) glfwSwapInterval(1); 
+		else glfwSwapInterval(0); 
+	}
+
+	void EnoWindow::setupEventCallbacks() {
+		glfwSetFramebufferSizeCallback(window_, FbSizeCallback);
+		glfwSetKeyCallback(window_, KeyCallback);
+		glfwSetMouseButtonCallback(window_, MouseButtonCallback);
+		glfwSetCursorPosCallback(window_, MousePosCallback);
+		glfwSetScrollCallback(window_, MouseScrollCallback);
+	}
+
+	void EnoWindow::ErrorCallback(int err, char const* description) {
+		std::string msg = "GLFW error: ";
+		msg += description;
+		throw std::runtime_error(msg);
+	}
+
+	void EnoWindow::FbSizeCallback(GLFWwindow* window, int width, int height) {
+		auto* self = static_cast<EnoWindow*>(glfwGetWindowUserPointer(window));
+		self->bus_.publish(FramebufferResizeEvent{ width, height });
+	}
+
+	void EnoWindow::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+		auto* self = static_cast<EnoWindow*>(glfwGetWindowUserPointer(window));
+		self->bus_.publish(KeyEvent{ key, scancode, action, mods });
+	}
+
+	void EnoWindow::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+		auto* self = static_cast<EnoWindow*>(glfwGetWindowUserPointer(window));
+		self->bus_.publish(MouseButtonEvent{ button, action, mods });
+	}
+
+	void EnoWindow::MousePosCallback(GLFWwindow* window, double xpos, double ypos) {
+		auto* self = static_cast<EnoWindow*>(glfwGetWindowUserPointer(window));
+		self->bus_.publish(MouseCursorEvent{ xpos, ypos });
+	}
+
+	void EnoWindow::MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+		auto* self = static_cast<EnoWindow*>(glfwGetWindowUserPointer(window));
+		self->bus_.publish(ScrollEvent{ xoffset, yoffset });
+	}
 
 }

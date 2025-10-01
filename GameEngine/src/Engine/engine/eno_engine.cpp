@@ -4,10 +4,13 @@ namespace Engine
 {
 	void EnoEngine::setup()
 	{
-		// Engine init
 		setupResourceLoading();
 		setupEventSystem();
-		setupGraphicsSystem();
+
+		// Systems init
+		windowMng_.initialize("RuneHolders", configMng_.getWindowDim().first, configMng_.getWindowDim().second);
+		graphicsMng_.initialize(windowMng_);
+
 		loader_.loadImages(loader_.getImagePath());
 	}
 
@@ -42,7 +45,7 @@ namespace Engine
 			updateEngineSystems();
 
 			// End graphics frame and present
-			graphicsMng_.endFrame();
+			graphicsMng_.endFrame(windowMng_);
 
 			inputMng_.endFrame();
 		}
@@ -89,17 +92,6 @@ namespace Engine
 			});
 	}
 
-	void EnoEngine::setupGraphicsSystem()
-	{
-		// Initialize the graphics system
-		if (!graphicsMng_.initialize())
-		{
-			throw std::runtime_error("Failed to initialize graphics system!");
-		}
-
-		std::cout << "Graphics system setup complete!" << std::endl;
-	}
-
 	// Function added for future use**
 	void EnoEngine::updateEngineSystems()
 	{
@@ -113,10 +105,6 @@ namespace Engine
 		}
 
 		audioMng_.process();
-
-		// Graphics update is handled in the main loop (beginFrame/endFrame)
-		// but we call Update() here for consistency with the system interface
-		graphicsMng_.Update();
 	}
 
 	void EnoEngine::updateTime(double fps_calc_interval) {

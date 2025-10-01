@@ -2,13 +2,22 @@
 
 namespace Input {
 
-	EnoInputManager::EnoInputManager(GLFWwindow* window, Event::EnoEventBus& bus) : bus_{ bus }
-	{
-		glfwSetWindowUserPointer(window, this);
-		glfwSetKeyCallback(window, KeyCallback);
-		glfwSetMouseButtonCallback(window, MouseButtonCallback);
-		glfwSetCursorPosCallback(window, MousePosCallback);
-		glfwSetScrollCallback(window, MouseScrollCallback);
+	EnoInputManager::EnoInputManager(Event::EnoEventBus& bus) : bus_{ bus } {
+		bus.subscribe<Window::KeyEvent>([this](const Window::KeyEvent& e) {
+			handleKey(e.key, e.scancode, e.action, e.mods);
+		});
+
+		bus.subscribe<Window::MouseButtonEvent>([this](const Window::MouseButtonEvent& e) {
+			handleMouseButton(e.button, e.action, e.mods);
+		});
+
+		bus.subscribe<Window::MouseCursorEvent>([this](const Window::MouseCursorEvent& e) {
+			handleMouseCursor(e.xpos, e.ypos);
+			});
+
+		bus.subscribe<Window::ScrollEvent>([this](const Window::ScrollEvent& e) {
+			handleMouseScroll(e.xoffset, e.yoffset);
+		});
 	}
 
 	void EnoInputManager::endFrame() {
@@ -97,28 +106,6 @@ namespace Input {
 
 	std::pair<double, double> EnoInputManager::getScrollOffset() const {
 		return { scrollX_, scrollY_ };
-	}
-
-	void EnoInputManager::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-	{
-		// Delegate to a non-static function to handle input
-		auto mgr = static_cast<EnoInputManager*>(glfwGetWindowUserPointer(window));
-		mgr->handleKey(key, scancode, action, mods);
-	}
-
-	void EnoInputManager::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-		auto mgr = static_cast<EnoInputManager*>(glfwGetWindowUserPointer(window));
-		mgr->handleMouseButton(button, action, mods);
-	}
-
-	void EnoInputManager::MousePosCallback(GLFWwindow* window, double xpos, double ypos) {
-		auto mgr = static_cast<EnoInputManager*>(glfwGetWindowUserPointer(window));
-		mgr->handleMouseCursor(xpos, ypos);
-	}
-
-	void EnoInputManager::MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-		auto mgr = static_cast<EnoInputManager*>(glfwGetWindowUserPointer(window));
-		mgr->handleMouseScroll(xoffset, yoffset);
 	}
 
 	// Handle key inputs

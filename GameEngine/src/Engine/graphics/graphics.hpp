@@ -1,13 +1,13 @@
 #pragma once
 
 // OpenGL and GLFW
-#define GLFW_INCLUDE_NONE
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 // Engine components
-#include "../event/eventBus.hpp"
+#include "../event/event_bus.hpp"
 #include "../math/math.hpp"
+#include "../window/eno_window.hpp"
 
 // Standard libraries
 #include <vector>
@@ -80,19 +80,6 @@ namespace Graphics
         int width_, height_, channels_;
     };
 
-    // Low-level OpenGL wrapper for managing render state
-    class EnoGLContext
-    {
-    public:
-        static bool initialize(GLFWwindow* window);
-        static void setViewport(int width, int height);
-        static void clear(const Color& clearColor = Color::Black);
-        static void enableBlending();
-        static void disableBlending();
-
-    private:
-        static bool initialized_;
-    };
 
     // Shader management class
     class EnoShader
@@ -149,19 +136,16 @@ namespace Graphics
     class EnoGraphicsManager 
     {
     public:
-        EnoGraphicsManager(Event::EnoEventBus& bus, GLFWwindow* window);
+        EnoGraphicsManager(Event::EnoEventBus& bus);
         ~EnoGraphicsManager();
 
-        // System interface implementation
-        void Update();
-
         // Initialize the graphics system
-        bool initialize();
+        bool initialize(Window::EnoWindow& windowMng);
         void shutdown();
 
         // Frame management
         void beginFrame(const Color& clearColor = Color::Black);
-        void endFrame();
+        void endFrame(Window::EnoWindow& windowMng);
         void flush() {
             if (!batchVertices_.empty()) {
                 flushBatch(currentBatchPrimitiveType_);
@@ -200,7 +184,6 @@ namespace Graphics
     private:
         // Core systems
         Event::EnoEventBus& bus_;
-        GLFWwindow* window_;
         bool initialized_;
 
         // Rendering components

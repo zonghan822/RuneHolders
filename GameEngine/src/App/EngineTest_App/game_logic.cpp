@@ -129,9 +129,7 @@ void GameApplication::updateGameLogic() {
     // This is called every frame (replaces your while loop in eno_engine.cpp run())
 
     // Calculate delta time
-    float currentTime = static_cast<float>(glfwGetTime());
-    float deltaTime = currentTime - lastFrameTime_;
-    lastFrameTime_ = currentTime;
+    float deltaTime = engine_.getDeltaTime();
 
 	// Draw background before everything else
 	if (backgroundTexture_ && backgroundTexture_->isValid()) {

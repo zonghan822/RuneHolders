@@ -46,21 +46,19 @@ namespace Engine
 		// Functions added for future use**
 		void setupResourceLoading();
 		void setupEventSystem();
-		void setupGraphicsSystem();
 		void updateEngineSystems();
 		void updateTime(double fpsCalcInt = 1.0);
 
 		// Services & Tools
 		EngineConfiguration::EnoConfigManager configMng_;
-		Window::EnoWindow windowMng_{ configMng_.getWindowDim() };
 		Event::EnoEventBus bus_;
-		Audio::EnoAudioManager audioMng_{ bus_ };
+		Window::EnoWindow windowMng_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
 		ECS::EntityManager entityMng_;
 		
 		// Systems
-		Input::EnoInputManager inputMng_{ windowMng_.getWindow(), bus_ };
-		Graphics::EnoGraphicsManager graphicsMng_{ bus_, windowMng_.getWindow() };
+		Input::EnoInputManager inputMng_{ bus_ };
+		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };
 		Audio::EnoAudioManager audioMng_{ bus_ };
 		
 		// TBD Demo for playing sounds

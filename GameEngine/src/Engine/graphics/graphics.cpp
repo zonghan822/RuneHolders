@@ -120,78 +120,6 @@ namespace Graphics
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    // =============================================================================
-    // EnoGLContext Implementation - Low-level OpenGL state management
-    // =============================================================================
-
-    bool EnoGLContext::initialized_ = false;
-
-    bool EnoGLContext::initialize(GLFWwindow* window)
-    {
-        if (initialized_) return true;
-
-        glfwMakeContextCurrent(window);
-
-        // GLEW Init
-        GLenum glewError = glewInit();
-        if (glewError != GLEW_OK)
-        {
-            std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(glewError) << std::endl;
-            return false;
-        }
-
-        // Verify
-        const GLubyte* version = glGetString(GL_VERSION);
-        if (!version)
-        {
-            std::cerr << "Failed to get OpenGL version - context may not be properly initialized!" << std::endl;
-            return false;
-        }
-
-        // Print OpenGL version info for debugging and verification
-        std::cout << "OpenGL Version: " << version << std::endl;
-        std::cout << "GPU: " << glGetString(GL_RENDERER) << std::endl;
-        std::cout << "OpenGL Vendor: " << glGetString(GL_VENDOR) << std::endl;
-
-        // Check that we have at least OpenGL 3.3 or not thsi shit crash and burns
-        if (!GLEW_VERSION_3_3)
-        {
-            std::cerr << "OpenGL 3.3 not available! Your graphics card may be too old." << std::endl;
-            return false;
-        }
-
-        // Set up basic OpenGL state for 2D rendering
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        // Enable point size control from shaders for drawPoint
-        glEnable(GL_PROGRAM_POINT_SIZE); // Can disable if not needed
-
-        initialized_ = true;
-        std::cout << "OpenGL context initialized successfully!" << std::endl;
-        return true;
-    }
-
-    void EnoGLContext::setViewport(int width, int height)
-    {
-        glViewport(0, 0, width, height);
-    }
-
-    void EnoGLContext::clear(const Color& clearColor)
-    {
-        glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-        glClear(GL_COLOR_BUFFER_BIT);
-    }
-
-    void EnoGLContext::enableBlending()
-    {
-        glEnable(GL_BLEND);
-    }
-
-    void EnoGLContext::disableBlending()
-    {
-        glDisable(GL_BLEND);
-    }
 
     // =============================================================================
     // EnoShader Implementation - Shader compilation and management
@@ -423,8 +351,8 @@ namespace Graphics
     // EnoGraphicsManager Implementation - Main graphics interface
     // =============================================================================
 
-    EnoGraphicsManager::EnoGraphicsManager(Event::EnoEventBus& bus, GLFWwindow* window)
-        : bus_(bus), window_(window), initialized_(false)
+    EnoGraphicsManager::EnoGraphicsManager(Event::EnoEventBus& bus)
+        : bus_(bus), initialized_(false)
     {
         // Reserve space for batch rendering
         batchVertices_.reserve(MAX_BATCH_SIZE);
@@ -440,21 +368,17 @@ namespace Graphics
         shutdown();
     }
 
-    void EnoGraphicsManager::Update()
-    {
-        // Will add window resize stuff later
-    }
 
-    bool EnoGraphicsManager::initialize()
+    bool EnoGraphicsManager::initialize(Window::EnoWindow& window)
     {
         if (initialized_) return true;
 
-        // Initialize OpenGL context
-        if (!EnoGLContext::initialize(window_))
-        {
-            std::cerr << "Failed to initialize OpenGL context!" << std::endl;
-            return false;
-        }
+        // Set up basic OpenGL state for 2D rendering
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Enable point size control from shaders for drawPoint
+        glEnable(GL_PROGRAM_POINT_SIZE); // Can disable if not needed
 
         // Create default shader for primitive rendering
         if (!createDefaultShader())
@@ -468,11 +392,14 @@ namespace Graphics
 
         // Set up initial projection matrix
         int width, height;
-        glfwGetFramebufferSize(window_, &width, &height);
+        glfwGetFramebufferSize(window.getWindow(), &width, &height);
         setupProjectionMatrix(width, height);
 
         initialized_ = true;
+
+#ifdef _DEBUG
         std::cout << "Graphics system initialized successfully!" << std::endl;
+#endif
         return true;
     }
 
@@ -487,7 +414,8 @@ namespace Graphics
     void EnoGraphicsManager::beginFrame(const Color& clearColor)
     {
         // Clear the screen
-        EnoGLContext::clear(clearColor);
+        glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+        glClear(GL_COLOR_BUFFER_BIT);;
 
         // Clear batch for new frame
         batchVertices_.clear();
@@ -497,14 +425,14 @@ namespace Graphics
         bus_.publish(Events::RenderFrameBegin{});
     }
 
-    void EnoGraphicsManager::endFrame()
+    void EnoGraphicsManager::endFrame(Window::EnoWindow& window)
     {
         if (!batchVertices_.empty())
         {
             flushBatch(currentBatchPrimitiveType_);  // Use tracked type
         }
 
-        glfwSwapBuffers(window_);
+        glfwSwapBuffers(window.getWindow());
         bus_.publish(Events::RenderFrameEnd{});
     }
 

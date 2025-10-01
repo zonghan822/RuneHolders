@@ -5,12 +5,10 @@
 
 // Engine Component(s)
 #include "../event/event_bus.hpp"
+#include "../window/window_events.hpp"
 
 // Utility
 #include "../utility/eno_bimap.hpp"
-
-// Events
-#include "../game_instance/game_instance_events.hpp"
 
 // stds
 #include <iostream>
@@ -56,7 +54,7 @@ namespace Input
 	class EnoInputManager
 	{
 	public:
-		EnoInputManager(GLFWwindow* window, Event::EnoEventBus& bus);
+		EnoInputManager(Event::EnoEventBus& bus);
 
 		// Set up a key in the input map
 		void setupKey(const std::string& inputName, int key = 0, int scancode = 0, int action = 0, int mods = 0);
@@ -125,17 +123,10 @@ namespace Input
 		double prevMouseX_ = 0.0, prevMouseY_ = 0.0;
 		double scrollX_ = 0.0, scrollY_ = 0.0;
 
-		static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-		static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
-		static void MousePosCallback(GLFWwindow* window, double xpos, double ypos);
-		static void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-
-
 		// Handle key inputs
 		void handleKey(int key, int scancode, int action, int mods);
 		void handleMouseButton(int button, int action, int mods);
 		void handleMouseCursor(double xpos, double ypos);
 		void handleMouseScroll(double xoffset, double yoffset);
-
 	};
 }

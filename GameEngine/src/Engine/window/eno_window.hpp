@@ -1,7 +1,11 @@
 #pragma once
 // OpenGL api
-#include <GLFW/glfw3.h>
 #include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+// Engine Component(s)
+#include "../event/event_bus.hpp"
+#include "window_events.hpp"
 
 // stds
 #include <iostream>
@@ -13,7 +17,7 @@ namespace Window
 	class EnoWindow 
 	{
 	public:
-		EnoWindow() = default;
+		EnoWindow(Event::EnoEventBus& bus);
 
 		// Non-copyable, movable
 		EnoWindow(const EnoWindow&) = delete;
@@ -21,7 +25,7 @@ namespace Window
 		EnoWindow(EnoWindow&&) = default;
 		EnoWindow& operator=(EnoWindow&&) = default;
 
-		~EnoWindow() { shutdown(); }
+		~EnoWindow();
 
 		// Create a window and make its GL context current.
 		// Throws std::runtime_error on failure.
@@ -35,21 +39,31 @@ namespace Window
 		GLFWwindow* getWindow() const;
 
 		// Window lifecycle
-		void pollEvents() const { if (window_) glfwPollEvents(); }
-		void swapBuffers() const { if (window_) glfwSwapBuffers(window_); }
-		bool shouldClose() const { return window_ == nullptr ? true : glfwWindowShouldClose(window_); }
-		void setShouldClose(bool value) { if (window_) glfwSetWindowShouldClose(window_, value ? GLFW_TRUE : GLFW_FALSE); }
+		void pollEvents() const;
+		void swapBuffers() const;
+		bool shouldClose() const;
+		void setShouldClose(bool value);
 
-		std::pair<int, int> getWindowSize() const {
-			int w = 0, h = 0;
-			if (window_) glfwGetWindowSize(window_, &w, &h);
-			return { w,h };
-		}
+		std::pair<int, int> getWindowSize() const;
+
+		// VSync
+		void setVSync(bool enabled) const;
 
 	private:
+		// event callbacks
+		static void ErrorCallback(int err, char const* description);
+		static void FbSizeCallback(GLFWwindow* window, int width, int height);
+		static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+		static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+		static void MousePosCallback(GLFWwindow* window, double xpos, double ypos);
+		static void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
+		// setup callbacks
 		void setupEventCallbacks();
+
 
 	private:
 		GLFWwindow* window_ = nullptr;
+		Event::EnoEventBus& bus_;
 	};
 }
