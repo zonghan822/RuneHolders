@@ -6,6 +6,13 @@
 #include <iostream>
 #include <fstream>
 
+#include "../engine/eno_engine.hpp"
+
+// Forward declare EnoEngine its usable in function signatures
+namespace Engine {
+    class EnoEngine;
+}
+
 
 struct PrefabData {
     std::string name;
@@ -19,5 +26,7 @@ struct PrefabData {
 };
 
 extern std::unordered_map<std::string, PrefabData> prefabRegistry;
+// Prefabs
+void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine);
 void savePrefab(const PrefabData& prefab);
 PrefabData loadPrefab(const std::string& filename);
