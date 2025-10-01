@@ -86,10 +86,11 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	float moveDelta = moveSpeed_ * deltaTime;
 
 	/* (kim) changed to ARROW KEYS for indicator control */
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) indicatorY_ -= moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) indicatorY_ += moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) indicatorX_ -= moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) indicatorX_ += moveDelta;
+	auto& inputManager = engine_.getInputManager();
+	if (inputManager.isKeyPressed(GLFW_KEY_UP)) indicatorY_ -= moveDelta;
+	if (inputManager.isKeyPressed(GLFW_KEY_DOWN)) indicatorY_ += moveDelta;
+	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
+	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
 
 	prefab.x = indicatorX_;
