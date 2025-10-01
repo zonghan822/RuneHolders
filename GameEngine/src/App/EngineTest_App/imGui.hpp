@@ -47,3 +47,9 @@ void imGuiDisplay(GLFWwindow* window, Engine::EnoEngine& engine_);
 
 void imGuiTerminate();
 
+//prefabs
+void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine);
+
+void static crashLogging();
+
+void static displayEntityCount(Engine::EnoEngine& engine_);

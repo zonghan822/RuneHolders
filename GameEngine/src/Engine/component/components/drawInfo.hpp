@@ -6,7 +6,7 @@
 //i would want to add the math and graphics library here
 #include "../../graphics/graphics.hpp"
 
-enum WindowID { Main, Edit, FPS };
+enum WindowID { Main, Edit, FPS, Prefabs };
 static WindowID activeWindow = WindowID::Main;
 
 enum Shapes {
