@@ -281,7 +281,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		if (FilterType == Filters::Name) {
 
 			if (ImGui::Button("Delete John")) {
-				for (ECS::Entity& e : engine_.getEntityManager().findEntitybyType<ECSComponents::NameComponent>()) {
+				for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
 					if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent("John")) {
 						toDelete.push_back(e);
 					}
@@ -291,14 +291,14 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 		if (FilterType == Filters::Type) {
 			//do another list to look for the type here
-			for (ECS::Entity& e : engine_.getEntityManager().findEntitybyType<>()) {
+			for (ECS::Entity& e : engine_.getEntityManager().findEntity<>()) {
 
 			}
 
 		}
 		if (FilterType == Filters::ID) {
 
-			for (ECS::Entity& e : engine_.getEntityManager().findEntitybyType<>()) {
+			for (ECS::Entity& e : engine_.getEntityManager().findEntity<>()) {
 
 			}
 

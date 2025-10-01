@@ -20,6 +20,8 @@
 #include "../Engine/collision/collision.hpp"
 #include "../Engine/ecs/entity.hpp"
 #include "../Engine/input/eno_input.hpp"
+#include "../Engine/engine/eno_engine.hpp"
+
 #include <GLFW/glfw3.h>
 
 namespace Player
