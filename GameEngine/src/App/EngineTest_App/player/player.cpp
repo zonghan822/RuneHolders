@@ -9,6 +9,34 @@
 
 namespace Player
 {
+
+    // =============================================================================
+    // HELPER FUNCTIONS
+    // =============================================================================
+    
+    // Manual power function for integer exponents
+    float Pow(float base, int exponent)
+    {
+        if (exponent == 0) return 1.0f;
+
+        float result = 1.0f;
+        int absExp = (exponent < 0) ? -exponent : exponent;
+
+        for (int i = 0; i < absExp; ++i)
+        {
+            result *= base;
+        }
+
+        return (exponent < 0) ? (1.0f / result) : result;
+    }
+
+    // Easing function for smooth dash deceleration
+    float EaseOutQuint(float x) {
+        
+        float oneMinusX = 1.0f - x;
+        return 1.0f - Pow(oneMinusX, 5);
+    }
+
     //======================================================================================
     // PLAYER SYSTEM IMPLEMENTATION
     //======================================================================================
@@ -49,6 +77,89 @@ namespace Player
             auto& transform = GetTransform(entityLoc);
             auto& collider = GetCollision(entityLoc);
 
+            // Update Dash Cooldown
+            if (playerComp.dashCooldownTimer > 0.0f)
+            {
+                playerComp.dashCooldownTimer -= deltaTime;
+                if (playerComp.dashCooldownTimer < 0.0f)
+                    playerComp.dashCooldownTimer = 0.0f;
+            }
+
+            // Dash logic
+            if (playerComp.isDashing)
+            {
+                // Update dash timer
+                playerComp.dashTimer += deltaTime;
+
+                // Calculate progress (0 to 1)
+                float progress = playerComp.dashTimer / playerComp.dashDuration;
+
+                if (progress >= 1.0f)
+                {
+                    // Dash complete
+                    progress = 1.0f;
+                    playerComp.isDashing = false;
+                    playerComp.dashTimer = 0.0f;
+                    playerComp.dashCooldownTimer = playerComp.dashCooldown;
+                }
+
+                // Apply easing function
+                float easedProgress = EaseOutQuint(progress);
+
+                // Calculate target position
+                Math::eVec2<float> targetPos =
+                {
+                    playerComp.dashStartPos.v1 + (playerComp.dashDirection.v1 * playerComp.dashDistance * easedProgress),
+                    playerComp.dashStartPos.v2 + (playerComp.dashDirection.v2 * playerComp.dashDistance * easedProgress)
+                };
+
+                // Check if we can move to target position (collision check)
+                if (CanMoveTo(entityLoc, collider, targetPos, entityManager))
+                {
+                    transform.pos.x = targetPos.v1;
+                    transform.pos.y = targetPos.v2;
+                }
+                else {
+                    // Hit something - end dash early
+                    playerComp.isDashing = false;
+                    playerComp.dashTimer = 0.0f;
+                    playerComp.dashCooldownTimer = playerComp.dashCooldown;
+                }
+
+                // Skip normal movement during dash
+                continue;
+            }
+
+            // Initiate Dash with Spacebar Key
+            if (inputManager.isKeyPressed(GLFW_KEY_SPACE) && playerComp.dashCooldownTimer <= 0.0f && playerComp.canMove)
+            {
+                // Get current movement input to determine dash direction
+                Math::eVec2<float> input = GetMovementInput(inputManager);
+
+                // If no input, dash in last faced direction (or default forward)
+                if (Math::eVec2SquaredLength(input) < 0.01f)
+                {
+                    // Default dash forward (down in screen space)
+                    input = { 0.0f, 1.0f };
+                }
+
+                // Normalize the direction
+                Math::eVec2<float> dashDir;
+                Math::eVec2Normalize(dashDir, input);
+
+                // Start the dash
+                playerComp.isDashing = true;
+                playerComp.dashTimer = 0.0f;
+                playerComp.dashDirection = dashDir;
+                playerComp.dashStartPos = { transform.pos.x, transform.pos.y };
+
+                // Skip normal movement this frame
+                continue;
+            }
+
+            // ====== NORMAL MOVEMENT (when not dashing) ======
+            if (!playerComp.canMove) continue;
+
             // Get input from EnoInputManager (WASD keys)
             Math::eVec2<float> input = GetMovementInput(inputManager);
 
@@ -76,8 +187,8 @@ namespace Player
         }
     }
 
-
-
+    
+     
     // Updated GetMovementInput to use EnoInputManager reference
     Math::eVec2<float> PlayerSystem::GetMovementInput(Input::EnoInputManager& inputManager)
     {
@@ -169,21 +280,8 @@ namespace Player
 
             // If collision detected, can't move there
             if (result.hasCollision) {
-//#ifdef _DEBUG
-//                std::cout << "  >>> COLLISION DETECTED! <<<" << std::endl;
-//                std::cout << "  Penetration depth: " << result.penetrationDepth << std::endl;
-//                std::cout << "  Penetration vector: (" << result.penetrationVector.v1 << ", " << result.penetrationVector.v2 << ")" << std::endl;
-//                std::cout << "  Contact point: (" << result.contactPoint.v1 << ", " << result.contactPoint.v2 << ")" << std::endl;
-//                std::cout << std::endl;
-//#endif
                 return false;
-            }
-            else
-            {
-                //std::cout << "  No collision" << std::endl;
-                //std::cout << std::endl;
-            }
-               
+            }              
         }
 
         // No collisions - movement is valid
