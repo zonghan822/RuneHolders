@@ -32,6 +32,8 @@ target_include_directories(${ENGINE_NAME} PUBLIC
 target_compile_definitions(${ENGINE_NAME} 
     PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
     -DGLEW_STATIC
+    _CRT_NONSTDC_NO_DEPRECATE
+    _CRT_SECURE_NO_WARNINGS
 )
 
 target_link_libraries(${ENGINE_NAME}
