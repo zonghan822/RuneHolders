@@ -153,11 +153,11 @@ namespace Player
                 continue;
 
             // DEBUG: Print positions before collision check
-            std::cout << "[COLLISION CHECK]" << std::endl;
-            std::cout << "  Player target pos: (" << targetPos.v1 << ", " << targetPos.v2 << ")" << std::endl;
-            std::cout << "  Player collider: " << playerCollider.data.rectangle.width << "x" << playerCollider.data.rectangle.height << std::endl;
-            std::cout << "  Entity " << otherID << " pos: (" << otherTransform.pos.x << ", " << otherTransform.pos.y << ")" << std::endl;
-            std::cout << "  Entity collider: " << otherCollider.data.rectangle.width << "x" << otherCollider.data.rectangle.height << std::endl;
+            //std::cout << "[COLLISION CHECK]" << std::endl;
+            //std::cout << "  Player target pos: (" << targetPos.v1 << ", " << targetPos.v2 << ")" << std::endl;
+            //std::cout << "  Player collider: " << playerCollider.data.rectangle.width << "x" << playerCollider.data.rectangle.height << std::endl;
+            //std::cout << "  Entity " << otherID << " pos: (" << otherTransform.pos.x << ", " << otherTransform.pos.y << ")" << std::endl;
+            //std::cout << "  Entity collider: " << otherCollider.data.rectangle.width << "x" << otherCollider.data.rectangle.height << std::endl;
 
             // Perform collision test at target position
             Collision::CollisionResult result = Collision::CollisionDetection::CheckCollision(
@@ -169,19 +169,19 @@ namespace Player
 
             // If collision detected, can't move there
             if (result.hasCollision) {
-#ifdef _DEBUG
-                std::cout << "  >>> COLLISION DETECTED! <<<" << std::endl;
-                std::cout << "  Penetration depth: " << result.penetrationDepth << std::endl;
-                std::cout << "  Penetration vector: (" << result.penetrationVector.v1 << ", " << result.penetrationVector.v2 << ")" << std::endl;
-                std::cout << "  Contact point: (" << result.contactPoint.v1 << ", " << result.contactPoint.v2 << ")" << std::endl;
-                std::cout << std::endl;
-#endif
+//#ifdef _DEBUG
+//                std::cout << "  >>> COLLISION DETECTED! <<<" << std::endl;
+//                std::cout << "  Penetration depth: " << result.penetrationDepth << std::endl;
+//                std::cout << "  Penetration vector: (" << result.penetrationVector.v1 << ", " << result.penetrationVector.v2 << ")" << std::endl;
+//                std::cout << "  Contact point: (" << result.contactPoint.v1 << ", " << result.contactPoint.v2 << ")" << std::endl;
+//                std::cout << std::endl;
+//#endif
                 return false;
             }
             else
             {
-                std::cout << "  No collision" << std::endl;
-                std::cout << std::endl;
+                //std::cout << "  No collision" << std::endl;
+                //std::cout << std::endl;
             }
                
         }
