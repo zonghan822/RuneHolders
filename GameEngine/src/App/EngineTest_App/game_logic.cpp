@@ -169,6 +169,20 @@ void GameApplication::updateEntities() {
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
 	auto& inputManager = engine_.getInputManager();
+	auto& graphics = engine_.getGraphicsManager();
+	auto windowDim = engine_.getConfigManager().getWindowDim();
+	Math::eVec2<float> windowSize{
+			static_cast<float>(windowDim.first),
+			static_cast<float>(windowDim.second)
+	};
+	graphics.drawTexturedQuadUV(
+		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
+		windowSize,                                // Full screen size from config
+		backgroundTexture_,
+		Math::eVec2<float>{0.0f, 0.0f},           // UV start
+		Math::eVec2<float>{1.0f, 1.0f},           // UV end
+		Graphics::Color::White
+	);
 
 	// Check if player is moving and switch animation accordingly
 	if (playerSystem_ && playerSpawned_) {

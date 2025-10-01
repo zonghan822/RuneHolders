@@ -351,16 +351,6 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 				instantiatePrefab(prefabRegistry[prefab.name], engine_);
 			}
 		}
-
-		//if (ImGui::Button("Save All Entities")) {
-		//	for (auto& ent : engine_.getEntityManager().findEntity<>()) {
-		//		//ent.save();
-		//	}
-		//}
-
-		//if (ImGui::Button("Load All Entities")) {
-
-		//}
 	
 		ImGui::End();
 	}
@@ -371,13 +361,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 }
 
 
-void static crashLogging() {
-	//open file
-	//write to it
-	//called after catch i guess... this should prolly not be part of imgui
-}
-
-void static displayEntityCount(Engine::EnoEngine& engine_) {
+void displayEntityCount(Engine::EnoEngine& engine_) {
 	size_t counter = 0;
 	
 	std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<>();
