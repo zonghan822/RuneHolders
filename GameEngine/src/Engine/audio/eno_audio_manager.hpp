@@ -11,7 +11,6 @@
 
 //stds
 #include <cstdint>
-#include <string>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -30,15 +29,6 @@ namespace Audio
 
 		~EnoAudioManager()
 		{
-			// Release sounds loaded
-			for (auto& pair : sounds_)
-			{
-				if (pair.second)
-				{
-					pair.second->release();
-				}
-			}
-
 			system->close();
 			system->release();
 		}

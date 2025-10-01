@@ -1,13 +1,13 @@
 #pragma once
 // STB_IMAGE
-#include "../../../lib/stb_image/stb_image.h"
+#include "stb_image.h"
 
 // FMOD
 #include "fmod.hpp"
 
 // Events
 #include "../audio/audio_events.hpp"
-#include "../event/eventBus.hpp"
+#include "../event/event_bus.hpp"
 
 // Graphics
 #include "../graphics/graphics.hpp"
@@ -55,7 +55,14 @@ namespace Resources
 
 		EnoLoader(Event::EnoEventBus& bus) :
 			bus_{ bus }
+		{}
+
+		~EnoLoader()
 		{
+			for (const auto& sound : sounds_)
+			{
+				if (sound.second) sound.second->release();
+			}
 		}
 
 		// Sound getters

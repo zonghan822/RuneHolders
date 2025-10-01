@@ -6,11 +6,11 @@
 #include "../window/eno_window.hpp"
 #include "../input/eno_input.hpp"
 #include "../ecs/entity.hpp"
-#include "../component/componentRegistry.hpp"
+#include "../component/component_registry.hpp"
 #include "../event/signals.hpp"
 #include "../audio/eno_audio_manager.hpp"
 #include "../math/math.hpp"
-#include "../tag/tagRegistry.hpp"
+#include "../tag/tag_registry.hpp"
 #include "../game_instance/eno_game_instance.hpp"
 #include "../collision/collision.hpp"
 
@@ -54,6 +54,7 @@ namespace Engine
 		EngineConfiguration::EnoConfigManager configMng_;
 		Window::EnoWindow windowMng_{ configMng_.getWindowDim() };
 		Event::EnoEventBus bus_;
+		Audio::EnoAudioManager audioMng_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
 		ECS::EntityManager entityMng_;
 		

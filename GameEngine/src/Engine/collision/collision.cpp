@@ -468,7 +468,7 @@ namespace Collision {
 	// COLLISION SYSTEM IMPLEMENTATION
 	// =============================================================================
 
-	CollisionSystem::CollisionSystem(Event::EnoEventBus& eventBus) : eventBus_(eventBus)
+	CollisionSystem::CollisionSystem(Event::EnoEventBus& event_bus) : eventBus_(event_bus)
 	{
 		// storing event bus reference
 		// system is ready to use 
