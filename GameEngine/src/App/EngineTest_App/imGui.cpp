@@ -196,7 +196,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::Combo("ColliderType", &selectedCollider, colliderShapes, IM_ARRAYSIZE(colliderShapes));
 
 		if (selectedCollider == 1) { // circle
-			ImGui::DragFloat("Collider Width", &colliderWidth, 0.5f, 1.0f, 100.0f);
+			ImGui::DragFloat("Collider Width", &colliderRadius, 0.5f, 1.0f, 100.0f);
 		}
 		else if (selectedCollider == 2) { // rectangle
 			ImGui::DragFloat("Collider Width", &colliderWidth, 0.5f, 1.0f, 100.0f);
