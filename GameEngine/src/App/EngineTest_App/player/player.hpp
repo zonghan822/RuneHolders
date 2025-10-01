@@ -25,6 +25,14 @@
 namespace Player
 {
     //======================================================================================
+    // PLAYER RENDERING AND COLLISION CONSTANTS
+    //======================================================================================
+    constexpr float PLAYER_SPRITE_WIDTH = 48.0f;
+    constexpr float PLAYER_SPRITE_HEIGHT = 48.0f;
+    constexpr float PLAYER_COLLIDER_WIDTH = 48.0f;
+    constexpr float PLAYER_COLLIDER_HEIGHT = 48.0f;
+
+    //======================================================================================
     // PLAYER COMPONENT
     //======================================================================================
 
@@ -39,6 +47,17 @@ namespace Player
         float moveSpeed;        // movement speed in pixels per second
         bool canMove;           // can the player move? (for stun effects, etc)
 
+        // dashing properties
+        bool isDashing;         // is the player currently dashing?
+        float dashTimer;        // current time in the dash
+        float dashDuration;     // how long the dash lasts (e.g., 0.2 seconds)
+        float dashDistance;     // how far to dash (e.g, 150 pixels)
+        float dashCooldown;     // cooldown time before next dash (e.g., 1.0 second)
+        float dashCooldownTimer; // tracks cooldown
+        Math::eVec2<float> dashDirection;   // direction of the dash
+        Math::eVec2<float> dashStartPos;    // starting position of dash
+
+
         /*
         * @brief Constructor with default values
         * @param speed - movement speed (default: 200.0f pixels/sec)
@@ -46,6 +65,14 @@ namespace Player
         PlayerComponent(float speed = 200.0f)
             : moveSpeed(speed)
             , canMove(true)
+            , isDashing(false)
+            , dashTimer(0.0f)
+            , dashDuration(0.3f)    // dash lasts 0.3 seconds
+            , dashDistance(150.0f)  // dash 150 pixels
+            , dashCooldown(0.5f)    // 0.5 second cooldown
+            , dashCooldownTimer(0.0f)
+            , dashDirection{0.0f, 0.0f}
+            , dashStartPos{0.0f, 0.0f}
         {
         }
     };
