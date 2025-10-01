@@ -4,14 +4,14 @@ namespace Engine
 {
 	void EnoEngine::setup()
 	{
-		setupResourceLoading();
-		setupEventSystem();
-
 		window_.initialize("RuneHolders", configMng_.getWindowDim().first, configMng_.getWindowDim().second);
 
 		// Systems init
 		inputMng_.initialize();
 		graphicsMng_.initialize(window_);
+
+		setupResourceLoading();
+		setupEventSystem();
 	}
 
 	// Thats why i added a callback version

@@ -14,14 +14,14 @@ namespace Config {
 			throw std::runtime_error("Failed to retrieve window width and/or height value!");
 		}
 
-		return { it->second, it2->second };
+		return { std::stoi(it->second), std::stoi(it2->second) };
 	}
 
 	// Read the local Settings file and
 	// store configurations
-	void EnoConfigManager::retrieveSettings()
-	{
+	void EnoConfigManager::retrieveSettings() {
 		read();
+		setEngineVer();
 	}
 
 	// Read the local config.txt file
@@ -45,7 +45,7 @@ namespace Config {
 					if (input.find(pair.first) != std::string::npos)
 					{
 						std::size_t pos = input.find(pair.first);
-						pair.second = std::stoi(input.substr(pos + std::string(pair.first).size() + COLON_OFFSET));
+						pair.second = input.substr(pos + std::string(pair.first).size() + COLON_OFFSET);
 					}
 				}
 			}
@@ -54,5 +54,18 @@ namespace Config {
 		{
 			throw std::runtime_error("Settings file does not exist!");
 		}
+	}
+
+	void EnoConfigManager::setEngineVer() {
+
+		auto it = configMap_.find("Engine Version");
+		if (it == configMap_.end())
+		{
+			throw std::runtime_error("Engine version not found!");
+		}
+
+		// Copy into 
+		std::strncpy(engine_version, it->second.c_str(), sizeof(engine_version) - 1);
+		engine_version[sizeof(engine_version) - 1] = '\0';
 	}
 }

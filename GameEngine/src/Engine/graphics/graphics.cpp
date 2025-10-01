@@ -19,9 +19,7 @@ namespace Graphics
     // EnoTexture Implementation - Texture loading and management
     // =============================================================================
 
-    EnoTexture::EnoTexture() : textureID_(0), width_(0), height_(0), channels_(0)
-    {
-    }
+    EnoTexture::EnoTexture() : textureID_(0), width_(0), height_(0), channels_(0) { /*empty by design*/ }
 
     EnoTexture::~EnoTexture()
     {

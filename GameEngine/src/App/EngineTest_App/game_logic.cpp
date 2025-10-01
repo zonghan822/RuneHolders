@@ -78,7 +78,12 @@ void GameApplication::setupAnimations() {
 	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
 	playerWalkTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Walk-Sheet");
 
-	if (!playerTexture_)
+	if (!backgroundTexture_ || !backgroundTexture_->isValid())
+	{
+		std::cerr << "Background texture not loaded properly" << std::endl;
+	}
+
+	if (!playerTexture_ || !playerTexture_->isValid())
 	{
 		std::cout << "Warning: Could not load player sprite sheet!" << std::endl;
 		return;
@@ -150,11 +155,15 @@ void GameApplication::updateGameLogic() {
 	}
 
     updateEntities();
+
+	// DEMO DRAW TEXT
+	auto& graphics = engine_.getGraphicsManager();
+	graphics.drawText(liberationFont_, "Hello World!", { 50.f, 100.f }, 1.f, Graphics::Color::White);
+
     updateAudio();
     drawShapes();
 	drawPlayerAndIndicator();
 
-	auto& graphics = engine_.getGraphicsManager();
 	engine_.getGraphicsManager().flush();
 
 	updateImGui();
@@ -174,6 +183,7 @@ void GameApplication::updateEntities() {
 			static_cast<float>(windowDim.first),
 			static_cast<float>(windowDim.second)
 	};
+
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
 		windowSize,                                // Full screen size from config
