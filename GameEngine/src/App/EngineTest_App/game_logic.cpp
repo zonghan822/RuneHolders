@@ -270,7 +270,7 @@ void GameApplication::drawPlayerAndIndicator() {
 				if (currentTexture && currentTexture->isValid()) {
 					graphics.drawTexturedQuadUV(
 						Math::eVec2<float>{transform.pos.x, transform.pos.y},
-						Math::eVec2<float>{48.0f, 48.0f},
+						Math::eVec2<float>{Player::PLAYER_SPRITE_WIDTH, Player::PLAYER_SPRITE_HEIGHT},
 						currentTexture,
 						uvStart,  // Use potentially flipped UV coords
 						uvEnd,    // Use potentially flipped UV coords

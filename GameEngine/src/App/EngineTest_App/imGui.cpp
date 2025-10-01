@@ -131,7 +131,10 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 				};
 
 				// create player with rectangle collider (can change to circle if u want)
-				Collision::CollisionComponent playerCollider(10.0f, 10.0f); // 10x10 rectangle
+				Collision::CollisionComponent playerCollider(
+					Player::PLAYER_COLLIDER_WIDTH,
+					Player::PLAYER_COLLIDER_HEIGHT
+				); // 10x10 rectangle
 
 				// for circle: (uncomment if u want circle!)
 				// Collision::CollisionComponent playerCollider(5.0f); // radius 5.0
@@ -213,9 +216,14 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 			// add collider if selected
 			if (selectedCollider != 0) {
-				// first add transform component (required for collision)
+
+				// calculate center position from top-left
+				float centerX = indicatorX_ + (eWidth * 0.5f);
+				float centerY = indicatorY_ + (eHeight * 0.5f);
+
+				// add transform component (required for collision)
 				ECSComponents::TransformComponent transform{
-					{indicatorX_, indicatorY_, 0.0f},
+					{centerX, centerY, 0.0f},
 					{0.0f, 0.0f, 0.0f},
 					{1.0f, 1.0f, 1.0f}
 				};
