@@ -1,14 +1,10 @@
 #pragma once
 
-namespace RegistryInfo
-{
-	enum ComponentID : uint32_t
-	{
-		NAME = 0,
-		VISBILITY = 1,
-		TRANSFORM = 2,
-		LAYER = 3,
-		MODULATION = 4,
-		DRAWINFO = 5,
-	};
-}
+
+#define COMPONENT_LIST \
+	X(NameComponent) \
+	X(VisibilityComponent) \
+	X(TransformComponent) \
+	X(LayerComponent) \
+	X(ModulationComponent) \
+	X(eVec2TransformComponent) \

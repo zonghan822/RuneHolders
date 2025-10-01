@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <typeindex>
 #include <algorithm>
+#include <iomanip>
 
 
 namespace ECSComponents
@@ -16,8 +17,6 @@ namespace ECSComponents
 	class EnoComponentRegistry
 	{
 	public:
-		using regID = RegistryInfo::ComponentID;
-
 		struct ComponentInfo
 		{
 			uint32_t id;
@@ -28,15 +27,27 @@ namespace ECSComponents
 		{
 			static std::unordered_map<std::type_index, ComponentInfo> map =
 			{
-				{ std::type_index(typeid(NameComponent)),				{ regID::NAME,					sizeof(NameComponent)			}},
-				{ std::type_index(typeid(VisibilityComponent)),			{ regID::VISBILITY,				sizeof(VisibilityComponent)		}},
-				{ std::type_index(typeid(TransformComponent)),			{ regID::TRANSFORM,				sizeof(TransformComponent)		}},
-				{ std::type_index(typeid(LayerComponent)),				{ regID::LAYER,					sizeof(LayerComponent)			}},
-				{ std::type_index(typeid(ModulationComponent)),			{ regID::MODULATION,			sizeof(ModulationComponent)		}},
-				{ std::type_index(typeid(DrawInfoComponent)),			{ regID::DRAWINFO,				sizeof(DrawInfoComponent)		}}
+#define X(TYPE) { std::type_index(typeid(TYPE)), { __COUNTER__, sizeof(TYPE) } },
+				COMPONENT_LIST
+#undef X
 			};
 
 			return map;
+		}
+
+		// Print all registered components and their respective ID and size
+		static void DisplayReg()
+		{
+			for (const auto& component : ComponentMap())
+			{
+				std::cout << "Component: " << component.first.name() << std::endl
+					<< "ID: " << component.second.id << std::endl
+					<< "Size: " << component.second.size << std::endl
+					<< std::setw(10) << std::setfill('_') << std::endl;
+			}
+
+			// Reset fill char
+			std::cout << std::setfill(' ');
 		}
 
 		// Register a new component into the componentMap
@@ -53,27 +64,7 @@ namespace ECSComponents
 			}
 
 			size_t id = ComponentMap().size();
-			ComponentMap().emplace(
-				index, 
-				ComponentInfo{ static_cast<uint32_t>(id), sizeof(Component) });
-		}
-
-		//  Sort and print each component and their corresponding id within the map
-		static void PrintIDs()
-		{
-			std::vector<std::pair<std::type_index, ComponentInfo>> cont{
-				ComponentMap().begin(), ComponentMap().end() };
-
-			// Sort components based on their id (ascending order)
-			std::sort(cont.begin(), cont.end(), [](auto& a, auto& b) 
-				{ return a.second.id < b.second.id; });
-
-			// Print
-			for (const auto& pair : cont)
-			{
-				std::cout << "Component: " << pair.first.name() << '\n'
-					<< "ID: " << pair.second.id << '\n';
-			}
+			ComponentMap().emplace(index, ComponentInfo{ static_cast<uint32_t>(id), sizeof(Component) });
 		}
 
 		// Get the ID of a component
