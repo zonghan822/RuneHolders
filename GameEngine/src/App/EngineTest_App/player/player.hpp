@@ -25,6 +25,14 @@
 namespace Player
 {
     //======================================================================================
+    // PLAYER RENDERING AND COLLISION CONSTANTS
+    //======================================================================================
+    constexpr float PLAYER_SPRITE_WIDTH = 48.0f;
+    constexpr float PLAYER_SPRITE_HEIGHT = 48.0f;
+    constexpr float PLAYER_COLLIDER_WIDTH = 48.0f;
+    constexpr float PLAYER_COLLIDER_HEIGHT = 48.0f;
+
+    //======================================================================================
     // PLAYER COMPONENT
     //======================================================================================
 

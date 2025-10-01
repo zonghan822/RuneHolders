@@ -86,10 +86,11 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	float moveDelta = moveSpeed_ * deltaTime;
 
 	/* (kim) changed to ARROW KEYS for indicator control */
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) indicatorY_ -= moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) indicatorY_ += moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) indicatorX_ -= moveDelta;
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) indicatorX_ += moveDelta;
+	auto& inputManager = engine_.getInputManager();
+	if (inputManager.isKeyPressed(GLFW_KEY_UP)) indicatorY_ -= moveDelta;
+	if (inputManager.isKeyPressed(GLFW_KEY_DOWN)) indicatorY_ += moveDelta;
+	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
+	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
 
 	prefab.x = indicatorX_;
@@ -131,7 +132,10 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 				};
 
 				// create player with rectangle collider (can change to circle if u want)
-				Collision::CollisionComponent playerCollider(10.0f, 10.0f); // 10x10 rectangle
+				Collision::CollisionComponent playerCollider(
+					Player::PLAYER_COLLIDER_WIDTH,
+					Player::PLAYER_COLLIDER_HEIGHT
+				); // 10x10 rectangle
 
 				// for circle: (uncomment if u want circle!)
 				// Collision::CollisionComponent playerCollider(5.0f); // radius 5.0
@@ -192,7 +196,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::Combo("ColliderType", &selectedCollider, colliderShapes, IM_ARRAYSIZE(colliderShapes));
 
 		if (selectedCollider == 1) { // circle
-			ImGui::DragFloat("Collider Width", &colliderWidth, 0.5f, 1.0f, 100.0f);
+			ImGui::DragFloat("Collider Width", &colliderRadius, 0.5f, 1.0f, 100.0f);
 		}
 		else if (selectedCollider == 2) { // rectangle
 			ImGui::DragFloat("Collider Width", &colliderWidth, 0.5f, 1.0f, 100.0f);
@@ -213,9 +217,14 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 			// add collider if selected
 			if (selectedCollider != 0) {
-				// first add transform component (required for collision)
+
+				// calculate center position from top-left
+				float centerX = indicatorX_ + (eWidth * 0.5f);
+				float centerY = indicatorY_ + (eHeight * 0.5f);
+
+				// add transform component (required for collision)
 				ECSComponents::TransformComponent transform{
-					{indicatorX_, indicatorY_, 0.0f},
+					{centerX, centerY, 0.0f},
 					{0.0f, 0.0f, 0.0f},
 					{1.0f, 1.0f, 1.0f}
 				};
