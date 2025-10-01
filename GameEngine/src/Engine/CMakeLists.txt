@@ -27,26 +27,23 @@ endif()
 
 target_include_directories(${ENGINE_NAME} SYSTEM PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories(${ENGINE_NAME} PUBLIC
-    ${glm_SOURCE_DIR} 
-    ${GLFW_SOURCE_DIR}/include
-    ${glew_SOURCE_DIR}/include
-    ${imgui_SOURCE_DIR}
-    ${imgui_SOURCE_DIR}/backends
     ${FMOD_INCLUDE_DIRS}
-    ${PROJECT_SOURCE_DIR}/lib/stb_image
 )
 target_compile_definitions(${ENGINE_NAME} 
     PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
     -DGLEW_STATIC
 )
 
-target_link_libraries(${ENGINE_NAME} 
+target_link_libraries(${ENGINE_NAME}
+    glm
     glfw
     libglew_static
     imgui
     fmod::core 
     fmod::studio
-    nlohmann_json
+    # nlohmann_json
+    freetype
+    stb_image
 )
 _fmod_copy_dll(${ENGINE_NAME})
 

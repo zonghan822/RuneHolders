@@ -128,6 +128,46 @@ macro(import_nlohmann_json)
     endif()
 endmacro()
 
+# ---------------------------------------------------------
+# Freetype
+# ---------------------------------------------------------
+macro(import_freetype)
+    if(NOT TARGET freetype)  # Guard to prevent multiple inclusion
+        include(FetchContent)
+
+        FetchContent_Declare(
+            freetype
+            GIT_REPOSITORY https://gitlab.freedesktop.org/freetype/freetype.git
+            GIT_TAG VER-2-13-2  # Pick a stable release
+        )
+        FetchContent_MakeAvailable(freetype)
+        set_library_folder(freetype)
+    endif()
+endmacro()
+
+# ---------------------------------------------------------
+# stb_image
+# ---------------------------------------------------------
+macro(import_stb_image)
+    if(NOT TARGET stb_image)  # Guard to prevent multiple inclusion
+        include(FetchContent)
+
+        FetchContent_Declare(
+            stb_image
+            GIT_REPOSITORY https://github.com/nothings/stb.git
+            GIT_TAG master  # Or specify a commit/tag, e.g., e.g., 2023-09-07
+        )
+        FetchContent_MakeAvailable(stb_image)
+
+        # Since stb_image is header-only, create an INTERFACE library
+        add_library(stb_image INTERFACE)
+        target_include_directories(stb_image INTERFACE
+            ${stb_image_SOURCE_DIR}
+        )
+        set_library_folder(stb_image)
+    endif()
+endmacro()
+
 # Macro to import all dependencies
 macro(importDependencies)
 message(STATUS "Starting to import dependencies...")
@@ -148,9 +188,18 @@ message(STATUS "Starting to import dependencies...")
     import_imgui()
     message(STATUS "ImGui imported successfully.")
 
-    message(STATUS "Importing nlohmann/json...")
-    import_nlohmann_json()
-    message(STATUS "nlohmann/json imported successfully.")
+    # Comment for now (Filename too long issue...)
+    # message(STATUS "Importing nlohmann/json...")
+    # import_nlohmann_json()
+    # message(STATUS "nlohmann/json imported successfully.")
+
+    message(STATUS "Importing Freetype...")
+    import_freetype()
+    message(STATUS "Freetype imported successfully.")
+
+    message(STATUS "Importing stb_image...")
+    import_stb_image()
+    message(STATUS "stb_image imported successfully.")
 
     message(STATUS "All dependencies have been imported successfully.")
     
