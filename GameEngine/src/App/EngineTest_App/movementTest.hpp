@@ -1,10 +1,10 @@
 #pragma once
-#include "math.hpp"
-#include "../component/components/drawInfo.hpp"
-#include "../component/components/transform.hpp"
-#include "../component/components/name.hpp"
-#include "../ecs/entity.hpp"
-#include "../engine/eno_engine.hpp"
+#include "math/math.hpp"
+#include "component/components/drawInfo.hpp"
+#include "component/components/transform.hpp"
+#include "component/components/name.hpp"
+#include "ecs/entity.hpp"
+#include "engine/eno_engine.hpp"
 
 
 

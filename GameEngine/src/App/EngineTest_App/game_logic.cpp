@@ -191,7 +191,7 @@ void GameApplication::updateEntities() {
 	);
 
 	// Get player input to toggle between scenes
-	if (inputManager.isKeyPressed(GLFW_KEY_L))
+	if (inputManager.isKeyPressed(GLFW_KEY_Q))
 	{
 		switch (currScene)
 		{
