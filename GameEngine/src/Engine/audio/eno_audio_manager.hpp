@@ -300,7 +300,8 @@ namespace Audio
 			ch->addDSP(0, reverbDSP);
 			ch->addDSP(0, eqDSP);
 
-			dsps_.push_back(reverbDSP, eqDSP);
+			dsps_.push_back(reverbDSP);
+			dsps_.push_back(eqDSP);
 		}
 
 		template <typename CH>
