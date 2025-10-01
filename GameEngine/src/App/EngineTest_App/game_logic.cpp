@@ -2,8 +2,6 @@
 #include <GLFW/glfw3.h>
 #include "imGui.hpp"
 #include "math/math.hpp"
-#include "math/movementTest.hpp"
-#include "../Engine/collision/collision.hpp"
 
 using Clock = std::chrono::high_resolution_clock;
 //throw std::runtime_error("error logging");
@@ -144,14 +142,6 @@ void GameApplication::updateGameLogic() {
 			static_cast<float>(windowDim.second)
 		};
 
-		graphics.drawTexturedQuadUV(
-			Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
-			windowSize,                                // Full screen size from config
-			backgroundTexture_,
-			Math::eVec2<float>{0.0f, 0.0f},           // UV start
-			Math::eVec2<float>{1.0f, 1.0f},           // UV end
-			Graphics::Color::White
-		);
 	}
 
 	// ===== UPDATE PLAYER ANIMATION =====
