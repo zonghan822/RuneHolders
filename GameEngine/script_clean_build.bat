@@ -41,7 +41,7 @@ mkdir build
 cd build
 
 REM Importing Dependencies
-cmake .. -G "Visual Studio 17 2022" -A x64 -DIMPORT_DEPS=TRUE
+cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 
 echo [3/4] Configuring Visual Studio with CMake...
 if %errorlevel% neq 0 (
     echo ERROR: CMake configuration failed!

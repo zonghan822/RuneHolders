@@ -1,6 +1,6 @@
 #pragma once
 // STB_IMAGE
-#include "../../../lib/stb_image/stb_image.h"
+#include "stb_image.h"
 
 // FMOD
 #include "fmod.hpp"
@@ -58,7 +58,14 @@ namespace Resources
 
 		EnoLoader(Event::EnoEventBus& bus) :
 			bus_{ bus }
+		{}
+
+		~EnoLoader()
 		{
+			for (const auto& sound : sounds_)
+			{
+				if (sound.second) sound.second->release();
+			}
 		}
 
 		// Sound getters
@@ -67,6 +74,7 @@ namespace Resources
 			static const std::string path{ musicPath_.data(), musicPath_.size() };
 			return path;
 		}
+
 		const std::string& getSFXPath() const
 		{
 			static const std::string path{ sfxPath_.data(), sfxPath_.size() };

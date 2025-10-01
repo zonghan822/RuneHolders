@@ -20,6 +20,8 @@ namespace Window
 	public:
 		EnoWindow(std::pair<int, int>);
 
+		~EnoWindow();
+
 		GLFWwindow* getWindow() const;
 
 		void windowInit(GLFWwindow*&);
