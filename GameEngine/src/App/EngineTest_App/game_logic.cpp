@@ -24,7 +24,7 @@ void GameApplication::initialize() {
     setupAnimations();
 
 	// Starting scene
-	currScene = PLAYER_SCENE;
+	currScene = DYANMIC_COL_SCENE;
 
     // This is for dynamic collision test object
     createTestObject(engine_.getEntityManager());
@@ -208,49 +208,53 @@ void GameApplication::updateEntities() {
 	// Determine current scene
 	switch (currScene)
 	{
-	case PLAYER_SCENE:
-		// Check if player is moving and switch animation accordingly
-		if (playerSystem_ && playerSpawned_) {
-			// Check for WASD input
-			bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
-				inputManager.isKeyPressed(GLFW_KEY_A) ||
-				inputManager.isKeyPressed(GLFW_KEY_S) ||
-				inputManager.isKeyPressed(GLFW_KEY_D);
+		case PLAYER_SCENE:
+		{
+			// Check if player is moving and switch animation accordingly
+			if (playerSystem_ && playerSpawned_) {
+				// Check for WASD input
+				bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+					inputManager.isKeyPressed(GLFW_KEY_A) ||
+					inputManager.isKeyPressed(GLFW_KEY_S) ||
+					inputManager.isKeyPressed(GLFW_KEY_D);
 
-			// Update facing direction based on A/D keys
-			if (inputManager.isKeyPressed(GLFW_KEY_D)) {
-				playerFacingDirection_ = -1;  // Face right
-			}
-			else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
-				playerFacingDirection_ = 1;  // Face left
-			}
-
-			// Switch animation based on movement
-			if (isMoving) {
-				if (playerAnimController_.getCurrentAnimationName() != "walk") {
-					playerAnimController_.setAnimation("walk");
+				// Update facing direction based on A/D keys
+				if (inputManager.isKeyPressed(GLFW_KEY_D)) {
+					playerFacingDirection_ = -1;  // Face right
 				}
-			}
-			else {
-				if (playerAnimController_.getCurrentAnimationName() != "idle") {
-					playerAnimController_.setAnimation("idle");
+				else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
+					playerFacingDirection_ = 1;  // Face left
 				}
+
+				// Switch animation based on movement
+				if (isMoving) {
+					if (playerAnimController_.getCurrentAnimationName() != "walk") {
+						playerAnimController_.setAnimation("walk");
+					}
+				}
+				else {
+					if (playerAnimController_.getCurrentAnimationName() != "idle") {
+						playerAnimController_.setAnimation("idle");
+					}
+				}
+
+				// Update player movement
+				playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 			}
 
-			// Update player movement
-			playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
+			// Update collision system
+			if (collisionSystem_) {
+				collisionSystem_->Update(engine_.getEntityManager());
+			}
+			break;
 		}
-
-		// Update collision system
-		if (collisionSystem_) {
-			collisionSystem_->Update(engine_.getEntityManager());
+		case DYANMIC_COL_SCENE:
+		{
+			updateTestObject(engine_.getEntityManager(), engine_);
+			break;
 		}
-		break;
-	case DYANMIC_COL_SCENE:
-		updateTestObject(engine_.getEntityManager(), engine_);
-		break;
+		
 	}
-
 
 	auto end = Clock::now();
 	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
@@ -384,19 +388,21 @@ void GameApplication::drawShapes() { // For testing
 	else if (currScene == DYANMIC_COL_SCENE)
 	{
 		//unique tagging for scene two objects for now would be eVec2TransformComponent
-		std::vector<ECS::Entity> sceneTwoList = engine_.getEntityManager().findEntity<ECSComponents::eVec2TransformComponent>();
+		std::vector<ECS::Entity> sceneTwoList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
 
 		for (ECS::Entity& entity : sceneTwoList) {
-			if (entity.has<ECSComponents::DrawInfoComponent>()) {
-				graphics.drawRect(
+			if (entity.has<drawInfo>()) {
+					graphics.drawCircle(
 					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
+					entity.get<drawInfo>().width,
 					entity.get<drawInfo>().color,
-					true
-				);
+					true);
+			}
+			// Draw colliders
+			if (showColliders_ && collisionSystem_) {
+				collisionSystem_->VisualizeColliders(graphics, entityManager);
 			}
 		}
-
 	}
 	
 

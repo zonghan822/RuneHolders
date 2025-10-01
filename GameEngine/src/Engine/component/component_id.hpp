@@ -9,6 +9,6 @@ namespace RegistryInfo
 		TRANSFORM = 2,
 		LAYER = 3,
 		MODULATION = 4,
-		DRAWINFO = 5
+		DRAWINFO = 5,
 	};
 }

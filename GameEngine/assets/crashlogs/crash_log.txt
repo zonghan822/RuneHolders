@@ -1,3 +1,24 @@
 [2025-10-01 04:12:26] file no open for read!!!
 [2025-10-01 04:31:25] file no open for read!!!
 [2025-10-01 04:32:11] file no open for read!!!
+[2025-10-02 05:34:26] Division by zero on a vector!
+[2025-10-02 05:35:16] Division by zero on a vector!
+[2025-10-02 05:37:53] Division by zero on a vector!
+[2025-10-02 05:40:05] Division by zero on a vector!
+[2025-10-02 05:41:56] Division by zero on a vector!
+[2025-10-02 05:42:34] Division by zero on a vector!
+[2025-10-02 05:44:10] Division by zero on a vector!
+[2025-10-02 05:44:41] Division by zero on a vector!
+[2025-10-02 05:45:08] Division by zero on a vector!
+[2025-10-02 05:45:14] Division by zero on a vector!
+[2025-10-02 05:45:46] Division by zero on a vector!
+[2025-10-02 05:49:06] Division by zero on a vector!
+[2025-10-02 06:06:18] Division by zero on a vector!
+[2025-10-02 06:06:28] Division by zero on a vector!
+[2025-10-02 06:06:55] Division by zero on a vector!
+[2025-10-02 06:07:05] Division by zero on a vector!
+[2025-10-02 06:07:28] Division by zero on a vector!
+[2025-10-02 06:07:45] Division by zero on a vector!
+[2025-10-02 06:09:24] Division by zero on a vector!
+[2025-10-02 06:09:59] Division by zero on a vector!
+[2025-10-02 06:11:47] Division by zero on a vector!

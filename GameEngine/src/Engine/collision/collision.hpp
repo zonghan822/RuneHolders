@@ -44,7 +44,8 @@ namespace Collision
 	{
 		CIRCLE = 0,		// circular collision areas (round objects)
 		RECTANGLE = 1,	// rectangular collision areas (AABB)
-		POINT = 2		// point collision (projectiles, click detection)
+		LINE = 2,
+		POINT = 3		// point collision (projectiles, click detection)
 	};
 
 	/* @brief component that stores collision information for entities 
@@ -75,6 +76,11 @@ namespace Collision
 				float height;		// height of rectangle collider
 			} rectangle;
 
+			struct LineData {
+				Math::eVec2<float> p1;			// first point of line collider
+				Math::eVec2<float> p2;			// second point of line collider
+				Math::eVec2<float> pNormal;		// normalized outward normal of line collider
+			} line;
 			// point collider doesn't need additional data beyond its position
 		} data;
 
@@ -108,6 +114,17 @@ namespace Collision
 			float width, 
 			float height, 
 			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f, }, 
+			bool trigger = false);
+
+		/*
+		@brief create a LINE collider
+		@param point1 - start point of line
+		@param point2 - end point of line
+		@param trigger - if TRUE, this collider, won't block movement but will detect overlaps
+		*/
+		CollisionComponent(
+			Math::eVec2<float> point1,
+			Math::eVec2<float> point2,
 			bool trigger = false);
 
 		/*
@@ -219,6 +236,34 @@ namespace Collision
 			const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA,
 			const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB);
 
+		/*
+		@brief dynamic collision detection function
+
+		automatically determines the correct algorithm based on collider types,
+		and performs the collision check and projects a reflected vector if any
+
+		@param colliderA	- first collision component
+		@param transformA	- transform first entity (for position)
+		@param colliderB	- second collision component
+		@param transformB	- transform of second entity (for position)
+		@param endPos		- next position of object
+		@param colPoint		- point of collision
+		@param normalAtCol	- normalized outward normal at collision point
+		@param colTi		- time till collision
+		@return bool		- returns true if collision occurs
+		*/
+		static bool CheckCollision(
+			const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA,
+			const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB,
+			const Math::eVec2<float>& endPos, Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi);
+
+
+		static void CollisionReflection(const Math::eVec2<float>& interPt,
+			const Math::eVec2<float>& normal,
+			Math::eVec2<float>& nextPos,
+			Math::eVec2<float>& reflected);
+
+
 	private:
 		//*****************************************
 		// collision detection functions
@@ -269,6 +314,18 @@ namespace Collision
 		*/
 		static CollisionResult CheckPointCollider(
 			const Math::eVec2<float>& pointPos, const CollisionComponent& colldier, const Math::eVec2<float>& colliderPos);
+
+		/*
+		@brief Check collision between a circle and line collider
+		@param pointPos - position of the point
+		@param collider - the other collider to check against
+		@param colliderPos - position of the other collider
+		@return CollisionResult - with collision details
+		*/
+		static bool CheckCircleLine(
+			const Math::eVec2<float>& circlePos, const float& radius, const Math::eVec2<float>& endPoint, const CollisionComponent& lineCol,
+			Math::eVec2<float>& pointAtCol, Math::eVec2<float>& normalAtCol, float& colTi);
+
 	};
 
 	//======================================================================================
