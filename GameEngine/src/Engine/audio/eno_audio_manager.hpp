@@ -37,6 +37,11 @@ namespace Audio
 				dsp->release();
 			}
 
+			for (const auto& sound : sounds_)
+			{
+				sound.second->release();
+			}
+
 			system->close();
 			system->release();
 		}
