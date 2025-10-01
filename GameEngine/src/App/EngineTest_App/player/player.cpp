@@ -31,10 +31,10 @@ namespace Player
     }
 
     // Easing function for smooth dash deceleration
-    float EaseOutQuint(float x) {
+    float EaseOutCubic(float x) {
         
         float oneMinusX = 1.0f - x;
-        return 1.0f - Pow(oneMinusX, 5);
+        return 1.0f - Pow(oneMinusX, 3);
     }
 
     //======================================================================================
@@ -104,7 +104,7 @@ namespace Player
                 }
 
                 // Apply easing function
-                float easedProgress = EaseOutQuint(progress);
+                float easedProgress = EaseOutCubic(progress);
 
                 // Calculate target position
                 Math::eVec2<float> targetPos =
