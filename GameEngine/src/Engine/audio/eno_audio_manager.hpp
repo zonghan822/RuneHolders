@@ -1,8 +1,5 @@
 #pragma once
 
-// Interface
-#include "../interface/system.hpp"
-
 // FMOD
 #include "fmod.hpp"
 
@@ -23,7 +20,7 @@
 
 namespace Audio
 {
-	class EnoAudioManager : public Sys::ISystem
+	class EnoAudioManager
 	{
 	public:
 		EnoAudioManager(Event::EnoEventBus& bus) : bus_{ bus }
@@ -60,11 +57,6 @@ namespace Audio
 		void process()
 		{
 			system->update();
-		}
-
-		void Update()
-		{
-
 		}
 
 		// Play all loaded sounds

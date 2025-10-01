@@ -53,7 +53,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 void testMovement(const Engine::EnoEngine& eng, ECSComponents::eVec2TransformComponent& transform, float speed) {
 
 	//dt
-	double dt = eng.GetDeltaTime();
+	double dt = eng.getDeltaTime();
 
 	//update movement here
 	//for now, i am doing linear movement without any velocity

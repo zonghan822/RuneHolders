@@ -9,17 +9,6 @@ namespace Engine
 		setupEventSystem();
 		setupGraphicsSystem();
 		loader_.loadImages(loader_.getImagePath());
-		// For debugging
-		compReg_.PrintIDs();
-
-		// Removed all your previous game codes like math and shi
-		
-	}
-
-	// Simpler run not sure how to build on but yeah
-	void EnoEngine::run()
-	{
-		run(nullptr);
 	}
 
 	// Thats why i added a callback version
@@ -27,28 +16,23 @@ namespace Engine
 	{
 		soundSetup();
 
-		while (!glfwWindowShouldClose(window_.getWindow()))
+		while (!glfwWindowShouldClose(windowMng_.getWindow()))
 		{
-
-
 			glfwPollEvents();
 
-			update_time(1.0);
+			updateTime(1.0);
 
 			// Handle window resize for graphics system
 			int width, height;
-			glfwGetFramebufferSize(window_.getWindow(), &width, &height);
+			glfwGetFramebufferSize(windowMng_.getWindow(), &width, &height);
 			if (width > 0 && height > 0) 
 			{
-				graphicsMng_->setProjectionMatrix(width, height);
+				graphicsMng_.setProjectionMatrix(width, height);
 			}
 
 			// Begin graphics frame
-			if (graphicsMng_ && graphicsMng_->isInitialized())
-			{
-				graphicsMng_->beginFrame(Graphics::Color::Black);  // Clear to black
-			}
-
+			graphicsMng_.beginFrame(Graphics::Color::Black);  // Clear to black
+			
 			// Call game logic if provided
 			if (gameUpdateCallback) {
 				gameUpdateCallback();
@@ -58,11 +42,14 @@ namespace Engine
 			updateEngineSystems();
 
 			// End graphics frame and present
-			if (graphicsMng_ && graphicsMng_->isInitialized())
-			{
-				graphicsMng_->endFrame();
-			}
+			graphicsMng_.endFrame();
+
+			inputMng_.endFrame();
 		}
+
+	}
+
+	void EnoEngine::shutDown() {
 
 	}
 
@@ -95,32 +82,22 @@ namespace Engine
 
 		bus_.subscribe<Graphics::Events::WindowResized>(
 			[&](const Graphics::Events::WindowResized& event) {
-				if (graphicsMng_ && graphicsMng_->isInitialized())
+				if (graphicsMng_.isInitialized())
 				{
-					graphicsMng_->setProjectionMatrix(event.width, event.height);
+					graphicsMng_.setProjectionMatrix(event.width, event.height);
 				}
 			});
 	}
 
 	void EnoEngine::setupGraphicsSystem()
 	{
-		// Create graphics manager
-		graphicsMng_ = std::make_unique<Graphics::EnoGraphicsManager>(bus_, window_.getWindow());
-
 		// Initialize the graphics system
-		if (!graphicsMng_->initialize())
+		if (!graphicsMng_.initialize())
 		{
 			throw std::runtime_error("Failed to initialize graphics system!");
 		}
 
 		std::cout << "Graphics system setup complete!" << std::endl;
-	}
-
-	// Create a game instance
-	void EnoEngine::createGameInstance()
-	{
-		// Initialization of game instance
-		gameInstance_ = std::make_unique<GameInstance::EnoGameInstance>(bus_);
 	}
 
 	// Function added for future use**
@@ -136,21 +113,17 @@ namespace Engine
 		}
 
 		audioMng_.process();
-		audioMng_.Update();
 
 		// Graphics update is handled in the main loop (beginFrame/endFrame)
 		// but we call Update() here for consistency with the system interface
-		if (graphicsMng_)
-		{
-			graphicsMng_->Update();
-		}
+		graphicsMng_.Update();
 	}
 
-	void EnoEngine::update_time(double fps_calc_interval) {
+	void EnoEngine::updateTime(double fps_calc_interval) {
 		// get elapsed time (in seconds) between previous and current frames
 		static double prev_time = glfwGetTime();
 		double curr_time = glfwGetTime();
-		dt = curr_time - prev_time;
+		dt_ = curr_time - prev_time;
 		prev_time = curr_time;
 
 		// fps calculations
@@ -165,18 +138,10 @@ namespace Engine
 		fps_calc_interval = (fps_calc_interval < 0.0) ? 0.0 : fps_calc_interval;
 		fps_calc_interval = (fps_calc_interval > 10.0) ? 10.0 : fps_calc_interval;
 		if (elapsed_time > fps_calc_interval) {
-			fps = count / elapsed_time;
+			fps_ = count / elapsed_time;
 			start_time = curr_time;
 			count = 0.0;
 		}
-		input_.endFrame();
-	}
-
-	// Not sure if we need it
-	ECS::EntityManager& EnoEngine::getEntityManager()
-	{
-		static ECS::EntityManager manager(compReg_);
-		return manager;
 	}
 
 

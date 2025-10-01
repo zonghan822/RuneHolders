@@ -1,8 +1,5 @@
 #pragma once
 
-// Interface
-#include "../interface/system.hpp"
-
 // stds
 #include <utility>
 #include <fstream>
@@ -14,7 +11,7 @@
 
 namespace EngineConfiguration
 {
-	class EnoConfigManager : public Sys::ISystem
+	class EnoConfigManager 
 	{
 	private:
 		std::string cfgFileName_ = ASSETS_DIR_PATH "settings/config.txt";
@@ -34,8 +31,6 @@ namespace EngineConfiguration
 		{
 			retrieveSettings();
 		}
-
-		void Update() {}
 
 		std::pair<int, int> getWindowDim()
 		{

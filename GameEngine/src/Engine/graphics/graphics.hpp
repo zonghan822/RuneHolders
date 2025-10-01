@@ -6,7 +6,6 @@
 #include <GLFW/glfw3.h>
 
 // Engine components
-#include "../interface/system.hpp"
 #include "../event/eventBus.hpp"
 #include "../math/math.hpp"
 
@@ -147,14 +146,14 @@ namespace Graphics
     };
 
     // Main graphics manager
-    class EnoGraphicsManager : public Sys::ISystem
+    class EnoGraphicsManager 
     {
     public:
         EnoGraphicsManager(Event::EnoEventBus& bus, GLFWwindow* window);
         ~EnoGraphicsManager();
 
         // System interface implementation
-        void Update() override;
+        void Update();
 
         // Initialize the graphics system
         bool initialize();

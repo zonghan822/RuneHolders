@@ -12,9 +12,6 @@
 // Events
 #include "../game_instance/game_instance_events.hpp"
 
-// System Interface
-#include "../interface/system.hpp"
-
 // stds
 #include <iostream>
 #include <unordered_map>
@@ -56,7 +53,7 @@ namespace Input
 		}
 	};
 
-	class EnoInputManager: public Sys::ISystem
+	class EnoInputManager
 	{
 	public:
 		EnoInputManager(GLFWwindow* window, Event::EnoEventBus& bus);
@@ -66,8 +63,6 @@ namespace Input
 
 		template <typename EventType>
 		void setupEvent(const std::string& inputName);
-
-		void Update() {};
 
 		void endFrame();
 

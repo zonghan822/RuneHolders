@@ -31,11 +31,7 @@ namespace ECS
 	{
 	public:
 
-		EntityManager(ECSComponents::EnoComponentRegistry& compReg)
-			:
-			compReg_{ compReg }
-		{
-		}
+		EntityManager() = default;
 
 		inline static uint32_t id = 0;
 
@@ -464,7 +460,7 @@ namespace ECS
 
 		std::unordered_map<uint32_t, EntityLoc> entityMap_;
 
-		ECSComponents::EnoComponentRegistry& compReg_;
+		ECSComponents::EnoComponentRegistry compReg_;
 
 		std::vector<uint32_t> destroyedEntityIDs_;									// For the purpose of reusing ids
 

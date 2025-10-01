@@ -117,7 +117,7 @@ void GameApplication::setupAnimations() {
 }
 
 void GameApplication::setupImGui() {
-	GLFWwindow* window = engine_.getWindow().getWindow();
+	GLFWwindow* window = engine_.getWindowManager().getWindow();
 	imGuiInit(window);
 }
 
@@ -299,7 +299,7 @@ void GameApplication::drawPlayerAndIndicator() {
 void GameApplication::updateImGui() {
 	auto start = Clock::now();
 
-	imGuiDisplay(engine_.getWindow().getWindow(), engine_);
+	imGuiDisplay(engine_.getWindowManager().getWindow(), engine_);
 
 	auto end = Clock::now();
 	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
