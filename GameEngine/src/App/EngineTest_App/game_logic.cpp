@@ -22,6 +22,7 @@ void GameApplication::initialize() {
     setupGameEvents();
     setupGameMath();
     setupAnimations();
+	liberationFont_ = engine_.getResourceLoader().getFont("liberation-mono");
 
     //this is for caven's movement test object
     createTestObject(engine_.getEntityManager());

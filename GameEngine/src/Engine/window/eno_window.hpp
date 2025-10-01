@@ -44,6 +44,7 @@ namespace Window
 		bool shouldClose() const;
 		void setShouldClose(bool value);
 
+		std::pair<int, int> getFramebufferSize() const;
 		std::pair<int, int> getWindowSize() const;
 
 		// VSync

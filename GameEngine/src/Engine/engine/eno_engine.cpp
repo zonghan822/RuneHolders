@@ -7,11 +7,11 @@ namespace Engine
 		setupResourceLoading();
 		setupEventSystem();
 
-		// Systems init
-		windowMng_.initialize("RuneHolders", configMng_.getWindowDim().first, configMng_.getWindowDim().second);
-		graphicsMng_.initialize(windowMng_);
+		window_.initialize("RuneHolders", configMng_.getWindowDim().first, configMng_.getWindowDim().second);
 
-		loader_.loadImages(loader_.getImagePath());
+		// Systems init
+		inputMng_.initialize();
+		graphicsMng_.initialize(window_);
 	}
 
 	// Thats why i added a callback version
@@ -19,15 +19,14 @@ namespace Engine
 	{
 		soundSetup();
 
-		while (!glfwWindowShouldClose(windowMng_.getWindow()))
+		while (!window_.shouldClose())
 		{
-			glfwPollEvents();
-
 			updateTime(1.0);
-
+			window_.pollEvents();
+			
 			// Handle window resize for graphics system
-			int width, height;
-			glfwGetFramebufferSize(windowMng_.getWindow(), &width, &height);
+			auto fbSize= window_.getFramebufferSize();
+			int width = fbSize.first, height = fbSize.second;
 			if (width > 0 && height > 0) 
 			{
 				graphicsMng_.setProjectionMatrix(width, height);
@@ -45,7 +44,7 @@ namespace Engine
 			updateEngineSystems();
 
 			// End graphics frame and present
-			graphicsMng_.endFrame(windowMng_);
+			graphicsMng_.endFrame(window_);
 
 			inputMng_.endFrame();
 		}
@@ -67,6 +66,12 @@ namespace Engine
 		// Shaders for future graphics use
 		auto vert = loader_.getVertShader("shader");//might need to change the name on this
 		auto frag = loader_.getFragShader("shader");
+
+		// Loading images
+		loader_.loadImages(loader_.getImagePath());
+
+		// Loading fonts
+		loader_.loadFonts(loader_.getFontPath(), 48);
 	}
 
 	// Function added for future use**
@@ -81,14 +86,6 @@ namespace Engine
 		bus_.subscribe<Audio::LoadSound>([&](const Audio::LoadSound& event)
 			{
 				audioMng_.onSoundReceived(event);
-			});
-
-		bus_.subscribe<Graphics::Events::WindowResized>(
-			[&](const Graphics::Events::WindowResized& event) {
-				if (graphicsMng_.isInitialized())
-				{
-					graphicsMng_.setProjectionMatrix(event.width, event.height);
-				}
 			});
 	}
 

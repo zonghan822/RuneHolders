@@ -2,22 +2,24 @@
 
 namespace Input {
 
-	EnoInputManager::EnoInputManager(Event::EnoEventBus& bus) : bus_{ bus } {
-		bus.subscribe<Window::KeyEvent>([this](const Window::KeyEvent& e) {
+	EnoInputManager::EnoInputManager(Event::EnoEventBus& bus) : bus_{ bus } { /*empty by design*/ }
+
+	void EnoInputManager::initialize() {
+		bus_.subscribe<Window::KeyEvent>([this](const Window::KeyEvent& e) {
 			handleKey(e.key, e.scancode, e.action, e.mods);
-		});
+			});
 
-		bus.subscribe<Window::MouseButtonEvent>([this](const Window::MouseButtonEvent& e) {
+		bus_.subscribe<Window::MouseButtonEvent>([this](const Window::MouseButtonEvent& e) {
 			handleMouseButton(e.button, e.action, e.mods);
-		});
+			});
 
-		bus.subscribe<Window::MouseCursorEvent>([this](const Window::MouseCursorEvent& e) {
+		bus_.subscribe<Window::MouseCursorEvent>([this](const Window::MouseCursorEvent& e) {
 			handleMouseCursor(e.xpos, e.ypos);
 			});
 
-		bus.subscribe<Window::ScrollEvent>([this](const Window::ScrollEvent& e) {
+		bus_.subscribe<Window::ScrollEvent>([this](const Window::ScrollEvent& e) {
 			handleMouseScroll(e.xoffset, e.yoffset);
-		});
+			});
 	}
 
 	void EnoInputManager::endFrame() {

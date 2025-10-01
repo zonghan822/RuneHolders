@@ -109,6 +109,27 @@ namespace Graphics
         return true;
     }
 
+    bool EnoTexture::loadFromMemory(int width, int height, int channels, const unsigned char* data) {
+        width_ = width;
+        height_ = height;
+        channels_ = channels;
+
+        glGenTextures(1, &textureID_);
+        glBindTexture(GL_TEXTURE_2D, textureID_);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        GLenum format = (channels == 1 ? GL_RED : GL_RGBA);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        return true;
+    }
+
+
     void EnoTexture::bind(unsigned int slot) const
     {
         glActiveTexture(GL_TEXTURE0 + slot);
@@ -588,6 +609,45 @@ namespace Graphics
         for (const auto& vertex : vertices)
         {
             addVertexToBatch(vertex);
+        }
+    }
+
+    void EnoGraphicsManager::drawText(const std::shared_ptr<Font::EnoFont>& font,
+        const std::string& text,
+        const Math::eVec2<float>& position,
+        float scale,
+        const Color& color)
+    {
+        if (!font || !font->getAtlasTexture() || !font->getAtlasTexture()->isValid()) {
+            std::cerr << "Invalid font atlas" << std::endl;
+            return;
+        }
+
+        auto atlas = font->getAtlasTexture();
+        float xCursor = position.v1;
+        float yCursor = position.v2;
+
+        for (char c : text) {
+            try {
+                const Font::Character& ch = font->getChar(c);
+
+                Math::eVec2<float> charPos(
+                    xCursor + ch.Bearing.v1 * scale,
+                    yCursor - (ch.Size.v2 - ch.Bearing.v2) * scale
+                );
+                Math::eVec2<float> charSize(ch.Size.v1 * scale, ch.Size.v2 * scale);
+
+                drawTexturedQuadUV(charPos, charSize,
+                    atlas,
+                    ch.UVStart,
+                    ch.UVEnd,
+                    color);
+
+                xCursor += (ch.Advance >> 6) * scale; // Advance in 1/64 pixels
+            }
+            catch (const std::out_of_range&) {
+                continue;
+            }
         }
     }
 

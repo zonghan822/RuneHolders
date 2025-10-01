@@ -37,8 +37,8 @@ namespace Engine
 		Graphics::EnoGraphicsManager& getGraphicsManager() { return graphicsMng_; }
 		Event::EnoEventBus& getEventBus() { return bus_; }
 		Resources::EnoLoader& getResourceLoader() { return loader_; }
-		EngineConfiguration::EnoConfigManager& getConfigManager() { return configMng_; }
-		Window::EnoWindow& getWindowManager() { return windowMng_; }
+		Config::EnoConfigManager& getConfigManager() { return configMng_; }
+		Window::EnoWindow& getWindowManager() { return window_; }
 		Input::EnoInputManager& getInputManager() { return inputMng_; }
 
 		double getDeltaTime() const { return dt_; }
@@ -52,9 +52,9 @@ namespace Engine
 		void updateTime(double fpsCalcInt = 1.0);
 
 		// Services & Tools
-		EngineConfiguration::EnoConfigManager configMng_;
+		Config::EnoConfigManager configMng_;
 		Event::EnoEventBus bus_;
-		Window::EnoWindow windowMng_{ bus_ };
+		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
 		ECS::EntityManager entityMng_;
 		

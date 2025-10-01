@@ -56,6 +56,8 @@ namespace Input
 	public:
 		EnoInputManager(Event::EnoEventBus& bus);
 
+		void initialize();
+
 		// Set up a key in the input map
 		void setupKey(const std::string& inputName, int key = 0, int scancode = 0, int action = 0, int mods = 0);
 

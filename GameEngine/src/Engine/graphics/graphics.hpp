@@ -8,6 +8,7 @@
 #include "../event/event_bus.hpp"
 #include "../math/math.hpp"
 #include "../window/eno_window.hpp"
+#include "font/font.hpp"
 
 // Standard libraries
 #include <vector>
@@ -67,6 +68,7 @@ namespace Graphics
         ~EnoTexture();
 
         bool loadFromFile(const std::string& filepath);
+        bool loadFromMemory(int width, int height, int channels, const unsigned char* data);
         void bind(unsigned int slot = 0) const;
         void unbind() const;
 
@@ -174,6 +176,13 @@ namespace Graphics
             const Color& tint = Color::White,
             float rotation = 0.0f);
 
+        // Text drawing function
+        void drawText(const std::shared_ptr<Font::EnoFont>& font,
+            const std::string& text,
+            const Math::eVec2<float>& position,
+            float scale,
+            const Color& color);
+
         // Camera/projection management
         void setProjectionMatrix(int windowWidth, int windowHeight);
         void setProjectionMatrix(const float* matrix);
@@ -225,12 +234,6 @@ namespace Graphics
     // Graphics events
     namespace Events
     {
-        struct WindowResized
-        {
-            int width;
-            int height;
-        };
-
         struct RenderFrameBegin {};
         struct RenderFrameEnd {};
     }

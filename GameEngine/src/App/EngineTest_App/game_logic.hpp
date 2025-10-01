@@ -25,6 +25,9 @@ private:
     Animation::AnimationController playerAnimController_;
     int playerFacingDirection_ = 1;
 
+    // Font
+    std::shared_ptr<Font::EnoFont> liberationFont_;
+
 public:
     // Constructors
     GameApplication() = default;

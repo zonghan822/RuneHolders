@@ -97,6 +97,12 @@ namespace Window
 	
 	void EnoWindow::setShouldClose(bool value) { if (window_) glfwSetWindowShouldClose(window_, value ? GLFW_TRUE : GLFW_FALSE); }
 
+	std::pair<int, int> EnoWindow::getFramebufferSize() const {
+		int w = 0, h = 0;
+		if (window_) glfwGetFramebufferSize(window_, &w, &h);
+		return { w,h };
+	}
+
 	std::pair<int, int> EnoWindow::getWindowSize() const {
 		int w = 0, h = 0;
 		if (window_) glfwGetWindowSize(window_, &w, &h);
