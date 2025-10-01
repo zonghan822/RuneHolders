@@ -32,6 +32,11 @@ namespace Audio
 
 		~EnoAudioManager()
 		{
+			for (const auto& dsp : dsps_)
+			{
+				dsp->release();
+			}
+
 			system->close();
 			system->release();
 		}
@@ -264,6 +269,9 @@ namespace Audio
 		// Sounds
 		std::map<std::string, FMOD::Sound*> sounds_;
 
+		// DSPs
+		std::vector<FMOD::DSP*> dsps_;
+
 		// Event bus
 		Event::EnoEventBus& bus_;
 
@@ -291,6 +299,8 @@ namespace Audio
 			// Append DSPs
 			ch->addDSP(0, reverbDSP);
 			ch->addDSP(0, eqDSP);
+
+			dsps_.push_back(reverbDSP, eqDSP);
 		}
 
 		template <typename CH>
