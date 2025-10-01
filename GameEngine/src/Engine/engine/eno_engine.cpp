@@ -78,9 +78,9 @@ namespace Engine
 	void EnoEngine::setupEventSystem()
 	{
 		// Setup core engine event handlers
-		bus_.subscribe<Audio::RequestSound>
-			(
-				[&](const Audio::RequestSound& event) {loader_.onSoundRequest(event);}
+		bus_.subscribe<Audio::RequestSound>([&](const Audio::RequestSound& event) 
+			{
+				loader_.onSoundRequest(event);}
 			);
 
 		bus_.subscribe<Audio::LoadSound>([&](const Audio::LoadSound& event)
