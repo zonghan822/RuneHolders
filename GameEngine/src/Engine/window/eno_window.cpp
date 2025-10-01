@@ -13,6 +13,10 @@ namespace Window
 		windowInit(window_);
 	}
 
+	EnoWindow::~EnoWindow()
+	{ 
+		glfwTerminate(); 
+	}
 	GLFWwindow* EnoWindow::getWindow() const { return window_; }
 
 	void EnoWindow::windowInit(GLFWwindow*& window)
@@ -23,6 +27,8 @@ namespace Window
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		glfwInitHint(GLFW_JOYSTICK_HAT_BUTTONS, GLFW_FALSE);
+
 		window = glfwCreateWindow(width_, height_, "Eno Engine Window", nullptr, nullptr);
 
 		if (!window)
