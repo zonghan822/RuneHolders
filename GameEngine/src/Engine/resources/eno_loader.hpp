@@ -58,7 +58,14 @@ namespace Resources
 
 		EnoLoader(Event::EnoEventBus& bus) :
 			bus_{ bus }
+		{}
+
+		~EnoLoader()
 		{
+			for (const auto& sound : sounds_)
+			{
+				if (sound.second) sound.second->release();
+			}
 		}
 
 		// Sound getters

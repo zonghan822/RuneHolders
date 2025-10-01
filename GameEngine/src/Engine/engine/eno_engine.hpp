@@ -55,11 +55,11 @@ namespace Engine
 		EngineConfiguration::EnoConfigManager configMng_;
 		Window::EnoWindow window_{ configMng_.getWindowDim() };
 		Event::EnoEventBus bus_;
+		Audio::EnoAudioManager audioMng_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
 		Input::EnoInputManager input_{ window_.getWindow(), bus_ };
 		ECSComponents::EnoComponentRegistry compReg_;
 		Tag::EnoTagRegistry tagReg_;
-		Audio::EnoAudioManager audioMng_{ bus_ };
 		// Game Instance
 		std::unique_ptr<Graphics::EnoGraphicsManager> graphicsMng_;
 		std::unique_ptr<GameInstance::EnoGameInstance> gameInstance_;
