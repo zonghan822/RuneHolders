@@ -29,8 +29,56 @@ namespace Audio
 
 		~EnoAudioManager()
 		{
+			cleanup();
+
 			system->close();
 			system->release();
+		}
+
+		void cleanup()
+		{
+			// Detaching potential dsps
+			for (const auto& ch : channels_)
+			{
+				// Get number of dsps to iterate through
+				int dspCount{};
+				ch->getNumDSPs(&dspCount);
+
+				// Get and detach each DSP from each channel
+				for (size_t i = 0; i < dspCount; i++)
+				{
+					FMOD::DSP* dsp{ nullptr };
+					ch->getDSP(i, &dsp);
+					ch->removeDSP(dsp);
+				}
+			}
+
+			for (const auto& group : channelGroups_)
+			{
+				// Get number of dsps to iterate through
+				int dspCount{};
+				group.second->getNumDSPs(&dspCount);
+
+				// Get and detach each DSP from each channel group
+				for (size_t i = 0; i < dspCount; i++)
+				{
+					FMOD::DSP* dsp{ nullptr };
+					group.second->getDSP(i, &dsp);
+					group.second->removeDSP(dsp);
+				}
+			}
+
+			// DSP cleanup
+			for (const auto& dsp : dsps_)
+			{
+				dsp->release();
+			}
+
+			// Sound cleanup
+			for (const auto& sound : sounds_)
+			{
+				sound.second->release();
+			}
 		}
 
 		void init()
@@ -256,6 +304,9 @@ namespace Audio
 		// Sounds
 		std::map<std::string, FMOD::Sound*> sounds_;
 
+		// DSPs
+		std::vector<FMOD::DSP*> dsps_;
+
 		// Event bus
 		Event::EnoEventBus& bus_;
 
@@ -283,6 +334,9 @@ namespace Audio
 			// Append DSPs
 			ch->addDSP(0, reverbDSP);
 			ch->addDSP(0, eqDSP);
+
+			dsps_.push_back(reverbDSP);
+			dsps_.push_back(eqDSP);
 		}
 
 		template <typename CH>

@@ -56,7 +56,7 @@ namespace Window
 					}
 					else {
 						std::cerr << "Warning: Detected OpenGL version " << major << "." << minor
-							<< " — does not meet required version "
+							<< " ï¿½ does not meet required version "
 							<< glMajor << "." << glMinor << "." << std::endl;
 					}
 				}

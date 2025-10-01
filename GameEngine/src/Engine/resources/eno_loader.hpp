@@ -71,6 +71,7 @@ namespace Resources
 			static const std::string path{ musicPath_.data(), musicPath_.size() };
 			return path;
 		}
+
 		const std::string& getSFXPath() const
 		{
 			static const std::string path{ sfxPath_.data(), sfxPath_.size() };
