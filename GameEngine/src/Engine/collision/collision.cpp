@@ -46,7 +46,12 @@ namespace Collision {
 	{
 		data.line.p1 = point1;
 		data.line.p2 = point2;
-		Math::eVec2Normalize(data.line.pNormal, (data.line.p1 - data.line.p2));
+		// Calculate edge vector (from p1 to p2)
+		Math::eVec2<float> edge = data.line.p2 - data.line.p1;
+		// Calculate perpendicular (rotate 90° counter-clockwise)
+		Math::eVec2<float> perpendicular = { -edge.v2, edge.v1 };
+		// Normalize to get the outward normal
+		Math::eVec2Normalize(data.line.pNormal, perpendicular);
 	}
 
 	// point

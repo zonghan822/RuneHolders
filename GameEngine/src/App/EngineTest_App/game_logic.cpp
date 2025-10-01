@@ -250,7 +250,40 @@ void GameApplication::updateEntities() {
 		}
 		case DYANMIC_COL_SCENE:
 		{
-			updateTestObject(engine_.getEntityManager(), engine_);
+			static bool frameUpdate = false;
+			static bool keyFrameMode = false;
+
+			if (inputManager.isKeyPressed(GLFW_KEY_P))
+			{
+				//this toggles keyframe mode
+				keyFrameMode = !keyFrameMode;
+			}
+			//in key frame mode, wait for trigger to update
+			if (keyFrameMode)
+			{
+
+				if (inputManager.isKeyPressed(GLFW_KEY_L))
+				{
+					//frame update 
+					frameUpdate = true;
+				}
+
+				if (frameUpdate)
+				{
+					//update one time
+					updateTestObject(engine_.getEntityManager(), engine_);
+
+					//set it back to false
+					frameUpdate = false;
+
+				}
+
+			}
+			else {
+				//not in key frame mode, update normally
+				updateTestObject(engine_.getEntityManager(), engine_);
+			}
+			
 			break;
 		}
 		

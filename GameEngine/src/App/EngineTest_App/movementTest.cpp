@@ -5,7 +5,7 @@
 void createTestObject(ECS::EntityManager& ent) {
 
 	//test circle initial config
-	Math::eVec2<float> pos{ 500.f, 600.f };
+	Math::eVec2<float> pos{ 900.f, 400.f };
 	const char* objName = { "testcaven" };
 	const char* shapeName = { "Circle" };
 	float radius = 15.f;
