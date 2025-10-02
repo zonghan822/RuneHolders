@@ -11,3 +11,4 @@
 [2025-10-01 21:36:28] bad allocation
 [2025-10-01 22:19:22] Failed to find a component in the registry based on id!
 [2025-10-01 22:21:35] bad allocation
+[2025-10-02 12:38:41] Division by zero on a vector!

@@ -191,7 +191,7 @@ void GameApplication::updateEntities() {
 	);
 
 	// Get player input to toggle between scenes
-	if (inputManager.isKeyDown(GLFW_KEY_Q))
+	if (inputManager.isKeyPressed(GLFW_KEY_Q))
 	{
 		switch (currScene)
 		{
@@ -279,11 +279,11 @@ void GameApplication::updateEntities() {
 				}
 
 			}
-			else {
+			else 
+			{
 				//not in key frame mode, update normally
 				updateTestObject(engine_.getEntityManager(), engine_);
 			}
-			
 			break;
 		}
 		

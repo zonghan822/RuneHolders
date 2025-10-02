@@ -5,7 +5,8 @@
 void createTestObject(ECS::EntityManager& ent) {
 
 	//test circle initial config
-	Math::eVec2<float> pos{ 900.f, 400.f };
+	const int numCircles = 3;
+	Math::eVec2<float> pos[numCircles] = {{ 900.f, 400.f }, { 800.0f, 350.f }, {950.0f, 450.0f}};
 	const char* objName = { "testcaven" };
 	const char* shapeName = { "Circle" };
 	float radius = 15.f;
@@ -17,21 +18,26 @@ void createTestObject(ECS::EntityManager& ent) {
 	std::cout << vel;
 
 	//now i want to create an entity with 3 different components, transform, drawinfo and name
-	ECSComponents::DrawInfoComponent DIC{ pos.v1, pos.v2, radius, radius, shapeName, color };
-	ECSComponents::NameComponent NC{ objName };
-	ECSComponents::TransformComponent TC{};
-	TC.pos.x = pos.v1;
-	TC.pos.y = pos.v2;
-	TC.pos.z = 0.0f;
-	TC.rot = { 0.0f, 0.0f, 0.0f };
-	TC.scale = { 1.0f, 1.0f, 1.0f };
-	TC.vel = { vel.v1, vel.v2 };
+	for (int i = 0; i < numCircles; ++i)
+	{
+		ECSComponents::DrawInfoComponent DIC{ pos[i].v1, pos[i].v2, radius, radius, shapeName, color};
+		ECSComponents::NameComponent NC{ objName };
+		ECSComponents::TransformComponent TC{};
+		TC.pos.x = pos[i].v1;
+		TC.pos.y = pos[i].v2;
+		TC.pos.z = 0.0f;
+		TC.rot = { 0.0f, 0.0f, 0.0f };
+		TC.scale = { 1.0f, 1.0f, 1.0f };
+		TC.vel = { vel.v1, vel.v2 };
+		-vel;
 
-	Collision::CollisionComponent cc{ radius };
+		Collision::CollisionComponent cc{ radius };
 
-	ECS::Entity circle = ent.create<ECSComponents::DrawInfoComponent, ECSComponents::NameComponent, ECSComponents::TransformComponent>(DIC, NC, TC);
-	circle.add<Collision::CollisionComponent>(cc);
-	//std::cout << circle.get<ECSComponents::DrawInfoComponent>();
+		ECS::Entity circle = ent.create<ECSComponents::DrawInfoComponent, ECSComponents::NameComponent, ECSComponents::TransformComponent>(DIC, NC, TC);
+		circle.add<Collision::CollisionComponent>(cc);
+		//std::cout << circle.get<ECSComponents::DrawInfoComponent>();
+	}
+
 
 	// Now make 3 line collider entities
 	const int numLines = 3;
@@ -86,11 +92,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			{
 				auto& collision = entity.get<Collision::CollisionComponent>();
 				//skip non circle objects
-				if (collision.type != Collision::ColliderType::CIRCLE)
-				//{
-				//	std::cout << " i am entity :" << entity.get<Collision::CollisionComponent>() << std::endl;
-					continue;
-				//}
+				if (collision.type != Collision::ColliderType::CIRCLE) continue;
 
 				auto& transform = entity.get<ECSComponents::TransformComponent>();
 				auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
@@ -104,45 +106,111 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				Math::eVec2<float> oldPos = { transform.pos.x, transform.pos.y };
  
 				// Track earliest collision
-				//bool hadCollision = false;
-				//float earliestTime = 2.0f;
-				//Math::eVec2<float> earliestColPoint;
-				//Math::eVec2<float> earliestNormal;
+				bool hadCollision = false;
+				float earliestTime = 2.0f;	// Impossible value for collision within current frame
+				Math::eVec2<float> earliestColPoint;
+				Math::eVec2<float> earliestNormal;
+				ECS::Entity* collidedWith = nullptr;
 
 				for (auto& other : entityList)
 				{
+					// skip same entity
+					if (&entity == &other) continue;
+
 					auto& otherCollision = other.get<Collision::CollisionComponent>();
-					//std::cout << " i am here :" << other.get<Collision::CollisionComponent>() << std::endl; 
+					auto& otherTransform = other.get<ECSComponents::TransformComponent>();
+					
+					// Variables for this specific collision check
+					Math::eVec2<float> colPoint;
+					Math::eVec2<float> normalAtCol;
+					float colTi;
+					bool collided = false;
+
 					//check collision with line
-					if (otherCollision.type != Collision::ColliderType::LINE) continue;
-				
-						if (Collision::CollisionDetection::CheckCollision(
+					if (otherCollision.type == Collision::ColliderType::LINE)
+					{
+						collided = Collision::CollisionDetection::CheckDynamicCollision(
 							collision,
 							transform,
 							otherCollision,
-							other.get<ECSComponents::TransformComponent>(),
+							otherTransform,
 							nextPos,
 							colPoint,
 							normalAtCol,
-							colTi))
-						{
-							std::cout << "COLLIDED\n" << otherCollision.data.line.p1 << " : " << otherCollision.data.line.p2 << std::endl;
-							std::cout << transform.pos.x << " : " << transform.pos.y << " \\n ";
+							colTi);
+							
+					}
+					else if (otherCollision.type == Collision::ColliderType::CIRCLE)
+					{
+						// check circle to circle collision
+						collided = (Collision::CollisionDetection::CheckDynamicCollision(
+							collision, transform, otherCollision, otherTransform,
+							nextPos, colPoint, normalAtCol, colTi, dt)); // dt to calculate moving distance between the circles
 
-							Math::eVec2<float> reflectedVec;
-							Collision::CollisionDetection::CollisionReflection(colPoint, normalAtCol, nextPos, reflectedVec);
+						
+					}
 
-							transform.vel.x = reflectedVec.v1 * 200.f;
-							transform.vel.y = reflectedVec.v2 * 200.f;
+					// Update earliest collision 
+					if (collided && colTi >= 0.0f && colTi < earliestTime)
+					{
+						earliestTime = colTi;
+						earliestColPoint = colPoint;
+						earliestNormal = normalAtCol;
+						hadCollision = true;
+						collidedWith = &other;
+					}
+				}
+				// Apply collision response
+				if (hadCollision)
+				{
+					if (collidedWith->get<Collision::CollisionComponent>().type == Collision::ColliderType::CIRCLE)
+					{
+						// This circle handles velocity reflection for BOTH circles
+						auto& otherTransform = collidedWith->get<ECSComponents::TransformComponent>();
 
-						}
+						// Move to collision point
+						const float separationEpsilon = 0.5f;
+						transform.pos.x = earliestColPoint.v1 + earliestNormal.v1 * separationEpsilon;
+						transform.pos.y = earliestColPoint.v2 + earliestNormal.v2 * separationEpsilon;
 
+						// Reflect velocity
+						Math::eVec2<float> velocityVec = { transform.vel.x, transform.vel.y };
+						float dotProduct = velocityVec.v1 * earliestNormal.v1 + velocityVec.v2 * earliestNormal.v2;
+
+						Math::eVec2<float> reflectedVel;
+						reflectedVel.v1 = velocityVec.v1 - 2.0f * dotProduct * earliestNormal.v1;
+						reflectedVel.v2 = velocityVec.v2 - 2.0f * dotProduct * earliestNormal.v2;
+
+						const float restitution = 0.95f;
+						transform.vel.x = reflectedVel.v1 * restitution;
+						transform.vel.y = reflectedVel.v2 * restitution;
+						
+					}
+
+					// For LINE collisions: Apply normal reflection
+					else if (collidedWith->get<Collision::CollisionComponent>().type == Collision::ColliderType::LINE)
+					{
+						const float separationEpsilon = 0.5f;
+						transform.pos.x = earliestColPoint.v1 + earliestNormal.v1 * separationEpsilon;
+						transform.pos.y = earliestColPoint.v2 + earliestNormal.v2 * separationEpsilon;
+
+						Math::eVec2<float> velocityVec = { transform.vel.x, transform.vel.y };
+						Math::eVec2<float> reflectedVel;
+						Collision::CollisionDetection::ReflectVelocity(velocityVec, earliestNormal, reflectedVel);
+
+						const float restitution = 0.99f;
+						transform.vel.x = reflectedVel.v1 * restitution;
+						transform.vel.y = reflectedVel.v2 * restitution;
+					}
 
 				}
-
-				entity.get<ECSComponents::TransformComponent>().pos.x = nextPos.v1;
-				entity.get<ECSComponents::TransformComponent>().pos.y = nextPos.v2;
-
+				else
+				{
+					// No collision - move normally
+					transform.pos.x = nextPos.v1;
+					transform.pos.y = nextPos.v2;
+				}
+				
 				//update draw info component for the new pos
 				entity.get<ECSComponents::DrawInfoComponent>().xPos = entity.get<ECSComponents::TransformComponent>().pos.x;
 				entity.get<ECSComponents::DrawInfoComponent>().yPos = entity.get<ECSComponents::TransformComponent>().pos.y;
