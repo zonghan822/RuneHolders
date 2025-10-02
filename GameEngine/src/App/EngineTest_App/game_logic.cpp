@@ -24,7 +24,7 @@ void GameApplication::initialize() {
     setupAnimations();
 
 	// Starting scene
-	currScene = DYANMIC_COL_SCENE;
+	currScene = PLAYER_SCENE;
 
     // This is for dynamic collision test object
     createTestObject(engine_.getEntityManager());
@@ -421,7 +421,7 @@ void GameApplication::drawShapes() { // For testing
 	else if (currScene == DYANMIC_COL_SCENE)
 	{
 		//unique tagging for scene two objects for now would be eVec2TransformComponent
-		std::vector<ECS::Entity> sceneTwoList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
+		std::vector<ECS::Entity> sceneTwoList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
 
 		for (ECS::Entity& entity : sceneTwoList) {
 			if (entity.has<drawInfo>()) {
