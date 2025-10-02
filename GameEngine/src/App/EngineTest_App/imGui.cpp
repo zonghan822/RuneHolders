@@ -10,6 +10,8 @@ std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
 std::unique_ptr<Player::PlayerSystem> playerSystem_;
 bool showColliders_ = true;
 
+GameApplication* g_game = nullptr;
+
 // player entity ID (to track the player)
 uint32_t playerEntityID_ = 0;
 bool playerSpawned_ = false;
@@ -39,6 +41,10 @@ static float           colliderWidth = 10.0f;
 static float           colliderHeight = 10.0f;
 static float           colliderRadius = 5.0f;
 
+//Player Scale Variables
+float pScaleX = 1.0f;
+float pScaleY = 1.0f;
+
 //time
 static float shown_fps = 0.0f;
 static double next_update = 0.0;         // next time we refresh the text
@@ -57,6 +63,11 @@ static char nameSetter[50] = "";
 float randomFloat(float min, float max) {
 	std::uniform_real_distribution<float> dist(min, max);
 	return dist(rng);
+}
+
+double percentage(double target, double max) {
+	if (max == 0.0) return 0.0;
+	return (target / max) * 100.0;
 }
 
 void imGuiInit(GLFWwindow* window){
@@ -91,6 +102,9 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	if (inputManager.isKeyPressed(GLFW_KEY_DOWN)) indicatorY_ += moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
+
+
+
 
 
 	prefab.x = indicatorX_;
@@ -169,6 +183,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 			if (ImGui::Button("Destroy Player")) {
 				engine_.getEntityManager().destroyEntity(playerEntityID_);
 				playerSpawned_ = false;
+				if (g_game) g_game->markEntitiesDirty();
 				std::cout << "Player destroyed\n";
 			}
 		}
@@ -246,6 +261,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 			else {
 				std::cout << "Spawned entity without collider\n";
 			}
+			if (g_game) g_game->markEntitiesDirty();
 		}
 
 
@@ -253,14 +269,19 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		//Clone Button
 		if (ImGui::Button("Spawn 2500 Entities")) {
 			for (size_t i = 0; i < 2500; i++) {
-				float randX = randomFloat(0.0f, 1200.0f); //screen width
+				float randX = randomFloat(0.0f, 1200.0f); //screen width 
 				float randY = randomFloat(0.0f, 900.0f); // screen height
+				float randScalar = randomFloat(0, 10.f);
+				float randW = eWidth + randScalar;
+				float randH = eHeight + randScalar;
+				Color randC = (randomFloat(0, 1.0f) < 0.5f ? Color::Green : Color::Red);
 				//HARDCODED(COPIED) SPAWN CODE INTO HERE
-				ECSComponents::DrawInfoComponent DIC{ randX, randY, eWidth, eHeight, shapes[eShapeIndex], eColor };
+				ECSComponents::DrawInfoComponent DIC{ randX, randY, randW, randH, shapes[eShapeIndex], randC };
 				ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
+				e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
 			}
 			entity_count += 2500;
-
+			if (g_game) g_game->markEntitiesDirty();
 			std::cout << "Spawned " << entity_count << " Entities\n";
 		}
 
@@ -281,7 +302,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		if (FilterType == Filters::Name) {
 
 			if (ImGui::Button("Delete John")) {
-				for (ECS::Entity& e : engine_.getEntityManager().findEntitybyType<ECSComponents::NameComponent>()) {
+				for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
 					if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent("John")) {
 						toDelete.push_back(e);
 					}
@@ -291,21 +312,32 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 		if (FilterType == Filters::Type) {
 			//do another list to look for the type here
-			for (ECS::Entity& e : engine_.getEntityManager().findEntitybyType<>()) {
+			for (ECS::Entity& e : engine_.getEntityManager().findEntity<>()) {
 
 			}
 
 		}
 		if (FilterType == Filters::ID) {
 
-			for (ECS::Entity& e : engine_.getEntityManager().findEntitybyType<>()) {
+			for (ECS::Entity& e : engine_.getEntityManager().findEntity<>()) {
 
 			}
 
 		}
 
-		for (auto& a : toDelete) {
-			a.destroy();
+		if (ImGui::Button("Show Entity Count")) {
+			displayEntityCount(engine_);
+		}
+
+		if (!toDelete.empty()) {
+			for (auto& a : toDelete) {
+				a.destroy();
+			}
+
+			// FIX: Mark cache as dirty after deletion
+			if (g_game) {
+				g_game->markEntitiesDirty();
+			}
 		}
 
 		ImGui::End();
@@ -316,15 +348,22 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::Begin("FPS");
 		ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
 		ImGui::Text("Frame (%.1f FPS)", shown_fps);
-		ImGui::Text("Per-System Timings:");
+		ImGui::Text("=== PER SYSTEM TIMING IN MS ===");
 		for (auto& time : throttledTimes_) {
-			ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);
-			// divide by 1000 to show microseconds as milliseconds
+
+			if (time.first != "totalTimePerFrame") {
+				ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);// divide by 1000 to show microseconds as milliseconds
+			}
 		
 		}
-		if (ImGui::Button("Show Entity Count")) {
-			displayEntityCount(engine_);
+		ImGui::Text("=== PER SYSTEM TIMING IN PERCENTAGE ===");
+		for (auto& time : throttledTimes_)
+		{
+			if (time.first != "totalTimePerFrame") {
+				ImGui::Text("%s: %.0f%%", time.first.c_str(), percentage(time.second, throttledTimes_["totalTimePerFrame"]));
+			}
 		}
+
 		ImGui::End();
 	}
 #pragma endregion
@@ -358,18 +397,9 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		if (ImGui::Button("Spawn Prefab")) {
 			if (prefabRegistry.count(prefab.name)) {
 				instantiatePrefab(prefabRegistry[prefab.name], engine_);
+				if (g_game) g_game->markEntitiesDirty();
 			}
 		}
-
-		//if (ImGui::Button("Save All Entities")) {
-		//	for (auto& ent : engine_.getEntityManager().findEntity<>()) {
-		//		//ent.save();
-		//	}
-		//}
-
-		//if (ImGui::Button("Load All Entities")) {
-
-		//}
 	
 		ImGui::End();
 	}
@@ -380,13 +410,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 }
 
 
-void static crashLogging() {
-	//open file
-	//write to it
-	//called after catch i guess... this should prolly not be part of imgui
-}
-
-void static displayEntityCount(Engine::EnoEngine& engine_) {
+void displayEntityCount(Engine::EnoEngine& engine_) {
 	size_t counter = 0;
 	
 	std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<>();

@@ -20,6 +20,8 @@
 #include "../Engine/collision/collision.hpp"
 #include "../Engine/ecs/entity.hpp"
 #include "../Engine/input/eno_input.hpp"
+#include "../Engine/engine/eno_engine.hpp"
+
 #include <GLFW/glfw3.h>
 
 namespace Player
@@ -124,6 +126,10 @@ namespace Player
         * @return normalized movement vector
         */
         Math::eVec2<float> GetMovementInput(Input::EnoInputManager& inputManager);
+        
+        
+        //Math::eVec2<float> GetScaleInput(Input::EnoInputManager& inputManager);
+
 
         /*
         * @brief Check if player can move to a new position

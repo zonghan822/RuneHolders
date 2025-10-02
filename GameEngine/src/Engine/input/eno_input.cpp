@@ -38,12 +38,6 @@ namespace Input {
 		inputMap_.insert(inputName, KeyBinding{ key, scancode, action, mods });
 	}
 
-	template <typename EventType>
-	void EnoInputManager::setupEvent(const std::string& inputName)
-	{
-		eventMap_[inputName] = [this]() { bus_.publish(EventType{}); };
-	}
-
 	bool EnoInputManager::isKeyPressed(int key) const {
 		auto it = keyStates_.find(key);
 		return it != keyStates_.end() && it->second;

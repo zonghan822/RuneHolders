@@ -87,18 +87,33 @@ namespace Engine
 			});
 	}
 
+	// *** For audio button demonstration purposes
+	// *** maybe to be removed!!!
+	void EnoEngine::setupAudioInput()
+	{
+		input_.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
+		input_.setupKey("Set New Audio", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
+		input_.setupKey("Set New Audio2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
+		input_.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
+		input_.setupEvent<Audio::SetNewAudio>("Set New Audio", "Close_To_The_End");
+		input_.setupEvent<Audio::SetNewAudio>("Set New Audio2", "Simulacrum");
+
+		bus_.subscribe<Audio::SetAudioState>([&](const Audio::SetAudioState& event)
+			{
+				audioMng_.onTogglePlay(event);
+			});
+
+		bus_.subscribe<Audio::SetNewAudio>([&](const Audio::SetNewAudio& event)
+			{
+				audioMng_.onAudioChange(event);
+			});
+	}
+
 	// Function added for future use**
 	void EnoEngine::updateEngineSystems()
 	{
 		// Update engine systems each frame
 		// Add any per-frame engine updates here
-		static bool scheduled{ false };
-		if (!scheduled)
-		{
-			soundPlaying();
-			scheduled = true;
-		}
-
 		audioMng_.process();
 	}
 
@@ -150,16 +165,5 @@ namespace Engine
 
 		audioMng_.publishSoundRequest("Close_To_The_End");
 		audioMng_.publishSoundRequest("Simulacrum");
-	}
-
-	void EnoEngine::soundPlaying()
-	{
-		//FMOD::Channel* channel = audioMng_.playByGroup("Close_To_The_End", "BGM", true);
-		FMOD::Channel* channel2 = audioMng_.playByGroup("Simulacrum", "BGM", true);
-
-		audioMng_.scheduleGroupFade("BGM", 5.0f, 5.0f, audioMng_.getSoundDurSec("Close_To_The_End"));
-
-		audioMng_.setPauseChannel(channel2, false);
-		//audioMng_.setPauseChannel(channel2, false);
 	}
 }

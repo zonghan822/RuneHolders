@@ -5,6 +5,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <type_traits>
+#include <iostream>
 
 
 constexpr float PI = 3.14159265358979323846f;
@@ -44,6 +45,7 @@ namespace Math
 
 		eVec2 operator*(Type val) const;
 
+
 		// ------------------------------ Division ------------------------------
 		eVec2& operator/=(const eVec2& other);
 
@@ -61,6 +63,8 @@ namespace Math
 	};
 
 	// --------------------- Friend functions for eVec2 ---------------------------
+	template <Arithmetic Type>
+	eVec2<Type> operator*(const Type& lhs, const eVec2<Type>& rhs);
 
 	template <Arithmetic Type>
 	eVec2<Type> operator+(const eVec2<Type>& lhs, const eVec2<Type>& rhs);
@@ -94,6 +98,9 @@ namespace Math
 	template<typename Type>
 	Type eVec2DotProduct(const eVec2<Type>& vec1, const eVec2<Type>& vec2);
 
+	//ostream operator
+	template<typename Type>
+	std::ostream& operator<<(std::ostream& os, const eVec2<Type>& vec1);
 
 	// -------------------------------- 3x3 MATRICES ------------------------------
 

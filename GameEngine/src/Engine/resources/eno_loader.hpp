@@ -79,7 +79,6 @@ namespace Resources
 		// Engine data getters
 		const std::string& getECSSavePath() const;
 
-
 		// Load Sound files (mp3 | wav)
 		// and store it in a container that is passed in
 		template <typename Container>

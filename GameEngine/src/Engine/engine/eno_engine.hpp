@@ -64,8 +64,8 @@ namespace Engine
 		Audio::EnoAudioManager audioMng_{ bus_ };
 		
 		// TBD Demo for playing sounds
+		void setupAudioInput();
 		void soundSetup();
-		void soundPlaying();
 
 		// Time
 		double dt_ = 0.0;

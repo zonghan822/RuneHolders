@@ -6,6 +6,10 @@
 using Clock = std::chrono::high_resolution_clock;
 //throw std::runtime_error("error logging");
 
+float scaleSize = 1.0f;
+float rotationRadians = 0.f;
+
+
 void GameApplication::initialize() {
 	// Setup engine systems first
 	engine_.setup();
@@ -25,7 +29,10 @@ void GameApplication::initialize() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
-    //this is for caven's movement test object
+	// Starting scene
+	currScene = PLAYER_SCENE;
+
+    // This is for dynamic collision test object
     createTestObject(engine_.getEntityManager());
     
 
@@ -124,6 +131,8 @@ void GameApplication::setupAnimations() {
 void GameApplication::setupImGui() {
 	GLFWwindow* window = engine_.getWindowManager().getWindow();
 	imGuiInit(window);
+	extern GameApplication* g_game;
+	g_game = this;
 }
 
 void GameApplication::demonstrateSignals() {
@@ -153,7 +162,11 @@ void GameApplication::updateGameLogic() {
 
     updateAudio();
     drawShapes();
-	drawPlayerAndIndicator();
+	// Draw player function for player scene ONLY
+	if (currScene == PLAYER_SCENE)
+	{
+		drawPlayerAndIndicator();
+	}
 
 	engine_.getGraphicsManager().flush();
 
@@ -163,12 +176,12 @@ void GameApplication::updateGameLogic() {
 	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.v1/2.f, windowSize.v2 - 25.f }, 0.75f, Graphics::Color::Blue);
 
 	updateImGui();
+	auto end = Clock::now();
+	systemTimes_["totalTimePerFrame"] = std::chrono::duration<double, std::micro>(end - startTotalTime).count();
 }
 
 void GameApplication::updateEntities() {
 	auto start = Clock::now();
-
-	updateTestObject(engine_.getEntityManager(), engine_);
 
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
@@ -180,6 +193,7 @@ void GameApplication::updateEntities() {
 			static_cast<float>(windowDim.second)
 	};
 
+	// Draw background
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
 		windowSize,                                // Full screen size from config
@@ -189,41 +203,111 @@ void GameApplication::updateEntities() {
 		Graphics::Color::White
 	);
 
-	// Check if player is moving and switch animation accordingly
-	if (playerSystem_ && playerSpawned_) {
-		// Check for WASD input
-		bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
-			inputManager.isKeyPressed(GLFW_KEY_A) ||
-			inputManager.isKeyPressed(GLFW_KEY_S) ||
-			inputManager.isKeyPressed(GLFW_KEY_D);
-
-		// Update facing direction based on A/D keys
-		if (inputManager.isKeyPressed(GLFW_KEY_D)) {
-			playerFacingDirection_ = -1;  // Face right
+	// Get player input to toggle between scenes
+	if (inputManager.isKeyPressed(GLFW_KEY_Q))
+	{
+		switch (currScene)
+		{
+		case PLAYER_SCENE:
+			currScene = DYANMIC_COL_SCENE;
+			entitiesDirty_ = true;  // Mark cache as dirty on scene change
+			break;
+		case DYANMIC_COL_SCENE:
+			currScene = PLAYER_SCENE;
+			entitiesDirty_ = true;  // Mark cache as dirty on scene change
+			break;
 		}
-		else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
-			playerFacingDirection_ = 1;  // Face left
-		}
-
-		// Switch animation based on movement
-		if (isMoving) {
-			if (playerAnimController_.getCurrentAnimationName() != "walk") {
-				playerAnimController_.setAnimation("walk");
-			}
-		}
-		else {
-			if (playerAnimController_.getCurrentAnimationName() != "idle") {
-				playerAnimController_.setAnimation("idle");
-			}
-		}
-
-		// Update player movement
-		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
 
-	// Update collision system
-	if (collisionSystem_) {
-		collisionSystem_->Update(engine_.getEntityManager());
+	// REBUILD CACHE ONLY WHEN DIRTY (optimization)
+	if (entitiesDirty_) {
+		cachedDrawableEntities_ = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
+		cachedSceneTwoEntities_ = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
+		entitiesDirty_ = false;
+	}
+
+	// Determine current scene
+	switch (currScene)
+	{
+	case PLAYER_SCENE:
+	{
+		// Check if player is moving and switch animation accordingly
+		if (playerSystem_ && playerSpawned_) {
+			// Check for WASD input
+			bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+				inputManager.isKeyPressed(GLFW_KEY_A) ||
+				inputManager.isKeyPressed(GLFW_KEY_S) ||
+				inputManager.isKeyPressed(GLFW_KEY_D);
+
+			// Update facing direction based on A/D keys
+			if (inputManager.isKeyPressed(GLFW_KEY_D)) {
+				playerFacingDirection_ = -1;  // Face right
+			}
+			else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
+				playerFacingDirection_ = 1;  // Face left
+			}
+
+			// Switch animation based on movement
+			if (isMoving) {
+				if (playerAnimController_.getCurrentAnimationName() != "walk") {
+					playerAnimController_.setAnimation("walk");
+				}
+			}
+			else {
+				if (playerAnimController_.getCurrentAnimationName() != "idle") {
+					playerAnimController_.setAnimation("idle");
+				}
+			}
+
+			// Update player movement
+			playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
+		}
+
+		// Update collision system
+		if (collisionSystem_) {
+			collisionSystem_->Update(engine_.getEntityManager());
+		}
+		break;
+	}
+	case DYANMIC_COL_SCENE:
+	{
+		static bool frameUpdate = false;
+		static bool keyFrameMode = false;
+
+		if (inputManager.isKeyPressed(GLFW_KEY_P))
+		{
+			//this toggles keyframe mode
+			keyFrameMode = !keyFrameMode;
+		}
+		//in key frame mode, wait for trigger to update
+		if (keyFrameMode)
+		{
+
+			if (inputManager.isKeyPressed(GLFW_KEY_L))
+			{
+				//frame update 
+				frameUpdate = true;
+			}
+
+			if (frameUpdate)
+			{
+				//update one time
+				updateTestObject(engine_.getEntityManager(), engine_);
+
+				//set it back to false
+				frameUpdate = false;
+
+			}
+
+		}
+		else {
+			//not in key frame mode, update normally
+			updateTestObject(engine_.getEntityManager(), engine_);
+		}
+
+		break;
+	}
+
 	}
 
 	auto end = Clock::now();
@@ -232,10 +316,6 @@ void GameApplication::updateEntities() {
 
 void GameApplication::updateAudio() {
 	// audio update
-	auto start = Clock::now();
-
-	auto end = Clock::now();
-	systemTimes_["Audio"] = std::chrono::duration<double, std::micro>(end - start).count();
 
 }
 
@@ -266,6 +346,39 @@ void GameApplication::drawPlayerAndIndicator() {
 				Math::eVec2<float> uvStart = frame.uvStart;
 				Math::eVec2<float> uvEnd = frame.uvEnd;
 
+				// Get player transform
+				auto& playerTransform = playerSystem_->GetTransform(it->second);
+				
+				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
+					// I am placing it here first as a 4.0 scale speed * DT
+					scaleSize += 3.0 * 0.01667;
+					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
+					playerTransform.scale.x = scaleSize;
+					playerTransform.scale.y = scaleSize;
+					std::cout << "Scaling by: " << scaleSize << '\n';				
+				}
+
+				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
+					scaleSize -= 3.0 * 0.01667;
+					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
+					playerTransform.scale.x = scaleSize;
+					playerTransform.scale.y = scaleSize;
+					std::cout << "Scaling by: " << scaleSize << '\n';
+				}
+
+				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
+					rotationRadians += 3.0f * 0.0174533 * 0.01667;
+					//playerTransform.rot.z = rotationRadians;
+					std::cout << "rotation in Radians:" << rotationRadians << '\n';
+				}
+
+				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
+					rotationRadians -= 3.0f * 0.0174533 * 0.01667;
+					//playerTransform.rot.z = rotationRadians;
+					std::cout << "rotation in Radians:" << rotationRadians << '\n';
+				}
+
+
 				if (playerFacingDirection_ == -1) {
 					// Swap horizontal UV coordinates to flip the sprite
 					std::swap(uvStart.v1, uvEnd.v1);
@@ -274,28 +387,34 @@ void GameApplication::drawPlayerAndIndicator() {
 				// Draw with the correct texture
 				if (currentTexture && currentTexture->isValid()) {
 					
+					// calculate scaled dimensions (match the collider size)
+					float scaledWidth = (Player::PLAYER_SPRITE_WIDTH * scaleSize);
+					float scaledHeight = (Player::PLAYER_SPRITE_HEIGHT * scaleSize);
+					
 					// convert center position to top-left for drawing
 					Math::eVec2<float> topLeft = {
-						transform.pos.x - (Player::PLAYER_COLLIDER_WIDTH * 0.5f),
-						transform.pos.y - (Player::PLAYER_SPRITE_HEIGHT * 0.5f)
+						transform.pos.x - (scaledWidth * 0.5f),
+						transform.pos.y - (scaledHeight * 0.5f)
 					};
 					
 					graphics.drawTexturedQuadUV(
 						topLeft,
-						Math::eVec2<float>{Player::PLAYER_SPRITE_WIDTH, Player::PLAYER_SPRITE_HEIGHT},
+						Math::eVec2<float>{scaledWidth, scaledHeight},
 						currentTexture,
 						uvStart,  // Use potentially flipped UV coords
 						uvEnd,    // Use potentially flipped UV coords
-						Graphics::Color::White
+						Graphics::Color::White,
+						rotationRadians
 					);
 				}
 				else {
 					// Fallback to colored rect if texture invalid
 					graphics.drawRect(
 						Math::eVec2<float>{transform.pos.x, transform.pos.y},
-						Math::eVec2<float>{10, 10},
+						Math::eVec2<float>{10 + scaleSize, 10 +scaleSize},
 						Graphics::Color::Blue,
-						true
+						true,
+						rotationRadians
 					);
 				}
 			}
@@ -321,34 +440,69 @@ void GameApplication::updateImGui() {
 	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
-void GameApplication::drawShapes() { // For testing
+void GameApplication::drawShapes() {
 	auto start = Clock::now();
 
-
 	auto& graphics = engine_.getGraphicsManager();
-
 	auto& entityManager = engine_.getEntityManager();
 
 	using drawInfo = ECSComponents::DrawInfoComponent;
 
-	//thinking here i do for each drawable entity: draw.
-	// draw all entities
-	std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
+	// Draw for different scenes
+	if (currScene == PLAYER_SCENE)
+	{
+		// USE CACHED ENTITIES with validation
+		for (ECS::Entity& entity : cachedDrawableEntities_) {
+			// Skip if entity was destroyed
+			try {
+				//skip dynamic scene items
+				if (entity.has<ECSComponents::eVec2TransformComponent>()) continue;
+				if (entity.has<ECSComponents::DrawInfoComponent>()) {
+					graphics.drawRect(
+						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+						Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
+						entity.get<drawInfo>().color,
+						true
+					);
+				}
+			}
+			catch (...) {
+				// Entity was destroyed, rebuild cache next frame
+				entitiesDirty_ = true;
+				continue;
+			}
+		}
 
-	for (ECS::Entity& entity : EntityList) {
-		if (entity.has<ECSComponents::DrawInfoComponent>()) {
-			graphics.drawRect(
-				Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-				Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
-				entity.get<drawInfo>().color,
-				true
-			);
+		// (kim) visualize colliders if enabled
+		if (showColliders_ && collisionSystem_) {
+			collisionSystem_->VisualizeColliders(graphics, entityManager);
 		}
 	}
+	else if (currScene == DYANMIC_COL_SCENE)
+	{
+		// USE CACHED ENTITIES with validation
+		for (ECS::Entity& entity : cachedSceneTwoEntities_) {
+			// FIX: Skip if entity was destroyed
+			try {
+				if (entity.has<drawInfo>()) {
+					graphics.drawCircle(
+						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+						entity.get<drawInfo>().width,
+						entity.get<drawInfo>().color,
+						true);
+				}
+			}
+			catch (...) {
+				// Entity was destroyed, rebuild cache next frame
+				entitiesDirty_ = true;
+				continue;
+			}
+		}
 
-	// (kim) visualize colliders if enabled
-	if (showColliders_ && collisionSystem_) {
-		collisionSystem_->VisualizeColliders(graphics, entityManager);
+		// Draw colliders
+		if (showColliders_ && collisionSystem_) {
+			collisionSystem_->VisualizeColliders(graphics, entityManager);
+		}
 	}
 
 

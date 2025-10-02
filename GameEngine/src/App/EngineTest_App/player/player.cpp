@@ -187,7 +187,22 @@ namespace Player
         }
     }
 
-    
+    //// YunQi testing scaling stuff
+    //Math::eVec2<float> PlayerSystem::GetScaleInput(Input::EnoInputManager& inputManager)
+    //{
+    //    Math::eVec2<float> scale = { 0.0f, 0.0f };
+
+    //    // Use EnoInputManager's isKeyPressed() for continuous WASD input
+    //    // isKeyPressed() returns true while the key is held down
+    //    if (inputManager.isKeyPressed(GLFW_KEY_O))
+    //        scale.v1 -= 1.0f;  // Scale Down
+    //    if (inputManager.isKeyPressed(GLFW_KEY_P))
+    //        scale.v2 += 1.0f;  // Scale Up
+
+    //    return scale;
+    //}
+
+
      
     // Updated GetMovementInput to use EnoInputManager reference
     Math::eVec2<float> PlayerSystem::GetMovementInput(Input::EnoInputManager& inputManager)
@@ -223,13 +238,16 @@ namespace Player
         const Math::eVec2<float>& targetPos,
         ECS::EntityManager& entityManager)
     {
+        extern float scaleSize;
+        extern float rotationRadians;
+
         // Create temporary transform at target position for collision testing
         ECSComponents::TransformComponent testTransform;
         testTransform.pos.x = targetPos.v1;
         testTransform.pos.y = targetPos.v2;
         testTransform.pos.z = 0.0f;
-        testTransform.rot = { 0.0f, 0.0f, 0.0f };
-        testTransform.scale = { 1.0f, 1.0f, 1.0f };
+        testTransform.rot = { 0.0f, 0.0f, 0.0f };   // apply rotation
+        testTransform.scale = { scaleSize, scaleSize, 1.0f }; // apply scale
 
         // Check collision with all other entities
         auto& entityMap = entityManager.getMap();

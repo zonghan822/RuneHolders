@@ -306,12 +306,18 @@ namespace Graphics
 
     EnoVertexBuffer::EnoVertexBuffer() : VAO_(0), VBO_(0), vertexCount_(0)
     {
-        // Generate vertex array object and vertex buffer object
         glGenVertexArrays(1, &VAO_);
         glGenBuffers(1, &VBO_);
 
-        // Set up vertex attributes
         setupVertexAttributes();
+
+        // PRE-ALLOCATE BUFFER FOR BETTER PERFORMANCE
+        bind();
+        glBufferData(GL_ARRAY_BUFFER,
+            50000 * sizeof(Vertex),  // MAX_BATCH_SIZE
+            nullptr,
+            GL_DYNAMIC_DRAW);
+        unbind();
     }
 
     EnoVertexBuffer::~EnoVertexBuffer()
@@ -325,7 +331,10 @@ namespace Graphics
         vertexCount_ = vertices.size();
 
         bind();
-        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_DYNAMIC_DRAW);
+        // USE glBufferSubData instead of glBufferData (faster!)
+        glBufferSubData(GL_ARRAY_BUFFER, 0,
+            vertices.size() * sizeof(Vertex),
+            vertices.data());
         unbind();
     }
 
@@ -454,19 +463,32 @@ namespace Graphics
         // Clear batch for new frame
         batchVertices_.clear();
         boundTextures_.clear();
+
+        // BIND SHADER ONCE FOR ENTIRE FRAME
+        if (defaultShader_ && defaultShader_->isValid()) {
+            defaultShader_->use();
+            defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
+        }
     }
 
     void EnoGraphicsManager::endFrame(Window::EnoWindow& window)
     {
+        // Flush any remaining batched geometry
         if (!batchVertices_.empty())
         {
-            flushBatch(currentBatchPrimitiveType_);  // Use tracked type
+            flushBatch(currentBatchPrimitiveType_);
+        }
+
+        // UNBIND SHADER ONCE AT END
+        if (defaultShader_ && defaultShader_->isValid()) {
+            defaultShader_->unuse();
         }
 
         glfwSwapBuffers(window.getWindow());
     }
 
-    Math::eVec2<float> rotatePoint(const Math::eVec2<float>& point,
+    // Helper function for rotation
+    static Math::eVec2<float> rotatePoint(const Math::eVec2<float>& point,
         const Math::eVec2<float>& center,
         float rotation)
     {
@@ -509,6 +531,16 @@ namespace Graphics
     void EnoGraphicsManager::drawLine(const Math::eVec2<float>& start, const Math::eVec2<float>& end, const Color& color, float thickness)
     {
         // Simple line implementation
+        GLenum primitiveType = GL_LINES;
+
+        // Flush if primitive type changes
+        if (!batchVertices_.empty() && currentBatchPrimitiveType_ != primitiveType)
+        {
+            flushBatch(currentBatchPrimitiveType_);
+        }
+
+        currentBatchPrimitiveType_ = primitiveType;
+
         addVertexToBatch(Vertex(start, color));
         addVertexToBatch(Vertex(end, color));
     }
@@ -556,10 +588,58 @@ namespace Graphics
 
         currentBatchPrimitiveType_ = primitiveType;
 
-        auto vertices = generateRectVertices(position, size, color, filled, rotation);
-        for (const auto& vertex : vertices)
+        // Calculate center for rotation
+        Math::eVec2<float> center = { position.v1 + size.v1 * 0.5f, position.v2 + size.v2 * 0.5f };
+
+        Math::eVec2<float> topLeft = position;
+        Math::eVec2<float> topRight = { position.v1 + size.v1, position.v2 };
+        Math::eVec2<float> bottomRight = { position.v1 + size.v1, position.v2 + size.v2 };
+        Math::eVec2<float> bottomLeft = { position.v1, position.v2 + size.v2 };
+
+        // Apply rotation if needed
+        if (rotation != 0.0f)
         {
-            addVertexToBatch(vertex);
+            topLeft = rotatePoint(topLeft, center, rotation);
+            topRight = rotatePoint(topRight, center, rotation);
+            bottomRight = rotatePoint(bottomRight, center, rotation);
+            bottomLeft = rotatePoint(bottomLeft, center, rotation);
+        }
+
+        if (filled)
+        {
+            // Reserve space for 6 vertices (2 triangles)
+            batchVertices_.reserve(batchVertices_.size() + 6);
+
+            batchVertices_.emplace_back(topLeft, color);
+            batchVertices_.emplace_back(topRight, color);
+            batchVertices_.emplace_back(bottomLeft, color);
+
+            batchVertices_.emplace_back(topRight, color);
+            batchVertices_.emplace_back(bottomRight, color);
+            batchVertices_.emplace_back(bottomLeft, color);
+        }
+        else
+        {
+            // Reserve space for 8 vertices (4 lines)
+            batchVertices_.reserve(batchVertices_.size() + 8);
+
+            batchVertices_.emplace_back(topLeft, color);
+            batchVertices_.emplace_back(topRight, color);
+
+            batchVertices_.emplace_back(topRight, color);
+            batchVertices_.emplace_back(bottomRight, color);
+
+            batchVertices_.emplace_back(bottomRight, color);
+            batchVertices_.emplace_back(bottomLeft, color);
+
+            batchVertices_.emplace_back(bottomLeft, color);
+            batchVertices_.emplace_back(topLeft, color);
+        }
+
+        // Check if we need to flush
+        if (batchVertices_.size() >= MAX_BATCH_SIZE - 8)
+        {
+            flushBatch(currentBatchPrimitiveType_);
         }
     }
 
@@ -575,10 +655,60 @@ namespace Graphics
 
         currentBatchPrimitiveType_ = primitiveType;
 
-        auto vertices = generateCircleVertices(center, radius, color, segments, filled);
-        for (const auto& vertex : vertices)
+        if (filled)
         {
-            addVertexToBatch(vertex);
+            // Reserve space for triangles (3 vertices per segment)
+            batchVertices_.reserve(batchVertices_.size() + (segments * 3));
+
+            // Generate triangles directly into batch
+            for (int i = 0; i < segments; ++i)
+            {
+                float angle1 = 2.0f * M_PI * i / segments;
+                float angle2 = 2.0f * M_PI * (i + 1) / segments;
+
+                Math::eVec2<float> point1{
+                    center.v1 + radius * cos(angle1),
+                    center.v2 + radius * sin(angle1)
+                };
+                Math::eVec2<float> point2{
+                    center.v1 + radius * cos(angle2),
+                    center.v2 + radius * sin(angle2)
+                };
+
+                // Create triangle: center -> point1 -> point2
+                batchVertices_.emplace_back(center, color);
+                batchVertices_.emplace_back(point1, color);
+                batchVertices_.emplace_back(point2, color);
+            }
+        }
+        else
+        {
+            // Reserve space for lines (2 vertices per segment)
+            batchVertices_.reserve(batchVertices_.size() + (segments * 2));
+
+            for (int i = 0; i < segments; ++i)
+            {
+                float angle1 = 2.0f * M_PI * i / segments;
+                float angle2 = 2.0f * M_PI * (i + 1) / segments;
+
+                Math::eVec2<float> point1{
+                    center.v1 + radius * cos(angle1),
+                    center.v2 + radius * sin(angle1)
+                };
+                Math::eVec2<float> point2{
+                    center.v1 + radius * cos(angle2),
+                    center.v2 + radius * sin(angle2)
+                };
+
+                batchVertices_.emplace_back(point1, color);
+                batchVertices_.emplace_back(point2, color);
+            }
+        }
+
+        // Check if we need to flush
+        if (batchVertices_.size() >= MAX_BATCH_SIZE - (segments * 3))
+        {
+            flushBatch(currentBatchPrimitiveType_);
         }
     }
 
@@ -613,11 +743,46 @@ namespace Graphics
         currentBatchPrimitiveType_ = GL_TRIANGLES;
 
         int texSlot = getTextureSlot(texture);
+        float texID = static_cast<float>(texSlot);
 
-        auto vertices = generateTexturedQuadVertices(position, size, tint, static_cast<float>(texSlot), uvStart, uvEnd, rotation);
-        for (const auto& vertex : vertices)
+        // Calculate center for rotation
+        Math::eVec2<float> center = { position.v1 + size.v1 * 0.5f, position.v2 + size.v2 * 0.5f };
+
+        Math::eVec2<float> topLeft = position;
+        Math::eVec2<float> topRight = { position.v1 + size.v1, position.v2 };
+        Math::eVec2<float> bottomRight = { position.v1 + size.v1, position.v2 + size.v2 };
+        Math::eVec2<float> bottomLeft = { position.v1, position.v2 + size.v2 };
+
+        // Apply rotation if needed
+        if (rotation != 0.0f)
         {
-            addVertexToBatch(vertex);
+            topLeft = rotatePoint(topLeft, center, rotation);
+            topRight = rotatePoint(topRight, center, rotation);
+            bottomRight = rotatePoint(bottomRight, center, rotation);
+            bottomLeft = rotatePoint(bottomLeft, center, rotation);
+        }
+
+        // UV coordinates
+        Math::eVec2<float> uvTopLeft = { uvStart.v1, uvStart.v2 };
+        Math::eVec2<float> uvTopRight = { uvEnd.v1, uvStart.v2 };
+        Math::eVec2<float> uvBottomRight = { uvEnd.v1, uvEnd.v2 };
+        Math::eVec2<float> uvBottomLeft = { uvStart.v1, uvEnd.v2 };
+
+        // Reserve space for 6 vertices
+        batchVertices_.reserve(batchVertices_.size() + 6);
+
+        batchVertices_.emplace_back(topLeft, tint, uvTopLeft, texID);
+        batchVertices_.emplace_back(topRight, tint, uvTopRight, texID);
+        batchVertices_.emplace_back(bottomLeft, tint, uvBottomLeft, texID);
+
+        batchVertices_.emplace_back(topRight, tint, uvTopRight, texID);
+        batchVertices_.emplace_back(bottomRight, tint, uvBottomRight, texID);
+        batchVertices_.emplace_back(bottomLeft, tint, uvBottomLeft, texID);
+
+        // Check if we need to flush
+        if (batchVertices_.size() >= MAX_BATCH_SIZE - 6)
+        {
+            flushBatch(currentBatchPrimitiveType_);
         }
     }
 
@@ -802,14 +967,8 @@ namespace Graphics
 
         vertexBuffer_->uploadData(batchVertices_);
 
-        EnoShader* shdr = getShader("default");
-
-        shdr->use();
-        shdr->setMatrix4("u_projection", projectionMatrix_.data());
-
+        // SHADER ALREADY BOUND - Just draw
         vertexBuffer_->draw(primitiveType);
-
-        shdr->unuse();
 
         batchVertices_.clear();
         currentBatchPrimitiveType_ = primitiveType;
@@ -870,155 +1029,5 @@ namespace Graphics
                 boundTextures_[i]->bind(static_cast<unsigned int>(i));
             }
         }
-    }
-
-    std::vector<Vertex> EnoGraphicsManager::generateCircleVertices(const Math::eVec2<float>& center, float radius, const Color& color, int segments, bool filled)
-    {
-        std::vector<Vertex> vertices;
-
-        if (filled)
-        {
-            // Generate triangles (not triangle fan) for batching
-            for (int i = 0; i < segments; ++i)
-            {
-                float angle1 = 2.0f * M_PI * i / segments;
-                float angle2 = 2.0f * M_PI * (i + 1) / segments;
-
-                Math::eVec2<float> point1{
-                    center.v1 + radius * cos(angle1),
-                    center.v2 + radius * sin(angle1)
-                };
-                Math::eVec2<float> point2{
-                    center.v1 + radius * cos(angle2),
-                    center.v2 + radius * sin(angle2)
-                };
-
-                // Create triangle: center -> point1 -> point2
-                vertices.push_back(Vertex(center, color));
-                vertices.push_back(Vertex(point1, color));
-                vertices.push_back(Vertex(point2, color));
-            }
-        }
-        else
-        {
-            // Outline code is correct
-            for (int i = 0; i < segments; ++i)
-            {
-                float angle1 = 2.0f * M_PI * i / segments;
-                float angle2 = 2.0f * M_PI * (i + 1) / segments;
-
-                Math::eVec2<float> point1{
-                    center.v1 + radius * cos(angle1),
-                    center.v2 + radius * sin(angle1)
-                };
-                Math::eVec2<float> point2{
-                    center.v1 + radius * cos(angle2),
-                    center.v2 + radius * sin(angle2)
-                };
-
-                vertices.push_back(Vertex(point1, color));
-                vertices.push_back(Vertex(point2, color));
-            }
-        }
-
-        return vertices;
-    }
-
-    std::vector<Vertex> EnoGraphicsManager::generateRectVertices(const Math::eVec2<float>& position,
-        const Math::eVec2<float>& size,
-        const Color& color,
-        bool filled,
-        float rotation)
-    {
-        std::vector<Vertex> vertices;
-
-        // Calculate center for rotation
-        Math::eVec2<float> center = { position.v1 + size.v1 * 0.5f, position.v2 + size.v2 * 0.5f };
-
-        Math::eVec2<float> topLeft = position;
-        Math::eVec2<float> topRight = { position.v1 + size.v1, position.v2 };
-        Math::eVec2<float> bottomRight = { position.v1 + size.v1, position.v2 + size.v2 };
-        Math::eVec2<float> bottomLeft = { position.v1, position.v2 + size.v2 };
-
-        // Apply rotation if needed
-        if (rotation != 0.0f)
-        {
-            topLeft = rotatePoint(topLeft, center, rotation);
-            topRight = rotatePoint(topRight, center, rotation);
-            bottomRight = rotatePoint(bottomRight, center, rotation);
-            bottomLeft = rotatePoint(bottomLeft, center, rotation);
-        }
-
-        if (filled)
-        {
-            vertices.push_back(Vertex(topLeft, color));
-            vertices.push_back(Vertex(topRight, color));
-            vertices.push_back(Vertex(bottomLeft, color));
-
-            vertices.push_back(Vertex(topRight, color));
-            vertices.push_back(Vertex(bottomRight, color));
-            vertices.push_back(Vertex(bottomLeft, color));
-        }
-        else
-        {
-            vertices.push_back(Vertex(topLeft, color));
-            vertices.push_back(Vertex(topRight, color));
-
-            vertices.push_back(Vertex(topRight, color));
-            vertices.push_back(Vertex(bottomRight, color));
-
-            vertices.push_back(Vertex(bottomRight, color));
-            vertices.push_back(Vertex(bottomLeft, color));
-
-            vertices.push_back(Vertex(bottomLeft, color));
-            vertices.push_back(Vertex(topLeft, color));
-        }
-
-        return vertices;
-    }
-
-    std::vector<Vertex> EnoGraphicsManager::generateTexturedQuadVertices(
-        const Math::eVec2<float>& position,
-        const Math::eVec2<float>& size,
-        const Color& tint,
-        float texID,
-        const Math::eVec2<float>& uvStart,
-        const Math::eVec2<float>& uvEnd,
-        float rotation)
-    {
-        std::vector<Vertex> vertices;
-
-        // Calculate center for rotation
-        Math::eVec2<float> center = { position.v1 + size.v1 * 0.5f, position.v2 + size.v2 * 0.5f };
-
-        Math::eVec2<float> topLeft = position;
-        Math::eVec2<float> topRight = { position.v1 + size.v1, position.v2 };
-        Math::eVec2<float> bottomRight = { position.v1 + size.v1, position.v2 + size.v2 };
-        Math::eVec2<float> bottomLeft = { position.v1, position.v2 + size.v2 };
-
-        // Apply rotation if needed
-        if (rotation != 0.0f)
-        {
-            topLeft = rotatePoint(topLeft, center, rotation);
-            topRight = rotatePoint(topRight, center, rotation);
-            bottomRight = rotatePoint(bottomRight, center, rotation);
-            bottomLeft = rotatePoint(bottomLeft, center, rotation);
-        }
-
-        // UV coordinates (unchanged)
-        Math::eVec2<float> uvTopLeft = { uvStart.v1, uvStart.v2 };
-        Math::eVec2<float> uvTopRight = { uvEnd.v1, uvStart.v2 };
-        Math::eVec2<float> uvBottomRight = { uvEnd.v1, uvEnd.v2 };
-        Math::eVec2<float> uvBottomLeft = { uvStart.v1, uvEnd.v2 };
-
-        vertices.push_back(Vertex(topLeft, tint, uvTopLeft, texID));
-        vertices.push_back(Vertex(topRight, tint, uvTopRight, texID));
-        vertices.push_back(Vertex(bottomLeft, tint, uvBottomLeft, texID));
-
-        vertices.push_back(Vertex(topRight, tint, uvTopRight, texID));
-        vertices.push_back(Vertex(bottomRight, tint, uvBottomRight, texID));
-        vertices.push_back(Vertex(bottomLeft, tint, uvBottomLeft, texID));
-
-        return vertices;
     }
 }

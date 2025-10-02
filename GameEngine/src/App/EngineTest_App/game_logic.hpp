@@ -4,7 +4,19 @@
 #include "../../Engine/resources/animation.hpp"
 #include <iostream>
 #include <memory>  
-#include "../Engine/math/movementTest.hpp"
+#include "movementTest.hpp"
+
+namespace {
+    //scene selection
+    enum SceneSelect
+    {
+        PLAYER_SCENE = 1,
+        DYANMIC_COL_SCENE
+
+    } currScene;
+
+}
+
 
 class GameApplication {
 private:
@@ -17,6 +29,11 @@ private:
 
     // For delta time calculation
     float lastFrameTime_ = 0.0f;  
+
+    // Caching
+    std::vector<ECS::Entity> cachedDrawableEntities_;
+    std::vector<ECS::Entity> cachedSceneTwoEntities_;
+    bool entitiesDirty_ = true;
 
     // Texture and anim loading
     std::shared_ptr<Graphics::EnoTexture> playerTexture_;
@@ -40,6 +57,7 @@ public:
     // Main game methods
     void initialize();  // Called once at start
     void run();         // Starts the game loop
+    void markEntitiesDirty() { entitiesDirty_ = true; }
 
 
 private:
