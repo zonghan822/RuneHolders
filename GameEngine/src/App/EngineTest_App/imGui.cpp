@@ -27,7 +27,7 @@ float moveSpeed_ = 200.0f; // pixels per second
 
 
 //Option Menu
-const char* shapes[] = { "Circle" , "Rectangle" };
+const char* shapes[] = { "Rectangle" };
 const char* colors[] = { "Green"  ,     "Red" };
 const char* colliderShapes[] = { "None", "Circle", "Rectangle" };
 
@@ -228,7 +228,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 			//adding name to the entity only for destroy() debug purposes
 			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
-			if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent("John")) std::cout << "he john\n";
+			//if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent("John")) std::cout << "he john\n";
 
 
 			// add collider if selected
@@ -259,6 +259,8 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 				std::cout << "Spawned entity WITH collider\n";
 			}
+
+
 			else {
 				std::cout << "Spawned entity without collider\n";
 			}

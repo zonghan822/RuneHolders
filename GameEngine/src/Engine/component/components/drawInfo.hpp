@@ -10,8 +10,7 @@ enum WindowID { Main, Edit, FPS, Prefabs };
 static WindowID activeWindow = WindowID::Main;
 
 enum Shapes {
-	Circle = 0,
-	Rectangle = 1
+	Rectangle = 0
 };
 enum Color {
 	Green = 0,
