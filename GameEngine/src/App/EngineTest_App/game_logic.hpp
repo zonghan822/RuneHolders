@@ -30,6 +30,11 @@ private:
     // For delta time calculation
     float lastFrameTime_ = 0.0f;  
 
+    // Caching
+    std::vector<ECS::Entity> cachedDrawableEntities_;
+    std::vector<ECS::Entity> cachedSceneTwoEntities_;
+    bool entitiesDirty_ = true;
+
     // Texture and anim loading
     std::shared_ptr<Graphics::EnoTexture> playerTexture_;
     std::shared_ptr<Graphics::EnoTexture> backgroundTexture_;
@@ -48,6 +53,7 @@ public:
     // Main game methods
     void initialize();  // Called once at start
     void run();         // Starts the game loop
+    void markEntitiesDirty() { entitiesDirty_ = true; }
 
 
 private:

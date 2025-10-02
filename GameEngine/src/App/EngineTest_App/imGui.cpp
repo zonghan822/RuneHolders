@@ -10,6 +10,8 @@ std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
 std::unique_ptr<Player::PlayerSystem> playerSystem_;
 bool showColliders_ = true;
 
+GameApplication* g_game = nullptr;
+
 // player entity ID (to track the player)
 uint32_t playerEntityID_ = 0;
 bool playerSpawned_ = false;
@@ -176,6 +178,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 			if (ImGui::Button("Destroy Player")) {
 				engine_.getEntityManager().destroyEntity(playerEntityID_);
 				playerSpawned_ = false;
+				if (g_game) g_game->markEntitiesDirty();
 				std::cout << "Player destroyed\n";
 			}
 		}
@@ -253,6 +256,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 			else {
 				std::cout << "Spawned entity without collider\n";
 			}
+			if (g_game) g_game->markEntitiesDirty();
 		}
 
 
@@ -268,7 +272,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 				e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
 			}
 			entity_count += 2500;
-
+			if (g_game) g_game->markEntitiesDirty();
 			std::cout << "Spawned " << entity_count << " Entities\n";
 		}
 

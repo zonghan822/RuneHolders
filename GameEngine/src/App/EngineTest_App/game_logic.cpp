@@ -124,6 +124,8 @@ void GameApplication::setupAnimations() {
 void GameApplication::setupImGui() {
 	GLFWwindow* window = engine_.getWindow().getWindow();
 	imGuiInit(window);
+	extern GameApplication* g_game;
+	g_game = this;
 }
 
 void GameApplication::demonstrateSignals() {
@@ -165,9 +167,7 @@ void GameApplication::updateGameLogic() {
 	{
 		drawPlayerAndIndicator();
 	}
-	
 
-	auto& graphics = engine_.getGraphicsManager();
 	engine_.getGraphicsManager().flush();
 
 	updateImGui();
@@ -185,6 +185,8 @@ void GameApplication::updateEntities() {
 			static_cast<float>(windowDim.first),
 			static_cast<float>(windowDim.second)
 	};
+
+	// Draw background
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
 		windowSize,                                // Full screen size from config
@@ -201,96 +203,104 @@ void GameApplication::updateEntities() {
 		{
 		case PLAYER_SCENE:
 			currScene = DYANMIC_COL_SCENE;
+			entitiesDirty_ = true;  // Mark cache as dirty on scene change
 			break;
 		case DYANMIC_COL_SCENE:
 			currScene = PLAYER_SCENE;
+			entitiesDirty_ = true;  // Mark cache as dirty on scene change
 			break;
 		}
 	}
 
+	// REBUILD CACHE ONLY WHEN DIRTY (optimization)
+	if (entitiesDirty_) {
+		cachedDrawableEntities_ = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
+		cachedSceneTwoEntities_ = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
+		entitiesDirty_ = false;
+	}
 
 	// Determine current scene
 	switch (currScene)
 	{
-		case PLAYER_SCENE:
-		{
-			// Check if player is moving and switch animation accordingly
-			if (playerSystem_ && playerSpawned_) {
-				// Check for WASD input
-				bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
-					inputManager.isKeyPressed(GLFW_KEY_A) ||
-					inputManager.isKeyPressed(GLFW_KEY_S) ||
-					inputManager.isKeyPressed(GLFW_KEY_D);
+	case PLAYER_SCENE:
+	{
+		// Check if player is moving and switch animation accordingly
+		if (playerSystem_ && playerSpawned_) {
+			// Check for WASD input
+			bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+				inputManager.isKeyPressed(GLFW_KEY_A) ||
+				inputManager.isKeyPressed(GLFW_KEY_S) ||
+				inputManager.isKeyPressed(GLFW_KEY_D);
 
-				// Update facing direction based on A/D keys
-				if (inputManager.isKeyPressed(GLFW_KEY_D)) {
-					playerFacingDirection_ = -1;  // Face right
-				}
-				else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
-					playerFacingDirection_ = 1;  // Face left
-				}
-
-				// Switch animation based on movement
-				if (isMoving) {
-					if (playerAnimController_.getCurrentAnimationName() != "walk") {
-						playerAnimController_.setAnimation("walk");
-					}
-				}
-				else {
-					if (playerAnimController_.getCurrentAnimationName() != "idle") {
-						playerAnimController_.setAnimation("idle");
-					}
-				}
-
-				// Update player movement
-				playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
+			// Update facing direction based on A/D keys
+			if (inputManager.isKeyPressed(GLFW_KEY_D)) {
+				playerFacingDirection_ = -1;  // Face right
+			}
+			else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
+				playerFacingDirection_ = 1;  // Face left
 			}
 
-			// Update collision system
-			if (collisionSystem_) {
-				collisionSystem_->Update(engine_.getEntityManager());
-			}
-			break;
-		}
-		case DYANMIC_COL_SCENE:
-		{
-			static bool frameUpdate = false;
-			static bool keyFrameMode = false;
-
-			if (inputManager.isKeyPressed(GLFW_KEY_P))
-			{
-				//this toggles keyframe mode
-				keyFrameMode = !keyFrameMode;
-			}
-			//in key frame mode, wait for trigger to update
-			if (keyFrameMode)
-			{
-
-				if (inputManager.isKeyPressed(GLFW_KEY_L))
-				{
-					//frame update 
-					frameUpdate = true;
+			// Switch animation based on movement
+			if (isMoving) {
+				if (playerAnimController_.getCurrentAnimationName() != "walk") {
+					playerAnimController_.setAnimation("walk");
 				}
-
-				if (frameUpdate)
-				{
-					//update one time
-					updateTestObject(engine_.getEntityManager(), engine_);
-
-					//set it back to false
-					frameUpdate = false;
-
-				}
-
 			}
 			else {
-				//not in key frame mode, update normally
-				updateTestObject(engine_.getEntityManager(), engine_);
+				if (playerAnimController_.getCurrentAnimationName() != "idle") {
+					playerAnimController_.setAnimation("idle");
+				}
 			}
-			
-			break;
+
+			// Update player movement
+			playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 		}
-		
+
+		// Update collision system
+		if (collisionSystem_) {
+			collisionSystem_->Update(engine_.getEntityManager());
+		}
+		break;
+	}
+	case DYANMIC_COL_SCENE:
+	{
+		static bool frameUpdate = false;
+		static bool keyFrameMode = false;
+
+		if (inputManager.isKeyPressed(GLFW_KEY_P))
+		{
+			//this toggles keyframe mode
+			keyFrameMode = !keyFrameMode;
+		}
+		//in key frame mode, wait for trigger to update
+		if (keyFrameMode)
+		{
+
+			if (inputManager.isKeyPressed(GLFW_KEY_L))
+			{
+				//frame update 
+				frameUpdate = true;
+			}
+
+			if (frameUpdate)
+			{
+				//update one time
+				updateTestObject(engine_.getEntityManager(), engine_);
+
+				//set it back to false
+				frameUpdate = false;
+
+			}
+
+		}
+		else {
+			//not in key frame mode, update normally
+			updateTestObject(engine_.getEntityManager(), engine_);
+		}
+
+		break;
+	}
+
 	}
 
 	auto end = Clock::now();
@@ -435,11 +445,10 @@ void GameApplication::updateImGui() {
 	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
-void GameApplication::drawShapes() { // For testing
+void GameApplication::drawShapes() {
 	auto start = Clock::now();
 
 	auto& graphics = engine_.getGraphicsManager();
-
 	auto& entityManager = engine_.getEntityManager();
 
 	using drawInfo = ECSComponents::DrawInfoComponent;
@@ -447,11 +456,8 @@ void GameApplication::drawShapes() { // For testing
 	// Draw for different scenes
 	if (currScene == PLAYER_SCENE)
 	{
-		//thinking here i do for each drawable entity: draw.
-		// draw all entities
-		std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
-
-		for (ECS::Entity& entity : EntityList) {
+		// USE CACHED ENTITIES instead of findEntity() every frame
+		for (ECS::Entity& entity : cachedDrawableEntities_) {
 			//skip dynamic scene items
 			if (entity.has<ECSComponents::eVec2TransformComponent>()) continue;
 			if (entity.has<ECSComponents::DrawInfoComponent>()) {
@@ -471,24 +477,23 @@ void GameApplication::drawShapes() { // For testing
 	}
 	else if (currScene == DYANMIC_COL_SCENE)
 	{
-		//unique tagging for scene two objects for now would be eVec2TransformComponent
-		std::vector<ECS::Entity> sceneTwoList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
-
-		for (ECS::Entity& entity : sceneTwoList) {
+		// USE CACHED ENTITIES instead of findEntity() every frame
+		for (ECS::Entity& entity : cachedSceneTwoEntities_) {
 			if (entity.has<drawInfo>()) {
-					graphics.drawCircle(
+				graphics.drawCircle(
 					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
 					entity.get<drawInfo>().width,
 					entity.get<drawInfo>().color,
 					true);
 			}
-			// Draw colliders
-			if (showColliders_ && collisionSystem_) {
-				collisionSystem_->VisualizeColliders(graphics, entityManager);
-			}
+		}
+
+		// Draw colliders
+		if (showColliders_ && collisionSystem_) {
+			collisionSystem_->VisualizeColliders(graphics, entityManager);
 		}
 	}
-	
+
 
 	auto end = Clock::now();
 	systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();

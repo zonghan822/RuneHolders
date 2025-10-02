@@ -351,12 +351,18 @@ namespace Graphics
 
     EnoVertexBuffer::EnoVertexBuffer() : VAO_(0), VBO_(0), vertexCount_(0)
     {
-        // Generate vertex array object and vertex buffer object
         glGenVertexArrays(1, &VAO_);
         glGenBuffers(1, &VBO_);
 
-        // Set up vertex attributes
         setupVertexAttributes();
+
+        // PRE-ALLOCATE BUFFER FOR BETTER PERFORMANCE
+        bind();
+        glBufferData(GL_ARRAY_BUFFER,
+            50000 * sizeof(Vertex),  // MAX_BATCH_SIZE
+            nullptr,
+            GL_DYNAMIC_DRAW);
+        unbind();
     }
 
     EnoVertexBuffer::~EnoVertexBuffer()
@@ -370,7 +376,10 @@ namespace Graphics
         vertexCount_ = vertices.size();
 
         bind();
-        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_DYNAMIC_DRAW);
+        // USE glBufferSubData instead of glBufferData (faster!)
+        glBufferSubData(GL_ARRAY_BUFFER, 0,
+            vertices.size() * sizeof(Vertex),
+            vertices.data());
         unbind();
     }
 
@@ -493,15 +502,27 @@ namespace Graphics
         batchVertices_.clear();
         boundTextures_.clear();
 
+        // BIND SHADER ONCE FOR ENTIRE FRAME
+        if (defaultShader_ && defaultShader_->isValid()) {
+            defaultShader_->use();
+            defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
+        }
+
         // Publish frame begin event
         bus_.publish(Events::RenderFrameBegin{});
     }
 
     void EnoGraphicsManager::endFrame()
     {
+        // Flush any remaining batched geometry
         if (!batchVertices_.empty())
         {
-            flushBatch(currentBatchPrimitiveType_);  // Use tracked type
+            flushBatch(currentBatchPrimitiveType_);
+        }
+
+        // UNBIND SHADER ONCE AT END
+        if (defaultShader_ && defaultShader_->isValid()) {
+            defaultShader_->unuse();
         }
 
         glfwSwapBuffers(window_);
@@ -924,12 +945,8 @@ namespace Graphics
 
         vertexBuffer_->uploadData(batchVertices_);
 
-        defaultShader_->use();
-        defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
-
+        // SHADER ALREADY BOUND - Just draw
         vertexBuffer_->draw(primitiveType);
-
-        defaultShader_->unuse();
 
         batchVertices_.clear();
         currentBatchPrimitiveType_ = primitiveType;

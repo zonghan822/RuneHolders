@@ -24,6 +24,7 @@ static std::mt19937 rng(std::random_device{}());
 extern std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
 extern std::unique_ptr<Player::PlayerSystem> playerSystem_;
 extern bool showColliders_;
+extern GameApplication* g_game;
 
 // Player entity ID to track player
 extern uint32_t playerEntityID_;
