@@ -172,27 +172,47 @@ namespace Collision {
 
 		// scenario 1: if both colliders are circles
 		if (colliderA.type == ColliderType::CIRCLE && colliderB.type == ColliderType::CIRCLE)
-		{
-			return CheckCircleCircle(posA, colliderA.data.circle.radius, posB, colliderB.data.circle.radius);
+		{	
+			// scale the radii
+			float radiusA = colliderA.data.circle.radius * transformA.scale.x;
+			float radiusB = colliderB.data.circle.radius * transformB.scale.x;
+			return CheckCircleCircle(posA, radiusA, posB, radiusB);
 		}
 
 		// scenario 2: if both colliders are rectangles
 		else if (colliderA.type == ColliderType::RECTANGLE && colliderB.type == ColliderType::RECTANGLE)
 		{
-			return CheckRectangleRectangle(posA, colliderA.data.rectangle, posB, colliderB.data.rectangle);
+			// Scale rectangle dimensions
+			CollisionComponent::ColliderData::RectangleData scaledRectA = colliderA.data.rectangle;
+			scaledRectA.width *= transformA.scale.x;
+			scaledRectA.height *= transformA.scale.y;
+
+			CollisionComponent::ColliderData::RectangleData scaledRectB = colliderB.data.rectangle;
+			scaledRectB.width *= transformB.scale.x;
+			scaledRectB.height *= transformB.scale.y;
+
+			return CheckRectangleRectangle(posA, scaledRectA, posB, scaledRectB);
 		}
 
 		// scenario 3: if collider A is a circle, and collider B is a rectangle
 		else if (colliderA.type == ColliderType::CIRCLE && colliderB.type == ColliderType::RECTANGLE)
 		{
-			return CheckCircleRectangle(posA, colliderA.data.circle.radius, posB, colliderB.data.rectangle);
+			float radiusA = colliderA.data.circle.radius * transformA.scale.x;
+			CollisionComponent::ColliderData::RectangleData scaledRectB = colliderB.data.rectangle;
+			scaledRectB.width *= transformB.scale.x;
+			scaledRectB.height *= transformB.scale.y;
+
+			return CheckCircleRectangle(posA, radiusA, posB, scaledRectB);
 		}
 
 		// scenario 4: if collider A is a rectangle, and collider B is a circle
 		else if (colliderA.type == ColliderType::RECTANGLE && colliderB.type == ColliderType::CIRCLE)
 		{
-			// swap the order and negate the pentetration vector (since we're checking B vs A instead of A vs B)
-			CollisionResult result = CheckCircleRectangle(posB, colliderB.data.circle.radius, posA, colliderA.data.rectangle);
+			float radiusB = colliderB.data.circle.radius * transformB.scale.x;
+			CollisionComponent::ColliderData::RectangleData scaledRectA = colliderA.data.rectangle;
+			scaledRectA.width *= transformA.scale.x;
+			scaledRectA.height *= transformA.scale.y;
+			CollisionResult result = CheckCircleRectangle(posB, radiusB, posA, scaledRectA);
 			result.penetrationVector = -result.penetrationVector;
 			return result;
 		}
@@ -200,6 +220,7 @@ namespace Collision {
 		// scenario 5: if collider A is a point
 		else if (colliderA.type == ColliderType::POINT)
 		{
+
 			return CheckPointCollider(posA, colliderB, posB);
 		}
 
@@ -813,33 +834,41 @@ namespace Collision {
 			};
 
 			// choose color based on trigger status
-			Graphics::Color color = collision.isTrigger ? Graphics::Color::Red : Graphics::Color::Green;
+			Graphics::Color color = collision.isTrigger ? Graphics::Color::Red : Graphics::Color::Red;
 
 			// draw based on collider type
 			switch (collision.type)
 			{
 				case ColliderType::CIRCLE:graphics.drawCircle(
 					worldPos,
-					collision.data.circle.radius,
+					collision.data.circle.radius * transform.scale.x,  // Scale the radius
 					color,
-					false, // not filled, jst outlined
+					true,
 					32
 				);
 					break;
 
 				case ColliderType::RECTANGLE:
 				{
+					
+					// Apply transform scale to the visualization
+					float scaledWidth = collision.data.rectangle.width * transform.scale.x;
+					float scaledHeight = collision.data.rectangle.height * transform.scale.y;
+					
+					
 					// calculate top-left corner (drawRect uses top-left pos), but worldPos is CENTER
 					Math::eVec2<float> topLeft = {
-						worldPos.v1 - (collision.data.rectangle.width * 0.5f),
-						worldPos.v2 - (collision.data.rectangle.height * 0.5f)
+						worldPos.v1 - (scaledWidth * 0.5f),
+						worldPos.v2 - (scaledHeight * 0.5f)
 					};
+
 
 					graphics.drawRect(
 						topLeft,
-						Math::eVec2<float>{collision.data.rectangle.width, collision.data.rectangle.height},
+						Math::eVec2<float>{scaledWidth, scaledHeight},
 						color,
 						false // not filled, just outline
+						//transform.rot.z
 					);
 
 					break;

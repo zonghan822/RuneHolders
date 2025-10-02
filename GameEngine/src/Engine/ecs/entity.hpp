@@ -459,23 +459,6 @@ namespace ECS
 			return entities;
 		}
 
-		template <typename... Components>
-		std::vector<Entity> findEntitybyType()
-		{
-			std::vector<Entity> entities;
-
-			// Find an entity based on their component type and value
-			for (const auto& [id, loc] : entityMap_)
-			{
-				Entity ent{ id, *this };
-				if (ent.template has<Components...>())
-				{
-					entities.push_back(ent);
-				}
-			}
-
-			return entities;
-		}
 
 	private:
 		ArchetypeManager archetypeMng_;
