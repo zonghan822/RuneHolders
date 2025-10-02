@@ -56,7 +56,6 @@ namespace Resources
 	public:
 
 		EnoLoader(Event::EnoEventBus& bus);
-		~EnoLoader();
 
 		// Sound getters
 		const std::string& getMusicPath() const;

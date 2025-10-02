@@ -2,13 +2,10 @@
 
 namespace Resources {
 
-	EnoLoader::EnoLoader(Event::EnoEventBus& bus) : bus_{ bus } { /*empty by design*/ }
-
-	EnoLoader::~EnoLoader() {
-		for (const auto& sound : sounds_)
-		{
-			if (sound.second) sound.second->release();
-		}
+	EnoLoader::EnoLoader(Event::EnoEventBus& bus) : bus_{ bus } { 
+		bus_.subscribe<Audio::RequestSound>([&](const Audio::RequestSound& event) {
+			onSoundRequest(event); }
+		);
 	}
 
 	// Sound getters

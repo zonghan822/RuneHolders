@@ -47,8 +47,6 @@ namespace Engine
 	private:
 		// Functions added for future use**
 		void setupResourceLoading();
-		void setupEventSystem();
-		void updateEngineSystems();
 		void updateTime(double fpsCalcInt = 1.0);
 
 		// Services & Tools
@@ -62,10 +60,6 @@ namespace Engine
 		Input::EnoInputManager inputMng_{ bus_ };
 		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };
 		Audio::EnoAudioManager audioMng_{ bus_ };
-		
-		// TBD Demo for playing sounds
-		void setupAudioInput();
-		void soundSetup();
 
 		// Time
 		double dt_ = 0.0;

@@ -56,7 +56,35 @@ void GameApplication::setupGameEntities() {
 }
 
 void GameApplication::setupGameAudio() {
-	// Setup audio
+	// setup audio
+	auto& audioMng = engine_.getAudioManager();
+	audioMng.setChannelGroup("BGM");
+
+	Audio::SoundParameters sound;
+	Audio::ParamEQ eq;
+	Audio::SFXReverb reverb;
+	eq = Audio::ParamEQ{ 3.f, 1000.f, 1.f };
+	sound.volume = 0.1f;
+	sound.eq = Audio::EQ{};
+	sound.eq->type = FMOD_DSP_TYPE_PARAMEQ;
+	sound.eq->paramEQ = eq;
+	sound.reverb = Audio::Reverb{};
+	sound.reverb->type = FMOD_DSP_TYPE_SFXREVERB;
+	sound.reverb->sfx = reverb;
+	audioMng.modifyChannelGroup("BGM", sound);
+
+	audioMng.publishSoundRequest("Close_To_The_End");
+	audioMng.publishSoundRequest("Simulacrum");
+
+	// setup input to play sound
+	auto& inputMng = engine_.getInputManager();
+
+	inputMng.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
+	inputMng.setupKey("Set New Audio", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
+	inputMng.setupKey("Set New Audio2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
+	inputMng.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
+	inputMng.setupEvent<Audio::SetNewAudio>("Set New Audio", "Close_To_The_End");
+	inputMng.setupEvent<Audio::SetNewAudio>("Set New Audio2", "Simulacrum");
 }
 
 void GameApplication::setupGameEvents() {
