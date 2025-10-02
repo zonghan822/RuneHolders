@@ -551,6 +551,16 @@ namespace Graphics
     void EnoGraphicsManager::drawLine(const Math::eVec2<float>& start, const Math::eVec2<float>& end, const Color& color, float thickness)
     {
         // Simple line implementation
+        GLenum primitiveType = GL_LINES;
+
+        // Flush if primitive type changes
+        if (!batchVertices_.empty() && currentBatchPrimitiveType_ != primitiveType)
+        {
+            flushBatch(currentBatchPrimitiveType_);
+        }
+
+        currentBatchPrimitiveType_ = primitiveType;
+
         addVertexToBatch(Vertex(start, color));
         addVertexToBatch(Vertex(end, color));
     }

@@ -16,7 +16,7 @@ namespace Collision {
 		data.circle.radius = 1.0f;
 	}
 
-	//circle
+	// circle
 	CollisionComponent::CollisionComponent(float radius, Math::eVec2<float> colliderOffset, bool trigger)
 		: type(ColliderType::CIRCLE)
 		, offset(colliderOffset)
@@ -35,6 +35,23 @@ namespace Collision {
 	{
 		data.rectangle.width = width;
 		data.rectangle.height = height;
+	}
+
+	// line
+	CollisionComponent::CollisionComponent(Math::eVec2<float> point1, Math::eVec2<float> point2, bool trigger)
+		: type(ColliderType::LINE)
+		, offset{ 0.f, 0.f }
+		, isTrigger(trigger)
+		, isActive(true)
+	{
+		data.line.p1 = point1;
+		data.line.p2 = point2;
+		// Calculate edge vector (from p1 to p2)
+		Math::eVec2<float> edge = data.line.p2 - data.line.p1;
+		// Calculate perpendicular (rotate 90° counter-clockwise)
+		Math::eVec2<float> perpendicular = { -edge.v2, edge.v1 };
+		// Normalize to get the outward normal
+		Math::eVec2Normalize(data.line.pNormal, perpendicular);
 	}
 
 	// point
@@ -105,6 +122,10 @@ namespace Collision {
 			break;
 		case ColliderType::RECTANGLE:
 			os << "Rectangle (" << collision.data.rectangle.width << "x" << collision.data.rectangle.height << ")";
+			break;
+		case ColliderType::LINE:
+			os << "Line:" << std::endl << "p1 : " << collision.data.line.p1 << "p2 : " << collision.data.line.p2 << "pNormal : " << collision.data.line.pNormal;
+			break;
 		case ColliderType::POINT:
 			os << "Point";
 			break;
@@ -191,6 +212,37 @@ namespace Collision {
 		// any unsupported collision type combination
 		return CollisionResult{};
 	}
+
+	bool CollisionDetection::CheckCollision(
+		const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA,
+		const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB,
+		const Math::eVec2<float>& endPos, Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi)
+	{
+
+		// early exit: skip collision if either collider is inactive
+		if (!colliderA.isActive || !colliderB.isActive)
+		{
+			return false; // return "no collision result"
+		}
+
+		// calculate actual world positiions of the colliders
+		// world position = transform position + collider offset
+		Math::eVec2<float> posA = { transformA.pos.x + colliderA.offset.v1, transformA.pos.y + colliderA.offset.v2 };
+		Math::eVec2<float> posB = { transformB.pos.x + colliderB.offset.v1, transformB.pos.y + colliderB.offset.v2 };
+
+		// convey to the collision detection function accordingly
+		// (BASED ON the types of the 2 colliders)
+		// Dynamic circle and line collision
+		if (colliderA.type == ColliderType::CIRCLE && colliderB.type == ColliderType::LINE)
+		{
+			//std::cout << "CIRCLE RADIUS ::: " << colliderA.data.circle.radius << std::endl;
+			return CheckCircleLine(posA, colliderA.data.circle.radius, endPos, colliderB, colPoint, normalAtCol, colTi);
+		}
+
+
+	}
+
+
 
 	CollisionResult CollisionDetection::CheckCircleCircle(const Math::eVec2<float>& posA, float radiusA, const Math::eVec2<float>& posB, float radiusB) {
 		CollisionResult result;
@@ -439,6 +491,121 @@ namespace Collision {
 
 	} // definition for CheckPointCollider
 
+	bool CollisionDetection::CheckCircleLine(const Math::eVec2<float>& circlePos, const float& radius, const Math::eVec2<float>& endPoint, const CollisionComponent& lineCol,
+		Math::eVec2<float>& pointAtCol, Math::eVec2<float>& normalAtCol, float& colTi)
+	{
+
+		if ((Math::eVec2DotProduct(lineCol.data.line.pNormal, circlePos) -
+			 Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1)) <= -radius)
+		{
+			// We consider an imaginary line that is -R away, where we test for the oppposite direction of the line's outward normal -> inner plane
+			//check whether the normalized velocity is within the end points of the line segment
+			// velocity V = end pt - start pt
+			Math::eVec2<float> vel{ endPoint - circlePos };
+
+			// normalized vector M = normalized(V.y, -V.x)
+			Math::eVec2<float> mVel;
+			Math::eVec2<float> tmp{ vel.v2, -vel.v1 };
+			Math::eVec2Normalize(mVel, tmp);
+		
+			//calculate end points of imaginary line as p1' and p2'
+			//P1' = P1 – R*N and P2' = P2 – R*N 
+
+			Math::eVec2<float> innerP1 = lineCol.data.line.p1 - (lineCol.data.line.pNormal * radius);
+			Math::eVec2<float> innerP2 = lineCol.data.line.p2 - (lineCol.data.line.pNormal * radius);
+
+			//check if the circle is moving towards the imaginary line: M.Bsp0' * M.Bsp1' < 0
+			if ((Math::eVec2DotProduct(mVel, (innerP1 - circlePos)) * Math::eVec2DotProduct(mVel, (innerP2 - circlePos))) < 0)
+			{
+				//calculate the time of intersection
+				//Ti = (N.P0 - N.Bs - R)/(N.V)
+				colTi = ((Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1) - 
+						  Math::eVec2DotProduct(lineCol.data.line.pNormal, circlePos) - radius) / 
+						  Math::eVec2DotProduct(lineCol.data.line.pNormal, vel));
+
+				//if time of intersection occurs within the next frame
+				if (0 <= colTi && colTi <= 1.f) {
+
+					//intersection pt = Bs + V*Ti
+					pointAtCol = circlePos + (vel * colTi);
+					normalAtCol = -lineCol.data.line.pNormal;
+					return true;
+
+				}
+			}
+			else 
+			{
+				//return CheckMovingCircleToLineEdge(false, circle, ptEnd, lineSeg, interPt, normalAtCollision, interTime);
+			}
+		}
+
+		else if ((Math::eVec2DotProduct(lineCol.data.line.pNormal, circlePos) -
+				  Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1)) >= radius)
+		{
+			// Here we consider an imaginary line R away on the outer plane -> outward normal
+			// velocity V = end pt - start pt
+			Math::eVec2<float> vel{ endPoint - circlePos };
+
+			// normalized vector M = normalized(V.y, -V.x)
+			Math::eVec2<float> mVel;
+			Math::eVec2Normalize(mVel, { vel.v2, -(vel.v1) });
+
+			//calculate end points of imaginary line as p1' and p2'
+			//P1' = P1 + R*N and P2' = P2 + R*N 
+			Math::eVec2<float> outerP1 = lineCol.data.line.p1 + (lineCol.data.line.pNormal * radius);
+			Math::eVec2<float> outerP2 = lineCol.data.line.p2 + (lineCol.data.line.pNormal * radius);
+			//check if the circle is moving towards the imaginary line: M.Bsp0' * M.Bsp1' < 0
+			if ((Math::eVec2DotProduct(mVel, (outerP1 - circlePos)) * Math::eVec2DotProduct(mVel, (outerP2 - circlePos))) < 0)
+			{
+				//calculate the time of intersection
+				//Ti = (N.P0 - N.Bs + R)/(N.V)
+				colTi = ((Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1) -
+					Math::eVec2DotProduct(lineCol.data.line.pNormal, circlePos) + radius) /
+					Math::eVec2DotProduct(lineCol.data.line.pNormal, vel));
+				//if time of intersection occurs within the next frame
+				if (0 <= colTi && colTi <= 1.f)
+				{
+					//intersection pt = Bs + V*Ti
+					pointAtCol = circlePos + (vel * colTi);
+					normalAtCol = lineCol.data.line.pNormal;
+					return true;
+				}
+			}
+
+			else 
+			{
+				//return CheckMovingCircleToLineEdge(false, circle, ptEnd, lineSeg, interPt, normalAtCollision, interTime);
+			}
+		}
+		else 
+		{
+
+			//return CheckMovingCircleToLineEdge(true, circle, ptEnd, lineSeg, interPt, normalAtCollision, interTime);
+		}
+
+		return false;
+	}
+		
+	 void CollisionDetection::CollisionReflection(const Math::eVec2<float>& interPt,
+		const Math::eVec2<float>& normal,
+		Math::eVec2<float>& nextPos,
+		Math::eVec2<float>& reflected)
+	{
+
+		//Penetration = BiBe
+		Math::eVec2<float> penetration = nextPos - interPt;
+		//B'e = Bi + penetration - 2(penetration.normal) * normal
+		nextPos = interPt + penetration - (2.0f * (Math::eVec2DotProduct(penetration, normal)) * normal);
+
+		// New position = collision point + reflected penetration
+		reflected = nextPos - interPt;
+
+		// Return normalized reflection direction
+		Math::eVec2Normalize(reflected, reflected);
+
+	}
+
+
 	// =============================================================================
 	// COLLISION EVENTS IMPLEMENTATION
 	// =============================================================================
@@ -563,6 +730,18 @@ namespace Collision {
 						false // not filled, just outline
 					);
 
+					break;
+				}
+
+				case ColliderType::LINE:
+				{
+
+					graphics.drawLine(
+						collision.data.line.p1,
+						collision.data.line.p2,
+						color,
+						1.0f
+					);
 					break;
 				}
 

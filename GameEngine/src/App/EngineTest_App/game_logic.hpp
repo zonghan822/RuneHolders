@@ -4,7 +4,19 @@
 #include "../../Engine/resources/animation.hpp"
 #include <iostream>
 #include <memory>  
-#include "../Engine/math/movementTest.hpp"
+#include "movementTest.hpp"
+
+namespace {
+    //scene selection
+    enum SceneSelect
+    {
+        PLAYER_SCENE = 1,
+        DYANMIC_COL_SCENE
+
+    } currScene;
+
+}
+
 
 class GameApplication {
 private:

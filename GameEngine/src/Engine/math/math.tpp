@@ -90,6 +90,8 @@ namespace Math
 	
 	}
 
+	
+
 	// ------------------------------ Division ------------------------------
 	template <Arithmetic Type>
 	eVec2<Type>& eVec2<Type>::operator/=(const eVec2<Type>& other)
@@ -155,6 +157,11 @@ namespace Math
 
 
 	// --------------------- Friend functions for eVec2 ---------------------------
+	template <Arithmetic Type>
+	eVec2<Type> operator*(const Type& lhs, const eVec2<Type>& rhs)
+	{
+		return {lhs * rhs.v1, lhs * rhs.v2};
+	}
 
 	template <Arithmetic Type>
 	eVec2<Type> operator+(const eVec2<Type>& lhs, const eVec2<Type>&rhs)
@@ -227,6 +234,12 @@ namespace Math
 		return (vec1.v1 * vec2.v1) + (vec1.v2 * vec2.v2);
 	}
 
+	template<typename Type>
+	std::ostream& operator<<(std::ostream& os, const eVec2<Type>& vec1)
+	{
+		std::cout << "x : " << vec1.v1 << " | y : " << vec1.v2 << std::endl;
+		return os;
+	}
 
 	// -------------------------------- 3x3 MATRICES ------------------------------
 
