@@ -397,6 +397,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		if (ImGui::Button("Spawn Prefab")) {
 			if (prefabRegistry.count(prefab.name)) {
 				instantiatePrefab(prefabRegistry[prefab.name], engine_);
+				if (g_game) g_game->markEntitiesDirty();
 			}
 		}
 	
