@@ -20,21 +20,21 @@ void GameApplication::initialize() {
 	setupGameEvents();
 	setupGameMath();
 	setupImGui();
-    // Setup all game content
-    setupGameEntities();
-    setupGameAudio();
-    setupGameEvents();
-    setupGameMath();
-    setupAnimations();
+	// Setup all game content
+	setupGameEntities();
+	setupGameAudio();
+	setupGameEvents();
+	setupGameMath();
+	setupAnimations();
 
 	// Starting scene
 	currScene = PLAYER_SCENE;
 
-    // This is for dynamic collision test object
-    createTestObject(engine_.getEntityManager());
-    
+	// This is for dynamic collision test object
+	createTestObject(engine_.getEntityManager());
 
-    std::cout << "Game initialized successfully!" << std::endl;
+
+	std::cout << "Game initialized successfully!" << std::endl;
 }
 
 void GameApplication::run() {
@@ -79,7 +79,7 @@ void GameApplication::setupGameMath() {
 }
 
 void GameApplication::setupAnimations() {
-    // Load the sprite sheet texture
+	// Load the sprite sheet texture
 	backgroundTexture_ = engine_.getResourceLoader().getTexture("Background");
 	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
 	playerWalkTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Walk-Sheet");
@@ -131,12 +131,14 @@ void GameApplication::demonstrateSignals() {
 }
 
 void GameApplication::updateGameLogic() {
-    // This is called every frame (replaces your while loop in eno_engine.cpp run())
+	// This is called every frame (replaces your while loop in eno_engine.cpp run())
 
-    // Calculate delta time
-    float currentTime = static_cast<float>(glfwGetTime());
-    float deltaTime = currentTime - lastFrameTime_;
-    lastFrameTime_ = currentTime;
+	// Calculate delta time
+	auto startTotalTime = Clock::now();
+	float currentTime = static_cast<float>(glfwGetTime());
+	float deltaTime = currentTime - lastFrameTime_;
+	lastFrameTime_ = currentTime;
+
 
 	// Draw background before everything else
 	if (backgroundTexture_ && backgroundTexture_->isValid()) {
@@ -157,20 +159,22 @@ void GameApplication::updateGameLogic() {
 		playerAnimController_.update(deltaTime);
 	}
 
-    updateEntities();
-    updateAudio();
-    drawShapes();
+	updateEntities();
+	updateAudio();
+	drawShapes();
 	// Draw player function for player scene ONLY
 	if (currScene == PLAYER_SCENE)
 	{
 		drawPlayerAndIndicator();
 	}
-	
+
 
 	auto& graphics = engine_.getGraphicsManager();
 	engine_.getGraphicsManager().flush();
 
 	updateImGui();
+	auto end = Clock::now();
+	systemTimes_["totalTimePerFrame"] = std::chrono::duration<double, std::micro>(end - startTotalTime).count();
 }
 
 void GameApplication::updateEntities() {
@@ -212,85 +216,85 @@ void GameApplication::updateEntities() {
 	// Determine current scene
 	switch (currScene)
 	{
-		case PLAYER_SCENE:
-		{
-			// Check if player is moving and switch animation accordingly
-			if (playerSystem_ && playerSpawned_) {
-				// Check for WASD input
-				bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
-					inputManager.isKeyPressed(GLFW_KEY_A) ||
-					inputManager.isKeyPressed(GLFW_KEY_S) ||
-					inputManager.isKeyPressed(GLFW_KEY_D);
+	case PLAYER_SCENE:
+	{
+		// Check if player is moving and switch animation accordingly
+		if (playerSystem_ && playerSpawned_) {
+			// Check for WASD input
+			bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+				inputManager.isKeyPressed(GLFW_KEY_A) ||
+				inputManager.isKeyPressed(GLFW_KEY_S) ||
+				inputManager.isKeyPressed(GLFW_KEY_D);
 
-				// Update facing direction based on A/D keys
-				if (inputManager.isKeyPressed(GLFW_KEY_D)) {
-					playerFacingDirection_ = -1;  // Face right
-				}
-				else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
-					playerFacingDirection_ = 1;  // Face left
-				}
-
-				// Switch animation based on movement
-				if (isMoving) {
-					if (playerAnimController_.getCurrentAnimationName() != "walk") {
-						playerAnimController_.setAnimation("walk");
-					}
-				}
-				else {
-					if (playerAnimController_.getCurrentAnimationName() != "idle") {
-						playerAnimController_.setAnimation("idle");
-					}
-				}
-
-				// Update player movement
-				playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
+			// Update facing direction based on A/D keys
+			if (inputManager.isKeyPressed(GLFW_KEY_D)) {
+				playerFacingDirection_ = -1;  // Face right
+			}
+			else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
+				playerFacingDirection_ = 1;  // Face left
 			}
 
-			// Update collision system
-			if (collisionSystem_) {
-				collisionSystem_->Update(engine_.getEntityManager());
-			}
-			break;
-		}
-		case DYANMIC_COL_SCENE:
-		{
-			static bool frameUpdate = false;
-			static bool keyFrameMode = false;
-
-			if (inputManager.isKeyPressed(GLFW_KEY_P))
-			{
-				//this toggles keyframe mode
-				keyFrameMode = !keyFrameMode;
-			}
-			//in key frame mode, wait for trigger to update
-			if (keyFrameMode)
-			{
-
-				if (inputManager.isKeyPressed(GLFW_KEY_L))
-				{
-					//frame update 
-					frameUpdate = true;
+			// Switch animation based on movement
+			if (isMoving) {
+				if (playerAnimController_.getCurrentAnimationName() != "walk") {
+					playerAnimController_.setAnimation("walk");
 				}
-
-				if (frameUpdate)
-				{
-					//update one time
-					updateTestObject(engine_.getEntityManager(), engine_);
-
-					//set it back to false
-					frameUpdate = false;
-
-				}
-
 			}
 			else {
-				//not in key frame mode, update normally
-				updateTestObject(engine_.getEntityManager(), engine_);
+				if (playerAnimController_.getCurrentAnimationName() != "idle") {
+					playerAnimController_.setAnimation("idle");
+				}
 			}
-			
-			break;
+
+			// Update player movement
+			playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 		}
-		
+
+		// Update collision system
+		if (collisionSystem_) {
+			collisionSystem_->Update(engine_.getEntityManager());
+		}
+		break;
+	}
+	case DYANMIC_COL_SCENE:
+	{
+		static bool frameUpdate = false;
+		static bool keyFrameMode = false;
+
+		if (inputManager.isKeyPressed(GLFW_KEY_P))
+		{
+			//this toggles keyframe mode
+			keyFrameMode = !keyFrameMode;
+		}
+		//in key frame mode, wait for trigger to update
+		if (keyFrameMode)
+		{
+
+			if (inputManager.isKeyPressed(GLFW_KEY_L))
+			{
+				//frame update 
+				frameUpdate = true;
+			}
+
+			if (frameUpdate)
+			{
+				//update one time
+				updateTestObject(engine_.getEntityManager(), engine_);
+
+				//set it back to false
+				frameUpdate = false;
+
+			}
+
+		}
+		else {
+			//not in key frame mode, update normally
+			updateTestObject(engine_.getEntityManager(), engine_);
+		}
+
+		break;
+	}
+
 	}
 
 	auto end = Clock::now();
@@ -376,13 +380,13 @@ void GameApplication::drawPlayerAndIndicator() {
 
 				// Draw with the correct texture
 				if (currentTexture && currentTexture->isValid()) {
-					
+
 					// convert center position to top-left for drawing
 					Math::eVec2<float> topLeft = {
 						transform.pos.x - (Player::PLAYER_COLLIDER_WIDTH * 0.5f),
 						transform.pos.y - (Player::PLAYER_SPRITE_HEIGHT * 0.5f)
 					};
-					
+
 					graphics.drawTexturedQuadUV(
 						topLeft,
 						Math::eVec2<float>{Player::PLAYER_SPRITE_WIDTH + scaleSize, Player::PLAYER_SPRITE_HEIGHT + scaleSize},
@@ -397,7 +401,7 @@ void GameApplication::drawPlayerAndIndicator() {
 					// Fallback to colored rect if texture invalid
 					graphics.drawRect(
 						Math::eVec2<float>{transform.pos.x, transform.pos.y},
-						Math::eVec2<float>{10 + scaleSize, 10 +scaleSize},
+						Math::eVec2<float>{10 + scaleSize, 10 + scaleSize},
 						Graphics::Color::Blue,
 						true,
 						rotationRadians
@@ -467,7 +471,7 @@ void GameApplication::drawShapes() { // For testing
 
 		for (ECS::Entity& entity : sceneTwoList) {
 			if (entity.has<drawInfo>()) {
-					graphics.drawCircle(
+				graphics.drawCircle(
 					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
 					entity.get<drawInfo>().width,
 					entity.get<drawInfo>().color,
@@ -479,7 +483,7 @@ void GameApplication::drawShapes() { // For testing
 			}
 		}
 	}
-	
+
 
 	auto end = Clock::now();
 	systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();

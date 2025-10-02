@@ -33,11 +33,13 @@ extern bool playerSpawned_;
 extern std::unordered_map<std::string, double> systemTimes_; //actual system time
 extern std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
-// indicator control variables
+// Indicator control variables
 extern float indicatorX_;
 extern float indicatorY_;
 extern float moveSpeed_ ; // pixels per second
 
+// Total time variable 
+//extern double totalTimePerFrame;
 
 // ImGui functions
 /*============================================================================================
