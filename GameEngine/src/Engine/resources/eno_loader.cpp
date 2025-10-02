@@ -33,7 +33,6 @@ namespace Resources {
 		auto it = textures_.find(name);
 		if (it != textures_.end())
 		{
-			std::cout << "Texture Found: " << name << std::endl;
 			return it->second;
 		}
 		std::cerr << "Texture not found: " << name << std::endl;
@@ -93,7 +92,9 @@ namespace Resources {
 				if (texture->loadFromFile(entry.path().string()))
 				{
 					textures_[entry.path().stem().string()] = texture;
+#ifdef _DEBUG
 					std::cout << "Loaded texture: " << entry.path().stem().string() << std::endl;
+#endif
 				}
 				else
 				{
@@ -160,8 +161,6 @@ namespace Resources {
 	}
 
 	void EnoLoader::onSoundRequest(const Audio::RequestSound& event) {
-		std::cout << "Sound Requested: " << event.sound_ << std::endl;
-
 		// Look for sound requested in the map
 		auto it = sounds_.find(event.sound_);
 		if (it == sounds_.end()) {

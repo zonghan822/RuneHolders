@@ -1013,6 +1013,7 @@ namespace Graphics
         if (it != shadersMap_.end()) {
             return it->second.get();
         }
+
         std::cerr << "[GraphicsManager] Shader '" << name
             << "' not found, using default shader.\n";
         return defaultShader_.get();
