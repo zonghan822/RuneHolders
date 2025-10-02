@@ -265,6 +265,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 				//HARDCODED(COPIED) SPAWN CODE INTO HERE
 				ECSComponents::DrawInfoComponent DIC{ randX, randY, eWidth, eHeight, shapes[eShapeIndex], eColor };
 				ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
+				e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
 			}
 			entity_count += 2500;
 

@@ -207,7 +207,7 @@ namespace Engine
 		FMOD::Channel* channel = audioMng_.playByGroup("Close_To_The_End", "BGM", true);
 		//FMOD::Channel* channel2 = audioMng_.playByGroup("Simulacrum", "BGM", true);
 
-		audioMng_.scheduleGroupFade("BGM", 5.0f, 5.0f, audioMng_.getSoundDurSec("Close_To_The_End"));
+		audioMng_.scheduleGroupFade("BGM", 5.0f, 5.0f, 8.f);
 
 		audioMng_.setPauseChannel(channel, false);
 		//audioMng_.setPauseChannel(channel2, false);
