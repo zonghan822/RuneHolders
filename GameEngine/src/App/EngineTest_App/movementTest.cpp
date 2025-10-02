@@ -13,6 +13,7 @@ bool CheckDynamicSquare(
 	const Collision::CollisionComponent& colB,
 	const ECSComponents::TransformComponent& transformB,
 	float& colTi,                 // time of collision (output)
+	Math::eVec2<float>& normal,
 	const float& dt
 )
 {
@@ -147,7 +148,29 @@ bool CheckDynamicSquare(
 	{
 		// Assign value to firstTimeOfCollision
 		// If value == 0, squares are already colliding
-		colTi = (max(tFirstX, tFirstY));		
+		colTi = (max(tFirstX, tFirstY));	
+
+		if (tFirstX > tFirstY) {
+			// X-axis collision
+			normal.v1 = (relVel.v1 > 0.f) ? -1.f : 1.f;
+			normal.v2 = 0.f;
+		}
+		else if (tFirstY > tFirstX) {
+			// Y-axis collision
+			normal.v1 = 0.f;
+			normal.v2 = (relVel.v2 > 0.f) ? -1.f : 1.f;
+		}
+		else {
+			// Corner collision
+			normal.v1 = (relVel.v1 > 0.f) ? -1.f : (relVel.v1 < 0.f ? 1.f : 0.f);
+			normal.v2 = (relVel.v2 > 0.f) ? -1.f : (relVel.v2 < 0.f ? 1.f : 0.f);
+			float length = sqrt(normal.v1 * normal.v1 + normal.v2 * normal.v2);
+			if (length > 0.f) {
+				normal.v1 /= length;
+				normal.v2 /= length;
+			}
+		}
+
 		if (!colTi)											
 		{
 			return true;
@@ -387,6 +410,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			nextPos.v1 = transform.pos.x + transform.vel.x * dt;
 			nextPos.v2 = transform.pos.y + transform.vel.y * dt;
 			Math::eVec2<float> colPoint;
+			Math::eVec2<float> normalAtCol;
 			float colTi;
 			bool hasCollided = false;
 
@@ -410,11 +434,60 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 							{
 								//Call check collision function for dynamic rect rect
 								if (CheckDynamicSquare(collision, transform, otherCollision, otherTransform,
-														colTi, dt))
+														colTi, normalAtCol, dt))
 								{
-									hasCollided = true;
-									Math::eVec2<float> penetration;
+									// Calculate relative velocity
+									Math::eVec2<float> relVel{
+										transform.vel.x - otherTransform.vel.x,
+										transform.vel.y - otherTransform.vel.y
+									};
 
+									// Calculate relative velocity along normal
+									float velAlongNormal = relVel.v1 * normalAtCol.v1 +
+										relVel.v2 * normalAtCol.v2;
+
+									// Don't resolve if velocities are separating
+									if (velAlongNormal > 0)
+										continue;
+
+									// Restitution (bounciness) - 1.0 = perfectly elastic
+									float restitution = 1.0f;
+
+									// Calculate impulse scalar
+									float impulseMagnitude = -(1.f + restitution) * velAlongNormal;
+
+									// Assume equal mass or adjust based on mass if you have it
+									// For equal mass, each gets half the impulse
+									float massA = 0.2f;  // Replace with actual mass if available
+									float massB = 0.1f;  // Replace with actual mass if available
+									float totalMass = massA + massB;
+
+									impulseMagnitude /= (1.f / massA + 1.f / massB);
+
+									// Calculate dot product for reflection
+									float dot = transform.vel.x * normalAtCol.v1 +
+										transform.vel.y * normalAtCol.v2;
+									// Reflect velocity: v' = v - 2(v·n)n
+
+									transform.vel.x = (transform.vel.x - 2.f * dot * normalAtCol.v1) * restitution;
+									transform.vel.y = (transform.vel.y - 2.f * dot * normalAtCol.v2) * restitution;
+
+									// Push this object back along the normal
+									transform.pos.x += normalAtCol.v1 * 3.f;
+									transform.pos.y += normalAtCol.v2 * 3.f;
+
+									// Push the OTHER object back in opposite direction (pseudo effect)
+									float otherDot = otherTransform.vel.x * (-normalAtCol.v1) +
+										otherTransform.vel.y * (-normalAtCol.v2);
+									otherTransform.vel.x = (otherTransform.vel.x - 2.f * otherDot * (-normalAtCol.v1)) * restitution;
+									otherTransform.vel.y = (otherTransform.vel.y - 2.f * otherDot * (-normalAtCol.v2)) * restitution;
+
+									// Push other object away
+									otherTransform.pos.x -= normalAtCol.v1 * 3.f;
+									otherTransform.pos.y -= normalAtCol.v2 * 3.f;
+									
+									hasCollided = true;
+									break;
 
 								}
 							}
@@ -431,21 +504,9 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				transform.pos.y = nextPos.v2;
 			}
 
-
 		}
 
-
-
 	}
-
-
-
-
-
-
-
-
-
 
 }
 

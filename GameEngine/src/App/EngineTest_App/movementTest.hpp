@@ -43,5 +43,6 @@ bool CheckDynamicSquare(
     const Collision::CollisionComponent& colB,
     const ECSComponents::TransformComponent& transformB,
     float& colTi,                 // time of collision (output)
+    Math::eVec2<float>& normAtCol,
     const float& dt
 );
