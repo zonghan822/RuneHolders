@@ -12,8 +12,6 @@
 // Events
 #include "../game_instance/game_instance_events.hpp"
 
-// System Interface
-#include "../interface/system.hpp"
 
 // stds
 #include <iostream>
@@ -56,7 +54,7 @@ namespace Input
 		}
 	};
 
-	class EnoInputManager: public Sys::ISystem
+	class EnoInputManager
 	{
 	public:
 		EnoInputManager(GLFWwindow* window, Event::EnoEventBus& bus);
@@ -64,10 +62,12 @@ namespace Input
 		// Set up a key in the input map
 		void setupKey(const std::string& inputName, int key = 0, int scancode = 0, int action = 0, int mods = 0);
 
-		template <typename EventType>
-		void setupEvent(const std::string& inputName);
-
-		void Update() {};
+		template <typename EventType, typename... Data>
+		void setupEvent(const std::string& inputName, Data&&... d)
+		{
+			eventMap_[inputName] = [this, ... args = std::forward<Data>(d)]()
+				{ bus_.publish(EventType{ args... }); };
+		}
 
 		void endFrame();
 

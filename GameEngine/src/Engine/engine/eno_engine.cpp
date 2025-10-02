@@ -9,6 +9,12 @@ namespace Engine
 		setupEventSystem();
 		setupGraphicsSystem();
 		loader_.loadImages(loader_.getImagePath());
+
+		// Temporary(?) Audio-Input setup
+		setupAudioInput();
+
+		soundSetup();
+
 		// For debugging
 		compReg_.DisplayReg();
 
@@ -25,8 +31,6 @@ namespace Engine
 	// Thats why i added a callback version
 	void EnoEngine::run(std::function<void()> gameUpdateCallback)
 	{
-		soundSetup();
-
 		while (!glfwWindowShouldClose(window_.getWindow()))
 		{
 			glfwPollEvents();
@@ -100,6 +104,28 @@ namespace Engine
 			});
 	}
 
+	// *** For audio button demonstration purposes
+	// *** maybe to be removed!!!
+	void EnoEngine::setupAudioInput()
+	{
+		input_.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
+		input_.setupKey("Set New Audio", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
+		input_.setupKey("Set New Audio2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
+		input_.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
+		input_.setupEvent<Audio::SetNewAudio>("Set New Audio", "Close_To_The_End");
+		input_.setupEvent<Audio::SetNewAudio>("Set New Audio2", "Simulacrum");
+
+		bus_.subscribe<Audio::SetAudioState>([&](const Audio::SetAudioState& event)
+			{
+				audioMng_.onTogglePlay(event);
+			});
+
+		bus_.subscribe<Audio::SetNewAudio>([&](const Audio::SetNewAudio& event)
+			{
+				audioMng_.onAudioChange(event);
+			});
+	}
+
 	void EnoEngine::setupGraphicsSystem()
 	{
 		// Create graphics manager
@@ -126,15 +152,8 @@ namespace Engine
 	{
 		// Update engine systems each frame
 		// Add any per-frame engine updates here
-		static bool scheduled{ false };
-		if (!scheduled)
-		{
-			soundPlaying();
-			scheduled = true;
-		}
 
 		audioMng_.process();
-		audioMng_.Update();
 
 		// Graphics update is handled in the main loop (beginFrame/endFrame)
 		// but we call Update() here for consistency with the system interface
@@ -200,16 +219,5 @@ namespace Engine
 
 		audioMng_.publishSoundRequest("Close_To_The_End");
 		audioMng_.publishSoundRequest("Simulacrum");
-	}
-
-	void EnoEngine::soundPlaying()
-	{
-		FMOD::Channel* channel = audioMng_.playByGroup("Close_To_The_End", "BGM", true);
-		//FMOD::Channel* channel2 = audioMng_.playByGroup("Simulacrum", "BGM", true);
-
-		audioMng_.scheduleGroupFade("BGM", 5.0f, 5.0f, 8.f);
-
-		audioMng_.setPauseChannel(channel, false);
-		//audioMng_.setPauseChannel(channel2, false);
 	}
 }

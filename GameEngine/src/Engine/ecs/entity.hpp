@@ -35,8 +35,7 @@ namespace ECS
 		EntityManager(ECSComponents::EnoComponentRegistry& compReg)
 			:
 			compReg_{ compReg }
-		{
-		}
+		{}
 
 		inline static uint32_t id = 0;
 

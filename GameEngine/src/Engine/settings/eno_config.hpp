@@ -21,7 +21,7 @@ namespace EngineConfiguration
 {
 	inline char engine_version[ENGINE_VER_SIZE];
 
-	class EnoConfigManager : public Sys::ISystem
+	class EnoConfigManager
 	{
 	private:
 		std::string cfgFileName_ = ASSETS_DIR_PATH "settings/config.txt";
@@ -42,8 +42,6 @@ namespace EngineConfiguration
 		{
 			retrieveSettings();
 		}
-
-		void Update() {}
 
 		std::pair<int, int> getWindowDim()
 		{

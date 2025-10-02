@@ -68,8 +68,8 @@ namespace Engine
 
 
 		// TBD Demo for playing sounds
+		void setupAudioInput();
 		void soundSetup();
-		void soundPlaying();
 
 		// Time
 		double dt = 0.0f;

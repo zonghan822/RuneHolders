@@ -37,8 +37,6 @@ namespace Window
 		}
 	}
 
-	void EnoWindow::Update() {}
-
 	// ----------------------- Events -----------------------
 	void EnoWindow::gameWindowInit()
 	{

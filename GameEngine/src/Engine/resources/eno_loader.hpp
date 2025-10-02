@@ -5,9 +5,6 @@
 // FMOD
 #include "fmod.hpp"
 
-// Interface
-#include "../interface/system.hpp"
-
 // Events
 #include "../audio/audio_events.hpp"
 #include "../event/event_bus.hpp"
@@ -28,7 +25,7 @@
 
 namespace Resources
 {
-	class EnoLoader : public Sys::ISystem
+	class EnoLoader
 	{
 	private:
 		// Sounds
@@ -115,8 +112,6 @@ namespace Resources
 			static const std::string path{ entityPath_.data(), entityPath_.size() };
 			return path;
 		}
-
-		void Update() {}
 
 		// Load Sound files (mp3 | wav)
 		// and store it in a container that is passed in

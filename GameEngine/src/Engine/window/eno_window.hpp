@@ -3,8 +3,6 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include "../interface/system.hpp"
-
 // Events
 #include "../game_instance/game_instance_events.hpp"
 
@@ -15,7 +13,7 @@
 
 namespace Window
 {
-	class EnoWindow : public Sys::ISystem
+	class EnoWindow
 	{
 	public:
 		EnoWindow(std::pair<int, int>);
