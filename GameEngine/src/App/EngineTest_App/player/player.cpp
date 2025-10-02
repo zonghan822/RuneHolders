@@ -238,13 +238,16 @@ namespace Player
         const Math::eVec2<float>& targetPos,
         ECS::EntityManager& entityManager)
     {
+        extern float scaleSize;
+        extern float rotationRadians;
+
         // Create temporary transform at target position for collision testing
         ECSComponents::TransformComponent testTransform;
         testTransform.pos.x = targetPos.v1;
         testTransform.pos.y = targetPos.v2;
         testTransform.pos.z = 0.0f;
-        testTransform.rot = { 0.0f, 0.0f, 0.0f };
-        testTransform.scale = { 1.0f, 1.0f, 1.0f };
+        testTransform.rot = { 0.0f, 0.0f, 0.0f };   // apply rotation
+        testTransform.scale = { scaleSize, scaleSize, 1.0f }; // apply scale
 
         // Check collision with all other entities
         auto& entityMap = entityManager.getMap();
