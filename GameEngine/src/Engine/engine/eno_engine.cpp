@@ -10,7 +10,7 @@ namespace Engine
 		setupGraphicsSystem();
 		loader_.loadImages(loader_.getImagePath());
 		// For debugging
-		compReg_.PrintIDs();
+		compReg_.DisplayReg();
 
 		// Removed all your previous game codes like math and shi
 		
@@ -29,8 +29,6 @@ namespace Engine
 
 		while (!glfwWindowShouldClose(window_.getWindow()))
 		{
-
-
 			glfwPollEvents();
 
 			update_time(1.0);
@@ -83,9 +81,9 @@ namespace Engine
 	void EnoEngine::setupEventSystem()
 	{
 		// Setup core engine event handlers
-		bus_.subscribe<Audio::RequestSound>
-			(
-				[&](const Audio::RequestSound& event) {loader_.onSoundRequest(event);}
+		bus_.subscribe<Audio::RequestSound>([&](const Audio::RequestSound& event) 
+			{
+				loader_.onSoundRequest(event);}
 			);
 
 		bus_.subscribe<Audio::LoadSound>([&](const Audio::LoadSound& event)

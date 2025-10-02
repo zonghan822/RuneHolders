@@ -1,6 +1,7 @@
 #pragma once
 
 // Engine Component(s)
+#include "../settings/eno_config.hpp"
 #include "archetype.hpp"
 #include "archetype_presets.hpp"
 
@@ -266,6 +267,7 @@ namespace ECS
 			// Writing to the file the following data respectively:
 			// 
 			// (char[8])  Header					: 8 bytes
+			// (char[8])  Version					: 8 bytes
 			// (uint32_t) Type Count				: 4 bytes
 			// (uint32_t) Registered Type IDs		: 4 bytes
 			//											.
@@ -279,6 +281,10 @@ namespace ECS
 			// Header
 			const char header[8] = "EnoECSS";
 			out.write(header, sizeof(header));
+
+			// Engine Version
+			out.write(EngineConfiguration::engine_version, 
+				sizeof(EngineConfiguration::engine_version));
 
 			for (auto& [archetypeKey, upArchetype] : archetypeMng_.getArchetypes())
 			{
@@ -337,12 +343,22 @@ namespace ECS
 				throw std::runtime_error("Opened file is not an ECS data file for the EnoEngine!");
 			}
 
+			// Verify engine version
+			char version[8]{};
+			in.read(version, sizeof(version));
+			if (strncmp(version, EngineConfiguration::engine_version, 8) != 0)
+			{
+				throw std::runtime_error("Opened file is not an ECS data file for the EnoEngine!");
+			}
+			
 			// Handled per archetype
 			while (in.peek() != EOF)
 			{
 				// Read for type count
 				uint32_t typeCount{};
 				in.read(reinterpret_cast<char*>(&typeCount), sizeof(typeCount));
+
+				std::cout << "Type count: " << typeCount << std::endl;
 
 				// Retrieve the types and associated sizes
 				// to recreate archetypes
@@ -357,10 +373,12 @@ namespace ECS
 					uint32_t typeID{};
 					in.read(reinterpret_cast<char*>(&typeID), sizeof(typeID));
 
+					std::type_index typeIdx = ECSComponents::EnoComponentRegistry::FindComponent(typeID);
+
 					// Use registered type ID 
 					// to retrieve the type and size of a component
-					types.push_back(ECSComponents::EnoComponentRegistry::FindComponent(typeID));
-					sizes.push_back(ECSComponents::EnoComponentRegistry::GetComponentSize(types[i]));
+					types.push_back(typeIdx);
+					sizes.push_back(ECSComponents::EnoComponentRegistry::GetComponentSize(typeIdx));
 				}
 
 				Archetype* archetype = archetypeMng_.getOrCreateArch(types, sizes);
@@ -441,23 +459,6 @@ namespace ECS
 			return entities;
 		}
 
-		template <typename... Components>
-		std::vector<Entity> findEntitybyType()
-		{
-			std::vector<Entity> entities;
-
-			// Find an entity based on their component type and value
-			for (const auto& [id, loc] : entityMap_)
-			{
-				Entity ent{ id, *this };
-				if (ent.template has<Components...>())
-				{
-					entities.push_back(ent);
-				}
-			}
-
-			return entities;
-		}
 
 	private:
 		ArchetypeManager archetypeMng_;

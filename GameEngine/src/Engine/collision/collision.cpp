@@ -247,7 +247,7 @@ namespace Collision {
 		// calculate half-extents (distance from center to edge) for AABB calculations later
 		float halfWidthA = rectA.width * 0.5f;
 		float halfHeightA = rectA.height * 0.5f;
-		float halfWidthB = rectB.width * 0.0f;
+		float halfWidthB = rectB.width * 0.5f;
 		float halfHeightB = rectB.height * 0.5f;
 
 		// calculate distance between between centers
@@ -550,7 +550,7 @@ namespace Collision {
 
 				case ColliderType::RECTANGLE:
 				{
-					// calculate top-left corner (drawRect uses top-left pos)
+					// calculate top-left corner (drawRect uses top-left pos), but worldPos is CENTER
 					Math::eVec2<float> topLeft = {
 						worldPos.v1 - (collision.data.rectangle.width * 0.5f),
 						worldPos.v2 - (collision.data.rectangle.height * 0.5f)
@@ -664,13 +664,13 @@ namespace Collision {
 		}
 
 		// Debug logging (only in debug builds to avoid performance impact)
-#ifdef _DEBUG
-		std::cout << "Collision detected between Entity " << entityA_ID
-			<< " and Entity " << entityB_ID
-			<< " | Penetration Depth: " << result.penetrationDepth
-			<< " | Trigger: " << (event.isEntityA_Trigger || event.isEntityB_Trigger ? "Yes" : "No")
-			<< std::endl;
-#endif	
+//#ifdef _DEBUG
+//		std::cout << "Collision detected between Entity " << entityA_ID
+//			<< " and Entity " << entityB_ID
+//			<< " | Penetration Depth: " << result.penetrationDepth
+//			<< " | Trigger: " << (event.isEntityA_Trigger || event.isEntityB_Trigger ? "Yes" : "No")
+//			<< std::endl;
+//#endif	
 	}
 
 	ECSComponents::TransformComponent& CollisionSystem::GetTransformComponent(const ECS::EntityLoc& entityLoc)

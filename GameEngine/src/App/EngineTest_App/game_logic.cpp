@@ -268,9 +268,16 @@ void GameApplication::drawPlayerAndIndicator() {
 
 				// Draw with the correct texture
 				if (currentTexture && currentTexture->isValid()) {
+					
+					// convert center position to top-left for drawing
+					Math::eVec2<float> topLeft = {
+						transform.pos.x - (Player::PLAYER_COLLIDER_WIDTH * 0.5f),
+						transform.pos.y - (Player::PLAYER_SPRITE_HEIGHT * 0.5f)
+					};
+					
 					graphics.drawTexturedQuadUV(
-						Math::eVec2<float>{transform.pos.x, transform.pos.y},
-						Math::eVec2<float>{48.0f, 48.0f},
+						topLeft,
+						Math::eVec2<float>{Player::PLAYER_SPRITE_WIDTH, Player::PLAYER_SPRITE_HEIGHT},
 						currentTexture,
 						uvStart,  // Use potentially flipped UV coords
 						uvEnd,    // Use potentially flipped UV coords
