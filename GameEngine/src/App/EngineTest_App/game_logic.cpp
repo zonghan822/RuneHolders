@@ -341,7 +341,7 @@ void GameApplication::drawPlayerAndIndicator() {
 				
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
 					// I am placing it here first as a 4.0 scale speed * DT
-					scaleSize += 10.0 * 0.01667;
+					scaleSize += 3.0 * 0.01667;
 					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					playerTransform.scale.x = scaleSize;
 					playerTransform.scale.y = scaleSize;
@@ -349,7 +349,7 @@ void GameApplication::drawPlayerAndIndicator() {
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
-					scaleSize -= 10.0 * 0.01667;
+					scaleSize -= 3.0 * 0.01667;
 					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					playerTransform.scale.x = scaleSize;
 					playerTransform.scale.y = scaleSize;
@@ -357,13 +357,13 @@ void GameApplication::drawPlayerAndIndicator() {
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
-					rotationRadians += 10.0f * 0.0174533 * 0.01667;
+					rotationRadians += 3.0f * 0.0174533 * 0.01667;
 					//playerTransform.rot.z = rotationRadians;
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
-					rotationRadians -= 10.0f * 0.0174533 * 0.01667;
+					rotationRadians -= 3.0f * 0.0174533 * 0.01667;
 					//playerTransform.rot.z = rotationRadians;
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
