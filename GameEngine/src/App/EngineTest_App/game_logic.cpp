@@ -191,7 +191,7 @@ void GameApplication::updateEntities() {
 	);
 
 	// Get player input to toggle between scenes
-	if (inputManager.isKeyPressed(GLFW_KEY_Q))
+	if (inputManager.isKeyDown(GLFW_KEY_Q))
 	{
 		switch (currScene)
 		{
@@ -253,16 +253,16 @@ void GameApplication::updateEntities() {
 			static bool frameUpdate = false;
 			static bool keyFrameMode = false;
 
-			if (inputManager.isKeyPressed(GLFW_KEY_P))
+			if (inputManager.isKeyDown(GLFW_KEY_P))
 			{
 				//this toggles keyframe mode
-				keyFrameMode = !keyFrameMode;
+				keyFrameMode = keyFrameMode ? false : true;
 			}
 			//in key frame mode, wait for trigger to update
 			if (keyFrameMode)
 			{
 
-				if (inputManager.isKeyPressed(GLFW_KEY_L))
+				if (inputManager.isKeyDown(GLFW_KEY_L))
 				{
 					//frame update 
 					frameUpdate = true;
