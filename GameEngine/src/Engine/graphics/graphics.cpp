@@ -635,6 +635,11 @@ namespace Graphics
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         EnoShader* shdr = getShader("text");
+
+        if (!shdr->isValid()) {
+            throw std::runtime_error("Text shader not loaded properly");
+        }
+
         shdr->use();
         shdr->setMatrix4("u_projection", projectionMatrix_.data());
 

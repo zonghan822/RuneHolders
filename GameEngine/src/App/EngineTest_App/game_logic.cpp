@@ -22,7 +22,7 @@ void GameApplication::initialize() {
     setupGameEvents();
     setupGameMath();
     setupAnimations();
-	liberationFont_ = engine_.getResourceLoader().getFont("liberation-mono");
+	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
     //this is for caven's movement test object
@@ -136,18 +136,12 @@ void GameApplication::updateGameLogic() {
     // Calculate delta time
     float deltaTime = engine_.getDeltaTime();
 
-	// Draw background before everything else
-	if (backgroundTexture_ && backgroundTexture_->isValid()) {
-		auto& graphics = engine_.getGraphicsManager();
-
-		// Get window dimensions from config
-		auto windowDim = engine_.getConfigManager().getWindowDim();
-		Math::eVec2<float> windowSize{
-			static_cast<float>(windowDim.first),
-			static_cast<float>(windowDim.second)
-		};
-
-	}
+	// Get window dimensions from config
+	auto windowDim = engine_.getWindowManager().getWindowSize();
+	Math::eVec2<float> windowSize{
+		static_cast<float>(windowDim.first),
+		static_cast<float>(windowDim.second)
+	};
 
 	// ===== UPDATE PLAYER ANIMATION =====
 	if (playerTexture_ && playerSpawned_)
@@ -157,15 +151,16 @@ void GameApplication::updateGameLogic() {
 
     updateEntities();
 
-	// DEMO DRAW TEXT
-	auto& graphics = engine_.getGraphicsManager();
-	graphics.drawText(timesFont_, "Hello World!", { 50.f, 100.f }, 1.f, Graphics::Color::Red);
-
     updateAudio();
     drawShapes();
 	drawPlayerAndIndicator();
 
 	engine_.getGraphicsManager().flush();
+
+	// DEMO DRAW TEXT
+	auto& graphics = engine_.getGraphicsManager();
+	graphics.drawText(timesFont_, "Hello World!", { 25.f , 50.f }, 1.f, Graphics::Color::Black);
+	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.v1/2.f, windowSize.v2 - 25.f }, 0.75f, Graphics::Color::Blue);
 
 	updateImGui();
 }

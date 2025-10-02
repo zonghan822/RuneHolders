@@ -26,7 +26,7 @@ private:
     int playerFacingDirection_ = 1;
 
     // Font
-    std::shared_ptr<Font::EnoFont> liberationFont_;
+    std::shared_ptr<Font::EnoFont> pixelifyFont_;
     std::shared_ptr<Font::EnoFont> timesFont_;
 
 public:
