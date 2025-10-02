@@ -442,20 +442,25 @@ void GameApplication::drawShapes() { // For testing
 	// Draw for different scenes
 	if (currScene == PLAYER_SCENE)
 	{
-		//thinking here i do for each drawable entity: draw.
-		// draw all entities
-		std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
-
-		for (ECS::Entity& entity : EntityList) {
-			//skip dynamic scene items
-			if (entity.has<ECSComponents::eVec2TransformComponent>()) continue;
-			if (entity.has<ECSComponents::DrawInfoComponent>()) {
-				graphics.drawRect(
-					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
-					entity.get<drawInfo>().color,
-					true
-				);
+		// USE CACHED ENTITIES with validation
+		for (ECS::Entity& entity : cachedDrawableEntities_) {
+			// Skip if entity was destroyed
+			try {
+				//skip dynamic scene items
+				if (entity.has<ECSComponents::eVec2TransformComponent>()) continue;
+				if (entity.has<ECSComponents::DrawInfoComponent>()) {
+					graphics.drawRect(
+						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+						Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
+						entity.get<drawInfo>().color,
+						true
+					);
+				}
+			}
+			catch (...) {
+				// Entity was destroyed, rebuild cache next frame
+				entitiesDirty_ = true;
+				continue;
 			}
 		}
 
@@ -466,21 +471,28 @@ void GameApplication::drawShapes() { // For testing
 	}
 	else if (currScene == DYANMIC_COL_SCENE)
 	{
-		//unique tagging for scene two objects for now would be eVec2TransformComponent
-		std::vector<ECS::Entity> sceneTwoList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
+		// USE CACHED ENTITIES with validation
+		for (ECS::Entity& entity : cachedSceneTwoEntities_) {
+			// FIX: Skip if entity was destroyed
+			try {
+				if (entity.has<drawInfo>()) {
+					graphics.drawCircle(
+						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+						entity.get<drawInfo>().width,
+						entity.get<drawInfo>().color,
+						true);
+				}
+			}
+			catch (...) {
+				// Entity was destroyed, rebuild cache next frame
+				entitiesDirty_ = true;
+				continue;
+			}
+		}
 
-		for (ECS::Entity& entity : sceneTwoList) {
-			if (entity.has<drawInfo>()) {
-				graphics.drawCircle(
-					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-					entity.get<drawInfo>().width,
-					entity.get<drawInfo>().color,
-					true);
-			}
-			// Draw colliders
-			if (showColliders_ && collisionSystem_) {
-				collisionSystem_->VisualizeColliders(graphics, entityManager);
-			}
+		// Draw colliders
+		if (showColliders_ && collisionSystem_) {
+			collisionSystem_->VisualizeColliders(graphics, entityManager);
 		}
 	}
 
