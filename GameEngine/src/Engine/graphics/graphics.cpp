@@ -667,8 +667,8 @@ namespace Graphics
                 continue;
             }
         }
-        /*atlas->unbind();
-        shdr->unuse();*/
+        atlas->unbind();
+        shdr->unuse();
     }
 
     void EnoGraphicsManager::setProjectionMatrix(int windowWidth, int windowHeight)
