@@ -338,28 +338,28 @@ void GameApplication::drawPlayerAndIndicator() {
 				***************************************************************************************/
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
 					// I am placing it here first as a 4.0 scale speed * DT
-					scaleSize += 10.0 * 0.01667;
+					scaleSize += 50.0 * 0.01667;
 					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					std::cout << "Scaling by: " << scaleSize << '\n';
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
 					// I am placing it here first as a 4.0 scale speed * DT
-					scaleSize -= 10.0 * 0.01667;
+					scaleSize -= 50.0 * 0.01667;
 					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					std::cout << "Scaling by: " << scaleSize << '\n';
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
 					// I am placing it here first as a const 1 degree in rads * DT
-					rotationRadians += 10.0f * 0.0174533 * 0.01667;
+					rotationRadians += 50.0f * 0.0174533 * 0.01667;
 					//rotationRadians = std::clamp(rotationRadians, 0.0f, 6.26573f + 0.0174533f);
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
 					// I am placing it here first as a const 1 degree in rads * DT
-					rotationRadians -= 10.0f * 0.0174533 * 0.01667;
+					rotationRadians -= 50.0f * 0.0174533 * 0.01667;
 					//rotationRadians = std::clamp(rotationRadians, 0.0f, 6.26573f + 0.0174533f);
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
