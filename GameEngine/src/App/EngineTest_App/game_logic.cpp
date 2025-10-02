@@ -29,9 +29,6 @@ void GameApplication::initialize() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
-	// Starting scene
-	currScene = PLAYER_SCENE;
-
     // This is for dynamic collision test object
     createTestObject(engine_.getEntityManager());
     
@@ -191,11 +188,8 @@ void GameApplication::updateGameLogic() {
 
     updateAudio();
     drawShapes();
-	// Draw player function for player scene ONLY
-	if (currScene == PLAYER_SCENE)
-	{
-		drawPlayerAndIndicator();
-	}
+
+	drawPlayerAndIndicator();
 
 	engine_.getGraphicsManager().flush();
 
@@ -231,22 +225,45 @@ void GameApplication::updateEntities() {
 		Math::eVec2<float>{1.0f, 1.0f},           // UV end
 		Graphics::Color::White
 	);
+	
+	// Check if player is moving and switch animation accordingly
+	if (playerSystem_ && playerSpawned_) {
+		// Check for WASD input
+		bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+			inputManager.isKeyPressed(GLFW_KEY_A) ||
+			inputManager.isKeyPressed(GLFW_KEY_S) ||
+			inputManager.isKeyPressed(GLFW_KEY_D);
 
-	// Get player input to toggle between scenes
-	if (inputManager.isKeyPressed(GLFW_KEY_Q))
-	{
-		switch (currScene)
-		{
-		case PLAYER_SCENE:
-			currScene = DYANMIC_COL_SCENE;
-			entitiesDirty_ = true;  // Mark cache as dirty on scene change
-			break;
-		case DYANMIC_COL_SCENE:
-			currScene = PLAYER_SCENE;
-			entitiesDirty_ = true;  // Mark cache as dirty on scene change
-			break;
+		// Update facing direction based on A/D keys
+		if (inputManager.isKeyPressed(GLFW_KEY_D)) {
+			playerFacingDirection_ = -1;  // Face right
 		}
+		else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
+			playerFacingDirection_ = 1;  // Face left
+		}
+
+		// Switch animation based on movement
+		if (isMoving) {
+			if (playerAnimController_.getCurrentAnimationName() != "walk") {
+				playerAnimController_.setAnimation("walk");
+			}
+		}
+		else {
+			if (playerAnimController_.getCurrentAnimationName() != "idle") {
+				playerAnimController_.setAnimation("idle");
+			}
+		}
+
+		// Update player movement
+		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
+
+	// Update collision system
+	if (collisionSystem_) {
+		collisionSystem_->Update(engine_.getEntityManager());
+	}
+
+	
 
 	// REBUILD CACHE ONLY WHEN DIRTY (optimization)
 	if (entitiesDirty_) {
@@ -255,11 +272,6 @@ void GameApplication::updateEntities() {
 		entitiesDirty_ = false;
 	}
 
-	// Determine current scene
-	switch (currScene)
-	{
-	case PLAYER_SCENE:
-	{
 		// Check if player is moving and switch animation accordingly
 		if (playerSystem_ && playerSpawned_) {
 			// Check for WASD input
@@ -296,14 +308,13 @@ void GameApplication::updateEntities() {
 		if (collisionSystem_) {
 			collisionSystem_->Update(engine_.getEntityManager());
 		}
-		break;
+		
 	}
-	case DYANMIC_COL_SCENE:
-	{
+	
 		static bool frameUpdate = false;
 		static bool keyFrameMode = false;
 
-		if (inputManager.isKeyPressed(GLFW_KEY_P))
+		if (inputManager.isKeyPressed(GLFW_KEY_M))
 		{
 			//this toggles keyframe mode
 			keyFrameMode = !keyFrameMode;
@@ -312,32 +323,33 @@ void GameApplication::updateEntities() {
 		if (keyFrameMode)
 		{
 
-			if (inputManager.isKeyPressed(GLFW_KEY_L))
+			if (inputManager.isKeyPressed(GLFW_KEY_N))
 			{
-				//frame update 
-				frameUpdate = true;
-			}
+		
 
-			if (frameUpdate)
-			{
-				//update one time
-				updateTestObject(engine_.getEntityManager(), engine_);
 
-				//set it back to false
-				frameUpdate = false;
-
-			}
-
+			//frame update 
+			frameUpdate = true;
 		}
-		else {
-			//not in key frame mode, update normally
+
+		if (frameUpdate)
+		{
+			//update one time
 			updateTestObject(engine_.getEntityManager(), engine_);
+
+			//set it back to false
+			frameUpdate = false;
+
 		}
-
-		break;
 	}
 
+	else
+	{
+		//not in key frame mode, update normally
+		updateTestObject(engine_.getEntityManager(), engine_);
+
 	}
+	
 
 	auto end = Clock::now();
 	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
@@ -477,15 +489,10 @@ void GameApplication::drawShapes() {
 
 	using drawInfo = ECSComponents::DrawInfoComponent;
 
-	// Draw for different scenes
-	if (currScene == PLAYER_SCENE)
-	{
 		// USE CACHED ENTITIES with validation
 		for (ECS::Entity& entity : cachedDrawableEntities_) {
 			// Skip if entity was destroyed
 			try {
-				//skip dynamic scene items
-				if (entity.has<ECSComponents::eVec2TransformComponent>()) continue;
 				if (entity.has<ECSComponents::DrawInfoComponent>()) {
 					graphics.drawRect(
 						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
@@ -507,32 +514,8 @@ void GameApplication::drawShapes() {
 			collisionSystem_->VisualizeColliders(graphics, entityManager);
 		}
 	}
-	else if (currScene == DYANMIC_COL_SCENE)
-	{
-		// USE CACHED ENTITIES with validation
-		for (ECS::Entity& entity : cachedSceneTwoEntities_) {
-			// FIX: Skip if entity was destroyed
-			try {
-				if (entity.has<drawInfo>()) {
-					graphics.drawCircle(
-						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-						entity.get<drawInfo>().width,
-						entity.get<drawInfo>().color,
-						true);
-				}
-			}
-			catch (...) {
-				// Entity was destroyed, rebuild cache next frame
-				entitiesDirty_ = true;
-				continue;
-			}
-		}
-
-		// Draw colliders
-		if (showColliders_ && collisionSystem_) {
-			collisionSystem_->VisualizeColliders(graphics, entityManager);
-		}
-	}
+{
+		
 
 
 	auto end = Clock::now();

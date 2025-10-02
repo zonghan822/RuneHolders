@@ -23,10 +23,11 @@ namespace Math
 		// ------------------------------- Addition -------------------------------
 		eVec2& operator+=(const eVec2& other);
 
-
 		eVec2& operator+=(const Type& other);
 
 		eVec2 operator+(const eVec2& other);
+
+		eVec2 operator+(const Type& other);
 
 		// ------------------------------ Subtraction ------------------------------
 		eVec2& operator-=(const eVec2& other);

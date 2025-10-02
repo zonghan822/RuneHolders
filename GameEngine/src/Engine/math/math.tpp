@@ -30,6 +30,11 @@ namespace Math
 	{
 		return { v1 + other.v1, v2 + other.v2 };
 	}
+	template <Arithmetic Type>
+	eVec2<Type> eVec2<Type>::operator+(const Type& other)
+	{
+		return {v1 + other, v2 + other};
+	}
 
 	// ------------------------------ Subtraction ------------------------------
 	template <Arithmetic Type>
@@ -184,7 +189,16 @@ namespace Math
 	void eVec2Normalize(eVec2<Type>& result, const eVec2<Type>& vec)
 	{
 		//normalized outward normal of a vector = n/||n||
-		result = vec / eVec2Length(vec);
+		Type length = eVec2Length(vec);
+		if(length < 0.000001f)
+		{
+			result = {0.0f, 0.0f};
+		}
+		else
+		{
+			result = vec / eVec2Length(vec);
+		}
+		
 
 	}
 
@@ -193,8 +207,8 @@ namespace Math
 	Type eVec2Length(const eVec2<Type>& vec)
 	{
 		//length = sqrt(x^2 + y^2)
-		return std::sqrt(eVec2SquaredLength(vec));
-
+		 Type val = std::sqrt(eVec2SquaredLength(vec));
+		 return val;
 	}
 
 	//eVec2SquaredLength returns the squared length of the vector
