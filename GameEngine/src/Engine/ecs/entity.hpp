@@ -672,6 +672,11 @@ namespace ECS
 			entityManager_.destroyEntity(id_);
 		}
 
+		// To remove when refactoring
+		uint32_t getEntityID() const{
+			return this->id_;
+		}
+
 		// Print all components the entity holds
 		void print()
 		{

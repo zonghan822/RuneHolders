@@ -103,9 +103,11 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
-
-
-
+	// Assuming that there will only be 1 entity with player component
+	for (ECS::Entity player : engine_.getEntityManager().findEntity<Player::PlayerComponent>())
+	{
+		playerEntityID_ = player.getEntityID();
+	}
 
 	prefab.x = indicatorX_;
 	prefab.y = indicatorY_;
@@ -138,6 +140,8 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 		if (!playerSpawned_) {
 			if (ImGui::Button("Spawn Player")) {
+
+
 				// create player entity at indicator position
 				ECSComponents::TransformComponent transform{
 					{indicatorX_, indicatorY_, 0.0f},
@@ -161,11 +165,8 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 				// Store ID by finding the last created entity in the map
 				// Get the entity map and find the most recent entity
 				auto& entityMap = engine_.getEntityManager().getMap();
-				uint32_t lastID = 0;
-				for (auto& [id, loc] : entityMap) {
-					if (id > lastID) lastID = id;
-				}
-				playerEntityID_ = lastID;
+
+
 
 				// Then add CollisionComponent
 				entity.add<Collision::CollisionComponent>(playerCollider);
