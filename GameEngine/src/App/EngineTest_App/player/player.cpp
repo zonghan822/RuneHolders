@@ -187,7 +187,22 @@ namespace Player
         }
     }
 
-    
+    //// YunQi testing scaling stuff
+    //Math::eVec2<float> PlayerSystem::GetScaleInput(Input::EnoInputManager& inputManager)
+    //{
+    //    Math::eVec2<float> scale = { 0.0f, 0.0f };
+
+    //    // Use EnoInputManager's isKeyPressed() for continuous WASD input
+    //    // isKeyPressed() returns true while the key is held down
+    //    if (inputManager.isKeyPressed(GLFW_KEY_O))
+    //        scale.v1 -= 1.0f;  // Scale Down
+    //    if (inputManager.isKeyPressed(GLFW_KEY_P))
+    //        scale.v2 += 1.0f;  // Scale Up
+
+    //    return scale;
+    //}
+
+
      
     // Updated GetMovementInput to use EnoInputManager reference
     Math::eVec2<float> PlayerSystem::GetMovementInput(Input::EnoInputManager& inputManager)

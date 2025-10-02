@@ -6,6 +6,10 @@
 using Clock = std::chrono::high_resolution_clock;
 //throw std::runtime_error("error logging");
 
+float scaleSize = 1.0f;
+float rotationRadians = 0.f;
+
+
 void GameApplication::initialize() {
 	// Setup engine systems first
 	engine_.setup();
@@ -329,6 +333,42 @@ void GameApplication::drawPlayerAndIndicator() {
 				Math::eVec2<float> uvStart = frame.uvStart;
 				Math::eVec2<float> uvEnd = frame.uvEnd;
 
+				/**************************************************************************************
+				YUNQI'S LAST MINUTE SAVEvvvvvvv
+				***************************************************************************************/
+				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
+					// I am placing it here first as a 4.0 scale speed * DT
+					scaleSize += 4.0 * 0.01667;
+					scaleSize = std::clamp(scaleSize, 1.0f, 50.0f);
+					std::cout << "Scaling by: " << scaleSize << '\n';
+				}
+
+				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
+					// I am placing it here first as a 4.0 scale speed * DT
+					scaleSize -= 4.0 * 0.01667;
+					scaleSize = std::clamp(scaleSize, 1.0f, 50.0f);
+					std::cout << "Scaling by: " << scaleSize << '\n';
+				}
+
+				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
+					// I am placing it here first as a const 1 degree in rads * DT
+					rotationRadians += 10.0f * 0.0174533 * 0.01667;
+					//rotationRadians = std::clamp(rotationRadians, 0.0f, 6.26573f + 0.0174533f);
+					std::cout << "rotation in Radians:" << rotationRadians << '\n';
+				}
+
+				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
+					// I am placing it here first as a const 1 degree in rads * DT
+					rotationRadians -= 10.0f * 0.0174533 * 0.01667;
+					//rotationRadians = std::clamp(rotationRadians, 0.0f, 6.26573f + 0.0174533f);
+					std::cout << "rotation in Radians:" << rotationRadians << '\n';
+				}
+
+
+				/****************************************************************************************
+				YUNQI'S LAST MINUTE SAVE^^^^^^
+				****************************************************************************************/
+
 				if (playerFacingDirection_ == -1) {
 					// Swap horizontal UV coordinates to flip the sprite
 					std::swap(uvStart.v1, uvEnd.v1);
@@ -345,20 +385,22 @@ void GameApplication::drawPlayerAndIndicator() {
 					
 					graphics.drawTexturedQuadUV(
 						topLeft,
-						Math::eVec2<float>{Player::PLAYER_SPRITE_WIDTH, Player::PLAYER_SPRITE_HEIGHT},
+						Math::eVec2<float>{Player::PLAYER_SPRITE_WIDTH + scaleSize, Player::PLAYER_SPRITE_HEIGHT + scaleSize},
 						currentTexture,
 						uvStart,  // Use potentially flipped UV coords
 						uvEnd,    // Use potentially flipped UV coords
-						Graphics::Color::White
+						Graphics::Color::White,
+						rotationRadians
 					);
 				}
 				else {
 					// Fallback to colored rect if texture invalid
 					graphics.drawRect(
 						Math::eVec2<float>{transform.pos.x, transform.pos.y},
-						Math::eVec2<float>{10, 10},
+						Math::eVec2<float>{10 + scaleSize, 10 +scaleSize},
 						Graphics::Color::Blue,
-						true
+						true,
+						rotationRadians
 					);
 				}
 			}

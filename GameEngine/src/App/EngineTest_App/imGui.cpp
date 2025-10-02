@@ -39,6 +39,10 @@ static float           colliderWidth = 10.0f;
 static float           colliderHeight = 10.0f;
 static float           colliderRadius = 5.0f;
 
+//Player Scale Variables
+float pScaleX = 1.0f;
+float pScaleY = 1.0f;
+
 //time
 static float shown_fps = 0.0f;
 static double next_update = 0.0;         // next time we refresh the text
@@ -91,6 +95,9 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	if (inputManager.isKeyPressed(GLFW_KEY_DOWN)) indicatorY_ += moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
+
+
+
 
 
 	prefab.x = indicatorX_;
