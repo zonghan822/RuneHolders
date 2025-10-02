@@ -338,15 +338,15 @@ void GameApplication::drawPlayerAndIndicator() {
 				***************************************************************************************/
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
 					// I am placing it here first as a 4.0 scale speed * DT
-					scaleSize += 4.0 * 0.01667;
-					scaleSize = std::clamp(scaleSize, 1.0f, 50.0f);
+					scaleSize += 10.0 * 0.01667;
+					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					std::cout << "Scaling by: " << scaleSize << '\n';
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
 					// I am placing it here first as a 4.0 scale speed * DT
-					scaleSize -= 4.0 * 0.01667;
-					scaleSize = std::clamp(scaleSize, 1.0f, 50.0f);
+					scaleSize -= 10.0 * 0.01667;
+					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					std::cout << "Scaling by: " << scaleSize << '\n';
 				}
 
