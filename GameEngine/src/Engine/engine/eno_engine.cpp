@@ -129,7 +129,7 @@ namespace Engine
 		static bool scheduled{ false };
 		if (!scheduled)
 		{
-			//soundPlaying();
+			soundPlaying();
 			scheduled = true;
 		}
 
