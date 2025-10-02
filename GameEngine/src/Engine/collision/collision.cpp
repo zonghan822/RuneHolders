@@ -237,7 +237,7 @@ namespace Collision {
 	bool CollisionDetection::CheckDynamicCollision(
 		const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA,
 		const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB,
-		const Math::eVec2<float>& endPos, Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi, const float& dt)
+		const Math::eVec2<float>& endPos, Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi)
 	{
 
 		// early exit: skip collision if either collider is inactive
@@ -266,10 +266,8 @@ namespace Collision {
 			//std::cout << "CIRCLE RADIUS ::: " << colliderA.data.circle.radius << std::endl;
 			return CheckDynamicCircleCircle(posA, { transformA.vel.x, transformA.vel.y }, colliderA.data.circle.radius, 
 											posB, { transformB.vel.x, transformB.vel.y }, colliderB.data.circle.radius, 
-											colPoint, normalAtCol, colTi, dt);
+											colPoint, normalAtCol, colTi);
 		}
-
-
 
 	}
 
@@ -526,8 +524,9 @@ namespace Collision {
 		Math::eVec2<float>& pointAtCol, Math::eVec2<float>& normalAtCol, float& colTi)
 	{
 
+
 		if ((Math::eVec2DotProduct(lineCol.data.line.pNormal, circlePos) -
-			 Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1)) <= -radius)
+			Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1)) <= -radius)
 		{
 			// We consider an imaginary line that is -R away, where we test for the oppposite direction of the line's outward normal -> inner plane
 			//check whether the normalized velocity is within the end points of the line segment
@@ -538,7 +537,7 @@ namespace Collision {
 			Math::eVec2<float> mVel;
 			Math::eVec2<float> tmp{ vel.v2, -vel.v1 };
 			Math::eVec2Normalize(mVel, tmp);
-		
+
 			//calculate end points of imaginary line as p1' and p2'
 			//P1' = P1 – R*N and P2' = P2 – R*N 
 
@@ -550,9 +549,9 @@ namespace Collision {
 			{
 				//calculate the time of intersection
 				//Ti = (N.P0 - N.Bs - R)/(N.V)
-				colTi = ((Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1) - 
-						  Math::eVec2DotProduct(lineCol.data.line.pNormal, circlePos) - radius) / 
-						  Math::eVec2DotProduct(lineCol.data.line.pNormal, vel));
+				colTi = ((Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1) -
+					Math::eVec2DotProduct(lineCol.data.line.pNormal, circlePos) - radius) /
+					Math::eVec2DotProduct(lineCol.data.line.pNormal, vel));
 
 				//if time of intersection occurs within the next frame
 				if (0 <= colTi && colTi <= 1.f) {
@@ -568,39 +567,39 @@ namespace Collision {
 		}
 
 		else if ((Math::eVec2DotProduct(lineCol.data.line.pNormal, circlePos) -
-				  Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1)) >= radius)
+			Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1)) >= radius)
+		{
+			// Here we consider an imaginary line R away on the outer plane -> outward normal
+			// velocity V = end pt - start pt
+			Math::eVec2<float> vel{ endPoint - circlePos };
+
+			// normalized vector M = normalized(V.y, -V.x)
+			Math::eVec2<float> mVel;
+			Math::eVec2Normalize(mVel, { vel.v2, -(vel.v1) });
+
+			// calculate end points of imaginary line as p1' and p2'
+			// P1' = P1 + R*N and P2' = P2 + R*N 
+			Math::eVec2<float> outerP1 = lineCol.data.line.p1 + (lineCol.data.line.pNormal * radius);
+			Math::eVec2<float> outerP2 = lineCol.data.line.p2 + (lineCol.data.line.pNormal * radius);
+			// check if the circle is moving towards the imaginary line: M.Bsp0' * M.Bsp1' < 0
+			if ((Math::eVec2DotProduct(mVel, (outerP1 - circlePos)) * Math::eVec2DotProduct(mVel, (outerP2 - circlePos))) < 0)
 			{
-				// Here we consider an imaginary line R away on the outer plane -> outward normal
-				// velocity V = end pt - start pt
-				Math::eVec2<float> vel{ endPoint - circlePos };
-
-				// normalized vector M = normalized(V.y, -V.x)
-				Math::eVec2<float> mVel;
-				Math::eVec2Normalize(mVel, { vel.v2, -(vel.v1) });
-
-				//calculate end points of imaginary line as p1' and p2'
-				//P1' = P1 + R*N and P2' = P2 + R*N 
-				Math::eVec2<float> outerP1 = lineCol.data.line.p1 + (lineCol.data.line.pNormal * radius);
-				Math::eVec2<float> outerP2 = lineCol.data.line.p2 + (lineCol.data.line.pNormal * radius);
-				//check if the circle is moving towards the imaginary line: M.Bsp0' * M.Bsp1' < 0
-				if ((Math::eVec2DotProduct(mVel, (outerP1 - circlePos)) * Math::eVec2DotProduct(mVel, (outerP2 - circlePos))) < 0)
+				// calculate the time of intersection
+				// Ti = (N.P0 - N.Bs + R)/(N.V)
+				colTi = ((Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1) -
+					Math::eVec2DotProduct(lineCol.data.line.pNormal, circlePos) + radius) /
+					Math::eVec2DotProduct(lineCol.data.line.pNormal, vel));
+				// if time of intersection occurs within the next frame
+				if (0 <= colTi && colTi <= 1.f)
 				{
-					//calculate the time of intersection
-					//Ti = (N.P0 - N.Bs + R)/(N.V)
-					colTi = ((Math::eVec2DotProduct(lineCol.data.line.pNormal, lineCol.data.line.p1) -
-						Math::eVec2DotProduct(lineCol.data.line.pNormal, circlePos) + radius) /
-						Math::eVec2DotProduct(lineCol.data.line.pNormal, vel));
-					//if time of intersection occurs within the next frame
-					if (0 <= colTi && colTi <= 1.f)
-					{
-						//intersection pt = Bs + V*Ti
-						pointAtCol = circlePos + (vel * colTi);
-						normalAtCol = lineCol.data.line.pNormal;
-						return true;
-					}
+					// intersection pt = Bs + V*Ti
+					pointAtCol = circlePos + (vel * colTi);
+					normalAtCol = lineCol.data.line.pNormal;
+					return true;
 				}
-
 			}
+
+		}
 
 		return false;
 	}
@@ -619,124 +618,83 @@ namespace Collision {
 		// New position = collision point + reflected penetration
 		reflected = nextPos - interPt;
 
-		// Return normalized reflection direction
+		// Return normalized reflection directionkr
 		Math::eVec2Normalize(reflected, reflected);
 
 	}
-
-	void CollisionDetection::ReflectVelocity(
-		const Math::eVec2<float>& vel,
-		const Math::eVec2<float>& norm,
-		Math::eVec2<float>& reflected)
-	{
-		// Reflection formula: V' = V - 2(V·N)N
-		// Where V is incoming velocity, N is surface normal
-
-		// Calculate dot product: V · N
-		float dotProduct = vel.v1 * norm.v1 + vel.v2 * norm.v2;
-
-		// Calculate reflected velocity
-		reflected.v1 = vel.v1 - 2.0f * dotProduct * norm.v1;
-		reflected.v2 = vel.v2 - 2.0f * dotProduct * norm.v2;
-	}
-
+	
 	bool CollisionDetection::CheckDynamicCircleCircle(
 		const Math::eVec2<float>& posA, const Math::eVec2<float>& velA, float radiusA,
 		const Math::eVec2<float>& posB, const Math::eVec2<float>& velB, float radiusB,
-		Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi, const float& dt)
+		Math::eVec2<float>& BeA, Math::eVec2<float>& BeB, float& colTi)
 	{
-		
-		// Relative position and velocity
-		Math::eVec2<float> relPos = { posA.v1 - posB.v1, posA.v2 - posB.v2 };
-		Math::eVec2<float> relVel = { velA.v1 - velB.v1, velA.v2 - velB.v2 };
-		float sumRadii = radiusA + radiusB;
 
-		// Look for 3 things, 
-		// a = if they are moving towards each other, 
-		// b = approaching or seperating,and 
-		// c = if they are already overlapping
+		const Math::eVec2<float> BaBb = posB - posA;
 
-		float a = relVel.v1 * relVel.v1 + relVel.v2 * relVel.v2;						// Squared speed of relative motion
-		float b = 2.0f * (relPos.v1 * relVel.v1 + relPos.v2 * relVel.v2);				// 2 times dot product
-		float c = relPos.v1 * relPos.v1 + relPos.v2 * relPos.v2 - sumRadii * sumRadii;	// (Startpos - ColDist)^2
+		//Get relative velocity
+		Math::eVec2<float> relativeVel = velA - velB;
+		Math::eVec2<float> normalizedRV;
+		Math::eVec2Normalize(normalizedRV, relativeVel);
 
-		// Check if already colliding
-		if (c <= 0.0f)
-		{
-			colTi = 0.0f;
-			return false;
-		}
+		//check moving point Bsa with velocity Rv against combined circle radii
+		Math::eVec2<float> circleC = posB;
+		float circleCRad = radiusA + radiusB;
 
-		// Avoid dealing with 0
-		if (std::abs(a) < 0.000001)
+		// First rejection test
+		float m = Math::eVec2DotProduct(BaBb, normalizedRV);
+
+		if (m < 0) return false;
+
+		//second rejection test
+
+		float dist2 = Math::eVec2SquaredLength(BaBb) - (m * m);
+
+		if (dist2 > radiusA * radiusA)
 		{
 			return false;
 		}
+		// Compute s^2 = r^2 - dist^2
+		float sSquared = (circleCRad * circleCRad) - dist2;
 
-		// Solve quadratic t = (-b +- sqr(b^2 - 4ac)) / (2a) which gives us 2 results
-		float discriminant = b * b - 4.0f * a * c;
+		//calculate time of collision
+		colTi = (m - sqrt(sSquared)) / Math::eVec2Length(relativeVel);
 
-		if (discriminant < 0.0f)
+		if (0 <= colTi && colTi <= 1.0f)
 		{
-			return false; // No collision
+			//Apply physical reflection
+			Math::eVec2<float> Bia = { posA.v1, posA.v2 };
+			Bia += velA * colTi;
+
+			Math::eVec2<float> Bib = { posB.v1, posB.v2 };
+			Bib += velB * colTi;
+
+			// Compute normal of reflection
+			Math::eVec2<float> normalVec = Bia - Bib;
+			Math::eVec2Normalize(normalVec, normalVec);
+
+			// Compute length of Va
+			Math::eVec2<float> aVel = velA;
+			float aA = Math::eVec2DotProduct(aVel, normalVec);
+
+			// Comput length of Vb
+			Math::eVec2<float> bVel = velB;
+			float aB = Math::eVec2DotProduct(bVel, normalVec);
+
+			// Reflected vector Va'
+			Math::eVec2<float> vAprime = aVel - (2 * (aA - aB) / (2.0f + 5.0f)) * 2.0f * normalVec;
+
+			// Reflected vector Vb
+			Math::eVec2<float> vBprime = bVel + (2 * (aA - aB) / (3.0f + 4.0f)) * 3.0f * normalVec;
+
+			// Compute BeA
+			Bia += ((1.f - colTi) * vAprime);
+			BeA = Bia;
+
+			// Compute Beb
+			Bib += (1 - colTi) * vBprime;
+			BeB = Bib;
+			return true;
 		}
-
-		float sqrtDisc = std::sqrt(discriminant);
-		float t1 = (-b - sqrtDisc) / (2.0f * a);
-		float t2 = (-b + sqrtDisc) / (2.0f * a);
-
-		// Use earliest positive time
-		float t = t1;
-		if (t < 0.0f)
-		{
-			t = t2;
-		}
-
-		// Check if collision happens within this frame
-		if (t < 0.0f || t > 1.0f)
-		{
-			return false;
-		}
-
-		colTi = t;
-
-		// Calculate collision point and normal
-		// Position of A at collision time
-		Math::eVec2<float> posAtCollision = {
-			posA.v1 + velA.v1 * dt * t,
-			posA.v2 + velA.v2 * dt * t
-		};
-
-		// Position of B at collision time
-		Math::eVec2<float> posBAtCollision = {
-			posB.v1 + velB.v1 * dt * t,
-			posB.v2 + velB.v2 * dt * t
-		};
-
-		// Normal points from B to A
-		Math::eVec2<float> normalDir = {
-			posAtCollision.v1 - posBAtCollision.v1,
-			posAtCollision.v2 - posBAtCollision.v2
-		};
-
-		float dist = std::sqrt(normalDir.v1 * normalDir.v1 + normalDir.v2 * normalDir.v2);
-		if (dist > 1e-6f)
-		{
-			normalAtCol.v1 = normalDir.v1 / dist;
-			normalAtCol.v2 = normalDir.v2 / dist;
-		}
-		else
-		{
-			normalAtCol.v1 = 1.0f;
-			normalAtCol.v2 = 0.0f;
-		}
-
-		// Collision point is on the surface of circle A
-		colPoint.v1 = posAtCollision.v1 - normalAtCol.v1 * radiusA;
-		colPoint.v2 = posAtCollision.v2 - normalAtCol.v2 * radiusA;
-
-		return true;
-
 	}
 
 	// =============================================================================

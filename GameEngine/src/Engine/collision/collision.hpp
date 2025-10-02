@@ -255,20 +255,13 @@ namespace Collision
 		static bool CheckDynamicCollision(
 			const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA,
 			const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB,
-			const Math::eVec2<float>& endPos, Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi, const float& dt = 0.f);
+			const Math::eVec2<float>& endPos, Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi);
 
 
 		static void CollisionReflection(const Math::eVec2<float>& interPt,
 			const Math::eVec2<float>& normal,
 			Math::eVec2<float>& nextPos,
 			Math::eVec2<float>& reflected);
-
-
-		static void ReflectVelocity(
-			const Math::eVec2<float>& vel,
-			const Math::eVec2<float>& norm,
-			Math::eVec2<float>& reflected);
-
 
 	private:
 		//*****************************************
@@ -340,7 +333,7 @@ namespace Collision
 		static bool CheckDynamicCircleCircle(
 			const Math::eVec2<float>& posA, const Math::eVec2<float>& velA, float radiusA,
 			const Math::eVec2<float>& posB, const Math::eVec2<float>& velB, float radiusB,
-			Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi, const float& dt);
+			Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi);
 		
 
 	};

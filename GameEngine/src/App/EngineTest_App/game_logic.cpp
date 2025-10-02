@@ -27,9 +27,6 @@ void GameApplication::initialize() {
     setupGameMath();
     setupAnimations();
 
-	// Starting scene
-	currScene = PLAYER_SCENE;
-
     // This is for dynamic collision test object
     createTestObject(engine_.getEntityManager());
     
@@ -160,12 +157,8 @@ void GameApplication::updateGameLogic() {
     updateEntities();
     updateAudio();
     drawShapes();
-	// Draw player function for player scene ONLY
-	if (currScene == PLAYER_SCENE)
-	{
-		drawPlayerAndIndicator();
-	}
-	
+
+	drawPlayerAndIndicator();
 
 	auto& graphics = engine_.getGraphicsManager();
 	engine_.getGraphicsManager().flush();
@@ -193,105 +186,79 @@ void GameApplication::updateEntities() {
 		Math::eVec2<float>{1.0f, 1.0f},           // UV end
 		Graphics::Color::White
 	);
+	
+	// Check if player is moving and switch animation accordingly
+	if (playerSystem_ && playerSpawned_) {
+		// Check for WASD input
+		bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+			inputManager.isKeyPressed(GLFW_KEY_A) ||
+			inputManager.isKeyPressed(GLFW_KEY_S) ||
+			inputManager.isKeyPressed(GLFW_KEY_D);
 
-	// Get player input to toggle between scenes
-	if (inputManager.isKeyPressed(GLFW_KEY_Q))
+		// Update facing direction based on A/D keys
+		if (inputManager.isKeyPressed(GLFW_KEY_D)) {
+			playerFacingDirection_ = -1;  // Face right
+		}
+		else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
+			playerFacingDirection_ = 1;  // Face left
+		}
+
+		// Switch animation based on movement
+		if (isMoving) {
+			if (playerAnimController_.getCurrentAnimationName() != "walk") {
+				playerAnimController_.setAnimation("walk");
+			}
+		}
+		else {
+			if (playerAnimController_.getCurrentAnimationName() != "idle") {
+				playerAnimController_.setAnimation("idle");
+			}
+		}
+
+		// Update player movement
+		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
+	}
+
+	// Update collision system
+	if (collisionSystem_) {
+		collisionSystem_->Update(engine_.getEntityManager());
+	}
+
+	static bool frameUpdate = false;
+	static bool keyFrameMode = false;
+
+	if (inputManager.isKeyDown(GLFW_KEY_M))
 	{
-		switch (currScene)
+		//this toggles keyframe mode
+		keyFrameMode = keyFrameMode ? false : true;
+	}
+	//in key frame mode, wait for trigger to update
+	if (keyFrameMode)
+	{
+
+		if (inputManager.isKeyDown(GLFW_KEY_N))
 		{
-		case PLAYER_SCENE:
-			currScene = DYANMIC_COL_SCENE;
-			break;
-		case DYANMIC_COL_SCENE:
-			currScene = PLAYER_SCENE;
-			break;
+			//frame update 
+			frameUpdate = true;
+		}
+
+		if (frameUpdate)
+		{
+			//update one time
+			updateTestObject(engine_.getEntityManager(), engine_);
+
+			//set it back to false
+			frameUpdate = false;
+
 		}
 	}
 
-
-	// Determine current scene
-	switch (currScene)
+	else
 	{
-		case PLAYER_SCENE:
-		{
-			// Check if player is moving and switch animation accordingly
-			if (playerSystem_ && playerSpawned_) {
-				// Check for WASD input
-				bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
-					inputManager.isKeyPressed(GLFW_KEY_A) ||
-					inputManager.isKeyPressed(GLFW_KEY_S) ||
-					inputManager.isKeyPressed(GLFW_KEY_D);
-
-				// Update facing direction based on A/D keys
-				if (inputManager.isKeyPressed(GLFW_KEY_D)) {
-					playerFacingDirection_ = -1;  // Face right
-				}
-				else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
-					playerFacingDirection_ = 1;  // Face left
-				}
-
-				// Switch animation based on movement
-				if (isMoving) {
-					if (playerAnimController_.getCurrentAnimationName() != "walk") {
-						playerAnimController_.setAnimation("walk");
-					}
-				}
-				else {
-					if (playerAnimController_.getCurrentAnimationName() != "idle") {
-						playerAnimController_.setAnimation("idle");
-					}
-				}
-
-				// Update player movement
-				playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
-			}
-
-			// Update collision system
-			if (collisionSystem_) {
-				collisionSystem_->Update(engine_.getEntityManager());
-			}
-			break;
-		}
-		case DYANMIC_COL_SCENE:
-		{
-			static bool frameUpdate = false;
-			static bool keyFrameMode = false;
-
-			if (inputManager.isKeyDown(GLFW_KEY_P))
-			{
-				//this toggles keyframe mode
-				keyFrameMode = keyFrameMode ? false : true;
-			}
-			//in key frame mode, wait for trigger to update
-			if (keyFrameMode)
-			{
-
-				if (inputManager.isKeyDown(GLFW_KEY_L))
-				{
-					//frame update 
-					frameUpdate = true;
-				}
-
-				if (frameUpdate)
-				{
-					//update one time
-					updateTestObject(engine_.getEntityManager(), engine_);
-
-					//set it back to false
-					frameUpdate = false;
-
-				}
-
-			}
-			else 
-			{
-				//not in key frame mode, update normally
-				updateTestObject(engine_.getEntityManager(), engine_);
-			}
-			break;
-		}
-		
+		//not in key frame mode, update normally
+		updateTestObject(engine_.getEntityManager(), engine_);
 	}
+	
 
 	auto end = Clock::now();
 	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
@@ -444,49 +411,24 @@ void GameApplication::drawShapes() { // For testing
 
 	using drawInfo = ECSComponents::DrawInfoComponent;
 
-	// Draw for different scenes
-	if (currScene == PLAYER_SCENE)
-	{
-		//thinking here i do for each drawable entity: draw.
-		// draw all entities
-		std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
+	//thinking here i do for each drawable entity: draw.
+	// draw all entities
+	std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
 
-		for (ECS::Entity& entity : EntityList) {
-			//skip dynamic scene items
-			if (entity.has<ECSComponents::eVec2TransformComponent>()) continue;
-			if (entity.has<ECSComponents::DrawInfoComponent>()) {
-				graphics.drawRect(
-					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
-					entity.get<drawInfo>().color,
-					true
-				);
-			}
-		}
-
-		// (kim) visualize colliders if enabled
-		if (showColliders_ && collisionSystem_) {
-			collisionSystem_->VisualizeColliders(graphics, entityManager);
+	for (ECS::Entity& entity : EntityList) {
+		if (entity.has<ECSComponents::DrawInfoComponent>()) {
+			graphics.drawRect(
+				Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+				Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
+				entity.get<drawInfo>().color,
+				true
+			);
 		}
 	}
-	else if (currScene == DYANMIC_COL_SCENE)
-	{
-		//unique tagging for scene two objects for now would be eVec2TransformComponent
-		std::vector<ECS::Entity> sceneTwoList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
 
-		for (ECS::Entity& entity : sceneTwoList) {
-			if (entity.has<drawInfo>()) {
-					graphics.drawCircle(
-					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-					entity.get<drawInfo>().width,
-					entity.get<drawInfo>().color,
-					true);
-			}
-			// Draw colliders
-			if (showColliders_ && collisionSystem_) {
-				collisionSystem_->VisualizeColliders(graphics, entityManager);
-			}
-		}
+	// (kim) visualize colliders if enabled
+	if (showColliders_ && collisionSystem_) {
+		collisionSystem_->VisualizeColliders(graphics, entityManager);
 	}
 	
 

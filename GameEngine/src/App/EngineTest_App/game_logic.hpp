@@ -6,17 +6,6 @@
 #include <memory>  
 #include "movementTest.hpp"
 
-namespace {
-    //scene selection
-    enum SceneSelect
-    {
-        PLAYER_SCENE = 1,
-        DYANMIC_COL_SCENE
-
-    } currScene;
-
-}
-
 
 class GameApplication {
 private:
