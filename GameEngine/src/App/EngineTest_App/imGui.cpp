@@ -269,10 +269,14 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		//Clone Button
 		if (ImGui::Button("Spawn 2500 Entities")) {
 			for (size_t i = 0; i < 2500; i++) {
-				float randX = randomFloat(0.0f, 1200.0f); //screen width
+				float randX = randomFloat(0.0f, 1200.0f); //screen width 
 				float randY = randomFloat(0.0f, 900.0f); // screen height
+				float randScalar = randomFloat(0, 10.f);
+				float randW = eWidth + randScalar;
+				float randH = eHeight + randScalar;
+				Color randC = (randomFloat(0, 1.0f) < 0.5f ? Color::Green : Color::Red);
 				//HARDCODED(COPIED) SPAWN CODE INTO HERE
-				ECSComponents::DrawInfoComponent DIC{ randX, randY, eWidth, eHeight, shapes[eShapeIndex], eColor };
+				ECSComponents::DrawInfoComponent DIC{ randX, randY, randW, randH, shapes[eShapeIndex], randC };
 				ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
 				e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
 			}

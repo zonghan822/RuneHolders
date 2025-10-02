@@ -311,10 +311,6 @@ void GameApplication::updateEntities() {
 
 void GameApplication::updateAudio() {
 	// audio update
-	auto start = Clock::now();
-
-	auto end = Clock::now();
-	systemTimes_["Audio"] = std::chrono::duration<double, std::micro>(end - start).count();
 
 }
 
@@ -345,9 +341,6 @@ void GameApplication::drawPlayerAndIndicator() {
 				Math::eVec2<float> uvStart = frame.uvStart;
 				Math::eVec2<float> uvEnd = frame.uvEnd;
 
-				/**************************************************************************************
-				YUNQI'S LAST MINUTE SAVE
-				***************************************************************************************/
 				// Get player transform
 				auto& playerTransform = playerSystem_->GetTransform(it->second);
 				
@@ -380,11 +373,6 @@ void GameApplication::drawPlayerAndIndicator() {
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
 
-				
-
-				/****************************************************************************************
-				YUNQI'S LAST MINUTE SAVE^^^^^^
-				****************************************************************************************/
 
 				if (playerFacingDirection_ == -1) {
 					// Swap horizontal UV coordinates to flip the sprite
