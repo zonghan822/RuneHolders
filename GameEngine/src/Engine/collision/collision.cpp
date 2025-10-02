@@ -701,7 +701,7 @@ namespace Collision {
 			};
 
 			// choose color based on trigger status
-			Graphics::Color color = collision.isTrigger ? Graphics::Color::Red : Graphics::Color::Green;
+			Graphics::Color color = collision.isTrigger ? Graphics::Color::Red : Graphics::Color::Red;
 
 			// draw based on collider type
 			switch (collision.type)
@@ -710,7 +710,7 @@ namespace Collision {
 					worldPos,
 					collision.data.circle.radius,
 					color,
-					false, // not filled, jst outlined
+					true, // not filled, jst outlined
 					32
 				);
 					break;
