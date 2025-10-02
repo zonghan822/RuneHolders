@@ -456,17 +456,25 @@ void GameApplication::drawShapes() {
 	// Draw for different scenes
 	if (currScene == PLAYER_SCENE)
 	{
-		// USE CACHED ENTITIES instead of findEntity() every frame
+		// USE CACHED ENTITIES with validation
 		for (ECS::Entity& entity : cachedDrawableEntities_) {
-			//skip dynamic scene items
-			if (entity.has<ECSComponents::eVec2TransformComponent>()) continue;
-			if (entity.has<ECSComponents::DrawInfoComponent>()) {
-				graphics.drawRect(
-					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
-					entity.get<drawInfo>().color,
-					true
-				);
+			// Skip if entity was destroyed
+			try {
+				//skip dynamic scene items
+				if (entity.has<ECSComponents::eVec2TransformComponent>()) continue;
+				if (entity.has<ECSComponents::DrawInfoComponent>()) {
+					graphics.drawRect(
+						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+						Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
+						entity.get<drawInfo>().color,
+						true
+					);
+				}
+			}
+			catch (...) {
+				// Entity was destroyed, rebuild cache next frame
+				entitiesDirty_ = true;
+				continue;
 			}
 		}
 
@@ -477,14 +485,22 @@ void GameApplication::drawShapes() {
 	}
 	else if (currScene == DYANMIC_COL_SCENE)
 	{
-		// USE CACHED ENTITIES instead of findEntity() every frame
+		// USE CACHED ENTITIES with validation
 		for (ECS::Entity& entity : cachedSceneTwoEntities_) {
-			if (entity.has<drawInfo>()) {
-				graphics.drawCircle(
-					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-					entity.get<drawInfo>().width,
-					entity.get<drawInfo>().color,
-					true);
+			// FIX: Skip if entity was destroyed
+			try {
+				if (entity.has<drawInfo>()) {
+					graphics.drawCircle(
+						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+						entity.get<drawInfo>().width,
+						entity.get<drawInfo>().color,
+						true);
+				}
+			}
+			catch (...) {
+				// Entity was destroyed, rebuild cache next frame
+				entitiesDirty_ = true;
+				continue;
 			}
 		}
 

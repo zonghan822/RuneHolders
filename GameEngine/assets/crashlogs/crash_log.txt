@@ -12,3 +12,6 @@
 [2025-10-01 22:19:22] Failed to find a component in the registry based on id!
 [2025-10-01 22:21:35] bad allocation
 [2025-10-02 13:33:35] file no open for read!!!
+[2025-10-02 22:50:38] Failed to find this entity in the Entity Map!
+[2025-10-02 23:11:23] Failed to find this entity in the Entity Map!
+[2025-10-02 23:11:40] Failed to find this entity in the Entity Map!

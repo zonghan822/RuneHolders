@@ -316,8 +316,15 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 		}
 
-		for (auto& a : toDelete) {
-			a.destroy();
+		if (!toDelete.empty()) {
+			for (auto& a : toDelete) {
+				a.destroy();
+			}
+
+			// FIX: Mark cache as dirty after deletion
+			if (g_game) {
+				g_game->markEntitiesDirty();
+			}
 		}
 
 		ImGui::End();
