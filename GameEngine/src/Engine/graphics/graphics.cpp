@@ -120,7 +120,15 @@ namespace Graphics
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        GLenum format = (channels == 1 ? GL_RED : GL_RGBA);
+        GLenum format = GL_RGB;
+
+        if (channels_ == 1)
+            format = GL_RED;
+        else if (channels_ == 3)
+            format = GL_RGB;
+        else if (channels_ == 4)
+            format = GL_RGBA;
+
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -388,9 +396,9 @@ namespace Graphics
     }
 
 
-    bool EnoGraphicsManager::initialize(Window::EnoWindow& window)
+    void EnoGraphicsManager::initialize(Window::EnoWindow& window)
     {
-        if (initialized_) return true;
+        if (initialized_) return;
 
         // Set up basic OpenGL state for 2D rendering
         glEnable(GL_BLEND);
@@ -402,16 +410,24 @@ namespace Graphics
         // Create default shader for primitive rendering
         if (!createDefaultShader())
         {
-            std::cerr << "Failed to create default shader!" << std::endl;
-            return false;
+            throw std::runtime_error("Failed to create default shader!");
         }
+
+        // Create shaders when shaders is loaded in resource loader
+        bus_.subscribe<Events::ShaderLoaded>(
+            [this](const Events::ShaderLoaded& e) {
+                if (!createShader(e.name, e.vertexSource, e.fragmentSource)) {
+                    throw std::runtime_error("Failed to create loaded shader!");
+                };
+            }
+        );
 
         // Create vertex buffer for batch rendering
         vertexBuffer_ = std::make_unique<EnoVertexBuffer>();
 
         // Set up initial projection matrix
-        int width, height;
-        glfwGetFramebufferSize(window.getWindow(), &width, &height);
+        int width = window.getFramebufferSize().first;
+        int height = window.getFramebufferSize().second;
         setupProjectionMatrix(width, height);
 
         initialized_ = true;
@@ -419,7 +435,6 @@ namespace Graphics
 #ifdef _DEBUG
         std::cout << "Graphics system initialized successfully!" << std::endl;
 #endif
-        return true;
     }
 
     void EnoGraphicsManager::shutdown()
@@ -439,9 +454,6 @@ namespace Graphics
         // Clear batch for new frame
         batchVertices_.clear();
         boundTextures_.clear();
-
-        // Publish frame begin event
-        bus_.publish(Events::RenderFrameBegin{});
     }
 
     void EnoGraphicsManager::endFrame(Window::EnoWindow& window)
@@ -452,7 +464,6 @@ namespace Graphics
         }
 
         glfwSwapBuffers(window.getWindow());
-        bus_.publish(Events::RenderFrameEnd{});
     }
 
     Math::eVec2<float> rotatePoint(const Math::eVec2<float>& point,
@@ -617,11 +628,20 @@ namespace Graphics
         const Color& color)
     {
         if (!font || !font->getAtlasTexture() || !font->getAtlasTexture()->isValid()) {
-            std::cerr << "Invalid font atlas" << std::endl;
-            return;
+            throw std::runtime_error("Invalid font atlas");
         }
 
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        EnoShader* shdr = getShader("text");
+        shdr->use();
+        shdr->setMatrix4("u_projection", projectionMatrix_.data());
+
         auto atlas = font->getAtlasTexture();
+        atlas->bind(0);
+        shdr->setInt("u_text", 0);
+
         float xCursor = position.v1;
         float yCursor = position.v2;
 
@@ -630,23 +650,25 @@ namespace Graphics
                 const Font::Character& ch = font->getChar(c);
 
                 Math::eVec2<float> charPos(
-                    xCursor + ch.Bearing.v1 * scale,
-                    yCursor - (ch.Size.v2 - ch.Bearing.v2) * scale
+                    xCursor + ch.bearing.v1 * scale,
+                    yCursor - ch.size.v2 * scale
                 );
-                Math::eVec2<float> charSize(ch.Size.v1 * scale, ch.Size.v2 * scale);
+                Math::eVec2<float> charSize(ch.size.v1 * scale, ch.size.v2 * scale);
 
-                drawTexturedQuadUV(charPos, charSize,
-                    atlas,
-                    ch.UVStart,
-                    ch.UVEnd,
-                    color);
+                // drawTexturedQuadUV(charPos, charSize, atlas, ch.uvStart, ch.uvEnd, color);
 
-                xCursor += (ch.Advance >> 6) * scale; // Advance in 1/64 pixels
+                auto vertices = generateTexturedQuadVertices(charPos, charSize, color, 0.f, ch.uvStart, ch.uvEnd);
+                vertexBuffer_->uploadData(vertices);
+                vertexBuffer_->draw(GL_TRIANGLES);
+
+                xCursor += (ch.advance >> 6) * scale; // Advance in 1/64 pixels
             }
             catch (const std::out_of_range&) {
                 continue;
             }
         }
+        /*atlas->unbind();
+        shdr->unuse();*/
     }
 
     void EnoGraphicsManager::setProjectionMatrix(int windowWidth, int windowHeight)
@@ -663,7 +685,7 @@ namespace Graphics
     {
         // Vertex shader with texture support
         std::string vertexShaderSource = R"(
-            #version 330 core
+            #version 450 core
             
             layout (location = 0) in vec2 a_position;
             layout (location = 1) in vec4 a_color;
@@ -689,7 +711,7 @@ namespace Graphics
 
         // Fragment shader with texture support
         std::string fragmentShaderSource = R"(
-            #version 330 core
+            #version 450 core
             
             in vec4 v_color;
             in vec2 v_texCoords;
@@ -735,6 +757,15 @@ namespace Graphics
         return true;
     }
 
+    bool EnoGraphicsManager::createShader(const std::string& name, const std::string& vertSrc, const std::string& fragSrc) {
+
+        auto shdr = std::make_unique<EnoShader>();
+        if (!shdr->loadFromStrings(vertSrc, fragSrc)) return false;
+
+        shadersMap_[name] = std::move(shdr);
+        return true;
+    }
+
     void EnoGraphicsManager::setupProjectionMatrix(int width, int height)
     {
         // Create orthographic projection matrix for 2D rendering
@@ -766,12 +797,14 @@ namespace Graphics
 
         vertexBuffer_->uploadData(batchVertices_);
 
-        defaultShader_->use();
-        defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
+        EnoShader* shdr = getShader("default");
+
+        shdr->use();
+        shdr->setMatrix4("u_projection", projectionMatrix_.data());
 
         vertexBuffer_->draw(primitiveType);
 
-        defaultShader_->unuse();
+        shdr->unuse();
 
         batchVertices_.clear();
         currentBatchPrimitiveType_ = primitiveType;
@@ -786,6 +819,18 @@ namespace Graphics
         {
             flushBatch(currentBatchPrimitiveType_);
         }
+    }
+
+    EnoShader* EnoGraphicsManager::getShader(const std::string& name) {
+        if (name == "default") return defaultShader_.get();
+
+        auto it = shadersMap_.find(name);
+        if (it != shadersMap_.end()) {
+            return it->second.get();
+        }
+        std::cerr << "[GraphicsManager] Shader '" << name
+            << "' not found, using default shader.\n";
+        return defaultShader_.get();
     }
 
     int EnoGraphicsManager::getTextureSlot(std::shared_ptr<EnoTexture> texture)

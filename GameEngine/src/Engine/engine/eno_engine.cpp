@@ -5,13 +5,13 @@ namespace Engine
 	void EnoEngine::setup()
 	{
 		window_.initialize("RuneHolders", configMng_.getWindowDim().first, configMng_.getWindowDim().second);
+		setupEventSystem();
 
 		// Systems init
 		inputMng_.initialize();
 		graphicsMng_.initialize(window_);
 
 		setupResourceLoading();
-		setupEventSystem();
 	}
 
 	// Thats why i added a callback version
@@ -55,17 +55,15 @@ namespace Engine
 
 	}
 
-	// Function added for future use**
+	// Loader
 	void EnoEngine::setupResourceLoading()
 	{
 		// Loading assets from directories
 		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getMusicPath());
 		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getSFXPath());
-		loader_.loadShaders(loader_.getShaderPath());
 
-		// Shaders for future graphics use
-		auto vert = loader_.getVertShader("shader");//might need to change the name on this
-		auto frag = loader_.getFragShader("shader");
+		// Loading shaders
+		loader_.loadShaders(loader_.getShaderPath());
 
 		// Loading images
 		loader_.loadImages(loader_.getImagePath());
@@ -97,7 +95,7 @@ namespace Engine
 		static bool scheduled{ false };
 		if (!scheduled)
 		{
-			//soundPlaying();
+			soundPlaying();
 			scheduled = true;
 		}
 
@@ -156,12 +154,12 @@ namespace Engine
 
 	void EnoEngine::soundPlaying()
 	{
-		FMOD::Channel* channel = audioMng_.playByGroup("Close_To_The_End", "BGM", true);
-		//FMOD::Channel* channel2 = audioMng_.playByGroup("Simulacrum", "BGM", true);
+		//FMOD::Channel* channel = audioMng_.playByGroup("Close_To_The_End", "BGM", true);
+		FMOD::Channel* channel2 = audioMng_.playByGroup("Simulacrum", "BGM", true);
 
 		audioMng_.scheduleGroupFade("BGM", 5.0f, 5.0f, audioMng_.getSoundDurSec("Close_To_The_End"));
 
-		audioMng_.setPauseChannel(channel, false);
+		audioMng_.setPauseChannel(channel2, false);
 		//audioMng_.setPauseChannel(channel2, false);
 	}
 }

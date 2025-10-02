@@ -39,12 +39,14 @@ namespace Font {
             }
 
             Character ch;
-            ch.Size = { (float)bmp.width, (float)bmp.rows };
-            ch.Bearing = { (float)face->glyph->bitmap_left, (float)face->glyph->bitmap_top };
-            ch.Advance = (unsigned int)face->glyph->advance.x;
+            ch.size = { static_cast<float>(bmp.width), static_cast<float>(bmp.rows) };
+            ch.bearing = { static_cast<float>(face->glyph->bitmap_left), 
+                static_cast<float>(face->glyph->bitmap_top) };
+            ch.advance = static_cast<unsigned int>(face->glyph->advance.x);
 
-            ch.UVStart = { (float)xOffset / atlasWidth, 0.0f };
-            ch.UVEnd = { (float)(xOffset + bmp.width) / atlasWidth, (float)bmp.rows / atlasHeight };
+            ch.uvStart = { static_cast<float>(xOffset) / atlasWidth, 0.0f };
+            ch.uvEnd = { static_cast<float>(xOffset + bmp.width) / atlasWidth, 
+                static_cast<float>(bmp.rows) / atlasHeight };
 
             characters_.insert({ c, ch });
             xOffset += bmp.width;

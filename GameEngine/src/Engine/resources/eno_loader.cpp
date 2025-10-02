@@ -125,14 +125,25 @@ namespace Resources {
 			buffer << file.rdbuf();
 			std::string source = buffer.str();
 
+			auto name = entry.path().stem().string();
+
 			// Find files with the frag and vert extensions
 			if (entry.path().extension().string() == ".vert")
 			{
-				vertShaders_[entry.path().stem().string()] = std::move(source);
+				vertShaders_[name] = std::move(source);
 			}
 			else if (entry.path().extension().string() == ".frag")
 			{
-				fragShaders_[entry.path().stem().string()] = std::move(source);
+				fragShaders_[name] = std::move(source);
+			}
+
+			// When both vert+frag exist, publish event
+			if (vertShaders_.count(name) && fragShaders_.count(name)) {
+				bus_.publish(Graphics::Events::ShaderLoaded{
+					name,
+					vertShaders_.at(name),
+					fragShaders_.at(name)
+					});
 			}
 		}
 	}

@@ -23,6 +23,7 @@ void GameApplication::initialize() {
     setupGameMath();
     setupAnimations();
 	liberationFont_ = engine_.getResourceLoader().getFont("liberation-mono");
+	timesFont_ = engine_.getResourceLoader().getFont("times");
 
     //this is for caven's movement test object
     createTestObject(engine_.getEntityManager());
@@ -158,7 +159,7 @@ void GameApplication::updateGameLogic() {
 
 	// DEMO DRAW TEXT
 	auto& graphics = engine_.getGraphicsManager();
-	graphics.drawText(liberationFont_, "Hello World!", { 50.f, 100.f }, 1.f, Graphics::Color::White);
+	graphics.drawText(timesFont_, "Hello World!", { 50.f, 100.f }, 1.f, Graphics::Color::Red);
 
     updateAudio();
     drawShapes();

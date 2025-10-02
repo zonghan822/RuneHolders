@@ -25,7 +25,7 @@
 
 namespace Resources
 {
-	class EnoLoader 
+	class EnoLoader
 	{
 	private:
 		// Sounds
@@ -56,7 +56,6 @@ namespace Resources
 	public:
 
 		EnoLoader(Event::EnoEventBus& bus);
-
 		~EnoLoader();
 
 		// Sound getters
@@ -130,5 +129,6 @@ namespace Resources
 
 		// Audio Event Handler
 		void onSoundRequest(const Audio::RequestSound& event);
+	
 	};
 }

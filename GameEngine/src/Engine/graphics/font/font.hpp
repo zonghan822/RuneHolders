@@ -24,11 +24,11 @@ namespace Graphics {
 namespace Font {
 
     struct Character {
-        Math::eVec2<float> Size;     // glyph size
-        Math::eVec2<float> Bearing;  // offset from baseline
-        unsigned int Advance;        // horizontal advance
-        Math::eVec2<float> UVStart;  // bottom-left UV
-        Math::eVec2<float> UVEnd;    // top-right UV
+        Math::eVec2<float> size;     // glyph size
+        Math::eVec2<float> bearing;  // offset from baseline
+        unsigned int advance;        // horizontal advance
+        Math::eVec2<float> uvStart;  // bottom-left UV
+        Math::eVec2<float> uvEnd;    // top-right UV
     };
 
     class EnoFont {

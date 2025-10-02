@@ -142,7 +142,7 @@ namespace Graphics
         ~EnoGraphicsManager();
 
         // Initialize the graphics system
-        bool initialize(Window::EnoWindow& windowMng);
+        void initialize(Window::EnoWindow& windowMng);
         void shutdown();
 
         // Frame management
@@ -197,6 +197,7 @@ namespace Graphics
 
         // Rendering components
         std::unique_ptr<EnoShader> defaultShader_;
+        std::unordered_map<std::string, std::unique_ptr<EnoShader>> shadersMap_;
         std::unique_ptr<EnoVertexBuffer> vertexBuffer_;
 
         // Texture management
@@ -213,9 +214,11 @@ namespace Graphics
 
         // Internal helper functions
         bool createDefaultShader();
+        bool createShader(const std::string& name, const std::string& vertSrc, const std::string& fragSrc);
         void setupProjectionMatrix(int width, int height);
         void flushBatch(GLenum primitiveType);
         void addVertexToBatch(const Vertex& vertex);
+        EnoShader* getShader(const std::string& name);
         int getTextureSlot(std::shared_ptr<EnoTexture> texture);
         void bindTextures();
 
@@ -234,7 +237,10 @@ namespace Graphics
     // Graphics events
     namespace Events
     {
-        struct RenderFrameBegin {};
-        struct RenderFrameEnd {};
+        struct ShaderLoaded {
+            std::string name;
+            std::string vertexSource;
+            std::string fragmentSource;
+        };
     }
 }

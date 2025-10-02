@@ -27,6 +27,7 @@ private:
 
     // Font
     std::shared_ptr<Font::EnoFont> liberationFont_;
+    std::shared_ptr<Font::EnoFont> timesFont_;
 
 public:
     // Constructors
