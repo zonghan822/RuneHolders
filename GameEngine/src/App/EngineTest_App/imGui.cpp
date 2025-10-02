@@ -65,6 +65,11 @@ float randomFloat(float min, float max) {
 	return dist(rng);
 }
 
+double percentage(double target, double max) {
+	if (max == 0.0) return 0.0;
+	return (target / max) * 100.0;
+}
+
 void imGuiInit(GLFWwindow* window){
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -316,6 +321,10 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 		}
 
+		if (ImGui::Button("Show Entity Count")) {
+			displayEntityCount(engine_);
+		}
+
 		if (!toDelete.empty()) {
 			for (auto& a : toDelete) {
 				a.destroy();
@@ -335,15 +344,22 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::Begin("FPS");
 		ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
 		ImGui::Text("Frame (%.1f FPS)", shown_fps);
-		ImGui::Text("Per-System Timings:");
+		ImGui::Text("=== PER SYSTEM TIMING IN MS ===");
 		for (auto& time : throttledTimes_) {
-			ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);
-			// divide by 1000 to show microseconds as milliseconds
+
+			if (time.first != "totalTimePerFrame") {
+				ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);// divide by 1000 to show microseconds as milliseconds
+			}
 		
 		}
-		if (ImGui::Button("Show Entity Count")) {
-			displayEntityCount(engine_);
+		ImGui::Text("=== PER SYSTEM TIMING IN PERCENTAGE ===");
+		for (auto& time : throttledTimes_)
+		{
+			if (time.first != "totalTimePerFrame") {
+				ImGui::Text("%s: %.0f%%", time.first.c_str(), percentage(time.second, throttledTimes_["totalTimePerFrame"]));
+			}
 		}
+
 		ImGui::End();
 	}
 #pragma endregion

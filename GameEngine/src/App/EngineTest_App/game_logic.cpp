@@ -134,11 +134,11 @@ void GameApplication::demonstrateSignals() {
 
 void GameApplication::updateGameLogic() {
     // This is called every frame (replaces your while loop in eno_engine.cpp run())
-
-    // Calculate delta time
-    float currentTime = static_cast<float>(glfwGetTime());
-    float deltaTime = currentTime - lastFrameTime_;
-    lastFrameTime_ = currentTime;
+	// Calculate delta time
+	auto startTotalTime = Clock::now();
+	float currentTime = static_cast<float>(glfwGetTime());
+	float deltaTime = currentTime - lastFrameTime_;
+	lastFrameTime_ = currentTime;
 
 	// Draw background before everything else
 	if (backgroundTexture_ && backgroundTexture_->isValid()) {
@@ -171,6 +171,8 @@ void GameApplication::updateGameLogic() {
 	engine_.getGraphicsManager().flush();
 
 	updateImGui();
+	auto end = Clock::now();
+	systemTimes_["totalTimePerFrame"] = std::chrono::duration<double, std::micro>(end - startTotalTime).count();
 }
 
 void GameApplication::updateEntities() {
