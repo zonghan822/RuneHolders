@@ -225,7 +225,16 @@ void GameApplication::updateEntities() {
 		Math::eVec2<float>{1.0f, 1.0f},           // UV end
 		Graphics::Color::White
 	);
+
 	
+
+	// REBUILD CACHE ONLY WHEN DIRTY (optimization)
+	if (entitiesDirty_) {
+		cachedDrawableEntities_ = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
+		cachedSceneTwoEntities_ = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
+		entitiesDirty_ = false;
+	}
+
 	// Check if player is moving and switch animation accordingly
 	if (playerSystem_ && playerSpawned_) {
 		// Check for WASD input
@@ -262,72 +271,21 @@ void GameApplication::updateEntities() {
 	if (collisionSystem_) {
 		collisionSystem_->Update(engine_.getEntityManager());
 	}
-
 	
+	static bool frameUpdate = false;
+	static bool keyFrameMode = false;
 
-	// REBUILD CACHE ONLY WHEN DIRTY (optimization)
-	if (entitiesDirty_) {
-		cachedDrawableEntities_ = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
-		cachedSceneTwoEntities_ = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
-		entitiesDirty_ = false;
+	if (inputManager.isKeyPressed(GLFW_KEY_M))
+	{
+		//this toggles keyframe mode
+		keyFrameMode = !keyFrameMode;
 	}
+	//in key frame mode, wait for trigger to update
+	if (keyFrameMode)
+	{
 
-		// Check if player is moving and switch animation accordingly
-		if (playerSystem_ && playerSpawned_) {
-			// Check for WASD input
-			bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
-				inputManager.isKeyPressed(GLFW_KEY_A) ||
-				inputManager.isKeyPressed(GLFW_KEY_S) ||
-				inputManager.isKeyPressed(GLFW_KEY_D);
-
-			// Update facing direction based on A/D keys
-			if (inputManager.isKeyPressed(GLFW_KEY_D)) {
-				playerFacingDirection_ = -1;  // Face right
-			}
-			else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
-				playerFacingDirection_ = 1;  // Face left
-			}
-
-			// Switch animation based on movement
-			if (isMoving) {
-				if (playerAnimController_.getCurrentAnimationName() != "walk") {
-					playerAnimController_.setAnimation("walk");
-				}
-			}
-			else {
-				if (playerAnimController_.getCurrentAnimationName() != "idle") {
-					playerAnimController_.setAnimation("idle");
-				}
-			}
-
-			// Update player movement
-			playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
-		}
-
-		// Update collision system
-		if (collisionSystem_) {
-			collisionSystem_->Update(engine_.getEntityManager());
-		}
-		
-	}
-	
-		static bool frameUpdate = false;
-		static bool keyFrameMode = false;
-
-		if (inputManager.isKeyPressed(GLFW_KEY_M))
+		if (inputManager.isKeyPressed(GLFW_KEY_N))
 		{
-			//this toggles keyframe mode
-			keyFrameMode = !keyFrameMode;
-		}
-		//in key frame mode, wait for trigger to update
-		if (keyFrameMode)
-		{
-
-			if (inputManager.isKeyPressed(GLFW_KEY_N))
-			{
-		
-
-
 			//frame update 
 			frameUpdate = true;
 		}
@@ -342,7 +300,6 @@ void GameApplication::updateEntities() {
 
 		}
 	}
-
 	else
 	{
 		//not in key frame mode, update normally
@@ -513,10 +470,6 @@ void GameApplication::drawShapes() {
 		if (showColliders_ && collisionSystem_) {
 			collisionSystem_->VisualizeColliders(graphics, entityManager);
 		}
-	}
-{
-		
-
 
 	auto end = Clock::now();
 	systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();
