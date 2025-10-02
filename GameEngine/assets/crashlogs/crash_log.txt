@@ -15,3 +15,4 @@
 [2025-10-02 22:50:38] Failed to find this entity in the Entity Map!
 [2025-10-02 23:11:23] Failed to find this entity in the Entity Map!
 [2025-10-02 23:11:40] Failed to find this entity in the Entity Map!
+[2025-10-03 01:44:21] file no open for read!!!

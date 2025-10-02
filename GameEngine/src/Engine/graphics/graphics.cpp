@@ -825,10 +825,31 @@ namespace Graphics
                 );
                 Math::eVec2<float> charSize(ch.size.v1 * scale, ch.size.v2 * scale);
 
-                // drawTexturedQuadUV(charPos, charSize, atlas, ch.uvStart, ch.uvEnd, color);
+                std::vector<Vertex> vertices;
 
-                auto vertices = generateTexturedQuadVertices(charPos, charSize, color, 0.f, ch.uvStart, ch.uvEnd);
-                vertexBuffer_->uploadData(vertices);
+                // Calculate center for rotation
+                Math::eVec2<float> center = { charPos.v1 + charSize.v1 * 0.5f, charPos.v2 + charSize.v2 * 0.5f };
+
+                Math::eVec2<float> topLeft = charPos;
+                Math::eVec2<float> topRight = { charPos.v1 + charSize.v1, charPos.v2 };
+                Math::eVec2<float> bottomRight = { charPos.v1 + charSize.v1, charPos.v2 + charSize.v2 };
+                Math::eVec2<float> bottomLeft = { charPos.v1, charPos.v2 + charSize.v2 };
+
+                // UV coordinates
+                Math::eVec2<float> uvTopLeft = { ch.uvStart.v1, ch.uvStart.v2 };
+                Math::eVec2<float> uvTopRight = { ch.uvEnd.v1, ch.uvStart.v2 };
+                Math::eVec2<float> uvBottomRight = { ch.uvEnd.v1, ch.uvEnd.v2 };
+                Math::eVec2<float> uvBottomLeft = { ch.uvStart.v1, ch.uvEnd.v2 };
+
+                vertices.push_back(Vertex(topLeft, color, uvTopLeft, 0.f));
+                vertices.push_back(Vertex(topRight, color, uvTopRight, 0.f));
+                vertices.push_back(Vertex(bottomLeft, color, uvBottomLeft, 0.f));
+
+                vertices.push_back(Vertex(topRight, color, uvTopRight, 0.f));
+                vertices.push_back(Vertex(bottomRight, color, uvBottomRight, 0.f));
+                vertices.push_back(Vertex(bottomLeft, color, uvBottomLeft, 0.f));
+
+                vertexBuffer_->uploadData(std::move(vertices));
                 vertexBuffer_->draw(GL_TRIANGLES);
 
                 xCursor += (ch.advance >> 6) * scale; // Advance in 1/64 pixels

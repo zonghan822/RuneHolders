@@ -71,7 +71,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 {
 
 	//dt
-	double dt = eng.GetDeltaTime();
+	double dt = eng.getDeltaTime();
 	
 	Math::eVec2<float> colPoint{ 0.0f };
 	Math::eVec2<float> normalAtCol{ 0.0f };

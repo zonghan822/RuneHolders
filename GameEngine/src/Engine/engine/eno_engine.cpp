@@ -91,12 +91,12 @@ namespace Engine
 	// *** maybe to be removed!!!
 	void EnoEngine::setupAudioInput()
 	{
-		input_.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
-		input_.setupKey("Set New Audio", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
-		input_.setupKey("Set New Audio2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
-		input_.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
-		input_.setupEvent<Audio::SetNewAudio>("Set New Audio", "Close_To_The_End");
-		input_.setupEvent<Audio::SetNewAudio>("Set New Audio2", "Simulacrum");
+		inputMng_.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
+		inputMng_.setupKey("Set New Audio", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
+		inputMng_.setupKey("Set New Audio2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
+		inputMng_.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
+		inputMng_.setupEvent<Audio::SetNewAudio>("Set New Audio", "Close_To_The_End");
+		inputMng_.setupEvent<Audio::SetNewAudio>("Set New Audio2", "Simulacrum");
 
 		bus_.subscribe<Audio::SetAudioState>([&](const Audio::SetAudioState& event)
 			{

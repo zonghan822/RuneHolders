@@ -141,6 +141,7 @@ void GameApplication::demonstrateSignals() {
 
 void GameApplication::updateGameLogic() {
     // This is called every frame (replaces your while loop in eno_engine.cpp run())
+	auto startTotalTime = Clock::now();
 
     // Calculate delta time
     float deltaTime = engine_.getDeltaTime();

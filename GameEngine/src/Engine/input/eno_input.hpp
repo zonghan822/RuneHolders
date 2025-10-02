@@ -61,8 +61,11 @@ namespace Input
 		// Set up a key in the input map
 		void setupKey(const std::string& inputName, int key = 0, int scancode = 0, int action = 0, int mods = 0);
 
-		template <typename EventType>
-		void setupEvent(const std::string& inputName);
+		template <typename EventType, typename... Data>
+		void setupEvent(const std::string& inputName, Data&&... d) {
+			eventMap_[inputName] = [this, ... args = std::forward<Data>(d)]()
+				{ bus_.publish(EventType{ args... }); };
+		}
 
 		void endFrame();
 
