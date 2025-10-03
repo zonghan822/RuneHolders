@@ -1,3 +1,17 @@
+/*============================================================================================
+* @file         eno_engine.cpp
+* @author       Lee Zhe An (zhean.l@digipen.edu),
+* @author		Law Zong Han (zonghan.law@digipen.edu)
+* @date         03-10-2025
+* @brief		Implementation of the core engine systems and main game loop
+*				
+*				This file contains the implementation of the EnoEngine class which serves as
+*				the central coordinator for all engine subsystems. It manages the initialization,
+*				main game loop execution, resource loading, time management, and shutdown procedures.
+*				The engine follows a component-based architecture where each system (graphics, audio,
+*				input, etc.) is managed independently but coordinated through the main engine class.
+*//*========================================================================================*/
+
 #include "eno_engine.hpp"
 
 namespace Engine

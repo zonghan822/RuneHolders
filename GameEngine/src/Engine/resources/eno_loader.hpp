@@ -1,3 +1,15 @@
+/*============================================================================================
+* @file         eno_loader.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu),
+* @author       Muhammad Raziq Bin Mohd Rafig (),
+* @author       Law Zong Han (zonghan.law@digipen.edu)
+* @date         03-10-2025
+* @brief        Resource loading and management system for textures, shaders, fonts, and sounds.
+*               Handles loading of image files (PNG/JPG), shader source files (GLSL),
+*               audio files (WAV/MP3), and fonts (TTF/OTF). Integrates with an event bus
+*               to publish and subscribe to resource-related events.
+*===========================================================================================*/
+
 #pragma once
 // STB_IMAGE
 #include "stb_image.h"
@@ -25,6 +37,13 @@
 
 namespace Resources
 {
+	/*============================================================================================
+	* \class	EnoLoader
+	* \brief	Central resource management system for loading and accessing game assets
+	*
+	*			Handles loading of textures, shaders, fonts, and audio files from disk and
+	*			provides access to loaded resources through a unified interface.
+	*//*========================================================================================*/
 	class EnoLoader
 	{
 	private:
@@ -55,31 +74,90 @@ namespace Resources
 
 	public:
 
+		/*============================================================================================
+		* \brief	Constructor, subscribes to relevant events.
+		* \param[in] bus	Reference to the event bus for publishing/subscribing to events.
+		*//*========================================================================================*/
 		EnoLoader(Event::EnoEventBus& bus);
 
-		// Sound getters
+		/*============================================================================================
+		* \brief	Get the music directory path.
+		* \return	String reference to the music path.
+		*//*========================================================================================*/
 		const std::string& getMusicPath() const;
+
+		/*============================================================================================
+		* \brief	Get the sound effects (SFX) directory path.
+		* \return	String reference to the SFX path.
+		*//*========================================================================================*/
 		const std::string& getSFXPath() const;
+
+		/*============================================================================================
+		* \brief	Get supported sound extensions.
+		* \return	Array of supported extensions (.wav, .mp3).
+		*//*========================================================================================*/
 		std::array<std::string_view, 2> getSoundExtensions() const;
 
-		// Texture getters
+		/*============================================================================================
+		* \brief	Get the image directory path.
+		* \return	String reference to the image path.
+		*//*========================================================================================*/
 		const std::string& getImagePath() const;
+
+		/*============================================================================================
+		* \brief	Retrieve a texture by name.
+		* \param[in] name	Name of the texture (filename stem).
+		* \return	Shared pointer to the texture, or nullptr if not found.
+		*//*========================================================================================*/
 		std::shared_ptr<Graphics::EnoTexture> getTexture(const std::string& name);
 
-		// Shader getters
+		/*============================================================================================
+		* \brief	Get the shader directory path.
+		* \return	String reference to the shader path.
+		*//*========================================================================================*/
 		const std::string& getShaderPath() const;
+
+		/*============================================================================================
+	    * \brief	Retrieve a vertex shader source by name.
+	    * \param[in] name	Name of the shader (filename stem).
+	    * \return	String reference to the shader source.
+	    *//*========================================================================================*/
 		const std::string& getVertShader(const std::string& name) const;
+
+		/*============================================================================================
+		* \brief	Retrieve a fragment shader source by name.
+		* \param[in] name	Name of the shader (filename stem).
+		* \return	String reference to the shader source.
+		*//*========================================================================================*/
 		const std::string& getFragShader(const std::string& name) const;
 
-		// Font getters
+		/*============================================================================================
+		* \brief	Retrieve a loaded font by name.
+		* \param[in] name	Name of the font (filename stem).
+		* \return	Shared pointer to the font, or nullptr if not found.
+		*//*========================================================================================*/
 		std::shared_ptr<Font::EnoFont> getFont(const std::string& name);
+
+		/*============================================================================================
+		* \brief	Get the font directory path.
+		* \return	String reference to the font path.
+		*//*========================================================================================*/
 		const std::string& getFontPath() const;
 
-		// Engine data getters
+		/*============================================================================================
+		* \brief	Get the ECS save data file path.
+		* \return	String reference to the ECS save path.
+		*//*========================================================================================*/
 		const std::string& getECSSavePath() const;
 
-		// Load Sound files (mp3 | wav)
-		// and store it in a container that is passed in
+		/*============================================================================================
+		* \brief	Load sound files (WAV/MP3) into FMOD.
+		* \tparam	Container Type of container holding supported file extensions.
+		* \param[in] system		FMOD system pointer.
+		* \param[in] extensions	List of supported file extensions.
+		* \param[in] path		Directory to search for sounds.
+		* \throw	std::runtime_error If path does not exist or sound creation fails.
+		*//*========================================================================================*/
 		template <typename Container>
 		void loadSound(FMOD::System* system, const Container& extensions, const std::string& path) {
 			if (!std::filesystem::exists(path))
@@ -118,16 +196,29 @@ namespace Resources
 			}
 		}
 
-		// Load Images (png | jpg)
+		/*============================================================================================
+		* \brief	Load image textures (PNG/JPG) from a directory.
+		* \param[in] path	Directory path for textures.
+		*//*========================================================================================*/
 		void loadImages(const std::string& path);
 
-		// Load shader files
+		/*============================================================================================
+		* \brief	Load GLSL shader files (.vert/.frag).
+		* \param[in] path	Directory path for shader files.
+		*//*========================================================================================*/
 		void loadShaders(const std::string_view& path);
 
-		// Load Font
+		/*============================================================================================
+		* \brief	Load font files (.ttf/.otf).
+		* \param[in] path		Directory path for font files.
+		* \param[in] pixelSize	Size of the font in pixels.
+		*//*========================================================================================*/
 		void loadFonts(const std::string& path, int pixelSize);
 
-		// Audio Event Handler
+		/*============================================================================================
+		* \brief	Handle sound request events from the event bus.
+		* \param[in] event	RequestSound event containing sound name.
+		*//*========================================================================================*/
 		void onSoundRequest(const Audio::RequestSound& event);
 	
 	};
