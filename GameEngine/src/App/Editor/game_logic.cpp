@@ -264,25 +264,25 @@ void GameApplication::updateEntities() {
 
 	if (inputManager.isKeyPressed(GLFW_KEY_M))
 	{
-		//this toggles keyframe mode
+		// This toggles keyframe mode
 		keyFrameMode = !keyFrameMode;
 	}
-	//in key frame mode, wait for trigger to update
+	// In key frame mode, wait for trigger to update
 	if (keyFrameMode)
 	{
 
 		if (inputManager.isKeyPressed(GLFW_KEY_N))
 		{
-			//frame update 
+			// Frame update 
 			frameUpdate = true;
 		}
 
 		if (frameUpdate)
 		{
-			//update one time
+			// Update one time
 			updateTestObject(engine_.getEntityManager(), engine_);
 
-			//set it back to false
+			// Set it back to false
 			frameUpdate = false;
 
 		}
