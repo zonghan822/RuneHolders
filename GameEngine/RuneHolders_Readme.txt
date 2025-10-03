@@ -34,6 +34,8 @@ Arrow Keys → Move cursor (red square).
 
 WASD → Move player (if spawned).
 
+Spacebar → Player Dash (if spawned).
+
 ---Player Transform---
 
 1 → Scale Up
