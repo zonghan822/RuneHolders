@@ -1,19 +1,9 @@
-/*============================================================================================
-* @file         eno_scene_tree.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
-* @date         10/3/2025
-* @brief        Declaration/definition file for a scene tree
-*//*========================================================================================*/
-
 #pragma once
 
 #include "../ecs/entity.hpp"
 
 namespace GameInstance
 {
-	/*============================================================================================
-		* \brief			Node definition
-	*//*========================================================================================*/
 	struct Node
 	{
 		// Scene Data
@@ -29,9 +19,6 @@ namespace GameInstance
 	public:
 
 		// Create a node
-		/*============================================================================================
-			* \brief			Create a node on the scene tree
-		*//*========================================================================================*/
 		void create()
 		{
 			Node node;
@@ -41,25 +28,25 @@ namespace GameInstance
 			nodes_.push_back(node);
 		}
 
-		//// Nest a node
-		//void nest(Node& node)
-		//{
-		//}
+		// Nest a node
+		void nest(Node& node)
+		{
+		}
 
-		//// Select a node and display all information
-		//Node select(const uint32_t& sceneID)
-		//{
-		//}
+		// Select a node and display all information
+		Node select(const uint32_t& sceneID)
+		{
+		}
 
-		//void insert()
-		//{
+		void insert()
+		{
 
-		//}
+		}
 
-		//void print()
-		//{
+		void print()
+		{
 
-		//}
+		}
 
 	private:
 		std::vector<Node> nodes_;

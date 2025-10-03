@@ -1,22 +1,12 @@
-/*============================================================================================
-* @file         eno_config.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
-* @date         10/3/2025
-* @brief        Definition file for config manager
-*//*========================================================================================*/
-
 #include "eno_config.hpp"
 
+namespace Config {
 
-namespace Config
-{
-	EnoConfigManager::EnoConfigManager()
-	{
+	EnoConfigManager::EnoConfigManager() {
 		retrieveSettings();
 	}
 
-	std::pair<int, int> EnoConfigManager::getWindowDim()
-	{
+	std::pair<int, int> EnoConfigManager::getWindowDim() {
 		auto it = configMap_.find("Window Width");
 		auto it2 = configMap_.find("Window Height");
 		if (it == configMap_.end() || it2 == configMap_.end())
@@ -29,16 +19,13 @@ namespace Config
 
 	// Read the local Settings file and
 	// store configurations
-	void EnoConfigManager::retrieveSettings()
-	{
+	void EnoConfigManager::retrieveSettings() {
 		read();
-
 		setEngineVer();
 	}
 
 	// Read the local config.txt file
-	void EnoConfigManager::read()
-	{
+	void EnoConfigManager::read() {
 		if (std::filesystem::exists(cfgFileName_))
 		{
 			std::ifstream settingsFile(cfgFileName_);
@@ -69,9 +56,8 @@ namespace Config
 		}
 	}
 
-	// Set engine version
-	void EnoConfigManager::setEngineVer()
-	{
+	void EnoConfigManager::setEngineVer() {
+
 		auto it = configMap_.find("Engine Version");
 		if (it == configMap_.end())
 		{

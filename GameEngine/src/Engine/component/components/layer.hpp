@@ -1,10 +1,3 @@
-/*============================================================================================
-* @file         layer.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
-* @date         10/3/2025
-* @brief        Declaration/definition file for the layer component
-*//*========================================================================================*/
-
 #pragma once
 
 //stds
@@ -14,15 +7,10 @@
 
 namespace ECSComponents
 {
-	/*============================================================================================
-	 * \brief			Definition of the layer component
-	*//*========================================================================================*/
 	struct LayerComponent
 	{
-		// Default construction
 		LayerComponent() = default;
 
-		// C string construction
 		LayerComponent(const char* l)
 		{
 			strncpy_s(layer, l, sizeof(layer) - 1);
@@ -32,15 +20,9 @@ namespace ECSComponents
 		char layer[32] = "NULL";
 	};
 
-	/*============================================================================================
-	 * \brief			Stream insertion operator overload for the name component
-	 * \param[in]		reference to the output stream
-	 * \param[in]		readonly reference to a LayerComponent to print its members
-	 * \return			reference to the output stream
-	*//*========================================================================================*/
-	inline std::ostream& operator<<(std::ostream& os, const LayerComponent& l)
+	inline std::ostream& operator<<(std::ostream& os, const LayerComponent& n)
 	{
-		std::cout << l.layer << std::endl;
+		std::cout << n.layer << std::endl;
 		return os;
 	}
 }
