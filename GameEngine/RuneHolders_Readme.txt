@@ -98,7 +98,7 @@ RuneHolders
 CHIA Qi Ming Jeremy - Project Manager ( Design Lead )
 LOH Sabrina Jing Jie ( Audio Lead )
 Muhammad Raziq Bin Mohd Rafig - Technical Lead ( Rendering Champion )
-LAW ZongHan ( Graphics Champion )
+LAW Zong Han ( Graphics Champion, Input Champion )
 KOH Caven ( Physics Champion )
 LEE Zhe An ( Engine Champion )
 KOE YunJi ( Level Editor Champion )
