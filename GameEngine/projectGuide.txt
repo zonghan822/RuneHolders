@@ -25,7 +25,7 @@ Before running any scripts, make sure the following are installed:
 
 
 ----------------------------------------------------------
-2. Scripts
+2. Regenerating Visual Studio 2022 Solution
 ----------------------------------------------------------
 Two scripts are provided to simplify project management:
 
@@ -48,7 +48,7 @@ Usage:
 ----------------------------------------------------------
 3. Regenerating Visual Studio 2022 Solution without Scripts
 ----------------------------------------------------------
-If you want to regenerate the solution from the provided CMake files:
+If you want to regenerate the solution by typing commands in terminal:
 
 1. Open a command prompt (cmd) in the project’s root directory.
 2. Create a build folder (if it does not exist yet):
@@ -56,8 +56,9 @@ If you want to regenerate the solution from the provided CMake files:
    > cd build
 3. Run CMake to generate Visual Studio 2022 solution:
    > cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 
-   > cmake --build . --config Debug
 4. Once finished, open the generated `.sln` file in the `build` folder.
+5. Run CMake to build the solution:
+   > cmake --build . --config Debug
 
 
 ----------------------------------------------------------
@@ -90,6 +91,13 @@ The solution is named **RuneHolders**. It contains two main projects:
    - Includes game logic and demos using the engine and ImGui.
    - Output: Executable in `build/projects/App/<AppName>/`
 
+⚠ IMPORTANT:  
+After opening the solution in Visual Studio,  
+**right-click on the `ImGui_App` project and select “Set as Startup Project”**  
+before pressing **F5** (Run).  
+Otherwise Visual Studio will attempt to start the `Engine` library project, 
+which has no executable.
+
 
 ----------------------------------------------------------
 5. Project Settings & Configurations
@@ -100,12 +108,10 @@ Both projects support the standard Visual Studio configurations:
   - Debug symbols enabled.
   - No optimization (`/Od`).
   - Defines: `_DEBUG`, `DEBUG`.
-  - DLLs: `fmodL.dll`, `fmodstudioL.dll`.
 
 - **Release**
   - Full optimizations (`/O2`).
   - Defines: `NDEBUG`.
-  - DLLs: `fmod.dll`, `fmodstudio.dll`.
 
 - **RelWithDebInfo**
   - Optimizations with debug symbols.
@@ -114,8 +120,8 @@ Both projects support the standard Visual Studio configurations:
 - **MinSizeRel**
   - Optimizations targeting minimal binary size.
 
-CMake automatically handles different FMOD DLL copies depending on the 
-configuration using the `_fmod_copy_dll` helper in `Utilities.cmake`.
+FMOD DLLs are copied automatically per configuration 
+(Debug uses `fmodL.dll`, Release uses `fmod.dll`).
 
 
 ----------------------------------------------------------

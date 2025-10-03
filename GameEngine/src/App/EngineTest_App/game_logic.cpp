@@ -160,10 +160,6 @@ void GameApplication::setupImGui() {
 	g_game = this;
 }
 
-void GameApplication::demonstrateSignals() {
-	// signalling code
-}
-
 void GameApplication::updateGameLogic() {
     // This is called every frame (replaces your while loop in eno_engine.cpp run())
 	auto startTotalTime = Clock::now();
@@ -185,20 +181,11 @@ void GameApplication::updateGameLogic() {
 	}
 
     updateEntities();
-
-    updateAudio();
     drawShapes();
-
 	drawPlayerAndIndicator();
-
 	engine_.getGraphicsManager().flush();
-
-	// DEMO DRAW TEXT
-	auto& graphics = engine_.getGraphicsManager();
-	graphics.drawText(timesFont_, "Hello World!", { 25.f , 50.f }, 1.f, Graphics::Color::Black);
-	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.v1/2.f, windowSize.v2 - 25.f }, 0.75f, Graphics::Color::Blue);
-
 	updateImGui();
+	drawText(windowSize);
 	auto end = Clock::now();
 	systemTimes_["totalTimePerFrame"] = std::chrono::duration<double, std::micro>(end - startTotalTime).count();
 }
@@ -312,9 +299,31 @@ void GameApplication::updateEntities() {
 	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
-void GameApplication::updateAudio() {
-	// audio update
 
+void GameApplication::drawText(Math::eVec2<float> windowSize) {
+	// DEMO DRAW TEXT
+	auto& graphics = engine_.getGraphicsManager();
+	auto& input = engine_.getInputManager();
+	std::string text;
+	if (input.isMousePressed(GLFW_MOUSE_BUTTON_LEFT) && input.isMousePressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+		text = "Left and Right Mouse Button pressed!";
+	}
+	else if (input.isMousePressed(GLFW_MOUSE_BUTTON_LEFT)) {
+		text = "Left Mouse Button pressed!";
+	}
+	else if (input.isMousePressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+		text = "Right Mouse Button pressed!";
+	}
+	else {
+		text = "No Mouse Button pressed!";
+	}
+	std::stringstream fpsSs;
+	fpsSs.precision(2);      // 2 significant digits
+	fpsSs << std::fixed;     // fixed-point notation
+	fpsSs << "FPS: " << engine_.getFPS();
+	graphics.drawText(timesFont_, text, { 25.f , 50.f }, 1.f, Graphics::Color::Black);
+	graphics.drawText(timesFont_, fpsSs.str(), {windowSize.v1 - 125.f , 25.f}, 0.5f, Graphics::Color::Red);
+	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.v1 / 2.f, windowSize.v2 - 25.f }, 0.75f, Graphics::Color::Blue);
 }
 
 void GameApplication::drawPlayerAndIndicator() {

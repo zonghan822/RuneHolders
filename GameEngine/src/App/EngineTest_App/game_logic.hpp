@@ -61,13 +61,11 @@ private:
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
-    void updateAudio();         // Update audio per frame
     void updateImGui();         // Update code for imGui
 
     void drawPlayerAndIndicator();
 
     void drawShapes(); // jsut to test
 
-    // Demonstration methods
-    void demonstrateSignals();
+    void drawText(Math::eVec2<float> windowSize);
 };
