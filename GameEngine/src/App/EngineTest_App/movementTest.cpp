@@ -1,5 +1,11 @@
+/*============================================================================================
+* @file         movementTest.cpp
+* @author       Caven Koh (caven.koh@digipen.edu)
+* @date         03-10-2025
+* @brief        This file creates objects using ECS to then test for various dynamic collision
+*				scenarios, such as moving circle and line, circle to circle and square to square
+*//*========================================================================================*/
 #pragma once
-
 #include "movementTest.hpp"
 
 

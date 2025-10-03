@@ -1,3 +1,10 @@
+/*============================================================================================
+* @file         movementTest.hpp
+* @author       Caven Koh (caven.koh@digipen.edu)
+* @date         03-10-2025
+* @brief        This file contains functions to instatiante objects for dynamic collision
+*               testing
+*//*========================================================================================*/
 #pragma once
 #include "math/math.hpp"
 #include "component/components/drawInfo.hpp"
