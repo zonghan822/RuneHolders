@@ -137,6 +137,7 @@ namespace Window
 	}
 
 	void EnoWindow::ErrorCallback(int err, char const* description) {
+		(void)err;
 		std::string msg = "GLFW error: ";
 		msg += description;
 		throw std::runtime_error(msg);

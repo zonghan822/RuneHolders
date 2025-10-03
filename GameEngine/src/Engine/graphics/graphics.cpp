@@ -538,6 +538,8 @@ namespace Graphics
 
     void EnoGraphicsManager::drawLine(const Math::eVec2<float>& start, const Math::eVec2<float>& end, const Color& color, float thickness)
     {
+        (void)thickness;
+
         // Simple line implementation
         GLenum primitiveType = GL_LINES;
 
@@ -671,8 +673,8 @@ namespace Graphics
             // Generate triangles directly into batch
             for (int i = 0; i < segments; ++i)
             {
-                float angle1 = 2.0f * M_PI * i / segments;
-                float angle2 = 2.0f * M_PI * (i + 1) / segments;
+                float angle1 = static_cast<float>(2.0f * M_PI * static_cast<float>(i) / static_cast<float>(segments));
+                float angle2 = static_cast<float>(2.0f * M_PI * static_cast<float>(i + 1) / static_cast<float>(segments));
 
                 Math::eVec2<float> point1{
                     center.v1 + radius * cos(angle1),
@@ -696,8 +698,8 @@ namespace Graphics
 
             for (int i = 0; i < segments; ++i)
             {
-                float angle1 = 2.0f * M_PI * i / segments;
-                float angle2 = 2.0f * M_PI * (i + 1) / segments;
+                float angle1 = static_cast<float>(2.0f * M_PI * static_cast<float>(i) / static_cast<float>(segments));
+                float angle2 = static_cast<float>(2.0f * M_PI * static_cast<float>(i + 1) / static_cast<float>(segments));
 
                 Math::eVec2<float> point1{
                     center.v1 + radius * cos(angle1),

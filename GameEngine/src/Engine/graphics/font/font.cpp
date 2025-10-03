@@ -43,8 +43,8 @@ namespace Font {
             if (FT_Load_Char(face, c, FT_LOAD_RENDER)) continue;
             FT_Bitmap& bmp = face->glyph->bitmap;
 
-            for (int row = 0; row < bmp.rows; ++row) {
-                for (int col = 0; col < bmp.width; ++col) {
+            for (int row = 0; row < static_cast<int>(bmp.rows); ++row) {
+                for (int col = 0; col < static_cast<int>(bmp.width); ++col) {
                     int atlasIndex = (row * atlasWidth) + (xOffset + col);
                     atlasPixels[atlasIndex] = bmp.buffer[row * bmp.pitch + col];
                 }
