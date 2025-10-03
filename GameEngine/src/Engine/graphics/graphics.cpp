@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         graphics.cpp
+* @author       Law Zong Han (zonghan.law@digipen.edu),
+* @author       Muhammad Raziq Bin Mohd Rafig ()
+* @date         03-10-2025
+* @brief
+*//*========================================================================================*/
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -484,7 +492,7 @@ namespace Graphics
             defaultShader_->unuse();
         }
 
-        glfwSwapBuffers(window.getWindow());
+        window.swapBuffers();
     }
 
     // Helper function for rotation
@@ -530,6 +538,8 @@ namespace Graphics
 
     void EnoGraphicsManager::drawLine(const Math::eVec2<float>& start, const Math::eVec2<float>& end, const Color& color, float thickness)
     {
+        (void)thickness;
+
         // Simple line implementation
         GLenum primitiveType = GL_LINES;
 
@@ -663,8 +673,8 @@ namespace Graphics
             // Generate triangles directly into batch
             for (int i = 0; i < segments; ++i)
             {
-                float angle1 = 2.0f * M_PI * i / segments;
-                float angle2 = 2.0f * M_PI * (i + 1) / segments;
+                float angle1 = static_cast<float>(2.0f * M_PI * static_cast<float>(i) / static_cast<float>(segments));
+                float angle2 = static_cast<float>(2.0f * M_PI * static_cast<float>(i + 1) / static_cast<float>(segments));
 
                 Math::eVec2<float> point1{
                     center.v1 + radius * cos(angle1),
@@ -688,8 +698,8 @@ namespace Graphics
 
             for (int i = 0; i < segments; ++i)
             {
-                float angle1 = 2.0f * M_PI * i / segments;
-                float angle2 = 2.0f * M_PI * (i + 1) / segments;
+                float angle1 = static_cast<float>(2.0f * M_PI * static_cast<float>(i) / static_cast<float>(segments));
+                float angle2 = static_cast<float>(2.0f * M_PI * static_cast<float>(i + 1) / static_cast<float>(segments));
 
                 Math::eVec2<float> point1{
                     center.v1 + radius * cos(angle1),
