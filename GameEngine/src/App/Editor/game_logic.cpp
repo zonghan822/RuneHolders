@@ -441,7 +441,7 @@ void GameApplication::drawPlayerAndIndicator() {
 void GameApplication::updateImGui() {
 	auto start = Clock::now();
 
-	imGuiDisplay(engine_.getWindowManager().getWindow(), engine_);
+	imGuiDisplay(engine_);
 
 	auto end = Clock::now();
 	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();

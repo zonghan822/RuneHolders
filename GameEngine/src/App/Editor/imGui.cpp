@@ -82,7 +82,7 @@ void imGuiInit(GLFWwindow* window) {
 }
 
 
-void imGuiDisplay(GLFWwindow* window, Engine::EnoEngine& engine_) {
+void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
@@ -164,9 +164,6 @@ void imGuiDisplay(GLFWwindow* window, Engine::EnoEngine& engine_) {
 
 				// Store ID by finding the last created entity in the map
 				// Get the entity map and find the most recent entity
-				auto& entityMap = engine_.getEntityManager().getMap();
-
-
 
 				// Then add CollisionComponent
 				entity.add<Collision::CollisionComponent>(playerCollider);
@@ -225,10 +222,7 @@ void imGuiDisplay(GLFWwindow* window, Engine::EnoEngine& engine_) {
 		if (ImGui::Button("Spawn Entity")) {
 			ECSComponents::DrawInfoComponent DIC{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor };
 			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
-
-			//adding name to the entity only for destroy() debug purposes
 			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
-			//if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent("John")) std::cout << "he john\n";
 
 
 			// add collider if selected
@@ -271,6 +265,7 @@ void imGuiDisplay(GLFWwindow* window, Engine::EnoEngine& engine_) {
 				//if (e.has<ECSComponents::DrawInfoComponent>())std::cout << "drawcomponent XY: " << e.get<ECSComponents::DrawInfoComponent>() << "\n";
 			}
 			if (g_game) g_game->markEntitiesDirty();
+			(void)e; // to silence compiler warning for unused param
 		}
 
 
@@ -320,17 +315,11 @@ void imGuiDisplay(GLFWwindow* window, Engine::EnoEngine& engine_) {
 		}
 
 		if (FilterType == Filters::Type) {
-			//do another list to look for the type here
-			for (ECS::Entity& e : engine_.getEntityManager().findEntity<>()) {
 
-			}
 
 		}
 		if (FilterType == Filters::ID) {
 
-			for (ECS::Entity& e : engine_.getEntityManager().findEntity<>()) {
-
-			}
 
 		}
 
@@ -425,8 +414,10 @@ void displayEntityCount(Engine::EnoEngine& engine_) {
 	std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<>();
 	for (ECS::Entity const& e : EntityList) {
 		counter++;
+		(void)e; // silence unused warning
 	}
 	std::cout << "Number of entities: " << counter << "\n";
+	
 }
 
 
