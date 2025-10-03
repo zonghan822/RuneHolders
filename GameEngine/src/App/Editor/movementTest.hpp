@@ -4,6 +4,8 @@
 * @date         03-10-2025
 * @brief        This file contains functions to instatiante objects for dynamic collision
 *               testing
+* 
+* * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once

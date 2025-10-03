@@ -4,6 +4,8 @@
 * @date         03-10-2025
 * @brief        This file creates objects using ECS to then test for various dynamic collision
 *				scenarios, such as moving circle and line, circle to circle and square to square
+* 
+* * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 #pragma once
 
