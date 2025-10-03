@@ -1,3 +1,12 @@
+/*============================================================================================
+* @file         eno_audio_manager.cpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Definition file for the audio manager
+* 
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+*//*========================================================================================*/
+
 #include "eno_audio_manager.hpp"
 
 
@@ -84,19 +93,24 @@ namespace Audio
 		});
 	}
 
-	// Getters
 	FMOD::System* EnoAudioManager::getSystem() const 
 		{ return system; }
+
 	std::unordered_map<std::string, FMOD::Sound*>& EnoAudioManager::getSounds() 
 		{ return sounds_; }
 
-	// Update system
+	/*============================================================================================
+	 * \brief				Update internal FMOD system
+	*//*========================================================================================*/
 	void EnoAudioManager::process()
 	{
 		system->update();
 	}
 
-	// Play all loaded sounds
+	/*============================================================================================
+	 * \brief				Play all loaded sounds
+	 * \param[in]			Set pause state for sounds
+	*//*========================================================================================*/
 	void EnoAudioManager::playAll(const bool& paused)
 	{
 		for (const auto& s : sounds_)
@@ -107,7 +121,13 @@ namespace Audio
 		}
 	}
 
-	// Play sounds from a channel group by passing the name of the sound
+	/*============================================================================================
+	 * \brief				Play sounds from a channel group
+	 * \param[in]			Name of sound
+	 * \param[in]			Channel group name
+	 * \param[in]			Set pause state
+	 * \return				pointer to the channel used to play the sound
+	*//*========================================================================================*/
 	FMOD::Channel* EnoAudioManager::playByGroup(
 		const std::string& soundName, const std::string& groupName, const bool& paused)
 	{
@@ -127,7 +147,13 @@ namespace Audio
 		return channel;
 	}
 
-	// (Overload) Play sounds from a channel group by passing the sound
+	/*============================================================================================
+	 * \brief				(Overload) Play sounds from a channel group
+	 * \param[in]			Pointer to the Sound
+	 * \param[in]			Channel group name
+	 * \param[in]			Set pause state
+	 * \return				pointer to the channel used to play the sound
+	*//*========================================================================================*/
 	FMOD::Channel* EnoAudioManager::playByGroup(
 		FMOD::Sound* sound, const std::string& groupName, const bool& paused)
 	{
@@ -146,7 +172,13 @@ namespace Audio
 		return channel;
 	}
 
-	// Set up fade to a channel group
+	/*============================================================================================
+	 * \brief				Set up fade to a channel group
+	 * \param[in]			Channel group name
+	 * \param[in]			Fade in time
+	 * \param[in]			Fade out time
+	 * \param[in]			Duration in seconds
+	*//*========================================================================================*/
 	void EnoAudioManager::scheduleGroupFade(
 		const std::string& groupName,
 		const float& fadeInTime, const float& fadeOutTime, const float& duration)
@@ -182,8 +214,13 @@ namespace Audio
 		group->second->addFadePoint(dspClock + totalSamples, 0.0f);
 	}
 
-	// Modify sound parameters
-	// for all channels
+	/*============================================================================================
+	 * \brief				Set up fade to a channel group
+	 * \param[in]			Group name
+	 * \param[in]			Fade in time
+	 * \param[in]			Fade out time
+	 * \param[in]			Duration in seconds
+	*//*========================================================================================*/
 	void EnoAudioManager::modifyGlobal(const SoundParameters& parameters)
 	{
 		for (FMOD::Channel* channel : channels_)
@@ -192,8 +229,11 @@ namespace Audio
 		}
 	}
 
-	// Modify sound parameters
-	// for a specific channel group
+	/*============================================================================================
+	 * \brief				Modify sound parameters for a specific channel group
+	 * \param[in]			Group name
+	 * \param[in]			Parameters to modify with
+	*//*========================================================================================*/
 	void EnoAudioManager::modifyChannelGroup(const std::string& group, const SoundParameters& parameters)
 	{
 		auto it = channelGroups_.find(group);
@@ -204,8 +244,10 @@ namespace Audio
 
 		modify(it->second, parameters);
 	}
-
-	// Set channel group
+	/*============================================================================================
+	 * \brief				Set channel group
+	 * \param[in]			Channel group name
+	*//*========================================================================================*/
 	void EnoAudioManager::setChannelGroup(const std::string& groupName)
 	{
 		FMOD::ChannelGroup* group{ nullptr };
@@ -214,7 +256,10 @@ namespace Audio
 		channelGroups_[groupName] = group;
 	}
 
-	// Get a channel group by name
+	/*============================================================================================
+	 * \brief				Get a channel group by name
+	 * \param[in]			Channel group name
+	*//*========================================================================================*/
 	FMOD::ChannelGroup* EnoAudioManager::getChannelGroup(const std::string& group) const
 	{
 		auto it = channelGroups_.find(group);
@@ -226,7 +271,11 @@ namespace Audio
 		return it->second;
 	}
 
-	// Get the length of a sound sample by sound name
+	/*============================================================================================
+	 * \brief				Get the length of a sound sample (in seconds) by sound name
+	 * \param[in]			Name of sound
+	 * \return				Length of sound sample in seconds
+	*//*========================================================================================*/
 	float EnoAudioManager::getSoundDurSec(const std::string& name)
 	{
 		unsigned int soundLength{};
@@ -245,7 +294,11 @@ namespace Audio
 		return static_cast<float>(soundLength) / static_cast<float>(sampleRate);
 	}
 
-	// (Overload) Get the length of a sound sample by sound
+	/*============================================================================================
+	 * \brief				(Overload) Get the length of a sound sample by sound
+	 * \param[in]			Pointer to a sound
+	 * \return				Length of sound sample in seconds
+	*//*========================================================================================*/
 	float EnoAudioManager::getSoundDurSec(FMOD::Sound* sound)
 	{
 		unsigned int soundLength{};
@@ -261,7 +314,10 @@ namespace Audio
 
 	// ---------- Pause ---------- 
 
-	// Set pause state of all groups
+	/*============================================================================================
+		* \brief				Set pause state of all groups
+		* \param[in]			Pause state to set
+	*//*========================================================================================*/
 	void EnoAudioManager::togglePauseAllGroups(const bool& paused)
 	{
 		for (auto& group : channelGroups_)
@@ -270,7 +326,11 @@ namespace Audio
 		}
 	}
 
-	// Set pause state of a group by name
+	/*============================================================================================
+	 * \brief				Set pause state of a group by name
+	 * \param[in]			Channel group name
+	 * \param[in]			Pause state to set
+	*//*========================================================================================*/
 	void EnoAudioManager::setPauseGroup(const std::string& name, const bool& paused)
 	{
 		auto group = channelGroups_.find(name);
@@ -282,7 +342,11 @@ namespace Audio
 		group->second->setPaused(paused);
 	}
 
-	// Set pause state of a channel
+	/*============================================================================================
+	 * \brief				Set pause state of a channel
+	 * \param[in]			Pointer to a Channel
+	 * \param[in]			Pause state to set
+	*//*========================================================================================*/
 	void EnoAudioManager::setPauseChannel(FMOD::Channel* channel, const bool& paused)
 	{
 		channel->setPaused(paused);
@@ -290,7 +354,10 @@ namespace Audio
 
 	// ---------- Stop ---------- 
 
-	// Stop a channel group
+	/*============================================================================================
+		* \brief				Stop a channel group
+		* \param[in]			Channel group name
+	*//*========================================================================================*/
 	void EnoAudioManager::stopChannelGroup(const std::string& name)
 	{
 		auto group = channelGroups_.find(name);
@@ -302,28 +369,40 @@ namespace Audio
 		group->second->stop();
 	}
 
-	// Stop a channel
+	/*============================================================================================
+	 * \brief				Stop a channel
+	 * \param[in]			Pointer to a Channel
+	*//*========================================================================================*/
 	void EnoAudioManager::stopChannel(FMOD::Channel* channel)
 	{
 		channel->stop();
 	}
 
-	// ----------------------- Events -----------------------
+	/*========================================= Events ===========================================
 
-	// Publish request for a sound by name
+	/*============================================================================================
+	 * \brief				Publish request for a sound by name
+	 * \param[in]			Name of sound to request for
+	*//*========================================================================================*/
 	void EnoAudioManager::publishSoundRequest(const std::string& soundName)
 	{
 		bus_.publish(RequestSound{ soundName });
 	}
 
-	// Received sound post-request
+	/*============================================================================================
+	 * \brief				Received sound post-request
+	 * \param[in]			LoadSound struct (sound and sound name to store)
+	*//*========================================================================================*/
 	void EnoAudioManager::onSoundReceived(const LoadSound& event)
 	{
 		// Storing sound
 		sounds_[event.soundName_] = event.sound_;
 	}
 
-	// Received request to play or pause a sound
+	/*============================================================================================
+	 * \brief				Received request to play or pause a sound
+	 * \param[in]			AudioState struct (Name of group to play)
+	*//*========================================================================================*/
 	void EnoAudioManager::onTogglePlay(const SetAudioState& event)
 	{
 		// Verify that a sound is selected
@@ -362,7 +441,10 @@ namespace Audio
 		}
 	}
 
-	// Received request to change sound
+	/*============================================================================================
+	 * \brief				Received request to change the selected sound
+	 * \param[in]			SetNewAudio struct (Name of audio to select)
+	*//*========================================================================================*/
 	void EnoAudioManager::onAudioChange(const Audio::SetNewAudio& event)
 	{
 		if (soundPlaying_ && selectedSound_)
@@ -380,7 +462,11 @@ namespace Audio
 		selectedSound_ = sound->second;
 	}
 
-	// Helper for modifying a reverb DSP
+	/*============================================================================================
+	 * \brief			Helper for modifying a reverb DSP
+	 * \param[in]		SoundParameters struct (Reverb/EQ/Volume/Pitch/Pan)
+	 * \return			pointer to a DSP to use to modify channel/channel group
+	*//*========================================================================================*/
 	FMOD::DSP* EnoAudioManager::modifyReverb(const SoundParameters& parameters)
 	{
 		if (!parameters.reverb) return nullptr;
@@ -432,7 +518,11 @@ namespace Audio
 		return dsp;
 	}
 
-	// Helper for modifying an EQ DSP
+	/*============================================================================================
+	 * \brief			Helper for modifying an EQ DSP
+	 * \param[in]		SoundParameters struct (Reverb/EQ/Volume/Pitch/Pan)
+	 * \return			Pointer to a DSP to use to modify channel/channel group
+	*//*========================================================================================*/
 	FMOD::DSP* EnoAudioManager::modifyEQ(const SoundParameters& parameters)
 	{
 		if (!parameters.eq) return nullptr;

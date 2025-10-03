@@ -1,3 +1,12 @@
+/*============================================================================================
+* @file         eno_audio_manager.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Declaration file for the audio manager
+* 
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+*//*========================================================================================*/
+
 #pragma once
 
 // FMOD
@@ -25,86 +34,182 @@ namespace Audio
 	class EnoAudioManager 
 	{
 	public:
+		/*============================================================================================
+				 * \brief				Constructor
+				 * \param[in]			A ref to the event bus to set up future events
+		*//*========================================================================================*/
 		EnoAudioManager(Event::EnoEventBus&);
 
+		/*============================================================================================
+				 * \brief				Destructor for the audio manager
+		*//*========================================================================================*/
 		~EnoAudioManager();
 
+		/*============================================================================================
+				 * \brief				Helper for cleaning up resources stored, such as dsps or sounds
+				 * \return				Return type
+		*//*========================================================================================*/
 		void cleanup();
 
+		/*============================================================================================
+				 * \brief				Initializing the FMOD system
+		*//*========================================================================================*/
 		void init();
 
-		// Getters
+		/*============================================================================================
+		 * \brief				Getter for the system
+		 * \return				pointer to the FMOD::System
+		*//*========================================================================================*/
 		FMOD::System* getSystem() const;
+
+		/*============================================================================================
+			 * \brief				Getter for the map to all the sounds stored in the manager
+			 * \return				an unordered map of string keys and sound values
+		*//*========================================================================================*/
 		std::unordered_map<std::string, FMOD::Sound*>& getSounds();
 
-		// Update system
+		/*============================================================================================
+		 * \brief				Update internal FMOD system
+		*//*========================================================================================*/
 		void process();
 
-		// Play all loaded sounds
+		/*============================================================================================
+		 * \brief				Play all loaded sounds
+		 * \param[in]			Set pause state for sounds
+		*//*========================================================================================*/
 		void playAll(const bool&);
 
-		// Play sounds from a channel group by passing the name of the sound
+		/*============================================================================================
+		 * \brief				Play sounds from a channel group
+		 * \param[in]			Name of sound
+		 * \param[in]			Channel group name
+		 * \param[in]			Set pause state
+		 * \return				pointer to the channel used to play the sound
+		*//*========================================================================================*/
 		FMOD::Channel* playByGroup(const std::string&, const std::string&, const bool&);
 
-		// (Overload) Play sounds from a channel group by passing the sound
+		/*============================================================================================
+		 * \brief				(Overload) Play sounds from a channel group
+		 * \param[in]			Pointer to the Sound
+		 * \param[in]			Channel group name
+		 * \param[in]			Set pause state
+		 * \return				pointer to the channel used to play the sound
+		*//*========================================================================================*/
 		FMOD::Channel* playByGroup(FMOD::Sound*, const std::string&, const bool&);
 
-		// Set up fade to a channel group
+		/*============================================================================================
+		 * \brief				Set up fade to a channel group
+		 * \param[in]			Channel group name
+		 * \param[in]			Fade in time
+		 * \param[in]			Fade out time
+		 * \param[in]			Duration in seconds
+		*//*========================================================================================*/
 		void scheduleGroupFade(
 			const std::string&,
 			const float&, const float&, const float&);
 
-		// Modify sound parameters
-		// for all channels
+		/*============================================================================================
+		 * \brief				Set up fade to a channel group
+		 * \param[in]			Group name
+		 * \param[in]			Fade in time
+		 * \param[in]			Fade out time
+		 * \param[in]			Duration in seconds
+		*//*========================================================================================*/
 		void modifyGlobal(const SoundParameters&);
 
-		// Modify sound parameters
-		// for a specific channel group
+		/*============================================================================================
+		 * \brief				Modify sound parameters for a specific channel group
+		 * \param[in]			Group name
+		 * \param[in]			Parameters to modify with
+		*//*========================================================================================*/
 		void modifyChannelGroup(const std::string&, const SoundParameters&);
 
-		// Set channel group
+		/*============================================================================================
+		 * \brief				Set channel group
+		 * \param[in]			Channel group name
+		*//*========================================================================================*/
 		void setChannelGroup(const std::string&);
 
-		// Get a channel group by name
+		/*============================================================================================
+		 * \brief				Get a channel group by name
+		 * \param[in]			Channel group name
+		*//*========================================================================================*/
 		FMOD::ChannelGroup* getChannelGroup(const std::string&) const;
 
-		// Get the length of a sound sample by sound name
+		/*============================================================================================
+		 * \brief				Get the length of a sound sample (in seconds) by sound name
+		 * \param[in]			Name of sound
+		 * \return				Length of sound sample in seconds
+		*//*========================================================================================*/
 		float getSoundDurSec(const std::string&);
 
-		// (Overload) Get the length of a sound sample by sound
+		/*============================================================================================
+		 * \brief				(Overload) Get the length of a sound sample by sound
+		 * \param[in]			Pointer to a sound
+		 * \return				Length of sound sample in seconds
+		*//*========================================================================================*/
 		float getSoundDurSec(FMOD::Sound*);
 
 		// ---------- Pause ---------- 
 
-		// Set pause state of all groups
+		/*============================================================================================
+		 * \brief				Set pause state of all groups
+		 * \param[in]			Pause state to set
+		*//*========================================================================================*/
 		void togglePauseAllGroups(const bool&);
 
-		// Set pause state of a group by name
+		/*============================================================================================
+		 * \brief				Set pause state of a group by name
+		 * \param[in]			Channel group name
+		 * \param[in]			Pause state to set
+		*//*========================================================================================*/
 		void setPauseGroup(const std::string&, const bool&);
 
-		// Set pause state of a channel
+		/*============================================================================================
+		 * \brief				Set pause state of a channel
+		 * \param[in]			Pointer to a Channel
+		 * \param[in]			Pause state to set
+		*//*========================================================================================*/
 		void setPauseChannel(FMOD::Channel*, const bool&);
 
 		// ---------- Stop ---------- 
 
-		// Stop a channel group
+		/*============================================================================================
+		 * \brief				Stop a channel group
+		 * \param[in]			Channel group name
+		*//*========================================================================================*/
 		void stopChannelGroup(const std::string&);
 
-		// Stop a channel
+		/*============================================================================================
+		 * \brief				Stop a channel
+		 * \param[in]			Pointer to a Channel
+		*//*========================================================================================*/
 		void stopChannel(FMOD::Channel*);
 
-		// ----------------------- Events -----------------------
+		/*========================================= Events ===========================================
 
-		// Publish request for a sound by name
+		/*============================================================================================
+		 * \brief				Publish request for a sound by name
+		 * \param[in]			Name of sound to request for
+		*//*========================================================================================*/
 		void publishSoundRequest(const std::string&);
 
-		// Received sound post-request
+		/*============================================================================================
+		 * \brief				Received sound post-request
+		 * \param[in]			LoadSound struct (sound and sound name to store)
+		*//*========================================================================================*/
 		void onSoundReceived(const LoadSound&);
 
-		// Received request to play or pause a sound
+		/*============================================================================================
+		 * \brief				Received request to play or pause a sound
+		 * \param[in]			AudioState struct (Name of group to play)
+		*//*========================================================================================*/
 		void onTogglePlay(const SetAudioState&);
 
-		// Received request to change sound
+		/*============================================================================================
+		 * \brief				Received request to play or pause a sound
+		 * \param[in]			SetNewAudio struct (Name of audio to select)
+		*//*========================================================================================*/
 		void onAudioChange(const Audio::SetNewAudio&);
 
 	private:
@@ -135,9 +240,11 @@ namespace Audio
 		// Event Bus
 		Event::EnoEventBus& bus_;
 
-
+		/*============================================================================================
+		 * \brief				Received request to play or pause a sound
+		 * \param[in]			SetNewAudio struct (Name of audio to select)
+		*//*========================================================================================*/
 		template <typename CH>
-		// Helper for modifying a channel or channel group
 		void modify(CH* ch, const SoundParameters& parameters)
 		{
 			// Basic
@@ -165,6 +272,11 @@ namespace Audio
 			dsps_.push_back(eqDSP);
 		}
 
+		/*============================================================================================
+		 * \brief				Helper for modifying a channel or channel group's volume/pitch/pan
+		 * \param[in]		Channel/Channel group to be modified
+		 * \param[in]		SoundParameters struct (Reverb/EQ/Volume/Pitch/Pan)
+		*//*========================================================================================*/
 		template <typename CH>
 		void modifyBasic(CH* ch, const SoundParameters& parameters)
 		{
@@ -173,10 +285,18 @@ namespace Audio
 			ch->setPan(parameters.pan);
 		}
 
-		// Helper for modifying a reverb DSP
+		/*============================================================================================
+		 * \brief				Helper for modifying a reverb DSP
+		 * \param[in]		SoundParameters struct (Reverb/EQ/Volume/Pitch/Pan)
+		 * \return				pointer to a DSP to use to modify channel/channel group
+		*//*========================================================================================*/
 		FMOD::DSP* modifyReverb(const SoundParameters&);
 
-		// Helper for modifying an EQ DSP
+		/*============================================================================================
+		 * \brief				Helper for modifying an EQ DSP
+		 * \param[in]		SoundParameters struct (Reverb/EQ/Volume/Pitch/Pan)
+		 * \return				pointer to a DSP to use to modify channel/channel group
+		*//*========================================================================================*/
 		FMOD::DSP* modifyEQ(const SoundParameters&);
 	};
 
