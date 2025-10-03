@@ -28,51 +28,41 @@ namespace Engine
 	{
 	public:
 		void setup();
-		void run();
-		void run(std::function<void()> gameUpdateCallback); // Overloaded version
-		void createGameInstance();
+		void run(std::function<void()> gameUpdateCallback);
+		void shutDown();
 
 		// Provide access to engine systems for game code
-		ECS::EntityManager& getEntityManager();
+		ECS::EntityManager& getEntityManager() { return entityMng_; }
 		Audio::EnoAudioManager& getAudioManager() { return audioMng_; }
-		Graphics::EnoGraphicsManager& getGraphicsManager() { return *graphicsMng_; }
+		Graphics::EnoGraphicsManager& getGraphicsManager() { return graphicsMng_; }
 		Event::EnoEventBus& getEventBus() { return bus_; }
 		Resources::EnoLoader& getResourceLoader() { return loader_; }
-		EngineConfiguration::EnoConfigManager& getConfigManager() { return configMng_; }
-		Window::EnoWindow& getWindow() { return window_; }
-		Input::EnoInputManager& getInputManager() { return input_; }
+		Config::EnoConfigManager& getConfigManager() { return configMng_; }
+		Window::EnoWindow& getWindowManager() { return window_; }
+		Input::EnoInputManager& getInputManager() { return inputMng_; }
 
-		double GetDeltaTime() const { return dt; }
-		double GetFPS() const { return fps; }
+		double getDeltaTime() const { return dt_; }
+		double getFPS() const { return fps_; }
 
 	private:
 		// Functions added for future use**
 		void setupResourceLoading();
-		void setupEventSystem();
-		void setupGraphicsSystem();
-		void updateEngineSystems();
-		void update_time(double fpsCalcInt = 1.0);
+		void updateTime(double fpsCalcInt = 1.0);
 
-		// Private member shii / was here before i edited
-		EngineConfiguration::EnoConfigManager configMng_;
-		Window::EnoWindow window_{ configMng_.getWindowDim() };
+		// Services & Tools
+		Config::EnoConfigManager configMng_;
 		Event::EnoEventBus bus_;
-		Audio::EnoAudioManager audioMng_{ bus_ };
+		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
-		Input::EnoInputManager input_{ window_.getWindow(), bus_ };
-		ECSComponents::EnoComponentRegistry compReg_;
-		Tag::EnoTagRegistry tagReg_;
-		// Game Instance
-		std::unique_ptr<Graphics::EnoGraphicsManager> graphicsMng_;
-		std::unique_ptr<GameInstance::EnoGameInstance> gameInstance_;
-
-
-		// TBD Demo for playing sounds
-		void setupAudioInput();
-		void soundSetup();
+		ECS::EntityManager entityMng_;
+		
+		// Systems
+		Input::EnoInputManager inputMng_{ bus_ };
+		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };
+		Audio::EnoAudioManager audioMng_{ bus_ };
 
 		// Time
-		double dt = 0.0f;
-		double fps = 0;
+		double dt_ = 0.0;
+		double fps_ = 0.0;
 	};
 }

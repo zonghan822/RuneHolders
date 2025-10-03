@@ -1,14 +1,14 @@
 #pragma once
 
 // OpenGL and GLFW
-#define GLFW_INCLUDE_NONE
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 // Engine components
-#include "../interface/system.hpp"
 #include "../event/event_bus.hpp"
 #include "../math/math.hpp"
+#include "../window/eno_window.hpp"
+#include "font/font.hpp"
 
 // Standard libraries
 #include <vector>
@@ -68,6 +68,7 @@ namespace Graphics
         ~EnoTexture();
 
         bool loadFromFile(const std::string& filepath);
+        bool loadFromMemory(int width, int height, int channels, const unsigned char* data);
         void bind(unsigned int slot = 0) const;
         void unbind() const;
 
@@ -81,19 +82,6 @@ namespace Graphics
         int width_, height_, channels_;
     };
 
-    // Low-level OpenGL wrapper for managing render state
-    class EnoGLContext
-    {
-    public:
-        static bool initialize(GLFWwindow* window);
-        static void setViewport(int width, int height);
-        static void clear(const Color& clearColor = Color::Black);
-        static void enableBlending();
-        static void disableBlending();
-
-    private:
-        static bool initialized_;
-    };
 
     // Shader management class
     class EnoShader
@@ -147,22 +135,19 @@ namespace Graphics
     };
 
     // Main graphics manager
-    class EnoGraphicsManager : public Sys::ISystem
+    class EnoGraphicsManager 
     {
     public:
-        EnoGraphicsManager(Event::EnoEventBus& bus, GLFWwindow* window);
+        EnoGraphicsManager(Event::EnoEventBus& bus);
         ~EnoGraphicsManager();
 
-        // System interface implementation
-        void Update() override;
-
         // Initialize the graphics system
-        bool initialize();
+        void initialize(Window::EnoWindow& windowMng);
         void shutdown();
 
         // Frame management
         void beginFrame(const Color& clearColor = Color::Black);
-        void endFrame();
+        void endFrame(Window::EnoWindow& windowMng);
         void flush() {
             if (!batchVertices_.empty()) {
                 flushBatch(currentBatchPrimitiveType_);
@@ -191,6 +176,13 @@ namespace Graphics
             const Color& tint = Color::White,
             float rotation = 0.0f);
 
+        // Text drawing function
+        void drawText(const std::shared_ptr<Font::EnoFont>& font,
+            const std::string& text,
+            const Math::eVec2<float>& position,
+            float scale,
+            const Color& color);
+
         // Camera/projection management
         void setProjectionMatrix(int windowWidth, int windowHeight);
         void setProjectionMatrix(const float* matrix);
@@ -201,11 +193,11 @@ namespace Graphics
     private:
         // Core systems
         Event::EnoEventBus& bus_;
-        GLFWwindow* window_;
         bool initialized_;
 
         // Rendering components
         std::unique_ptr<EnoShader> defaultShader_;
+        std::unordered_map<std::string, std::unique_ptr<EnoShader>> shadersMap_;
         std::unique_ptr<EnoVertexBuffer> vertexBuffer_;
 
         // Texture management
@@ -222,9 +214,11 @@ namespace Graphics
 
         // Internal helper functions
         bool createDefaultShader();
+        bool createShader(const std::string& name, const std::string& vertSrc, const std::string& fragSrc);
         void setupProjectionMatrix(int width, int height);
         void flushBatch(GLenum primitiveType);
         void addVertexToBatch(const Vertex& vertex);
+        EnoShader* getShader(const std::string& name);
         int getTextureSlot(std::shared_ptr<EnoTexture> texture);
         void bindTextures();
     };
@@ -232,13 +226,10 @@ namespace Graphics
     // Graphics events
     namespace Events
     {
-        struct WindowResized
-        {
-            int width;
-            int height;
+        struct ShaderLoaded {
+            std::string name;
+            std::string vertexSource;
+            std::string fragmentSource;
         };
-
-        struct RenderFrameBegin {};
-        struct RenderFrameEnd {};
     }
 }

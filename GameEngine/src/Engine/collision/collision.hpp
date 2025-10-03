@@ -252,7 +252,7 @@ namespace Collision
 		@param colTi		- time till collision
 		@return bool		- returns true if collision occurs
 		*/
-		static bool CheckCollision(
+		static bool CheckDynamicCollision(
 			const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA,
 			const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB,
 			const Math::eVec2<float>& endPos, Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi);
@@ -262,7 +262,6 @@ namespace Collision
 			const Math::eVec2<float>& normal,
 			Math::eVec2<float>& nextPos,
 			Math::eVec2<float>& reflected);
-
 
 	private:
 		//*****************************************
@@ -317,14 +316,25 @@ namespace Collision
 
 		/*
 		@brief Check collision between a circle and line collider
-		@param pointPos - position of the point
-		@param collider - the other collider to check against
-		@param colliderPos - position of the other collider
+		@param 
+		@param 
 		@return CollisionResult - with collision details
 		*/
 		static bool CheckCircleLine(
 			const Math::eVec2<float>& circlePos, const float& radius, const Math::eVec2<float>& endPoint, const CollisionComponent& lineCol,
 			Math::eVec2<float>& pointAtCol, Math::eVec2<float>& normalAtCol, float& colTi);
+
+		/*
+		@brief Check collision between two moving circles
+		@param 
+		@param 
+		@return CollisionResult - with collision details
+		*/
+		static bool CheckDynamicCircleCircle(
+			const Math::eVec2<float>& posA, const Math::eVec2<float>& velA, float radiusA,
+			const Math::eVec2<float>& posB, const Math::eVec2<float>& velB, float radiusB,
+			Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi);
+		
 
 	};
 

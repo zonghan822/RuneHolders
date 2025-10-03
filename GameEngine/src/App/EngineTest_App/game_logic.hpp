@@ -14,17 +14,6 @@
 #include <memory>  
 #include "movementTest.hpp"
 
-namespace {
-    //scene selection
-    enum SceneSelect
-    {
-        PLAYER_SCENE = 1,
-        DYANMIC_COL_SCENE
-
-    } currScene;
-
-}
-
 
 class GameApplication {
 private:
@@ -49,6 +38,10 @@ private:
     std::shared_ptr<Graphics::EnoTexture> playerWalkTexture_;
     Animation::AnimationController playerAnimController_;
     int playerFacingDirection_ = 1;
+
+    // Font
+    std::shared_ptr<Font::EnoFont> pixelifyFont_;
+    std::shared_ptr<Font::EnoFont> timesFont_;
 
 public:
     // Constructors
@@ -76,13 +69,11 @@ private:
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
-    void updateAudio();         // Update audio per frame
     void updateImGui();         // Update code for imGui
 
     void drawPlayerAndIndicator();
 
     void drawShapes(); // jsut to test
 
-    // Demonstration methods
-    void demonstrateSignals();
+    void drawText(Math::eVec2<float> windowSize);
 };

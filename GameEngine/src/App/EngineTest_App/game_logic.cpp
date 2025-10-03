@@ -26,9 +26,8 @@ void GameApplication::initialize() {
     setupGameEvents();
     setupGameMath();
     setupAnimations();
-
-	// Starting scene
-	currScene = PLAYER_SCENE;
+	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
+	timesFont_ = engine_.getResourceLoader().getFont("times");
 
     // This is for dynamic collision test object
     createTestObject(engine_.getEntityManager());
@@ -54,7 +53,35 @@ void GameApplication::setupGameEntities() {
 }
 
 void GameApplication::setupGameAudio() {
-	// Setup audio
+	// setup audio
+	auto& audioMng = engine_.getAudioManager();
+	audioMng.setChannelGroup("BGM");
+
+	Audio::SoundParameters sound;
+	Audio::ParamEQ eq;
+	Audio::SFXReverb reverb;
+	eq = Audio::ParamEQ{ 3.f, 1000.f, 1.f };
+	sound.volume = 0.1f;
+	sound.eq = Audio::EQ{};
+	sound.eq->type = FMOD_DSP_TYPE_PARAMEQ;
+	sound.eq->paramEQ = eq;
+	sound.reverb = Audio::Reverb{};
+	sound.reverb->type = FMOD_DSP_TYPE_SFXREVERB;
+	sound.reverb->sfx = reverb;
+	audioMng.modifyChannelGroup("BGM", sound);
+
+	audioMng.publishSoundRequest("Close_To_The_End");
+	audioMng.publishSoundRequest("Simulacrum");
+
+	// setup input to play sound
+	auto& inputMng = engine_.getInputManager();
+
+	inputMng.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
+	inputMng.setupKey("Set New Audio", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
+	inputMng.setupKey("Set New Audio2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
+	inputMng.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
+	inputMng.setupEvent<Audio::SetNewAudio>("Set New Audio", "Close_To_The_End");
+	inputMng.setupEvent<Audio::SetNewAudio>("Set New Audio2", "Simulacrum");
 }
 
 void GameApplication::setupGameEvents() {
@@ -84,7 +111,12 @@ void GameApplication::setupAnimations() {
 	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
 	playerWalkTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Walk-Sheet");
 
-	if (!playerTexture_)
+	if (!backgroundTexture_ || !backgroundTexture_->isValid())
+	{
+		std::cerr << "Background texture not loaded properly" << std::endl;
+	}
+
+	if (!playerTexture_ || !playerTexture_->isValid())
 	{
 		std::cout << "Warning: Could not load player sprite sheet!" << std::endl;
 		return;
@@ -122,36 +154,25 @@ void GameApplication::setupAnimations() {
 }
 
 void GameApplication::setupImGui() {
-	GLFWwindow* window = engine_.getWindow().getWindow();
+	GLFWwindow* window = engine_.getWindowManager().getWindow();
 	imGuiInit(window);
 	extern GameApplication* g_game;
 	g_game = this;
 }
 
-void GameApplication::demonstrateSignals() {
-	// signalling code
-}
-
 void GameApplication::updateGameLogic() {
     // This is called every frame (replaces your while loop in eno_engine.cpp run())
-	// Calculate delta time
 	auto startTotalTime = Clock::now();
-	float currentTime = static_cast<float>(glfwGetTime());
-	float deltaTime = currentTime - lastFrameTime_;
-	lastFrameTime_ = currentTime;
 
-	// Draw background before everything else
-	if (backgroundTexture_ && backgroundTexture_->isValid()) {
-		auto& graphics = engine_.getGraphicsManager();
+    // Calculate delta time
+    float deltaTime = engine_.getDeltaTime();
 
-		// Get window dimensions from config
-		auto windowDim = engine_.getConfigManager().getWindowDim();
-		Math::eVec2<float> windowSize{
-			static_cast<float>(windowDim.first),
-			static_cast<float>(windowDim.second)
-		};
-
-	}
+	// Get window dimensions from config
+	auto windowDim = engine_.getWindowManager().getWindowSize();
+	Math::eVec2<float> windowSize{
+		static_cast<float>(windowDim.first),
+		static_cast<float>(windowDim.second)
+	};
 
 	// ===== UPDATE PLAYER ANIMATION =====
 	if (playerTexture_ && playerSpawned_)
@@ -160,17 +181,11 @@ void GameApplication::updateGameLogic() {
 	}
 
     updateEntities();
-    updateAudio();
     drawShapes();
-	// Draw player function for player scene ONLY
-	if (currScene == PLAYER_SCENE)
-	{
-		drawPlayerAndIndicator();
-	}
-
+	drawPlayerAndIndicator();
 	engine_.getGraphicsManager().flush();
-
 	updateImGui();
+	drawText(windowSize);
 	auto end = Clock::now();
 	systemTimes_["totalTimePerFrame"] = std::chrono::duration<double, std::micro>(end - startTotalTime).count();
 }
@@ -198,21 +213,7 @@ void GameApplication::updateEntities() {
 		Graphics::Color::White
 	);
 
-	// Get player input to toggle between scenes
-	if (inputManager.isKeyPressed(GLFW_KEY_Q))
-	{
-		switch (currScene)
-		{
-		case PLAYER_SCENE:
-			currScene = DYANMIC_COL_SCENE;
-			entitiesDirty_ = true;  // Mark cache as dirty on scene change
-			break;
-		case DYANMIC_COL_SCENE:
-			currScene = PLAYER_SCENE;
-			entitiesDirty_ = true;  // Mark cache as dirty on scene change
-			break;
-		}
-	}
+	
 
 	// REBUILD CACHE ONLY WHEN DIRTY (optimization)
 	if (entitiesDirty_) {
@@ -221,97 +222,108 @@ void GameApplication::updateEntities() {
 		entitiesDirty_ = false;
 	}
 
-	// Determine current scene
-	switch (currScene)
-	{
-	case PLAYER_SCENE:
-	{
-		// Check if player is moving and switch animation accordingly
-		if (playerSystem_ && playerSpawned_) {
-			// Check for WASD input
-			bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
-				inputManager.isKeyPressed(GLFW_KEY_A) ||
-				inputManager.isKeyPressed(GLFW_KEY_S) ||
-				inputManager.isKeyPressed(GLFW_KEY_D);
+	// Check if player is moving and switch animation accordingly
+	if (playerSystem_ && playerSpawned_) {
+		// Check for WASD input
+		bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+			inputManager.isKeyPressed(GLFW_KEY_A) ||
+			inputManager.isKeyPressed(GLFW_KEY_S) ||
+			inputManager.isKeyPressed(GLFW_KEY_D);
 
-			// Update facing direction based on A/D keys
-			if (inputManager.isKeyPressed(GLFW_KEY_D)) {
-				playerFacingDirection_ = -1;  // Face right
-			}
-			else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
-				playerFacingDirection_ = 1;  // Face left
-			}
-
-			// Switch animation based on movement
-			if (isMoving) {
-				if (playerAnimController_.getCurrentAnimationName() != "walk") {
-					playerAnimController_.setAnimation("walk");
-				}
-			}
-			else {
-				if (playerAnimController_.getCurrentAnimationName() != "idle") {
-					playerAnimController_.setAnimation("idle");
-				}
-			}
-
-			// Update player movement
-			playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
+		// Update facing direction based on A/D keys
+		if (inputManager.isKeyPressed(GLFW_KEY_D)) {
+			playerFacingDirection_ = -1;  // Face right
+		}
+		else if (inputManager.isKeyPressed(GLFW_KEY_A)) {
+			playerFacingDirection_ = 1;  // Face left
 		}
 
-		// Update collision system
-		if (collisionSystem_) {
-			collisionSystem_->Update(engine_.getEntityManager());
-		}
-		break;
-	}
-	case DYANMIC_COL_SCENE:
-	{
-		static bool frameUpdate = false;
-		static bool keyFrameMode = false;
-
-		if (inputManager.isKeyPressed(GLFW_KEY_P))
-		{
-			//this toggles keyframe mode
-			keyFrameMode = !keyFrameMode;
-		}
-		//in key frame mode, wait for trigger to update
-		if (keyFrameMode)
-		{
-
-			if (inputManager.isKeyPressed(GLFW_KEY_L))
-			{
-				//frame update 
-				frameUpdate = true;
+		// Switch animation based on movement
+		if (isMoving) {
+			if (playerAnimController_.getCurrentAnimationName() != "walk") {
+				playerAnimController_.setAnimation("walk");
 			}
-
-			if (frameUpdate)
-			{
-				//update one time
-				updateTestObject(engine_.getEntityManager(), engine_);
-
-				//set it back to false
-				frameUpdate = false;
-
-			}
-
 		}
 		else {
-			//not in key frame mode, update normally
-			updateTestObject(engine_.getEntityManager(), engine_);
+			if (playerAnimController_.getCurrentAnimationName() != "idle") {
+				playerAnimController_.setAnimation("idle");
+			}
 		}
 
-		break;
+		// Update player movement
+		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
 
+	// Update collision system
+	if (collisionSystem_) {
+		collisionSystem_->Update(engine_.getEntityManager());
 	}
+	
+	static bool frameUpdate = false;
+	static bool keyFrameMode = false;
+
+	if (inputManager.isKeyPressed(GLFW_KEY_M))
+	{
+		//this toggles keyframe mode
+		keyFrameMode = !keyFrameMode;
+	}
+	//in key frame mode, wait for trigger to update
+	if (keyFrameMode)
+	{
+
+		if (inputManager.isKeyPressed(GLFW_KEY_N))
+		{
+			//frame update 
+			frameUpdate = true;
+		}
+
+		if (frameUpdate)
+		{
+			//update one time
+			updateTestObject(engine_.getEntityManager(), engine_);
+
+			//set it back to false
+			frameUpdate = false;
+
+		}
+	}
+	else
+	{
+		//not in key frame mode, update normally
+		updateTestObject(engine_.getEntityManager(), engine_);
+
+	}
+	
 
 	auto end = Clock::now();
 	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
-void GameApplication::updateAudio() {
-	// audio update
 
+void GameApplication::drawText(Math::eVec2<float> windowSize) {
+	// DEMO DRAW TEXT
+	auto& graphics = engine_.getGraphicsManager();
+	auto& input = engine_.getInputManager();
+	std::string text;
+	if (input.isMousePressed(GLFW_MOUSE_BUTTON_LEFT) && input.isMousePressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+		text = "Left and Right Mouse Button pressed!";
+	}
+	else if (input.isMousePressed(GLFW_MOUSE_BUTTON_LEFT)) {
+		text = "Left Mouse Button pressed!";
+	}
+	else if (input.isMousePressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+		text = "Right Mouse Button pressed!";
+	}
+	else {
+		text = "No Mouse Button pressed!";
+	}
+	std::stringstream fpsSs;
+	fpsSs.precision(2);      // 2 significant digits
+	fpsSs << std::fixed;     // fixed-point notation
+	fpsSs << "FPS: " << engine_.getFPS();
+	graphics.drawText(timesFont_, text, { 25.f , 50.f }, 1.f, Graphics::Color::Black);
+	graphics.drawText(timesFont_, fpsSs.str(), {windowSize.v1 - 125.f , 25.f}, 0.5f, Graphics::Color::Red);
+	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.v1 / 2.f, windowSize.v2 - 25.f }, 0.75f, Graphics::Color::Blue);
 }
 
 void GameApplication::drawPlayerAndIndicator() {
@@ -429,7 +441,7 @@ void GameApplication::drawPlayerAndIndicator() {
 void GameApplication::updateImGui() {
 	auto start = Clock::now();
 
-	imGuiDisplay(engine_.getWindow().getWindow(), engine_);
+	imGuiDisplay(engine_.getWindowManager().getWindow(), engine_);
 
 	auto end = Clock::now();
 	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
@@ -443,15 +455,10 @@ void GameApplication::drawShapes() {
 
 	using drawInfo = ECSComponents::DrawInfoComponent;
 
-	// Draw for different scenes
-	if (currScene == PLAYER_SCENE)
-	{
 		// USE CACHED ENTITIES with validation
 		for (ECS::Entity& entity : cachedDrawableEntities_) {
 			// Skip if entity was destroyed
 			try {
-				//skip dynamic scene items
-				if (entity.has<ECSComponents::eVec2TransformComponent>()) continue;
 				if (entity.has<ECSComponents::DrawInfoComponent>()) {
 					graphics.drawRect(
 						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
@@ -472,34 +479,6 @@ void GameApplication::drawShapes() {
 		if (showColliders_ && collisionSystem_) {
 			collisionSystem_->VisualizeColliders(graphics, entityManager);
 		}
-	}
-	else if (currScene == DYANMIC_COL_SCENE)
-	{
-		// USE CACHED ENTITIES with validation
-		for (ECS::Entity& entity : cachedSceneTwoEntities_) {
-			// FIX: Skip if entity was destroyed
-			try {
-				if (entity.has<drawInfo>()) {
-					graphics.drawCircle(
-						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-						entity.get<drawInfo>().width,
-						entity.get<drawInfo>().color,
-						true);
-				}
-			}
-			catch (...) {
-				// Entity was destroyed, rebuild cache next frame
-				entitiesDirty_ = true;
-				continue;
-			}
-		}
-
-		// Draw colliders
-		if (showColliders_ && collisionSystem_) {
-			collisionSystem_->VisualizeColliders(graphics, entityManager);
-		}
-	}
-
 
 	auto end = Clock::now();
 	systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();

@@ -19,9 +19,7 @@ namespace Graphics
     // EnoTexture Implementation - Texture loading and management
     // =============================================================================
 
-    EnoTexture::EnoTexture() : textureID_(0), width_(0), height_(0), channels_(0)
-    {
-    }
+    EnoTexture::EnoTexture() : textureID_(0), width_(0), height_(0), channels_(0) { /*empty by design*/ }
 
     EnoTexture::~EnoTexture()
     {
@@ -109,6 +107,35 @@ namespace Graphics
         return true;
     }
 
+    bool EnoTexture::loadFromMemory(int width, int height, int channels, const unsigned char* data) {
+        width_ = width;
+        height_ = height;
+        channels_ = channels;
+
+        glGenTextures(1, &textureID_);
+        glBindTexture(GL_TEXTURE_2D, textureID_);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        GLenum format = GL_RGB;
+
+        if (channels_ == 1)
+            format = GL_RED;
+        else if (channels_ == 3)
+            format = GL_RGB;
+        else if (channels_ == 4)
+            format = GL_RGBA;
+
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        return true;
+    }
+
+
     void EnoTexture::bind(unsigned int slot) const
     {
         glActiveTexture(GL_TEXTURE0 + slot);
@@ -120,78 +147,6 @@ namespace Graphics
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    // =============================================================================
-    // EnoGLContext Implementation - Low-level OpenGL state management
-    // =============================================================================
-
-    bool EnoGLContext::initialized_ = false;
-
-    bool EnoGLContext::initialize(GLFWwindow* window)
-    {
-        if (initialized_) return true;
-
-        glfwMakeContextCurrent(window);
-
-        // GLEW Init
-        GLenum glewError = glewInit();
-        if (glewError != GLEW_OK)
-        {
-            std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(glewError) << std::endl;
-            return false;
-        }
-
-        // Verify
-        const GLubyte* version = glGetString(GL_VERSION);
-        if (!version)
-        {
-            std::cerr << "Failed to get OpenGL version - context may not be properly initialized!" << std::endl;
-            return false;
-        }
-
-        // Print OpenGL version info for debugging and verification
-        std::cout << "OpenGL Version: " << version << std::endl;
-        std::cout << "GPU: " << glGetString(GL_RENDERER) << std::endl;
-        std::cout << "OpenGL Vendor: " << glGetString(GL_VENDOR) << std::endl;
-
-        // Check that we have at least OpenGL 3.3 or not thsi shit crash and burns
-        if (!GLEW_VERSION_3_3)
-        {
-            std::cerr << "OpenGL 3.3 not available! Your graphics card may be too old." << std::endl;
-            return false;
-        }
-
-        // Set up basic OpenGL state for 2D rendering
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        // Enable point size control from shaders for drawPoint
-        glEnable(GL_PROGRAM_POINT_SIZE); // Can disable if not needed
-
-        initialized_ = true;
-        std::cout << "OpenGL context initialized successfully!" << std::endl;
-        return true;
-    }
-
-    void EnoGLContext::setViewport(int width, int height)
-    {
-        glViewport(0, 0, width, height);
-    }
-
-    void EnoGLContext::clear(const Color& clearColor)
-    {
-        glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-        glClear(GL_COLOR_BUFFER_BIT);
-    }
-
-    void EnoGLContext::enableBlending()
-    {
-        glEnable(GL_BLEND);
-    }
-
-    void EnoGLContext::disableBlending()
-    {
-        glDisable(GL_BLEND);
-    }
 
     // =============================================================================
     // EnoShader Implementation - Shader compilation and management
@@ -432,8 +387,8 @@ namespace Graphics
     // EnoGraphicsManager Implementation - Main graphics interface
     // =============================================================================
 
-    EnoGraphicsManager::EnoGraphicsManager(Event::EnoEventBus& bus, GLFWwindow* window)
-        : bus_(bus), window_(window), initialized_(false)
+    EnoGraphicsManager::EnoGraphicsManager(Event::EnoEventBus& bus)
+        : bus_(bus), initialized_(false)
     {
         // Reserve space for batch rendering
         batchVertices_.reserve(MAX_BATCH_SIZE);
@@ -449,40 +404,46 @@ namespace Graphics
         shutdown();
     }
 
-    void EnoGraphicsManager::Update()
-    {
-        // Will add window resize stuff later
-    }
 
-    bool EnoGraphicsManager::initialize()
+    void EnoGraphicsManager::initialize(Window::EnoWindow& window)
     {
-        if (initialized_) return true;
+        if (initialized_) return;
 
-        // Initialize OpenGL context
-        if (!EnoGLContext::initialize(window_))
-        {
-            std::cerr << "Failed to initialize OpenGL context!" << std::endl;
-            return false;
-        }
+        // Set up basic OpenGL state for 2D rendering
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Enable point size control from shaders for drawPoint
+        glEnable(GL_PROGRAM_POINT_SIZE); // Can disable if not needed
 
         // Create default shader for primitive rendering
         if (!createDefaultShader())
         {
-            std::cerr << "Failed to create default shader!" << std::endl;
-            return false;
+            throw std::runtime_error("Failed to create default shader!");
         }
+
+        // Create shaders when shaders is loaded in resource loader
+        bus_.subscribe<Events::ShaderLoaded>(
+            [this](const Events::ShaderLoaded& e) {
+                if (!createShader(e.name, e.vertexSource, e.fragmentSource)) {
+                    throw std::runtime_error("Failed to create loaded shader!");
+                };
+            }
+        );
 
         // Create vertex buffer for batch rendering
         vertexBuffer_ = std::make_unique<EnoVertexBuffer>();
 
         // Set up initial projection matrix
-        int width, height;
-        glfwGetFramebufferSize(window_, &width, &height);
+        int width = window.getFramebufferSize().first;
+        int height = window.getFramebufferSize().second;
         setupProjectionMatrix(width, height);
 
         initialized_ = true;
+
+#ifdef _DEBUG
         std::cout << "Graphics system initialized successfully!" << std::endl;
-        return true;
+#endif
     }
 
     void EnoGraphicsManager::shutdown()
@@ -496,7 +457,8 @@ namespace Graphics
     void EnoGraphicsManager::beginFrame(const Color& clearColor)
     {
         // Clear the screen
-        EnoGLContext::clear(clearColor);
+        glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+        glClear(GL_COLOR_BUFFER_BIT);;
 
         // Clear batch for new frame
         batchVertices_.clear();
@@ -507,12 +469,9 @@ namespace Graphics
             defaultShader_->use();
             defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
         }
-
-        // Publish frame begin event
-        bus_.publish(Events::RenderFrameBegin{});
     }
 
-    void EnoGraphicsManager::endFrame()
+    void EnoGraphicsManager::endFrame(Window::EnoWindow& window)
     {
         // Flush any remaining batched geometry
         if (!batchVertices_.empty())
@@ -525,8 +484,7 @@ namespace Graphics
             defaultShader_->unuse();
         }
 
-        glfwSwapBuffers(window_);
-        bus_.publish(Events::RenderFrameEnd{});
+        glfwSwapBuffers(window.getWindow());
     }
 
     // Helper function for rotation
@@ -828,6 +786,82 @@ namespace Graphics
         }
     }
 
+    void EnoGraphicsManager::drawText(const std::shared_ptr<Font::EnoFont>& font,
+        const std::string& text,
+        const Math::eVec2<float>& position,
+        float scale,
+        const Color& color)
+    {
+        if (!font || !font->getAtlasTexture() || !font->getAtlasTexture()->isValid()) {
+            throw std::runtime_error("Invalid font atlas");
+        }
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        EnoShader* shdr = getShader("text");
+
+        if (!shdr->isValid()) {
+            throw std::runtime_error("Text shader not loaded properly");
+        }
+
+        shdr->use();
+        shdr->setMatrix4("u_projection", projectionMatrix_.data());
+
+        auto atlas = font->getAtlasTexture();
+        atlas->bind(0);
+        shdr->setInt("u_text", 0);
+
+        float xCursor = position.v1;
+        float yCursor = position.v2;
+
+        for (char c : text) {
+            try {
+                const Font::Character& ch = font->getChar(c);
+
+                Math::eVec2<float> charPos(
+                    xCursor + ch.bearing.v1 * scale,
+                    yCursor - ch.size.v2 * scale
+                );
+                Math::eVec2<float> charSize(ch.size.v1 * scale, ch.size.v2 * scale);
+
+                std::vector<Vertex> vertices;
+
+                // Calculate center for rotation
+                Math::eVec2<float> center = { charPos.v1 + charSize.v1 * 0.5f, charPos.v2 + charSize.v2 * 0.5f };
+
+                Math::eVec2<float> topLeft = charPos;
+                Math::eVec2<float> topRight = { charPos.v1 + charSize.v1, charPos.v2 };
+                Math::eVec2<float> bottomRight = { charPos.v1 + charSize.v1, charPos.v2 + charSize.v2 };
+                Math::eVec2<float> bottomLeft = { charPos.v1, charPos.v2 + charSize.v2 };
+
+                // UV coordinates
+                Math::eVec2<float> uvTopLeft = { ch.uvStart.v1, ch.uvStart.v2 };
+                Math::eVec2<float> uvTopRight = { ch.uvEnd.v1, ch.uvStart.v2 };
+                Math::eVec2<float> uvBottomRight = { ch.uvEnd.v1, ch.uvEnd.v2 };
+                Math::eVec2<float> uvBottomLeft = { ch.uvStart.v1, ch.uvEnd.v2 };
+
+                vertices.push_back(Vertex(topLeft, color, uvTopLeft, 0.f));
+                vertices.push_back(Vertex(topRight, color, uvTopRight, 0.f));
+                vertices.push_back(Vertex(bottomLeft, color, uvBottomLeft, 0.f));
+
+                vertices.push_back(Vertex(topRight, color, uvTopRight, 0.f));
+                vertices.push_back(Vertex(bottomRight, color, uvBottomRight, 0.f));
+                vertices.push_back(Vertex(bottomLeft, color, uvBottomLeft, 0.f));
+
+                vertexBuffer_->uploadData(std::move(vertices));
+                vertexBuffer_->draw(GL_TRIANGLES);
+
+                xCursor += (ch.advance >> 6) * scale; // Advance in 1/64 pixels
+            }
+            catch (const std::out_of_range&) {
+                continue;
+            }
+        }
+        atlas->unbind();
+        shdr->unuse();
+    }
+
     void EnoGraphicsManager::setProjectionMatrix(int windowWidth, int windowHeight)
     {
         setupProjectionMatrix(windowWidth, windowHeight);
@@ -842,7 +876,7 @@ namespace Graphics
     {
         // Vertex shader with texture support
         std::string vertexShaderSource = R"(
-            #version 330 core
+            #version 450 core
             
             layout (location = 0) in vec2 a_position;
             layout (location = 1) in vec4 a_color;
@@ -868,7 +902,7 @@ namespace Graphics
 
         // Fragment shader with texture support
         std::string fragmentShaderSource = R"(
-            #version 330 core
+            #version 450 core
             
             in vec4 v_color;
             in vec2 v_texCoords;
@@ -911,6 +945,15 @@ namespace Graphics
         defaultShader_->setIntArray("u_textures", samplers, MAX_TEXTURE_SLOTS);
         defaultShader_->unuse();
 
+        return true;
+    }
+
+    bool EnoGraphicsManager::createShader(const std::string& name, const std::string& vertSrc, const std::string& fragSrc) {
+
+        auto shdr = std::make_unique<EnoShader>();
+        if (!shdr->loadFromStrings(vertSrc, fragSrc)) return false;
+
+        shadersMap_[name] = std::move(shdr);
         return true;
     }
 
@@ -961,6 +1004,19 @@ namespace Graphics
         {
             flushBatch(currentBatchPrimitiveType_);
         }
+    }
+
+    EnoShader* EnoGraphicsManager::getShader(const std::string& name) {
+        if (name == "default") return defaultShader_.get();
+
+        auto it = shadersMap_.find(name);
+        if (it != shadersMap_.end()) {
+            return it->second.get();
+        }
+
+        std::cerr << "[GraphicsManager] Shader '" << name
+            << "' not found, using default shader.\n";
+        return defaultShader_.get();
     }
 
     int EnoGraphicsManager::getTextureSlot(std::shared_ptr<EnoTexture> texture)

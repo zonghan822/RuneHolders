@@ -1,0 +1,153 @@
+==========================================================
+Project Guide
+==========================================================
+
+This guide explains how to set up, build, and run the project 
+on a fresh Windows machine using Visual Studio 2022 and CMake.
+
+----------------------------------------------------------
+1. Prerequisites
+----------------------------------------------------------
+Before running any scripts, make sure the following are installed:
+
+- CMake (v4.1.1 or above):
+  https://github.com/Kitware/CMake/releases/download/v4.1.1/cmake-4.1.1-windows-x86_64.msi
+
+- Git for Windows (v2.51.0 or above):
+  https://github.com/git-for-windows/git/releases/download/v2.51.0.windows.1/Git-2.51.0-64-bit.exe
+
+- Visual Studio 2022 (v17.10.4 or above).
+  During installation, include "Desktop development with C++" workload.
+
+- (Optional) OpenGL Extensions Viewer:
+  Use this tool to verify your system supports OpenGL 4.5+.
+  https://download.cnet.com/opengl-extensions-viewer/3000-18487_4-34442.html?ex=WLS-2202.0
+
+
+----------------------------------------------------------
+2. Regenerating Visual Studio 2022 Solution
+----------------------------------------------------------
+Two scripts are provided to simplify project management:
+
+- run.bat  
+  * Cleans and recompiles the project if the executable is not found.  
+  * Then runs the application.  
+
+- clean.bat  
+  * Deletes build artifacts and temporary files, resetting the project 
+    to a clean state.
+
+Usage:
+- To build & run:  
+  > run.bat
+
+- To clean the project:  
+  > clean.bat
+
+
+----------------------------------------------------------
+3. Regenerating Visual Studio 2022 Solution without Scripts
+----------------------------------------------------------
+If you want to regenerate the solution by typing commands in terminal:
+
+1. Open a command prompt (cmd) in the project’s root directory.
+2. Create a build folder (if it does not exist yet):
+   > mkdir build
+   > cd build
+3. Run CMake to generate Visual Studio 2022 solution:
+   > cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 
+4. Once finished, open the generated `.sln` file in the `build` folder.
+5. Run CMake to build the solution:
+   > cmake --build . --config Debug
+
+
+----------------------------------------------------------
+4. Solution Structure
+----------------------------------------------------------
+The solution is named **RuneHolders**. It contains two main projects:
+
+1. **Engine**
+   - Location: `src/Engine/`
+   - Type: Static Library (`Engine.lib`)
+   - Purpose: Core game engine functionality.
+   - Contains: window manager, graphics manager, event bus, physics system, 
+     audio integration (FMOD), FreeType font handling, ImGui backends, etc.
+   - Dependencies (via CMake `ImportDependencies.cmake`):
+     * **GLFW** – window and input
+     * **GLM** – math library
+     * **GLEW** – OpenGL extension wrangler
+     * **ImGui** – immediate mode GUI
+     * **FMOD** – audio
+     * **FreeType** – font loading
+     * **stb_image** – texture/image loading
+   - Output: `Engine.lib` in `build/projects/Engine/`
+
+2. **ImGui_App**
+   - Location: `src/App/ImGui_App/`
+   - Type: Executable (`ImGui_App.exe`)
+   - Purpose: Application layer that links against `Engine.lib`.
+   - Each subfolder inside `src/App/` can be built as its own executable 
+     by the `SETUP_APP` macro (defined in `BuildTests.cmake`).
+   - Includes game logic and demos using the engine and ImGui.
+   - Output: Executable in `build/projects/App/<AppName>/`
+
+⚠ IMPORTANT:  
+After opening the solution in Visual Studio,  
+**right-click on the `ImGui_App` project and select “Set as Startup Project”**  
+before pressing **F5** (Run).  
+Otherwise Visual Studio will attempt to start the `Engine` library project, 
+which has no executable.
+
+
+----------------------------------------------------------
+5. Project Settings & Configurations
+----------------------------------------------------------
+Both projects support the standard Visual Studio configurations:
+
+- **Debug**
+  - Debug symbols enabled.
+  - No optimization (`/Od`).
+  - Defines: `_DEBUG`, `DEBUG`.
+
+- **Release**
+  - Full optimizations (`/O2`).
+  - Defines: `NDEBUG`.
+
+- **RelWithDebInfo**
+  - Optimizations with debug symbols.
+  - Useful for profiling.
+
+- **MinSizeRel**
+  - Optimizations targeting minimal binary size.
+
+FMOD DLLs are copied automatically per configuration 
+(Debug uses `fmodL.dll`, Release uses `fmod.dll`).
+
+
+----------------------------------------------------------
+6. Assets
+----------------------------------------------------------
+- Assets (textures, shaders, sounds, fonts) are stored in the top-level `assets/` folder.
+- During build, assets are copied into the build output directory 
+  (see `Utilities.cmake` → `COPY_FOLDER_IF_DIFFERENT`).
+- At runtime, both Engine and ImGui_App access assets relative to `ASSETS_DIR_PATH`, 
+  which CMake defines as:
+  ${CMAKE_SOURCE_DIR}/assets/
+
+
+----------------------------------------------------------
+7. Notes
+----------------------------------------------------------
+- Ensure all prerequisites are installed and on your system PATH.
+- Always regenerate your solution with CMake after pulling changes to 
+`CMakeLists.txt`.
+- The first build may take longer due to dependency fetching (via 
+`FetchContent`).
+- ImGui_App **cannot build/run without Engine**; always build Engine first.
+- Engine can build independently as a static library if you need to link it 
+into other applications.
+
+
+==========================================================
+End of Project Guide
+==========================================================

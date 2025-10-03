@@ -32,10 +32,7 @@ namespace ECS
 	{
 	public:
 
-		EntityManager(ECSComponents::EnoComponentRegistry& compReg)
-			:
-			compReg_{ compReg }
-		{}
+		EntityManager() = default;
 
 		inline static uint32_t id = 0;
 
@@ -282,8 +279,8 @@ namespace ECS
 			out.write(header, sizeof(header));
 
 			// Engine Version
-			out.write(EngineConfiguration::engine_version, 
-				sizeof(EngineConfiguration::engine_version));
+			out.write(Config::engine_version, 
+				sizeof(Config::engine_version));
 
 			for (auto& [archetypeKey, upArchetype] : archetypeMng_.getArchetypes())
 			{
@@ -345,7 +342,7 @@ namespace ECS
 			// Verify engine version
 			char version[8]{};
 			in.read(version, sizeof(version));
-			if (strncmp(version, EngineConfiguration::engine_version, 8) != 0)
+			if (strncmp(version, Config::engine_version, 8) != 0)
 			{
 				throw std::runtime_error("Opened file is not an ECS data file for the EnoEngine!");
 			}
@@ -464,7 +461,7 @@ namespace ECS
 
 		std::unordered_map<uint32_t, EntityLoc> entityMap_;
 
-		ECSComponents::EnoComponentRegistry& compReg_;
+		ECSComponents::EnoComponentRegistry compReg_;
 
 		std::vector<uint32_t> destroyedEntityIDs_;									// For the purpose of reusing ids
 

@@ -1,10 +1,11 @@
 #pragma once
-
-#define GLFW_INCLUDE_NONE
+// OpenGL api
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-// Events
-#include "../game_instance/game_instance_events.hpp"
+// Engine Component(s)
+#include "../event/event_bus.hpp"
+#include "window_events.hpp"
 
 // stds
 #include <iostream>
@@ -13,27 +14,57 @@
 
 namespace Window
 {
-	class EnoWindow
+	class EnoWindow 
 	{
 	public:
-		EnoWindow(std::pair<int, int>);
+		EnoWindow(Event::EnoEventBus& bus);
+
+		// Non-copyable, movable
+		EnoWindow(const EnoWindow&) = delete;
+		EnoWindow& operator=(const EnoWindow&) = delete;
+		EnoWindow(EnoWindow&&) = default;
+		EnoWindow& operator=(EnoWindow&&) = default;
 
 		~EnoWindow();
 
+		// Create a window and make its GL context current.
+		// Throws std::runtime_error on failure.
+		void initialize(const std::string& title, int width, int height,
+						int glMajor = 4, int glMinor = 5);
+
+		// Destroys window and terminates GLFW if created by this manager.
+		void shutdown();
+		
+		// Window accessor
 		GLFWwindow* getWindow() const;
 
-		void windowInit(GLFWwindow*&);
+		// Window lifecycle
+		void pollEvents() const;
+		void swapBuffers() const;
+		bool shouldClose() const;
+		void setShouldClose(bool value);
 
-		void gameWindowInit();
-		void destroyGameWindow();
+		std::pair<int, int> getFramebufferSize() const;
+		std::pair<int, int> getWindowSize() const;
 
-		void Update();
+		// VSync
+		void setVSync(bool enabled) const;
 
 	private:
-		int width_;
-		int height_;
+		// event callbacks
+		static void ErrorCallback(int err, char const* description);
+		static void FbSizeCallback(GLFWwindow* window, int width, int height);
+		static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+		static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+		static void MousePosCallback(GLFWwindow* window, double xpos, double ypos);
+		static void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
-		GLFWwindow* window_;
-		GLFWwindow* gameWindow_;
+		// setup callbacks
+		void setupEventCallbacks();
+
+
+	private:
+		GLFWwindow* window_ = nullptr;
+		Event::EnoEventBus& bus_;
 	};
 }

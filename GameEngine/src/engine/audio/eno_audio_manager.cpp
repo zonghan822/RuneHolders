@@ -8,9 +8,7 @@ namespace Audio
 		bus_{ bus },
 		selectedSound_{ nullptr },
 		soundPlaying_{ false }
-	{
-		init();
-	}
+	{}
 
 	EnoAudioManager::~EnoAudioManager()
 	{
@@ -71,6 +69,18 @@ namespace Audio
 		// System initialization for FMOD
 		FMOD::System_Create(&system);
 		system->init(512, FMOD_INIT_NORMAL, nullptr);
+
+		bus_.subscribe<LoadSound>([&](const LoadSound& event) {
+			onSoundReceived(event);
+		});
+
+		bus_.subscribe<SetAudioState>([&](const SetAudioState& event) {
+			onTogglePlay(event);
+		});
+
+		bus_.subscribe<SetNewAudio>([&](const SetNewAudio& event){
+			onAudioChange(event);
+		});
 	}
 
 	// Getters
