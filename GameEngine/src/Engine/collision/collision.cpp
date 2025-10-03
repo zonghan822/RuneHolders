@@ -801,7 +801,7 @@ namespace Collision {
 					worldPos,
 					collision.data.circle.radius * transform.scale.x,  // Scale the radius
 					color,
-					true,
+					false,
 					32
 				);
 					break;
