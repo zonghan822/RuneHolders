@@ -14,7 +14,7 @@
 #include "../ecs/entity.hpp"
 #include "../event/event_bus.hpp"
 
-// standard library includes
+// Standard library includes
 #include <iostream>
 #include <vector>
 #include <functional>
@@ -23,225 +23,216 @@
 
 namespace Collision
 {
-	//*========================================================================================*/
-	// Collision Component Definitions
-	//*========================================================================================*/
-
-	/* 
-	@brief defines the type of collision shape 
-	*/
+	/*============================================================================================
+	 * \brief       Defines the type of collision shape for a collider
+	*//*========================================================================================*/	
 	enum class ColliderType
 	{
-		CIRCLE = 0,		// circular collision areas (round objects)
-		RECTANGLE = 1,	// rectangular collision areas (AABB)
-		LINE = 2,
-		POINT = 3		// point collision (projectiles, click detection)
+		CIRCLE = 0,		// Circular collision areas (round objects)
+		RECTANGLE = 1,	// Rectangular collision areas (AABB)
+		LINE = 2,		// Line segment
+		POINT = 3		// Point collision (projectiles, click detection)
 	};
 
-	/* @brief component that stores collision information for entities 
-		
-		- can be attached to any entity to give it collision detection
-		- supports different collision shapes and can be configured as either
-			a solid collider (blocks movement) or trigger (detects overlap only)
-	*/
+	/*============================================================================================
+	 * \brief       Component that stores collision information for entities. Can be attached to
+	 *              any entity to give it collision detection. Supports different collision shapes
+	 *              and can be configured as either a solid collider (blocks movement) or trigger
+	 *              (detects overlap only).
+	*//*========================================================================================*/	
 	struct CollisionComponent
 	{
-		ColliderType type;			// what shape is the collider?
-		Math::eVec2<float> offset;	// offset from entity's transform position
-		bool isTrigger;				// is this a trigger (no physics response) or solid collider?
-		bool isActive;				// can this collider currently participate in collision detection
+		ColliderType type;			// What shape is the collider?
+		Math::eVec2<float> offset;	// Offset from entity's transform position
+		bool isTrigger;				// Is this a trigger (no physics response) or solid collider?
+		bool isActive;				// Can this collider currently participate in collision detection
 
-		/*
-		@brief 'Union' to store different collision shape data efficiently
-				only stores the data needed for the current collider type
-		*/
+		/*============================================================================================
+		* \brief       Union to store different collision shape data efficiently. Only stores the
+		*              data needed for the current collider type.
+		*//*========================================================================================*/		
 		union ColliderData
 		{
 			struct CircleData {
-				float radius;		// radius for circle collider
+				float radius;		// Radius for circle collider
 			} circle;
 
 			struct RectangleData {
-				float width;		// width of rectangle collider
-				float height;		// height of rectangle collider
+				float width;		// Width of rectangle collider
+				float height;		// Height of rectangle collider
 			} rectangle;
 
 			struct LineData {
-				Math::eVec2<float> p1;			// first point of line collider
-				Math::eVec2<float> p2;			// second point of line collider
-				Math::eVec2<float> pNormal;		// normalized outward normal of line collider
+				Math::eVec2<float> p1;			// First point of line collider
+				Math::eVec2<float> p2;			// Second point of line collider
+				Math::eVec2<float> pNormal;		// Normalized outward normal of line collider
 			} line;
-			// point collider doesn't need additional data beyond its position
+			// Point collider doesn't need additional data beyond its position
 		} data;
 
-		/****** CONSTRUCTORS ******/
+		// CONSTRUCTORS
 
-		/*
-		@brief Default constructor - creates a basic circle collider
-		*/
+		/*============================================================================================
+		* \brief       Default constructor - creates a basic circle collider
+		*//*========================================================================================*/		
 		CollisionComponent();
 
-		/*
-		@brief create a CIRCLE collider
-		@param radius - size of the circular collision area
-		@param colliderOffset - offset from the entity's transform position
-		@param trigger - if TRUE, this collider won't block movement but will detect overlaps
-		*/
+		/*============================================================================================
+		* \brief       Create a CIRCLE collider
+		* \param[in]   float radius - Size of the circular collision area
+		* \param[in]   Math::eVec2<float> colliderOffset - Offset from the entity's transform position
+		* \param[in]   bool trigger - If TRUE, this collider won't block movement but will detect overlaps
+		*//*========================================================================================*/		
 		CollisionComponent(
 			float radius,
 			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f },
 			bool trigger = false
 		);
 
-		/*
-		@brief create a RECTANGLE collider
-		@param width - width of the recetangular collision area
-		@param height - height of the rectangular collision area
-		@param colliderOffset - offset from the entity's transform position
-		@param trigger - if TRUE, this collider, won't block movement but will detect overlaps
-		*/
+		/*============================================================================================
+		* \brief       Create a RECTANGLE collider
+		* \param[in]   float width - Width of the rectangular collision area
+		* \param[in]   float height - Height of the rectangular collision area
+		* \param[in]   Math::eVec2<float> colliderOffset - Offset from the entity's transform position
+		* \param[in]   bool trigger - If TRUE, this collider won't block movement but will detect overlaps
+		*//*========================================================================================*/		
 		CollisionComponent(
 			float width, 
 			float height, 
 			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f, }, 
 			bool trigger = false);
 
-		/*
-		@brief create a LINE collider
-		@param point1 - start point of line
-		@param point2 - end point of line
-		@param trigger - if TRUE, this collider, won't block movement but will detect overlaps
-		*/
+		/*============================================================================================
+		* \brief       Create a LINE collider
+		* \param[in]   Math::eVec2<float> point1 - Start point of line
+		* \param[in]   Math::eVec2<float> point2 - End point of line
+		* \param[in]   bool trigger - If TRUE, this collider won't block movement but will detect overlaps
+		*//*========================================================================================*/		
 		CollisionComponent(
 			Math::eVec2<float> point1,
 			Math::eVec2<float> point2,
 			bool trigger = false);
 
-		/*
-		@brief create a point collider (e.g., bullets, mouse clicks, etc.)
-		@param colliderOffset - offset from the entity's transform position
-		@param trigger - if TRUE, this collider won't block movement but will detect overlaps
-		*/
+		/*============================================================================================
+		* \brief       Create a point collider (e.g., bullets, mouse clicks, etc.)
+		* \param[in]   Math::eVec2<float> colliderOffset - Offset from the entity's transform position
+		* \param[in]   bool trigger - If TRUE, this collider won't block movement but will detect overlaps
+		* \return      CollisionComponent - Point collider instance
+		*//*========================================================================================*/		
 		static CollisionComponent CreatePointCollider(
 			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f }, 
 			bool trigger = false);
 
-		//*****************************************
-		// UTILITY functions
-		//*****************************************
+		// UTILITY FUNCTIONS
 
-		/*
-		@brief set the radius of a circle collider
-		@param radius new radius value
-		@note only works if this is a circle collider
-		*/
+		/*============================================================================================
+		* \brief       Set the radius of a circle collider
+		* \param[in]   float radius - New radius value
+		* \return      void
+		* \note        Only works if this is a circle collider
+		*//*========================================================================================*/		
 		void SetRadius(float radius);
 
-		/*
-		@brief set the size of a rectangle collider
-		@param width - new width value
-		@param height - new height value
-		@note only works if this is a rectangle collider
-		*/
+		/*============================================================================================
+		* \brief       Set the size of a rectangle collider
+		* \param[in]   float width - New width value
+		* \param[in]   float height - New height value
+		* \return      void
+		* \note        Only works if this is a rectangle collider
+		*//*========================================================================================*/		
 		void SetRectangleSize(float width, float height);
 
-		/*
-		@brief change the offset of this collider from the entity's positon
-		@param newOffset - new offset vector
-		*/
+		/*============================================================================================
+		* \brief       Change the offset of this collider from the entity's position
+		* \param[in]   Math::eVec2<float> const& newOffset - New offset vector
+		* \return      void
+		*//*========================================================================================*/		
 		void SetOffset(const Math::eVec2<float>& newOffset);
 
-		/*
-		@brief enable or disable this collider
-		@param active - IF FALSE, this collider will be ignored during collision detection
-		*/
+		/*============================================================================================
+		* \brief       Enable or disable this collider
+		* \param[in]   bool active - If FALSE, this collider will be ignored during collision detection
+		* \return      void
+		*//*========================================================================================*/		
 		void SetActive(bool active);
 
-		/*
-		@brief set whether this collider is a trigger or solid
-		@param trigger - IF TRUE, collider becomes a trigger (no physics reponse)
-		*/
+		/*============================================================================================
+		* \brief       Set whether this collider is a trigger or solid
+		* \param[in]   bool trigger - If TRUE, collider becomes a trigger (no physics response)
+		* \return      void
+		*//*========================================================================================*/		
 		void SetTrigger(bool trigger);
 
-		/*
-		@brief Get the area covered by this collider (for debugging??)
-		@return Area in square units
-		*/
+		/*============================================================================================
+		* \brief       Get the area covered by this collider
+		* \return      float - Area in square units
+		*//*========================================================================================*/		
 		float GetColliderArea() const;
 	};
 	
-	/*
-	@brief Stream operator for easy debugging of collision components
-	@param os - output stream
-	@param collision - CollisionComponent to print
-	@return Reference to the output stream
-	*/
+	/*============================================================================================
+	* \brief       Stream operator for easy debugging of collision components
+	* \param[in]   std::ostream& os - Output stream
+	* \param[in]   CollisionComponent const& collision - CollisionComponent to print
+	* \return      std::ostream& - Reference to the output stream
+	*//*========================================================================================*/	
 	std::ostream& operator<<(std::ostream& os, const CollisionComponent& collision);
 
 
-	// =============================================================================
 	// COLLISION DETECTION
-	// =============================================================================
 
-	/*
-	@brief result of a collision detection check
-
-	contains all information about a collision that occured, including where it happeened,
-	and how to separate the objects.
-	*/
+	/*============================================================================================
+	* \brief       Result of a collision detection check. Contains all information about a
+	*              collision that occurred, including where it happened and how to separate
+	*              the objects.
+	*//*========================================================================================*/	
 	struct CollisionResult
 	{
-		bool hasCollision;						// did a collision occur?
-		Math::eVec2<float> penetrationVector;	// vector to separate objects (points from A to B)
-		float penetrationDepth;					// how deep is the penetration
-		Math::eVec2<float> contactPoint;		// where the collision occurred in the world space
+		bool hasCollision;						// Did a collision occur?
+		Math::eVec2<float> penetrationVector;	// Vector to separate objects (points from A to B)
+		float penetrationDepth;					// How deep is the penetration
+		Math::eVec2<float> contactPoint;		// Where the collision occurred in the world space
 		
-		/*
-		@brief default constructor - no collision
-		*/
+		/*============================================================================================
+		* \brief       Default constructor - no collision
+		*//*========================================================================================*/		
 		CollisionResult();
 	};
 
-	/*
-	@brief static class containing collision detection algorithms
-			
-			this class handles the math for detecting collisions between different types of shapes!
-	*/
+	/*============================================================================================
+	* \brief       Static class containing collision detection algorithms. This class handles
+	*              the math for detecting collisions between different types of shapes.
+	*//*========================================================================================*/
 	class CollisionDetection
 	{
 	public:
-		/*
-		@brief main collision detection function
-
-		automatically determines the correct algorithm based on collider types,
-		and performs the collision check
-
-		@param colliderA - first collision component
-		@param transformA - transform first entity (for position)
-		@param colliderB - second collision component
-		@param transformB transform of second entity (for position)
-		@return CollisionResult - containing all collision information
-		*/
+		/*============================================================================================
+		* \brief       Main collision detection function. Automatically determines the correct
+		*              algorithm based on collider types and performs the collision check.
+		* \param[in]   CollisionComponent const& colliderA - First collision component
+		* \param[in]   ECSComponents::TransformComponent const& transformA - Transform of first entity (for position)
+		* \param[in]   CollisionComponent const& colliderB - Second collision component
+		* \param[in]   ECSComponents::TransformComponent const& transformB - Transform of second entity (for position)
+		* \return      CollisionResult - Containing all collision information
+		*//*========================================================================================*/		
 		static CollisionResult CheckCollision(
 			const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA,
 			const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB);
 
-		/*
-		@brief dynamic collision detection function
-
-		automatically determines the correct algorithm based on collider types,
-		and performs the collision check and projects a reflected vector if any
-
-		@param colliderA	- first collision component
-		@param transformA	- transform first entity (for position)
-		@param colliderB	- second collision component
-		@param transformB	- transform of second entity (for position)
-		@param endPos		- next position of object
-		@param colPoint		- point of collision
-		@param normalAtCol	- normalized outward normal at collision point
-		@param colTi		- time till collision
-		@return bool		- returns true if collision occurs
-		*/
+		/*============================================================================================
+		* \brief       Dynamic collision detection function. Automatically determines the correct
+		*              algorithm based on collider types, performs the collision check and projects
+		*              a reflected vector if any.
+		* \param[in]   CollisionComponent const& colliderA - First collision component
+		* \param[in]   ECSComponents::TransformComponent const& transformA - Transform of first entity (for position)
+		* \param[in]   CollisionComponent const& colliderB - Second collision component
+		* \param[in]   ECSComponents::TransformComponent const& transformB - Transform of second entity (for position)
+		* \param[in]   Math::eVec2<float> const& endPos - Next position of object
+		* \param[out]  Math::eVec2<float>& colPoint - Point of collision
+		* \param[out]  Math::eVec2<float>& normalAtCol - Normalized outward normal at collision point
+		* \param[out]  float& colTi - Time till collision
+		* \return      bool - Returns true if collision occurs
+		//*========================================================================================*/		
 		static bool CheckDynamicCollision(
 			const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA,
 			const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB,
@@ -347,9 +338,7 @@ namespace Collision
 
 	};
 
-	//======================================================================================
 	// COLLISION EVENTS
-	//======================================================================================
 
 	/*============================================================================================
 	* \brief       Event sent when a collision occurs between two entities
@@ -381,15 +370,13 @@ namespace Collision
 	// Event sent when an entity exits a trigger area
 
 	struct TriggerExitEvent {
-		uint32_t triggerEntityID;			// entity with the trigger colliser
-		uint32_t otherEntityID;				// entity that exited the trigger
+		uint32_t triggerEntityID;			// Entity with the trigger colliser
+		uint32_t otherEntityID;				// Entity that exited the trigger
 
 		TriggerExitEvent();
 	};
 
-	//======================================================================================
-	// COLLISION SYSTEM
-	//======================================================================================
+	// COLLISION SYSTEMS
 	
 	/*============================================================================================
 	 * \brief       Main collision system that integrates with the ECS architecture. Handles
@@ -489,16 +476,13 @@ namespace Collision
 		CollisionComponent& GetCollisionComponent(const ECS::EntityLoc& entityLoc);
 	};
 
-	// -------------------------------------------------------------------------
-	// UTILITY FUNCTION
-	// -------------------------------------------------------------------------
+	// UTILITY FUNCTIONS
 
-	/*
-	* @brief run a collision test (for debugging)
-	* 
-	* creates test entities and shows collision detections
-	* call this function to verify if the collision system is working
-	*/
+	/*============================================================================================
+	* \brief       Run a collision test for debugging. Creates test entities and shows collision
+	*              detections. Call this function to verify if the collision system is working.
+	* \return      void
+	*//*========================================================================================*/	
 	void RunBasicCollisionTest();
 
 } // namespace Collision
