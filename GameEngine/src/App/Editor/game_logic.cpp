@@ -338,7 +338,7 @@ void GameApplication::drawPlayerAndIndicator() {
 				auto& transform = playerSystem_->GetTransform(it->second);
 
 				// Get the current animation frame
-				auto frame = playerAnimController_.getCurrentFrame();
+				auto &frame = playerAnimController_.getCurrentFrame();
 
 				// Select the correct texture based on current animation
 				std::shared_ptr<Graphics::EnoTexture> currentTexture;
