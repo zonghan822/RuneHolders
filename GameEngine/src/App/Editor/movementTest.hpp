@@ -20,22 +20,15 @@
 struct AABB
 {
 
-    Math::eVec2<float>min;
-    Math::eVec2<float>max;
+    Math::eVec2<float>min; // Minimum 2d pos
+    Math::eVec2<float>max; // Maximum 2d pos
 
-    AABB(ECSComponents::TransformComponent transform, Collision::CollisionComponent coll)
-    {
-        float minx = transform.pos.x - coll.data.rectangle.width / 2.0f;
-        float miny = transform.pos.y - coll.data.rectangle.height / 2.0f;
+    /*============================================================================================
+     * \brief       This constructor takes in a transform component as well as a collision component
+     *              to determine the min and max positions of the object using its coords and dimensions
+    *//*========================================================================================*/
 
-        float maxx = transform.pos.x + coll.data.rectangle.width / 2.0f;
-        float maxy = transform.pos.y + coll.data.rectangle.height / 2.0f;
-
-        min = { minx, miny };
-        max = { maxx, maxy };
-    }
-
-
+    AABB(ECSComponents::TransformComponent transform, Collision::CollisionComponent coll);
 
 };
 

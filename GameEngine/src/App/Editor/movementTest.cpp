@@ -14,12 +14,25 @@
 double min(double a, double b) { return a < b ? a : b; }
 double max(double a, double b) { return a < b ? a : b; }
 
+AABB::AABB(ECSComponents::TransformComponent transform, Collision::CollisionComponent coll)
+{
+	float minx = transform.pos.x - coll.data.rectangle.width / 2.0f;
+	float miny = transform.pos.y - coll.data.rectangle.height / 2.0f;
+
+	float maxx = transform.pos.x + coll.data.rectangle.width / 2.0f;
+	float maxy = transform.pos.y + coll.data.rectangle.height / 2.0f;
+
+	min = { minx, miny };
+	max = { maxx, maxy };
+}
+
+
 bool CheckDynamicSquare(
 	const Collision::CollisionComponent& colA,
 	const ECSComponents::TransformComponent& transformA,
 	const Collision::CollisionComponent& colB,
 	const ECSComponents::TransformComponent& transformB,
-	float& colTi,                 // time of collision (output)
+	float& colTi,                 // Time of collision (output)
 	Math::eVec2<float>& normal,
 	const double& dt
 )
@@ -174,7 +187,7 @@ bool CheckDynamicSquare(
 void createTestObject(ECS::EntityManager& ent) {
 
 #if 0
-	//test circle initial config
+	// Test circle initial config
 	const int numCircles = 3;
 	Math::eVec2<float> pos[numCircles] = {{ 900.f, 400.f }, { 800.0f, 350.f }, {950.0f, 450.0f}};
 	const char* objName = { "testcaven" };
@@ -187,7 +200,7 @@ void createTestObject(ECS::EntityManager& ent) {
 	Math::eVec2<float> vel = { cos(45.0f * 3.1415926f / 180.f) * speed, sin(-45.0f * 3.1415926f / 180.f) * speed };
 	std::cout << vel;
 
-	//now i want to create an entity with 3 different components, transform, drawinfo and name
+	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numCircles; ++i)
 	{
 		ECSComponents::DrawInfoComponent DIC{ pos[i].v1, pos[i].v2, radius, radius, shapeName, color};
@@ -230,12 +243,12 @@ void createTestObject(ECS::EntityManager& ent) {
 		Collision::CollisionComponent lineCC{ linePos[i].first, linePos[i].second};
 		ECS::Entity wall = ent.create<ECSComponents::TransformComponent, ECSComponents::NameComponent>(lineTC, lineNC);
 		wall.add<Collision::CollisionComponent>(lineCC);
-		//debugging
+		// Debugging
 		//std::cout << wall.get<Collision::CollisionComponent>() << std::endl;
 	}
 #endif
 
-	//Square config
+	// Square config
 	const int numSquares = 2;
 	Math::eVec2<float> squarePos[numSquares] = { {700.0f, 400.0f}, {1000.0f, 400.0f} };
 	Math::eVec2<float> squareVel[numSquares] = { {50.0f, 0.0f}, { -50.0f, 0.0f } };
@@ -243,11 +256,11 @@ void createTestObject(ECS::EntityManager& ent) {
 	const char* shapeName = { "Rectangle" };
 	float width = 100.f;
 	float height = 100.f;
-	int color = 1; // red
+	int color = 1; // Red
 
 	static float squareSpeed = 200.0f;
 
-	//now i want to create an entity with 3 different components, transform, drawinfo and name
+	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numSquares; ++i)
 	{
 		ECSComponents::DrawInfoComponent DIC{ squarePos[i].v1, squarePos[i].v2, width, height, shapeName, color };
@@ -270,12 +283,12 @@ void createTestObject(ECS::EntityManager& ent) {
 void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 {
 
-	//dt
+	// DT
 	double dt = eng.getDeltaTime();
 
 
 #if 0
-	//look for the entity that i created
+	// Look for the entity that i created
 	std::vector<ECS::Entity> entityList = ent.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
 	if (!entityList.empty())
 	{
@@ -283,14 +296,14 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 		for (auto& entity : entityList)
 		{
 			auto& collision = entity.get<Collision::CollisionComponent>();
-			//skip non circle objects
+			// Skip non circle objects
 			if (collision.type != Collision::ColliderType::CIRCLE) continue;
 
 			auto& transform = entity.get<ECSComponents::TransformComponent>();
 			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
 
 			//std::cout << "object found: " << entity.get<ECSComponents::NameComponent>() << std::endl;
-			//update movement here
+			// Update movement here
 			Math::eVec2<float> nextPos;
 			nextPos.v1 = transform.pos.x + transform.vel.x * dt;
 			nextPos.v2 = transform.pos.y + transform.vel.y * dt;
@@ -306,14 +319,14 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 			for (auto& other : entityList)
 			{
-				// skip same entity
+				// Skip same entity
 				if (&entity == &other) continue;
 
 				auto& otherCollision = other.get<Collision::CollisionComponent>();
 				auto& otherTransform = other.get<ECSComponents::TransformComponent>();
 
 
-				//check collision with line
+				// Check collision with line
 				if (otherCollision.type == Collision::ColliderType::LINE)
 				{
 					if (Collision::CollisionDetection::CheckDynamicCollision(
@@ -344,7 +357,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				else if (otherCollision.type == Collision::ColliderType::CIRCLE)
 				{
 
-					// check circle to circle collision
+					// Check circle to circle collision
 					if (Collision::CollisionDetection::CheckDynamicCollision(
 						collision, transform, otherCollision, otherTransform,
 						nextPos, BeA, BeB, colTi))
@@ -372,7 +385,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				transform.pos.y = nextPos.v2;
 			}
 
-			//update draw info component for the new pos
+			// Update draw info component for the new pos
 			entity.get<ECSComponents::DrawInfoComponent>().xPos = entity.get<ECSComponents::TransformComponent>().pos.x;
 			entity.get<ECSComponents::DrawInfoComponent>().yPos = entity.get<ECSComponents::TransformComponent>().pos.y;
 			
@@ -416,7 +429,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 						{
 							case Collision::ColliderType::RECTANGLE:
 							{
-								//Call check collision function for dynamic rect rect
+								// Call check collision function for dynamic rect rect
 								if (CheckDynamicSquare(collision, transform, otherCollision, otherTransform,
 														colTi, normalAtCol, dt))
 								{
@@ -434,7 +447,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 									// Don't resolve if velocities are separating
 									//if (velAlongNormal > 0)
-									//	continue;
+									//continue;
 
 									// Subtract the component along that direction
 									transform.vel.x -= velAlongNormal * normalAtCol.v1;
@@ -444,13 +457,14 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 
 								}
+								break;
 							}
-						}
+						} // End of switch case for other entity
 					}
 
-				}
+				} // End of switch case for first entity
 
-			}
+			} // End of entity loop
 
 			if (!hasCollided)
 			{
@@ -458,12 +472,10 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				transform.pos.y = nextPos.v2;
 			}
 
-			//update draw info component for the new pos
+			// Update draw info component for the new pos
 			drawInfo.xPos = transform.pos.x;
 			drawInfo.yPos = transform.pos.y;
 		}
-
-
 
 	}
 

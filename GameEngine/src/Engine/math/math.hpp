@@ -26,7 +26,8 @@ namespace Math
 	template <Arithmetic Type>
 	struct eVec2
 	{
-		Type v1, v2;
+		Type v1, // X coords
+			 v2; // Y coords
 
 		/*============================================================================================
 		 * \brief       Adds another vector to this vector (component-wise).
@@ -232,7 +233,9 @@ namespace Math
 	template <Arithmetic Type>
 	struct eVec3
 	{
-		Type v1, v2, v3;
+		Type v1, // X coords
+			 v2, // Y coords
+			 v3; // Z coords
 
 		/*============================================================================================
 		 * \brief       Adds another vector to this vector (component-wise).
@@ -334,9 +337,9 @@ namespace Math
 	template <Arithmetic Type>
 	struct eMtx3x3
 	{
-		Type v1, v2, v3,
-			v4, v5, v6,
-			v7, v8, v9;
+		Type v1, v2, v3, // 00, 01, 02
+			v4, v5, v6,	 // 10, 11, 12
+			v7, v8, v9;	 // 20, 21, 22
 
 		/*============================================================================================
 		 * \brief       Default constructor. Initializes matrix without setting values.
@@ -413,9 +416,9 @@ namespace Math
 	template <Arithmetic Type>
 	struct eMtx4x4
 	{
-		Type v1, v2, v3, v4,
-			v5, v6, v7, v8,
-			v9, v10, v11, v12;
+		Type v1, v2, v3, v4,	// 00, 01, 02, 03
+			v5, v6, v7, v8,		// 10, 11, 12, 13
+			v9, v10, v11, v12;  // 20, 21, 22, 23
 
 		/*============================================================================================
 		 * \brief       Default constructor. Initializes matrix without setting values.
@@ -424,6 +427,6 @@ namespace Math
 
 	};
 
-}
+} // End of namespace Math
 
 #include "math.tpp"
