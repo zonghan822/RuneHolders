@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         math.hpp
+* @author       Caven Koh (caven.koh@digipen.edu)
+* @date         15-09-2025
+* @brief        This file contains struct templates for Vector2D, Vector3D, Mtx3x3, and Mtx4x4
+*				as well as operator overloads and helper functions which assists in arithmetic
+*				calculations
+*//*========================================================================================*/
 #pragma once
 
 #include <utility>
@@ -18,125 +26,299 @@ namespace Math
 	template <Arithmetic Type>
 	struct eVec2
 	{
-		Type v1, v2;
+		Type v1, // X coords
+			 v2; // Y coords
 
-		// ------------------------------- Addition -------------------------------
+		/*============================================================================================
+		 * \brief       Adds another vector to this vector (component-wise).
+		 * \param[in]   other  Vector to add.
+		 * \return      Reference to this vector after addition.
+		*//*========================================================================================*/
 		eVec2& operator+=(const eVec2& other);
 
+		/*============================================================================================
+		 * \brief       Adds a scalar value to both components of this vector.
+		 * \param[in]   other  Scalar value to add.
+		 * \return      Reference to this vector after addition.
+		*//*========================================================================================*/
 		eVec2& operator+=(const Type& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector plus another (component-wise).
+		 * \param[in]   other  Vector to add.
+		 * \return      New eVec2 containing the sum.
+		*//*========================================================================================*/
 		eVec2 operator+(const eVec2& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector plus a scalar.
+		 * \param[in]   other  Scalar value to add.
+		 * \return      New eVec2 containing the sum.
+		*//*========================================================================================*/
 		eVec2 operator+(const Type& other);
 
-		// ------------------------------ Subtraction ------------------------------
+		/*============================================================================================
+		 * \brief       Subtracts another vector from this vector (component-wise).
+		 * \param[in]   other  Vector to subtract.
+		 * \return      Reference to this vector after subtraction.
+		*//*========================================================================================*/
 		eVec2& operator-=(const eVec2& other);
 
-
+		/*============================================================================================
+		 * \brief       Subtracts a scalar from both components of this vector.
+		 * \param[in]   other  Scalar value to subtract.
+		 * \return      Reference to this vector after subtraction.
+		*//*========================================================================================*/
 		eVec2& operator-=(const Type& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector minus another (component-wise).
+		 * \param[in]   other  Vector to subtract.
+		 * \return      New eVec2 containing the difference.
+		*//*========================================================================================*/
 		eVec2 operator-(const eVec2& other);
 
-		// ----------------------------- Multiplication -----------------------------
+		/*============================================================================================
+		 * \brief       Multiplies this vector by another vector (component-wise).
+		 * \param[in]   other  Vector to multiply by.
+		 * \return      Reference to this vector after multiplication.
+		*//*========================================================================================*/
 		eVec2& operator*=(const eVec2& other);
 
+		/*============================================================================================
+		 * \brief       Multiplies both components of this vector by a scalar.
+		 * \param[in]   other  Scalar multiplier.
+		 * \return      Reference to this vector after multiplication.
+		*//*========================================================================================*/
 		eVec2& operator*=(const Type& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector multiplied by another (component-wise).
+		 * \param[in]   other  Vector to multiply by.
+		 * \return      New eVec2 containing the product.
+		*//*========================================================================================*/
 		eVec2 operator*(const eVec2& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector scaled by a scalar value.
+		 * \param[in]   val  Scalar multiplier.
+		 * \return      New eVec2 containing the scaled result.
+		*//*========================================================================================*/
 		eVec2 operator*(Type val) const;
 
-
-		// ------------------------------ Division ------------------------------
+		/*============================================================================================
+		 * \brief       Divides this vector by another vector (component-wise).
+		 * \param[in]   other  Vector to divide by.
+		 * \return      Reference to this vector after division.
+		*//*========================================================================================*/
 		eVec2& operator/=(const eVec2& other);
 
-
+		/*============================================================================================
+		 * \brief       Divides both components of this vector by a scalar.
+		 * \param[in]   other  Scalar divisor.
+		 * \return      Reference to this vector after division.
+		*//*========================================================================================*/
 		eVec2& operator/=(const Type& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector divided by another (component-wise).
+		 * \param[in]   other  Vector to divide by.
+		 * \return      New eVec2 containing the quotient.
+		*//*========================================================================================*/
 		eVec2 operator/(const eVec2& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector divided by a scalar.
+		 * \param[in]   val  Scalar divisor.
+		 * \return      New eVec2 containing the quotient.
+		*//*========================================================================================*/
 		eVec2 operator/(Type val) const;
 
-		// ------------------------------ Unary ------------------------------
-		// this negates the vector
+		/*============================================================================================
+		 * \brief       Returns the negation of this vector (flips the sign of each component).
+		 * \return      New eVec2 containing the negated vector.
+		*//*========================================================================================*/
 		eVec2 operator-() const;
-
 	};
 
 	// --------------------- Friend functions for eVec2 ---------------------------
+	/*============================================================================================
+	 * \brief       Multiplies a scalar by a vector (scalar * vector).
+	 * \param[in]   lhs  Scalar multiplier.
+	 * \param[in]   rhs  Vector to multiply.
+	 * \return      New eVec2 containing the scaled vector.
+	*//*========================================================================================*/
 	template <Arithmetic Type>
 	eVec2<Type> operator*(const Type& lhs, const eVec2<Type>& rhs);
 
+	/*============================================================================================
+	 * \brief       Adds two vectors (component-wise).
+	 * \param[in]   lhs  Left-hand vector.
+	 * \param[in]   rhs  Right-hand vector.
+	 * \return      New eVec2 containing the sum.
+	*//*========================================================================================*/
 	template <Arithmetic Type>
 	eVec2<Type> operator+(const eVec2<Type>& lhs, const eVec2<Type>& rhs);
 
+	/*============================================================================================
+	 * \brief       Subtracts one vector from another (component-wise).
+	 * \param[in]   lhs  Left-hand vector.
+	 * \param[in]   rhs  Right-hand vector.
+	 * \return      New eVec2 containing the difference.
+	*//*========================================================================================*/
 	template <Arithmetic Type>
 	eVec2<Type> operator-(const eVec2<Type>& lhs, const eVec2<Type>& rhs);
 
-	//eVec2Normalize takes a const &eVec2 vec to normalize and puts the unit vector into result
+	/*============================================================================================
+	 * \brief       Normalizes a vector (scales it to unit length).
+	 * \param[out]  result  Normalized unit vector result.
+	 * \param[in]   vec     Input vector to normalize.
+	*//*========================================================================================*/
 	template <Arithmetic Type>
 	void eVec2Normalize(eVec2<Type>& result, const eVec2<Type>& vec);
 
-	//eVec2Length returns the length of the vector
+	/*============================================================================================
+	 * \brief       Computes the length (magnitude) of a vector.
+	 * \param[in]   vec  Input vector.
+	 * \return      Length of the vector.
+	*//*========================================================================================*/
 	template <typename Type>
 	Type eVec2Length(const eVec2<Type>& vec);
 
-	//eVec2SquaredLength returns the squared length of the vector
+	/*============================================================================================
+	 * \brief       Computes the squared length of a vector.
+	 * \param[in]   vec  Input vector.
+	 * \return      Squared length of the vector.
+	*//*========================================================================================*/
 	template <Arithmetic Type>
 	Type eVec2SquaredLength(const eVec2<Type>& vec);
 
-
-	//eVec2Distance returns the distance between two vectors
-	//They are considered as the distance between any 2 points along the vector
+	/*============================================================================================
+	 * \brief       Computes the distance between two vectors (treated as points).
+	 * \param[in]   vec1  First vector.
+	 * \param[in]   vec2  Second vector.
+	 * \return      Distance between vec1 and vec2.
+	*//*========================================================================================*/
 	template <Arithmetic Type>
 	Type eVec2Distance(const eVec2<Type>& vec1, const eVec2<Type>& vec2);
 
-	//eVec2SquaredDistance returns the squared distance between two vectors
+	/*============================================================================================
+	 * \brief       Computes the squared distance between two vectors (treated as points).
+	 * \param[in]   vec1  First vector.
+	 * \param[in]   vec2  Second vector.
+	 * \return      Squared distance between vec1 and vec2.
+	*//*========================================================================================*/
 	template <Arithmetic Type>
 	Type eVec2SquaredDistance(const eVec2<Type>& vec1, const eVec2<Type>& vec2);
 
-	//eVec2DotProduct returns the dot product between 2 vectors
+	/*============================================================================================
+	 * \brief       Computes the dot product between two vectors.
+	 * \param[in]   vec1  First vector.
+	 * \param[in]   vec2  Second vector.
+	 * \return      Dot product value.
+	*//*========================================================================================*/
 	template<typename Type>
 	Type eVec2DotProduct(const eVec2<Type>& vec1, const eVec2<Type>& vec2);
 
-	//ostream operator
+	/*============================================================================================
+	 * \brief       Outputs the vector components to an output stream.
+	 * \param[in]   os    Output stream.
+	 * \param[in]   vec1  Vector to output.
+	 * \return      Reference to the output stream.
+	*//*========================================================================================*/
 	template<typename Type>
 	std::ostream& operator<<(std::ostream& os, const eVec2<Type>& vec1);
 
-	// -------------------------------- 3x3 MATRICES ------------------------------
-
-
+	// -------------------------------- 3D VECTORS --------------------------------
 	template <Arithmetic Type>
 	struct eVec3
 	{
-		Type v1, v2, v3;
+		Type v1, // X coords
+			 v2, // Y coords
+			 v3; // Z coords
 
-		// ------------------------------- Addition -------------------------------
+		/*============================================================================================
+		 * \brief       Adds another vector to this vector (component-wise).
+		 * \param[in]   other  Vector to add.
+		 * \return      Reference to this vector after addition.
+		*//*========================================================================================*/
 		eVec3& operator+=(const eVec3& other);
 
+		/*============================================================================================
+		 * \brief       Adds a scalar value to all components of this vector.
+		 * \param[in]   other  Scalar value to add.
+		 * \return      Reference to this vector after addition.
+		*//*========================================================================================*/
 		eVec3& operator+=(const Type& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector plus another (component-wise).
+		 * \param[in]   other  Vector to add.
+		 * \return      New eVec3 containing the sum.
+		*//*========================================================================================*/
 		eVec3 operator+(const eVec3& other);
 
-		// ------------------------------ Subtraction ------------------------------
+		/*============================================================================================
+		 * \brief       Subtracts another vector from this vector (component-wise).
+		 * \param[in]   other  Vector to subtract.
+		 * \return      Reference to this vector after subtraction.
+		*//*========================================================================================*/
 		eVec3& operator-=(const eVec3& other);
 
+		/*============================================================================================
+		 * \brief       Subtracts a scalar from all components of this vector.
+		 * \param[in]   other  Scalar value to subtract.
+		 * \return      Reference to this vector after subtraction.
+		*//*========================================================================================*/
 		eVec3& operator-=(const Type& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector minus another (component-wise).
+		 * \param[in]   other  Vector to subtract.
+		 * \return      New eVec3 containing the difference.
+		*//*========================================================================================*/
 		eVec3 operator-(const eVec3& other);
 
-		// ----------------------------- Multiplication -----------------------------
+		/*============================================================================================
+		 * \brief       Multiplies this vector by another vector (component-wise).
+		 * \param[in]   other  Vector to multiply by.
+		 * \return      Reference to this vector after multiplication.
+		*//*========================================================================================*/
 		eVec3& operator*=(const eVec3& other);
 
+		/*============================================================================================
+		 * \brief       Multiplies all components of this vector by a scalar.
+		 * \param[in]   other  Scalar multiplier.
+		 * \return      Reference to this vector after multiplication.
+		*//*========================================================================================*/
 		eVec3& operator*=(const Type& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector multiplied by another (component-wise).
+		 * \param[in]   other  Vector to multiply by.
+		 * \return      New eVec3 containing the product.
+		*//*========================================================================================*/
 		eVec3 operator*(const eVec3& other);
 
-		// ------------------------------ Division ------------------------------
+		/*============================================================================================
+		 * \brief       Divides this vector by another vector (component-wise).
+		 * \param[in]   other  Vector to divide by.
+		 * \return      Reference to this vector after division.
+		*//*========================================================================================*/
 		eVec3& operator/=(const eVec3& other);
 
+		/*============================================================================================
+		 * \brief       Divides all components of this vector by a scalar.
+		 * \param[in]   other  Scalar divisor.
+		 * \return      Reference to this vector after division.
+		*//*========================================================================================*/
 		eVec3& operator/=(const Type& other);
 
+		/*============================================================================================
+		 * \brief       Returns a new vector equal to this vector divided by another (component-wise).
+		 * \param[in]   other  Vector to divide by.
+		 * \return      New eVec3 containing the quotient.
+		*//*========================================================================================*/
 		eVec3 operator/(const eVec3& other);
 	};
 
@@ -151,56 +333,100 @@ namespace Math
 	};
 #endif
 
+	// -------------------------------- 3x3 MATRICES --------------------------------
 	template <Arithmetic Type>
 	struct eMtx3x3
 	{
-		Type v1, v2, v3,
-			v4, v5, v6,
-			v7, v8, v9;
+		Type v1, v2, v3, // 00, 01, 02
+			v4, v5, v6,	 // 10, 11, 12
+			v7, v8, v9;	 // 20, 21, 22
 
-		// -------------------- Constructors ---------------------
-
+		/*============================================================================================
+		 * \brief       Default constructor. Initializes matrix without setting values.
+		*//*========================================================================================*/
 		eMtx3x3() = default;
 
-		eMtx3x3
-		(Type _00, Type _01, Type _02,
+		/*============================================================================================
+		 * \brief       Constructs a matrix with 9 specified values.
+		 * \param[in]   _00.._22  Elements of the 3x3 matrix in row-major order.
+		*//*========================================================================================*/
+		eMtx3x3(Type _00, Type _01, Type _02,
 			Type _10, Type _11, Type _12,
 			Type _20, Type _21, Type _22);
 
-		//copy constructor
+		/*============================================================================================
+		 * \brief       Copy constructor.
+		 * \param[in]   other  Matrix to copy from.
+		*//*========================================================================================*/
 		eMtx3x3(const eMtx3x3& other);
 
-		//Assignment operator
+		/*============================================================================================
+		 * \brief       Assignment operator.
+		 * \param[in]   other  Matrix to assign from.
+		 * \return      Reference to this matrix after assignment.
+		*//*========================================================================================*/
 		eMtx3x3& operator=(const eMtx3x3& other);
-		// ------------------------ Multiplication ----------------------------
+
+		/*============================================================================================
+		 * \brief       Multiplies this matrix by another matrix (matrix * matrix).
+		 * \param[in]   rhs  Right-hand side matrix.
+		 * \return      Reference to this matrix after multiplication.
+		*//*========================================================================================*/
 		eMtx3x3& operator*=(const eMtx3x3& rhs);
 
-
-		// ----------------------- Member functions ----------------------
-
-		//eMtx3x3Translate stores the translate vector about a 2D plane
+		/*============================================================================================
+		 * \brief       Builds a 2D translation matrix.
+		 * \param[out]  result  Resulting matrix with translation applied.
+		 * \param[in]   x       Translation along X axis.
+		 * \param[in]   y       Translation along Y axis.
+		*//*========================================================================================*/
 		void eMtx3x3Translate(eMtx3x3<Type>& result, Type x, Type y);
 
+		/*============================================================================================
+		 * \brief       Builds a 2D scaling matrix.
+		 * \param[out]  result  Resulting matrix with scaling applied.
+		 * \param[in]   x       Scale along X axis.
+		 * \param[in]   y       Scale along Y axis.
+		*//*========================================================================================*/
 		void eMtx3x3Scale(eMtx3x3<Type> result, Type x, Type y);
 
+		/*============================================================================================
+		 * \brief       Builds a 2D rotation matrix (angle in radians).
+		 * \param[out]  result  Resulting matrix with rotation applied.
+		 * \param[in]   angle   Rotation angle in radians.
+		*//*========================================================================================*/
 		void eMtx3x3RotRad(eMtx3x3<Type>& result, Type angle);
 
+		/*============================================================================================
+		 * \brief       Builds a 2D rotation matrix (angle in degrees).
+		 * \param[out]  result  Resulting matrix with rotation applied.
+		 * \param[in]   angle   Rotation angle in degrees.
+		*//*========================================================================================*/
 		void eMtx3x3RotDeg(eMtx3x3<Type>& result, Type angle);
 
+		/*============================================================================================
+		 * \brief       Computes the transpose of a 3x3 matrix.
+		 * \param[out]  result  Transposed matrix.
+		 * \param[in]   mtx     Input matrix.
+		*//*========================================================================================*/
 		void eMtx3x3Transpose(eMtx3x3<Type>& result, const eMtx3x3<Type>& mtx);
-
 	};
 
+	// -------------------------------- 4x4 MATRICES --------------------------------
 	template <Arithmetic Type>
 	struct eMtx4x4
 	{
-		Type v1, v2, v3, v4,
-			v5, v6, v7, v8,
-			v9, v10, v11, v12;
+		Type v1, v2, v3, v4,	// 00, 01, 02, 03
+			v5, v6, v7, v8,		// 10, 11, 12, 13
+			v9, v10, v11, v12;  // 20, 21, 22, 23
 
+		/*============================================================================================
+		 * \brief       Default constructor. Initializes matrix without setting values.
+		*//*========================================================================================*/
+		eMtx4x4() = default;
 
 	};
 
-}
+} // End of namespace Math
 
 #include "math.tpp"

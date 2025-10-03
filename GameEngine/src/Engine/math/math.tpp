@@ -1,3 +1,9 @@
+/*============================================================================================
+* @file         math.tpp
+* @author       Caven Koh (caven.koh@digipen.edu)
+* @date         15-09-2025
+* @brief        This file contains the definitions for the math library math.hpp
+*//*========================================================================================*/
 #pragma once
 
 

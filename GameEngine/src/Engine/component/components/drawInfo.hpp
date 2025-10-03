@@ -1,3 +1,12 @@
+/*============================================================================================
+* @file         drawInfo.hpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @date         01-10-2025
+* @brief        This file contains the component constructor for Drawing Information
+*				This Component allows the drawing system to act directly upon it so long as it
+*				exists. 
+*//*========================================================================================*/
+
 #pragma once
 
 #include <iostream>
@@ -30,6 +39,7 @@ namespace ECSComponents
 	{
 		DrawInfoComponent() = default;
 
+		//	Ctor for DrawInfoComponent
 		DrawInfoComponent(float xPosition, float yPosition, float w, float h, const char* n, int c):
 			xPos{ xPosition }, yPos{ yPosition }, width{w}, height{h}
 		{

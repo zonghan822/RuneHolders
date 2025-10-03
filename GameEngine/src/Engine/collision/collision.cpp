@@ -271,7 +271,7 @@ namespace Collision {
 											posB, { transformB.vel.x, transformB.vel.y }, colliderB.data.circle.radius, 
 											colPoint, normalAtCol, colTi);
 		}
-
+		return false;
 	}
 
 
@@ -697,6 +697,7 @@ namespace Collision {
 			BeB = Bib;
 			return true;
 		}
+		return false;
 	}
 
 	// COLLISION EVENTS IMPLEMENTATION

@@ -165,7 +165,7 @@ void GameApplication::updateGameLogic() {
 	auto startTotalTime = Clock::now();
 
     // Calculate delta time
-    float deltaTime = engine_.getDeltaTime();
+    double deltaTime = engine_.getDeltaTime();
 
 	// Get window dimensions from config
 	auto windowDim = engine_.getWindowManager().getWindowSize();
@@ -177,7 +177,7 @@ void GameApplication::updateGameLogic() {
 	// ===== UPDATE PLAYER ANIMATION =====
 	if (playerTexture_ && playerSpawned_)
 	{
-		playerAnimController_.update(deltaTime);
+		playerAnimController_.update(static_cast<float>(deltaTime));
 	}
 
     updateEntities();
@@ -358,7 +358,7 @@ void GameApplication::drawPlayerAndIndicator() {
 				
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
 					// I am placing it here first as a 4.0 scale speed * DT
-					scaleSize += 3.0 * 0.01667;
+					scaleSize += static_cast<float>(3.0 * 0.01667);
 					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					playerTransform.scale.x = scaleSize;
 					playerTransform.scale.y = scaleSize;
@@ -366,7 +366,7 @@ void GameApplication::drawPlayerAndIndicator() {
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
-					scaleSize -= 3.0 * 0.01667;
+					scaleSize -= static_cast < float>(3.0 * 0.01667);
 					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					playerTransform.scale.x = scaleSize;
 					playerTransform.scale.y = scaleSize;
@@ -374,13 +374,13 @@ void GameApplication::drawPlayerAndIndicator() {
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
-					rotationRadians += 3.0f * 0.0174533 * 0.01667;
+					rotationRadians += static_cast < float>(3.0f * 0.0174533 * 0.01667);
 					//playerTransform.rot.z = rotationRadians;
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
-					rotationRadians -= 3.0f * 0.0174533 * 0.01667;
+					rotationRadians -= static_cast < float>(3.0f * 0.0174533 * 0.01667);
 					//playerTransform.rot.z = rotationRadians;
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}

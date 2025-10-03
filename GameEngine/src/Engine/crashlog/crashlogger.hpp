@@ -33,7 +33,7 @@
 #include <fstream>
 #include <string>
 
-
+// CrashLogger Class encapsulates the function logerror
 class CrashLogger {
 public:
     /*============================================================================================
