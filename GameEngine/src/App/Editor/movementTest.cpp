@@ -53,7 +53,7 @@ bool CheckDynamicSquare(
 		transformA.vel.y - transformB.vel.y
 	};
 
-	std::cout << "rev vel" << relVel << std::endl;
+	//std::cout << "rev vel" << relVel << std::endl;
 
 	// X-axis collision checks
 	if (relVel.v1 < 0.f)

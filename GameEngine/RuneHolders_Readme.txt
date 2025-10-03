@@ -52,6 +52,14 @@ O → Play/Stop selected track
 
 **** Stop audio with O before switching tracks ****
 
+---Physics---
+
+***Physics has to be tested at the start before collision***
+
+M → Toggle keyframe mode
+
+N → Move to next frame
+
 ---------------------------
 2.b Features
 ---------------------------

@@ -51,6 +51,6 @@ namespace GameInstance
 	private:
 		std::vector<Node> nodes_;
 
-		Node selectedNode_;
+		
 	};
 }
