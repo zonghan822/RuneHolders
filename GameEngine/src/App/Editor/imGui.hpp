@@ -50,11 +50,10 @@ void imGuiInit(GLFWwindow* window);
 
 /*============================================================================================
  * \brief       Updates and renders the ImGui control panel
- * \param[in]   GLFWwindow* window
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void imGuiDisplay(GLFWwindow* window, Engine::EnoEngine& engine_);
+void imGuiDisplay(Engine::EnoEngine& engine_);
 
 /*============================================================================================
  * \brief       Terminates Dear ImGui

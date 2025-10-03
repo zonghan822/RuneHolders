@@ -1,8 +1,13 @@
+/*============================================================================================
+* @file         crashlogger.cpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @date         03-10-2025
+* @brief        Logs exception into a crash_log.txt file with timestamps
+*//*========================================================================================*/
+
 #include "crashlogger.hpp"
 #include <iostream>
 #include <ctime>
-
-
 
 void CrashLogger::logError(const std::string& message) {
     std::ofstream log("../../../assets/crashlogs/crash_log.txt", std::ios::app);

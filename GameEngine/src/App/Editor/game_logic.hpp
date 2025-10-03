@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         game_logic.hpp
+* @author       Name (@digipen.edu)
+* @date         DD-MM-YYYY
+* @brief        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+*               incididunt ut labore et dolore magna aliqua.
+*//*========================================================================================*/
+
 #pragma once
 
 #include "engine/eno_engine.hpp"

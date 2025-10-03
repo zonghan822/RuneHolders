@@ -103,6 +103,7 @@ namespace Resources
 		* \return	String reference to the image path.
 		*//*========================================================================================*/
 		const std::string& getImagePath() const;
+		std::shared_ptr<Graphics::EnoTexture> getTexture(const std::string& name);
 
 		/*============================================================================================
 		* \brief	Retrieve a texture by name.
