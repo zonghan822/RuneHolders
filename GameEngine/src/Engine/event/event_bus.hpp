@@ -1,10 +1,3 @@
-/*============================================================================================
-* @file         event_bus.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
-* @date         10/3/2025
-* @brief        Declaration/definition file for the event bus
-*//*========================================================================================*/
-
 #pragma once
 
 // stds
@@ -17,11 +10,6 @@ namespace Event
 	class EnoEventBus
 	{
 	public:
-		/*============================================================================================
-			* \brief			Subscribe a handler function to an event type
-			* \param[in]		A function (usually a lambda) to invoke when publishing
-			* \return			Subscription ID for unsubscribing
-		*//*========================================================================================*/
 		template <typename Event>
 		uint32_t subscribe(std::function<void(const Event&)> handler)
 		{
@@ -37,11 +25,7 @@ namespace Event
 
 			return id;
 		}
-		
-		/*============================================================================================
-			* \brief			Publish an event to all subscribed handlers
-			* \param[in]		Event being published
-		*//*========================================================================================*/
+
 		template <typename Event>
 		void publish(const Event& event) const
 		{
@@ -63,10 +47,6 @@ namespace Event
 			}
 		}
 
-		/*============================================================================================
-			* \brief			Unsubscribe a handler from an event type
-			* \param[in]		Subscription ID
-		*//*========================================================================================*/
 		template <typename Event>
 		void unsubscribe(uint32_t id)
 		{

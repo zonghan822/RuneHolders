@@ -1,11 +1,3 @@
-/*============================================================================================
-* @file         audio_params.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
-* @date         10/3/2025
-* @brief        Params for a user to define, which includes reverb, eq, volume, pitch and pan.
-*//*========================================================================================*/
-
-
 #pragma once
 
 // fmod

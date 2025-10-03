@@ -116,7 +116,7 @@ namespace Input {
 
 		modsState_ = mods;
 
-		auto name = inputMap_.findr(KeyBinding{ key, scancode, action, mods });
+		auto name = inputMap_.findk(KeyBinding{ key, scancode, action, mods });
 		if (name.has_value())
 		{
 			// Handle publishing events

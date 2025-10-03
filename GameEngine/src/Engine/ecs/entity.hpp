@@ -1,11 +1,3 @@
-/*============================================================================================
-* @file         entity.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
-* @date         10/3/2025
-* @brief        Declaration/definition file for the entity and entity manager
-*//*========================================================================================*/
-
-
 #pragma once
 
 // Engine Component(s)
@@ -23,11 +15,12 @@
 
 namespace ECS
 {
+	/// 
+	/// User defined game object that will hold defined components
+	/// which make up its properties
+	/// 
 	class Entity;
 
-	/*============================================================================================
-	* \brief		Enitty Location within an archetype
-	*//*========================================================================================*/
 	struct EntityLoc
 	{
 		Archetype* archetype;
@@ -39,32 +32,14 @@ namespace ECS
 	{
 	public:
 
-<<<<<<< Updated upstream
 		EntityManager() = default;
-=======
-		/*============================================================================================
-		* \brief		Entity manager
-		*//*========================================================================================*/
-		EntityManager(ECSComponents::EnoComponentRegistry& compReg)
-			:
-			compReg_{ compReg }
-		{}
->>>>>>> Stashed changes
 
 		inline static uint32_t id = 0;
 
-		/*============================================================================================
-		* \brief		Entity map getter
-		*//*========================================================================================*/
 		std::unordered_map<uint32_t, EntityLoc>& getMap() { return entityMap_; }
 
-		/*============================================================================================
-		* \brief		Create and return a new entity based on components passed in
-		* \param		Values to initialize the components with
-		* \tparam		Components to construct
-		* \tparam		Values to construct components with
-		* \return		Newly created Entity
-		*//*========================================================================================*/
+		// Create and return a new entity 
+		// based on components passed in
 		template <typename... Components, typename... Values>
 		Entity create(Values&&... val)
 		{
@@ -106,11 +81,8 @@ namespace ECS
 			return { curID, *this };
 		}
 
-		/*============================================================================================
-		* \brief		Overload for the create function, assuming no values are passed in
-		* \tparam		Components to construct
-		* \return		Newly created Entity
-		*//*========================================================================================*/
+		// Overload for the create function, 
+		// assuming no values are passed in
 		template <typename... Components>
 		Entity create()
 		{
@@ -145,12 +117,7 @@ namespace ECS
 			return { curID, *this };
 		}
 
-		/*============================================================================================
-		* \brief		Specialization for presets
-		* \tparam		Preset
-		* \tparam		Values to intialize the components in the tuple
-		* \return		Newly created Entity
-		*//*========================================================================================*/
+		// Specialization for presets
 		template <typename Tuple, typename... Values>
 		Entity presetCreate(Values&&... val)
 		{
@@ -165,11 +132,8 @@ namespace ECS
 				Tuple{});
 		}
 
-		/*============================================================================================
-		* \brief		Specialization overload for presets where there are no values
-		* \tparam		Preset
-		* \return		Newly created Entity
-		*//*========================================================================================*/
+		// Specialization overload for presets
+		// where there are no values
 		template <typename Tuple>
 		Entity presetCreate()
 		{
@@ -180,11 +144,7 @@ namespace ECS
 				Tuple{});
 		}
 
-		/*============================================================================================
-		* \brief		Cloning an existing entity
-		* \tparam		Id of an existing entity
-		* \return		Id of cloned enitty
-		*//*========================================================================================*/
+		// Cloning an existing entity
 		uint32_t clone(const uint32_t& progenitorID)
 		{
 			// Using the cloned entity's id to clone the new entity
@@ -219,12 +179,7 @@ namespace ECS
 			return curID;
 		}
 
-		/*============================================================================================
-		* \brief		Move an entity to a new archetype
-		* \tparam		Entity's id
-		* \tparam		Entity's types
-		* \tparam		Entity's types' sizes
-		*//*========================================================================================*/
+		// Move an entity to a new archetype
 		void shift(
 			const uint32_t& entityID,
 			const std::vector<std::type_index>& types,
@@ -259,9 +214,7 @@ namespace ECS
 			cleanup(oldArchetype, srcChnkIdx);
 		}
 
-		/*============================================================================================
-		* \brief		Prints all entity IDs and their associated types
-		*//*========================================================================================*/
+		// Prints all entity IDs and their associated types
 		void viewMap()
 		{
 			// Print total Entity count
@@ -282,10 +235,7 @@ namespace ECS
 			std::cout << std::endl;
 		}
 
-		/*============================================================================================
-		* \brief		Manage and cleanup entity destruction
-		* \param		ID of the entity to be destroyed
-		*//*========================================================================================*/
+		// Manage and cleanup entity destruction
 		void destroyEntity(const uint32_t& entityID)
 		{
 			// Clean up archetype and related chunks
@@ -301,10 +251,7 @@ namespace ECS
 			destroyedEntityIDs_.push_back(entityID);
 		}
 
-		/*============================================================================================
-		* \brief		Saves data for all entities existing in the entity map
-		* \param		File name of the save file
-		*//*========================================================================================*/
+		// Saving entity data
 		void save(const std::string& file)
 		{
 			std::ofstream out(file, std::ios::binary);
@@ -375,10 +322,7 @@ namespace ECS
 			}
 		}
 
-		/*============================================================================================
-		* \brief		Load data from save file
-		* \param		File name of the save file
-		*//*========================================================================================*/
+		// Loading entity data
 		void load(const std::string& file)
 		{
 			std::ifstream in(file, std::ios::binary);
@@ -469,14 +413,8 @@ namespace ECS
 			}
 		}
 
-		/*============================================================================================
-		* \brief		Find and return entities based on their components or optionally, 
-		*				their components and associated values
-		* \param		Values to search for in component(s)
-		* \tparam		Components to be searched
-		* \tparam		Values to be searched
-		* return		A vector of entities
-		*//*========================================================================================*/
+		// Find and return entities based on their
+		// components or optionally, their components and associated values
 		template <typename... Components, typename... Values>
 		std::vector<Entity> findEntity(Values... values)
 		{
@@ -527,23 +465,12 @@ namespace ECS
 
 		std::vector<uint32_t> destroyedEntityIDs_;									// For the purpose of reusing ids
 
-		/*============================================================================================
-		* \brief		Helper for getting all entities from the entity map
-		* return		Entity count
-		*//*========================================================================================*/
+		// Retrieve total number of entities
 		uint32_t getEntCount()
 		{
 			return static_cast<uint32_t>(entityMap_.size());
 		}
 
-		/*============================================================================================
-		* \brief		Helper for getting all entities from the entity map
-		* \tparam		List of components to modify
-		* \param		Entity location to look into
-		* \param		Index of the chunk where the entity resides
-		* \param		Index of the entity within the chunk
-		* \param		Indices used to expand parameter pack
-		*//*========================================================================================*/
 		template <typename... Components, size_t... I>
 		void setComponentsImpl(
 			const EntityLoc& loc,
@@ -556,16 +483,6 @@ namespace ECS
 				...);
 		}
 
-		/*============================================================================================
-		* \brief		Set provided values for components in a chunk
-		* \tparam		List of components to modify
-		* \tparam		Tuple containing the values to instantiate the components with
-		* \param		Entity location to look into
-		* \param		Index of the chunk where the entity resides
-		* \param		Index of the entity within the chunk
-		* \param		Values to assign to components
-		* \param		Indices used to expand parameter pack
-		*//*========================================================================================*/
 		template <typename... Components, typename Tuple, size_t... I>
 		void modifyComponentsImpl(
 			const EntityLoc& loc,
@@ -579,11 +496,7 @@ namespace ECS
 			), ...);
 		}
 
-		/*============================================================================================
-		* \brief		Helper for finding a chunk in an archetype which has available space
-		* param			Archetype to search in for an open chunk
-		* return		Open chunk index
-		*//*========================================================================================*/
+		// Helper for finding a chunk in an archetype which has available space
 		size_t findOpenChunk(Archetype* archetype)
 		{
 			// Find chunk with available space
@@ -617,10 +530,7 @@ namespace ECS
 			return openChunkIndex;
 		}
 
-		/*============================================================================================
-		* \brief		Helper for assigning an id to an entity, prefer destroyed entity ids
-		* return		ID to assign to an entity
-		*//*========================================================================================*/
+		// Helper for assigning an id to an entity
 		uint32_t assignID()
 		{
 			uint32_t curID;
@@ -639,11 +549,7 @@ namespace ECS
 			return curID;
 		}
 
-		/*============================================================================================
-		* \brief		Clean up archetype chunks and the archetype after an operation
-		* \param		Archetype to be cleaned
-		* \param		Chunk index to be cleaned
-		*//*========================================================================================*/
+		// Clean up archetype chunks and the archetype after an operation
 		void cleanup(Archetype* archetype, const size_t& srcChnkIdx)
 		{
 			bool freed{ false };
@@ -703,10 +609,6 @@ namespace ECS
 			}
 		}
 
-		/*============================================================================================
-		* \brief		Helper for remapping the chunk index value of an entity
-		* \param		Archetype remap chunk indices for
-		*//*========================================================================================*/
 		void remap(Archetype* archetype)
 		{
 			size_t newIndex{};
@@ -721,12 +623,9 @@ namespace ECS
 			}
 		}
 
-		/*============================================================================================
-		* \brief		Helper for sorting types and sizes
-		* \tparam		Archetype remap chunk indices for
-		* \return		auto type deduces into: 
-						std::pair<std::vector<std::type_index>, std::vector<std::size_t>>
-		*//*========================================================================================*/
+		// Helper for sorting types and sizes
+		// return auto type deduces into: 
+		// std::pair<std::vector<std::type_index>, std::vector<std::size_t>>
 		template <typename... Components>
 		auto sortTypes()
 		{
@@ -757,29 +656,20 @@ namespace ECS
 	class Entity
 	{
 	public:
-
-		/*============================================================================================
-		* \brief		Constructor
-		* \param		ID to be assigned to the entity
-		* \param		(TEMPORARY *tbd*) handle ref to entity manager
-		*//*========================================================================================*/
 		Entity(const uint32_t& newId, EntityManager& entMng)
 			:
 			id_{ newId },
 			entityManager_{ entMng }
-		{}
+		{
+		}
 
-		/*============================================================================================
-		* \brief		Destroy entity and free associated memory
-		*//*========================================================================================*/
+		// Destroy entity and free associated memory
 		void destroy()
 		{
 			entityManager_.destroyEntity(id_);
 		}
 
-		/*============================================================================================
-		* \brief		Print all components the entity holds
-		*//*========================================================================================*/
+		// Print all components the entity holds
 		void print()
 		{
 			std::cout << "____________________________________" << std::endl << std::endl;
@@ -797,11 +687,7 @@ namespace ECS
 			std::cout << "____________________________________" << std::endl << std::endl;
 		}
 
-		/*============================================================================================
-		* \brief		Modifying an existing entity value
-		* \param		Component type to be modified
-		* \tparam		Value to modify the component with
-		*//*========================================================================================*/
+		// Modifying an existing entity value
 		template <typename CompType>
 		void set(const CompType& value)
 		{
@@ -815,10 +701,7 @@ namespace ECS
 			loc.archetype->chunks_[chkIndex].get()->modify<CompType>(typeIndex, entIndex, value);
 		}
 
-		/*============================================================================================
-		* \brief		Get a component value from an existing entity
-		* \tparam		Component type to get the value from
-		*//*========================================================================================*/
+		// Get a component value from an existing entity
 		template <typename CompType>
 		CompType& get()
 		{
@@ -832,12 +715,7 @@ namespace ECS
 			return loc.archetype->chunks_[chkIndex].get()->retrieve<CompType>(typeIndex, entIndex);
 		}
 
-		/*============================================================================================
-		* \brief		Adding components to an entity
-		* \param		Values to be initialize new components with
-		* \tparam		Components to be added
-		* \tparam		Values to be initialize new components with
-		*//*========================================================================================*/
+		// Adding components to an entity
 		template <typename... Components, typename... Values>
 		void add(Values&&... val)
 		{
@@ -904,10 +782,7 @@ namespace ECS
 			}
 		}
 
-		/*============================================================================================
-		* \brief		Remove existing component(s) from an entity
-		* \tparam		Component(s) to be removed
-		*//*========================================================================================*/
+		// Remove existing component(s) from an entity
 		template <typename... Components>
 		void remove()
 		{
@@ -959,19 +834,13 @@ namespace ECS
 			}
 		}
 
-		/*============================================================================================
-		* \brief		Replicate the current entity's data onto a new entity
-		* \return		Cloned entity
-		*//*========================================================================================*/
+		// Replicate the current entity's data onto a new entity
 		Entity clone()
 		{
 			return { entityManager_.clone(id_), entityManager_ };
 		}
 
-		/*============================================================================================
-		* \brief		Check if an entity consists of the given component(s)
-		* \tparam		Components to check for
-		*//*========================================================================================*/
+		// Check if an entity consists of the given component(s)
 		template <typename... Components>
 		bool has()
 		{
@@ -984,11 +853,7 @@ namespace ECS
 		uint32_t id_;
 		EntityManager& entityManager_;
 
-		/*============================================================================================
-		* \brief		Helper for finding and returning the location of the entity in the map
-		* \param		Components to check for
-		* \return		Location of the entity
-		*//*========================================================================================*/
+		// Find and return the location of the entity in the map
 		EntityLoc& findEntity(const uint32_t& id)
 		{
 			auto it = entityManager_.getMap().find(id);
@@ -1000,11 +865,7 @@ namespace ECS
 			return it->second;
 		}
 
-		/*============================================================================================
-		* \brief		Helper for the adding a new component with values
-		* \param		Value of the component
-		* \tparam		Component type
-		*//*========================================================================================*/
+		// Helper for the adding a new component with values
 		template <typename CompType>
 		void setInitial(const CompType& value)
 		{
@@ -1018,10 +879,7 @@ namespace ECS
 			loc.archetype->chunks_[chkIndex].get()->setVal<CompType>(typeIndex, entIndex, value);
 		}
 
-		/*============================================================================================
-		* \brief		Helper for the adding a new component without values
-		* \tparam		Component type
-		*//*========================================================================================*/
+		// Helper for the adding a new component without values
 		template <typename CompType>
 		void setInitialEmpty()
 		{
@@ -1035,12 +893,6 @@ namespace ECS
 			loc.archetype->chunks_[chkIndex].get()->set<CompType>(typeIndex, entIndex);
 		}
 
-		/*============================================================================================
-		* \brief		Helper for assigning values to multiple new components. Used for 
-		* \tparam		(Tuple) List of components to add
-		* \tparam		Type of tuple
-		* \param		Sequence of indices used for expanding the parameter pack
-		*//*========================================================================================*/
 		template <typename... Components, typename Tuple, std::size_t... I>
 		void addImpl(Tuple&& t, std::index_sequence<I...>)
 		{

@@ -1,11 +1,3 @@
-/*============================================================================================
-* @file         chunk.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
-* @date         10/3/2025
-* @brief        Declaration/definition file for chunks
-*//*========================================================================================*/
-
-
 #pragma once
 
 // stds
@@ -19,9 +11,10 @@
 
 namespace ECS
 {
-	/*============================================================================================
-		* \brief		memory blocks that contain entities of a single archetype in SoA format
-	*//*========================================================================================*/
+	///
+	/// Chunks are memory blocks that contain entities of a single archetype
+	/// in a SoA format. 
+	///
 	struct Chunk
 	{
 		std::unique_ptr<std::byte[]> data;					// Starting address of the chunk
@@ -31,12 +24,6 @@ namespace ECS
 		size_t capacity;									// Max number of entities for the chunk to store
 		size_t current;										// Current number of entities stored
 
-		/*============================================================================================
-			* \brief			Chunk Constructor
-			* \param[in]		Max number of entities to store
-			* \param[in]		Types to be stored
-			* \param[in]		Sizes of types to store
-		*//*========================================================================================*/
 		Chunk(
 			uint32_t chunkCapacity,
 			std::vector<std::type_index>& types,
@@ -66,12 +53,7 @@ namespace ECS
 			}
 		}
 
-		/*============================================================================================
-			* \brief			Retrieve the value of an entity's component
-			* \param[in]		Component index
-			* \param[in]		Entity index
-			* \return			Value of a component
-		*//*========================================================================================*/
+		// Retrieve the value of an entity's component
 		template <typename T>
 		T& retrieve(const size_t& componentIndex, const size_t& entityIndex)
 		{
@@ -81,11 +63,7 @@ namespace ECS
 			return *reinterpret_cast<T*>(p);
 		}
 
-		/*============================================================================================
-			* \brief			Default construct a specified component
-			* \param[in]		Component index
-			* \param[in]		Entity index
-		*//*========================================================================================*/
+		// Set a value in a specified component
 		template <typename T>
 		void set(const size_t& componentIndex, const size_t& entityIndex)
 		{
@@ -95,15 +73,10 @@ namespace ECS
 			char* p = search(componentIndex, entityIndex);
 
 			// Construct component into memory
-			new (p) T{};
+			new (p) T();
 		}
 
-		/*============================================================================================
-			* \brief			Set a value in a specified component
-			* \param[in]		Component index
-			* \param[in]		Entity index
-			* \param[in]		Forwarded value
-		*//*========================================================================================*/
+		// Set a value in a specified component
 		template <typename T, typename U>
 		void setVal(const size_t& componentIndex, const size_t& entityIndex, U&& value)
 		{
@@ -116,12 +89,7 @@ namespace ECS
 			new (p) T{ std::forward<U>(value) };
 		}
 
-		/*============================================================================================
-			* \brief			Modify a value in a specified component
-			* \param[in]		Component index
-			* \param[in]		Entity index
-			* \param[in]		Forwarded value
-		*//*========================================================================================*/
+		// Modify a value in a specified component
 		template <typename T, typename U>
 		void modify(const size_t& componentIndex, const size_t& entityIndex, U&& value)
 		{
@@ -138,12 +106,7 @@ namespace ECS
 			new (p) T{ std::forward<U>(value) };
 		}
 
-		/*============================================================================================
-			* \brief			Identify the location of the component of a given entity
-			* \param[in]		Component index
-			* \param[in]		Entity index
-			* \return			Pointer to the start of the component of an entity
-		*//*========================================================================================*/
+		// Identify the location of the component of a given entity
 		char* search(const size_t& componentIndex, const size_t& entityIndex)
 		{
 			auto pComp = static_cast<char*>(pComponent[componentIndex]);
