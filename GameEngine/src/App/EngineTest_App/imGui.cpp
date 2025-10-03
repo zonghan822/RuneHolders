@@ -70,7 +70,7 @@ double percentage(double target, double max) {
 	return (target / max) * 100.0;
 }
 
-void imGuiInit(GLFWwindow* window){
+void imGuiInit(GLFWwindow* window) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -82,7 +82,7 @@ void imGuiInit(GLFWwindow* window){
 }
 
 
-void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
+void imGuiDisplay(GLFWwindow* window, Engine::EnoEngine& engine_) {
 
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
@@ -130,7 +130,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	if (ImGui::Button("FPS"))      activeWindow = WindowID::FPS;
 	if (ImGui::Button("Prefabs"))  activeWindow = WindowID::Prefabs;
 	//FPS and Time Staggering for Displaying FPS
-	#pragma region IMGUI Main
+#pragma region IMGUI Main
 	if (activeWindow == WindowID::Main) {
 		ImGui::Begin("Main");
 
@@ -250,11 +250,16 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 				// then add appropriate collider
 				if (selectedCollider == 1) {//circle
 					e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderRadius));
-
+					if (e.has<ECSComponents::DrawInfoComponent>()) {
+						e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+					}
 				}
 				else if (selectedCollider == 2) { // rectangle
-					e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderWidth, colliderHeight)
-					);
+					e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderWidth, colliderHeight));
+					if (e.has<ECSComponents::DrawInfoComponent>()) {
+						e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+					}
+
 				}
 
 				std::cout << "Spawned entity WITH collider\n";
@@ -263,6 +268,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 			else {
 				std::cout << "Spawned entity without collider\n";
+				//if (e.has<ECSComponents::DrawInfoComponent>())std::cout << "drawcomponent XY: " << e.get<ECSComponents::DrawInfoComponent>() << "\n";
 			}
 			if (g_game) g_game->markEntitiesDirty();
 		}
@@ -293,7 +299,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
-	#pragma region IMGUI Edit
+#pragma region IMGUI Edit
 
 	if (activeWindow == WindowID::Edit) {
 		ImGui::Begin("Edit");
@@ -346,7 +352,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
-	#pragma region IMGUI FPS
+#pragma region IMGUI FPS
 	if (activeWindow == WindowID::FPS) {
 		ImGui::Begin("FPS");
 		ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
@@ -357,7 +363,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 			if (time.first != "totalTimePerFrame") {
 				ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);// divide by 1000 to show microseconds as milliseconds
 			}
-		
+
 		}
 		ImGui::Text("=== PER SYSTEM TIMING IN PERCENTAGE ===");
 		for (auto& time : throttledTimes_)
@@ -370,7 +376,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
-	#pragma region IMGUI Prefabs and Serialization
+#pragma region IMGUI Prefabs and Serialization
 	//to use, do your settings on main tab. then enter prefabs tab to save your file
 	//1. Enter file/prefab name
 	//2. Load from the name tab
@@ -380,14 +386,14 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::Begin("Prefabs");
 
 
-		if ( ImGui::InputText("Name for Prefab", nameSetter,sizeof(nameSetter)) ) {
+		if (ImGui::InputText("Name for Prefab", nameSetter, sizeof(nameSetter))) {
 			prefab.name = static_cast<std::string>(nameSetter);
 		}
 
 		if (ImGui::Button("Save Prefab")) {
 			//this will save to assets/saves/..
 			savePrefab(prefab);
-		}		
+		}
 
 		if (ImGui::Button("Load Prefab")) {
 			std::string fileStr = "../../../assets/saves/" + static_cast<std::string>(nameSetter) + ".txt";
@@ -395,14 +401,14 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 			//PrefabData loaded = loadPrefab("../../../assets/saves/prefabs.txt");
 			PrefabData loaded = loadPrefab(fileStr);
 			prefabRegistry[loaded.name] = loaded;
-		}		
+		}
 
 		if (ImGui::Button("Spawn Prefab")) {
 			if (prefabRegistry.count(prefab.name)) {
 				instantiatePrefab(prefabRegistry[prefab.name], engine_);
 			}
 		}
-	
+
 		ImGui::End();
 	}
 #pragma endregion
@@ -414,7 +420,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 void displayEntityCount(Engine::EnoEngine& engine_) {
 	size_t counter = 0;
-	
+
 	std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<>();
 	for (ECS::Entity const& e : EntityList) {
 		counter++;

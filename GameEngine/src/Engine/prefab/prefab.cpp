@@ -57,14 +57,29 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
 
     // add draw info
     ECSComponents::DrawInfoComponent DIC{
-        prefab.x, prefab.y, 
-        prefab.width, prefab.height,
+        prefab.x, 
+        prefab.y, 
+        prefab.width, 
+        prefab.height,
         prefab.shape == 0 ? "Circle" : "Rectangle",
         prefab.color
     };
-    e.add<ECSComponents::DrawInfoComponent>(DIC);
 
-    //add collider
+    const float prX       = prefab.x;
+    const float prY       = prefab.y;
+    const float prW       = prefab.width;
+    const float prH       = prefab.height;
+    const char* prS       = "Rectangle";
+    const int prC         = prefab.color;
+
+
+
+    e.add<ECSComponents::DrawInfoComponent>(DIC);
+    e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ prX , prY, prW, prH , prS, prC });
+    std::cout << e.get<ECSComponents::DrawInfoComponent>() << "\n";
+
+
+
     if (prefab.hasCollider) {
         e.add<Collision::CollisionComponent>(
             Collision::CollisionComponent(prefab.width, prefab.height)
