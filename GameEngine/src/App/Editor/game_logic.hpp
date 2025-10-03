@@ -1,4 +1,5 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         game_logic.hpp
 * @author       Name (@digipen.edu)
 * @date         DD-MM-YYYY

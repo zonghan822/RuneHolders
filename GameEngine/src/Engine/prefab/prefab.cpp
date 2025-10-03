@@ -1,3 +1,12 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         prefab.cpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @date         01-10-2025
+* @brief        Provides data structures and functions for saving, loading, and instantiating
+*               prefabs. Prefabs are reusable templates that define attributes such as position,
+*               size, color, shape, and collider information.
+*===========================================================================================*/
 #include "prefab.hpp"
 #include "../engine/eno_engine.hpp"
 

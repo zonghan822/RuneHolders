@@ -1,4 +1,5 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         crashlogger.cpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
 * @date         03-10-2025
