@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         window.cpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Definition file for the window manager
+*//*========================================================================================*/
+
+
 #include "eno_window.hpp"
 
 namespace Window
@@ -103,10 +111,18 @@ namespace Window
 		return { w,h };
 	}
 
+<<<<<<< Updated upstream
 	std::pair<int, int> EnoWindow::getWindowSize() const {
 		int w = 0, h = 0;
 		if (window_) glfwGetWindowSize(window_, &w, &h);
 		return { w,h };
+=======
+	/*========================================= Events ===========================================*/
+	void EnoWindow::gameWindowInit()
+	{
+		std::cout << "initializing game window" << std::endl;
+		windowInit(gameWindow_);
+>>>>>>> Stashed changes
 	}
 
 	void EnoWindow::setVSync(bool enabled) const { 

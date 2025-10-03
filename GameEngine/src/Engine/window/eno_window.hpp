@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         window.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Declaration file for the window manager
+*//*========================================================================================*/
+
+
 #pragma once
 // OpenGL api
 #include <GL/glew.h>
@@ -17,6 +25,7 @@ namespace Window
 	class EnoWindow 
 	{
 	public:
+<<<<<<< Updated upstream
 		EnoWindow(Event::EnoEventBus& bus);
 
 		// Non-copyable, movable
@@ -24,9 +33,20 @@ namespace Window
 		EnoWindow& operator=(const EnoWindow&) = delete;
 		EnoWindow(EnoWindow&&) = default;
 		EnoWindow& operator=(EnoWindow&&) = default;
+=======
+		/*============================================================================================
+		 * \brief				Window manager constructor
+		 * \param				Window dimensions (Width, Height)
+		*//*========================================================================================*/
+		EnoWindow(std::pair<int, int>);
+>>>>>>> Stashed changes
 
+		/*============================================================================================
+		 * \brief				Window manager destructor
+		*//*========================================================================================*/
 		~EnoWindow();
 
+<<<<<<< Updated upstream
 		// Create a window and make its GL context current.
 		// Throws std::runtime_error on failure.
 		void initialize(const std::string& title, int width, int height,
@@ -49,6 +69,29 @@ namespace Window
 
 		// VSync
 		void setVSync(bool enabled) const;
+=======
+		/*============================================================================================
+		 * \brief				Window getter
+		*//*========================================================================================*/
+		GLFWwindow* getWindow() const;
+		
+		/*============================================================================================
+		 * \brief				Initialize and create the window
+		*//*========================================================================================*/
+		void windowInit(GLFWwindow*&);
+
+		/*========================================= Events ===========================================
+
+		/*============================================================================================
+		 * \brief				Creating the game window
+		*//*========================================================================================*/
+		void gameWindowInit();
+
+		/*============================================================================================
+		 * \brief				Destroying the game window
+		*//*========================================================================================*/
+		void destroyGameWindow();
+>>>>>>> Stashed changes
 
 	private:
 		// event callbacks

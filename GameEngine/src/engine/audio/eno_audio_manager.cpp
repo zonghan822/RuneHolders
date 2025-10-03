@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         eno_audio_manager.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Implementation file for the audio manager
+*//*========================================================================================*/
+
+
 #include "eno_audio_manager.hpp"
 
 

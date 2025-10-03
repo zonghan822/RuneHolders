@@ -1,8 +1,16 @@
-#pragma once
+/*============================================================================================
+* @file         eno_map.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Declaration/definition file for a bimap
+*//*========================================================================================*/
 
+#pragma once
 
 // stds
 #include <unordered_map>
+#include <optional>
+#include <utility>
 
 
 namespace Utility
@@ -13,27 +21,38 @@ namespace Utility
 	class EnoMap
 	{
 	public:
-		
-		// Default map functions
-		std::optional<Value> find(const Key& key) const
-		{
-			auto it = map_.find(key);
-			if (it == map_.end())
-				return std::nullopt;
+		/*============================================================================================
+		 * \brief				Main reason for the custom map, instead of an iterator, we return
+		 *						an optional value instead from finding
+		 * \return				Value found from finding the key in the map
+		*//*========================================================================================*/
+		std::optional<Value> find(const Key&) const;
 
-			return it->second;
-		}
+		/*============================================================================================
+		 * \brief				Insert a key and value into the map
+		 * \param				Key to insert
+		 * \param				Value to insert
+		*//*========================================================================================*/
+		void insert(const Key&, const Value&);
 
-		void insert(const Key& key, const Value& value) { map_[key] = value; }
-
-		size_t size() const { return map_.size(); }
+		/*============================================================================================
+		 * \brief				Returns the size of the map
+		 * \return				Size of the map in size_t
+		*//*========================================================================================*/
+		size_t size() const;
 
 		// Overloads
-		Value& operator[](const Key& key) { return map_[key]; }
-		const Value& operator[](const Key& key) const { return map_.at(key); }
+		/*============================================================================================
+		 * \brief				Overloads on the subscript operator to retrieve associated value to key
+		 * \param				Key to find
+		 * \return				Value associated with passed in key
+		*//*========================================================================================*/
+		Value& operator[](const Key&);
+		const Value& operator[](const Key&) const;
 
 
 	private:
 		std::unordered_map<Key, Value, Hasher, KeyEq> map_;
 	};
+	#include "eno_map.tpp"
 }

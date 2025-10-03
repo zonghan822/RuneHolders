@@ -56,10 +56,15 @@ namespace Engine
 	void EnoEngine::setupResourceLoading()
 	{
 		// Loading assets from directories
+<<<<<<< Updated upstream
 		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getMusicPath());
 		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getSFXPath());
 
 		// Loading shaders
+=======
+		loader_.loadSound(audioMng_.getSystem(), loader_.getMusicPath());
+		loader_.loadSound(audioMng_.getSystem(), loader_.getSFXPath());
+>>>>>>> Stashed changes
 		loader_.loadShaders(loader_.getShaderPath());
 
 		// Loading images

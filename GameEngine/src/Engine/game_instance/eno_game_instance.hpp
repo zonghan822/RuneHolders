@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         eno_game_instance.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Declaration/definition file for the game instance class
+*//*========================================================================================*/
+
+
 #pragma once
 
 // Engine Component(s)
@@ -12,6 +20,10 @@ namespace GameInstance
 	class EnoGameInstance
 	{
 	public:
+
+		/*============================================================================================
+			* \brief			Game instance constructor
+		*//*========================================================================================*/
 		EnoGameInstance(Event::EnoEventBus& bus)
 			:
 			bus_ { bus },
@@ -24,19 +36,26 @@ namespace GameInstance
 			selectedScene_ = scenes_.front().get();
 		}
 
-		// Create and append a new scene
+		/*============================================================================================
+			* \brief			Create a unique game scene
+		*//*========================================================================================*/
 		void createScene()
 		{
 			std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
 			scenes_.push_back(std::move(scene));
 		}
 
+		/*============================================================================================
+			* \brief			Plays the selected scene via input (F5)
+		*//*========================================================================================*/
 		void selectScene()
 		{
 			
 		}
 
-		// Plays the selected scene
+		/*============================================================================================
+			* \brief			Plays the selected scene via input (F5)
+		*//*========================================================================================*/
 		void playScene()
 		{
 			if (!playingScene_)
@@ -48,7 +67,20 @@ namespace GameInstance
 			}
 		}
 
-		// Stops playing a running scene
+		/*============================================================================================
+			* \brief			Pause a running scene via input (F7)
+		*//*========================================================================================*/
+		void pauseScene()
+		{
+			if (playingScene_)
+			{
+				std::cout << "Pausing scene!" << std::endl;
+			}
+		}
+
+		/*============================================================================================
+			* \brief			Stops playing a running scene via input (F8)
+		*//*========================================================================================*/
 		void stopScene()
 		{
 			if (playingScene_)
@@ -57,15 +89,6 @@ namespace GameInstance
 
 				// Destroy the game window
 				bus_.publish(DestroyGameWindow{});
-			}
-		}
-
-		// Pause a running scene
-		void pauseScene()
-		{
-			if (playingScene_)
-			{
-				std::cout << "Pausing scene!" << std::endl;
 			}
 		}
 
