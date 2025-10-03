@@ -44,16 +44,21 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
     }
 
     e.add<ECSComponents::NameComponent>(static_cast<const char*>(name));
-    //std::cout << "name of this entity: " << e.get<ECSComponents::NameComponent>().name << "\n";
+    //std::cout << "name of this entity: " << e.get<ECSComponents::NameComponent>().name << "\n;
 
+    // Calculate CENTER position from DrawInfo's top-left
+    float centerX = prefab.x + (prefab.width * 0.5f);
+    float centerY = prefab.y + (prefab.height * 0.5f);
 
-    // add transform
-    ECSComponents::TransformComponent t{
-        {prefab.x, prefab.y, 0.0f},             //x,y,z
-        {0,0,0},                                //rotation
-        {1,1,1}                                 //scale
+    ECSComponents::TransformComponent transform{
+            {centerX, centerY, 0.0f},
+            {0.0f, 0.0f, 0.0f},
+            {1.0f, 1.0f, 1.0f}
     };
-    e.add<ECSComponents::TransformComponent>(t);
+
+    e.add<ECSComponents::TransformComponent>(transform);
+
+
 
     // add draw info
     ECSComponents::DrawInfoComponent DIC{
@@ -65,22 +70,14 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
         prefab.color
     };
 
-    const float prX       = prefab.x;
-    const float prY       = prefab.y;
-    const float prW       = prefab.width;
-    const float prH       = prefab.height;
-    const char* prS       = "Rectangle";
-    const int prC         = prefab.color;
-
-
 
     e.add<ECSComponents::DrawInfoComponent>(DIC);
-    e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ prX , prY, prW, prH , prS, prC });
     std::cout << e.get<ECSComponents::DrawInfoComponent>() << "\n";
 
 
 
     if (prefab.hasCollider) {
+
         e.add<Collision::CollisionComponent>(
             Collision::CollisionComponent(prefab.width, prefab.height)
         );
