@@ -25,6 +25,7 @@ namespace Window
 	class EnoWindow 
 	{
 	public:
+<<<<<<< Updated upstream
 		EnoWindow(Event::EnoEventBus& bus);
 
 		// Non-copyable, movable
@@ -32,24 +33,20 @@ namespace Window
 		EnoWindow& operator=(const EnoWindow&) = delete;
 		EnoWindow(EnoWindow&&) = default;
 		EnoWindow& operator=(EnoWindow&&) = default;
-		
+=======
 		/*============================================================================================
 		 * \brief				Window manager constructor
 		 * \param				Window dimensions (Width, Height)
 		*//*========================================================================================*/
 		EnoWindow(std::pair<int, int>);
-
-		/*============================================================================================
-		 * \brief				Window manager constructor
-		 * \param				Window dimensions (Width, Height)
-		*//*========================================================================================*/
-		EnoWindow(std::pair<int, int>);
+>>>>>>> Stashed changes
 
 		/*============================================================================================
 		 * \brief				Window manager destructor
 		*//*========================================================================================*/
 		~EnoWindow();
 
+<<<<<<< Updated upstream
 		// Create a window and make its GL context current.
 		// Throws std::runtime_error on failure.
 		void initialize(const std::string& title, int width, int height,
@@ -72,12 +69,7 @@ namespace Window
 
 		// VSync
 		void setVSync(bool enabled) const;
-		
-		/*============================================================================================
-		 * \brief				Window getter
-		*//*========================================================================================*/
-		GLFWwindow* getWindow() const;
-
+=======
 		/*============================================================================================
 		 * \brief				Window getter
 		*//*========================================================================================*/
@@ -99,7 +91,7 @@ namespace Window
 		 * \brief				Destroying the game window
 		*//*========================================================================================*/
 		void destroyGameWindow();
-
+>>>>>>> Stashed changes
 
 	private:
 		// event callbacks

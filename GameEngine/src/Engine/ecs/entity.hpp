@@ -38,6 +38,19 @@ namespace ECS
 	class EntityManager
 	{
 	public:
+
+<<<<<<< Updated upstream
+		EntityManager() = default;
+=======
+		/*============================================================================================
+		* \brief		Entity manager
+		*//*========================================================================================*/
+		EntityManager(ECSComponents::EnoComponentRegistry& compReg)
+			:
+			compReg_{ compReg }
+		{}
+>>>>>>> Stashed changes
+
 		inline static uint32_t id = 0;
 
 		/*============================================================================================
