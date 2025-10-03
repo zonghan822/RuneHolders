@@ -1,11 +1,18 @@
+/*============================================================================================
+* @file         movementTest.cpp
+* @author       Caven Koh (caven.koh@digipen.edu)
+* @date         03-10-2025
+* @brief        This file creates objects using ECS to then test for various dynamic collision
+*				scenarios, such as moving circle and line, circle to circle and square to square
+*//*========================================================================================*/
 #pragma once
 
 #include "movementTest.hpp"
 
 
 
-float min(float a, float b) { return a < b ? a : b; }
-float max(float a, float b) { return a < b ? a : b; }
+double min(double a, double b) { return a < b ? a : b; }
+double max(double a, double b) { return a < b ? a : b; }
 
 bool CheckDynamicSquare(
 	const Collision::CollisionComponent& colA,
@@ -13,150 +20,151 @@ bool CheckDynamicSquare(
 	const Collision::CollisionComponent& colB,
 	const ECSComponents::TransformComponent& transformB,
 	float& colTi,                 // time of collision (output)
-	const float& dt
+	Math::eVec2<float>& normal,
+	const double& dt
 )
 {
-	
+
 	AABB aabb1{ transformA, colA };
 	AABB aabb2{ transformB, colB };
 
-	float tFirstX = 0.f;
-	float tLastX = dt;
+	double tFirstX = 0.f;
+	double tLastX = dt;
 
-	float tFirstY = 0.f;
-	float tLastY = dt;
+	double tFirstY = 0.f;
+	double tLastY = dt;
 
-	// Relative velocity
-	Math::eVec2<float> relVel{ transformA.vel.x - transformB.vel.x ,transformA.vel.y - transformB.vel.y };
+	// Calculate relative velocity between the two objects
+	Math::eVec2<float> relVel{
+		transformA.vel.x - transformB.vel.x,
+		transformA.vel.y - transformB.vel.y
+	};
 
-	// b is on the left, no intersection and b is moving away  
-	if (aabb1.min.v1 > aabb2.max.v1) 
+	std::cout << "rev vel" << relVel << std::endl;
+
+	// X-axis collision checks
+	if (relVel.v1 < 0.f)
 	{
-		return false;												
-	}
-
-	//case 4
-	if (aabb1.max.v1 < aabb2.min.v1) 
-	{
-
-		// b is on the left, tFirst = time taken to reach minimum distance for collision 
-		tFirstX = max((aabb1.max.v1 - aabb2.min.v1) / relVel.v1, tFirstX);
-
-		// b is on the left, tLast = time taken to reach max distance before no more collision
-		tLastX = min((aabb1.min.v1 - aabb2.max.v1) / relVel.v1, tLastX);
-	}
-
-	else if (relVel.v1 > 0.f)
-	{
-		//case 2
-		if (aabb1.min.v1 > aabb2.max.v1) 
+		// Object A moving left relative to B
+		if (aabb1.min.v1 > aabb2.max.v1)
 		{
-			// b is on the right, tFirst = time taken to reach minimum distance for collision
-			tFirstX = max((aabb1.min.v1 - aabb2.max.v1) / relVel.v1, tFirstX);
-
-			// b is on the right, tLast = time taken to reach max distance before no more collision
-			tLastX = min((aabb1.max.v1 - aabb2.min.v1) / relVel.v1, tLastX);		
+			return false; // Already separated, moving away
 		}
 
-		//case 3
 		if (aabb1.max.v1 < aabb2.min.v1)
 		{
-			// b is on the right, no intersection b is and moving away
-			return false;													
+			// Calculate collision time window on X-axis
+			tFirstX = max((aabb1.max.v1 - aabb2.min.v1) / relVel.v1, tFirstX);
+			tLastX = min((aabb1.min.v1 - aabb2.max.v1) / relVel.v1, tLastX);
 		}
 	}
-
-	// object is moving in direction parallel to collision object
-	else if (relVel.v1 == 0.f) 
-	{											
-		//case 5	
-		if (aabb1.max.v1 < aabb2.min.v1) 
-		{
-
-			return false;
-
-		}
-		// checks that the two objects are not stationary and intersecting
-		else if (aabb1.min.v1 > aabb2.max.v1) 
-		{	
-			return false;
-		}
-	}
-
-
-	//Step 4: Repeat step 3 on the y-axis
-	if (relVel.v2 < 0.f) 
-	{													
-		//case 1
-		// b is on the top, no intersection and b is moving away  
-		if (aabb1.min.v2 > aabb2.max.v2) 
-		{
-			return false;													
-		}
-
-		//case 4
-		if (aabb1.max.v2 < aabb2.min.v2) 
-		{
-			// b is on the bottom, tFirst = time taken to reach minimum distance for collision 
-			tFirstY = max((aabb1.max.v2 - aabb2.min.v2) / relVel.v2, tFirstY);
-
-			// b is on the bottom, tLast = time taken to reach max distance before no more collision
-			tLastY = min((aabb1.min.v2 - aabb2.max.v2) / relVel.v2, tLastY);		
-		}
-
-	}
-	// moving down
-	else if (relVel.v2 > 0.f) 
-	{													
-		//case 2
-		if (aabb1.min.v2 > aabb2.max.v2) 
-		{
-			// b is on the top, tFirst = time taken to reach minimum distance for collision
-			tFirstY = max((aabb1.min.v2 - aabb2.max.v2) / relVel.v2, tFirstY);
-
-			// b is on the top, tLast = time taken to reach max distance before no more collision
-			tLastY = min((aabb1.max.v2 - aabb2.min.v2) / relVel.v2, tLastY);		
-		}
-
-		//case 3
-		if (aabb1.max.v2 < aabb2.min.v2) 
-		{
-			// b is on the bottom, no intersection b is and moving away
-			return false;													
-		}
-	}
-
-	// object is moving in direction parallel to collision object
-	else if (relVel.v2 == 0.f) 
-	{													
-		//case 5	
-		if (aabb1.max.v2 < aabb2.min.v2) 
-		{
-			return false;
-
-		}
-		// checks that the two objects are not stationary and intersecting
-		else if (aabb1.min.v2 > aabb2.max.v2) 
-		{								
-			return false;
-		}
-	}
-	// no intersection
-	if (tFirstX > tLastY || tFirstY > tLastX) { return false; }				
-	else 
+	else if (relVel.v1 > 0.f)
 	{
-		// Assign value to firstTimeOfCollision
-		// If value == 0, squares are already colliding
-		colTi = (max(tFirstX, tFirstY));		
-		if (!colTi)											
+		// Object A moving right relative to B
+		if (aabb1.min.v1 > aabb2.max.v1)
 		{
-			return true;
+			tFirstX = max((aabb1.min.v1 - aabb2.max.v1) / relVel.v1, tFirstX);
+			tLastX = min((aabb1.max.v1 - aabb2.min.v1) / relVel.v1, tLastX);
 		}
-		return false;
 
+		if (aabb1.max.v1 < aabb2.min.v1)
+		{
+			return false; // Already separated, moving away
+		}
+	}
+	else if (relVel.v1 == 0.f)
+	{
+		// No relative motion on X-axis - check for overlap
+		if (aabb1.max.v1 < aabb2.min.v1 || aabb1.min.v1 > aabb2.max.v1)
+		{
+			return false; // Not overlapping on X-axis
+		}
 	}
 
+	// Y-axis collision checks
+	if (relVel.v2 < 0.f)
+	{
+		// Object A moving up relative to B
+		if (aabb1.min.v2 > aabb2.max.v2)
+		{
+			return false; // Already separated, moving away
+		}
 
+		if (aabb1.max.v2 < aabb2.min.v2)
+		{
+			// Calculate collision time window on Y-axis
+			tFirstY = max((aabb1.max.v2 - aabb2.min.v2) / relVel.v2, tFirstY);
+			tLastY = min((aabb1.min.v2 - aabb2.max.v2) / relVel.v2, tLastY);
+		}
+	}
+	else if (relVel.v2 > 0.f)
+	{
+		// Object A moving down relative to B
+		if (aabb1.min.v2 > aabb2.max.v2)
+		{
+			tFirstY = max((aabb1.min.v2 - aabb2.max.v2) / relVel.v2, tFirstY);
+			tLastY = min((aabb1.max.v2 - aabb2.min.v2) / relVel.v2, tLastY);
+		}
+
+		if (aabb1.max.v2 < aabb2.min.v2)
+		{
+			return false; // Already separated, moving away
+		}
+	}
+	else if (relVel.v2 == 0.f)
+	{
+		// No relative motion on Y-axis - check for overlap
+		if (aabb1.max.v2 < aabb2.min.v2 || aabb1.min.v2 > aabb2.max.v2)
+		{
+			return false; // Not overlapping on Y-axis
+		}
+	}
+
+	// Check if collision time windows overlap
+	if (tFirstX > tLastY || tFirstY > tLastX)
+	{
+		return false; // No intersection
+	}
+
+	// Collision detected - calculate time and normal
+	colTi = static_cast<float>(max(tFirstX, tFirstY));
+
+	// Determine collision normal based on which axis had first contact
+	if (tFirstX > tFirstY)
+	{
+		// X-axis collision
+		normal.v1 = (relVel.v1 > 0.f) ? -1.f : 1.f;
+		//std::cout << "normal V1: " << normal.v1 << std::endl;
+		normal.v2 = 0.f;
+	}
+	else if (tFirstY > tFirstX)
+	{
+		// Y-axis collision
+		normal.v1 = 0.f;
+		normal.v2 = (relVel.v2 > 0.f) ? -1.f : 1.f;
+		//std::cout << "normal V2: " << normal.v2 << std::endl;
+	}
+	else
+	{
+		//std::cout << "tFirstX: " << tFirstX << ", tFirstY: " << tFirstY << std::endl;
+		//std::cout << "relVel: (" << relVel.v1 << ", " << relVel.v2 << ")" << std::endl;
+
+		// Corner collision - normalize diagonal normal
+		normal.v1 = (relVel.v1 > 0.f) ? -1.f : (relVel.v1 < 0.f ? 1.f : 0.f);
+		normal.v2 = (relVel.v2 > 0.f) ? -1.f : (relVel.v2 < 0.f ? 1.f : 0.f);
+		//std::cout << "normalv1v2:: " << normal << std::endl;
+		//float length = sqrt(normal.v1 * normal.v1 + normal.v2 * normal.v2);
+
+		//std::cout << "Normal v1 v2:" << normal << std::endl;
+	}
+
+	// Only report collision if it happens within this frame
+	if (colTi >= 0.f && colTi <= 1.f)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -384,10 +392,10 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
 
 			Math::eVec2<float> nextPos;
-			nextPos.v1 = transform.pos.x + transform.vel.x * dt;
-			nextPos.v2 = transform.pos.y + transform.vel.y * dt;
-			Math::eVec2<float> colPoint;
+			nextPos.v1 = static_cast<float>(transform.pos.x + transform.vel.x * dt);
+			nextPos.v2 = static_cast<float>(transform.pos.y + transform.vel.y * dt);
 			float colTi;
+			Math::eVec2<float> normalAtCol;
 			bool hasCollided = false;
 
 			// Loop through other objects
@@ -410,10 +418,29 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 							{
 								//Call check collision function for dynamic rect rect
 								if (CheckDynamicSquare(collision, transform, otherCollision, otherTransform,
-														colTi, dt))
+														colTi, normalAtCol, dt))
 								{
+									// Calculate relative velocity
+									Math::eVec2<float> relVel{
+										transform.vel.x - otherTransform.vel.x,
+										transform.vel.y - otherTransform.vel.y
+									};
+
+									//std::cout << "relvel = :" << relVel << std::endl;
+
+									// Calculate relative velocity along normal
+									float velAlongNormal = relVel.v1 * normalAtCol.v1 +
+										relVel.v2 * normalAtCol.v2;
+
+									// Don't resolve if velocities are separating
+									//if (velAlongNormal > 0)
+									//	continue;
+
+									// Subtract the component along that direction
+									transform.vel.x -= velAlongNormal * normalAtCol.v1;
+									transform.vel.y -= velAlongNormal * normalAtCol.v2;
+
 									hasCollided = true;
-									Math::eVec2<float> penetration;
 
 
 								}
@@ -431,21 +458,14 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				transform.pos.y = nextPos.v2;
 			}
 
-
+			//update draw info component for the new pos
+			drawInfo.xPos = transform.pos.x;
+			drawInfo.yPos = transform.pos.y;
 		}
 
 
 
 	}
-
-
-
-
-
-
-
-
-
 
 }
 
