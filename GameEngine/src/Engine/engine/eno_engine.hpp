@@ -38,10 +38,13 @@ namespace Engine
 		Event::EnoEventBus& getEventBus() { return bus_; }
 		Resources::EnoLoader& getResourceLoader() { return loader_; }
 		Config::EnoConfigManager& getConfigManager() { return configMng_; }
+<<<<<<< Updated upstream
 		Window::EnoWindow& getWindowManager() { return window_; }
 		Input::EnoInputManager& getInputManager() { return inputMng_; }
+=======
 		Window::EnoWindow& getWindow() { return window_; }
 		Input::EnoInputManager& getInputManager() { return input_; }
+>>>>>>> Stashed changes
 
 		double getDeltaTime() const { return dt_; }
 		double getFPS() const { return fps_; }
@@ -51,8 +54,14 @@ namespace Engine
 		void setupResourceLoading();
 		void updateTime(double fpsCalcInt = 1.0);
 
+<<<<<<< Updated upstream
 		// Services & Tools
 		Config::EnoConfigManager configMng_;
+=======
+		// Private member shii / was here before i edited
+		Config::EnoConfigManager configMng_;
+		Window::EnoWindow window_{ configMng_.getWindowDim() };
+>>>>>>> Stashed changes
 		Event::EnoEventBus bus_;
 		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };

@@ -111,16 +111,18 @@ namespace Window
 		return { w,h };
 	}
 
+<<<<<<< Updated upstream
 	std::pair<int, int> EnoWindow::getWindowSize() const {
 		int w = 0, h = 0;
 		if (window_) glfwGetWindowSize(window_, &w, &h);
 		return { w,h };
-
+=======
 	/*========================================= Events ===========================================*/
 	void EnoWindow::gameWindowInit()
 	{
 		std::cout << "initializing game window" << std::endl;
 		windowInit(gameWindow_);
+>>>>>>> Stashed changes
 	}
 
 	void EnoWindow::setVSync(bool enabled) const { 
