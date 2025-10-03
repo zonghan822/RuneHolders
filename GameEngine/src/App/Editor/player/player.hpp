@@ -1,18 +1,11 @@
-/*************************************************
-* @file player.hpp
-* @brief Player component and system for character control
-* @author Your Team
-*
-* This file contains:
-*   - Player component (marks an entity as the player)
-*   - Player system (handles movement with collision response)
-*
-* USAGE:
-*   1. Create entity with Player, Transform, and Collision components
-*   2. Create PlayerSystem and call Update() each frame
-*   3. Player will move with WASD but respect collisions
-**************************************************/
-
+/*============================================================================================
+* @file         player.hpp
+* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @date         03-10-2025
+* @brief        Player component and system for character control. Contains player component
+*               that marks entities as the player and player system that handles movement
+*               with collision response and dash mechanics.
+*//*========================================================================================*/
 #pragma once
 
 #include "../Engine/math/math.hpp"
@@ -26,52 +19,45 @@
 
 namespace Player
 {
-    //======================================================================================
-    // PLAYER RENDERING AND COLLISION CONSTANTS
-    //======================================================================================
+    // Player rendering and collision constants
     constexpr float PLAYER_SPRITE_WIDTH = 48.0f;
     constexpr float PLAYER_SPRITE_HEIGHT = 48.0f;
     constexpr float PLAYER_COLLIDER_WIDTH = 48.0f;
     constexpr float PLAYER_COLLIDER_HEIGHT = 48.0f;
 
-    //======================================================================================
-    // PLAYER COMPONENT
-    //======================================================================================
-
-    /*
-    * @brief Component that marks an entity as the player character
-    *
-    * Attach this to an entity to designate it as the player.
-    * The entity should also have Transform and Collision components.
-    */
+    /*============================================================================================
+    * \brief       Component that marks an entity as the player character. Attach this to an
+    *              entity to designate it as the player. The entity should also have Transform
+    *              and Collision components.
+    *//*========================================================================================*/
     struct PlayerComponent
     {
-        float moveSpeed;        // movement speed in pixels per second
-        bool canMove;           // can the player move? (for stun effects, etc)
+        float moveSpeed;                    // Movement speed in pixels per second
+        bool canMove;                       // Can the player move? (for stun effects, etc)
 
         // dashing properties
-        bool isDashing;         // is the player currently dashing?
-        float dashTimer;        // current time in the dash
-        float dashDuration;     // how long the dash lasts (e.g., 0.2 seconds)
-        float dashDistance;     // how far to dash (e.g, 150 pixels)
-        float dashCooldown;     // cooldown time before next dash (e.g., 1.0 second)
-        float dashCooldownTimer; // tracks cooldown
-        Math::eVec2<float> dashDirection;   // direction of the dash
-        Math::eVec2<float> dashStartPos;    // starting position of dash
+        bool isDashing;                     // Is the player currently dashing?
+        float dashTimer;                    // Current time in the dash
+        float dashDuration;                 // How long the dash lasts (e.g., 0.2 seconds)
+        float dashDistance;                 // How far to dash (e.g, 150 pixels)
+        float dashCooldown;                 // Cooldown time before next dash (e.g., 1.0 second)
+        float dashCooldownTimer;            // Tracks cooldown
+        Math::eVec2<float> dashDirection;   // Direction of the dash
+        Math::eVec2<float> dashStartPos;    // Starting position of dash
 
 
-        /*
-        * @brief Constructor with default values
-        * @param speed - movement speed (default: 200.0f pixels/sec)
-        */
+        /*============================================================================================
+        * \brief       Constructor with default values
+        * \param[in]   float speed - Movement speed (default: 200.0f pixels/sec)
+        *//*========================================================================================*/        
         PlayerComponent(float speed = 200.0f)
             : moveSpeed(speed)
             , canMove(true)
             , isDashing(false)
             , dashTimer(0.0f)
-            , dashDuration(0.3f)    // dash lasts 0.3 seconds
-            , dashDistance(150.0f)  // dash 150 pixels
-            , dashCooldown(0.5f)    // 0.5 second cooldown
+            , dashDuration(0.3f)            // Dash lasts 0.3 seconds
+            , dashDistance(150.0f)          // Dash 150 pixels
+            , dashCooldown(0.5f)            // 0.5 second cooldown
             , dashCooldownTimer(0.0f)
             , dashDirection{0.0f, 0.0f}
             , dashStartPos{0.0f, 0.0f}
@@ -79,79 +65,65 @@ namespace Player
         }
     };
 
-    //======================================================================================
-    // PLAYER SYSTEM
-    //======================================================================================
-
-    /*
-    * @brief System that handles player movement with collision response
-    *
-    * This system:
-    *   - Reads WASD input for movement
-    *   - Calculates desired position
-    *   - Checks for collisions at new position
-    *   - Only moves if no collision (collision response)
-    *
-    * Usage:
-    *   PlayerSystem playerSystem;
-    *   playerSystem.Update(entityManager, window, deltaTime);
-    */
+    /*============================================================================================
+    * \brief       System that handles player movement with collision response. This system reads
+    *              WASD input for movement, calculates desired position, checks for collisions at
+    *              new position, and only moves if no collision (collision response). Also handles
+    *              dash mechanics with spacebar input.
+    *//*========================================================================================*/    
     class PlayerSystem
     {
     public:
-        /*
-        * @brief Constructor
-        */
+        /*============================================================================================
+        * \brief       Default constructor for PlayerSystem
+        *//*========================================================================================*/        
         PlayerSystem() = default;
 
-        /*
-        * @brief Main update function - call every frame
-        *
-        * Handles player input and movement with collision checking
-        *
-        * @param entityManager - reference to entity manager
-        * @param inputManager - reference to input manager for reading controls
-        * @param deltaTime - time since last frame (seconds)
-        */
+        /*============================================================================================
+        * \brief       Main update function - call every frame. Handles player input and movement
+        *              with collision checking.
+        * \param[in]   ECS::EntityManager& entityManager - Reference to entity manager
+        * \param[in]   Input::EnoInputManager& inputManager - Reference to input manager for reading controls
+        * \param[in]   float deltaTime - Time since last frame in seconds
+        * \return      void
+        *//*========================================================================================*/        
         void Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime);
-        /*
-        * @brief Helper to get transform component from entity (made public for game_logic access)
-        */
+
+        /*============================================================================================
+        * \brief       Helper to get transform component from entity (made public for game_logic access)
+        * \param[in]   ECS::EntityLoc const& entityLoc - Entity location information
+        * \return      ECSComponents::TransformComponent& - Reference to entity's transform component
+        *//*========================================================================================*/        
         ECSComponents::TransformComponent& GetTransform(const ECS::EntityLoc& entityLoc);
 
     private:
-        /*
-        * @brief Get movement input from WASD keys using EnoInputManager
-        * @param inputManager - reference to the input manager
-        * @return normalized movement vector
-        */
+        /*============================================================================================
+        * \brief       Get movement input from WASD keys using EnoInputManager
+        * \param[in]   Input::EnoInputManager& inputManager - Reference to the input manager
+        * \return      Math::eVec2<float> - Normalized movement vector
+        *//*========================================================================================*/
         Math::eVec2<float> GetMovementInput(Input::EnoInputManager& inputManager);
-        
-        
-        //Math::eVec2<float> GetScaleInput(Input::EnoInputManager& inputManager);
 
-
-        /*
-        * @brief Check if player can move to a new position
-        *
-        * Tests if the player's collider would overlap with any
-        * solid colliders at the target position
-        *
-        * @param playerEntity - the player entity location
-        * @param playerCollider - player's collision component
-        * @param targetPos - desired new position
-        * @param entityManager - entity manager
-        * @return true if position is valid (no collisions)
-        */
+        /*============================================================================================
+        * \brief       Check if player can move to a new position without colliding. Tests if the
+        *              player's collider would overlap with any solid colliders at the target position.
+        * \param[in]   ECS::EntityLoc const& playerEntity - The player entity location
+        * \param[in]   Collision::CollisionComponent const& playerCollider - Player's collision component
+        * \param[in]   Math::eVec2<float> const& targetPos - Desired new position
+        * \param[in]   ECS::EntityManager& entityManager - Entity manager reference
+        * \return      bool - True if position is valid (no collisions)
+        *//*========================================================================================*/        
         bool CanMoveTo(
             const ECS::EntityLoc& playerEntity,
             const Collision::CollisionComponent& playerCollider,
             const Math::eVec2<float>& targetPos,
             ECS::EntityManager& entityManager);
 
-        /*
-        * @brief Helper to get collision component from entity
-        */
+        /*============================================================================================
+        * \brief       Helper to get collision component from entity location
+        * \param[in]   ECS::EntityLoc const& entityLoc - Entity location information
+        * \return      Collision::CollisionComponent& - Reference to entity's collision component
+        *//*========================================================================================*/        
         Collision::CollisionComponent& GetCollision(const ECS::EntityLoc& entityLoc);
     };
 
