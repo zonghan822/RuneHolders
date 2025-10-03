@@ -20,10 +20,7 @@
 
 #define ENGINE_VER_SIZE 8
 
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
 namespace Config
 {
 	inline char engine_version[ENGINE_VER_SIZE];
@@ -47,7 +44,6 @@ namespace Config
 
 	public:
 
-<<<<<<< Updated upstream
 		EnoConfigManager();
 
 		std::pair<int, int> getWindowDim();
@@ -59,8 +55,23 @@ namespace Config
 		// Read the local config.txt file
 		void read();
 
-		// Set engine version
-=======
+		/*============================================================================================
+		 * \brief				Eno Config Constructor
+		*//*========================================================================================*/
+		EnoConfigManager();
+
+		/*============================================================================================
+		 * \brief				Finds the read window dimensions and casts them to int before 
+		 *						returning them
+		 * \return				Window width and height respectively
+		*//*========================================================================================*/
+		std::pair<int, int> getWindowDim();
+
+		/*============================================================================================
+		 * \brief				Read the local Settings file and store configurations
+		*//*========================================================================================*/
+		void retrieveSettings();
+
 		/*============================================================================================
 		 * \brief				Eno Config Constructor
 		*//*========================================================================================*/
@@ -86,7 +97,6 @@ namespace Config
 		/*============================================================================================
 		 * \brief				Set engine version
 		*//*========================================================================================*/
->>>>>>> Stashed changes
 		void setEngineVer();
 	};
 }
