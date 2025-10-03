@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         imGui.cpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @date         01-10-2025
+* @brief        This file contains the functions that are required for Dear ImGui displays,
+*				which includes the init, update and terminate functions.
+*     			There are also functions for spawning and counting entities.
+*//*========================================================================================*/
 #include "imGui.hpp"
 #include "game_logic.hpp"
 
