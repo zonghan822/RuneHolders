@@ -34,7 +34,7 @@ Arrow Keys → Move cursor (red square).
 
 WASD → Move player (if spawned).
 
-SPACEBAR → Player dash (if spawned)
+SPACEBAR → Player dash (if spawned).
 
 ---Player Transform---
 
