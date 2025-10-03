@@ -16,7 +16,8 @@ namespace Audio
 		:
 		bus_{ bus },
 		selectedSound_{ nullptr },
-		soundPlaying_{ false }
+		soundPlaying_{ false },
+		system{ nullptr }
 	{}
 
 	EnoAudioManager::~EnoAudioManager()
@@ -37,7 +38,7 @@ namespace Audio
 			ch->getNumDSPs(&dspCount);
 
 			// Get and detach each DSP from each channel
-			for (size_t i = 0; i < dspCount; i++)
+			for (int i = 0; i < dspCount; i++)
 			{
 				FMOD::DSP* dsp{ nullptr };
 				ch->getDSP(i, &dsp);
@@ -52,7 +53,7 @@ namespace Audio
 			group.second->getNumDSPs(&dspCount);
 
 			// Get and detach each DSP from each channel group
-			for (size_t i = 0; i < dspCount; i++)
+			for (int i = 0; i < dspCount; i++)
 			{
 				FMOD::DSP* dsp{ nullptr };
 				group.second->getDSP(i, &dsp);

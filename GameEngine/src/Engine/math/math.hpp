@@ -5,6 +5,8 @@
 * @brief        This file contains struct templates for Vector2D, Vector3D, Mtx3x3, and Mtx4x4
 *				as well as operator overloads and helper functions which assists in arithmetic
 *				calculations
+* 
+* * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 #pragma once
 
