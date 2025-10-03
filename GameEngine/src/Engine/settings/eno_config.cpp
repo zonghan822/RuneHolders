@@ -1,3 +1,13 @@
+/*============================================================================================
+* @file         eno_config.cpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Definition file for config manager
+* 
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+*//*========================================================================================*/
+
+
 #include "eno_config.hpp"
 
 namespace Config {
@@ -6,7 +16,8 @@ namespace Config {
 		retrieveSettings();
 	}
 
-	std::pair<int, int> EnoConfigManager::getWindowDim() {
+	std::pair<int, int> EnoConfigManager::getWindowDim() 
+	{
 		auto it = configMap_.find("Window Width");
 		auto it2 = configMap_.find("Window Height");
 		if (it == configMap_.end() || it2 == configMap_.end())

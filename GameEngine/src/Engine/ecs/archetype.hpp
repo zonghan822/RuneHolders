@@ -1,3 +1,13 @@
+/*============================================================================================
+* @file         archetype.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Declaration/Implemnentation file for archetypes
+* 
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+*//*========================================================================================*/
+
+
 #pragma once
 
 // Engine Component(s)
@@ -10,10 +20,9 @@
 
 namespace ECS
 {
-	///
-	/// Defined by a collection of components
-	/// created at any point in time
-	///
+	/*============================================================================================
+		* \brief       Defined by a collection of components created at any point in time
+	*//*========================================================================================*/
 	struct Archetype
 	{
 		std::vector<std::unique_ptr<Chunk>> chunks_;					// Storing of the component data for the archetype
@@ -23,6 +32,11 @@ namespace ECS
 
 		const uint32_t entityCount_{ 50 };								// Number of entities stored in a chunk
 
+		/*============================================================================================
+			* \brief			Constructor for an archetype
+			* \param[in]		Component types used to construct the chunk
+			* \param[in]		Component sizes determine the size of the chunk
+		*//*========================================================================================*/
 		Archetype(std::vector<std::type_index> t, std::vector<size_t> sizes)
 			: types_(std::move(t)), typeSizes_(std::move(sizes))
 		{
@@ -37,6 +51,10 @@ namespace ECS
 			createChunk(entityCount_, types_, typeSizes_);
 		}
 
+		/*============================================================================================
+			* \brief			Finds the index of a component within an archetype
+			* \return			Component index
+		*//*========================================================================================*/
 		template <typename Type>
 		size_t findComponentIndex()
 		{
@@ -45,6 +63,12 @@ namespace ECS
 			return std::distance(types_.begin(), it);
 		}
 
+		/*============================================================================================
+			* \brief			Instantiates a new chunk for a particular archetype
+			* \param[in]		Number of entities to store in chunk
+			* \param[in]		Types to be stored
+			* \param[in]		Size of each type to be stored
+		*//*========================================================================================*/
 		// Instantiate a new chunk
 		void createChunk(
 			const uint32_t& entityCount,
@@ -55,6 +79,9 @@ namespace ECS
 		}
 	};
 
+	/*============================================================================================
+		* \brief				Custom key for archetype manager
+	*//*========================================================================================*/
 	struct ArchetypeKey
 	{
 		std::vector<std::type_index> types;
@@ -64,6 +91,9 @@ namespace ECS
 		}
 	};
 
+	/*============================================================================================
+		* \brief				Custom hash for archetype manager
+	*//*========================================================================================*/
 	struct ArchetypeKeyHash
 	{
 		std::size_t operator()(const ArchetypeKey& key) const
@@ -78,6 +108,9 @@ namespace ECS
 		}
 	};
 
+	/*============================================================================================
+		* \brief				Maps out all created archetypes
+	*//*========================================================================================*/
 	class ArchetypeManager
 	{
 	public:
@@ -103,13 +136,24 @@ namespace ECS
 			return pArche;
 		}
 
-		// Get archetype manager map
+		/*============================================================================================
+			* \brief			Iterate through a map to discern if an archetype has been created.
+			*
+			*					If not, create a new archetype.
+			*					Else retrieve this archetype and insert a new entity
+			* \param[in]		Types representing the archetype
+			* \param[in]		Sizes representing the types of the archetype
+			* \return			Pointer to the archetype created/retrieved
+		*//*========================================================================================*/
 		std::unordered_map<ArchetypeKey, std::unique_ptr<Archetype>, ArchetypeKeyHash>& getArchetypes()
 		{
 			return archetypeMap;
 		}
 
-		// Transfer data between 2 archetypes
+		/*============================================================================================
+			* \brief		Archetype map getter
+			* \return		Ref to archetype map
+		*//*========================================================================================*/
 		void transferData(
 			const Archetype& src, const Archetype& dst,						// Archetypes
 			const size_t& srcECIdx, const size_t& dstECIdx,					// Entity index in chunk
@@ -144,7 +188,15 @@ namespace ECS
 			}
 		}
 
-		// Retrieve raw data of an entity
+		/*============================================================================================
+			* \brief			Transfer data between 2 archetypes
+			* \param[in]		Source archetype
+			* \param[in]		Destination archetype
+			* \param[in]		Source entity chunk index
+			* \param[in]		Destination entity chunk index
+			* \param[in]		Source chunk index
+			* \param[in]		Destination chunk index
+		*//*========================================================================================*/
 		std::vector<std::byte*> retrieveData(
 			const Archetype& src,
 			const size_t& srcECIdx,
@@ -163,7 +215,13 @@ namespace ECS
 		}
 
 
-		// Remove an existing archetype
+		/*============================================================================================
+			* \brief			Retrieve raw data of an entity
+			* \param[in]		Source archetype
+			* \param[in]		Source entity chunk index
+			* \param[in]		Source chunk index
+			* \return			Data region of the entity's components
+		*//*========================================================================================*/
 		void cleanup(Archetype* archetype)
 		{
 			ArchetypeKey key{ archetype->types_ };
@@ -176,7 +234,10 @@ namespace ECS
 			}
 		}
 
-		// View Archetype map
+		/*============================================================================================
+			* \brief			Erase an archetype off the archetype map
+			* \param[in]		Pointer to an archetype
+		*//*========================================================================================*/
 		void viewMap()
 		{
 			for (const auto& [key, archPtr] : archetypeMap)
