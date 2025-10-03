@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         graphics.hpp
+* @author       Law Zong Han (zonghan.law@digipen.edu),
+* @author       Muhammad Raziq Bin Mohd Rafig ()
+* @date         03-10-2025
+* @brief
+*//*========================================================================================*/
+
 #pragma once
 
 // OpenGL and GLFW

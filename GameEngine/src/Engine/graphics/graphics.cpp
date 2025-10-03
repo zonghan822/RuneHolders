@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         graphics.cpp
+* @author       Law Zong Han (zonghan.law@digipen.edu),
+* @author       Muhammad Raziq Bin Mohd Rafig ()
+* @date         03-10-2025
+* @brief
+*//*========================================================================================*/
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -484,7 +492,7 @@ namespace Graphics
             defaultShader_->unuse();
         }
 
-        glfwSwapBuffers(window.getWindow());
+        window.swapBuffers();
     }
 
     // Helper function for rotation
