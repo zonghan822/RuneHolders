@@ -1,3 +1,13 @@
+/*============================================================================================
+* @file         component_registry.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Declaration/definition file for the component registry
+* 
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+*//*========================================================================================*/
+
+
 #pragma once
 
 // Engine Component(s)
@@ -23,6 +33,10 @@ namespace ECSComponents
 			size_t size;
 		};
 
+		/*============================================================================================
+		 * \brief		Static component map, using macro expansion to populate components
+		 * \return		unordered map of components
+		*//*========================================================================================*/
 		static std::unordered_map<std::type_index, ComponentInfo>& ComponentMap()
 		{
 			static std::unordered_map<std::type_index, ComponentInfo> map =
@@ -79,7 +93,11 @@ namespace ECSComponents
 			return it->second.id;
 		}
 
-		// Get a component based on the id passed
+		/*============================================================================================
+		 * \brief			Using an id to find a component stored
+		 * \param[in]       ID used to search the component
+		 * \return			Found component
+		*//*========================================================================================*/
 		static std::type_index FindComponent(const std::size_t& id)
 		{
 			auto it = std::find_if(
@@ -98,7 +116,11 @@ namespace ECSComponents
 			return it->first;
 		}
 
-		// Get a component's size
+		/*============================================================================================
+		 * \brief			Get a component's size
+		 * \param[in]       Component type
+		 * \return			Component size
+		*//*========================================================================================*/
 		static std::size_t GetComponentSize(const std::type_index& type)
 		{
 			auto it = ComponentMap().find(type);

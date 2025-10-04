@@ -1,12 +1,21 @@
+/*============================================================================================
+* @file         eno_loader.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu),
+* @author       Muhammad Raziq Bin Mohd Rafig (),
+* @author       Law Zong Han (zonghan.law@digipen.edu)
+* @date         03-10-2025
+* @brief        Resource loading and management system for textures, shaders, fonts, and sounds.
+*               Handles loading of image files (PNG/JPG), shader source files (GLSL),
+*               audio files (WAV/MP3), and fonts (TTF/OTF). Integrates with an event bus
+*               to publish and subscribe to resource-related events.
+*===========================================================================================*/
+
 #pragma once
 // STB_IMAGE
 #include "stb_image.h"
 
 // FMOD
 #include "fmod.hpp"
-
-// Interface
-#include "../interface/system.hpp"
 
 // Events
 #include "../audio/audio_events.hpp"
@@ -24,18 +33,24 @@
 #include <array>
 #include <unordered_map>
 #include <memory>
-
+#include <fstream>
 
 namespace Resources
 {
-	class EnoLoader : public Sys::ISystem
+	/*============================================================================================
+	* \class	EnoLoader
+	* \brief	Central resource management system for loading and accessing game assets
+	*
+	*			Handles loading of textures, shaders, fonts, and audio files from disk and
+	*			provides access to loaded resources through a unified interface.
+	*//*========================================================================================*/
+	class EnoLoader
 	{
 	private:
 		// Sounds
 		static constexpr std::string_view musicPath_ = ASSETS_DIR_PATH "sound/music/";
 		static constexpr std::string_view sfxPath_ = ASSETS_DIR_PATH "sound/sfx/";
 		static constexpr std::array<std::string_view, 2> soundExtensions_ = { ".wav", ".mp3" };
-
 		std::map<std::string, FMOD::Sound*> sounds_;
 
 		// Images
@@ -44,9 +59,12 @@ namespace Resources
 
 		// Shaders
 		static constexpr std::string_view shaderPath_ = ASSETS_DIR_PATH "shaders/";
-
 		std::unordered_map<std::string, std::string> vertShaders_;
 		std::unordered_map<std::string, std::string> fragShaders_;
+
+		// Fonts
+		static constexpr std::string_view fontPath_ = ASSETS_DIR_PATH "fonts/";
+		Font::FontManager fontManager_;
 
 		// ECS Entities
 		static constexpr std::string_view entityPath_ = ASSETS_DIR_PATH "saves/ecs_save_data.txt";
@@ -56,76 +74,92 @@ namespace Resources
 
 	public:
 
-		EnoLoader(Event::EnoEventBus& bus) :
-			bus_{ bus }
-		{}
+		/*============================================================================================
+		* \brief	Constructor, subscribes to relevant events.
+		* \param[in] bus	Reference to the event bus for publishing/subscribing to events.
+		*//*========================================================================================*/
+		EnoLoader(Event::EnoEventBus& bus);
 
-		~EnoLoader()
-		{
-			for (const auto& sound : sounds_)
-			{
-				if (sound.second) sound.second->release();
-			}
-		}
+		/*============================================================================================
+		* \brief	Get the music directory path.
+		* \return	String reference to the music path.
+		*//*========================================================================================*/
+		const std::string& getMusicPath() const;
 
-		// Sound getters
-		const std::string& getMusicPath() const
-		{
-			static const std::string path{ musicPath_.data(), musicPath_.size() };
-			return path;
-		}
+		/*============================================================================================
+		* \brief	Get the sound effects (SFX) directory path.
+		* \return	String reference to the SFX path.
+		*//*========================================================================================*/
+		const std::string& getSFXPath() const;
 
-		const std::string& getSFXPath() const
-		{
-			static const std::string path{ sfxPath_.data(), sfxPath_.size() };
-			return path;
-		}
-		std::array<std::string_view, 2> getSoundExtensions() const { return soundExtensions_; }
+		/*============================================================================================
+		* \brief	Get supported sound extensions.
+		* \return	Array of supported extensions (.wav, .mp3).
+		*//*========================================================================================*/
+		std::array<std::string_view, 2> getSoundExtensions() const;
 
-		// Texture getters
-		const std::string& getImagePath() const
-		{
-			static const std::string path{ imagePath_.data(), imagePath_.size() };
-			return path;
-		}
+		/*============================================================================================
+		* \brief	Get the image directory path.
+		* \return	String reference to the image path.
+		*//*========================================================================================*/
+		const std::string& getImagePath() const;
 
-		std::shared_ptr<Graphics::EnoTexture> getTexture(const std::string& name)
-		{
-			auto it = textures_.find(name);
-			if (it != textures_.end())
-			{
-				return it->second;
-			}
-			std::cerr << "Texture not found: " << name << std::endl;
-			return nullptr;
-		}
+		/*============================================================================================
+		* \brief	Retrieve a texture by name.
+		* \param[in] name	Name of the texture (filename stem).
+		* \return	Shared pointer to the texture, or nullptr if not found.
+		*//*========================================================================================*/
+		std::shared_ptr<Graphics::EnoTexture> getTexture(const std::string& name);
 
-		// Shader getters
-		const std::string& getShaderPath() const
-		{
-			static const std::string path{ shaderPath_.data(), shaderPath_.size() };
-			return path;
-		}
-		const std::string& getVertShader(const std::string& name) const { return vertShaders_.at(name); }
-		const std::string& getFragShader(const std::string& name) const { return fragShaders_.at(name); }
+		/*============================================================================================
+		* \brief	Get the shader directory path.
+		* \return	String reference to the shader path.
+		*//*========================================================================================*/
+		const std::string& getShaderPath() const;
 
-		// Engine data getters
-		const std::string& getECSSavePath() const
-		{
-			static const std::string path{ entityPath_.data(), entityPath_.size() };
-			return path;
-		}
+		/*============================================================================================
+	    * \brief	Retrieve a vertex shader source by name.
+	    * \param[in] name	Name of the shader (filename stem).
+	    * \return	String reference to the shader source.
+	    *//*========================================================================================*/
+		const std::string& getVertShader(const std::string& name) const;
 
-		void Update() {}
+		/*============================================================================================
+		* \brief	Retrieve a fragment shader source by name.
+		* \param[in] name	Name of the shader (filename stem).
+		* \return	String reference to the shader source.
+		*//*========================================================================================*/
+		const std::string& getFragShader(const std::string& name) const;
 
-		// Load Sound files (mp3 | wav)
-		// and store it in a container that is passed in
+		/*============================================================================================
+		* \brief	Retrieve a loaded font by name.
+		* \param[in] name	Name of the font (filename stem).
+		* \return	Shared pointer to the font, or nullptr if not found.
+		*//*========================================================================================*/
+		std::shared_ptr<Font::EnoFont> getFont(const std::string& name);
+
+		/*============================================================================================
+		* \brief	Get the font directory path.
+		* \return	String reference to the font path.
+		*//*========================================================================================*/
+		const std::string& getFontPath() const;
+
+		/*============================================================================================
+		* \brief	Get the ECS save data file path.
+		* \return	String reference to the ECS save path.
+		*//*========================================================================================*/
+		const std::string& getECSSavePath() const;
+
+		/*============================================================================================
+		* \brief	Load sound files (WAV/MP3) into FMOD.
+		* \tparam	Container Type of container holding supported file extensions.
+		* \param[in] system		FMOD system pointer.
+		* \param[in] extensions	List of supported file extensions.
+		* \param[in] path		Directory to search for sounds.
+		* \throw	std::runtime_error If path does not exist or sound creation fails.
+		*//*========================================================================================*/
 		template <typename Container>
-		void loadSound(
-			FMOD::System* system,
-			const Container& extensions,
-			const std::string& path)
-		{
+		void loadSound(FMOD::System* system, const Container& extensions, const std::string& path) {
 			if (!std::filesystem::exists(path))
 			{
 				throw std::runtime_error("Specified path does not exist!");
@@ -150,7 +184,9 @@ namespace Resources
 					{
 						// Store the sound obtained
 						sounds_[entry.path().filename().stem().string()] = sound;
+#ifdef _DEBUG
 						std::cout << entry.path().filename().stem().string() << " was retrieved!" << std::endl;
+#endif
 					}
 					else
 					{
@@ -160,85 +196,30 @@ namespace Resources
 			}
 		}
 
-		// Load Images (png | jpg)
-		void loadImages(const std::string& path)
-		{
-			if (!std::filesystem::exists(path))
-			{
-				std::cerr << "Image path does not exist: " << path << std::endl;
-				return;
-			}
+		/*============================================================================================
+		* \brief	Load image textures (PNG/JPG) from a directory.
+		* \param[in] path	Directory path for textures.
+		*//*========================================================================================*/
+		void loadImages(const std::string& path);
 
-			// Iterate through a folder through the given path
-			for (const auto& entry : std::filesystem::directory_iterator(path))
-			{
-				if (!entry.is_regular_file())
-					continue;
+		/*============================================================================================
+		* \brief	Load GLSL shader files (.vert/.frag).
+		* \param[in] path	Directory path for shader files.
+		*//*========================================================================================*/
+		void loadShaders(const std::string_view& path);
 
-				// Find files with the PNG or JPG extensions
-				if (entry.path().extension().string() == ".png" ||
-					entry.path().extension().string() == ".jpg")
-				{
-					auto texture = std::make_shared<Graphics::EnoTexture>();
-					if (texture->loadFromFile(entry.path().string()))
-					{
-						textures_[entry.path().stem().string()] = texture;
-						std::cout << "Loaded texture: " << entry.path().stem().string() << std::endl;
-					}
-					else
-					{
-						std::cerr << "Failed to load texture: " << entry.path().string() << std::endl;
-					}
-				}
-			}
-		}
+		/*============================================================================================
+		* \brief	Load font files (.ttf/.otf).
+		* \param[in] path		Directory path for font files.
+		* \param[in] pixelSize	Size of the font in pixels.
+		*//*========================================================================================*/
+		void loadFonts(const std::string& path, int pixelSize);
 
-		// Load shader files
-		void loadShaders(const std::string_view& path)
-		{
-			// Iterate through a folder through the given path
-			for (const auto& entry : std::filesystem::directory_iterator(path))
-			{
-				if (!entry.is_regular_file())
-					continue;
-
-				std::ifstream file(entry.path());
-
-				if (!file.is_open())
-				{
-					throw std::runtime_error("Failed to open a file!");
-				}
-
-				// Allocate buffer for storing text data
-				// from each shader file
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				std::string source = buffer.str();
-
-				// Find files with the frag and vert extensions
-				if (entry.path().extension().string() == ".vert")
-				{
-					vertShaders_[entry.path().stem().string()] = std::move(source);
-				}
-				else if (entry.path().extension().string() == ".frag")
-				{
-					fragShaders_[entry.path().stem().string()] = std::move(source);
-				}
-			}
-		}
-
-		void onSoundRequest(const Audio::RequestSound& event)
-		{
-			std::cout << "Sound Requested: " << event.sound_ << std::endl;
-
-			// Look for sound requested in the map
-			auto it = sounds_.find(event.sound_);
-			if (it == sounds_.end())
-			{
-				throw std::runtime_error("Failed to find the requested sound!");
-			}
-
-			bus_.publish(Audio::LoadSound{ event.sound_, it->second });
-		}
+		/*============================================================================================
+		* \brief	Handle sound request events from the event bus.
+		* \param[in] event	RequestSound event containing sound name.
+		*//*========================================================================================*/
+		void onSoundRequest(const Audio::RequestSound& event);
+	
 	};
 }

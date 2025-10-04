@@ -14,6 +14,7 @@ namespace ECSComponents
 		glm::vec3 pos;
 		glm::vec3 rot;
 		glm::vec3 scale;
+		glm::vec2 vel;
 	};
 
 	inline std::ostream& operator<<(std::ostream& os, const TransformComponent& c)
@@ -32,10 +33,11 @@ namespace ECSComponents
 		Math::eVec2<float> pos;
 		float rot;
 		Math::eVec2<float> scale;
+		Math::eVec2<float> vel;
 
 		Math::eMtx3x3<float> transform;
 
-		eVec2TransformComponent(float x, float y, float w, float h, float r = 0.f) : pos{ x,y }, scale{ w,h }, rot{ r }, transform {} {};
+		eVec2TransformComponent(float x, float y, float w, float h, float v1, float v2, float r = 0.f) : pos{ x,y }, scale{ w,h }, vel{v1, v2}, rot { r }, transform{} {};
 
 	};
 

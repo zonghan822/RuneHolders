@@ -1,10 +1,30 @@
+/*============================================================================================
+* @file         eno_engine.cpp
+* @author       Lee Zhe An (zhean.l@digipen.edu),
+* @author		Law Zong Han (zonghan.law@digipen.edu)
+* @date         03-10-2025
+* @brief		Implementation of the core engine systems and main game loop
+*				
+*				This file contains the implementation of the EnoEngine class which serves as
+*				the central coordinator for all engine subsystems. It manages the initialization,
+*				main game loop execution, resource loading, time management, and shutdown procedures.
+*				The engine follows a component-based architecture where each system (graphics, audio,
+*				input, etc.) is managed independently but coordinated through the main engine class.
+*//*========================================================================================*/
+
 #include "eno_engine.hpp"
 
 namespace Engine
 {
 	void EnoEngine::setup()
 	{
-		// Engine init
+		window_.initialize("RuneHolders", configMng_.getWindowDim().first, configMng_.getWindowDim().second);
+
+		// Systems init
+		inputMng_.initialize();
+		graphicsMng_.initialize(window_);
+		audioMng_.init();
+
 		setupResourceLoading();
 		setupEventSystem();
 		setupGraphicsSystem();
@@ -25,56 +45,57 @@ namespace Engine
 	// Thats why i added a callback version
 	void EnoEngine::run(std::function<void()> gameUpdateCallback)
 	{
-		soundSetup();
-
-		while (!glfwWindowShouldClose(window_.getWindow()))
+		while (!window_.shouldClose())
 		{
 			glfwPollEvents();
 
 			update_time(1.0);
 
 			// Handle window resize for graphics system
-			int width, height;
-			glfwGetFramebufferSize(window_.getWindow(), &width, &height);
+			auto fbSize= window_.getFramebufferSize();
+			int width = fbSize.first, height = fbSize.second;
 			if (width > 0 && height > 0) 
 			{
-				graphicsMng_->setProjectionMatrix(width, height);
+				graphicsMng_.setProjectionMatrix(width, height);
 			}
 
 			// Begin graphics frame
-			if (graphicsMng_ && graphicsMng_->isInitialized())
-			{
-				graphicsMng_->beginFrame(Graphics::Color::Black);  // Clear to black
-			}
-
+			graphicsMng_.beginFrame(Graphics::Color::Black);  // Clear to black
+			
 			// Call game logic if provided
 			if (gameUpdateCallback) {
 				gameUpdateCallback();
 			}
 
-			// Update engine systems
-			updateEngineSystems();
+			audioMng_.process();
 
 			// End graphics frame and present
-			if (graphicsMng_ && graphicsMng_->isInitialized())
-			{
-				graphicsMng_->endFrame();
-			}
+			graphicsMng_.endFrame(window_);
+
+			inputMng_.endFrame();
 		}
 
 	}
 
-	// Function added for future use**
+	void EnoEngine::shutDown() {
+
+	}
+
+	// Loader
 	void EnoEngine::setupResourceLoading()
 	{
 		// Loading assets from directories
 		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getMusicPath());
 		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getSFXPath());
+
+		// Loading shaders
 		loader_.loadShaders(loader_.getShaderPath());
 
-		// Shaders for future graphics use
-		auto vert = loader_.getVertShader("shader");//might need to change the name on this
-		auto frag = loader_.getFragShader("shader");
+		// Loading images
+		loader_.loadImages(loader_.getImagePath());
+
+		// Loading fonts
+		loader_.loadFonts(loader_.getFontPath(), 48);
 	}
 
 	// Function added for future use**
@@ -148,7 +169,7 @@ namespace Engine
 		// get elapsed time (in seconds) between previous and current frames
 		static double prev_time = glfwGetTime();
 		double curr_time = glfwGetTime();
-		dt = curr_time - prev_time;
+		dt_ = curr_time - prev_time;
 		prev_time = curr_time;
 
 		// fps calculations
@@ -163,53 +184,9 @@ namespace Engine
 		fps_calc_interval = (fps_calc_interval < 0.0) ? 0.0 : fps_calc_interval;
 		fps_calc_interval = (fps_calc_interval > 10.0) ? 10.0 : fps_calc_interval;
 		if (elapsed_time > fps_calc_interval) {
-			fps = count / elapsed_time;
+			fps_ = count / elapsed_time;
 			start_time = curr_time;
 			count = 0.0;
 		}
-		input_.endFrame();
-	}
-
-	// Not sure if we need it
-	ECS::EntityManager& EnoEngine::getEntityManager()
-	{
-		static ECS::EntityManager manager(compReg_);
-		return manager;
-	}
-
-
-	/// <summary>
-	///  TBD: for sound demoing!!!
-	/// </summary>
-	void EnoEngine::soundSetup()
-	{
-		audioMng_.setChannelGroup("BGM");
-
-		Audio::SoundParameters sound;
-		Audio::ParamEQ eq;
-		Audio::SFXReverb reverb;
-		eq = Audio::ParamEQ{ 3.f, 1000.f, 1.f };
-		sound.volume = 0.1f;
-		sound.eq = Audio::EQ{};
-		sound.eq->type = FMOD_DSP_TYPE_PARAMEQ;
-		sound.eq->paramEQ = eq;
-		sound.reverb = Audio::Reverb{};
-		sound.reverb->type = FMOD_DSP_TYPE_SFXREVERB;
-		sound.reverb->sfx = reverb;
-		audioMng_.modifyChannelGroup("BGM", sound);
-
-		audioMng_.publishSoundRequest("Close_To_The_End");
-		audioMng_.publishSoundRequest("Simulacrum");
-	}
-
-	void EnoEngine::soundPlaying()
-	{
-		FMOD::Channel* channel = audioMng_.playByGroup("Close_To_The_End", "BGM", true);
-		//FMOD::Channel* channel2 = audioMng_.playByGroup("Simulacrum", "BGM", true);
-
-		audioMng_.scheduleGroupFade("BGM", 5.0f, 5.0f, audioMng_.getSoundDurSec("Close_To_The_End"));
-
-		audioMng_.setPauseChannel(channel, false);
-		//audioMng_.setPauseChannel(channel2, false);
 	}
 }

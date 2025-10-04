@@ -1,3 +1,11 @@
+/*============================================================================================
+* @file         math.tpp
+* @author       Caven Koh (caven.koh@digipen.edu)
+* @date         15-09-2025
+* @brief        This file contains the definitions for the math library math.hpp
+*
+* * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+*//*========================================================================================*/
 #pragma once
 
 
@@ -29,6 +37,11 @@ namespace Math
 	eVec2<Type> eVec2<Type>::operator+(const eVec2<Type>& other)
 	{
 		return { v1 + other.v1, v2 + other.v2 };
+	}
+	template <Arithmetic Type>
+	eVec2<Type> eVec2<Type>::operator+(const Type& other)
+	{
+		return {v1 + other, v2 + other};
 	}
 
 	// ------------------------------ Subtraction ------------------------------
@@ -89,6 +102,8 @@ namespace Math
 		return {v1 * other, v2*other};
 	
 	}
+
+	
 
 	// ------------------------------ Division ------------------------------
 	template <Arithmetic Type>
@@ -155,6 +170,11 @@ namespace Math
 
 
 	// --------------------- Friend functions for eVec2 ---------------------------
+	template <Arithmetic Type>
+	eVec2<Type> operator*(const Type& lhs, const eVec2<Type>& rhs)
+	{
+		return {lhs * rhs.v1, lhs * rhs.v2};
+	}
 
 	template <Arithmetic Type>
 	eVec2<Type> operator+(const eVec2<Type>& lhs, const eVec2<Type>&rhs)
@@ -177,7 +197,16 @@ namespace Math
 	void eVec2Normalize(eVec2<Type>& result, const eVec2<Type>& vec)
 	{
 		//normalized outward normal of a vector = n/||n||
-		result = vec / eVec2Length(vec);
+		Type length = eVec2Length(vec);
+		if(length < 0.000001f)
+		{
+			result = {0.0f, 0.0f};
+		}
+		else
+		{
+			result = vec / eVec2Length(vec);
+		}
+		
 
 	}
 
@@ -186,8 +215,8 @@ namespace Math
 	Type eVec2Length(const eVec2<Type>& vec)
 	{
 		//length = sqrt(x^2 + y^2)
-		return std::sqrt(eVec2SquaredLength(vec));
-
+		 Type val = std::sqrt(eVec2SquaredLength(vec));
+		 return val;
 	}
 
 	//eVec2SquaredLength returns the squared length of the vector
@@ -227,6 +256,12 @@ namespace Math
 		return (vec1.v1 * vec2.v1) + (vec1.v2 * vec2.v2);
 	}
 
+	template<typename Type>
+	std::ostream& operator<<(std::ostream& os, const eVec2<Type>& vec1)
+	{
+		std::cout << "x : " << vec1.v1 << " | y : " << vec1.v2 << std::endl;
+		return os;
+	}
 
 	// -------------------------------- 3x3 MATRICES ------------------------------
 

@@ -22,7 +22,7 @@ set_property(TARGET ${ENGINE_NAME}  PROPERTY CXX_STANDARD 20)
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(${ENGINE_NAME} PRIVATE -Wall ${DisableWarnings})
 elseif (MSVC)
-    target_compile_options(${ENGINE_NAME} PRIVATE /W3 /WX-)
+    target_compile_options(${ENGINE_NAME} PRIVATE /W4 /WX-)
 endif()
 
 target_include_directories(${ENGINE_NAME} SYSTEM PUBLIC ${PROJECT_SOURCE_DIR})

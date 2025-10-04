@@ -1,7 +1,13 @@
-#pragma once
+/*============================================================================================
+* @file         eno_config.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Declaration file for config manager
+* 
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+*//*========================================================================================*/
 
-// Interface
-#include "../interface/system.hpp"
+#pragma once
 
 // stds
 #include <utility>
@@ -38,21 +44,22 @@ namespace EngineConfiguration
 
 	public:
 
-		EnoConfigManager()
-		{
-			retrieveSettings();
-		}
+		/*============================================================================================
+		 * \brief				Eno Config Constructor
+		*//*========================================================================================*/
+		EnoConfigManager();
 
-		void Update() {}
+		/*============================================================================================
+		 * \brief				Finds the read window dimensions and casts them to int before
+		 *						returning them
+		 * \return				Window width and height respectively
+		*//*========================================================================================*/
+		std::pair<int, int> getWindowDim();
 
-		std::pair<int, int> getWindowDim()
-		{
-			auto it = configMap_.find("Window Width");
-			auto it2 = configMap_.find("Window Height");
-			if (it == configMap_.end() || it2 == configMap_.end())
-			{
-				throw std::runtime_error("Failed to retrieve window width and/or height value!");
-			}
+		/*============================================================================================
+		 * \brief				Read the local Settings file and store configurations
+		*//*========================================================================================*/
+		void retrieveSettings();
 
 			return { std::stoi(it->second), std::stoi(it2->second) };
 		}

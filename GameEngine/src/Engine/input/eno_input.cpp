@@ -1,14 +1,39 @@
+/*============================================================================================
+* @file         eno_input.cpp
+* @author       Lee Zhe An (zhean.l@digipen.edu),
+* @author		Law Zong Han (zonghan.law@digipen.edu)
+* @date         03-10-2025
+* @brief		Implementation of input management system with keyboard and mouse handling
+*				
+*				This file implements the input management system that handles keyboard and mouse
+*				input through GLFW callbacks. It provides state tracking for keys and mouse buttons,
+*				edge detection for press/release events, modifier key handling, and configurable
+*				input-to-event mapping. The system maintains frame-to-frame state for accurate
+*				input processing in games.
+*//*========================================================================================*/
+
 #include "eno_input.hpp"
 
 namespace Input {
 
-	EnoInputManager::EnoInputManager(GLFWwindow* window, Event::EnoEventBus& bus) : bus_{ bus }
-	{
-		glfwSetWindowUserPointer(window, this);
-		glfwSetKeyCallback(window, KeyCallback);
-		glfwSetMouseButtonCallback(window, MouseButtonCallback);
-		glfwSetCursorPosCallback(window, MousePosCallback);
-		glfwSetScrollCallback(window, MouseScrollCallback);
+	EnoInputManager::EnoInputManager(Event::EnoEventBus& bus) : bus_{ bus } { /*empty by design*/ }
+
+	void EnoInputManager::initialize() {
+		bus_.subscribe<Window::KeyEvent>([this](const Window::KeyEvent& e) {
+			handleKey(e.key, e.scancode, e.action, e.mods);
+			});
+
+		bus_.subscribe<Window::MouseButtonEvent>([this](const Window::MouseButtonEvent& e) {
+			handleMouseButton(e.button, e.action, e.mods);
+			});
+
+		bus_.subscribe<Window::MouseCursorEvent>([this](const Window::MouseCursorEvent& e) {
+			handleMouseCursor(e.xpos, e.ypos);
+			});
+
+		bus_.subscribe<Window::ScrollEvent>([this](const Window::ScrollEvent& e) {
+			handleMouseScroll(e.xoffset, e.yoffset);
+			});
 	}
 
 	void EnoInputManager::endFrame() {
@@ -25,12 +50,6 @@ namespace Input {
 	void EnoInputManager::setupKey(const std::string& inputName, int key, int scancode, int action, int mods)
 	{
 		inputMap_.insert(inputName, KeyBinding{ key, scancode, action, mods });
-	}
-
-	template <typename EventType>
-	void EnoInputManager::setupEvent(const std::string& inputName)
-	{
-		eventMap_[inputName] = [this]() { bus_.publish(EventType{}); };
 	}
 
 	bool EnoInputManager::isKeyPressed(int key) const {
@@ -99,28 +118,6 @@ namespace Input {
 		return { scrollX_, scrollY_ };
 	}
 
-	void EnoInputManager::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-	{
-		// Delegate to a non-static function to handle input
-		auto mgr = static_cast<EnoInputManager*>(glfwGetWindowUserPointer(window));
-		mgr->handleKey(key, scancode, action, mods);
-	}
-
-	void EnoInputManager::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-		auto mgr = static_cast<EnoInputManager*>(glfwGetWindowUserPointer(window));
-		mgr->handleMouseButton(button, action, mods);
-	}
-
-	void EnoInputManager::MousePosCallback(GLFWwindow* window, double xpos, double ypos) {
-		auto mgr = static_cast<EnoInputManager*>(glfwGetWindowUserPointer(window));
-		mgr->handleMouseCursor(xpos, ypos);
-	}
-
-	void EnoInputManager::MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-		auto mgr = static_cast<EnoInputManager*>(glfwGetWindowUserPointer(window));
-		mgr->handleMouseScroll(xoffset, yoffset);
-	}
-
 	// Handle key inputs
 	void EnoInputManager::handleKey(int key, int scancode, int action, int mods)
 	{
@@ -133,7 +130,7 @@ namespace Input {
 
 		modsState_ = mods;
 
-		auto name = inputMap_.findk(KeyBinding{ key, scancode, action, mods });
+		auto name = inputMap_.findr(KeyBinding{ key, scancode, action, mods });
 		if (name.has_value())
 		{
 			// Handle publishing events
