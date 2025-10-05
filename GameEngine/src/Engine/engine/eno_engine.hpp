@@ -25,6 +25,7 @@
 #include "../collision/collision.hpp"
 #include "../prefab/prefab.hpp"
 #include "../crashlog/crashlogger.hpp"
+#include "../graphics/animation/animation.hpp"
 
 
 // stds
