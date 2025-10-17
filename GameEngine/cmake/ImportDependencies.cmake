@@ -3,14 +3,6 @@ include(FetchContent)
 # --- Put all downloaded libraries inside lib/
 set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR}/lib)
 
-# Helper to group libraries in VS Solution Explorer
-function(set_library_folder target)
-    if (TARGET ${target})
-        set_target_properties(${target} PROPERTIES FOLDER "Libraries")
-    endif()
-endfunction()
-
-
 # ---------------------------------------------------------
 # GLFW
 # ---------------------------------------------------------
@@ -142,6 +134,9 @@ macro(import_freetype)
         )
         FetchContent_MakeAvailable(freetype)
         set_library_folder(freetype)
+
+        # Ensure FreeType headers come before system headers
+        prioritize_includes(freetype)
     endif()
 endmacro()
 

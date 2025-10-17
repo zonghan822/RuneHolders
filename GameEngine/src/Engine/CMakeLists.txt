@@ -46,6 +46,7 @@ target_link_libraries(${ENGINE_NAME}
     freetype
     stb_image
 )
+
 _fmod_copy_dll(${ENGINE_NAME})
 
 # Call the function to copy assets

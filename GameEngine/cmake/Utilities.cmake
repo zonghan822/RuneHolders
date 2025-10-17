@@ -101,3 +101,18 @@ macro(set_fmod)
         endfunction()
     endif()
 endmacro()
+
+# Helper to group libraries in VS Solution Explorer
+function(set_library_folder target)
+    if (TARGET ${target})
+        set_target_properties(${target} PROPERTIES FOLDER "Libraries")
+    endif()
+endfunction()
+
+# Ensures include directories of a target are placed BEFORE system headers
+function(prioritize_includes target_name)
+    get_target_property(_incs ${target_name} INTERFACE_INCLUDE_DIRECTORIES)
+    if(_incs)
+        target_include_directories(${target_name} BEFORE INTERFACE ${_incs})
+    endif()
+endfunction()

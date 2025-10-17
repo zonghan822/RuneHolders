@@ -11,11 +11,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Set the directory where your custom modules are located
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-include(ImportDependencies)
-importDependencies()
-
 include(Utilities)
+include(ImportDependencies)
 include(BuildTests)
+
+importDependencies()
 
 # Set External Libraries
 set_fmod()
