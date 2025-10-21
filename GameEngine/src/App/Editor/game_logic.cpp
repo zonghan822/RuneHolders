@@ -162,7 +162,7 @@ void GameApplication::setupImGui() {
 
 void GameApplication::updateGameLogic() {
     // This is called every frame (replaces your while loop in eno_engine.cpp run())
-	auto startTotalTime = Clock::now();
+	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 
     // Calculate delta time
     double deltaTime = engine_.getDeltaTime();
@@ -186,12 +186,10 @@ void GameApplication::updateGameLogic() {
 	engine_.getGraphicsManager().flush();
 	updateImGui();
 	drawText(windowSize);
-	auto end = Clock::now();
-	systemTimes_["totalTimePerFrame"] = std::chrono::duration<double, std::micro>(end - startTotalTime).count();
 }
 
 void GameApplication::updateEntities() {
-	auto start = Clock::now();
+	SystemTimer EntityTimer("Entities" , systemTimes_);
 
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
@@ -225,7 +223,8 @@ void GameApplication::updateEntities() {
 	// Check if player is moving and switch animation accordingly
 	if (playerSystem_ && playerSpawned_) {
 		// Check for WASD input
-		bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+		bool isMoving = 
+			inputManager.isKeyPressed(GLFW_KEY_W) ||
 			inputManager.isKeyPressed(GLFW_KEY_A) ||
 			inputManager.isKeyPressed(GLFW_KEY_S) ||
 			inputManager.isKeyPressed(GLFW_KEY_D);
@@ -293,10 +292,6 @@ void GameApplication::updateEntities() {
 		updateTestObject(engine_.getEntityManager(), engine_);
 
 	}
-	
-
-	auto end = Clock::now();
-	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
 
@@ -439,16 +434,12 @@ void GameApplication::drawPlayerAndIndicator() {
 }
 
 void GameApplication::updateImGui() {
-	auto start = Clock::now();
-
+	SystemTimer ImGuiTimer("ImGui", systemTimes_);
 	imGuiDisplay(engine_);
-
-	auto end = Clock::now();
-	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
 void GameApplication::drawShapes() {
-	auto start = Clock::now();
+	SystemTimer GraphicsTimer("Graphics", systemTimes_);
 
 	auto& graphics = engine_.getGraphicsManager();
 	auto& entityManager = engine_.getEntityManager();
@@ -480,6 +471,4 @@ void GameApplication::drawShapes() {
 			collisionSystem_->VisualizeColliders(graphics, entityManager);
 		}
 
-	auto end = Clock::now();
-	systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
