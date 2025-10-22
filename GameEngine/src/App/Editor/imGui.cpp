@@ -138,6 +138,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	if (ImGui::Button("Edit"))     activeWindow = WindowID::Edit;
 	if (ImGui::Button("FPS"))      activeWindow = WindowID::FPS;
 	if (ImGui::Button("Prefabs"))  activeWindow = WindowID::Prefabs;
+	if (ImGui::Button("Assets"))   activeWindow = WindowID::Assets;
 	//FPS and Time Staggering for Displaying FPS
 #pragma region IMGUI Main
 	if (activeWindow == WindowID::Main) {
@@ -411,6 +412,18 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
+#pragma region IMGUI Assets
+	if (activeWindow == WindowID::Assets) {
+		ImGui::Begin("Assets Browser");
+
+		// Display all loaded assets here
+		displayAssetBrowser(engine_);
+
+		ImGui::End();
+	}
+
+
+#pragma endregion
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -427,6 +440,50 @@ void displayEntityCount(Engine::EnoEngine& engine_) {
 	}
 	std::cout << "Number of entities: " << counter << "\n";
 	
+}
+
+
+
+void displayAssetBrowser(Engine::EnoEngine& engine_) {
+	Resources::EnoLoader& loader =  engine_.getResourceLoader();
+	std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>const& textures = loader.getAllTextures();
+
+	ImGui::Text("=== Loaded Textures ===");
+	ImGui::Separator();
+
+	static std::string selectedTexture;
+	// Begin the list box
+	// The first argument is a unique label (can be "##hidden_label" for no visible label)
+	// The second argument is the size of the list box (ImVec2(width, height))
+	ImGui::Text("Loaded Textures:");
+	if (ImGui::BeginListBox("##TextureList", ImVec2(0, 200))) {
+		// Structured bindings to extract name from the texture list
+		for (auto& [name, texture] : textures) {
+			bool isSelected = (selectedTexture == name);
+			if (ImGui::Selectable(name.c_str(), isSelected)) {
+				selectedTexture = name;
+			}
+		}
+		ImGui::EndListBox();
+	}
+
+	ImGui::Separator();
+	// Preview and replace button
+	if (!selectedTexture.empty()) {
+		ImGui::Text("Selected: %s", selectedTexture.c_str());
+		// Replaces player texture with selected image.
+		if (ImGui::Button("Apply to Player")) {
+			if (playerSpawned_ && playerSystem_) {
+				// replace player texture at runtime
+				auto newTex = loader.getTexture(selectedTexture);
+				if (newTex && newTex->isValid()) {
+					g_game->setPlayerTexture(newTex);
+					std::cout << "Applied new texture: " << selectedTexture << std::endl;
+				}
+			}
+		}
+	}
+
 }
 
 

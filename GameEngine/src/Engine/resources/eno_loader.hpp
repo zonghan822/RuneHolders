@@ -112,6 +112,13 @@ namespace Resources
 		std::shared_ptr<Graphics::EnoTexture> getTexture(const std::string& name);
 
 		/*============================================================================================
+		* \author   Yunqi
+		* \brief	Retrieve all textures in read only format.
+		* \return	Map of all textures.
+		*//*========================================================================================*/
+		const std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>& getAllTextures() const;
+
+		/*============================================================================================
 		* \brief	Get the shader directory path.
 		* \return	String reference to the shader path.
 		*//*========================================================================================*/

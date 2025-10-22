@@ -446,29 +446,35 @@ void GameApplication::drawShapes() {
 
 	using drawInfo = ECSComponents::DrawInfoComponent;
 
-		// USE CACHED ENTITIES with validation
-		for (ECS::Entity& entity : cachedDrawableEntities_) {
-			// Skip if entity was destroyed
-			try {
-				if (entity.has<ECSComponents::DrawInfoComponent>()) {
-					graphics.drawRect(
-						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-						Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
-						entity.get<drawInfo>().color,
-						true
-					);
-				}
-			}
-			catch (...) {
-				// Entity was destroyed, rebuild cache next frame
-				entitiesDirty_ = true;
-				continue;
+	// USE CACHED ENTITIES with validation
+	for (ECS::Entity& entity : cachedDrawableEntities_) {
+		// Skip if entity was destroyed
+		try {
+			if (entity.has<ECSComponents::DrawInfoComponent>()) {
+				graphics.drawRect(
+					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
+					entity.get<drawInfo>().color,
+					true
+				);
 			}
 		}
-
-		// (kim) visualize colliders if enabled
-		if (showColliders_ && collisionSystem_) {
-			collisionSystem_->VisualizeColliders(graphics, entityManager);
+		catch (...) {
+			// Entity was destroyed, rebuild cache next frame
+			entitiesDirty_ = true;
+			continue;
 		}
+	}
 
+	// (kim) visualize colliders if enabled
+	if (showColliders_ && collisionSystem_) {
+		collisionSystem_->VisualizeColliders(graphics, entityManager);
+	}
+
+}
+
+
+void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex) {
+	playerTexture_ = newTex;
+	playerWalkTexture_ = newTex;
 }

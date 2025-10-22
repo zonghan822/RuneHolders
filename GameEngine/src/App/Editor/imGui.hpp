@@ -99,4 +99,9 @@ float randomFloat(float min, float max);
 void displayEntityCount(Engine::EnoEngine& engine_);
 
 
-
+/*============================================================================================
+ * \brief       Displays Assets in the Assets menu
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayAssetBrowser(Engine::EnoEngine& engine_);
