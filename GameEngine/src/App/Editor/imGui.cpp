@@ -463,6 +463,13 @@ void displayAssetBrowser(Engine::EnoEngine& engine_) {
 			if (ImGui::Selectable(name.c_str(), isSelected)) {
 				selectedTexture = name;
 			}
+			// Start drag operation
+			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+				// This turns each texture name into a draggable payload
+				ImGui::SetDragDropPayload("ASSET_TEXTURE", name.c_str(), name.size() + 1);
+				ImGui::Text("Dragging %s", name.c_str());
+				ImGui::EndDragDropSource();
+			}
 		}
 		ImGui::EndListBox();
 	}
@@ -471,10 +478,25 @@ void displayAssetBrowser(Engine::EnoEngine& engine_) {
 	// Preview and replace button
 	if (!selectedTexture.empty()) {
 		ImGui::Text("Selected: %s", selectedTexture.c_str());
-		// Replaces player texture with selected image.
-		if (ImGui::Button("Apply to Player")) {
+
+		// Apply texture to player
+		ImGui::Button("Apply to Player", ImVec2(200, 40));
+		// Accept drag-drop payload while hovering
+		if (ImGui::BeginDragDropTarget()) {
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_TEXTURE")) {
+				const char* droppedName = static_cast<const char*>(payload->Data);
+				auto newTex = loader.getTexture(droppedName);
+				if (newTex && newTex->isValid()) {
+					g_game->setPlayerTexture(newTex);
+					std::cout << "Dropped texture applied: " << droppedName << std::endl;
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		// Separate click logic for normal apply button
+		if (ImGui::IsItemClicked()) {
 			if (playerSpawned_ && playerSystem_) {
-				// replace player texture at runtime
 				auto newTex = loader.getTexture(selectedTexture);
 				if (newTex && newTex->isValid()) {
 					g_game->setPlayerTexture(newTex);
