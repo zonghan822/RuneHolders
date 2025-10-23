@@ -65,6 +65,9 @@ size_t entity_count{};
 static PrefabData prefab;
 static char nameSetter[50] = "";
 
+//Tracks which entities were spawned from which prefab
+static std::unordered_map<std::string, std::vector<uint32_t>> prefabInstances;
+
 
 
 #pragma endregion
@@ -404,9 +407,13 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 		if (ImGui::Button("Spawn Prefab")) {
 			if (prefabRegistry.count(prefab.name)) {
-				instantiatePrefab(prefabRegistry[prefab.name], engine_);
+				//instantiatePrefab(prefabRegistry[prefab.name], engine_);
+				ECS::Entity e = instantiatePrefab(prefabRegistry[prefab.name], engine_);
+				prefabInstances[prefab.name].push_back(e.getEntityID());
 				if (g_game) g_game->markEntitiesDirty();
 			}
+
+
 		}
 
 		ImGui::End();

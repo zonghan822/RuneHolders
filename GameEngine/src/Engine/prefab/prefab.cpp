@@ -40,8 +40,9 @@ PrefabData loadPrefab(const std::string& filename) {
     return prefab;
 }
 
-
-void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
+//small update: returns entity
+//might want to try catch here incase E cannot be instantiated?
+ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
 
     ECS::Entity e = engine.getEntityManager().create<>();
 
@@ -66,9 +67,6 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
     };
 
     e.add<ECSComponents::TransformComponent>(transform);
-
-
-
     // add draw info
     ECSComponents::DrawInfoComponent DIC{
         prefab.x, 
@@ -79,11 +77,8 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
         prefab.color
     };
 
-
     e.add<ECSComponents::DrawInfoComponent>(DIC);
     std::cout << e.get<ECSComponents::DrawInfoComponent>() << "\n";
-
-
 
     if (prefab.hasCollider) {
 
@@ -91,4 +86,5 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
             Collision::CollisionComponent(prefab.width, prefab.height)
         );
     }
+    return e;
 }
