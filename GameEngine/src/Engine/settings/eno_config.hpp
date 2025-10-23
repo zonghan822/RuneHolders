@@ -1,3 +1,12 @@
+/*============================================================================================
+* @file         eno_config.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @date         10/3/2025
+* @brief        Declaration file for config manager
+* 
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+*//*========================================================================================*/
+
 #pragma once
 
 // stds
@@ -22,7 +31,9 @@ namespace Config
 	private:
 		std::string cfgFileName_ = ASSETS_DIR_PATH "settings/config.txt";
 
-		// Map for storing setting strings
+		/*============================================================================================
+		 * \brief				Map for storing setting strings
+		*//*========================================================================================*/
 		std::unordered_map<std::string, std::string> configMap_ =
 		{
 			{ "Engine Version", "0"},
@@ -34,18 +45,31 @@ namespace Config
 
 	public:
 
+		/*============================================================================================
+		 * \brief				Eno Config Constructor
+		*//*========================================================================================*/
 		EnoConfigManager();
 
+		/*============================================================================================
+		 * \brief				Finds the read window dimensions and casts them to int before
+		 *						returning them
+		 * \return				Window width and height respectively
+		*//*========================================================================================*/
 		std::pair<int, int> getWindowDim();
 
-		// Read the local Settings file and
-		// store configurations
+		/*============================================================================================
+		 * \brief				Read the local Settings file and store configurations
+		*//*========================================================================================*/
 		void retrieveSettings();
 
-		// Read the local config.txt file
+		/*============================================================================================
+		 * \brief				Read the local config.txt file and store configurations
+		*//*========================================================================================*/
 		void read();
 
-		// Set engine version
+		/*============================================================================================
+		 * \brief				Set engine version
+		*//*========================================================================================*/
 		void setEngineVer();
 	};
 }

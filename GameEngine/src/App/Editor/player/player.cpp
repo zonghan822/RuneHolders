@@ -1,8 +1,11 @@
-/*************************************************
-* @file player.cpp
-* @brief Implementation of player system
-* @author Your Team
-**************************************************/
+/*============================================================================================
+* @file         player.cpp
+* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @date         03-10-2025
+* @brief        Implementation of player system including movement logic with collision
+*               detection, dash mechanics with easing, and helper functions for component
+*               retrieval from the ECS architecture.
+*//*========================================================================================*/
 
 #include "player.hpp"
 #include <GLFW/glfw3.h>
@@ -10,11 +13,14 @@
 namespace Player
 {
 
-    // =============================================================================
     // HELPER FUNCTIONS
-    // =============================================================================
     
-    // Manual power function for integer exponents
+    /*============================================================================================
+    * \brief       Manual power function for integer exponents
+    * \param[in]   float base - Base value
+    * \param[in]   int exponent - Integer exponent
+    * \return      float - Result of base raised to exponent
+    *//*========================================================================================*/    
     float Pow(float base, int exponent)
     {
         if (exponent == 0) return 1.0f;
@@ -30,16 +36,17 @@ namespace Player
         return (exponent < 0) ? (1.0f / result) : result;
     }
 
-    // Easing function for smooth dash deceleration
+    /*============================================================================================
+    * \brief       Easing function for smooth dash deceleration using cubic easing
+    * \param[in]   float x - Progress value (0.0 to 1.0)
+    * \return      float - Eased value using formula: 1 - (1-x)³
+    *//*========================================================================================*/    
     float EaseOutCubic(float x) {
         
         float oneMinusX = 1.0f - x;
         return 1.0f - Pow(oneMinusX, 3);
     }
 
-    //======================================================================================
-    // PLAYER SYSTEM IMPLEMENTATION
-    //======================================================================================
     void PlayerSystem::Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime)
     {
         // Get the entity map which contains all entities with their locations
@@ -187,24 +194,7 @@ namespace Player
         }
     }
 
-    //// YunQi testing scaling stuff
-    //Math::eVec2<float> PlayerSystem::GetScaleInput(Input::EnoInputManager& inputManager)
-    //{
-    //    Math::eVec2<float> scale = { 0.0f, 0.0f };
-
-    //    // Use EnoInputManager's isKeyPressed() for continuous WASD input
-    //    // isKeyPressed() returns true while the key is held down
-    //    if (inputManager.isKeyPressed(GLFW_KEY_O))
-    //        scale.v1 -= 1.0f;  // Scale Down
-    //    if (inputManager.isKeyPressed(GLFW_KEY_P))
-    //        scale.v2 += 1.0f;  // Scale Up
-
-    //    return scale;
-    //}
-
-
      
-    // Updated GetMovementInput to use EnoInputManager reference
     Math::eVec2<float> PlayerSystem::GetMovementInput(Input::EnoInputManager& inputManager)
     {
         Math::eVec2<float> input = { 0.0f, 0.0f };
@@ -212,13 +202,13 @@ namespace Player
         // Use EnoInputManager's isKeyPressed() for continuous WASD input
         // isKeyPressed() returns true while the key is held down
         if (inputManager.isKeyPressed(GLFW_KEY_W))
-            input.v2 -= 1.0f;  // Move up (negative Y in screen space)
+            input.v2 -= 1.0f;                       // Move up (negative Y in screen space)
         if (inputManager.isKeyPressed(GLFW_KEY_S))
-            input.v2 += 1.0f;  // Move down (positive Y in screen space)
+            input.v2 += 1.0f;                       // Move down (positive Y in screen space)
         if (inputManager.isKeyPressed(GLFW_KEY_A))
-            input.v1 -= 1.0f;  // Move left (negative X)
+            input.v1 -= 1.0f;                       // Move left (negative X)
         if (inputManager.isKeyPressed(GLFW_KEY_D))
-            input.v1 += 1.0f;  // Move right (positive X)
+            input.v1 += 1.0f;                       // Move right (positive X)
 
         // Normalize diagonal movement to ensure consistent speed
         float lengthSquared = Math::eVec2SquaredLength(input);
@@ -281,13 +271,6 @@ namespace Player
             if (!otherCollider.isActive || otherCollider.isTrigger)
                 continue;
 
-            // DEBUG: Print positions before collision check
-            //std::cout << "[COLLISION CHECK]" << std::endl;
-            //std::cout << "  Player target pos: (" << targetPos.v1 << ", " << targetPos.v2 << ")" << std::endl;
-            //std::cout << "  Player collider: " << playerCollider.data.rectangle.width << "x" << playerCollider.data.rectangle.height << std::endl;
-            //std::cout << "  Entity " << otherID << " pos: (" << otherTransform.pos.x << ", " << otherTransform.pos.y << ")" << std::endl;
-            //std::cout << "  Entity collider: " << otherCollider.data.rectangle.width << "x" << otherCollider.data.rectangle.height << std::endl;
-
             // Perform collision test at target position
             Collision::CollisionResult result = Collision::CollisionDetection::CheckCollision(
                 playerCollider, testTransform,
@@ -306,9 +289,7 @@ namespace Player
         return true;
     }
 
-    // =========================================================================
     // GET TRANSFORM - Helper to retrieve Transform component from EntityLoc
-    // =========================================================================
     ECSComponents::TransformComponent& PlayerSystem::GetTransform(const ECS::EntityLoc& entityLoc)
     {
         // Find the Transform component's index in this entity's archetype
@@ -319,9 +300,7 @@ namespace Player
             index, entityLoc.entityIndexInChunk);
     }
 
-    // =========================================================================
     // GET COLLISION - Helper to retrieve Collision component from EntityLoc
-    // =========================================================================
     Collision::CollisionComponent& PlayerSystem::GetCollision(const ECS::EntityLoc& entityLoc)
     {
         // Find the Collision component's index in this entity's archetype

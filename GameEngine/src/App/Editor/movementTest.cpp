@@ -4,66 +4,82 @@
 * @date         03-10-2025
 * @brief        This file creates objects using ECS to then test for various dynamic collision
 *				scenarios, such as moving circle and line, circle to circle and square to square
+* 
+* * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 #pragma once
+
 #include "movementTest.hpp"
 
 
 
-float min(float a, float b) { return a < b ? a : b; }
-float max(float a, float b) { return a < b ? a : b; }
+double min(double a, double b) { return a < b ? a : b; }
+double max(double a, double b) { return a < b ? a : b; }
+
+AABB::AABB(ECSComponents::TransformComponent transform, Collision::CollisionComponent coll)
+{
+	float minx = transform.pos.x - coll.data.rectangle.width / 2.0f;
+	float miny = transform.pos.y - coll.data.rectangle.height / 2.0f;
+
+	float maxx = transform.pos.x + coll.data.rectangle.width / 2.0f;
+	float maxy = transform.pos.y + coll.data.rectangle.height / 2.0f;
+
+	min = { minx, miny };
+	max = { maxx, maxy };
+}
+
 
 bool CheckDynamicSquare(
 	const Collision::CollisionComponent& colA,
 	const ECSComponents::TransformComponent& transformA,
 	const Collision::CollisionComponent& colB,
 	const ECSComponents::TransformComponent& transformB,
-	float& colTi,                 // time of collision (output)
+	float& colTi,                 // Time of collision (output)
 	Math::eVec2<float>& normal,
-	const float &dt
+	const double& dt
 )
 {
-	
+
 	AABB aabb1{ transformA, colA };
 	AABB aabb2{ transformB, colB };
 
-	float tFirstX = 0.f;
-	float tLastX = dt;
+	double tFirstX = 0.f;
+	double tLastX = dt;
 
-	float tFirstY = 0.f;
-	float tLastY = dt;
+	double tFirstY = 0.f;
+	double tLastY = dt;
 
 	// Calculate relative velocity between the two objects
-	Math::eVec2<float> relVel{ 
+	Math::eVec2<float> relVel{
 		transformA.vel.x - transformB.vel.x,
-		transformA.vel.y - transformB.vel.y 
+		transformA.vel.y - transformB.vel.y
 	};
 
-	std::cout << "rev vel" << relVel << std::endl;
+	//std::cout << "rev vel" << relVel << std::endl;
 
 	// X-axis collision checks
 	if (relVel.v1 < 0.f)
 	{
 		// Object A moving left relative to B
-		if (aabb1.min.v1 > aabb2.max.v1) 
+		if (aabb1.min.v1 > aabb2.max.v1)
 		{
 			return false; // Already separated, moving away
 		}
 
-		if (aabb1.max.v1 < aabb2.min.v1) 
+		if (aabb1.max.v1 < aabb2.min.v1)
 		{
 			// Calculate collision time window on X-axis
-			tFirstX = max((aabb1.max.v1 - aabb2.min.v1) / relVel.v1*dt, tFirstX);
+			tFirstX = max((aabb1.max.v1 - aabb2.min.v1) / relVel.v1, tFirstX);
 			tLastX = min((aabb1.min.v1 - aabb2.max.v1) / relVel.v1, tLastX);
 		}
 	}
 	else if (relVel.v1 > 0.f)
 	{
 		// Object A moving right relative to B
-		if (aabb1.min.v1 > aabb2.max.v1) 
+		if (aabb1.min.v1 > aabb2.max.v1)
 		{
 			tFirstX = max((aabb1.min.v1 - aabb2.max.v1) / relVel.v1, tFirstX);
-			tLastX = min((aabb1.max.v1 - aabb2.min.v1) / relVel.v1, tLastX);		
+			tLastX = min((aabb1.max.v1 - aabb2.min.v1) / relVel.v1, tLastX);
 		}
 
 		if (aabb1.max.v1 < aabb2.min.v1)
@@ -71,98 +87,94 @@ bool CheckDynamicSquare(
 			return false; // Already separated, moving away
 		}
 	}
-	else if (relVel.v1 == 0.f) 
+	else if (relVel.v1 == 0.f)
 	{
 		// No relative motion on X-axis - check for overlap
-		if (aabb1.max.v1 < aabb2.min.v1 || aabb1.min.v1 > aabb2.max.v1) 
+		if (aabb1.max.v1 < aabb2.min.v1 || aabb1.min.v1 > aabb2.max.v1)
 		{
 			return false; // Not overlapping on X-axis
 		}
 	}
 
 	// Y-axis collision checks
-	if (relVel.v2 < 0.f) 
+	if (relVel.v2 < 0.f)
 	{
 		// Object A moving up relative to B
-		if (aabb1.min.v2 > aabb2.max.v2) 
+		if (aabb1.min.v2 > aabb2.max.v2)
 		{
 			return false; // Already separated, moving away
 		}
 
-		if (aabb1.max.v2 < aabb2.min.v2) 
+		if (aabb1.max.v2 < aabb2.min.v2)
 		{
 			// Calculate collision time window on Y-axis
 			tFirstY = max((aabb1.max.v2 - aabb2.min.v2) / relVel.v2, tFirstY);
-			tLastY = min((aabb1.min.v2 - aabb2.max.v2) / relVel.v2, tLastY);		
+			tLastY = min((aabb1.min.v2 - aabb2.max.v2) / relVel.v2, tLastY);
 		}
 	}
-	else if (relVel.v2 > 0.f) 
+	else if (relVel.v2 > 0.f)
 	{
 		// Object A moving down relative to B
-		if (aabb1.min.v2 > aabb2.max.v2) 
+		if (aabb1.min.v2 > aabb2.max.v2)
 		{
 			tFirstY = max((aabb1.min.v2 - aabb2.max.v2) / relVel.v2, tFirstY);
-			tLastY = min((aabb1.max.v2 - aabb2.min.v2) / relVel.v2, tLastY);		
+			tLastY = min((aabb1.max.v2 - aabb2.min.v2) / relVel.v2, tLastY);
 		}
 
-		if (aabb1.max.v2 < aabb2.min.v2) 
+		if (aabb1.max.v2 < aabb2.min.v2)
 		{
 			return false; // Already separated, moving away
 		}
 	}
-	else if (relVel.v2 == 0.f) 
+	else if (relVel.v2 == 0.f)
 	{
 		// No relative motion on Y-axis - check for overlap
-		if (aabb1.max.v2 < aabb2.min.v2 || aabb1.min.v2 > aabb2.max.v2) 
+		if (aabb1.max.v2 < aabb2.min.v2 || aabb1.min.v2 > aabb2.max.v2)
 		{
 			return false; // Not overlapping on Y-axis
 		}
 	}
 
 	// Check if collision time windows overlap
-	if (tFirstX > tLastY || tFirstY > tLastX) 
+	if (tFirstX > tLastY || tFirstY > tLastX)
 	{
 		return false; // No intersection
 	}
 
 	// Collision detected - calculate time and normal
-	colTi = max(tFirstX, tFirstY);
+	colTi = static_cast<float>(max(tFirstX, tFirstY));
 
 	// Determine collision normal based on which axis had first contact
-	if (tFirstX > tFirstY) 
+	if (tFirstX > tFirstY)
 	{
 		// X-axis collision
 		normal.v1 = (relVel.v1 > 0.f) ? -1.f : 1.f;
-		std::cout << "normal V1: " << normal.v1 << std::endl;
+		//std::cout << "normal V1: " << normal.v1 << std::endl;
 		normal.v2 = 0.f;
 	}
-	else if (tFirstY > tFirstX) 
+	else if (tFirstY > tFirstX)
 	{
 		// Y-axis collision
 		normal.v1 = 0.f;
 		normal.v2 = (relVel.v2 > 0.f) ? -1.f : 1.f;
-		std::cout << "normal V2: " << normal.v2 << std::endl;
+		//std::cout << "normal V2: " << normal.v2 << std::endl;
 	}
-	else 
+	else
 	{
-		std::cout << "tFirstX: " << tFirstX << ", tFirstY: " << tFirstY << std::endl;
-		std::cout << "relVel: (" << relVel.v1 << ", " << relVel.v2 << ")" << std::endl;
+		//std::cout << "tFirstX: " << tFirstX << ", tFirstY: " << tFirstY << std::endl;
+		//std::cout << "relVel: (" << relVel.v1 << ", " << relVel.v2 << ")" << std::endl;
 
 		// Corner collision - normalize diagonal normal
 		normal.v1 = (relVel.v1 > 0.f) ? -1.f : (relVel.v1 < 0.f ? 1.f : 0.f);
 		normal.v2 = (relVel.v2 > 0.f) ? -1.f : (relVel.v2 < 0.f ? 1.f : 0.f);
-		std::cout << "normalv1v2:: " << normal << std::endl;
+		//std::cout << "normalv1v2:: " << normal << std::endl;
 		//float length = sqrt(normal.v1 * normal.v1 + normal.v2 * normal.v2);
-		//if (length > 0.f) 
-		//{
-		//	normal.v1 /= length;
-		//	normal.v2 /= length;
-		//}
-		std::cout << "Normal v1 v2:" << normal << std::endl;
+
+		//std::cout << "Normal v1 v2:" << normal << std::endl;
 	}
 
 	// Only report collision if it happens within this frame
-	if (colTi >= 0.f && colTi <= 1.f) 
+	if (colTi >= 0.f && colTi <= 1.f)
 	{
 		return true;
 	}
@@ -174,11 +186,10 @@ bool CheckDynamicSquare(
 
 
 
-
 void createTestObject(ECS::EntityManager& ent) {
 
 #if 0
-	// test circle initial config
+	// Test circle initial config
 	const int numCircles = 3;
 	Math::eVec2<float> pos[numCircles] = {{ 900.f, 400.f }, { 800.0f, 350.f }, {950.0f, 450.0f}};
 	const char* objName = { "testcaven" };
@@ -191,7 +202,7 @@ void createTestObject(ECS::EntityManager& ent) {
 	Math::eVec2<float> vel = { cos(45.0f * 3.1415926f / 180.f) * speed, sin(-45.0f * 3.1415926f / 180.f) * speed };
 	std::cout << vel;
 
-	// now i want to create an entity with 3 different components, transform, drawinfo and name
+	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numCircles; ++i)
 	{
 		ECSComponents::DrawInfoComponent DIC{ pos[i].v1, pos[i].v2, radius, radius, shapeName, color};
@@ -209,7 +220,7 @@ void createTestObject(ECS::EntityManager& ent) {
 
 		ECS::Entity circle = ent.create<ECSComponents::DrawInfoComponent, ECSComponents::NameComponent, ECSComponents::TransformComponent>(DIC, NC, TC);
 		circle.add<Collision::CollisionComponent>(cc);
-		// std::cout << circle.get<ECSComponents::DrawInfoComponent>();
+		//std::cout << circle.get<ECSComponents::DrawInfoComponent>();
 	}
 
 
@@ -234,24 +245,24 @@ void createTestObject(ECS::EntityManager& ent) {
 		Collision::CollisionComponent lineCC{ linePos[i].first, linePos[i].second};
 		ECS::Entity wall = ent.create<ECSComponents::TransformComponent, ECSComponents::NameComponent>(lineTC, lineNC);
 		wall.add<Collision::CollisionComponent>(lineCC);
-		// debugging
-		// std::cout << wall.get<Collision::CollisionComponent>() << std::endl;
+		// Debugging
+		//std::cout << wall.get<Collision::CollisionComponent>() << std::endl;
 	}
 #endif
 
 	// Square config
 	const int numSquares = 2;
 	Math::eVec2<float> squarePos[numSquares] = { {700.0f, 400.0f}, {1000.0f, 400.0f} };
-	Math::eVec2<float> squareVel[numSquares] = { {60.0f, 0.0f}, { -50.0f, 0.0f } };
+	Math::eVec2<float> squareVel[numSquares] = { {50.0f, 0.0f}, { -50.0f, 0.0f } };
 	const char* objName = { "testcaven" };
 	const char* shapeName = { "Rectangle" };
 	float width = 100.f;
 	float height = 100.f;
-	int color = 1; // red
+	int color = 1; // Red
 
 	static float squareSpeed = 200.0f;
 
-	// now i want to create an entity with 3 different components, transform, drawinfo and name
+	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numSquares; ++i)
 	{
 		ECSComponents::DrawInfoComponent DIC{ squarePos[i].v1, squarePos[i].v2, width, height, shapeName, color };
@@ -274,12 +285,12 @@ void createTestObject(ECS::EntityManager& ent) {
 void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 {
 
-	// dt
+	// DT
 	double dt = eng.getDeltaTime();
 
 
 #if 0
-	// look for the entity that i created
+	// Look for the entity that i created
 	std::vector<ECS::Entity> entityList = ent.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
 	if (!entityList.empty())
 	{
@@ -287,14 +298,14 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 		for (auto& entity : entityList)
 		{
 			auto& collision = entity.get<Collision::CollisionComponent>();
-			// skip non circle objects
+			// Skip non circle objects
 			if (collision.type != Collision::ColliderType::CIRCLE) continue;
 
 			auto& transform = entity.get<ECSComponents::TransformComponent>();
 			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
 
-			// std::cout << "object found: " << entity.get<ECSComponents::NameComponent>() << std::endl;
-			// update movement here
+			//std::cout << "object found: " << entity.get<ECSComponents::NameComponent>() << std::endl;
+			// Update movement here
 			Math::eVec2<float> nextPos;
 			nextPos.v1 = transform.pos.x + transform.vel.x * dt;
 			nextPos.v2 = transform.pos.y + transform.vel.y * dt;
@@ -310,14 +321,14 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 			for (auto& other : entityList)
 			{
-				// skip same entity
+				// Skip same entity
 				if (&entity == &other) continue;
 
 				auto& otherCollision = other.get<Collision::CollisionComponent>();
 				auto& otherTransform = other.get<ECSComponents::TransformComponent>();
 
 
-				//check collision with line
+				// Check collision with line
 				if (otherCollision.type == Collision::ColliderType::LINE)
 				{
 					if (Collision::CollisionDetection::CheckDynamicCollision(
@@ -348,7 +359,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				else if (otherCollision.type == Collision::ColliderType::CIRCLE)
 				{
 
-					// check circle to circle collision
+					// Check circle to circle collision
 					if (Collision::CollisionDetection::CheckDynamicCollision(
 						collision, transform, otherCollision, otherTransform,
 						nextPos, BeA, BeB, colTi))
@@ -376,7 +387,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				transform.pos.y = nextPos.v2;
 			}
 
-			// update draw info component for the new pos
+			// Update draw info component for the new pos
 			entity.get<ECSComponents::DrawInfoComponent>().xPos = entity.get<ECSComponents::TransformComponent>().pos.x;
 			entity.get<ECSComponents::DrawInfoComponent>().yPos = entity.get<ECSComponents::TransformComponent>().pos.y;
 			
@@ -396,15 +407,10 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
 
 			Math::eVec2<float> nextPos;
-
-			nextPos.v1 = transform.pos.x + transform.vel.x * dt;
-			nextPos.v2 = transform.pos.y + transform.vel.y * dt;
-
-			//std::cout << "current vel: " << transform.vel.x << std::endl;
-
-			Math::eVec2<float> colPoint;
-			Math::eVec2<float> normalAtCol;
+			nextPos.v1 = static_cast<float>(transform.pos.x + transform.vel.x * dt);
+			nextPos.v2 = static_cast<float>(transform.pos.y + transform.vel.y * dt);
 			float colTi;
+			Math::eVec2<float> normalAtCol;
 			bool hasCollided = false;
 
 			// Loop through other objects
@@ -443,54 +449,24 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 									// Don't resolve if velocities are separating
 									//if (velAlongNormal > 0)
-									//	continue;
+									//continue;
 
 									// Subtract the component along that direction
 									transform.vel.x -= velAlongNormal * normalAtCol.v1;
 									transform.vel.y -= velAlongNormal * normalAtCol.v2;
 
-									// Restitution (bounciness) - 1.0 = perfectly elastic
-									//float restitution = 0.6f;
-
-									// Calculate impulse scalar
-									//float impulseMagnitude = -(1.f + restitution) * velAlongNormal;
-
-									// Assume equal mass or adjust based on mass if you have it
-									// For equal mass, each gets half the impulse
-									//float massA = 0.2f;  // Replace with actual mass if available
-									//float massB = 0.1f;  // Replace with actual mass if available
-									//float totalMass = massA + massB;
-
-									//impulseMagnitude /= (1.f / massA + 1.f / massB);
-
-									// Apply impulse to velocities
-									//Math::eVec2<float> impulse{
-									//	impulseMagnitude * normalAtCol.v1,
-									//	impulseMagnitude * normalAtCol.v2
-									//};
-
-
-									// Reflect velocity: v' = v - 2(v·n)n
-									// Apply impulse to both objects
-									//transform.vel.x += impulse.v1 / massA;
-									//transform.vel.y += impulse.v2 / massA;
-
-									//otherTransform.vel.x -= impulse.v1 / massB;
-									//otherTransform.vel.y -= impulse.v2 / massB;
-
-
 									hasCollided = true;
-									//std::cout << "collided" << "velocity at norm : " << velAlongNormal << std::endl;
-									break;
+
 
 								}
+								break;
 							}
-						}
+						} // End of switch case for other entity
 					}
 
-				}
+				} // End of switch case for first entity
 
-			}
+			} // End of entity loop
 
 			if (!hasCollided)
 			{
@@ -498,7 +474,9 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				transform.pos.y = nextPos.v2;
 			}
 
-
+			// Update draw info component for the new pos
+			drawInfo.xPos = transform.pos.x;
+			drawInfo.yPos = transform.pos.y;
 		}
 
 	}

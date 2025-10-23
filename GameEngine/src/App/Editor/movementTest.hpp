@@ -4,7 +4,10 @@
 * @date         03-10-2025
 * @brief        This file contains functions to instatiante objects for dynamic collision
 *               testing
+* 
+* * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
+
 #pragma once
 #include "math/math.hpp"
 #include "component/components/drawInfo.hpp"
@@ -19,40 +22,33 @@
 struct AABB
 {
 
-    Math::eVec2<float>min;
-    Math::eVec2<float>max;
+    Math::eVec2<float>min; // Minimum 2d pos
+    Math::eVec2<float>max; // Maximum 2d pos
 
-    AABB(ECSComponents::TransformComponent transform, Collision::CollisionComponent coll)
-    {
-        float minx = transform.pos.x - coll.data.rectangle.width / 2.0f;
-        float miny = transform.pos.y - coll.data.rectangle.height / 2.0f;
+    /*============================================================================================
+     * \brief       This constructor takes in a transform component as well as a collision component
+     *              to determine the min and max positions of the object using its coords and dimensions
+    *//*========================================================================================*/
 
-        float maxx = transform.pos.x + coll.data.rectangle.width / 2.0f;
-        float maxy = transform.pos.y + coll.data.rectangle.height / 2.0f;
-
-        min = { minx, miny };
-        max = { maxx, maxy };
-    }
-
-   
+    AABB(ECSComponents::TransformComponent transform, Collision::CollisionComponent coll);
 
 };
 
 /*============================================================================================
  * \brief Returns the maximum of two float values
- * \param[in] float a - First value
- * \param[in] float b - Second value
- * \return float - The larger of the two values
+ * \param[in] double a - First value
+ * \param[in] double b - Second value
+ * \return double - The larger of the two values
  *//*========================================================================================*/
-float max(float a, float b);
+double max(double a, double b);
 
 /*============================================================================================
  * \brief Returns the minimum of two float values
- * \param[in] float a - First value
- * \param[in] float b - Second value
- * \return float - The smaller of the two values
+ * \param[in] double a - First value
+ * \param[in] double b - Second value
+ * \return double - The smaller of the two values
  *//*========================================================================================*/
-float min(float a, float b);
+double min(double a, double b);
 
 /*============================================================================================
  * \brief Performs swept AABB collision detection between two dynamic rectangular objects
@@ -67,6 +63,7 @@ float min(float a, float b);
  * \param[in] ECSComponents::TransformComponent const& transformB - Transform of second object
  * \param[out] float& colTi - Time of collision in range [0,1] where 0 is frame start
  * \param[out] Math::eVec2<float>& normal - Normalized collision normal vector
+ * \param[in] const double& dt - Reference to dt
  * \return bool - True if collision detected during frame, false otherwise
  *//*========================================================================================*/
 bool CheckDynamicSquare(
@@ -75,8 +72,8 @@ bool CheckDynamicSquare(
     const Collision::CollisionComponent& colB,
     const ECSComponents::TransformComponent& transformB,
     float& colTi,                 // time of collision (output)
-    Math::eVec2<float>& normAtCol,
-    const float& dt
+    Math::eVec2<float>& normal,
+    const double& dt
 );
 
 /*============================================================================================

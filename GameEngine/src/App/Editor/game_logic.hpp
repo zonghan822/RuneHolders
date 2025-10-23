@@ -1,7 +1,15 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         game_logic.hpp
+* @author       Name (@digipen.edu)
+* @date         DD-MM-YYYY
+* @brief        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+*               incididunt ut labore et dolore magna aliqua.
+*//*========================================================================================*/
+
 #pragma once
 
 #include "engine/eno_engine.hpp"
-#include "../../Engine/resources/animation.hpp"
 #include <iostream>
 #include <memory>  
 #include "movementTest.hpp"
@@ -61,13 +69,11 @@ private:
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
-    void updateAudio();         // Update audio per frame
     void updateImGui();         // Update code for imGui
 
     void drawPlayerAndIndicator();
 
     void drawShapes(); // jsut to test
 
-    // Demonstration methods
-    void demonstrateSignals();
+    void drawText(Math::eVec2<float> windowSize);
 };

@@ -1,3 +1,17 @@
+/*============================================================================================
+* @file         eno_input.cpp
+* @author       Lee Zhe An (zhean.l@digipen.edu),
+* @author		Law Zong Han (zonghan.law@digipen.edu)
+* @date         03-10-2025
+* @brief		Implementation of input management system with keyboard and mouse handling
+*				
+*				This file implements the input management system that handles keyboard and mouse
+*				input through GLFW callbacks. It provides state tracking for keys and mouse buttons,
+*				edge detection for press/release events, modifier key handling, and configurable
+*				input-to-event mapping. The system maintains frame-to-frame state for accurate
+*				input processing in games.
+*//*========================================================================================*/
+
 #include "eno_input.hpp"
 
 namespace Input {
@@ -116,7 +130,7 @@ namespace Input {
 
 		modsState_ = mods;
 
-		auto name = inputMap_.findk(KeyBinding{ key, scancode, action, mods });
+		auto name = inputMap_.findr(KeyBinding{ key, scancode, action, mods });
 		if (name.has_value())
 		{
 			// Handle publishing events

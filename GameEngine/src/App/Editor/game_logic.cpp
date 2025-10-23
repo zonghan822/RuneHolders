@@ -160,16 +160,12 @@ void GameApplication::setupImGui() {
 	g_game = this;
 }
 
-void GameApplication::demonstrateSignals() {
-	// signalling code
-}
-
 void GameApplication::updateGameLogic() {
     // This is called every frame (replaces your while loop in eno_engine.cpp run())
 	auto startTotalTime = Clock::now();
 
     // Calculate delta time
-    float deltaTime = engine_.getDeltaTime();
+    double deltaTime = engine_.getDeltaTime();
 
 	// Get window dimensions from config
 	auto windowDim = engine_.getWindowManager().getWindowSize();
@@ -181,24 +177,15 @@ void GameApplication::updateGameLogic() {
 	// ===== UPDATE PLAYER ANIMATION =====
 	if (playerTexture_ && playerSpawned_)
 	{
-		playerAnimController_.update(deltaTime);
+		playerAnimController_.update(static_cast<float>(deltaTime));
 	}
 
     updateEntities();
-
-    updateAudio();
     drawShapes();
-
 	drawPlayerAndIndicator();
-
 	engine_.getGraphicsManager().flush();
-
-	// DEMO DRAW TEXT
-	auto& graphics = engine_.getGraphicsManager();
-	graphics.drawText(timesFont_, "Hello World!", { 25.f , 50.f }, 1.f, Graphics::Color::Black);
-	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.v1/2.f, windowSize.v2 - 25.f }, 0.75f, Graphics::Color::Blue);
-
 	updateImGui();
+	drawText(windowSize);
 	auto end = Clock::now();
 	systemTimes_["totalTimePerFrame"] = std::chrono::duration<double, std::micro>(end - startTotalTime).count();
 }
@@ -277,25 +264,25 @@ void GameApplication::updateEntities() {
 
 	if (inputManager.isKeyPressed(GLFW_KEY_M))
 	{
-		//this toggles keyframe mode
+		// This toggles keyframe mode
 		keyFrameMode = !keyFrameMode;
 	}
-	//in key frame mode, wait for trigger to update
+	// In key frame mode, wait for trigger to update
 	if (keyFrameMode)
 	{
 
 		if (inputManager.isKeyPressed(GLFW_KEY_N))
 		{
-			//frame update 
+			// Frame update 
 			frameUpdate = true;
 		}
 
 		if (frameUpdate)
 		{
-			//update one time
+			// Update one time
 			updateTestObject(engine_.getEntityManager(), engine_);
 
-			//set it back to false
+			// Set it back to false
 			frameUpdate = false;
 
 		}
@@ -312,9 +299,31 @@ void GameApplication::updateEntities() {
 	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
-void GameApplication::updateAudio() {
-	// audio update
 
+void GameApplication::drawText(Math::eVec2<float> windowSize) {
+	// DEMO DRAW TEXT
+	auto& graphics = engine_.getGraphicsManager();
+	auto& input = engine_.getInputManager();
+	std::string text;
+	if (input.isMousePressed(GLFW_MOUSE_BUTTON_LEFT) && input.isMousePressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+		text = "Left and Right Mouse Button pressed!";
+	}
+	else if (input.isMousePressed(GLFW_MOUSE_BUTTON_LEFT)) {
+		text = "Left Mouse Button pressed!";
+	}
+	else if (input.isMousePressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+		text = "Right Mouse Button pressed!";
+	}
+	else {
+		text = "No Mouse Button pressed!";
+	}
+	std::stringstream fpsSs;
+	fpsSs.precision(2);      // 2 significant digits
+	fpsSs << std::fixed;     // fixed-point notation
+	fpsSs << "FPS: " << engine_.getFPS();
+	graphics.drawText(timesFont_, text, { 25.f , 50.f }, 1.f, Graphics::Color::Black);
+	graphics.drawText(timesFont_, fpsSs.str(), {windowSize.v1 - 125.f , 25.f}, 0.5f, Graphics::Color::Red);
+	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.v1 / 2.f, windowSize.v2 - 25.f }, 0.75f, Graphics::Color::Blue);
 }
 
 void GameApplication::drawPlayerAndIndicator() {
@@ -329,7 +338,7 @@ void GameApplication::drawPlayerAndIndicator() {
 				auto& transform = playerSystem_->GetTransform(it->second);
 
 				// Get the current animation frame
-				auto frame = playerAnimController_.getCurrentFrame();
+				auto &frame = playerAnimController_.getCurrentFrame();
 
 				// Select the correct texture based on current animation
 				std::shared_ptr<Graphics::EnoTexture> currentTexture;
@@ -349,7 +358,7 @@ void GameApplication::drawPlayerAndIndicator() {
 				
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
 					// I am placing it here first as a 4.0 scale speed * DT
-					scaleSize += 3.0 * 0.01667;
+					scaleSize += static_cast<float>(3.0 * 0.01667);
 					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					playerTransform.scale.x = scaleSize;
 					playerTransform.scale.y = scaleSize;
@@ -357,7 +366,7 @@ void GameApplication::drawPlayerAndIndicator() {
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
-					scaleSize -= 3.0 * 0.01667;
+					scaleSize -= static_cast < float>(3.0 * 0.01667);
 					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					playerTransform.scale.x = scaleSize;
 					playerTransform.scale.y = scaleSize;
@@ -365,13 +374,13 @@ void GameApplication::drawPlayerAndIndicator() {
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
-					rotationRadians += 3.0f * 0.0174533 * 0.01667;
+					rotationRadians += static_cast < float>(3.0f * 0.0174533 * 0.01667);
 					//playerTransform.rot.z = rotationRadians;
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
-					rotationRadians -= 3.0f * 0.0174533 * 0.01667;
+					rotationRadians -= static_cast < float>(3.0f * 0.0174533 * 0.01667);
 					//playerTransform.rot.z = rotationRadians;
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
@@ -432,7 +441,7 @@ void GameApplication::drawPlayerAndIndicator() {
 void GameApplication::updateImGui() {
 	auto start = Clock::now();
 
-	imGuiDisplay(engine_.getWindowManager().getWindow(), engine_);
+	imGuiDisplay(engine_);
 
 	auto end = Clock::now();
 	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();

@@ -1,12 +1,13 @@
 @echo off
 REM ===============================================
-REM Windows Build and Run Script
+REM          Visual Studio Configuration
 REM ===============================================
 
 echo.
 echo ==============================================
 echo   Configuring RuneHolders for Visual Studio
 echo ==============================================
+echo.
 
 REM Create build directory
 if not exist build mkdir build

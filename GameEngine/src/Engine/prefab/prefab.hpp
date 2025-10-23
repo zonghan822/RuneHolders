@@ -1,4 +1,5 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         prefab.hpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
 * @date         01-10-2025
@@ -31,6 +32,7 @@ struct PrefabData {
     int shape;
     bool hasCollider;
 
+    PrefabData() : name{ "Empty" }, x{ 0.0f }, y{ 0.0f }, width{ 10.f }, height{ 10.f }, color{ 0 }, shape{ 0 }, hasCollider{ 0 } {}
 
 };
 

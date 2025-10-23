@@ -1,3 +1,12 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         prefab.cpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @date         01-10-2025
+* @brief        Provides data structures and functions for saving, loading, and instantiating
+*               prefabs. Prefabs are reusable templates that define attributes such as position,
+*               size, color, shape, and collider information.
+*===========================================================================================*/
 #include "prefab.hpp"
 #include "../engine/eno_engine.hpp"
 
@@ -44,28 +53,40 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
     }
 
     e.add<ECSComponents::NameComponent>(static_cast<const char*>(name));
-    //std::cout << "name of this entity: " << e.get<ECSComponents::NameComponent>().name << "\n";
+    //std::cout << "name of this entity: " << e.get<ECSComponents::NameComponent>().name << "\n;
 
+    // Calculate CENTER position from DrawInfo's top-left
+    float centerX = prefab.x + (prefab.width * 0.5f);
+    float centerY = prefab.y + (prefab.height * 0.5f);
 
-    // add transform
-    ECSComponents::TransformComponent t{
-        {prefab.x, prefab.y, 0.0f},             //x,y,z
-        {0,0,0},                                //rotation
-        {1,1,1}                                 //scale
+    ECSComponents::TransformComponent transform{
+            {centerX, centerY, 0.0f},
+            {0.0f, 0.0f, 0.0f},
+            {1.0f, 1.0f, 1.0f}
     };
-    e.add<ECSComponents::TransformComponent>(t);
+
+    e.add<ECSComponents::TransformComponent>(transform);
+
+
 
     // add draw info
     ECSComponents::DrawInfoComponent DIC{
-        prefab.x, prefab.y, 
-        prefab.width, prefab.height,
+        prefab.x, 
+        prefab.y, 
+        prefab.width, 
+        prefab.height,
         prefab.shape == 0 ? "Circle" : "Rectangle",
         prefab.color
     };
-    e.add<ECSComponents::DrawInfoComponent>(DIC);
 
-    //add collider
+
+    e.add<ECSComponents::DrawInfoComponent>(DIC);
+    std::cout << e.get<ECSComponents::DrawInfoComponent>() << "\n";
+
+
+
     if (prefab.hasCollider) {
+
         e.add<Collision::CollisionComponent>(
             Collision::CollisionComponent(prefab.width, prefab.height)
         );

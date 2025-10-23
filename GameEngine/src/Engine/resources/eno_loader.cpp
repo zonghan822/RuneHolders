@@ -1,3 +1,18 @@
+/*============================================================================================
+* @file         eno_loader.cpp
+* @author       Lee Zhe An (zhean.l@digipen.edu),
+* @author		Muhammad Raziq Bin Mohd Rafig (),
+* @author		Law Zong Han (zonghan.law@digipen.edu)
+* @date         03-10-2025
+* @brief		Implementation of resource loading system for game assets
+*				
+*				This file implements the resource loading system that handles loading and
+*				management of game assets including textures, shaders, fonts, and audio files.
+*				The system provides a unified interface for accessing resources by name and
+*				includes comprehensive error handling and debug output. Resources are loaded
+*				from predefined directory structures and cached for efficient reuse.
+*//*========================================================================================*/
+
 #include "eno_loader.hpp"
 
 namespace Resources {
@@ -33,7 +48,6 @@ namespace Resources {
 		auto it = textures_.find(name);
 		if (it != textures_.end())
 		{
-			std::cout << "Texture Found: " << name << std::endl;
 			return it->second;
 		}
 		std::cerr << "Texture not found: " << name << std::endl;
@@ -93,7 +107,9 @@ namespace Resources {
 				if (texture->loadFromFile(entry.path().string()))
 				{
 					textures_[entry.path().stem().string()] = texture;
+#ifdef _DEBUG
 					std::cout << "Loaded texture: " << entry.path().stem().string() << std::endl;
+#endif
 				}
 				else
 				{
@@ -160,8 +176,6 @@ namespace Resources {
 	}
 
 	void EnoLoader::onSoundRequest(const Audio::RequestSound& event) {
-		std::cout << "Sound Requested: " << event.sound_ << std::endl;
-
 		// Look for sound requested in the map
 		auto it = sounds_.find(event.sound_);
 		if (it == sounds_.end()) {

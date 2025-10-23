@@ -1,3 +1,13 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         drawInfo.hpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @date         01-10-2025
+* @brief        This file contains the component constructor for Drawing Information
+*				This Component allows the drawing system to act directly upon it so long as it
+*				exists. 
+*//*========================================================================================*/
+
 #pragma once
 
 #include <iostream>
@@ -10,8 +20,7 @@ enum WindowID { Main, Edit, FPS, Prefabs };
 static WindowID activeWindow = WindowID::Main;
 
 enum Shapes {
-	Circle = 0,
-	Rectangle = 1
+	Rectangle = 0
 };
 enum Color {
 	Green = 0,
@@ -31,6 +40,7 @@ namespace ECSComponents
 	{
 		DrawInfoComponent() = default;
 
+		//	Ctor for DrawInfoComponent
 		DrawInfoComponent(float xPosition, float yPosition, float w, float h, const char* n, int c):
 			xPos{ xPosition }, yPos{ yPosition }, width{w}, height{h}
 		{

@@ -1,4 +1,5 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         imGui.hpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
 * @date         01-10-2025
@@ -34,7 +35,7 @@ extern bool playerSpawned_;
 extern std::unordered_map<std::string, double> systemTimes_; //actual system time
 extern std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
-// indicator control variables
+// Indicator control variables
 extern float indicatorX_;
 extern float indicatorY_;
 extern float moveSpeed_ ; // pixels per second
@@ -50,11 +51,10 @@ void imGuiInit(GLFWwindow* window);
 
 /*============================================================================================
  * \brief       Updates and renders the ImGui control panel
- * \param[in]   GLFWwindow* window
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void imGuiDisplay(GLFWwindow* window, Engine::EnoEngine& engine_);
+void imGuiDisplay(Engine::EnoEngine& engine_);
 
 /*============================================================================================
  * \brief       Terminates Dear ImGui

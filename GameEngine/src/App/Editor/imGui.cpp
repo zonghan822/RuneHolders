@@ -1,3 +1,12 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         imGui.cpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @date         01-10-2025
+* @brief        This file contains the functions that are required for Dear ImGui displays,
+*				which includes the init, update and terminate functions.
+*     			There are also functions for spawning and counting entities.
+*//*========================================================================================*/
 #include "imGui.hpp"
 #include "game_logic.hpp"
 
@@ -27,7 +36,7 @@ float moveSpeed_ = 200.0f; // pixels per second
 
 
 //Option Menu
-const char* shapes[] = { "Circle" , "Rectangle" };
+const char* shapes[] = { "Rectangle" };
 const char* colors[] = { "Green"  ,     "Red" };
 const char* colliderShapes[] = { "None", "Circle", "Rectangle" };
 
@@ -70,7 +79,7 @@ double percentage(double target, double max) {
 	return (target / max) * 100.0;
 }
 
-void imGuiInit(GLFWwindow* window){
+void imGuiInit(GLFWwindow* window) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -82,7 +91,7 @@ void imGuiInit(GLFWwindow* window){
 }
 
 
-void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
+void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
@@ -103,9 +112,11 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
-
-
-
+	// Assuming that there will only be 1 entity with player component
+	for (ECS::Entity player : engine_.getEntityManager().findEntity<Player::PlayerComponent>())
+	{
+		playerEntityID_ = player.getEntityID();
+	}
 
 	prefab.x = indicatorX_;
 	prefab.y = indicatorY_;
@@ -128,7 +139,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 	if (ImGui::Button("FPS"))      activeWindow = WindowID::FPS;
 	if (ImGui::Button("Prefabs"))  activeWindow = WindowID::Prefabs;
 	//FPS and Time Staggering for Displaying FPS
-	#pragma region IMGUI Main
+#pragma region IMGUI Main
 	if (activeWindow == WindowID::Main) {
 		ImGui::Begin("Main");
 
@@ -138,6 +149,8 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 		if (!playerSpawned_) {
 			if (ImGui::Button("Spawn Player")) {
+
+
 				// create player entity at indicator position
 				ECSComponents::TransformComponent transform{
 					{indicatorX_, indicatorY_, 0.0f},
@@ -160,12 +173,6 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 				// Store ID by finding the last created entity in the map
 				// Get the entity map and find the most recent entity
-				auto& entityMap = engine_.getEntityManager().getMap();
-				uint32_t lastID = 0;
-				for (auto& [id, loc] : entityMap) {
-					if (id > lastID) lastID = id;
-				}
-				playerEntityID_ = lastID;
 
 				// Then add CollisionComponent
 				entity.add<Collision::CollisionComponent>(playerCollider);
@@ -224,10 +231,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		if (ImGui::Button("Spawn Entity")) {
 			ECSComponents::DrawInfoComponent DIC{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor };
 			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
-
-			//adding name to the entity only for destroy() debug purposes
 			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
-			if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent("John")) std::cout << "he john\n";
 
 
 			// add collider if selected
@@ -249,19 +253,28 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 				// then add appropriate collider
 				if (selectedCollider == 1) {//circle
 					e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderRadius));
-
+					if (e.has<ECSComponents::DrawInfoComponent>()) {
+						e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+					}
 				}
 				else if (selectedCollider == 2) { // rectangle
-					e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderWidth, colliderHeight)
-					);
+					e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderWidth, colliderHeight));
+					if (e.has<ECSComponents::DrawInfoComponent>()) {
+						e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+					}
+
 				}
 
 				std::cout << "Spawned entity WITH collider\n";
 			}
+
+
 			else {
 				std::cout << "Spawned entity without collider\n";
+				//if (e.has<ECSComponents::DrawInfoComponent>())std::cout << "drawcomponent XY: " << e.get<ECSComponents::DrawInfoComponent>() << "\n";
 			}
 			if (g_game) g_game->markEntitiesDirty();
+			(void)e; // to silence compiler warning for unused param
 		}
 
 
@@ -290,7 +303,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
-	#pragma region IMGUI Edit
+#pragma region IMGUI Edit
 
 	if (activeWindow == WindowID::Edit) {
 		ImGui::Begin("Edit");
@@ -311,17 +324,11 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		}
 
 		if (FilterType == Filters::Type) {
-			//do another list to look for the type here
-			for (ECS::Entity& e : engine_.getEntityManager().findEntity<>()) {
 
-			}
 
 		}
 		if (FilterType == Filters::ID) {
 
-			for (ECS::Entity& e : engine_.getEntityManager().findEntity<>()) {
-
-			}
 
 		}
 
@@ -343,7 +350,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
-	#pragma region IMGUI FPS
+#pragma region IMGUI FPS
 	if (activeWindow == WindowID::FPS) {
 		ImGui::Begin("FPS");
 		ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
@@ -354,7 +361,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 			if (time.first != "totalTimePerFrame") {
 				ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);// divide by 1000 to show microseconds as milliseconds
 			}
-		
+
 		}
 		ImGui::Text("=== PER SYSTEM TIMING IN PERCENTAGE ===");
 		for (auto& time : throttledTimes_)
@@ -367,7 +374,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
-	#pragma region IMGUI Prefabs and Serialization
+#pragma region IMGUI Prefabs and Serialization
 	//to use, do your settings on main tab. then enter prefabs tab to save your file
 	//1. Enter file/prefab name
 	//2. Load from the name tab
@@ -377,14 +384,14 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 		ImGui::Begin("Prefabs");
 
 
-		if ( ImGui::InputText("Name for Prefab", nameSetter,sizeof(nameSetter)) ) {
+		if (ImGui::InputText("Name for Prefab", nameSetter, sizeof(nameSetter))) {
 			prefab.name = static_cast<std::string>(nameSetter);
 		}
 
 		if (ImGui::Button("Save Prefab")) {
 			//this will save to assets/saves/..
 			savePrefab(prefab);
-		}		
+		}
 
 		if (ImGui::Button("Load Prefab")) {
 			std::string fileStr = "../../../assets/saves/" + static_cast<std::string>(nameSetter) + ".txt";
@@ -392,7 +399,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 			//PrefabData loaded = loadPrefab("../../../assets/saves/prefabs.txt");
 			PrefabData loaded = loadPrefab(fileStr);
 			prefabRegistry[loaded.name] = loaded;
-		}		
+		}
 
 		if (ImGui::Button("Spawn Prefab")) {
 			if (prefabRegistry.count(prefab.name)) {
@@ -400,7 +407,7 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 				if (g_game) g_game->markEntitiesDirty();
 			}
 		}
-	
+
 		ImGui::End();
 	}
 #pragma endregion
@@ -412,12 +419,14 @@ void imGuiDisplay(GLFWwindow* window,Engine::EnoEngine& engine_) {
 
 void displayEntityCount(Engine::EnoEngine& engine_) {
 	size_t counter = 0;
-	
+
 	std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<>();
 	for (ECS::Entity const& e : EntityList) {
 		counter++;
+		(void)e; // silence unused warning
 	}
 	std::cout << "Number of entities: " << counter << "\n";
+	
 }
 
 
