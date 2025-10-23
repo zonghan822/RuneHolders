@@ -65,9 +65,6 @@ size_t entity_count{};
 static PrefabData prefab;
 static char nameSetter[50] = "";
 
-//Tracks which entities were spawned from which prefab
-static std::unordered_map<std::string, std::vector<uint32_t>> prefabInstances;
-
 
 
 #pragma endregion
@@ -105,10 +102,10 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
 
-	// (kim) WASD movement for indicator (always active, no need to focus on ImGui)
+	// (kim) WASD movement for indicator 
 	float moveDelta = moveSpeed_ * deltaTime;
 
-	/* (kim) changed to ARROW KEYS for indicator control */
+	// (kim) changed to ARROW KEYS for indicator control 
 	auto& inputManager = engine_.getInputManager();
 	if (inputManager.isKeyPressed(GLFW_KEY_UP)) indicatorY_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_DOWN)) indicatorY_ += moveDelta;
@@ -120,14 +117,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	{
 		playerEntityID_ = player.getEntityID();
 	}
-
-	prefab.x = indicatorX_;
-	prefab.y = indicatorY_;
-	prefab.width = eWidth;
-	prefab.height = eHeight;
-	prefab.color = eColor;
-	prefab.shape = eShapeIndex;
-	prefab.hasCollider = (selectedCollider != 0);
 
 
 	double now = ImGui::GetTime();           // imgui monotonic time (seconds)
@@ -378,42 +367,62 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 		ImGui::End();
 	}
 #pragma endregion
-#pragma region IMGUI Prefabs and Serialization
-	//to use, do your settings on main tab. then enter prefabs tab to save your file
-	//1. Enter file/prefab name
-	//2. Load from the name tab
-	//3. Spawn from your prefabs
-
+#pragma region IMGUI Prefabs
 	if (activeWindow == WindowID::Prefabs) {
 		ImGui::Begin("Prefabs");
 
+		static PrefabData currentPrefab;  // local editable prefab
+		static char prefabName[64] = "";
+		static bool hasCollider = false;
+		static int shapeIndex = 0;
+		static int colorIndex = 0;
 
-		if (ImGui::InputText("Name for Prefab", nameSetter, sizeof(nameSetter))) {
-			prefab.name = static_cast<std::string>(nameSetter);
-		}
+		ImGui::InputText("Prefab Name", prefabName, sizeof(prefabName));
+		currentPrefab.name = prefabName;
 
+		ImGui::Separator();
+		ImGui::Text("Transform / Size");
+		ImGui::DragFloat("Position X", &currentPrefab.x, 0.1f);
+		ImGui::DragFloat("Position Y", &currentPrefab.y, 0.1f);
+		ImGui::DragFloat("Width", &currentPrefab.width, 0.5f, 1.0f, 200.0f);
+		ImGui::DragFloat("Height", &currentPrefab.height, 0.5f, 1.0f, 200.0f);
+
+		ImGui::Combo("Shape", &shapeIndex, shapes, IM_ARRAYSIZE(shapes));
+		currentPrefab.shape = shapeIndex;
+
+		ImGui::Combo("Color", &colorIndex, colors, IM_ARRAYSIZE(colors));
+		currentPrefab.color = colorIndex;
+
+		ImGui::Checkbox("Has Collider", &hasCollider);
+		currentPrefab.hasCollider = hasCollider;
+
+		ImGui::Separator();
 		if (ImGui::Button("Save Prefab")) {
-			//this will save to assets/saves/..
-			savePrefab(prefab);
+			if (strlen(prefabName) > 0) {
+				savePrefab(currentPrefab);
+				prefabRegistry[currentPrefab.name] = currentPrefab;
+				std::cout << "Saved prefab: " << currentPrefab.name << std::endl;
+			}
 		}
 
 		if (ImGui::Button("Load Prefab")) {
-			std::string fileStr = "../../../assets/saves/" + static_cast<std::string>(nameSetter) + ".txt";
-
-			//PrefabData loaded = loadPrefab("../../../assets/saves/prefabs.txt");
-			PrefabData loaded = loadPrefab(fileStr);
-			prefabRegistry[loaded.name] = loaded;
+			std::string path = "../../../assets/saves/" + std::string(prefabName) + ".txt";
+			try {
+				currentPrefab = loadPrefab(path);
+				prefabRegistry[currentPrefab.name] = currentPrefab;
+				std::cout << "Loaded prefab: " << currentPrefab.name << std::endl;
+			}
+			catch (const std::exception& e) {
+				std::cerr << e.what() << std::endl;
+			}
 		}
 
+		ImGui::Separator();
 		if (ImGui::Button("Spawn Prefab")) {
-			if (prefabRegistry.count(prefab.name)) {
-				//instantiatePrefab(prefabRegistry[prefab.name], engine_);
-				ECS::Entity e = instantiatePrefab(prefabRegistry[prefab.name], engine_);
-				prefabInstances[prefab.name].push_back(e.getEntityID());
+			if (prefabRegistry.count(currentPrefab.name)) {
+				ECS::Entity e = instantiatePrefab(prefabRegistry[currentPrefab.name], engine_);
 				if (g_game) g_game->markEntitiesDirty();
 			}
-
-
 		}
 
 		ImGui::End();
@@ -446,13 +455,13 @@ void displayEntityCount(Engine::EnoEngine& engine_) {
 		(void)e; // silence unused warning
 	}
 	std::cout << "Number of entities: " << counter << "\n";
-	
+
 }
 
 
 
 void displayAssetBrowser(Engine::EnoEngine& engine_) {
-	Resources::EnoLoader& loader =  engine_.getResourceLoader();
+	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>const& textures = loader.getAllTextures();
 
 	ImGui::Text("=== Loaded Textures ===");
