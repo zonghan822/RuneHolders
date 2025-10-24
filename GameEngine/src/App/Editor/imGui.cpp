@@ -188,6 +188,10 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 	#pragma endregion
 
+
+
+
+
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
@@ -406,6 +410,55 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 }
 
+
+ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine)
+{
+
+	const PrefabData& prefab = prefabRegistry[name];
+
+	// center position if your prefab uses width/height as top-left reference
+	float centerX = x + prefab.width * 0.5f;
+	float centerY = y + prefab.height * 0.5f;
+
+	// create the entity
+	ECS::Entity e = engine.getEntityManager().create<>();
+
+	// attach components
+	e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent(prefab.name.c_str()));
+
+	// transform
+	ECSComponents::TransformComponent transform{
+		{centerX, centerY, 0.0f},
+		{0.0f, 0.0f, 0.0f},
+		{1.0f, 1.0f, 1.0f}
+	};
+	e.add<ECSComponents::TransformComponent>(transform);
+
+	// draw info
+	ECSComponents::DrawInfoComponent draw{
+		x, y, prefab.width, prefab.height,
+		prefab.shape == 0 ? "Circle" : "Rectangle",
+		prefab.color
+	};
+	e.add<ECSComponents::DrawInfoComponent>(draw);
+
+	// collider (optional)
+	if (prefab.hasCollider) {
+		e.add<Collision::CollisionComponent>(
+			Collision::CollisionComponent(prefab.width, prefab.height));
+	}
+
+	// update render cache
+	if (g_game) g_game->markEntitiesDirty();
+
+	std::cout << "Spawned prefab '" << prefab.name
+		<< "' at (" << x << ", " << y << ")\n";
+
+	return e;
+}
+
+
+
 void displayPrefabsTab(Engine::EnoEngine& engine_) {
 
 	static PrefabData currentPrefab{};  // local editable prefab
@@ -419,9 +472,15 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	static std::string selectedPrefabName{};
 
 
+	ImGui::Text("==========PREFABS TAB==========");
 
-	ImGui::InputText("Prefab Name", prefabName, sizeof(prefabName));
+	ImGui::Text("Prefab name:");
+	ImGui::InputText("##Prefab Name", prefabName, sizeof(prefabName));
 	currentPrefab.name = prefabName;
+
+
+
+
 
 	ImGui::Separator();
 	ImGui::Text("Transform / Size");
@@ -441,12 +500,16 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	currentPrefab.hasCollider = hasCollider;
 
 
+	// Save a new prefab or edit existing value
+	if (ImGui::Button("Save New or Existing Prefabs:")) {
+		savePrefab(currentPrefab);
+		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
+	}
 
-
-	ImGui::Separator();
+	//ImGui::Separator();
 
 	// Load performs a "read all file in directory" now
-	if (ImGui::Button("Load All Existing Prefab")) {
+	if (ImGui::Button("Load Existing Prefab")) {
 		for (auto& entry : std::filesystem::directory_iterator("../../../assets/saves/")) {
 			if (entry.path().extension() == ".txt") {
 				PrefabData loaded = loadPrefab(entry.path().string());
@@ -455,15 +518,8 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 		}
 	}
 
-	// Save a new prefab or edit existing value
-	if (ImGui::Button("Save New or Existing Prefabs:")) {
-		savePrefab(currentPrefab);
-		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
-	}
-
-
 	//Drop down and selectable list of loaded prefabs
-	ImGui::Text("Saved Prefabs:");
+	ImGui::Text("Available Prefabs:");
 	if (ImGui::BeginListBox("##PrefabList", ImVec2(200, 150))) {
 		for (auto& [name, data] : prefabRegistry) {
 			bool selected = (selectedPrefabName == name);
@@ -476,7 +532,29 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 			}
 		}
 		ImGui::EndListBox();
+
+		// Handle prefab placement overlay
+		if (selectedPrefabName.size()) {
+			ImVec2 mouse = ImGui::GetMousePos();
+			ImGuiIO& io = ImGui::GetIO();
+
+			// Only place if user releases mouse outside ImGui windows
+			if (!io.WantCaptureMouse && ImGui::IsMouseReleased(0)) {
+				spawnPrefabAt(mouse.x, mouse.y, selectedPrefabName, engine_);
+			}
+
+			// Show tooltip only when hovering outside ImGui
+			if (!io.WantCaptureMouse) {
+				ImGui::SetNextWindowPos(ImVec2(mouse.x + 20, mouse.y + 20));
+				ImGui::Begin("Placement Tooltip", nullptr,
+					ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+					ImGuiWindowFlags_NoInputs);
+				ImGui::Text("Placing %s", selectedPrefabName.c_str());
+				ImGui::End();
+			}
+		}
 	}
+
 
 	//Spawn desired prefab
 	ImGui::Separator();
