@@ -90,6 +90,12 @@ void imGuiTerminate();
 *//*========================================================================================*/
 float randomFloat(float min, float max);
 
+/*============================================================================================
+ * \brief       Displays Main Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayMainTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
  * \brief       Displays total active entity count
@@ -98,10 +104,23 @@ float randomFloat(float min, float max);
 *//*========================================================================================*/
 void displayEntityCount(Engine::EnoEngine& engine_);
 
+/*============================================================================================
+ * \brief       Displays Edit tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayEditTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays Prefabs in Prefabs Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayPrefabsTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
  * \brief       Displays Assets in the Assets menu
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void displayAssetBrowser(Engine::EnoEngine& engine_);
+void displayAssetTab(Engine::EnoEngine& engine_);

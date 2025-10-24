@@ -129,218 +129,22 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	if (ImGui::Button("Prefabs"))  activeWindow = WindowID::Prefabs;
 	if (ImGui::Button("Assets"))   activeWindow = WindowID::Assets;
 	//FPS and Time Staggering for Displaying FPS
-#pragma region IMGUI Main
+	#pragma region IMGUI Main
 	if (activeWindow == WindowID::Main) {
 		ImGui::Begin("Main");
-
-		//=======================PLAYER CONTROLS =======================
-		ImGui::Text("=== PLAYER CONTROLS ===");
-		ImGui::Text("WASD to move player");
-
-		if (!playerSpawned_) {
-			if (ImGui::Button("Spawn Player")) {
-
-
-				// create player entity at indicator position
-				ECSComponents::TransformComponent transform{
-					{indicatorX_, indicatorY_, 0.0f},
-					{0.0f, 0.0f, 0.0f},
-					{1.0f, 1.0f, 1.0f}
-				};
-
-				// create player with rectangle collider (can change to circle if u want)
-				Collision::CollisionComponent playerCollider(
-					Player::PLAYER_COLLIDER_WIDTH,
-					Player::PLAYER_COLLIDER_HEIGHT
-				); // 10x10 rectangle
-
-				// for circle: (uncomment if u want circle!)
-				// Collision::CollisionComponent playerCollider(5.0f); // radius 5.0
-				Player::PlayerComponent playerComp(moveSpeed_);
-
-				// Create entity with TransformComponent first
-				ECS::Entity entity = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
-
-				// Store ID by finding the last created entity in the map
-				// Get the entity map and find the most recent entity
-
-				// Then add CollisionComponent
-				entity.add<Collision::CollisionComponent>(playerCollider);
-
-				// Then add PlayerComponent
-				entity.add<Player::PlayerComponent>(playerComp);
-
-				playerSpawned_ = true;
-
-				std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")\n";
-			}
-		}
-		else {
-			ImGui::Text("Player Active (ID: %u)", playerEntityID_);
-			if (ImGui::Button("Destroy Player")) {
-				engine_.getEntityManager().destroyEntity(playerEntityID_);
-				playerSpawned_ = false;
-				if (g_game) g_game->markEntitiesDirty();
-				std::cout << "Player destroyed\n";
-			}
-		}
-
-		ImGui::Separator();
-
-		// ==================== SPAWN POSITION INDICATOR ====================
-		ImGui::Text("=== SPAWN POSITION INDICATOR ===");
-		ImGui::Text("Position (%.1f, %.1f)", indicatorX_, indicatorY_);
-		ImGui::DragFloat("Move Speed", &moveSpeed_, 10.0f, 50.0f, 500.0f);
-		//collision visualization toggle
-		ImGui::Checkbox("Show Colliders", &showColliders_);
-
-		// entity spawn settings
-		ImGui::Text("Entity Spawn Settings");
-		ImGui::DragFloat("Entity Width", &eWidth, 0.5f, 1.0f, 100.0f);
-		ImGui::DragFloat("Entity Height", &eHeight, 0.5f, 1.0f, 100.0f);
-		//dropdown menu
-		ImGui::Combo("Shape", &eShapeIndex, shapes, IM_ARRAYSIZE(shapes));
-		ImGui::Combo("Color", &eColor, colors, IM_ARRAYSIZE(colors));
-
-
-		//collider settings
-		ImGui::Text("Collider Settings");
-		ImGui::Combo("ColliderType", &selectedCollider, colliderShapes, IM_ARRAYSIZE(colliderShapes));
-
-		if (selectedCollider == 1) { // circle
-			ImGui::DragFloat("Collider Width", &colliderRadius, 0.5f, 1.0f, 100.0f);
-		}
-		else if (selectedCollider == 2) { // rectangle
-			ImGui::DragFloat("Collider Width", &colliderWidth, 0.5f, 1.0f, 100.0f);
-			ImGui::DragFloat("Collider Height", &colliderHeight, 0.5f, 1.0f, 100.0f);
-		}
-
-		ImGui::Separator();
-
-		//Spawn Button (with optional collider)
-		if (ImGui::Button("Spawn Entity")) {
-			ECSComponents::DrawInfoComponent DIC{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor };
-			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
-			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
-
-
-			// add collider if selected
-			if (selectedCollider != 0) {
-
-				// calculate center position from top-left
-				float centerX = indicatorX_ + (eWidth * 0.5f);
-				float centerY = indicatorY_ + (eHeight * 0.5f);
-
-				// add transform component (required for collision)
-				ECSComponents::TransformComponent transform{
-					{centerX, centerY, 0.0f},
-					{0.0f, 0.0f, 0.0f},
-					{1.0f, 1.0f, 1.0f}
-				};
-
-				e.add<ECSComponents::TransformComponent>(transform);
-
-				// then add appropriate collider
-				if (selectedCollider == 1) {//circle
-					e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderRadius));
-					if (e.has<ECSComponents::DrawInfoComponent>()) {
-						e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
-					}
-				}
-				else if (selectedCollider == 2) { // rectangle
-					e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderWidth, colliderHeight));
-					if (e.has<ECSComponents::DrawInfoComponent>()) {
-						e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
-					}
-
-				}
-
-				std::cout << "Spawned entity WITH collider\n";
-			}
-
-
-			else {
-				std::cout << "Spawned entity without collider\n";
-				//if (e.has<ECSComponents::DrawInfoComponent>())std::cout << "drawcomponent XY: " << e.get<ECSComponents::DrawInfoComponent>() << "\n";
-			}
-			if (g_game) g_game->markEntitiesDirty();
-			(void)e; // to silence compiler warning for unused param
-		}
-
-
-
-		//Clone Button
-		if (ImGui::Button("Spawn 2500 Entities")) {
-			for (size_t i = 0; i < 2500; i++) {
-				float randX = randomFloat(0.0f, 1200.0f); //screen width 
-				float randY = randomFloat(0.0f, 900.0f); // screen height
-				float randScalar = randomFloat(0, 10.f);
-				float randW = eWidth + randScalar;
-				float randH = eHeight + randScalar;
-				Color randC = (randomFloat(0, 1.0f) < 0.5f ? Color::Green : Color::Red);
-				//HARDCODED(COPIED) SPAWN CODE INTO HERE
-				ECSComponents::DrawInfoComponent DIC{ randX, randY, randW, randH, shapes[eShapeIndex], randC };
-				ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
-				e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
-			}
-			entity_count += 2500;
-			if (g_game) g_game->markEntitiesDirty();
-			std::cout << "Spawned " << entity_count << " Entities\n";
-		}
-
-
-
+		displayMainTab(engine_);
 		ImGui::End();
 	}
-#pragma endregion
-#pragma region IMGUI Edit
+	#pragma endregion
+	#pragma region IMGUI Edit
 
 	if (activeWindow == WindowID::Edit) {
 		ImGui::Begin("Edit");
-		const char* filters[] = { "Name", "Type" , "ID" };
-		static int FilterType = Filters::Name;
-		std::vector<ECS::Entity> toDelete;
-
-		ImGui::Combo("Filters", &FilterType, filters, IM_ARRAYSIZE(filters));
-		if (FilterType == Filters::Name) {
-
-			if (ImGui::Button("Delete John")) {
-				for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-					if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent("John")) {
-						toDelete.push_back(e);
-					}
-				}
-			}
-		}
-
-		if (FilterType == Filters::Type) {
-
-
-		}
-		if (FilterType == Filters::ID) {
-
-
-		}
-
-		if (ImGui::Button("Show Entity Count")) {
-			displayEntityCount(engine_);
-		}
-
-		if (!toDelete.empty()) {
-			for (auto& a : toDelete) {
-				a.destroy();
-			}
-
-			// FIX: Mark cache as dirty after deletion
-			if (g_game) {
-				g_game->markEntitiesDirty();
-			}
-		}
-
+		displayEditTab(engine_);
 		ImGui::End();
 	}
-#pragma endregion
-#pragma region IMGUI FPS
+	#pragma endregion
+	#pragma region IMGUI FPS
 	if (activeWindow == WindowID::FPS) {
 		ImGui::Begin("FPS");
 		ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
@@ -363,112 +167,189 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 		ImGui::End();
 	}
-#pragma endregion
-#pragma region IMGUI Prefabs
+	#pragma endregion
+	#pragma region IMGUI Prefabs
 	if (activeWindow == WindowID::Prefabs) {
 		ImGui::Begin("Prefabs");
-
-		static PrefabData currentPrefab{};  // local editable prefab
-		static char prefabName[64] = "";
-		static bool hasCollider = false;
-		static int shapeIndex = Shapes::Rectangle;
-		static int colorIndex = Color::Green;
-
-		// New implementation for dropdown scrollable UI for prefabs
-		static std::string statusMessage{};
-		static std::string selectedPrefabName{};
-
-
-
-		ImGui::InputText("Prefab Name", prefabName, sizeof(prefabName));
-		currentPrefab.name = prefabName;
-
-		ImGui::Separator();
-		ImGui::Text("Transform / Size");
-		ImGui::DragFloat("Position X", &currentPrefab.x, 1.0f);
-		ImGui::DragFloat("Position Y", &currentPrefab.y, 1.0f);
-		ImGui::DragFloat("Width", &currentPrefab.width, 0.5f, 1.0f, 200.0f);
-		ImGui::DragFloat("Height", &currentPrefab.height, 0.5f, 1.0f, 200.0f);
-
-
-		ImGui::Combo("Shape", &shapeIndex, shapes, IM_ARRAYSIZE(shapes));
-		currentPrefab.shape = shapeIndex;
-
-		ImGui::Combo("Color", &colorIndex, colors, IM_ARRAYSIZE(colors));
-		currentPrefab.color = colorIndex;
-
-		ImGui::Checkbox("Has Collider", &hasCollider);
-		currentPrefab.hasCollider = hasCollider;
-
-
-
-
-		ImGui::Separator();
-
-		// Load performs a "read all file in directory" now
-		if (ImGui::Button("Load All Existing Prefab")) {
-			for (auto& entry : std::filesystem::directory_iterator("../../../assets/saves/")) {
-				if (entry.path().extension() == ".txt") {
-					PrefabData loaded = loadPrefab(entry.path().string());
-					prefabRegistry[loaded.name] = loaded;
-				}
-			}
-		}
-
-		// Save a new prefab or edit existing value
-		if (ImGui::Button("Save New or Existing Prefabs:")) {
-			savePrefab(currentPrefab);
-			prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
-		}
-
-
-		//Drop down and selectable list of loaded prefabs
-		ImGui::Text("Saved Prefabs:");
-		if (ImGui::BeginListBox("##PrefabList", ImVec2(200, 150))) {
-			for (auto& [name, data] : prefabRegistry) {
-				bool selected = (selectedPrefabName == name);
-				if (ImGui::Selectable(name.c_str(), selected)) {
-					selectedPrefabName = name;
-					currentPrefab = data;  // load into editor fields
-					statusMessage = "Loaded prefab: " + name;
-					strncpy(prefabName, name.c_str(), sizeof(prefabName));
-					prefabName[sizeof(prefabName) - 1] = '\0';
-				}
-			}
-			ImGui::EndListBox();
-		}
-
-		//Spawn desired prefab
-		ImGui::Separator();
-		if (ImGui::Button("Spawn Prefab")) {
-			if (prefabRegistry.count(selectedPrefabName)) {
-				ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], engine_);
-				if (g_game) g_game->markEntitiesDirty();
-				std::cout << "Spawned prefab: " << selectedPrefabName << "\n";
-
-			}
-		}
-
+		displayPrefabsTab(engine_);
 		ImGui::End();
 	}
-#pragma endregion
-#pragma region IMGUI Assets
+	#pragma endregion
+	#pragma region IMGUI Assets
 	if (activeWindow == WindowID::Assets) {
 		ImGui::Begin("Assets Browser");
 
 		// Display all loaded assets here
-		displayAssetBrowser(engine_);
+		displayAssetTab(engine_);
 
 		ImGui::End();
 	}
 
 
-#pragma endregion
+	#pragma endregion
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
+void displayMainTab(Engine::EnoEngine& engine_) {
+	//=======================PLAYER CONTROLS =======================
+	ImGui::Text("=== PLAYER CONTROLS ===");
+	ImGui::Text("WASD to move player");
+
+	if (!playerSpawned_) {
+		if (ImGui::Button("Spawn Player")) {
+
+
+			// create player entity at indicator position
+			ECSComponents::TransformComponent transform{
+				{indicatorX_, indicatorY_, 0.0f},
+				{0.0f, 0.0f, 0.0f},
+				{1.0f, 1.0f, 1.0f}
+			};
+
+			// create player with rectangle collider (can change to circle if u want)
+			Collision::CollisionComponent playerCollider(
+				Player::PLAYER_COLLIDER_WIDTH,
+				Player::PLAYER_COLLIDER_HEIGHT
+			); // 10x10 rectangle
+
+			// for circle: (uncomment if u want circle!)
+			// Collision::CollisionComponent playerCollider(5.0f); // radius 5.0
+			Player::PlayerComponent playerComp(moveSpeed_);
+
+			// Create entity with TransformComponent first
+			ECS::Entity entity = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
+
+			// Store ID by finding the last created entity in the map
+			// Get the entity map and find the most recent entity
+
+			// Then add CollisionComponent
+			entity.add<Collision::CollisionComponent>(playerCollider);
+
+			// Then add PlayerComponent
+			entity.add<Player::PlayerComponent>(playerComp);
+
+			playerSpawned_ = true;
+
+			std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")\n";
+		}
+	}
+	else {
+		ImGui::Text("Player Active (ID: %u)", playerEntityID_);
+		if (ImGui::Button("Destroy Player")) {
+			engine_.getEntityManager().destroyEntity(playerEntityID_);
+			playerSpawned_ = false;
+			if (g_game) g_game->markEntitiesDirty();
+			std::cout << "Player destroyed\n";
+		}
+	}
+
+	ImGui::Separator();
+
+	// ==================== SPAWN POSITION INDICATOR ====================
+	ImGui::Text("=== SPAWN POSITION INDICATOR ===");
+	ImGui::Text("Position (%.1f, %.1f)", indicatorX_, indicatorY_);
+	ImGui::DragFloat("Move Speed", &moveSpeed_, 10.0f, 50.0f, 500.0f);
+	//collision visualization toggle
+	ImGui::Checkbox("Show Colliders", &showColliders_);
+
+	// entity spawn settings
+	ImGui::Text("Entity Spawn Settings");
+	ImGui::DragFloat("Entity Width", &eWidth, 0.5f, 1.0f, 100.0f);
+	ImGui::DragFloat("Entity Height", &eHeight, 0.5f, 1.0f, 100.0f);
+	//dropdown menu
+	ImGui::Combo("Shape", &eShapeIndex, shapes, IM_ARRAYSIZE(shapes));
+	ImGui::Combo("Color", &eColor, colors, IM_ARRAYSIZE(colors));
+
+
+	//collider settings
+	ImGui::Text("Collider Settings");
+	ImGui::Combo("ColliderType", &selectedCollider, colliderShapes, IM_ARRAYSIZE(colliderShapes));
+
+	if (selectedCollider == 1) { // circle
+		ImGui::DragFloat("Collider Width", &colliderRadius, 0.5f, 1.0f, 100.0f);
+	}
+	else if (selectedCollider == 2) { // rectangle
+		ImGui::DragFloat("Collider Width", &colliderWidth, 0.5f, 1.0f, 100.0f);
+		ImGui::DragFloat("Collider Height", &colliderHeight, 0.5f, 1.0f, 100.0f);
+	}
+
+	ImGui::Separator();
+
+	//Spawn Button (with optional collider)
+	if (ImGui::Button("Spawn Entity")) {
+		ECSComponents::DrawInfoComponent DIC{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor };
+		ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
+		e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
+
+
+		// add collider if selected
+		if (selectedCollider != 0) {
+
+			// calculate center position from top-left
+			float centerX = indicatorX_ + (eWidth * 0.5f);
+			float centerY = indicatorY_ + (eHeight * 0.5f);
+
+			// add transform component (required for collision)
+			ECSComponents::TransformComponent transform{
+				{centerX, centerY, 0.0f},
+				{0.0f, 0.0f, 0.0f},
+				{1.0f, 1.0f, 1.0f}
+			};
+
+			e.add<ECSComponents::TransformComponent>(transform);
+
+			// then add appropriate collider
+			if (selectedCollider == 1) {//circle
+				e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderRadius));
+				if (e.has<ECSComponents::DrawInfoComponent>()) {
+					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+				}
+			}
+			else if (selectedCollider == 2) { // rectangle
+				e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderWidth, colliderHeight));
+				if (e.has<ECSComponents::DrawInfoComponent>()) {
+					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+				}
+
+			}
+
+			std::cout << "Spawned entity WITH collider\n";
+		}
+
+
+		else {
+			std::cout << "Spawned entity without collider\n";
+			//if (e.has<ECSComponents::DrawInfoComponent>())std::cout << "drawcomponent XY: " << e.get<ECSComponents::DrawInfoComponent>() << "\n";
+		}
+		if (g_game) g_game->markEntitiesDirty();
+		(void)e; // to silence compiler warning for unused param
+	}
+
+
+
+	//Clone Button
+	if (ImGui::Button("Spawn 2500 Entities")) {
+		for (size_t i = 0; i < 2500; i++) {
+			float randX = randomFloat(0.0f, 1200.0f); //screen width 
+			float randY = randomFloat(0.0f, 900.0f); // screen height
+			float randScalar = randomFloat(0, 10.f);
+			float randW = eWidth + randScalar;
+			float randH = eHeight + randScalar;
+			Color randC = (randomFloat(0, 1.0f) < 0.5f ? Color::Green : Color::Red);
+			//HARDCODED(COPIED) SPAWN CODE INTO HERE
+			ECSComponents::DrawInfoComponent DIC{ randX, randY, randW, randH, shapes[eShapeIndex], randC };
+			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
+			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
+		}
+		entity_count += 2500;
+		if (g_game) g_game->markEntitiesDirty();
+		std::cout << "Spawned " << entity_count << " Entities\n";
+	}
+
+
+}
 
 void displayEntityCount(Engine::EnoEngine& engine_) {
 	size_t counter = 0;
@@ -482,9 +363,135 @@ void displayEntityCount(Engine::EnoEngine& engine_) {
 
 }
 
+void displayEditTab(Engine::EnoEngine& engine_) {
+	const char* filters[] = { "Name", "Type" , "ID" };
+	static int FilterType = Filters::Name;
+	std::vector<ECS::Entity> toDelete;
+
+	ImGui::Combo("Filters", &FilterType, filters, IM_ARRAYSIZE(filters));
+	if (FilterType == Filters::Name) {
+
+		if (ImGui::Button("Delete John")) {
+			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
+				if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent("John")) {
+					toDelete.push_back(e);
+				}
+			}
+		}
+	}
+
+	if (FilterType == Filters::Type) {
 
 
-void displayAssetBrowser(Engine::EnoEngine& engine_) {
+	}
+	if (FilterType == Filters::ID) {
+
+
+	}
+
+	if (ImGui::Button("Show Entity Count")) {
+		displayEntityCount(engine_);
+	}
+
+	if (!toDelete.empty()) {
+		for (auto& a : toDelete) {
+			a.destroy();
+		}
+
+		// FIX: Mark cache as dirty after deletion
+		if (g_game) {
+			g_game->markEntitiesDirty();
+		}
+	}
+
+}
+
+void displayPrefabsTab(Engine::EnoEngine& engine_) {
+
+	static PrefabData currentPrefab{};  // local editable prefab
+	static char prefabName[64] = "";
+	static bool hasCollider = false;
+	static int shapeIndex = Shapes::Rectangle;
+	static int colorIndex = Color::Green;
+
+	// New implementation for dropdown scrollable UI for prefabs
+	static std::string statusMessage{};
+	static std::string selectedPrefabName{};
+
+
+
+	ImGui::InputText("Prefab Name", prefabName, sizeof(prefabName));
+	currentPrefab.name = prefabName;
+
+	ImGui::Separator();
+	ImGui::Text("Transform / Size");
+	ImGui::DragFloat("Position X", &currentPrefab.x, 1.0f);
+	ImGui::DragFloat("Position Y", &currentPrefab.y, 1.0f);
+	ImGui::DragFloat("Width", &currentPrefab.width, 0.5f, 1.0f, 200.0f);
+	ImGui::DragFloat("Height", &currentPrefab.height, 0.5f, 1.0f, 200.0f);
+
+
+	ImGui::Combo("Shape", &shapeIndex, shapes, IM_ARRAYSIZE(shapes));
+	currentPrefab.shape = shapeIndex;
+
+	ImGui::Combo("Color", &colorIndex, colors, IM_ARRAYSIZE(colors));
+	currentPrefab.color = colorIndex;
+
+	ImGui::Checkbox("Has Collider", &hasCollider);
+	currentPrefab.hasCollider = hasCollider;
+
+
+
+
+	ImGui::Separator();
+
+	// Load performs a "read all file in directory" now
+	if (ImGui::Button("Load All Existing Prefab")) {
+		for (auto& entry : std::filesystem::directory_iterator("../../../assets/saves/")) {
+			if (entry.path().extension() == ".txt") {
+				PrefabData loaded = loadPrefab(entry.path().string());
+				prefabRegistry[loaded.name] = loaded;
+			}
+		}
+	}
+
+	// Save a new prefab or edit existing value
+	if (ImGui::Button("Save New or Existing Prefabs:")) {
+		savePrefab(currentPrefab);
+		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
+	}
+
+
+	//Drop down and selectable list of loaded prefabs
+	ImGui::Text("Saved Prefabs:");
+	if (ImGui::BeginListBox("##PrefabList", ImVec2(200, 150))) {
+		for (auto& [name, data] : prefabRegistry) {
+			bool selected = (selectedPrefabName == name);
+			if (ImGui::Selectable(name.c_str(), selected)) {
+				selectedPrefabName = name;
+				currentPrefab = data;  // load into editor fields
+				statusMessage = "Loaded prefab: " + name;
+				strncpy(prefabName, name.c_str(), sizeof(prefabName));
+				prefabName[sizeof(prefabName) - 1] = '\0';
+			}
+		}
+		ImGui::EndListBox();
+	}
+
+	//Spawn desired prefab
+	ImGui::Separator();
+	if (ImGui::Button("Spawn Prefab")) {
+		if (prefabRegistry.count(selectedPrefabName)) {
+			ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], engine_);
+			if (g_game) g_game->markEntitiesDirty();
+			std::cout << "Spawned prefab: " << selectedPrefabName << "\n";
+
+		}
+	}
+
+}
+
+void displayAssetTab(Engine::EnoEngine& engine_) {
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>const& textures = loader.getAllTextures();
 
@@ -548,10 +555,10 @@ void displayAssetBrowser(Engine::EnoEngine& engine_) {
 
 }
 
-
-
 void imGuiTerminate() {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 }
+
+
