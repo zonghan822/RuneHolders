@@ -32,7 +32,7 @@ struct PrefabData {
     int shape;
     bool hasCollider;
 
-    PrefabData() : name{ "Empty" }, x{ 0.0f }, y{ 0.0f }, width{ 10.f }, height{ 10.f }, color{ 0 }, shape{ 0 }, hasCollider{ 0 } {}
+    PrefabData() : name{ "Empty" }, x{ 250.0f }, y{ 250.0f }, width{ 30.f }, height{ 30.f }, color{ 0 }, shape{ 0 }, hasCollider{ 0 } {}
 
 };
 
@@ -60,3 +60,17 @@ void savePrefab(const PrefabData& prefab);
  * \return      PrefabData   
  *===========================================================================================*/
 PrefabData loadPrefab(const std::string& filename);
+
+
+
+
+/*============================================================================================
+ * \brief       Loads a prefab definition from persistent storage.
+ * \param[in]   std::string const& filename 
+ * \return      PrefabData   
+ *===========================================================================================*/
+//PrefabData getPrefabList(const std::string& filename);
+
+
+
+

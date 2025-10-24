@@ -7,6 +7,7 @@
 *				which includes the init, update and terminate functions.
 *     			There are also functions for spawning and counting entities.
 *//*========================================================================================*/
+#include <filesystem>
 #include "imGui.hpp"
 #include "game_logic.hpp"
 
@@ -60,10 +61,6 @@ static double next_update = 0.0;         // next time we refresh the text
 
 //entity counter
 size_t entity_count{};
-
-//prefabs
-static PrefabData prefab;
-static char nameSetter[50] = "";
 
 
 
@@ -201,7 +198,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 		ImGui::Text("Entity Spawn Settings");
 		ImGui::DragFloat("Entity Width", &eWidth, 0.5f, 1.0f, 100.0f);
 		ImGui::DragFloat("Entity Height", &eHeight, 0.5f, 1.0f, 100.0f);
-		//dropdoawn menu
+		//dropdown menu
 		ImGui::Combo("Shape", &eShapeIndex, shapes, IM_ARRAYSIZE(shapes));
 		ImGui::Combo("Color", &eColor, colors, IM_ARRAYSIZE(colors));
 
@@ -371,21 +368,28 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	if (activeWindow == WindowID::Prefabs) {
 		ImGui::Begin("Prefabs");
 
-		static PrefabData currentPrefab;  // local editable prefab
+		static PrefabData currentPrefab{};  // local editable prefab
 		static char prefabName[64] = "";
 		static bool hasCollider = false;
-		static int shapeIndex = 0;
-		static int colorIndex = 0;
+		static int shapeIndex = Shapes::Rectangle;
+		static int colorIndex = Color::Green;
+
+		// New implementation for dropdown scrollable UI for prefabs
+		static std::string statusMessage{};
+		static std::string selectedPrefabName{};
+
+
 
 		ImGui::InputText("Prefab Name", prefabName, sizeof(prefabName));
 		currentPrefab.name = prefabName;
 
 		ImGui::Separator();
 		ImGui::Text("Transform / Size");
-		ImGui::DragFloat("Position X", &currentPrefab.x, 0.1f);
-		ImGui::DragFloat("Position Y", &currentPrefab.y, 0.1f);
+		ImGui::DragFloat("Position X", &currentPrefab.x, 1.0f);
+		ImGui::DragFloat("Position Y", &currentPrefab.y, 1.0f);
 		ImGui::DragFloat("Width", &currentPrefab.width, 0.5f, 1.0f, 200.0f);
 		ImGui::DragFloat("Height", &currentPrefab.height, 0.5f, 1.0f, 200.0f);
+
 
 		ImGui::Combo("Shape", &shapeIndex, shapes, IM_ARRAYSIZE(shapes));
 		currentPrefab.shape = shapeIndex;
@@ -396,32 +400,52 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 		ImGui::Checkbox("Has Collider", &hasCollider);
 		currentPrefab.hasCollider = hasCollider;
 
+
+
+
 		ImGui::Separator();
-		if (ImGui::Button("Save Prefab")) {
-			if (strlen(prefabName) > 0) {
-				savePrefab(currentPrefab);
-				prefabRegistry[currentPrefab.name] = currentPrefab;
-				std::cout << "Saved prefab: " << currentPrefab.name << std::endl;
+
+		// Load performs a "read all file in directory" now
+		if (ImGui::Button("Load All Existing Prefab")) {
+			for (auto& entry : std::filesystem::directory_iterator("../../../assets/saves/")) {
+				if (entry.path().extension() == ".txt") {
+					PrefabData loaded = loadPrefab(entry.path().string());
+					prefabRegistry[loaded.name] = loaded;
+				}
 			}
 		}
 
-		if (ImGui::Button("Load Prefab")) {
-			std::string path = "../../../assets/saves/" + std::string(prefabName) + ".txt";
-			try {
-				currentPrefab = loadPrefab(path);
-				prefabRegistry[currentPrefab.name] = currentPrefab;
-				std::cout << "Loaded prefab: " << currentPrefab.name << std::endl;
-			}
-			catch (const std::exception& e) {
-				std::cerr << e.what() << std::endl;
-			}
+		// Save a new prefab or edit existing value
+		if (ImGui::Button("Save New or Existing Prefabs:")) {
+			savePrefab(currentPrefab);
+			prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
 		}
 
+
+		//Drop down and selectable list of loaded prefabs
+		ImGui::Text("Saved Prefabs:");
+		if (ImGui::BeginListBox("##PrefabList", ImVec2(200, 150))) {
+			for (auto& [name, data] : prefabRegistry) {
+				bool selected = (selectedPrefabName == name);
+				if (ImGui::Selectable(name.c_str(), selected)) {
+					selectedPrefabName = name;
+					currentPrefab = data;  // load into editor fields
+					statusMessage = "Loaded prefab: " + name;
+					strncpy(prefabName, name.c_str(), sizeof(prefabName));
+					prefabName[sizeof(prefabName) - 1] = '\0';
+				}
+			}
+			ImGui::EndListBox();
+		}
+
+		//Spawn desired prefab
 		ImGui::Separator();
 		if (ImGui::Button("Spawn Prefab")) {
-			if (prefabRegistry.count(currentPrefab.name)) {
-				ECS::Entity e = instantiatePrefab(prefabRegistry[currentPrefab.name], engine_);
+			if (prefabRegistry.count(selectedPrefabName)) {
+				ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], engine_);
 				if (g_game) g_game->markEntitiesDirty();
+				std::cout << "Spawned prefab: " << selectedPrefabName << "\n";
+
 			}
 		}
 

@@ -12,6 +12,8 @@
 
 std::unordered_map<std::string, PrefabData> prefabRegistry;
 
+
+
 void savePrefab(const PrefabData& prefab) {
     std::ofstream file( "../../../assets/saves/" + prefab.name + ".txt");
     if (!file){
@@ -40,8 +42,6 @@ PrefabData loadPrefab(const std::string& filename) {
     return prefab;
 }
 
-//small update: returns entity
-//might want to try catch here incase E cannot be instantiated?
 ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
 
     ECS::Entity e = engine.getEntityManager().create<>();
