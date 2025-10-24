@@ -5,8 +5,13 @@ file(GLOB_RECURSE ENGINE_SRC_FILES
     ${CMAKE_CURRENT_LIST_DIR}/*.[ch]
 )
 
+file(GLOB_RECURSE ENGINE_TEMP_FILES
+    ${CMAKE_CURRENT_LIST_DIR}/*.tpp
+)
+
 set(ALL_FILES
     ${ENGINE_SRC_FILES} 
+    ${ENGINE_TEMP_FILES}
 )
 
 # Call the macro to group files by folder
@@ -16,7 +21,7 @@ GROUP_FILES_BY_FOLDER(${ALL_FILES})
 # INCLUDE_DIR_BY_FOLDER(${ALL_FILES} ${ENGINE_NAME})
 
 # Create the executable (or library)
-add_library(${ENGINE_NAME} ${ALL_FILES})
+add_library(${ENGINE_NAME} ${ENGINE_SRC_FILES})
 
 set_property(TARGET ${ENGINE_NAME}  PROPERTY CXX_STANDARD 20) 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -42,7 +47,6 @@ target_link_libraries(${ENGINE_NAME}
     imgui
     fmod::core 
     fmod::studio
-    # nlohmann_json
     freetype
     stb_image
 )
