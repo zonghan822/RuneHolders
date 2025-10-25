@@ -25,6 +25,9 @@ void savePrefab(const PrefabData& prefab) {
     file << prefab.width << " " << prefab.height << "\n";
     file << prefab.color << " " << prefab.shape << "\n";
     file << prefab.hasCollider << "\n";
+
+
+    std::cout << prefab.name;
 }
 
 PrefabData loadPrefab(const std::string& filename) {
