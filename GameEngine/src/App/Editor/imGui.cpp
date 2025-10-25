@@ -434,10 +434,50 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 		}
 	}
 	else if (FilterType == Filters::Select) {
-		if (ImGui::Button("Delete Entities")) {
+		static bool waitingForClick = false;
+		ImGuiIO& io = ImGui::GetIO();
+
+		if (!waitingForClick) {
+			if (ImGui::Button("Delete an Entity by Click")) {
+				waitingForClick = true;
+			}
+		}
+		else {
+			ImGui::TextColored(ImVec4(1, 0.5f, 0, 1), "Click anywhere to delete an entity");
+			// Cancel option
+			if (ImGui::Button("Cancel")) {
+				waitingForClick = false;
+			}
+
+			if (!io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
+				ImVec2 mouse = io.MousePos;
+
+				for (ECS::Entity& e : engine_.getEntityManager().findEntity<
+					ECSComponents::TransformComponent,
+					ECSComponents::DrawInfoComponent>()) {
+
+					auto& tc = e.get<ECSComponents::TransformComponent>();
+					auto& dc = e.get<ECSComponents::DrawInfoComponent>();
+
+					// Since x and y coords are top left, we have to account for it by offsetting it by half its W and H
+					float halfW = dc.width * 0.5f;
+					float halfH = dc.height * 0.5f;
+					float left = tc.pos.x - halfW;
+					float right = tc.pos.x + halfW;
+					float top = tc.pos.y - halfH;
+					float bottom = tc.pos.y + halfH;
+
+					if (mouse.x >= left && mouse.x <= right && mouse.y >= top && mouse.y <= bottom) {
+						std::cout << "Deleted entity: " << e.getEntityID() << "\n";
+						toDelete.push_back(e);
+						if (g_game) g_game->markEntitiesDirty();
+						waitingForClick = false; // exit delete mode
+						break;
+					}
+				}
+			}
 
 		}
-
 	}
 	else if (FilterType == Filters::All) {
 		if (ImGui::Button("Delete ALL Entities")) {
