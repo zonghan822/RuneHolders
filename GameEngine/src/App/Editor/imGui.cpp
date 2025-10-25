@@ -394,6 +394,14 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 
 	if (FilterType == Filters::Architype) {
+		if (ImGui::Button("DEBUG: List Named Entities")) {
+			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
+				auto& nameComp = e.get<ECSComponents::NameComponent>();
+				std::cout << "Entity " << e.getEntityID() << " name: '" << nameComp.name << "'\n";
+			}
+		}
+
+
 		static char searchInput[32] = ""; // to enter archetype name
 		ImGui::InputTextWithHint("##Search", "Enter Name to delete...", searchInput, sizeof(searchInput));
 
