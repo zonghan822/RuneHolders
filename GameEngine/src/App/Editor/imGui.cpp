@@ -145,34 +145,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 #pragma region IMGUI FPS
 	if (activeWindow == WindowID::FPS) {
 		ImGui::Begin("FPS");
-		ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
-		ImGui::Text("Frame (%.1f FPS)", shown_fps);
-		ImGui::Text("=== PER SYSTEM TIMING IN MS ===");
-		for (auto& time : throttledTimes_) {
-
-			if (time.first != "totalTimePerFrame") {
-				ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);// divide by 1000 to show microseconds as milliseconds
-			}
-
-		}
-		ImGui::Text("=== PER SYSTEM TIMING IN PERCENTAGE ===");
-		for (auto& time : throttledTimes_)
-		{
-			if (time.first != "totalTimePerFrame") {
-				ImGui::Text("%s: %.0f%%", time.first.c_str(), percentage(time.second, throttledTimes_["totalTimePerFrame"]));
-			}
-		}
-
-		if (ImGui::Button("Show Entity Count")) {
-			displayEntityCount(engine_);
-		}
-
-		if (ImGui::Button("Show Entity Characteristics")) {
-			displayEntityCharacteristics(engine_);
-		}
-
-
-
+		displayFPSTab(engine_);
 		ImGui::End();
 	}
 #pragma endregion
@@ -362,6 +335,36 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 		std::cout << "Spawned " << entity_count << " Entities\n";
 	}
 
+
+}
+
+
+void displayFPSTab(Engine::EnoEngine& engine_) {
+	ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
+	ImGui::Text("Frame (%.1f FPS)", shown_fps);
+	ImGui::Text("=== PER SYSTEM TIMING IN MS ===");
+	for (auto& time : throttledTimes_) {
+
+		if (time.first != "totalTimePerFrame") {
+			ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);// divide by 1000 to show microseconds as milliseconds
+		}
+
+	}
+	ImGui::Text("=== PER SYSTEM TIMING IN PERCENTAGE ===");
+	for (auto& time : throttledTimes_)
+	{
+		if (time.first != "totalTimePerFrame") {
+			ImGui::Text("%s: %.0f%%", time.first.c_str(), percentage(time.second, throttledTimes_["totalTimePerFrame"]));
+		}
+	}
+
+	if (ImGui::Button("Show Entity Count")) {
+		displayEntityCount(engine_);
+	}
+
+	if (ImGui::Button("Show Entity Characteristics")) {
+		displayEntityCharacteristics(engine_);
+	}
 
 }
 

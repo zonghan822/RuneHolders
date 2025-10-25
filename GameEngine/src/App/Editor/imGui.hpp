@@ -131,3 +131,10 @@ void displayAssetTab(Engine::EnoEngine& engine_);
  * \return      void
 *//*========================================================================================*/
 void displayEntityCharacteristics(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays FPS tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayFPSTab(Engine::EnoEngine& engine_);
