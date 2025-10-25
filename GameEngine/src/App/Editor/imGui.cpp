@@ -391,16 +391,18 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 
 	if (FilterType == Filters::Architype) {
-		static char searchInput[64] = ""; // to enter architype name
+		static char searchInput[32] = ""; // to enter archetype name
 		ImGui::InputTextWithHint("##Search", "Enter Name to delete...", searchInput, sizeof(searchInput));
-		if (ImGui::Button("Delete Entities")) {
-			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
 
-				if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent(searchInput)) {
+		if (ImGui::Button("Delete Entities")) {
+			std::string target = searchInput;
+
+			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
+				auto& nameComp = e.get<ECSComponents::NameComponent>();
+				if (nameComp.name == target) {
 					toDelete.push_back(e);
 				}
 			}
-
 		}
 	}
 	else if (FilterType == Filters::Last) {
