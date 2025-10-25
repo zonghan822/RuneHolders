@@ -388,23 +388,11 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 	ImGui::Combo("Filters", &FilterType, filters, IM_ARRAYSIZE(filters));
 
 
-#if 1
+#if 1 //remove after debug
 	if (ImGui::Button("DEBUG: List Named Entities")) {
 		for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
 			auto& nameComp = e.get<ECSComponents::NameComponent>();
 			std::cout << "Entity " << e.getEntityID() << " name: '" << nameComp.name << "'\n";
-		}
-	}
-
-	if (ImGui::Button("DEBUG: Check Name Memory")) {
-		for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-			auto& nc = e.get<ECSComponents::NameComponent>();
-			std::cout << "Entity " << e.getEntityID() << ":\n";
-			std::cout << "  First byte as int: " << (int)nc.name[0] << "\n";
-			std::cout << "  strlen: " << strlen(nc.name) << "\n";
-			if (nc.name[0] == '\0') {
-				std::cout << "  WARNING: Name is empty!\n";
-			}
 		}
 	}
 #endif
