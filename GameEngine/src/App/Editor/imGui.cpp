@@ -62,8 +62,6 @@ static double next_update = 0.0;         // next time we refresh the text
 //entity counter
 size_t entity_count{};
 
-
-
 #pragma endregion
 
 float randomFloat(float min, float max) {
@@ -129,22 +127,22 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	if (ImGui::Button("Prefabs"))  activeWindow = WindowID::Prefabs;
 	if (ImGui::Button("Assets"))   activeWindow = WindowID::Assets;
 	//FPS and Time Staggering for Displaying FPS
-	#pragma region IMGUI Main
+#pragma region IMGUI Main
 	if (activeWindow == WindowID::Main) {
 		ImGui::Begin("Main");
 		displayMainTab(engine_);
 		ImGui::End();
 	}
-	#pragma endregion
-	#pragma region IMGUI Edit
+#pragma endregion
+#pragma region IMGUI Edit
 
 	if (activeWindow == WindowID::Edit) {
 		ImGui::Begin("Edit");
 		displayEditTab(engine_);
 		ImGui::End();
 	}
-	#pragma endregion
-	#pragma region IMGUI FPS
+#pragma endregion
+#pragma region IMGUI FPS
 	if (activeWindow == WindowID::FPS) {
 		ImGui::Begin("FPS");
 		ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
@@ -165,17 +163,27 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 			}
 		}
 
+		if (ImGui::Button("Show Entity Count")) {
+			displayEntityCount(engine_);
+		}
+
+		if (ImGui::Button("Show Entity Characteristics")) {
+			displayEntityCharacteristics(engine_);
+		}
+
+
+
 		ImGui::End();
 	}
-	#pragma endregion
-	#pragma region IMGUI Prefabs
+#pragma endregion
+#pragma region IMGUI Prefabs
 	if (activeWindow == WindowID::Prefabs) {
 		ImGui::Begin("Prefabs");
 		displayPrefabsTab(engine_);
 		ImGui::End();
 	}
-	#pragma endregion
-	#pragma region IMGUI Assets
+#pragma endregion
+#pragma region IMGUI Assets
 	if (activeWindow == WindowID::Assets) {
 		ImGui::Begin("Assets Browser");
 
@@ -186,7 +194,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	}
 
 
-	#pragma endregion
+#pragma endregion
 
 
 
@@ -242,7 +250,9 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 	else {
 		ImGui::Text("Player Active (ID: %u)", playerEntityID_);
 		if (ImGui::Button("Destroy Player")) {
-			engine_.getEntityManager().destroyEntity(playerEntityID_);
+			if (playerSpawned_ == true) {
+				engine_.getEntityManager().destroyEntity(playerEntityID_);
+			}
 			playerSpawned_ = false;
 			if (g_game) g_game->markEntitiesDirty();
 			std::cout << "Player destroyed\n";
@@ -364,37 +374,74 @@ void displayEntityCount(Engine::EnoEngine& engine_) {
 		(void)e; // silence unused warning
 	}
 	std::cout << "Number of entities: " << counter << "\n";
+}
 
+
+void displayEntityCharacteristics(Engine::EnoEngine& engine_) {
+	engine_.getEntityManager().viewMap();
 }
 
 void displayEditTab(Engine::EnoEngine& engine_) {
-	const char* filters[] = { "Name", "Type" , "ID" };
-	static int FilterType = Filters::Name;
+	const char* filters[] = { "Architype" , "Last Spawned", "Mouse Select", "All" };
+	static int FilterType = Filters::Architype;
+
 	std::vector<ECS::Entity> toDelete;
 
 	ImGui::Combo("Filters", &FilterType, filters, IM_ARRAYSIZE(filters));
-	if (FilterType == Filters::Name) {
 
-		if (ImGui::Button("Delete John")) {
+
+	if (FilterType == Filters::Architype) {
+		static char searchInput[64] = ""; // to enter architype name
+		ImGui::InputTextWithHint("##Search", "Enter Name to delete...", searchInput, sizeof(searchInput));
+		if (ImGui::Button("Delete Entities")) {
 			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent("John")) {
+
+				if (e.get<ECSComponents::NameComponent>().name == ECSComponents::NameComponent(searchInput)) {
 					toDelete.push_back(e);
 				}
 			}
+
 		}
 	}
+	else if (FilterType == Filters::Last) {
+		if (ImGui::Button("Delete Last Spawned")) {
+			if (!ECS::spawnHistory.empty()) {
+				uint32_t lastID = ECS::spawnHistory.back();
+				ECS::spawnHistory.pop_back();  // remove from history
 
-	if (FilterType == Filters::Type) {
+				bool found = false;
+				for (auto& e : engine_.getEntityManager().findEntity<>()) {
+					if (e.getEntityID() == lastID) {
+						if (playerEntityID_ == lastID) playerSpawned_ = false;
+						toDelete.push_back(e);
+						found = true;
+						if (g_game) g_game->markEntitiesDirty();
+						std::cout << "Deleted last spawned entity (ID: " << lastID << ")\n";
+						break;
+					}
+				}
+				if (!found)
+					std::cout << "Entity ID " << lastID << " not found in registry.\n";
+			}
+			else {
+				std::cout << "No spawn history left to delete.\n";
+			}
+		}
+	}
+	else if (FilterType == Filters::Select) {
+		if (ImGui::Button("Delete Entities")) {
 
+		}
 
 	}
-	if (FilterType == Filters::ID) {
+	else if (FilterType == Filters::All) {
+		if (ImGui::Button("Delete ALL Entities")) {
+			for (auto& e : engine_.getEntityManager().findEntity<>()) {
+				toDelete.push_back(e);
+			}
+			playerSpawned_ = false;
+		}
 
-
-	}
-
-	if (ImGui::Button("Show Entity Count")) {
-		displayEntityCount(engine_);
 	}
 
 	if (!toDelete.empty()) {
@@ -407,9 +454,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 			g_game->markEntitiesDirty();
 		}
 	}
-
 }
-
 
 ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine)
 {
@@ -456,8 +501,6 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 
 	return e;
 }
-
-
 
 void displayPrefabsTab(Engine::EnoEngine& engine_) {
 

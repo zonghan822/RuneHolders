@@ -124,3 +124,10 @@ void displayPrefabsTab(Engine::EnoEngine& engine_);
  * \return      void
 *//*========================================================================================*/
 void displayAssetTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays all characteristics of each entity available
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayEntityCharacteristics(Engine::EnoEngine& engine_);
