@@ -56,6 +56,7 @@ void GameApplication::setupGameAudio() {
 	// setup audio
 	auto& audioMng = engine_.getAudioManager();
 	audioMng.setChannelGroup("BGM");
+	audioMng.setChannelGroup("SFX");
 
 	Audio::SoundParameters sound;
 	Audio::ParamEQ eq;
@@ -71,17 +72,34 @@ void GameApplication::setupGameAudio() {
 	audioMng.modifyChannelGroup("BGM", sound);
 
 	audioMng.publishSoundRequest("Close_To_The_End");
-	audioMng.publishSoundRequest("Simulacrum");
+	audioMng.publishSoundRequest("Across_The_Horizon");
+	audioMng.publishSoundRequest("Flask");
+	audioMng.publishSoundRequest("Stone_Impact");
+	audioMng.publishSoundRequest("Water_Drip");
 
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
 
+	// Music Tracks
+	// O to play/stop a music track, P && L for switching soundtracks when music is not playing
+	// Only 1 music track may be placed at a time
 	inputMng.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
-	inputMng.setupKey("Set New Audio", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
-	inputMng.setupKey("Set New Audio2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
+	inputMng.setupKey("Set New Music 1", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
+	inputMng.setupKey("Set New Music 2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
+	
 	inputMng.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
-	inputMng.setupEvent<Audio::SetNewAudio>("Set New Audio", "Close_To_The_End");
-	inputMng.setupEvent<Audio::SetNewAudio>("Set New Audio2", "Simulacrum");
+	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 1", "Close_To_The_End");
+	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 2", "Across_The_Horizon");
+
+	// Sound Effects
+	// Intended to be played regardless of any background music playing at the time
+	inputMng.setupKey("Play SFX1", GLFW_KEY_A, glfwGetKeyScancode(GLFW_KEY_A), GLFW_RELEASE, 0);
+	inputMng.setupKey("Play SFX2", GLFW_KEY_S, glfwGetKeyScancode(GLFW_KEY_S), GLFW_RELEASE, 0);
+	inputMng.setupKey("Play SFX3", GLFW_KEY_D, glfwGetKeyScancode(GLFW_KEY_D), GLFW_RELEASE, 0);
+	
+	inputMng.setupEvent<Audio::PlayInstant>("Play SFX1", "SFX", "Flask");
+	inputMng.setupEvent<Audio::PlayInstant>("Play SFX2", "SFX", "Stone_Impact");
+	inputMng.setupEvent<Audio::PlayInstant>("Play SFX3", "SFX", "Water_Drip");
 }
 
 void GameApplication::setupGameEvents() {
