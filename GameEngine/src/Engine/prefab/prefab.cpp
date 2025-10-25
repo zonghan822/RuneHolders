@@ -35,6 +35,7 @@ PrefabData loadPrefab(const std::string& filename) {
     }
 
     file >> prefab.name;
+    prefab.name.erase(prefab.name.find_last_not_of(" \r\n\t") + 1);
     file >> prefab.x >> prefab.y;
     file >> prefab.width >> prefab.height;
     file >> prefab.color >> prefab.shape;
@@ -46,15 +47,12 @@ ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engin
 
     ECS::Entity e = engine.getEntityManager().create<>();
 
-    char name[50]{};
-    size_t counter{};
-    for (const char& a : prefab.name) {
-        name[counter] = a;
-        counter++;
-    }
+    ECSComponents::NameComponent nameComp;
+    memset(nameComp.name, 0, sizeof(nameComp.name));
+    strncpy(nameComp.name, prefab.name.c_str(), sizeof(nameComp.name) - 1);
 
-    e.add<ECSComponents::NameComponent>(static_cast<char*>(name));
-    //std::cout << "name of this entity: " << e.get<ECSComponents::NameComponent>().name << "\n;
+    e.add<ECSComponents::NameComponent>(nameComp);
+
 
     // Calculate CENTER position from DrawInfo's top-left
     float centerX = prefab.x + (prefab.width * 0.5f);

@@ -105,6 +105,14 @@ void displayMainTab(Engine::EnoEngine& engine_);
 void displayEntityCount(Engine::EnoEngine& engine_);
 
 /*============================================================================================
+ * \brief       Displays FPS Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayFPSTab(Engine::EnoEngine& engine_);
+
+
+/*============================================================================================
  * \brief       Displays Edit tab
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void

@@ -145,34 +145,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 #pragma region IMGUI FPS
 	if (activeWindow == WindowID::FPS) {
 		ImGui::Begin("FPS");
-		ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
-		ImGui::Text("Frame (%.1f FPS)", shown_fps);
-		ImGui::Text("=== PER SYSTEM TIMING IN MS ===");
-		for (auto& time : throttledTimes_) {
-
-			if (time.first != "totalTimePerFrame") {
-				ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);// divide by 1000 to show microseconds as milliseconds
-			}
-
-		}
-		ImGui::Text("=== PER SYSTEM TIMING IN PERCENTAGE ===");
-		for (auto& time : throttledTimes_)
-		{
-			if (time.first != "totalTimePerFrame") {
-				ImGui::Text("%s: %.0f%%", time.first.c_str(), percentage(time.second, throttledTimes_["totalTimePerFrame"]));
-			}
-		}
-
-		if (ImGui::Button("Show Entity Count")) {
-			displayEntityCount(engine_);
-		}
-
-		if (ImGui::Button("Show Entity Characteristics")) {
-			displayEntityCharacteristics(engine_);
-		}
-
-
-
+		displayFPSTab(engine_);
 		ImGui::End();
 	}
 #pragma endregion
@@ -186,19 +159,12 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 #pragma region IMGUI Assets
 	if (activeWindow == WindowID::Assets) {
 		ImGui::Begin("Assets Browser");
-
-		// Display all loaded assets here
 		displayAssetTab(engine_);
-
 		ImGui::End();
 	}
 
 
 #pragma endregion
-
-
-
-
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -365,6 +331,38 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 
 }
 
+
+void displayFPSTab(Engine::EnoEngine& engine_) {
+	ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
+	ImGui::Text("Frame (%.1f FPS)", shown_fps);
+	ImGui::Text("=== PER SYSTEM TIMING IN MS ===");
+	for (auto& time : throttledTimes_) {
+
+		if (time.first != "totalTimePerFrame") {
+			ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);// divide by 1000 to show microseconds as milliseconds
+		}
+
+	}
+	ImGui::Text("=== PER SYSTEM TIMING IN PERCENTAGE ===");
+	for (auto& time : throttledTimes_)
+	{
+		if (time.first != "totalTimePerFrame") {
+			ImGui::Text("%s: %.0f%%", time.first.c_str(), percentage(time.second, throttledTimes_["totalTimePerFrame"]));
+		}
+	}
+
+	if (ImGui::Button("Show Entity Count")) {
+		displayEntityCount(engine_);
+	}
+
+	if (ImGui::Button("Show Entity Characteristics")) {
+		displayEntityCharacteristics(engine_);
+	}
+
+}
+
+
+
 void displayEntityCount(Engine::EnoEngine& engine_) {
 	size_t counter = 0;
 
@@ -390,16 +388,38 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 	ImGui::Combo("Filters", &FilterType, filters, IM_ARRAYSIZE(filters));
 
 
+#if 1
+	if (ImGui::Button("DEBUG: List Named Entities")) {
+		for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
+			auto& nameComp = e.get<ECSComponents::NameComponent>();
+			std::cout << "Entity " << e.getEntityID() << " name: '" << nameComp.name << "'\n";
+		}
+	}
+
+	if (ImGui::Button("DEBUG: Check Name Memory")) {
+		for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
+			auto& nc = e.get<ECSComponents::NameComponent>();
+			std::cout << "Entity " << e.getEntityID() << ":\n";
+			std::cout << "  First byte as int: " << (int)nc.name[0] << "\n";
+			std::cout << "  strlen: " << strlen(nc.name) << "\n";
+			if (nc.name[0] == '\0') {
+				std::cout << "  WARNING: Name is empty!\n";
+			}
+		}
+	}
+#endif
+
 	if (FilterType == Filters::Architype) {
 		static char searchInput[32] = ""; // to enter archetype name
 		ImGui::InputTextWithHint("##Search", "Enter Name to delete...", searchInput, sizeof(searchInput));
 
 		if (ImGui::Button("Delete Entities")) {
+			std::cout << "[DEBUG] Delete button pressed\n";
 			std::string target = searchInput;
 
 			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
 				auto& nameComp = e.get<ECSComponents::NameComponent>();
-				if (nameComp.name == target) {
+				if (std::strcmp(nameComp.name, target.c_str()) == 0) {
 					toDelete.push_back(e);
 				}
 			}
@@ -430,12 +450,53 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 			}
 		}
 	}
+#if 0
 	else if (FilterType == Filters::Select) {
-		if (ImGui::Button("Delete Entities")) {
+		static bool waitingForClick = false;
+		ImGuiIO& io = ImGui::GetIO();
 
+		if (!waitingForClick) {
+			if (ImGui::Button("Delete an Entity by Click")) {
+				waitingForClick = true;
+			}
 		}
+		else {
+			ImGui::TextColored(ImVec4(1, 0.5f, 0, 1), "Click anywhere to delete an entity");
+			// Cancel option
+			if (ImGui::Button("Cancel")) {
+				waitingForClick = false;
+			}
 
+			if (!io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
+				ImVec2 mouse = io.MousePos;
+
+				for (ECS::Entity& e : engine_.getEntityManager().findEntity<
+					ECSComponents::TransformComponent,
+					ECSComponents::DrawInfoComponent>()) {
+
+					auto& tc = e.get<ECSComponents::TransformComponent>();
+					auto& dc = e.get<ECSComponents::DrawInfoComponent>();
+
+					// Since x and y coords are top left, we have to account for it by offsetting it by half its W and H
+					float halfW = dc.width * 0.5f;
+					float halfH = dc.height * 0.5f;
+					float left = tc.pos.x - halfW;
+					float right = tc.pos.x + halfW;
+					float top = tc.pos.y - halfH;
+					float bottom = tc.pos.y + halfH;
+
+					if (mouse.x >= left && mouse.x <= right && mouse.y >= top && mouse.y <= bottom) {
+						std::cout << "Deleted entity: " << e.getEntityID() << "\n";
+						toDelete.push_back(e);
+						if (g_game) g_game->markEntitiesDirty();
+						waitingForClick = false; // exit delete mode
+						break;
+					}
+				}
+			}
+		}
 	}
+#endif
 	else if (FilterType == Filters::All) {
 		if (ImGui::Button("Delete ALL Entities")) {
 			for (auto& e : engine_.getEntityManager().findEntity<>()) {
@@ -461,7 +522,9 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine)
 {
 
-	const PrefabData& prefab = prefabRegistry[name];
+	//const PrefabData& prefab = prefabRegistry[name];
+	PrefabData prefab = prefabRegistry[name];        
+	prefab.name = name;                              
 
 	// center position if your prefab uses width/height as top-left reference
 	float centerX = x + prefab.width * 0.5f;
@@ -520,8 +583,10 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	ImGui::Text("==========PREFABS TAB==========");
 
 	ImGui::Text("Prefab name:");
-	ImGui::InputText("##Prefab Name", prefabName, sizeof(prefabName));
-	currentPrefab.name = prefabName;
+	if (ImGui::InputText("##Prefab Name", prefabName, sizeof(prefabName))) {
+		//currentPrefab.name = prefabName;
+		if (std::strlen(prefabName) > 0) currentPrefab.name = prefabName;
+	}
 
 
 
