@@ -17,6 +17,7 @@ void GameApplication::initialize() {
 	// Setup all game content
 	setupGameEntities();
 	setupGameAudio();
+	setupTreeTesting();
 	setupGameEvents();
 	setupGameMath();
 	setupImGui();
@@ -100,6 +101,14 @@ void GameApplication::setupGameAudio() {
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX1", "SFX", "Flask");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX2", "SFX", "Stone_Impact");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX3", "SFX", "Water_Drip");
+}
+
+void GameApplication::setupTreeTesting()
+{
+	auto& inputMng = engine_.getInputManager();
+
+	inputMng.setupKey("Test Editor Tree", GLFW_KEY_Q, glfwGetKeyScancode(GLFW_KEY_Q), GLFW_RELEASE, 0);
+	inputMng.setupEvent<Editor::TestTree>("Test Editor Tree");
 }
 
 void GameApplication::setupGameEvents() {

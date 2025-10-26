@@ -82,17 +82,17 @@ namespace Audio
 
 		bus_.subscribe<LoadSound>([&](const LoadSound& event) 
 			{
-			onSoundReceived(event);
+				onSoundReceived(event);
 			});
 
 		bus_.subscribe<SetAudioState>([&](const SetAudioState& event) 
 			{
-			onTogglePlay(event);
+				onTogglePlay(event);
 			});
 
 		bus_.subscribe<SetNewAudio>([&](const SetNewAudio& event)
 			{
-			onAudioChange(event);
+				onAudioChange(event);
 			});
 
 		bus_.subscribe<PlayInstant>([&](const PlayInstant& event)

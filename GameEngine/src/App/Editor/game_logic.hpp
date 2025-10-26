@@ -60,6 +60,7 @@ public:
 private:
     // Setup (called during initialize())
     void setupGameEntities();   // ECS code
+    void setupTreeTesting();    // Editor tree testing code
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
     void setupGameMath();       // math demonstration code
