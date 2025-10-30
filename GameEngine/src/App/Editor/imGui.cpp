@@ -61,7 +61,7 @@ static double next_update = 0.0;         // next time we refresh the text
 
 //entity counter
 size_t entity_count{};
-
+static uint32_t selectedEntityID;
 #pragma endregion
 
 float randomFloat(float min, float max) {
@@ -406,15 +406,30 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 		static char searchInput[32] = ""; // to enter archetype name
 		ImGui::InputTextWithHint("##Search", "Enter Name to delete...", searchInput, sizeof(searchInput));
 
+
 		if (ImGui::Button("Delete Entities")) {
 			std::string target = searchInput;
+			bool deletedSelected = false;
 
+			// Iterate only once through all entities that have NameComponent
 			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				auto& nameComp = e.get<ECSComponents::NameComponent>();
+				ECSComponents::NameComponent& nameComp = e.get<ECSComponents::NameComponent>();
+
+				if (!deletedSelected && e.getEntityID() == selectedEntityID) {
+					e.destroy();
+					selectedEntityID = 0;
+					deletedSelected = true;
+					std::cout << "Deleted selected entity\n";
+					continue; 
+				}
+
 				if (nameComp.name == target) {
 					toDelete.push_back(e);
 				}
 			}
+
+			if (g_game)
+				g_game->markEntitiesDirty();
 		}
 	}
 	else if (FilterType == Filters::Last) {
@@ -668,7 +683,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 
 void displayHierarchyTab(Engine::EnoEngine& engine_)
 {
-	static uint32_t selectedEntity = 0;
+	
 	std::vector<ECS::Entity> NamedEntityList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
 
 	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
@@ -679,14 +694,11 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 	{
 		const auto& nameComp = e.get<ECSComponents::NameComponent>();
 		std::string name = nameComp.name;
-
-		// Create a simple selectable item
-		//bool selected = (selectedEntity == entityID);
-		bool selected = (selectedEntity == e.getEntityID());
+		bool selected = (selectedEntityID == e.getEntityID());
 		std::string label = std::to_string(e.getEntityID()) + ": " + name;
 		if (ImGui::Selectable(label.c_str(), selected))
 		{
-			selectedEntity = e.getEntityID();
+			selectedEntityID = e.getEntityID();
 		}
 	}
 }
