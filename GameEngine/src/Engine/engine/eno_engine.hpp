@@ -15,13 +15,13 @@
 #include "../resources/eno_loader.hpp"
 #include "../window/eno_window.hpp"
 #include "../input/eno_input.hpp"
+#include "../editor/eno_editor.hpp"
 #include "../ecs/entity.hpp"
 #include "../component/component_registry.hpp"
 #include "../event/signals.hpp"
 #include "../audio/eno_audio_manager.hpp"
 #include "../math/math.hpp"
 #include "../tag/tag_registry.hpp"
-#include "../game_instance/eno_game_instance.hpp"
 #include "../collision/collision.hpp"
 #include "../prefab/prefab.hpp"
 #include "../crashlog/crashlogger.hpp"
@@ -146,6 +146,7 @@ namespace Engine
 		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
 		ECS::EntityManager entityMng_;
+		Editor::EnoEditor editor{ bus_ };
 		
 		// Systems
 		Input::EnoInputManager inputMng_{ bus_ };

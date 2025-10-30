@@ -50,4 +50,13 @@ namespace Audio
 	{
 		std::string soundName_;
 	};
+
+	/*============================================================================================
+	 * \brief				A request from input -> audio manager to play a sound immediately
+	*//*========================================================================================*/
+	struct PlayInstant
+	{
+		std::string groupName_;
+		std::string soundName_;
+	};
 }

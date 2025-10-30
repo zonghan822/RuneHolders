@@ -17,6 +17,9 @@
 #include "../event/event_bus.hpp"
 #include "../window/window_events.hpp"
 
+// Events
+#include "eno_input_events.hpp"
+
 // Utility
 #include "../utility/eno_bimap.hpp"
 
@@ -109,7 +112,8 @@ namespace Input
 		* \param[in] d Arguments for the event.
 		*//*========================================================================================*/
 		template <typename EventType, typename... Data>
-		void setupEvent(const std::string& inputName, Data&&... d) {
+		void setupEvent(const std::string& inputName, Data&&... d) 
+		{
 			eventMap_[inputName] = [this, ... args = std::forward<Data>(d)]()
 				{ bus_.publish(EventType{ args... }); };
 		}
@@ -210,6 +214,11 @@ namespace Input
 		*//*========================================================================================*/
 		std::pair<double, double> getScrollOffset() const;
 		
+		/*============================================================================================
+		* \brief   Publishes an input event for subscribers to listen to
+		* \return  Pair of (xOffset, yOffset).
+		*//*========================================================================================*/
+		void fireInput(const int&, const int&, const int&, const int&);
 
 	private:
 		Event::EnoEventBus& bus_;
