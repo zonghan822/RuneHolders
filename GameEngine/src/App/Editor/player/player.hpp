@@ -14,6 +14,7 @@
 #include "../Engine/ecs/entity.hpp"
 #include "../Engine/input/eno_input.hpp"
 #include "../Engine/engine/eno_engine.hpp"
+#include "player_config.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -61,6 +62,24 @@ namespace Player
             , dashCooldownTimer(0.0f)
             , dashDirection{0.0f, 0.0f}
             , dashStartPos{0.0f, 0.0f}
+        {
+        }
+        
+        /*============================================================================================
+        * \brief       Constructor from JSON configuration
+        * \param[in]   PlayerConfig const& confid - Configuration loaded from JSON
+        *//*========================================================================================*/
+        PlayerComponent(const PlayerConfig& config)
+            : moveSpeed(config.moveSpeed)
+            , canMove(config.canMove)
+            , isDashing(false)
+            , dashTimer(0.0f)
+            , dashDuration(config.dashDuration)
+            , dashDistance(config.dashDistance)
+            , dashCooldown(config.dashCooldown)
+            , dashCooldownTimer(0.0f)
+            , dashDirection{ 0.0f, 0.0f }
+            , dashStartPos{ 0.0f, 0.0f }
         {
         }
     };

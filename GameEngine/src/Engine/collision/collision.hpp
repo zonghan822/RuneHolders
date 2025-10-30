@@ -252,6 +252,19 @@ namespace Collision
 			Math::eVec2<float>& nextPos,
 			Math::eVec2<float>& reflected);
 
+		/*============================================================================================
+		* \brief      Performs SAT collision detection between 2 oriented rectangles
+		* \param[in]  CollisionComponent const& colliderA - First collision component
+		* \param[in]  ECSComponents::TransformComponent const& transformA - First transform
+		* \param[in]  CollisionComponent const& colliderB - Second collision component
+		* \param[in]  ECSComponents::TransformComponent const& transformB - Second transform
+		* \return     CollisionResult - Contains collision information
+		*//*========================================================================================*/
+		static CollisionResult CheckRectangleRectangleSAT(
+			const CollisionComponent& colliderA,
+			const ECSComponents::TransformComponent& transformA,
+			const CollisionComponent& colliderB,
+			const ECSComponents::TransformComponent& transformB);
 	private:
 		/*============================================================================================
 		// Collision detection functions
@@ -336,7 +349,36 @@ namespace Collision
 			const Math::eVec2<float>& posB, const Math::eVec2<float>& velB, float radiusB,
 			Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi);
 		
+		/*============================================================================================
+		* \brief       Oriented Bounding Box structure for SAT
+		*//*========================================================================================*/
+		struct OBB {
+			Math::eVec2<float> center;
+			Math::eVec2<float> halfExtents;
+			Math::eVec2<float> axes[2];
 
+			OBB(const ECSComponents::TransformComponent& transform, const CollisionComponent& collision);
+			void GetCorners(Math::eVec2<float> corners[4]) const;
+		};
+
+		/*============================================================================================
+		* \brief       Projects OBB onto axis
+		*//*========================================================================================*/
+		static void ProjectOBB(const OBB& obb, const Math::eVec2<float>& axis, float& min, float& max);
+
+		/*============================================================================================
+		* \brief       Checks if 2 projection ranges overlap
+		*//*========================================================================================*/
+		static inline bool ProjectionsOverlap(float minA, float maxA, float minB, float maxB) {
+			return !(maxA < minB || maxB < minA);
+		}
+
+		/*============================================================================================
+		* \brief       Calculates overlap amount between 2 ranges
+		*//*========================================================================================*/
+		static inline float GetOverlap(float minA, float maxA, float minB, float maxB) {
+			return std::min(maxA, maxB) - std::max(minA, minB);
+		}
 	};
 
 	// COLLISION EVENTS
