@@ -105,7 +105,7 @@ endmacro()
 # =========================================================
 # .NET SDK
 # =========================================================
-macro(set_dotnet)
+function(set_dotnet)
     message(STATUS "Checking for .NET SDK installation...")
 
     # Check for system installation
@@ -157,7 +157,7 @@ macro(set_dotnet)
 
     message(STATUS ".NET SDK successfully installed at ${DOTNET_LOCAL_BIN}")
     set(DOTNET_CMD "${DOTNET_LOCAL_BIN}" PARENT_SCOPE)
-endmacro()
+endfunction()
 
 # Helper to group libraries in VS Solution Explorer
 function(set_library_folder target)

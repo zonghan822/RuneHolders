@@ -19,6 +19,9 @@ importDependencies()
 
 # Set External Libraries
 set_fmod()
+set(rapidjson_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/lib/rapidjson)
+
+# Set dotnet SDK
 set_dotnet()
 
 ADD_SUBDIRECTORY(src/Engine ${CMAKE_BINARY_DIR}/projects/Engine)

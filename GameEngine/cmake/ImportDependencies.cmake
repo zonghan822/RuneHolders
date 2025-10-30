@@ -104,23 +104,6 @@ set_property(TARGET imgui PROPERTY CXX_STANDARD_REQUIRED ON)
 endmacro()
 
 # ---------------------------------------------------------
-# RapidJSON (header-only library)
-# ---------------------------------------------------------
-macro(import_rapidjson)
-    if(NOT TARGET rapidjson)  # Guard to prevent multiple inclusion
-        include(FetchContent)
-
-        FetchContent_Declare(
-            rapidjson
-            GIT_REPOSITORY https://github.com/Tencent/rapidjson.git
-            GIT_TAG master
-        )
-        FetchContent_MakeAvailable(rapidjson)
-        set_library_folder(rapidjson)
-    endif()
-endmacro()
-
-# ---------------------------------------------------------
 # Freetype
 # ---------------------------------------------------------
 macro(import_freetype)
@@ -183,10 +166,6 @@ message(STATUS "Starting to import dependencies...")
     message(STATUS "Importing ImGui...")
     import_imgui()
     message(STATUS "ImGui imported successfully.")
-
-    message(STATUS "Importing RapidJSON...")
-    import_rapidjson()
-    message(STATUS "RapidJSON imported successfully.")
 
     message(STATUS "Importing Freetype...")
     import_freetype()
