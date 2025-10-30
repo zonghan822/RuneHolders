@@ -142,8 +142,6 @@ namespace Input {
 
 			it->second();
 		}
-
-		fireInput(key, scancode, action, mods);
 	}
 
 	void EnoInputManager::handleMouseButton(int button, int action, int mods) {
@@ -167,10 +165,5 @@ namespace Input {
 	void EnoInputManager::handleMouseScroll(double xoffset, double yoffset) {
 		scrollX_ = xoffset;
 		scrollY_ = yoffset;
-	}
-
-	void EnoInputManager::fireInput(const int& key, const int& scancode, const int& action, const int& mods)
-	{
-		bus_.publish<InputSent>(InputSent{key, scancode, action, mods});
 	}
 }

@@ -506,15 +506,15 @@ namespace Graphics
         float sinR = sin(rotation);
 
         // Translate to origin
-        float x = point.v1 - center.v1;
-        float y = point.v2 - center.v2;
+        float x = point.x - center.x;
+        float y = point.y - center.y;
 
         // Rotate
         float xNew = x * cosR - y * sinR;
         float yNew = x * sinR + y * cosR;
 
         // Translate back
-        return Math::eVec2<float>{xNew + center.v1, yNew + center.v2};
+        return Math::eVec2<float>{xNew + center.x, yNew + center.y};
     }
 
     void EnoGraphicsManager::drawPoint(const Math::eVec2<float>& position, const Color& color, float size)
@@ -599,12 +599,12 @@ namespace Graphics
         currentBatchPrimitiveType_ = primitiveType;
 
         // Calculate center for rotation
-        Math::eVec2<float> center = { position.v1 + size.v1 * 0.5f, position.v2 + size.v2 * 0.5f };
+        Math::eVec2<float> center = { position.x + size.x * 0.5f, position.y + size.y * 0.5f };
 
         Math::eVec2<float> topLeft = position;
-        Math::eVec2<float> topRight = { position.v1 + size.v1, position.v2 };
-        Math::eVec2<float> bottomRight = { position.v1 + size.v1, position.v2 + size.v2 };
-        Math::eVec2<float> bottomLeft = { position.v1, position.v2 + size.v2 };
+        Math::eVec2<float> topRight = { position.x + size.x, position.y };
+        Math::eVec2<float> bottomRight = { position.x + size.x, position.y + size.y };
+        Math::eVec2<float> bottomLeft = { position.x, position.y + size.y };
 
         // Apply rotation if needed
         if (rotation != 0.0f)
@@ -677,12 +677,12 @@ namespace Graphics
                 float angle2 = static_cast<float>(2.0f * M_PI * static_cast<float>(i + 1) / static_cast<float>(segments));
 
                 Math::eVec2<float> point1{
-                    center.v1 + radius * cos(angle1),
-                    center.v2 + radius * sin(angle1)
+                    center.x + radius * cos(angle1),
+                    center.y + radius * sin(angle1)
                 };
                 Math::eVec2<float> point2{
-                    center.v1 + radius * cos(angle2),
-                    center.v2 + radius * sin(angle2)
+                    center.x + radius * cos(angle2),
+                    center.y + radius * sin(angle2)
                 };
 
                 // Create triangle: center -> point1 -> point2
@@ -702,12 +702,12 @@ namespace Graphics
                 float angle2 = static_cast<float>(2.0f * M_PI * static_cast<float>(i + 1) / static_cast<float>(segments));
 
                 Math::eVec2<float> point1{
-                    center.v1 + radius * cos(angle1),
-                    center.v2 + radius * sin(angle1)
+                    center.x + radius * cos(angle1),
+                    center.y + radius * sin(angle1)
                 };
                 Math::eVec2<float> point2{
-                    center.v1 + radius * cos(angle2),
-                    center.v2 + radius * sin(angle2)
+                    center.x + radius * cos(angle2),
+                    center.y + radius * sin(angle2)
                 };
 
                 batchVertices_.emplace_back(point1, color);
@@ -756,12 +756,12 @@ namespace Graphics
         float texID = static_cast<float>(texSlot);
 
         // Calculate center for rotation
-        Math::eVec2<float> center = { position.v1 + size.v1 * 0.5f, position.v2 + size.v2 * 0.5f };
+        Math::eVec2<float> center = { position.x + size.x * 0.5f, position.y + size.y * 0.5f };
 
         Math::eVec2<float> topLeft = position;
-        Math::eVec2<float> topRight = { position.v1 + size.v1, position.v2 };
-        Math::eVec2<float> bottomRight = { position.v1 + size.v1, position.v2 + size.v2 };
-        Math::eVec2<float> bottomLeft = { position.v1, position.v2 + size.v2 };
+        Math::eVec2<float> topRight = { position.x + size.x, position.y };
+        Math::eVec2<float> bottomRight = { position.x + size.x, position.y + size.y };
+        Math::eVec2<float> bottomLeft = { position.x, position.y + size.y };
 
         // Apply rotation if needed
         if (rotation != 0.0f)
@@ -773,10 +773,10 @@ namespace Graphics
         }
 
         // UV coordinates
-        Math::eVec2<float> uvTopLeft = { uvStart.v1, uvStart.v2 };
-        Math::eVec2<float> uvTopRight = { uvEnd.v1, uvStart.v2 };
-        Math::eVec2<float> uvBottomRight = { uvEnd.v1, uvEnd.v2 };
-        Math::eVec2<float> uvBottomLeft = { uvStart.v1, uvEnd.v2 };
+        Math::eVec2<float> uvTopLeft = { uvStart.x, uvStart.y };
+        Math::eVec2<float> uvTopRight = { uvEnd.x, uvStart.y };
+        Math::eVec2<float> uvBottomRight = { uvEnd.x, uvEnd.y };
+        Math::eVec2<float> uvBottomLeft = { uvStart.x, uvEnd.y };
 
         // Reserve space for 6 vertices
         batchVertices_.reserve(batchVertices_.size() + 6);
@@ -822,34 +822,34 @@ namespace Graphics
         atlas->bind(0);
         shdr->setInt("u_text", 0);
 
-        float xCursor = position.v1;
-        float yCursor = position.v2;
+        float xCursor = position.x;
+        float yCursor = position.y;
 
         for (char c : text) {
             try {
                 const Font::Character& ch = font->getChar(c);
 
                 Math::eVec2<float> charPos(
-                    xCursor + ch.bearing.v1 * scale,
-                    yCursor - ch.size.v2 * scale
+                    xCursor + ch.bearing.x * scale,
+                    yCursor - ch.size.y * scale
                 );
-                Math::eVec2<float> charSize(ch.size.v1 * scale, ch.size.v2 * scale);
+                Math::eVec2<float> charSize(ch.size.x * scale, ch.size.y * scale);
 
                 std::vector<Vertex> vertices;
 
                 // Calculate center for rotation
-                Math::eVec2<float> center = { charPos.v1 + charSize.v1 * 0.5f, charPos.v2 + charSize.v2 * 0.5f };
+                Math::eVec2<float> center = { charPos.x + charSize.x * 0.5f, charPos.y + charSize.y * 0.5f };
 
                 Math::eVec2<float> topLeft = charPos;
-                Math::eVec2<float> topRight = { charPos.v1 + charSize.v1, charPos.v2 };
-                Math::eVec2<float> bottomRight = { charPos.v1 + charSize.v1, charPos.v2 + charSize.v2 };
-                Math::eVec2<float> bottomLeft = { charPos.v1, charPos.v2 + charSize.v2 };
+                Math::eVec2<float> topRight = { charPos.x + charSize.x, charPos.y };
+                Math::eVec2<float> bottomRight = { charPos.x + charSize.x, charPos.y + charSize.y };
+                Math::eVec2<float> bottomLeft = { charPos.x, charPos.y + charSize.y };
 
                 // UV coordinates
-                Math::eVec2<float> uvTopLeft = { ch.uvStart.v1, ch.uvStart.v2 };
-                Math::eVec2<float> uvTopRight = { ch.uvEnd.v1, ch.uvStart.v2 };
-                Math::eVec2<float> uvBottomRight = { ch.uvEnd.v1, ch.uvEnd.v2 };
-                Math::eVec2<float> uvBottomLeft = { ch.uvStart.v1, ch.uvEnd.v2 };
+                Math::eVec2<float> uvTopLeft = { ch.uvStart.x, ch.uvStart.y };
+                Math::eVec2<float> uvTopRight = { ch.uvEnd.x, ch.uvStart.y };
+                Math::eVec2<float> uvBottomRight = { ch.uvEnd.x, ch.uvEnd.y };
+                Math::eVec2<float> uvBottomLeft = { ch.uvStart.x, ch.uvEnd.y };
 
                 vertices.push_back(Vertex(topLeft, color, uvTopLeft, 0.f));
                 vertices.push_back(Vertex(topRight, color, uvTopRight, 0.f));
