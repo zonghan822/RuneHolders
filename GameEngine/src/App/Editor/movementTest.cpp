@@ -13,8 +13,8 @@
 
 
 
-double min(double a, double b) { return a < b ? a : b; }
-double max(double a, double b) { return a < b ? a : b; }
+//double min(double a, double b) { return a < b ? a : b; }
+//double max(double a, double b) { return a > b ? a : b; }
 
 AABB::AABB(ECSComponents::TransformComponent transform, Collision::CollisionComponent coll)
 {
@@ -58,78 +58,78 @@ bool CheckDynamicSquare(
 	//std::cout << "rev vel" << relVel << std::endl;
 
 	// X-axis collision checks
-	if (relVel.v1 < 0.f)
+	if (relVel.x < 0.f)
 	{
 		// Object A moving left relative to B
-		if (aabb1.min.v1 > aabb2.max.v1)
+		if (aabb1.min.x > aabb2.max.x)
 		{
 			return false; // Already separated, moving away
 		}
 
-		if (aabb1.max.v1 < aabb2.min.v1)
+		if (aabb1.max.x < aabb2.min.x)
 		{
 			// Calculate collision time window on X-axis
-			tFirstX = max((aabb1.max.v1 - aabb2.min.v1) / relVel.v1, tFirstX);
-			tLastX = min((aabb1.min.v1 - aabb2.max.v1) / relVel.v1, tLastX);
+			tFirstX = Math::max(static_cast<double>((aabb1.max.x - aabb2.min.x) / relVel.x), tFirstX);
+			tLastX = Math::min(static_cast<double>((aabb1.min.x - aabb2.max.x) / relVel.x), tLastX);
 		}
 	}
-	else if (relVel.v1 > 0.f)
+	else if (relVel.x > 0.f)
 	{
 		// Object A moving right relative to B
-		if (aabb1.min.v1 > aabb2.max.v1)
+		if (aabb1.min.x > aabb2.max.x)
 		{
-			tFirstX = max((aabb1.min.v1 - aabb2.max.v1) / relVel.v1, tFirstX);
-			tLastX = min((aabb1.max.v1 - aabb2.min.v1) / relVel.v1, tLastX);
+			tFirstX = Math::max(static_cast<double>((aabb1.min.x - aabb2.max.x) / relVel.x), tFirstX);
+			tLastX = Math::min(static_cast<double>((aabb1.max.x - aabb2.min.x) / relVel.x), tLastX);
 		}
 
-		if (aabb1.max.v1 < aabb2.min.v1)
+		if (aabb1.max.x < aabb2.min.x)
 		{
 			return false; // Already separated, moving away
 		}
 	}
-	else if (relVel.v1 == 0.f)
+	else if (relVel.x == 0.f)
 	{
 		// No relative motion on X-axis - check for overlap
-		if (aabb1.max.v1 < aabb2.min.v1 || aabb1.min.v1 > aabb2.max.v1)
+		if (aabb1.max.x < aabb2.min.x || aabb1.min.x > aabb2.max.x)
 		{
 			return false; // Not overlapping on X-axis
 		}
 	}
 
 	// Y-axis collision checks
-	if (relVel.v2 < 0.f)
+	if (relVel.y < 0.f)
 	{
 		// Object A moving up relative to B
-		if (aabb1.min.v2 > aabb2.max.v2)
+		if (aabb1.min.y > aabb2.max.y)
 		{
 			return false; // Already separated, moving away
 		}
 
-		if (aabb1.max.v2 < aabb2.min.v2)
+		if (aabb1.max.y < aabb2.min.y)
 		{
 			// Calculate collision time window on Y-axis
-			tFirstY = max((aabb1.max.v2 - aabb2.min.v2) / relVel.v2, tFirstY);
-			tLastY = min((aabb1.min.v2 - aabb2.max.v2) / relVel.v2, tLastY);
+			tFirstY = Math::max(static_cast<double>((aabb1.max.y - aabb2.min.y) / relVel.y), tFirstY);
+			tLastY = Math::min(static_cast<double>((aabb1.min.y - aabb2.max.y) / relVel.y), tLastY);
 		}
 	}
-	else if (relVel.v2 > 0.f)
+	else if (relVel.y > 0.f)
 	{
 		// Object A moving down relative to B
-		if (aabb1.min.v2 > aabb2.max.v2)
+		if (aabb1.min.y > aabb2.max.y)
 		{
-			tFirstY = max((aabb1.min.v2 - aabb2.max.v2) / relVel.v2, tFirstY);
-			tLastY = min((aabb1.max.v2 - aabb2.min.v2) / relVel.v2, tLastY);
+			tFirstY = Math::max(static_cast<double>((aabb1.min.y - aabb2.max.y) / relVel.y), tFirstY);
+			tLastY = Math::min(static_cast<double>((aabb1.max.y - aabb2.min.y) / relVel.y), tLastY);
 		}
 
-		if (aabb1.max.v2 < aabb2.min.v2)
+		if (aabb1.max.y < aabb2.min.y)
 		{
 			return false; // Already separated, moving away
 		}
 	}
-	else if (relVel.v2 == 0.f)
+	else if (relVel.y == 0.f)
 	{
 		// No relative motion on Y-axis - check for overlap
-		if (aabb1.max.v2 < aabb2.min.v2 || aabb1.min.v2 > aabb2.max.v2)
+		if (aabb1.max.y < aabb2.min.y || aabb1.min.y > aabb2.max.y)
 		{
 			return false; // Not overlapping on Y-axis
 		}
@@ -142,35 +142,35 @@ bool CheckDynamicSquare(
 	}
 
 	// Collision detected - calculate time and normal
-	colTi = static_cast<float>(max(tFirstX, tFirstY));
+	colTi = static_cast<float>(Math::max(tFirstX, tFirstY));
 
 	// Determine collision normal based on which axis had first contact
 	if (tFirstX > tFirstY)
 	{
 		// X-axis collision
-		normal.v1 = (relVel.v1 > 0.f) ? -1.f : 1.f;
-		//std::cout << "normal V1: " << normal.v1 << std::endl;
-		normal.v2 = 0.f;
+		normal.x = (relVel.x > 0.f) ? -1.f : 1.f;
+		//std::cout << "normal V1: " << normal.x << std::endl;
+		normal.y = 0.f;
 	}
 	else if (tFirstY > tFirstX)
 	{
 		// Y-axis collision
-		normal.v1 = 0.f;
-		normal.v2 = (relVel.v2 > 0.f) ? -1.f : 1.f;
-		//std::cout << "normal V2: " << normal.v2 << std::endl;
+		normal.x = 0.f;
+		normal.y = (relVel.y > 0.f) ? -1.f : 1.f;
+		//std::cout << "normal V2: " << normal.y << std::endl;
 	}
 	else
 	{
 		//std::cout << "tFirstX: " << tFirstX << ", tFirstY: " << tFirstY << std::endl;
-		//std::cout << "relVel: (" << relVel.v1 << ", " << relVel.v2 << ")" << std::endl;
+		//std::cout << "relVel: (" << relVel.x << ", " << relVel.y << ")" << std::endl;
 
 		// Corner collision - normalize diagonal normal
-		normal.v1 = (relVel.v1 > 0.f) ? -1.f : (relVel.v1 < 0.f ? 1.f : 0.f);
-		normal.v2 = (relVel.v2 > 0.f) ? -1.f : (relVel.v2 < 0.f ? 1.f : 0.f);
+		normal.x = (relVel.x > 0.f) ? -1.f : (relVel.x < 0.f ? 1.f : 0.f);
+		normal.y = (relVel.y > 0.f) ? -1.f : (relVel.y < 0.f ? 1.f : 0.f);
 		//std::cout << "normalv1v2:: " << normal << std::endl;
-		//float length = sqrt(normal.v1 * normal.v1 + normal.v2 * normal.v2);
+		//float length = sqrt(normal.x * normal.x + normal.y * normal.y);
 
-		//std::cout << "Normal v1 v2:" << normal << std::endl;
+		//std::cout << "Normal x y:" << normal << std::endl;
 	}
 
 	// Only report collision if it happens within this frame
@@ -205,15 +205,15 @@ void createTestObject(ECS::EntityManager& ent) {
 	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numCircles; ++i)
 	{
-		ECSComponents::DrawInfoComponent DIC{ pos[i].v1, pos[i].v2, radius, radius, shapeName, color};
+		ECSComponents::DrawInfoComponent DIC{ pos[i].x, pos[i].y, radius, radius, shapeName, color};
 		ECSComponents::NameComponent NC{ objName };
 		ECSComponents::TransformComponent TC{};
-		TC.pos.x = pos[i].v1;
-		TC.pos.y = pos[i].v2;
+		TC.pos.x = pos[i].x;
+		TC.pos.y = pos[i].y;
 		TC.pos.z = 0.0f;
 		TC.rot = { 0.0f, 0.0f, 0.0f };
 		TC.scale = { 1.0f, 1.0f, 1.0f };
-		TC.vel = { vel.v1, vel.v2 };
+		TC.vel = { vel.x, vel.y };
 		-vel;
 
 		Collision::CollisionComponent cc{ radius };
@@ -233,8 +233,8 @@ void createTestObject(ECS::EntityManager& ent) {
 	{
 		ECSComponents::TransformComponent lineTC;
 		// Point of origin for line segments will be at the middle point
-		lineTC.pos.x = linePos[i].first.v1 + ((linePos[i].first.v1 - linePos[i].second.v1) / 2.f);
-		lineTC.pos.y = linePos[i].first.v2 + ((linePos[i].first.v2 - linePos[i].second.v2) / 2.f);
+		lineTC.pos.x = linePos[i].first.x + ((linePos[i].first.x - linePos[i].second.x) / 2.f);
+		lineTC.pos.y = linePos[i].first.y + ((linePos[i].first.y - linePos[i].second.y) / 2.f);
 		lineTC.pos.z = 0.0f;
 		lineTC.rot = { 0.0f, 0.0f, 0.0f };
 		lineTC.scale = { 1.0f, 1.0f, 1.0f };
@@ -265,15 +265,14 @@ void createTestObject(ECS::EntityManager& ent) {
 	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numSquares; ++i)
 	{
-		ECSComponents::DrawInfoComponent DIC{ squarePos[i].v1, squarePos[i].v2, width, height, shapeName, color };
+		ECSComponents::DrawInfoComponent DIC{ squarePos[i].x, squarePos[i].y, width, height, shapeName, color };
 		ECSComponents::NameComponent NC{ objName };
 		ECSComponents::TransformComponent TC{};
-		TC.pos.x = squarePos[i].v1;
-		TC.pos.y = squarePos[i].v2;
-		TC.pos.z = 0.0f;
-		TC.rot = { 0.0f, 0.0f, 0.0f };
-		TC.scale = { 1.0f, 1.0f, 1.0f };
-		TC.vel = { squareVel[i].v1, squareVel[i].v2 };
+		TC.pos.x = squarePos[i].x;
+		TC.pos.y = squarePos[i].y;
+		TC.rot = { 0.0f, 0.0f };
+		TC.scale = { 1.0f, 1.0f };
+		TC.vel = { squareVel[i].x, squareVel[i].y };
 
 		Collision::CollisionComponent SC{ width, height };
 
@@ -307,8 +306,8 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			//std::cout << "object found: " << entity.get<ECSComponents::NameComponent>() << std::endl;
 			// Update movement here
 			Math::eVec2<float> nextPos;
-			nextPos.v1 = transform.pos.x + transform.vel.x * dt;
-			nextPos.v2 = transform.pos.y + transform.vel.y * dt;
+			nextPos.x = transform.pos.x + transform.vel.x * dt;
+			nextPos.y = transform.pos.y + transform.vel.y * dt;
 
 			Math::eVec2<float> oldPos = { transform.pos.x, transform.pos.y };
 			Math::eVec2<float> BeA;
@@ -349,8 +348,8 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 							nextPos,
 							reflectedVec);
 
-						transform.vel.x = reflectedVec.v1 * 100.f * 0.99f;
-						transform.vel.y = reflectedVec.v2 * 100.f * 0.99f;
+						transform.vel.x = reflectedVec.x * 100.f * 0.99f;
+						transform.vel.y = reflectedVec.y * 100.f * 0.99f;
 						hadCollision = true;
 
 					}
@@ -365,11 +364,11 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 						nextPos, BeA, BeB, colTi))
 					{
 
-						transform.pos.x = BeA.v1;
-						transform.pos.y = BeA.v2;
+						transform.pos.x = BeA.x;
+						transform.pos.y = BeA.y;
 
-						otherTransform.pos.x = BeB.v1;
-						otherTransform.pos.y = BeB.v2;
+						otherTransform.pos.x = BeB.x;
+						otherTransform.pos.y = BeB.y;
 
 						std::cout << "bia: " << BeB << std::endl;
 						hadCollision = true;
@@ -383,8 +382,8 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			
 			if (!hadCollision)
 			{
-				transform.pos.x = nextPos.v1;
-				transform.pos.y = nextPos.v2;
+				transform.pos.x = nextPos.x;
+				transform.pos.y = nextPos.y;
 			}
 
 			// Update draw info component for the new pos
@@ -407,8 +406,8 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
 
 			Math::eVec2<float> nextPos;
-			nextPos.v1 = static_cast<float>(transform.pos.x + transform.vel.x * dt);
-			nextPos.v2 = static_cast<float>(transform.pos.y + transform.vel.y * dt);
+			nextPos.x = static_cast<float>(transform.pos.x + transform.vel.x * dt);
+			nextPos.y = static_cast<float>(transform.pos.y + transform.vel.y * dt);
 			float colTi;
 			Math::eVec2<float> normalAtCol;
 			bool hasCollided = false;
@@ -444,16 +443,16 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 									//std::cout << "relvel = :" << relVel << std::endl;
 
 									// Calculate relative velocity along normal
-									float velAlongNormal = relVel.v1 * normalAtCol.v1 +
-										relVel.v2 * normalAtCol.v2;
+									float velAlongNormal = relVel.x * normalAtCol.x +
+										relVel.y * normalAtCol.y;
 
 									// Don't resolve if velocities are separating
 									//if (velAlongNormal > 0)
 									//continue;
 
 									// Subtract the component along that direction
-									transform.vel.x -= velAlongNormal * normalAtCol.v1;
-									transform.vel.y -= velAlongNormal * normalAtCol.v2;
+									transform.vel.x -= velAlongNormal * normalAtCol.x;
+									transform.vel.y -= velAlongNormal * normalAtCol.y;
 
 									hasCollided = true;
 
@@ -470,8 +469,8 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 			if (!hasCollided)
 			{
-				transform.pos.x = nextPos.v1;
-				transform.pos.y = nextPos.v2;
+				transform.pos.x = nextPos.x;
+				transform.pos.y = nextPos.y;
 			}
 
 			// Update draw info component for the new pos

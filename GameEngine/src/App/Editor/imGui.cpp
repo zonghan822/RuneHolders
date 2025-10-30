@@ -153,9 +153,9 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 				// create player entity at indicator position
 				ECSComponents::TransformComponent transform{
-					{indicatorX_, indicatorY_, 0.0f},
-					{0.0f, 0.0f, 0.0f},
-					{1.0f, 1.0f, 1.0f}
+					{indicatorX_, indicatorY_},
+					{0.0f, 0.0f},
+					{1.0f, 1.0f}
 				};
 
 				// create player with rectangle collider (can change to circle if u want)
@@ -243,9 +243,9 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 				// add transform component (required for collision)
 				ECSComponents::TransformComponent transform{
-					{centerX, centerY, 0.0f},
-					{0.0f, 0.0f, 0.0f},
-					{1.0f, 1.0f, 1.0f}
+					{centerX, centerY},
+					{0.0f, 0.0f},
+					{1.0f, 1.0f}
 				};
 
 				e.add<ECSComponents::TransformComponent>(transform);

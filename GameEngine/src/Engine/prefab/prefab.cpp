@@ -60,9 +60,9 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
     float centerY = prefab.y + (prefab.height * 0.5f);
 
     ECSComponents::TransformComponent transform{
-            {centerX, centerY, 0.0f},
-            {0.0f, 0.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f}
+            {centerX, centerY},
+            {0.0f, 0.0f},
+            {1.0f, 1.0f}
     };
 
     e.add<ECSComponents::TransformComponent>(transform);

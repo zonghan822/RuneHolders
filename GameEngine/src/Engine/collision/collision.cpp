@@ -56,7 +56,7 @@ namespace Collision {
 		// Calculate edge vector (from p1 to p2)
 		Math::eVec2<float> edge = data.line.p2 - data.line.p1;
 		// Calculate perpendicular (rotate 90° counter-clockwise)
-		Math::eVec2<float> perpendicular = { -edge.v2, edge.v1 };
+		Math::eVec2<float> perpendicular = { -edge.y, edge.x };
 		// Normalize to get the outward normal
 		Math::eVec2Normalize(data.line.pNormal, perpendicular);
 	}
@@ -139,7 +139,7 @@ namespace Collision {
 			break;
 		}
 
-		os << " Offset: (" << collision.offset.v1 << ", " << collision.offset.v2 << ")";
+		os << " Offset: (" << collision.offset.x << ", " << collision.offset.y << ")";
 		os << " Trigger: " << (collision.isTrigger ? "Yes" : "No");
 		os << " Active: " << (collision.isActive ? "Yes" : "No");
 		return os;
@@ -168,8 +168,8 @@ namespace Collision {
 
 		// Calculate actual world positiions of the colliders
 		// World position = transform position + collider offset
-		Math::eVec2<float> posA = { transformA.pos.x + colliderA.offset.v1, transformA.pos.y + colliderA.offset.v2 };
-		Math::eVec2<float> posB = { transformB.pos.x + colliderB.offset.v1, transformB.pos.y + colliderB.offset.v2 };
+		Math::eVec2<float> posA = { transformA.pos.x + colliderA.offset.x, transformA.pos.y + colliderA.offset.y };
+		Math::eVec2<float> posB = { transformB.pos.x + colliderB.offset.x, transformB.pos.y + colliderB.offset.y };
 
 		// Convey to the collision detection function accordingly
 		// (BASED ON the types of the 2 colliders)
@@ -252,8 +252,8 @@ namespace Collision {
 
 		// Calculate actual world positiions of the colliders
 		// World position = transform position + collider offset
-		Math::eVec2<float> posA = { transformA.pos.x + colliderA.offset.v1, transformA.pos.y + colliderA.offset.v2 };
-		Math::eVec2<float> posB = { transformB.pos.x + colliderB.offset.v1, transformB.pos.y + colliderB.offset.v2 };
+		Math::eVec2<float> posA = { transformA.pos.x + colliderA.offset.x, transformA.pos.y + colliderA.offset.y };
+		Math::eVec2<float> posB = { transformB.pos.x + colliderB.offset.x, transformB.pos.y + colliderB.offset.y };
 
 		// Convey to the collision detection function accordingly
 		// (BASED ON the types of the 2 colliders)
@@ -340,8 +340,8 @@ namespace Collision {
 
 		// Calcualte overlap on each axis
 		// If rectangles overlap, the overlap = (sum of half-widths) - (distance between centers)
-		float overlapX = (halfWidthA + halfWidthB) - std::abs(distance.v1);
-		float overlapY = (halfHeightA + halfHeightB) - std::abs(distance.v2);
+		float overlapX = (halfWidthA + halfWidthB) - std::abs(distance.x);
+		float overlapY = (halfHeightA + halfHeightB) - std::abs(distance.y);
 
 		// Rectangles collide only if they overlap both axes!
 		if (overlapX > 0 && overlapY > 0) {
@@ -352,23 +352,23 @@ namespace Collision {
 			{
 				// Separate along X-axis
 				result.penetrationDepth = overlapX;
-				result.penetrationVector.v1 = (distance.v1 < 0) ? -overlapX : overlapX;
-				result.penetrationVector.v2 = 0.0f;
+				result.penetrationVector.x = (distance.x < 0) ? -overlapX : overlapX;
+				result.penetrationVector.y = 0.0f;
 
 				// Contact point is on the edge of rectangle A
-				float contactX = (distance.v1 < 0) ? posA.v1 - halfWidthA : posA.v1 + halfWidthA;
-				result.contactPoint = Math::eVec2<float>{ contactX , posA.v2 };
+				float contactX = (distance.x < 0) ? posA.x - halfWidthA : posA.x + halfWidthA;
+				result.contactPoint = Math::eVec2<float>{ contactX , posA.y };
 				
 			}
 			else {
 				// Separate along y-axis
 				result.penetrationDepth = overlapY;
-				result.penetrationVector.v1 = 0.0f;
-				result.penetrationVector.v2 = (distance.v2 < 0) ? -overlapY : overlapY;
+				result.penetrationVector.x = 0.0f;
+				result.penetrationVector.y = (distance.y < 0) ? -overlapY : overlapY;
 
 				// Contact point is on the edge of rectangle A
-				float contactY = (distance.v2 < 0) ? posA.v2 - halfHeightA : posA.v2 + halfHeightA;
-				result.contactPoint = Math::eVec2<float>{ posA.v1, contactY };
+				float contactY = (distance.y < 0) ? posA.y - halfHeightA : posA.y + halfHeightA;
+				result.contactPoint = Math::eVec2<float>{ posA.x, contactY };
 			}
 		}
 
@@ -391,8 +391,8 @@ namespace Collision {
 		//	1. Circle outside rectangle
 		//	2. Circle inside rectangle
 		Math::eVec2<float> closestPoint;
-		closestPoint.v1 = std::max(rectPos.v1 - halfWidth, std::min(circlePos.v1, rectPos.v1 + halfWidth));
-		closestPoint.v2 = std::max(rectPos.v2 - halfHeight, std::min(circlePos.v2, rectPos.v2 + halfWidth));
+		closestPoint.x = std::max(rectPos.x - halfWidth, std::min(circlePos.x, rectPos.x + halfWidth));
+		closestPoint.y = std::max(rectPos.y - halfHeight, std::min(circlePos.y, rectPos.y + halfWidth));
 
 		// Calculate distance from circle center to closest point on rectangle
 		Math::eVec2<float> distance = closestPoint - circlePos;
@@ -417,10 +417,10 @@ namespace Collision {
 			else {
 				// Special case: circle center is inside rectangle
 				// Need to find the shortest path to push the circle out
-				float distToLeft = (circlePos.v1 - (rectPos.v1 - halfWidth));
-				float distToRight = ((rectPos.v1 + halfWidth) - circlePos.v1);
-				float distToTop = (circlePos.v2 - (rectPos.v2 - halfHeight));
-				float distToBottom = ((rectPos.v2 + halfHeight) - circlePos.v2);
+				float distToLeft = (circlePos.x - (rectPos.x - halfWidth));
+				float distToRight = ((rectPos.x + halfWidth) - circlePos.x);
+				float distToTop = (circlePos.y - (rectPos.y - halfHeight));
+				float distToBottom = ((rectPos.y + halfHeight) - circlePos.y);
 
 				// Find the shortest distance to and edge
 				float minDist = std::min({ distToLeft, distToRight, distToTop, distToBottom });
@@ -485,8 +485,8 @@ namespace Collision {
 				float halfWidth = collider.data.rectangle.width * 0.5f;
 				float halfHeight = collider.data.rectangle.height * 0.5f;
 
-				bool insideX = (pointPos.v1 >= colliderPos.v1 - halfWidth) && (pointPos.v1 <= colliderPos.v1 + halfWidth);
-				bool insideY = (pointPos.v2 >= colliderPos.v2 - halfHeight) && (pointPos.v2 <= colliderPos.v2 + halfHeight);
+				bool insideX = (pointPos.x >= colliderPos.x - halfWidth) && (pointPos.x <= colliderPos.x + halfWidth);
+				bool insideY = (pointPos.y >= colliderPos.y - halfHeight) && (pointPos.y <= colliderPos.y + halfHeight);
 
 				if (insideX && insideY) {
 					result.hasCollision = true;
@@ -539,7 +539,7 @@ namespace Collision {
 
 			// Normalized vector M = normalized(V.y, -V.x)
 			Math::eVec2<float> mVel;
-			Math::eVec2<float> tmp{ vel.v2, -vel.v1 };
+			Math::eVec2<float> tmp{ vel.y, -vel.x };
 			Math::eVec2Normalize(mVel, tmp);
 
 			// Calculate end points of imaginary line as p1' and p2'
@@ -578,7 +578,7 @@ namespace Collision {
 
 			// Normalized vector M = normalized(V.y, -V.x)
 			Math::eVec2<float> mVel;
-			Math::eVec2Normalize(mVel, { vel.v2, -(vel.v1) });
+			Math::eVec2Normalize(mVel, { vel.y, -(vel.x) });
 
 			// Calculate end points of imaginary line as p1' and p2'
 			// P1' = P1 + R*N and P2' = P2 + R*N 
@@ -665,10 +665,10 @@ namespace Collision {
 		if (0 <= colTi && colTi <= 1.0f)
 		{
 			// Apply physical reflection
-			Math::eVec2<float> Bia = { posA.v1, posA.v2 };
+			Math::eVec2<float> Bia = { posA.x, posA.y };
 			Bia += velA * colTi;
 
-			Math::eVec2<float> Bib = { posB.v1, posB.v2 };
+			Math::eVec2<float> Bib = { posB.x, posB.y };
 			Bib += velB * colTi;
 
 			// Compute normal of reflection
@@ -787,8 +787,8 @@ namespace Collision {
 
 			// Calculate world position
 			Math::eVec2<float> worldPos = {
-				transform.pos.x + collision.offset.v1,
-				transform.pos.y + collision.offset.v2
+				transform.pos.x + collision.offset.x,
+				transform.pos.y + collision.offset.y
 			};
 
 			// Choose color based on trigger status
@@ -816,8 +816,8 @@ namespace Collision {
 					
 					// Calculate top-left corner (drawRect uses top-left pos), but worldPos is CENTER
 					Math::eVec2<float> topLeft = {
-						worldPos.v1 - (scaledWidth * 0.5f),
-						worldPos.v2 - (scaledHeight * 0.5f)
+						worldPos.x - (scaledWidth * 0.5f),
+						worldPos.y - (scaledHeight * 0.5f)
 					};
 
 
@@ -984,8 +984,8 @@ namespace Collision {
 		CollisionComponent circleA(1.0f);  // Radius 1.0 at origin
 		CollisionComponent circleB(1.0f);  // Radius 1.0
 
-		ECSComponents::TransformComponent transformA{ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} };
-		ECSComponents::TransformComponent transformB{ {1.5f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} };
+		ECSComponents::TransformComponent transformA{ {0.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f} };
+		ECSComponents::TransformComponent transformB{ {1.5f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f} };
 
 		CollisionResult result1 = CollisionDetection::CheckCollision(circleA, transformA, circleB, transformB);
 		std::cout << "Collision detected: " << (result1.hasCollision ? "Yes" : "No") << std::endl;
@@ -998,8 +998,8 @@ namespace Collision {
 		CollisionComponent rectA(2.0f, 2.0f);  // 2x2 rectangle
 		CollisionComponent rectB(2.0f, 2.0f);  // 2x2 rectangle
 
-		ECSComponents::TransformComponent transformC{ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} };
-		ECSComponents::TransformComponent transformD{ {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f} };
+		ECSComponents::TransformComponent transformC{ {0.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f} };
+		ECSComponents::TransformComponent transformD{ {1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f} };
 
 		CollisionResult result2 = CollisionDetection::CheckCollision(rectA, transformC, rectB, transformD);
 		std::cout << "Collision detected: " << (result2.hasCollision ? "Yes" : "No") << std::endl;

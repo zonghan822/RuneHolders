@@ -15,4 +15,3 @@
 	X(VisibilityComponent) \
 	X(TransformComponent) \
 	X(LayerComponent) \
-	X(eVec2TransformComponent) \
