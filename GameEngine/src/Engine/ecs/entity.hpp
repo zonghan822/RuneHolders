@@ -25,7 +25,7 @@
 namespace ECS
 {
 
-	//(YunQi) for deletion purposes
+	//(YunQi)
 	static std::vector<uint32_t> spawnHistory;
 	static uint32_t lastSpawnedID = 0;
 

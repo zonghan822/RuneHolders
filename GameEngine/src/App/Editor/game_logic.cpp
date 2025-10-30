@@ -529,32 +529,6 @@ void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> new
 	);
 	playerWalkAnim.setLooping(true);
 
-// Create player idle animation (same sprite sheet as test)
-auto playerIdleAnim = Animation::createSpriteSheetAnimation(
-	96,    // Frame width
-	96,    // Frame height
-	2304,  // Sheet width
-	96,    // Sheet height
-	0,     // Start frame
-	24,    // Frame count
-	0.1f   // Duration per frame
-);
-
-playerIdleAnim.setLooping(true);
-playerAnimController_.addAnimation("idle", playerIdleAnim);
-
-auto playerWalkAnim = Animation::createSpriteSheetAnimation(
-	96,    // Frame width
-	96,    // Frame height
-	384,  // Sheet width
-	96,    // Sheet height
-	0,     // Start frame
-	4,    // Frame count
-	0.08f // Duration per frame
-);
-playerWalkAnim.setLooping(true);
-playerAnimController_.addAnimation("walk", playerWalkAnim);
-
 
 	playerAnimController_.addAnimation("idle", playerIdleAnim);
 	playerAnimController_.addAnimation("walk", playerWalkAnim);

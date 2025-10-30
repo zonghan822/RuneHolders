@@ -139,6 +139,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	if (activeWindow == WindowID::Edit) {
 		ImGui::Begin("Edit");
 		displayEditTab(engine_);
+		displayHierarchyTab(engine_);
 		ImGui::End();
 	}
 #pragma endregion
@@ -664,6 +665,32 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	}
 
 }
+
+void displayHierarchyTab(Engine::EnoEngine& engine_)
+{
+	static uint32_t selectedEntity = 0;
+	std::vector<ECS::Entity> NamedEntityList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
+
+	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
+	ImGui::Separator();
+
+	// Iterate through each entity
+	for (ECS::Entity& e : NamedEntityList)
+	{
+		const auto& nameComp = e.get<ECSComponents::NameComponent>();
+		std::string name = nameComp.name;
+
+		// Create a simple selectable item
+		//bool selected = (selectedEntity == entityID);
+		bool selected = (selectedEntity == e.getEntityID());
+		std::string label = std::to_string(e.getEntityID()) + ": " + name;
+		if (ImGui::Selectable(label.c_str(), selected))
+		{
+			selectedEntity = e.getEntityID();
+		}
+	}
+}
+
 
 void displayAssetTab(Engine::EnoEngine& engine_) {
 	Resources::EnoLoader& loader = engine_.getResourceLoader();

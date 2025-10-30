@@ -112,6 +112,13 @@ void displayEntityCount(Engine::EnoEngine& engine_);
 void displayEditTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
+ * \brief       Displays HierachyTab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayHierarchyTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
