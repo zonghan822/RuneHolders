@@ -163,6 +163,54 @@ macro(import_stb_image)
     endif()
 endmacro()
 
+# =========================================================
+# .NET runtime
+# =========================================================
+function(install_dotnet_runtime)
+    set(DOTNET_DIR ${FETCHCONTENT_BASE_DIR}/dotnet)
+
+    if (EXISTS "${DOTNET_DIR}")
+        message(STATUS ".NET runtime already present at ${DOTNET_DIR}")
+        return()
+    endif()
+
+    # Create destination directory
+    file(MAKE_DIRECTORY "${DOTNET_DIR}")
+
+    if (WIN32)
+        set(DOTNET_INSTALLER "${DOTNET_DIR}/dotnet-install.ps1")
+        file(DOWNLOAD
+            "https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.ps1"
+            "${DOTNET_INSTALLER}"
+            SHOW_PROGRESS
+        )
+        execute_process(
+            COMMAND powershell -NoLogo -NoProfile -ExecutionPolicy Bypass
+                    -File "${DOTNET_INSTALLER}"
+                    -Runtime dotnet
+                    -Version latest
+                    -InstallDir "${DOTNET_DIR}"
+            RESULT_VARIABLE install_result
+        )
+    else()
+        set(DOTNET_INSTALLER "${DOTNET_DIR}/dotnet-install.sh")
+        file(DOWNLOAD
+            "https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh"
+            "${DOTNET_INSTALLER}"
+            SHOW_PROGRESS
+        )
+        execute_process(
+            COMMAND bash "${DOTNET_INSTALLER}" --runtime dotnet --version latest --install-dir "${DOTNET_DIR}"
+            RESULT_VARIABLE install_result
+        )
+    endif()
+
+    if (NOT install_result EQUAL 0)
+        message(FATAL_ERROR "Failed to install .NET runtime into ${DOTNET_DIR}")
+    endif()
+endfunction()
+
+
 # Macro to import all dependencies
 macro(importDependencies)
 message(STATUS "Starting to import dependencies...")
@@ -195,6 +243,10 @@ message(STATUS "Starting to import dependencies...")
     message(STATUS "Importing stb_image...")
     import_stb_image()
     message(STATUS "stb_image imported successfully.")
+
+    message(STATUS "Installing .NET runtime...")
+    install_dotnet_runtime()
+    message(STATUS ".NET runtime installed successfully.")
 
     message(STATUS "All dependencies have been imported successfully.")
     
