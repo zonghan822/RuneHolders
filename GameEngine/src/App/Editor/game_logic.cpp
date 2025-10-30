@@ -189,7 +189,7 @@ void GameApplication::setupImGui() {
 
 void GameApplication::updateGameLogic() {
     // This is called every frame (replaces your while loop in eno_engine.cpp run())
-	auto startTotalTime = Clock::now();
+	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 
     // Calculate delta time
     double deltaTime = engine_.getDeltaTime();
@@ -213,12 +213,10 @@ void GameApplication::updateGameLogic() {
 	engine_.getGraphicsManager().flush();
 	updateImGui();
 	drawText(windowSize);
-	auto end = Clock::now();
-	systemTimes_["totalTimePerFrame"] = std::chrono::duration<double, std::micro>(end - startTotalTime).count();
 }
 
 void GameApplication::updateEntities() {
-	auto start = Clock::now();
+	SystemTimer EntityTimer("Entities" , systemTimes_);
 
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
@@ -252,7 +250,8 @@ void GameApplication::updateEntities() {
 	// Check if player is moving and switch animation accordingly
 	if (playerSystem_ && playerSpawned_) {
 		// Check for WASD input
-		bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+		bool isMoving = 
+			inputManager.isKeyPressed(GLFW_KEY_W) ||
 			inputManager.isKeyPressed(GLFW_KEY_A) ||
 			inputManager.isKeyPressed(GLFW_KEY_S) ||
 			inputManager.isKeyPressed(GLFW_KEY_D);
@@ -320,10 +319,6 @@ void GameApplication::updateEntities() {
 		updateTestObject(engine_.getEntityManager(), engine_);
 
 	}
-	
-
-	auto end = Clock::now();
-	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
 
@@ -466,47 +461,47 @@ void GameApplication::drawPlayerAndIndicator() {
 }
 
 void GameApplication::updateImGui() {
-	auto start = Clock::now();
-
+	SystemTimer ImGuiTimer("ImGui", systemTimes_);
 	imGuiDisplay(engine_);
-
-	auto end = Clock::now();
-	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
 void GameApplication::drawShapes() {
-	auto start = Clock::now();
+	SystemTimer GraphicsTimer("Graphics", systemTimes_);
 
 	auto& graphics = engine_.getGraphicsManager();
 	auto& entityManager = engine_.getEntityManager();
 
 	using drawInfo = ECSComponents::DrawInfoComponent;
 
-		// USE CACHED ENTITIES with validation
-		for (ECS::Entity& entity : cachedDrawableEntities_) {
-			// Skip if entity was destroyed
-			try {
-				if (entity.has<ECSComponents::DrawInfoComponent>()) {
-					graphics.drawRect(
-						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-						Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
-						entity.get<drawInfo>().color,
-						true
-					);
-				}
-			}
-			catch (...) {
-				// Entity was destroyed, rebuild cache next frame
-				entitiesDirty_ = true;
-				continue;
+	// USE CACHED ENTITIES with validation
+	for (ECS::Entity& entity : cachedDrawableEntities_) {
+		// Skip if entity was destroyed
+		try {
+			if (entity.has<ECSComponents::DrawInfoComponent>()) {
+				graphics.drawRect(
+					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
+					entity.get<drawInfo>().color,
+					true
+				);
 			}
 		}
-
-		// (kim) visualize colliders if enabled
-		if (showColliders_ && collisionSystem_) {
-			collisionSystem_->VisualizeColliders(graphics, entityManager);
+		catch (...) {
+			// Entity was destroyed, rebuild cache next frame
+			entitiesDirty_ = true;
+			continue;
 		}
+	}
 
-	auto end = Clock::now();
-	systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();
+	// (kim) visualize colliders if enabled
+	if (showColliders_ && collisionSystem_) {
+		collisionSystem_->VisualizeColliders(graphics, entityManager);
+	}
+
+}
+
+
+void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex) {
+	playerTexture_ = newTex;
+	playerWalkTexture_ = newTex;
 }

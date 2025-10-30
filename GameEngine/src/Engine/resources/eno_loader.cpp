@@ -54,6 +54,10 @@ namespace Resources {
 		return nullptr;
 	}
 
+	const std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>& EnoLoader::getAllTextures() const {
+		return textures_;
+	}
+
 	// Shader getters
 	const std::string& EnoLoader::getShaderPath() const {
 		static const std::string path{ shaderPath_.data(), shaderPath_.size() };
