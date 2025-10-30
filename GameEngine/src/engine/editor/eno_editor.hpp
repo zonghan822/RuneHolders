@@ -4,9 +4,9 @@
 #include "../editor/eno_scene.hpp"
 #include "../editor/eno_scene_tree.hpp"
 
-//#include "../coreclr/eno_core_host.hpp"
+#include "../coreclr/eno_core_host.hpp"
 
-//#include "../scripting/eno_script_manager.hpp"
+#include "../scripting/eno_script_manager.hpp"
 
 // Events
 #include "../editor/editor_events.hpp"
@@ -22,10 +22,10 @@ namespace Editor
 		EnoEditor(const EnoEditor&) = delete;
 		EnoEditor(EnoEditor&&) = delete;
 
-		EnoEditor(Event::EnoEventBus& bus /* Core::EnoCoreHost& coreHost */)
+		EnoEditor(Event::EnoEventBus& bus, Core::EnoCoreHost& coreHost)
 			:
 			bus_ { bus },
-			/*coreHost_{ coreHost },*/
+			coreHost_{ coreHost },
 			playingScene_{ false }
 		{
 			eventSetup();
@@ -37,7 +37,6 @@ namespace Editor
 			selectedScene_ = scenes_.front().get();
 		}
 
-		// Testing the scene tree
 		void operation()
 		{
 			Node* node1 = tree_.create();
@@ -69,30 +68,48 @@ namespace Editor
 			tree_.selectedNodeView();
 
 			// Create and open a new script
-			/*scriptMng_.createAndOpenScript("EnemyController");*/
+			//scriptMng_.createAndOpenScript("EnemyController");
 
 			// We attach the script onto node5 and open it
-			//auto script = scriptMng_.selectScript();
-			//if (script)
-			//{
-			//	tree_.attachScript(node5, std::move(script.value()));
-			//}
+			auto script = scriptMng_.selectScript();
+			if (script)
+			{
+				tree_.attachScript(node5, std::move(script.value()));
+			}
 
-			//// Call script delegate to get exposed fields
-			//// after attaching the script
+			// Call script delegate to get exposed fields
+			// after attaching the script
 			//int count{};
 			//Core::EnoCoreHost::Field* data = (coreHost_.fields())(L"PlayerController", &count);
 
 			//for (size_t i = 0; i < count; i++)
 			//{
 			//	Core::EnoCoreHost::Field& field = data[i];
-			//	
+
 			//	std::wcout << "Name : " << field.name_ << std::endl <<
 			//		"Type: " << field.type_ << std::endl <<
 			//		"Field: " << field.value_ << std::endl;
 			//}
+			//
+			// Modify value and run a function in C# to verify value change
+			// PlayerController script attached
+			node5->script_->displayVars();
+			node5->script_->modValue(L"playerName", L"Anthony");
+			node5->script_->displayVars();
 
-			//// Opens the script
+
+			////////////////////////////////////////////////////////////////
+			//Core::EnoCoreHost::Field* data1 = (coreHost_.fields())(L"PlayerController", &count);
+
+			//for (size_t i = 0; i < count; i++)
+			//{
+			//	Core::EnoCoreHost::Field& field = data1[i];
+
+			//	std::wcout << "Name : " << field.name_ << std::endl <<
+			//		"Type: " << field.type_ << std::endl <<
+			//		"Field: " << field.value_ << std::endl;
+			//}
+			// Opens the script
 			//if (node5->script_)
 			//{
 			//	scriptMng_.openScript(node5->script_->path());
@@ -165,11 +182,11 @@ namespace Editor
 
 		bool playingScene_;
 
-		// Scripting
-		//Script::EnoScriptManager scriptMng_;
-
 		// Core Host
-		//Core::EnoCoreHost& coreHost_;
+		Core::EnoCoreHost& coreHost_;
+
+		// Scripting
+		Script::EnoScriptManager scriptMng_{ coreHost_ };
 
 		// Events
 		Event::EnoEventBus& bus_;

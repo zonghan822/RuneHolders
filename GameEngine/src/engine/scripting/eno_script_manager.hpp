@@ -1,9 +1,9 @@
 #pragma once
 
 // Engine Component(s)
-#include "../event/event_bus.hpp"
-
+#include "../coreclr/eno_core_host.hpp"
 #include "eno_script.hpp"
+#include "eno_field.hpp"
 
 // Windows
 #include <Windows.h>
@@ -25,6 +25,8 @@ namespace Script
 		static constexpr std::string_view scriptPath = "./scripts/user_scripts";
 
 	public:
+		EnoScriptManager(Core::EnoCoreHost&);
+
 		// Open scripts folder and browse for a script
 		std::optional<std::unique_ptr<EnoScript>> selectScript();
 		
@@ -41,13 +43,14 @@ namespace Script
 		std::string prepareScript(const std::string&);
 
 		// Verify that a script exists
-		bool scriptExists(const std::string&);
+		bool scriptExists(const std::string&, const std::string&);
 
 	private:
+		Core::EnoCoreHost& coreHost_;
 
 		static constexpr std::string_view scriptTemplate =
 			R"(using System;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace Eno
 {

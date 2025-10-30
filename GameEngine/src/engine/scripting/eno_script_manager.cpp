@@ -2,6 +2,10 @@
 
 namespace Script
 {
+	EnoScriptManager::EnoScriptManager(Core::EnoCoreHost& core) :
+		coreHost_{ core }
+	{}
+
 	std::optional<std::unique_ptr<EnoScript>> EnoScriptManager::selectScript()
 	{
 		// Using COM for windows
@@ -54,7 +58,7 @@ namespace Script
 						HRESULT result2 = file->GetDisplayName(SIGDN_NORMALDISPLAY, &fileName);
 						if (SUCCEEDED(result) && SUCCEEDED(result2))
 						{
-							auto script = std::make_unique<EnoScript>(fileName, filePath);
+							auto script = std::make_unique<EnoScript>(coreHost_, fileName, filePath);
 
 							CoTaskMemFree(filePath);
 							CoTaskMemFree(fileName);
@@ -100,7 +104,7 @@ namespace Script
 		file << prepareScript(name);
 
 		std::wstring wname{ name.begin(), name.end() };
-		auto script = std::make_unique<EnoScript>(wname, absPath.wstring());
+		auto script = std::make_unique<EnoScript>(coreHost_, wname, absPath.wstring());
 
 		return script;
 	}
@@ -114,12 +118,12 @@ namespace Script
 		std::filesystem::path absPath = std::filesystem::absolute(folder / filename);
 
 		// Create the script if it does not exist
-		if (!scriptExists(absPath.string()))
+		if (!scriptExists(name, absPath.string()))
 			createScript(name);
 
 		// Create and return EnoScript
 		std::wstring wname{ name.begin(), name.end() };
-		auto script = std::make_unique<EnoScript>(wname, absPath.wstring());
+		auto script = std::make_unique<EnoScript>(coreHost_, wname, absPath.wstring());
 		
 		openScript(absPath.string());
 
@@ -161,7 +165,7 @@ namespace Script
 	}
 
 	// Check if a script file exists in the specified location
-	bool EnoScriptManager::scriptExists(const std::string& loc)
+	bool EnoScriptManager::scriptExists(const std::string& name, const std::string& loc)
 	{
 		std::filesystem::path p = std::filesystem::absolute(loc);
 
