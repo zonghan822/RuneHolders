@@ -28,8 +28,8 @@ namespace Math
 	template <Arithmetic Type>
 	struct eVec2
 	{
-		Type v1, // X coords
-			 v2; // Y coords
+		Type x, // X coords
+			 y; // Y coords
 
 		/*============================================================================================
 		 * \brief       Adds another vector to this vector (component-wise).
@@ -235,9 +235,9 @@ namespace Math
 	template <Arithmetic Type>
 	struct eVec3
 	{
-		Type v1, // X coords
-			 v2, // Y coords
-			 v3; // Z coords
+		Type x, // X coords
+			 y, // Y coords
+			 z; // Z coords
 
 		/*============================================================================================
 		 * \brief       Adds another vector to this vector (component-wise).
@@ -428,6 +428,27 @@ namespace Math
 		eMtx4x4() = default;
 
 	};
+
+	// ------------------------------- MISCELLANEOUS ----------------------------------
+
+	/*============================================================================================
+	 * \brief       Compares two values and identify which is greater
+	 * \param[in]   a  First value.
+	 * \param[in]   b  Second value.
+	 * \return      Returns the greater value
+	*//*========================================================================================*/
+	template <typename T>
+	T max(const T& a, const T& b);
+
+
+	/*============================================================================================
+	 * \brief       Compares two values and identify which is lesser
+	 * \param[in]   a  First value.
+	 * \param[in]   b  Second value.
+	 * \return      Returns the lesser value
+	*//*========================================================================================*/
+	template <typename T>
+	T min(const T& a, const T& b);
 
 } // End of namespace Math
 

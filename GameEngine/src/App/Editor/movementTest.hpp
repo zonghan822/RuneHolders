@@ -35,22 +35,6 @@ struct AABB
 };
 
 /*============================================================================================
- * \brief Returns the maximum of two float values
- * \param[in] double a - First value
- * \param[in] double b - Second value
- * \return double - The larger of the two values
- *//*========================================================================================*/
-double max(double a, double b);
-
-/*============================================================================================
- * \brief Returns the minimum of two float values
- * \param[in] double a - First value
- * \param[in] double b - Second value
- * \return double - The smaller of the two values
- *//*========================================================================================*/
-double min(double a, double b);
-
-/*============================================================================================
  * \brief Performs swept AABB collision detection between two dynamic rectangular objects
  *
  * Uses continuous collision detection to determine if and when two axis-aligned bounding

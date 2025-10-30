@@ -18,8 +18,8 @@ namespace Math
 	template <Arithmetic Type>
 	eVec2<Type>& eVec2<Type>::operator+=(const eVec2<Type>& other)
 	{
-		this->v1 += other.v1;
-		this->v2 += other.v2;
+		this->x += other.x;
+		this->y += other.y;
 
 		return *this;
 	}
@@ -27,8 +27,8 @@ namespace Math
 	template <Arithmetic Type>
 	eVec2<Type>& eVec2<Type>::operator+=(const Type& other)
 	{
-		this->v1 += other;
-		this->v2 += other;
+		this->x += other;
+		this->y += other;
 
 		return *this;
 	}
@@ -36,12 +36,12 @@ namespace Math
 	template <Arithmetic Type>
 	eVec2<Type> eVec2<Type>::operator+(const eVec2<Type>& other)
 	{
-		return { v1 + other.v1, v2 + other.v2 };
+		return { x + other.x, y + other.y };
 	}
 	template <Arithmetic Type>
 	eVec2<Type> eVec2<Type>::operator+(const Type& other)
 	{
-		return {v1 + other, v2 + other};
+		return {x + other, y + other};
 	}
 
 	// ------------------------------ Subtraction ------------------------------
@@ -49,8 +49,8 @@ namespace Math
 		
 	eVec2<Type>& eVec2<Type>::operator-=(const eVec2<Type>& other)
 	{
-		this->v1 -= other.v1;
-		this->v2 -= other.v2;
+		this->x -= other.x;
+		this->y -= other.y;
 
 		return *this;
 	}
@@ -59,8 +59,8 @@ namespace Math
 		
 	eVec2<Type>& eVec2<Type>::operator-=(const Type& other)
 	{
-		this->v1 -= other;
-		this->v2 -= other;
+		this->x -= other;
+		this->y -= other;
 
 		return *this;
 	}
@@ -68,15 +68,15 @@ namespace Math
 	template <Arithmetic Type>
 	eVec2<Type> eVec2<Type>::operator-(const eVec2<Type>& other)
 	{
-		return { v1 - other.v1, v2 - other.v2 };
+		return { x - other.x, y - other.y };
 	}
 
 	// ----------------------------- Multiplication -----------------------------
 	template <Arithmetic Type>
 	eVec2<Type>& eVec2<Type>::operator*=(const eVec2<Type>& other)
 	{
-		this->v1 *= other.v1;
-		this->v2 *= other.v2;
+		this->x *= other.x;
+		this->y *= other.y;
 
 		return *this;
 	}
@@ -84,8 +84,8 @@ namespace Math
 	template <Arithmetic Type>
 	eVec2<Type>& eVec2<Type>::operator*=(const Type& other)
 	{
-		this->v1 *= other;
-		this->v2 *= other;
+		this->x *= other;
+		this->y *= other;
 
 		return *this;
 	}
@@ -93,13 +93,13 @@ namespace Math
 	template <Arithmetic Type>
 	eVec2<Type> eVec2<Type>::operator*(const eVec2<Type>& other)
 	{
-		return { v1 * other.v1, v2 * other.v2 };
+		return { x * other.x, y * other.y };
 	}
 
 	template <Arithmetic Type>
 	eVec2<Type> eVec2<Type>::operator*(Type other) const
 	{
-		return {v1 * other, v2*other};
+		return {x * other, y*other};
 	
 	}
 
@@ -109,14 +109,14 @@ namespace Math
 	template <Arithmetic Type>
 	eVec2<Type>& eVec2<Type>::operator/=(const eVec2<Type>& other)
 	{
-		if (other.v1 == 0 ||
-			other.v2 == 0)
+		if (other.x == 0 ||
+			other.y == 0)
 		{
 			throw std::runtime_error("Division by zero on a vector!");
 		}
 
-		this->v1 /= other.v1;
-		this->v2 /= other.v2;
+		this->x /= other.x;
+		this->y /= other.y;
 
 		return *this;
 	}
@@ -129,8 +129,8 @@ namespace Math
 			throw std::runtime_error("Division by zero on a vector!");
 		}
 
-		this->v1 /= other;
-		this->v2 /= other;
+		this->x /= other;
+		this->y /= other;
 
 		return *this;
 	}
@@ -138,13 +138,13 @@ namespace Math
 	template <Arithmetic Type>
 	eVec2<Type> eVec2<Type>::operator/(const eVec2<Type>& other)
 	{
-		if (other.v1 == 0 ||
-			other.v2 == 0)
+		if (other.x == 0 ||
+			other.y == 0)
 		{
 			throw std::runtime_error("Division by zero on a vector!");
 		}
 
-		return { v1 / other.v1, v2 / other.v2 };
+		return { x / other.x, y / other.y };
 	}
 
 	template <Arithmetic Type>
@@ -155,7 +155,7 @@ namespace Math
 			throw std::runtime_error("Division by zero on a vector!");
 		}
 
-		return { v1 / val, v2 / val };
+		return { x / val, y / val };
 
 	}
 
@@ -164,7 +164,7 @@ namespace Math
 	template <Arithmetic Type>
 	eVec2<Type> eVec2<Type>::operator-() const
 	{
-		return { -v1, -v2 };
+		return { -x, -y };
 	}
 
 
@@ -173,7 +173,7 @@ namespace Math
 	template <Arithmetic Type>
 	eVec2<Type> operator*(const Type& lhs, const eVec2<Type>& rhs)
 	{
-		return {lhs * rhs.v1, lhs * rhs.v2};
+		return {lhs * rhs.x, lhs * rhs.y};
 	}
 
 	template <Arithmetic Type>
@@ -224,7 +224,7 @@ namespace Math
 	Type eVec2SquaredLength(const eVec2<Type>& vec)
 	{
 		//sq length = (x^2 + y^2)
-		return ((vec.v1 * vec.v1) + (vec.v2 * vec.v2));
+		return ((vec.x * vec.x) + (vec.y * vec.y));
 
 	}
 
@@ -244,7 +244,7 @@ namespace Math
 	Type eVec2SquaredDistance(const eVec2<Type>& vec1, const eVec2<Type>& vec2)
 	{
 		//sq distance = ((x1 - x2)^2, (y1-y2)^2)
-		return (((vec1.v1 - vec2.v1) * (vec1.v1 - vec2.v1)) + ((vec1.v2 - vec2.v2) * (vec1.v2 - vec2.v2)));
+		return (((vec1.x - vec2.x) * (vec1.x - vec2.x)) + ((vec1.y - vec2.y) * (vec1.y - vec2.y)));
 
 	}
 
@@ -253,13 +253,13 @@ namespace Math
 	Type eVec2DotProduct(const eVec2<Type>& vec1, const eVec2<Type>& vec2)
 	{
 		//Dot product = x1 * x2 + y1*y2
-		return (vec1.v1 * vec2.v1) + (vec1.v2 * vec2.v2);
+		return (vec1.x * vec2.x) + (vec1.y * vec2.y);
 	}
 
 	template<typename Type>
 	std::ostream& operator<<(std::ostream& os, const eVec2<Type>& vec1)
 	{
-		std::cout << "x : " << vec1.v1 << " | y : " << vec1.v2 << std::endl;
+		std::cout << "x : " << vec1.x << " | y : " << vec1.y << std::endl;
 		return os;
 	}
 
@@ -269,9 +269,9 @@ namespace Math
 	template <Arithmetic Type>
 	eVec3<Type>& eVec3<Type>::operator+=(const eVec3<Type>& other)
 	{
-		this->v1 += other.v1;
-		this->v2 += other.v2;
-		this->v3 += other.v3;
+		this->x += other.x;
+		this->y += other.y;
+		this->z += other.z;
 
 		return *this;
 	}
@@ -279,9 +279,9 @@ namespace Math
 	template <Arithmetic Type>
 	eVec3<Type>& eVec3<Type>::operator+=(const Type& other)
 	{
-		this->v1 += other;
-		this->v2 += other;
-		this->v3 += other;
+		this->x += other;
+		this->y += other;
+		this->z += other;
 
 		return *this;
 	}
@@ -289,16 +289,16 @@ namespace Math
 	template <Arithmetic Type>
 	eVec3<Type> eVec3<Type>::operator+(const eVec3<Type>& other)
 	{
-		return { v1 + other.v1, v2 + other.v2, v3 + other.v3 };
+		return { x + other.x, y + other.y, z + other.z };
 	}
 
 	// ------------------------------ Subtraction ------------------------------
 	template <Arithmetic Type>
 	eVec3<Type>& eVec3<Type>::operator-=(const eVec3<Type>& other)
 	{
-		this->v1 -= other.v1;
-		this->v2 -= other.v2;
-		this->v3 -= other.v3;
+		this->x -= other.x;
+		this->y -= other.y;
+		this->z -= other.z;
 
 		return *this;
 	}
@@ -306,9 +306,9 @@ namespace Math
 	template <Arithmetic Type>
 	eVec3<Type>& eVec3<Type>::operator-=(const Type& other)
 	{
-		this->v1 -= other;
-		this->v2 -= other;
-		this->v3 -= other;
+		this->x -= other;
+		this->y -= other;
+		this->z -= other;
 
 		return *this;
 	}
@@ -316,16 +316,16 @@ namespace Math
 	template <Arithmetic Type>
 	eVec3<Type> eVec3<Type>::operator-(const eVec3<Type>& other)
 	{
-		return { v1 - other.v1, v2 - other.v2, v3 - other.v3 };
+		return { x - other.x, y - other.y, z - other.z };
 	}
 
 	// ----------------------------- Multiplication -----------------------------
 	template <Arithmetic Type>
 	eVec3<Type>& eVec3<Type>::operator*=(const eVec3<Type>& other)
 	{
-		this->v1 *= other.v1;
-		this->v2 *= other.v2;
-		this->v3 *= other.v3;
+		this->x *= other.x;
+		this->y *= other.y;
+		this->z *= other.z;
 
 		return *this;
 	}
@@ -333,9 +333,9 @@ namespace Math
 	template <Arithmetic Type>
 	eVec3<Type>& eVec3<Type>::operator*=(const Type& other)
 	{
-		this->v1 *= other;
-		this->v2 *= other;
-		this->v3 *= other;
+		this->x *= other;
+		this->y *= other;
+		this->z *= other;
 
 		return *this;
 	}
@@ -343,23 +343,23 @@ namespace Math
 	template <Arithmetic Type>
 	eVec3<Type> eVec3<Type>::operator*(const eVec3<Type>& other)
 	{
-		return { v1 * other.v1, v2 * other.v2, v3 * other.v3 };
+		return { x * other.x, y * other.y, z * other.z };
 	}
 
 	// ------------------------------ Division ------------------------------
 	template <Arithmetic Type>
 	eVec3<Type>& eVec3<Type>::operator/=(const eVec3<Type>& other)
 	{
-		if (other.v1 == 0 ||
-			other.v2 == 0 ||
-			other.v3 == 0)
+		if (other.x == 0 ||
+			other.y == 0 ||
+			other.z == 0)
 		{
 			throw std::runtime_error("Division by zero on a vector!");
 		}
 
-		this->v1 /= other.v1;
-		this->v2 /= other.v2;
-		this->v3 /= other.v3;
+		this->x /= other.x;
+		this->y /= other.y;
+		this->z /= other.z;
 
 		return *this;
 	}
@@ -372,9 +372,9 @@ namespace Math
 			throw std::runtime_error("Division by zero on a vector!");
 		}
 
-		this->v1 /= other;
-		this->v2 /= other;
-		this->v3 /= other;
+		this->x /= other;
+		this->y /= other;
+		this->z /= other;
 
 		return *this;
 	}
@@ -382,14 +382,14 @@ namespace Math
 	template <Arithmetic Type>
 	eVec3<Type> eVec3<Type>::operator/(const eVec3<Type>& other)
 	{
-		if (other.v1 == 0 ||
-			other.v2 == 0 ||
-			other.v3 == 0)
+		if (other.x == 0 ||
+			other.y == 0 ||
+			other.z == 0)
 		{
 			throw std::runtime_error("Division by zero on a vector!");
 		}
 
-		return { v1 / other.v1, v2 / other.v2, v3 / other.v3 };
+		return { x / other.x, y / other.y, z / other.z };
 	}
 	
 	// -------------------- 3 x 3 Matrix -----------------------
@@ -503,5 +503,21 @@ namespace Math
 		result.v7 = mtx.v3;  result.v8 = mtx.v6;  result.v9 = mtx.v9;
 
 	}
+
+
+	// ------------------------------- MISCELLANEOUS ----------------------------------
+
+	template <typename T>
+	T max(const T& a, const T& b)
+	{
+		return a > b ? a : b;
+	}
+
+	template <typename T>
+	T min(const T& a, const T& b)
+	{
+		return a < b ? a : b;
+	}
+
 
 }
