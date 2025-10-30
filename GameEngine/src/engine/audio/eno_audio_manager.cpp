@@ -80,17 +80,25 @@ namespace Audio
 		FMOD::System_Create(&system);
 		system->init(512, FMOD_INIT_NORMAL, nullptr);
 
-		bus_.subscribe<LoadSound>([&](const LoadSound& event) {
-			onSoundReceived(event);
-		});
+		bus_.subscribe<LoadSound>([&](const LoadSound& event) 
+			{
+				onSoundReceived(event);
+			});
 
-		bus_.subscribe<SetAudioState>([&](const SetAudioState& event) {
-			onTogglePlay(event);
-		});
+		bus_.subscribe<SetAudioState>([&](const SetAudioState& event) 
+			{
+				onTogglePlay(event);
+			});
 
-		bus_.subscribe<SetNewAudio>([&](const SetNewAudio& event){
-			onAudioChange(event);
-		});
+		bus_.subscribe<SetNewAudio>([&](const SetNewAudio& event)
+			{
+				onAudioChange(event);
+			});
+
+		bus_.subscribe<PlayInstant>([&](const PlayInstant& event)
+			{
+				onAudioInstantPlay(event);
+			});
 	}
 
 	FMOD::System* EnoAudioManager::getSystem() const 
@@ -122,6 +130,23 @@ namespace Audio
 	}
 
 	/*============================================================================================
+	 * \brief				(Overload) Play sounds from a channel group
+	 * \param[in]			Pointer to Sound
+	 * \param[in]			Pointer to Channel group
+	 * \param[in]			Set pause state
+	 * \return				pointer to the channel used to play the sound
+	*//*========================================================================================*/
+	FMOD::Channel* EnoAudioManager::playByGroup(
+		FMOD::Sound* sound, FMOD::ChannelGroup* group, const bool paused)
+	{
+		FMOD::Channel* channel{ nullptr };
+		system->playSound(sound, group, paused, &channel);
+		channels_.push_back(channel);
+
+		return channel;
+	}
+
+	/*============================================================================================
 	 * \brief				Play sounds from a channel group
 	 * \param[in]			Name of sound
 	 * \param[in]			Channel group name
@@ -129,7 +154,7 @@ namespace Audio
 	 * \return				pointer to the channel used to play the sound
 	*//*========================================================================================*/
 	FMOD::Channel* EnoAudioManager::playByGroup(
-		const std::string& soundName, const std::string& groupName, const bool& paused)
+		const std::string& soundName, const std::string& groupName, const bool paused)
 	{
 		// Fetch the sound and channel group
 		auto sound = sounds_.find(soundName);
@@ -140,11 +165,7 @@ namespace Audio
 			throw std::runtime_error("Failed to find a sound or group by name!");
 		}
 
-		FMOD::Channel* channel{ nullptr };
-		system->playSound(sound->second, group->second, paused, &channel);
-		channels_.push_back(channel);
-
-		return channel;
+		return playByGroup(sound->second, group->second, paused);
 	}
 
 	/*============================================================================================
@@ -155,9 +176,9 @@ namespace Audio
 	 * \return				pointer to the channel used to play the sound
 	*//*========================================================================================*/
 	FMOD::Channel* EnoAudioManager::playByGroup(
-		FMOD::Sound* sound, const std::string& groupName, const bool& paused)
+		FMOD::Sound* sound, const std::string& groupName, const bool paused)
 	{
-		// Fetch the sound and channel group
+		// Fetch the channel group
 		auto group = channelGroups_.find(groupName);
 
 		if (group == channelGroups_.end())
@@ -165,8 +186,41 @@ namespace Audio
 			throw std::runtime_error("Failed to find a sound or group by name!");
 		}
 
+		return playByGroup(sound, group->second, paused);
+	}
+
+	/*============================================================================================
+	 * \brief				(Overload) Play sounds from a channel group
+	 * \param[in]			Pointer to the Sound
+	 * \param[in]			Channel group name
+	 * \param[in]			Set pause state
+	 * \return				pointer to the channel used to play the sound
+	*//*========================================================================================*/
+	FMOD::Channel* EnoAudioManager::playByGroup(
+		const std::string& soundName, FMOD::ChannelGroup* group, const bool paused)
+	{
+		// Fetch the sound
+		auto sound = sounds_.find(soundName);
+
+		if (sound == sounds_.end())
+		{
+			throw std::runtime_error("Failed to find a sound or group by name!");
+		}
+
+		return playByGroup(sound->second, group, paused);
+	}
+
+	/*============================================================================================
+	 * \brief				Set up fade to a channel group
+	 * \param[in]			Channel group name
+	 * \param[in]			Fade in time
+	 * \param[in]			Fade out time
+	 * \param[in]			Duration in seconds
+	*//*========================================================================================*/
+	FMOD::Channel* EnoAudioManager::playByChannel(FMOD::Sound* sound, const bool paused)
+	{
 		FMOD::Channel* channel{ nullptr };
-		system->playSound(sound, group->second, paused, &channel);
+		system->playSound(sound, nullptr, paused, &channel);
 		channels_.push_back(channel);
 
 		return channel;
@@ -378,7 +432,7 @@ namespace Audio
 		channel->stop();
 	}
 
-	/*========================================= Events ===========================================
+	/*======================================== Events ===========================================*/
 
 	/*============================================================================================
 	 * \brief				Publish request for a sound by name
@@ -417,7 +471,7 @@ namespace Audio
 		auto group = channelGroups_.find(event.groupName_);
 		if (group == channelGroups_.end())
 		{
-			throw std::runtime_error("Failed to find the group" + event.groupName_);
+			throw std::runtime_error("Failed to find the group " + event.groupName_);
 		}
 
 		// Toggle playing state of specified group
@@ -453,13 +507,41 @@ namespace Audio
 			return;
 		}
 
+		for (const auto& sound : sounds_)
+		{
+			std::cout << "Sound: " << sound.first << std::endl;
+		}
+
 		auto sound = sounds_.find(event.soundName_);
 		if (sound == sounds_.end())
 		{
-			throw std::runtime_error("Failed to find the sound" + event.soundName_);
+			throw std::runtime_error("Failed to find the sound " + event.soundName_);
 		}
 
 		selectedSound_ = sound->second;
+	}
+
+	/*============================================================================================
+	 * \brief				Received request to change the selected sound
+	 * \param[in]			SetNewAudio struct (Name of audio to select)
+	*//*========================================================================================*/
+	void EnoAudioManager::onAudioInstantPlay(const Audio::PlayInstant& event)
+	{
+		auto group = channelGroups_.find(event.groupName_);
+		if (group == channelGroups_.end())
+		{
+			throw std::runtime_error("Failed to find the group " + event.groupName_);
+		}
+
+		auto sound = sounds_.find(event.soundName_);
+		if (sound == sounds_.end())
+		{
+			throw std::runtime_error("Failed to find the sound " + event.soundName_);
+		}
+
+		FMOD::Channel* channel = playByChannel(sound->second, true);
+		scheduleGroupFade("SFX", FADE_IN, FADE_OUT, getSoundDurSec(sound->second));
+		setPauseChannel(channel, false);
 	}
 
 	/*============================================================================================

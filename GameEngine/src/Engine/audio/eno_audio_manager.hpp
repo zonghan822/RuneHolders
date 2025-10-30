@@ -81,12 +81,21 @@ namespace Audio
 
 		/*============================================================================================
 		 * \brief				Play sounds from a channel group
+		 * \param[in]			Pointer to the Sound
+		 * \param[in]			Pointer to the Channel Group
+		 * \param[in]			Set pause state
+		 * \return				pointer to the channel used to play the sound
+		*//*========================================================================================*/
+		FMOD::Channel* playByGroup(FMOD::Sound*, FMOD::ChannelGroup*, const bool);
+
+		/*============================================================================================
+		 * \brief				(Overload) Play sounds from a channel group
 		 * \param[in]			Name of sound
 		 * \param[in]			Channel group name
 		 * \param[in]			Set pause state
 		 * \return				pointer to the channel used to play the sound
 		*//*========================================================================================*/
-		FMOD::Channel* playByGroup(const std::string&, const std::string&, const bool&);
+		FMOD::Channel* playByGroup(const std::string&, const std::string&, const bool);
 
 		/*============================================================================================
 		 * \brief				(Overload) Play sounds from a channel group
@@ -95,7 +104,25 @@ namespace Audio
 		 * \param[in]			Set pause state
 		 * \return				pointer to the channel used to play the sound
 		*//*========================================================================================*/
-		FMOD::Channel* playByGroup(FMOD::Sound*, const std::string&, const bool&);
+		FMOD::Channel* playByGroup(FMOD::Sound*, const std::string&, const bool);
+
+		/*============================================================================================
+		 * \brief				(Overload) Play sounds from a channel group
+		 * \param[in]			Sound name
+		 * \param[in]			Pointer to the Channel Group
+		 * \param[in]			Set pause state
+		 * \return				pointer to the channel used to play the sound
+		*//*========================================================================================*/
+		FMOD::Channel* playByGroup(const std::string&, FMOD::ChannelGroup*, const bool);
+
+		/*============================================================================================
+		 * \brief				Play sounds from with no channel group
+		 * \param[in]			Channel group name
+		 * \param[in]			Fade in time
+		 * \param[in]			Fade out time
+		 * \param[in]			Duration in seconds
+		*//*========================================================================================*/
+		FMOD::Channel* playByChannel(FMOD::Sound*, const bool);
 
 		/*============================================================================================
 		 * \brief				Set up fade to a channel group
@@ -104,8 +131,7 @@ namespace Audio
 		 * \param[in]			Fade out time
 		 * \param[in]			Duration in seconds
 		*//*========================================================================================*/
-		void scheduleGroupFade(
-			const std::string&,
+		void scheduleGroupFade(const std::string&,
 			const float&, const float&, const float&);
 
 		/*============================================================================================
@@ -186,7 +212,7 @@ namespace Audio
 		*//*========================================================================================*/
 		void stopChannel(FMOD::Channel*);
 
-		/*========================================= Events ===========================================
+		/*======================================== Events ==========================================*/
 
 		/*============================================================================================
 		 * \brief				Publish request for a sound by name
@@ -196,21 +222,31 @@ namespace Audio
 
 		/*============================================================================================
 		 * \brief				Received sound post-request
-		 * \param[in]			LoadSound struct (sound and sound name to store)
+		 * \param[in]			LoadSound struct 
+								sound and sound name to store
 		*//*========================================================================================*/
 		void onSoundReceived(const LoadSound&);
 
 		/*============================================================================================
 		 * \brief				Received request to play or pause a sound
-		 * \param[in]			AudioState struct (Name of group to play)
+		 * \param[in]			AudioState struct 
+								Name of group to play
 		*//*========================================================================================*/
 		void onTogglePlay(const SetAudioState&);
 
 		/*============================================================================================
 		 * \brief				Received request to play or pause a sound
-		 * \param[in]			SetNewAudio struct (Name of audio to select)
+		 * \param[in]			SetNewAudio struct 
+								Name of audio to select
 		*//*========================================================================================*/
 		void onAudioChange(const Audio::SetNewAudio&);
+
+		/*============================================================================================
+		 * \brief				Received request to play or pause a sound immediately
+		 * \param[in]			PlayInstant struct 
+								Name of group and audio to play in group
+		*//*========================================================================================*/
+		void onAudioInstantPlay(const Audio::PlayInstant&);
 
 	private:
 
