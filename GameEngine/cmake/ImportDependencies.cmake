@@ -63,7 +63,7 @@ macro(import_imgui)
         FetchContent_Declare(
             imgui
             GIT_REPOSITORY https://github.com/ocornut/imgui.git
-            GIT_TAG v1.90.4
+            GIT_TAG docking
         )
         if(NOT imgui_POPULATED)
             FetchContent_Populate(imgui)
@@ -104,19 +104,19 @@ set_property(TARGET imgui PROPERTY CXX_STANDARD_REQUIRED ON)
 endmacro()
 
 # ---------------------------------------------------------
-# nlohmann_json
+# RapidJSON (header-only library)
 # ---------------------------------------------------------
-macro(import_nlohmann_json)
-    if(NOT TARGET nlohmann_json)  # Guard to prevent multiple inclusion
+macro(import_rapidjson)
+    if(NOT TARGET rapidjson)  # Guard to prevent multiple inclusion
         include(FetchContent)
 
         FetchContent_Declare(
-            nlohmann_json
-            GIT_REPOSITORY https://github.com/nlohmann/json.git
-            GIT_TAG v3.11.3  # Stable release, change as needed
+            rapidjson
+            GIT_REPOSITORY https://github.com/Tencent/rapidjson.git
+            GIT_TAG master
         )
-        FetchContent_MakeAvailable(nlohmann_json)
-        set_library_folder(nlohmann_json)
+        FetchContent_MakeAvailable(rapidjson)
+        set_library_folder(rapidjson)
     endif()
 endmacro()
 
@@ -183,10 +183,9 @@ message(STATUS "Starting to import dependencies...")
     import_imgui()
     message(STATUS "ImGui imported successfully.")
 
-    # Comment for now (Filename too long issue...)
-    # message(STATUS "Importing nlohmann/json...")
-    # import_nlohmann_json()
-    # message(STATUS "nlohmann/json imported successfully.")
+    message(STATUS "Importing RapidJSON...")
+    import_rapidjson()
+    message(STATUS "RapidJSON imported successfully.")
 
     message(STATUS "Importing Freetype...")
     import_freetype()
