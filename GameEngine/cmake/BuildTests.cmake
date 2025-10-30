@@ -10,12 +10,21 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 file(GLOB_RECURSE ${APP_NAME}_source_files
-    ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.[cht]pp
+    ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.[ch]pp
     ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.[ch]
 )
 
+file(GLOB_RECURSE ${APP_NAME}_template_files
+    ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.tpp
+)
+
+set(${APP_NAME}_all_files
+    ${${APP_NAME}_source_files} 
+    ${${APP_NAME}_template_files}
+)
+
 # Group files
-GROUP_FILES_BY_FOLDER(${${APP_NAME}_source_files})
+GROUP_FILES_BY_FOLDER(${${APP_NAME}_all_files})
 
 # Add the executable
 add_executable(${APP_NAME} 

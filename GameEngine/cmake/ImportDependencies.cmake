@@ -44,14 +44,14 @@ macro(import_glew)
         FetchContent_Declare(
             glew
             GIT_REPOSITORY https://github.com/omniavinco/glew-cmake.git
-            GIT_TAG master  # Or use a specific commit or tag if preferred
+            GIT_TAG glew-cmake-release  # Or use a specific commit or tag if preferred
         )
 
-        # Disable shared builds if needed
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libs" FORCE)
+        # Disable shared builds
+        set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "Disable GLEW shared library" FORCE)
+        set(glew-cmake_BUILD_STATIC ON CACHE BOOL "Enable GLEW static library" FORCE)
         FetchContent_MakeAvailable(glew)
         set_library_folder(libglew_static)
-        set_library_folder(libglew_shared)
     endif()
 endmacro()
 

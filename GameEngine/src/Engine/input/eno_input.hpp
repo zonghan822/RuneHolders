@@ -109,7 +109,8 @@ namespace Input
 		* \param[in] d Arguments for the event.
 		*//*========================================================================================*/
 		template <typename EventType, typename... Data>
-		void setupEvent(const std::string& inputName, Data&&... d) {
+		void setupEvent(const std::string& inputName, Data&&... d) 
+		{
 			eventMap_[inputName] = [this, ... args = std::forward<Data>(d)]()
 				{ bus_.publish(EventType{ args... }); };
 		}

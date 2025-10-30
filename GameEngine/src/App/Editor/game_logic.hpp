@@ -56,10 +56,14 @@ public:
     void run();         // Starts the game loop
     void markEntitiesDirty() { entitiesDirty_ = true; }
 
+    // Yun Qi's IMGUI sandbox
+    void setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex);
+
 
 private:
     // Setup (called during initialize())
     void setupGameEntities();   // ECS code
+    void setupTreeTesting();    // Editor tree testing code
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
     void setupGameMath();       // math demonstration code
@@ -72,6 +76,9 @@ private:
     void updateImGui();         // Update code for imGui
 
     void drawPlayerAndIndicator();
+    
+
+
 
     void drawShapes(); // jsut to test
 

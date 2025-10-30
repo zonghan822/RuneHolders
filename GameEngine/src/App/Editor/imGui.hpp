@@ -31,14 +31,33 @@ extern GameApplication* g_game;
 extern uint32_t playerEntityID_;
 extern bool playerSpawned_;
 
-// Containers to store system timings
-extern std::unordered_map<std::string, double> systemTimes_; //actual system time
-extern std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
-
 // Indicator control variables
 extern float indicatorX_;
 extern float indicatorY_;
 extern float moveSpeed_ ; // pixels per second
+
+// Containers to store system timings
+extern std::unordered_map<std::string, double> systemTimes_; //actual system time
+extern std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
+
+// System Timers abstracted for neatness and accuracy
+struct SystemTimer {
+    using Clock = std::chrono::high_resolution_clock;
+
+    std::string name;
+    std::unordered_map<std::string, double>& systemTimes;
+    std::chrono::time_point<Clock> start;
+
+    SystemTimer(std::string name, std::unordered_map<std::string, double>& systemTimes)
+        : name(std::move(name)), systemTimes(systemTimes), start(Clock::now()) {
+    }
+
+    ~SystemTimer() {
+        auto end = Clock::now();
+        systemTimes[name] = std::chrono::duration<double, std::micro>(end - start).count();
+    }
+};
+
 
 
 // ImGui functions
@@ -71,6 +90,12 @@ void imGuiTerminate();
 *//*========================================================================================*/
 float randomFloat(float min, float max);
 
+/*============================================================================================
+ * \brief       Displays Main Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayMainTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
  * \brief       Displays total active entity count
@@ -78,3 +103,38 @@ float randomFloat(float min, float max);
  * \return      void 
 *//*========================================================================================*/
 void displayEntityCount(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays Edit tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayEditTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays Prefabs in Prefabs Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayPrefabsTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays Assets in the Assets menu
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayAssetTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays all characteristics of each entity available
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayEntityCharacteristics(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays FPS tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayFPSTab(Engine::EnoEngine& engine_);

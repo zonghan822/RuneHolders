@@ -24,6 +24,11 @@
 
 namespace ECS
 {
+
+	//(YunQi) for deletion purposes
+	static std::vector<uint32_t> spawnHistory;
+	static uint32_t lastSpawnedID = 0;
+
 	// Entity forward declaration
 	class Entity;
 
@@ -96,6 +101,9 @@ namespace ECS
 				values,
 				std::index_sequence_for<Components...>{});
 
+
+			spawnHistory.push_back(curID);
+			lastSpawnedID = curID;
 			return { curID, *this };
 		}
 
@@ -135,6 +143,8 @@ namespace ECS
 				entIndex,
 				std::index_sequence_for<Components...>{});
 
+			spawnHistory.push_back(curID);
+			lastSpawnedID = curID;
 			return { curID, *this };
 		}
 
@@ -209,6 +219,9 @@ namespace ECS
 				it->second.entityIndexInChunk, entityIndexInChunk,
 				it->second.chunkIndex, openChunkIndex);
 
+
+			spawnHistory.push_back(curID);
+			lastSpawnedID = curID;
 			return curID;
 		}
 

@@ -12,6 +12,8 @@
 
 std::unordered_map<std::string, PrefabData> prefabRegistry;
 
+
+
 void savePrefab(const PrefabData& prefab) {
     std::ofstream file( "../../../assets/saves/" + prefab.name + ".txt");
     if (!file){
@@ -23,6 +25,9 @@ void savePrefab(const PrefabData& prefab) {
     file << prefab.width << " " << prefab.height << "\n";
     file << prefab.color << " " << prefab.shape << "\n";
     file << prefab.hasCollider << "\n";
+
+
+    std::cout << prefab.name;
 }
 
 PrefabData loadPrefab(const std::string& filename) {
@@ -40,8 +45,7 @@ PrefabData loadPrefab(const std::string& filename) {
     return prefab;
 }
 
-
-void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
+ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
 
     ECS::Entity e = engine.getEntityManager().create<>();
 
@@ -52,7 +56,7 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
         counter++;
     }
 
-    e.add<ECSComponents::NameComponent>(static_cast<const char*>(name));
+    e.add<ECSComponents::NameComponent>(static_cast<char*>(name));
     //std::cout << "name of this entity: " << e.get<ECSComponents::NameComponent>().name << "\n;
 
     // Calculate CENTER position from DrawInfo's top-left
@@ -66,9 +70,6 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
     };
 
     e.add<ECSComponents::TransformComponent>(transform);
-
-
-
     // add draw info
     ECSComponents::DrawInfoComponent DIC{
         prefab.x, 
@@ -79,11 +80,8 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
         prefab.color
     };
 
-
     e.add<ECSComponents::DrawInfoComponent>(DIC);
     std::cout << e.get<ECSComponents::DrawInfoComponent>() << "\n";
-
-
 
     if (prefab.hasCollider) {
 
@@ -91,4 +89,5 @@ void instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
             Collision::CollisionComponent(prefab.width, prefab.height)
         );
     }
+    return e;
 }

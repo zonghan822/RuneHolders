@@ -17,6 +17,7 @@ void GameApplication::initialize() {
 	// Setup all game content
 	setupGameEntities();
 	setupGameAudio();
+	setupTreeTesting();
 	setupGameEvents();
 	setupGameMath();
 	setupImGui();
@@ -56,6 +57,7 @@ void GameApplication::setupGameAudio() {
 	// setup audio
 	auto& audioMng = engine_.getAudioManager();
 	audioMng.setChannelGroup("BGM");
+	audioMng.setChannelGroup("SFX");
 
 	Audio::SoundParameters sound;
 	Audio::ParamEQ eq;
@@ -71,17 +73,42 @@ void GameApplication::setupGameAudio() {
 	audioMng.modifyChannelGroup("BGM", sound);
 
 	audioMng.publishSoundRequest("Close_To_The_End");
-	audioMng.publishSoundRequest("Simulacrum");
+	audioMng.publishSoundRequest("Across_The_Horizon");
+	audioMng.publishSoundRequest("Flask");
+	audioMng.publishSoundRequest("Stone_Impact");
+	audioMng.publishSoundRequest("Water_Drip");
 
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
 
+	// Music Tracks
+	// O to play/stop a music track, P && L for switching soundtracks when music is not playing
+	// Only 1 music track may be placed at a time
 	inputMng.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
-	inputMng.setupKey("Set New Audio", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
-	inputMng.setupKey("Set New Audio2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
+	inputMng.setupKey("Set New Music 1", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
+	inputMng.setupKey("Set New Music 2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
+	
 	inputMng.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
-	inputMng.setupEvent<Audio::SetNewAudio>("Set New Audio", "Close_To_The_End");
-	inputMng.setupEvent<Audio::SetNewAudio>("Set New Audio2", "Simulacrum");
+	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 1", "Close_To_The_End");
+	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 2", "Across_The_Horizon");
+
+	// Sound Effects
+	// Intended to be played regardless of any background music playing at the time
+	inputMng.setupKey("Play SFX1", GLFW_KEY_A, glfwGetKeyScancode(GLFW_KEY_A), GLFW_RELEASE, 0);
+	inputMng.setupKey("Play SFX2", GLFW_KEY_S, glfwGetKeyScancode(GLFW_KEY_S), GLFW_RELEASE, 0);
+	inputMng.setupKey("Play SFX3", GLFW_KEY_D, glfwGetKeyScancode(GLFW_KEY_D), GLFW_RELEASE, 0);
+	
+	inputMng.setupEvent<Audio::PlayInstant>("Play SFX1", "SFX", "Flask");
+	inputMng.setupEvent<Audio::PlayInstant>("Play SFX2", "SFX", "Stone_Impact");
+	inputMng.setupEvent<Audio::PlayInstant>("Play SFX3", "SFX", "Water_Drip");
+}
+
+void GameApplication::setupTreeTesting()
+{
+	auto& inputMng = engine_.getInputManager();
+
+	inputMng.setupKey("Test Editor Tree", GLFW_KEY_Q, glfwGetKeyScancode(GLFW_KEY_Q), GLFW_RELEASE, 0);
+	inputMng.setupEvent<Editor::TestTree>("Test Editor Tree");
 }
 
 void GameApplication::setupGameEvents() {
@@ -162,7 +189,7 @@ void GameApplication::setupImGui() {
 
 void GameApplication::updateGameLogic() {
     // This is called every frame (replaces your while loop in eno_engine.cpp run())
-	auto startTotalTime = Clock::now();
+	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 
     // Calculate delta time
     double deltaTime = engine_.getDeltaTime();
@@ -186,12 +213,10 @@ void GameApplication::updateGameLogic() {
 	engine_.getGraphicsManager().flush();
 	updateImGui();
 	drawText(windowSize);
-	auto end = Clock::now();
-	systemTimes_["totalTimePerFrame"] = std::chrono::duration<double, std::micro>(end - startTotalTime).count();
 }
 
 void GameApplication::updateEntities() {
-	auto start = Clock::now();
+	SystemTimer EntityTimer("Entities" , systemTimes_);
 
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
@@ -225,7 +250,8 @@ void GameApplication::updateEntities() {
 	// Check if player is moving and switch animation accordingly
 	if (playerSystem_ && playerSpawned_) {
 		// Check for WASD input
-		bool isMoving = inputManager.isKeyPressed(GLFW_KEY_W) ||
+		bool isMoving = 
+			inputManager.isKeyPressed(GLFW_KEY_W) ||
 			inputManager.isKeyPressed(GLFW_KEY_A) ||
 			inputManager.isKeyPressed(GLFW_KEY_S) ||
 			inputManager.isKeyPressed(GLFW_KEY_D);
@@ -323,9 +349,6 @@ void GameApplication::updateEntities() {
 		//not in key frame mode, update normally
 		updateTestObject(engine_.getEntityManager(), engine_);
 	}
-
-	auto end = Clock::now();
-	systemTimes_["Entities"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
 
@@ -468,47 +491,47 @@ void GameApplication::drawPlayerAndIndicator() {
 }
 
 void GameApplication::updateImGui() {
-	auto start = Clock::now();
-
+	SystemTimer ImGuiTimer("ImGui", systemTimes_);
 	imGuiDisplay(engine_);
-
-	auto end = Clock::now();
-	systemTimes_["ImGui"] = std::chrono::duration<double, std::micro>(end - start).count();
 }
 
 void GameApplication::drawShapes() {
-	auto start = Clock::now();
+	SystemTimer GraphicsTimer("Graphics", systemTimes_);
 
 	auto& graphics = engine_.getGraphicsManager();
 	auto& entityManager = engine_.getEntityManager();
 
 	using drawInfo = ECSComponents::DrawInfoComponent;
 
-		// USE CACHED ENTITIES with validation
-		for (ECS::Entity& entity : cachedDrawableEntities_) {
-			// Skip if entity was destroyed
-			try {
-				if (entity.has<ECSComponents::DrawInfoComponent>()) {
-					graphics.drawRect(
-						Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-						Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
-						entity.get<drawInfo>().color,
-						true
-					);
-				}
-			}
-			catch (...) {
-				// Entity was destroyed, rebuild cache next frame
-				entitiesDirty_ = true;
-				continue;
+	// USE CACHED ENTITIES with validation
+	for (ECS::Entity& entity : cachedDrawableEntities_) {
+		// Skip if entity was destroyed
+		try {
+			if (entity.has<ECSComponents::DrawInfoComponent>()) {
+				graphics.drawRect(
+					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
+					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
+					entity.get<drawInfo>().color,
+					true
+				);
 			}
 		}
-
-		// (kim) visualize colliders if enabled
-		if (showColliders_ && collisionSystem_) {
-			collisionSystem_->VisualizeColliders(graphics, entityManager);
+		catch (...) {
+			// Entity was destroyed, rebuild cache next frame
+			entitiesDirty_ = true;
+			continue;
 		}
+	}
 
-	auto end = Clock::now();
-	systemTimes_["Graphics"] = std::chrono::duration<double, std::micro>(end - start).count();
+	// (kim) visualize colliders if enabled
+	if (showColliders_ && collisionSystem_) {
+		collisionSystem_->VisualizeColliders(graphics, entityManager);
+	}
+
+}
+
+
+void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex) {
+	playerTexture_ = newTex;
+	playerWalkTexture_ = newTex;
 }
