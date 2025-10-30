@@ -102,7 +102,62 @@ macro(set_fmod)
     endif()
 endmacro()
 
+# =========================================================
+# .NET SDK
+# =========================================================
+macro(set_dotnet)
+    message(STATUS "Checking for .NET SDK installation...")
 
+    # Check for system installation
+    execute_process(
+        COMMAND dotnet --version
+        RESULT_VARIABLE DOTNET_RESULT
+        OUTPUT_VARIABLE DOTNET_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+
+    if (DOTNET_RESULT EQUAL 0)
+        message(STATUS ".NET SDK found: version ${DOTNET_VERSION}")
+        set(DOTNET_CMD "dotnet" PARENT_SCOPE)
+        return()
+    endif()
+
+
+    # Check for local installation
+    set(DOTNET_LOCAL_DIR "${CMAKE_BINARY_DIR}/lib/dotnet")
+    set(DOTNET_LOCAL_BIN "${DOTNET_LOCAL_DIR}/dotnet.exe")
+    if (EXISTS "${DOTNET_LOCAL_BIN}")
+        message(STATUS ".NET SDK found at ${DOTNET_LOCAL_BIN}")
+        set(DOTNET_CMD "${DOTNET_LOCAL_BIN}" PARENT_SCOPE)
+        return()
+    endif()
+
+    message(STATUS ".NET SDK not found globally or locally — downloading to ${DOTNET_LOCAL_DIR}")
+    # Create destination directory
+    file(MAKE_DIRECTORY "${DOTNET_LOCAL_DIR}")
+
+    set(DOTNET_INSTALLER "${DOTNET_LOCAL_DIR}/dotnet-install.ps1")
+    file(DOWNLOAD
+        "https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.ps1"
+        "${DOTNET_INSTALLER}"
+        SHOW_PROGRESS
+    )
+    execute_process(
+        COMMAND powershell -ExecutionPolicy Bypass
+                -File "${DOTNET_INSTALLER}"
+                -Version latest
+                -InstallDir "${DOTNET_LOCAL_DIR}"
+        RESULT_VARIABLE install_result
+    )
+
+    if (NOT install_result EQUAL 0)
+        message(FATAL_ERROR "Failed to install .NET SDK. Check your internet connection or PowerShell setup.")
+    endif()
+
+    message(STATUS ".NET SDK successfully installed at ${DOTNET_LOCAL_BIN}")
+    set(DOTNET_CMD "${DOTNET_LOCAL_BIN}" PARENT_SCOPE)
+endmacro()
 
 # Helper to group libraries in VS Solution Explorer
 function(set_library_folder target)

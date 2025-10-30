@@ -19,6 +19,7 @@ importDependencies()
 
 # Set External Libraries
 set_fmod()
+set_dotnet()
 
 ADD_SUBDIRECTORY(src/Engine ${CMAKE_BINARY_DIR}/projects/Engine)
 ADD_SUBDIRECTORY(src/App ${CMAKE_BINARY_DIR}/projects/App)
