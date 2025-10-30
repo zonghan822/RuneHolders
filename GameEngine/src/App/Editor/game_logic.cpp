@@ -275,7 +275,6 @@ void GameApplication::updateEntities() {
 				playerAnimController_.setAnimation("idle");
 			}
 		}
-
 		// Update player movement
 		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
@@ -501,7 +500,69 @@ void GameApplication::drawShapes() {
 }
 
 
-void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex) {
+void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex)
+{
+	if (!newTex || !newTex->isValid()) {
+		std::cerr << "Invalid texture passed to setPlayerTexture()" << std::endl;
+		return;
+	}
+
 	playerTexture_ = newTex;
 	playerWalkTexture_ = newTex;
+
+	int sheetWidth = newTex->getWidth();
+	int sheetHeight = newTex->getHeight();
+#if 1
+	// Assume new texture still uses 96×96 frames — adjust as needed
+	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
+		96, 96,           // frame size
+		sheetWidth, sheetHeight,
+		0, 24,            // start + frame count
+		0.1f
+	);
+	playerIdleAnim.setLooping(true);
+
+	auto playerWalkAnim = Animation::createSpriteSheetAnimation(
+		96, 96,
+		sheetWidth, sheetHeight,
+		0, 4,
+		0.08f
+	);
+	playerWalkAnim.setLooping(true);
+#else
+
+// Create player idle animation (same sprite sheet as test)
+auto playerIdleAnim = Animation::createSpriteSheetAnimation(
+	96,    // Frame width
+	96,    // Frame height
+	2304,  // Sheet width
+	96,    // Sheet height
+	0,     // Start frame
+	24,    // Frame count
+	0.1f   // Duration per frame
+);
+
+playerIdleAnim.setLooping(true);
+playerAnimController_.addAnimation("idle", playerIdleAnim);
+
+auto playerWalkAnim = Animation::createSpriteSheetAnimation(
+	96,    // Frame width
+	96,    // Frame height
+	384,  // Sheet width
+	96,    // Sheet height
+	0,     // Start frame
+	4,    // Frame count
+	0.08f  // Faster duration for walking
+);
+playerWalkAnim.setLooping(true);
+playerAnimController_.addAnimation("walk", playerWalkAnim);
+#endif
+
+
+	playerAnimController_.addAnimation("idle", playerIdleAnim);
+	playerAnimController_.addAnimation("walk", playerWalkAnim);
+
+	// Keep the same current state
+	if (playerAnimController_.getCurrentAnimationName().empty())
+		playerAnimController_.setAnimation("idle");
 }
