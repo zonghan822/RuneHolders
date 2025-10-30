@@ -512,8 +512,7 @@ void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> new
 
 	int sheetWidth = newTex->getWidth();
 	int sheetHeight = newTex->getHeight();
-#if 1
-	// Assume new texture still uses 96×96 frames — adjust as needed
+
 	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
 		96, 96,           // frame size
 		sheetWidth, sheetHeight,
@@ -529,7 +528,6 @@ void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> new
 		0.08f
 	);
 	playerWalkAnim.setLooping(true);
-#else
 
 // Create player idle animation (same sprite sheet as test)
 auto playerIdleAnim = Animation::createSpriteSheetAnimation(
@@ -552,11 +550,10 @@ auto playerWalkAnim = Animation::createSpriteSheetAnimation(
 	96,    // Sheet height
 	0,     // Start frame
 	4,    // Frame count
-	0.08f  // Faster duration for walking
+	0.08f // Duration per frame
 );
 playerWalkAnim.setLooping(true);
 playerAnimController_.addAnimation("walk", playerWalkAnim);
-#endif
 
 
 	playerAnimController_.addAnimation("idle", playerIdleAnim);
