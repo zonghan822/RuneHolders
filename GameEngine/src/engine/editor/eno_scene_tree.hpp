@@ -9,14 +9,14 @@ namespace Editor
 	{
 		// Scene Data
 		std::string name_;
-		uint32_t sceneObjectID_{ 0 };
-		uint32_t nestedLayer_{ 0 };
+		uint32_t sceneObjectID_		{0};
+		uint32_t nestedLayer_		{0};
 
 		// Entity Data
 		//ECS::Entity entity_;
 
 		// Attached script
-		std::unique_ptr<Script::EnoScript> script_;
+		//std::unique_ptr<Script::EnoScript> script_;
 
 		// Relationships
 		Node* parent_{ nullptr };
@@ -57,11 +57,8 @@ namespace Editor
 		void toggleEnable(const uint32_t&);
 
 		// Attach script
-		void attachScript(Node*, std::unique_ptr<Script::EnoScript>&&);
-		void attachScript(std::unique_ptr<Script::EnoScript>&&);
-
-		// Detach script
-		void detachScript(std::unique_ptr<Script::EnoScript>&&);
+		//void attachScript(Node*, std::unique_ptr<Script::EnoScript>&&);
+		//void attachScript(std::unique_ptr<Script::EnoScript>&&);
 
 		// View node information
 		void nodeView(const Node* node);
