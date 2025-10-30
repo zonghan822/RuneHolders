@@ -121,7 +121,7 @@ void GameApplication::setupGameMath() {
 	Math::eVec2 vec{ 1.1f, 1.2f };
 	Math::eVec2 vec2{ 1.3f, 2.f };
 	vec += vec2;
-	std::cout << "vector : " << vec.v1 << ", " << vec.v2 << std::endl;
+	std::cout << "vector : " << vec.x << ", " << vec.y << std::endl;
 
 	Collision::RunBasicCollisionTest();
 
@@ -287,16 +287,48 @@ void GameApplication::updateEntities() {
 	static bool frameUpdate = false;
 	static bool keyFrameMode = false;
 
-	if (inputManager.isKeyPressed(GLFW_KEY_M))
+	if (inputManager.isKeyDown(GLFW_KEY_M))
 	{
+		// Get list of entities which I want to store current pos
+		auto& ent = engine_.getEntityManager();
+		std::vector<ECS::Entity> entityList = ent.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
+
 		// This toggles keyframe mode
 		keyFrameMode = !keyFrameMode;
+
+		// If true, store all the positions
+		if (keyFrameMode)
+		{
+
+			if (!entityList.empty())
+			{
+				for (auto& e : entityList)
+				{
+					e.get<ECSComponents::TransformComponent>().resetPos = e.get<ECSComponents::TransformComponent>().pos;
+					std::cout << "Reset pos: " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
+				}
+
+			}
+
+		}
+		else
+		{
+			std::cout << "keyframe off! \n";
+			// Reset all object positions
+			for (auto& e : entityList)
+			{
+				std::cout << "Before reset : " << e.get<ECSComponents::TransformComponent>().pos << std::endl;
+				e.get<ECSComponents::TransformComponent>().pos = e.get<ECSComponents::TransformComponent>().resetPos;
+				std::cout << "After reset : " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
+			}
+			
+		}
 	}
 	// In key frame mode, wait for trigger to update
 	if (keyFrameMode)
 	{
 
-		if (inputManager.isKeyPressed(GLFW_KEY_N))
+		if (inputManager.isKeyDown(GLFW_KEY_N))
 		{
 			// Frame update 
 			frameUpdate = true;
@@ -309,14 +341,12 @@ void GameApplication::updateEntities() {
 
 			// Set it back to false
 			frameUpdate = false;
-
 		}
 	}
 	else
 	{
 		//not in key frame mode, update normally
 		updateTestObject(engine_.getEntityManager(), engine_);
-
 	}
 }
 
@@ -343,8 +373,8 @@ void GameApplication::drawText(Math::eVec2<float> windowSize) {
 	fpsSs << std::fixed;     // fixed-point notation
 	fpsSs << "FPS: " << engine_.getFPS();
 	graphics.drawText(timesFont_, text, { 25.f , 50.f }, 1.f, Graphics::Color::Black);
-	graphics.drawText(timesFont_, fpsSs.str(), {windowSize.v1 - 125.f , 25.f}, 0.5f, Graphics::Color::Red);
-	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.v1 / 2.f, windowSize.v2 - 25.f }, 0.75f, Graphics::Color::Blue);
+	graphics.drawText(timesFont_, fpsSs.str(), {windowSize.x - 125.f , 25.f}, 0.5f, Graphics::Color::Red);
+	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.x / 2.f, windowSize.y - 25.f }, 0.75f, Graphics::Color::Blue);
 }
 
 void GameApplication::drawPlayerAndIndicator() {
@@ -409,7 +439,7 @@ void GameApplication::drawPlayerAndIndicator() {
 
 				if (playerFacingDirection_ == -1) {
 					// Swap horizontal UV coordinates to flip the sprite
-					std::swap(uvStart.v1, uvEnd.v1);
+					std::swap(uvStart.x, uvEnd.x);
 				}
 
 				// Draw with the correct texture

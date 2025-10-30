@@ -116,15 +116,15 @@ namespace Player
                 // Calculate target position
                 Math::eVec2<float> targetPos =
                 {
-                    playerComp.dashStartPos.v1 + (playerComp.dashDirection.v1 * playerComp.dashDistance * easedProgress),
-                    playerComp.dashStartPos.v2 + (playerComp.dashDirection.v2 * playerComp.dashDistance * easedProgress)
+                    playerComp.dashStartPos.x + (playerComp.dashDirection.x * playerComp.dashDistance * easedProgress),
+                    playerComp.dashStartPos.y + (playerComp.dashDirection.y * playerComp.dashDistance * easedProgress)
                 };
 
                 // Check if we can move to target position (collision check)
                 if (CanMoveTo(entityLoc, collider, targetPos, entityManager))
                 {
-                    transform.pos.x = targetPos.v1;
-                    transform.pos.y = targetPos.v2;
+                    transform.pos.x = targetPos.x;
+                    transform.pos.y = targetPos.y;
                 }
                 else {
                     // Hit something - end dash early
@@ -173,22 +173,22 @@ namespace Player
             // Calculate desired movement based on input and move speed
             // deltaTime ensures smooth movement regardless of framerate
             Math::eVec2<float> movement = {
-                input.v1 * playerComp.moveSpeed * deltaTime,
-                input.v2 * playerComp.moveSpeed * deltaTime
+                input.x * playerComp.moveSpeed * deltaTime,
+                input.y * playerComp.moveSpeed * deltaTime
             };
 
             // Calculate target position after movement
             Math::eVec2<float> targetPos = {
-                transform.pos.x + movement.v1,
-                transform.pos.y + movement.v2
+                transform.pos.x + movement.x,
+                transform.pos.y + movement.y
             };
 
             // Check if the target position is valid (no collision with solid objects)
             if (CanMoveTo(entityLoc, collider, targetPos, entityManager))
             {
                 // Movement is valid - update transform position
-                transform.pos.x = targetPos.v1;
-                transform.pos.y = targetPos.v2;
+                transform.pos.x = targetPos.x;
+                transform.pos.y = targetPos.y;
             }
             // If collision detected, player stays at current position (blocked)
         }
@@ -202,13 +202,13 @@ namespace Player
         // Use EnoInputManager's isKeyPressed() for continuous WASD input
         // isKeyPressed() returns true while the key is held down
         if (inputManager.isKeyPressed(GLFW_KEY_W))
-            input.v2 -= 1.0f;                       // Move up (negative Y in screen space)
+            input.y -= 1.0f;                       // Move up (negative Y in screen space)
         if (inputManager.isKeyPressed(GLFW_KEY_S))
-            input.v2 += 1.0f;                       // Move down (positive Y in screen space)
+            input.y += 1.0f;                       // Move down (positive Y in screen space)
         if (inputManager.isKeyPressed(GLFW_KEY_A))
-            input.v1 -= 1.0f;                       // Move left (negative X)
+            input.x -= 1.0f;                       // Move left (negative X)
         if (inputManager.isKeyPressed(GLFW_KEY_D))
-            input.v1 += 1.0f;                       // Move right (positive X)
+            input.x += 1.0f;                       // Move right (positive X)
 
         // Normalize diagonal movement to ensure consistent speed
         float lengthSquared = Math::eVec2SquaredLength(input);
@@ -233,11 +233,10 @@ namespace Player
 
         // Create temporary transform at target position for collision testing
         ECSComponents::TransformComponent testTransform;
-        testTransform.pos.x = targetPos.v1;
-        testTransform.pos.y = targetPos.v2;
-        testTransform.pos.z = 0.0f;
-        testTransform.rot = { 0.0f, 0.0f, 0.0f };   // apply rotation
-        testTransform.scale = { scaleSize, scaleSize, 1.0f }; // apply scale
+        testTransform.pos.x = targetPos.x;
+        testTransform.pos.y = targetPos.y;
+        testTransform.rot = { 0.0f, 0.0f };   // apply rotation
+        testTransform.scale = { scaleSize, scaleSize}; // apply scale
 
         // Check collision with all other entities
         auto& entityMap = entityManager.getMap();
