@@ -30,6 +30,8 @@ bool playerSpawned_ = false;
 std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
+
+
 // Red Indicator
 float indicatorX_ = 600.0f;
 float indicatorY_ = 425.0f;
@@ -769,45 +771,75 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 	}
 }
 
-
 void displayAssetTab(Engine::EnoEngine& engine_) {
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
-	std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>const& textures = loader.getAllTextures();
+	const auto& textures = loader.getAllTextures();
+	auto& g_droppedFiles = Window::EnoWindow::GetDroppedFiles();
 
 	ImGui::Text("=== Loaded Textures ===");
 	ImGui::Separator();
 
 	static std::string selectedTexture;
-	// Begin the list box
-	// The first argument is a unique label (can be "##hidden_label" for no visible label)
-	// The second argument is the size of the list box (ImVec2(width, height))
-	ImGui::Text("Loaded Textures:");
-	if (ImGui::BeginListBox("##TextureList", ImVec2(0, 200))) {
-		// Structured bindings to extract name from the texture list
-		for (auto& [name, texture] : textures) {
-			bool isSelected = (selectedTexture == name);
-			if (ImGui::Selectable(name.c_str(), isSelected)) {
-				selectedTexture = name;
-			}
-			// Start drag operation
-			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-				// This turns each texture name into a draggable payload
-				ImGui::SetDragDropPayload("ASSET_TEXTURE", name.c_str(), name.size() + 1);
-				ImGui::Text("Dragging %s", name.c_str());
-				ImGui::EndDragDropSource();
+
+	// --- Handle newly dropped files ---
+	if (!g_droppedFiles.empty()) {
+		std::cout << "[DEBUG] Processing dropped files...\n";
+
+		for (auto& path : g_droppedFiles) {
+			std::filesystem::path filePath(path);
+			auto ext = filePath.extension().string();
+
+			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
+				std::cout << "[DEBUG] Loading: " << path << std::endl;
+
+				auto tex = std::make_shared<Graphics::EnoTexture>();
+				if (tex->loadFromFile(path)) {
+					std::string name = filePath.stem().string();
+					loader.addTexture(name, tex);
+					std::cout << "[DEBUG] Imported: " << name << std::endl;
+				}
+				else {
+					std::cout << "[ERROR] Failed to load: " << path << std::endl;
+				}
 			}
 		}
-		ImGui::EndListBox();
+
+		g_droppedFiles.clear();
+	}
+
+	// --- Inline preview list (thumbnail + name in one line) ---
+	ImGui::Text("Loaded Textures:");
+	for (auto& [name, texture] : textures) {
+		if (!texture || !texture->isValid())
+			continue;
+
+		// Draw thumbnail first
+		ImGui::Image((void*)(intptr_t)texture->getID(), ImVec2(48, 48));
+
+		// Keep texture name on same horizontal line
+		ImGui::SameLine();
+
+		// Make name selectable for preview/application
+		bool isSelected = (selectedTexture == name);
+		if (ImGui::Selectable(name.c_str(), isSelected, 0, ImVec2(200, 48))) {
+			selectedTexture = name;
+		}
+
+		// Add spacing between rows
+		ImGui::Spacing();
+		ImGui::Separator();
 	}
 
 	ImGui::Separator();
-	// Preview and replace button
+
+
+	// --- Preview & Apply Button ---
 	if (!selectedTexture.empty()) {
 		ImGui::Text("Selected: %s", selectedTexture.c_str());
 
-		// Apply texture to player
 		ImGui::Button("Apply to Player", ImVec2(200, 40));
-		// Accept drag-drop payload while hovering
+
+		// Handle drag-drop texture application
 		if (ImGui::BeginDragDropTarget()) {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_TEXTURE")) {
 				const char* droppedName = static_cast<const char*>(payload->Data);
@@ -820,7 +852,7 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 			ImGui::EndDragDropTarget();
 		}
 
-		// Separate click logic for normal apply button
+		// Handle direct button click (apply selected texture)
 		if (ImGui::IsItemClicked()) {
 			if (playerSpawned_ && playerSystem_) {
 				auto newTex = loader.getTexture(selectedTexture);
@@ -831,7 +863,6 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 			}
 		}
 	}
-
 }
 
 void imGuiTerminate() {
