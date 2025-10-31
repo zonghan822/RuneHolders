@@ -115,6 +115,9 @@ namespace Window
 		*//*========================================================================================*/
 		void setVSync(bool enabled) const;
 
+		//(YunQi)
+		static std::vector<std::string>& GetDroppedFiles();
+
 	private:
 		// event callbacks
 

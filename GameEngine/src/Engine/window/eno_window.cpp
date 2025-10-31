@@ -16,6 +16,8 @@
 
 namespace Window
 {
+	static std::vector<std::string> g_droppedFiles;
+
 
 	EnoWindow::EnoWindow(Event::EnoEventBus& bus) : bus_{ bus } { /*empty by design*/ }
 
@@ -51,6 +53,17 @@ namespace Window
 		glfwMakeContextCurrent(window_);
 
 		setupEventCallbacks();
+
+		//(YunQi's file dropping)
+		glfwSetDropCallback(window_, [](GLFWwindow* w, int count, const char** paths)
+			{
+				for (int i = 0; i < count; ++i)
+					g_droppedFiles.emplace_back(paths[i]);   // store dropped file path
+				std::cout << "[DEBUG] File drop callback triggered!\n";
+				for (int i = 0; i < count; ++i)
+					std::cout << "   " << paths[i] << "\n";
+			});
+
 
 		// Part 2: Initialize entry points to OpenGL functions and extensions
 		GLenum err = glewInit();
@@ -92,6 +105,9 @@ namespace Window
 		// Default swap interval 1 (vsync on)
 		glfwSwapInterval(1);
 	}
+
+
+	std::vector<std::string>& EnoWindow::GetDroppedFiles() { return g_droppedFiles; }
 
 	void EnoWindow::shutdown() {
 		if (window_) {

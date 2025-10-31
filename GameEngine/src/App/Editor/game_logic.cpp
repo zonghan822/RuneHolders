@@ -275,7 +275,6 @@ void GameApplication::updateEntities() {
 				playerAnimController_.setAnimation("idle");
 			}
 		}
-
 		// Update player movement
 		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
@@ -531,7 +530,40 @@ void GameApplication::drawShapes() {
 }
 
 
-void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex) {
+void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex)
+{
+	if (!newTex || !newTex->isValid()) {
+		std::cerr << "Invalid texture passed to setPlayerTexture()" << std::endl;
+		return;
+	}
+
 	playerTexture_ = newTex;
 	playerWalkTexture_ = newTex;
+
+	int sheetWidth = newTex->getWidth();
+	int sheetHeight = newTex->getHeight();
+
+	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
+		96, 96,           // frame size
+		sheetWidth, sheetHeight,
+		0, 24,            // start + frame count
+		0.1f
+	);
+	playerIdleAnim.setLooping(true);
+
+	auto playerWalkAnim = Animation::createSpriteSheetAnimation(
+		96, 96,
+		sheetWidth, sheetHeight,
+		0, 4,
+		0.08f
+	);
+	playerWalkAnim.setLooping(true);
+
+
+	playerAnimController_.addAnimation("idle", playerIdleAnim);
+	playerAnimController_.addAnimation("walk", playerWalkAnim);
+
+	// Keep the same current state
+	if (playerAnimController_.getCurrentAnimationName().empty())
+		playerAnimController_.setAnimation("idle");
 }

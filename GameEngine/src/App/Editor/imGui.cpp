@@ -15,33 +15,35 @@
 
 extern GameApplication game;
 
-//collision system
+// Collision system
 std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
 std::unique_ptr<Player::PlayerSystem> playerSystem_;
 bool showColliders_ = true;
 
 GameApplication* g_game = nullptr;
 
-// player entity ID (to track the player)
+// Player entity ID (to track the player)
 uint32_t playerEntityID_ = 0;
 bool playerSpawned_ = false;
 
-//containers (time display)
+// Containers for time display
 std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
-//indicator
+
+
+// Red Indicator
 float indicatorX_ = 600.0f;
 float indicatorY_ = 425.0f;
 float moveSpeed_ = 200.0f; // pixels per second
 
 
-//Option Menu
+// Option Menu
 const char* shapes[] = { "Rectangle" };
 const char* colors[] = { "Green"  ,     "Red" };
 const char* colliderShapes[] = { "None", "Circle", "Rectangle" };
 
-//Values to set for entities
+// Values to set for entities
 static float           eWidth = 10;
 static float           eHeight = 10;
 static int             eColor = Color::Green;
@@ -51,16 +53,22 @@ static float           colliderWidth = 10.0f;
 static float           colliderHeight = 10.0f;
 static float           colliderRadius = 5.0f;
 
-//Player Scale Variables
+// Player Scale Variables
 float pScaleX = 1.0f;
 float pScaleY = 1.0f;
 
-//time
+// Time
 static float shown_fps = 0.0f;
 static double next_update = 0.0;         // next time we refresh the text
 
-//entity counter
+// Entity counter
 size_t entity_count{};
+static uint32_t selectedEntityID;
+
+// Drag-Drop Gizmos
+static bool isDragging = false;
+static uint32_t draggedEntityID = 0;
+static ImVec2 dragOffset;
 
 #pragma endregion
 
@@ -139,6 +147,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	if (activeWindow == WindowID::Edit) {
 		ImGui::Begin("Edit");
 		displayEditTab(engine_);
+		displayHierarchyTab(engine_);
 		ImGui::End();
 	}
 #pragma endregion
@@ -231,7 +240,6 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			std::cout << "Player destroyed\n";
 		}
 	}
-
 	ImGui::Separator();
 
 	// ==================== SPAWN POSITION INDICATOR ====================
@@ -313,7 +321,58 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 		if (g_game) g_game->markEntitiesDirty();
 		(void)e; // to silence compiler warning for unused param
 	}
+	// Intentional: To only be able to drag and Drop in Main Tab
+	ImGuiIO& io = ImGui::GetIO();
 
+	// --- begin drag ---
+	if (!io.WantCaptureMouse && ImGui::IsMouseClicked(0) && !isDragging)
+	{
+		auto clicked = getEntityUnderMouse(engine_, io.MousePos);
+		if (clicked)
+		{
+			draggedEntityID = clicked->getEntityID();
+			isDragging = true;
+
+			auto& tc = clicked->get<ECSComponents::TransformComponent>();
+			dragOffset.x = io.MousePos.x - tc.pos.x;
+			dragOffset.y = io.MousePos.y - tc.pos.y;
+		}
+	}
+
+	// --- while dragging ---
+	if (isDragging && ImGui::IsMouseDown(0))
+	{
+		auto all = engine_.getEntityManager().findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+		for (auto& e : all)
+		{
+			if (e.getEntityID() == draggedEntityID)
+			{
+				auto& tc = e.get<ECSComponents::TransformComponent>();
+				auto& dc = e.get<ECSComponents::DrawInfoComponent>();
+
+				// Update transform
+				tc.pos.x = io.MousePos.x - dragOffset.x;
+				tc.pos.y = io.MousePos.y - dragOffset.y;
+
+				// Sync DrawInfo so renderer knows the new position
+				dc.xPos = tc.pos.x - (dc.width * 0.5f);
+				dc.yPos = tc.pos.y - (dc.height * 0.5f);
+
+				if (g_game)
+					g_game->markEntitiesDirty();
+				break;
+			}
+		}
+	}
+
+	// --- drop ---
+	if (isDragging && ImGui::IsMouseReleased(0))
+	{
+		std::cout << "Entity " << draggedEntityID
+			<< " dropped at (" << io.MousePos.x << ", " << io.MousePos.y << ")\n";
+		isDragging = false;
+		draggedEntityID = 0;
+	}
 
 
 	//Clone Button
@@ -405,15 +464,30 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 		static char searchInput[32] = ""; // to enter archetype name
 		ImGui::InputTextWithHint("##Search", "Enter Name to delete...", searchInput, sizeof(searchInput));
 
+
 		if (ImGui::Button("Delete Entities")) {
 			std::string target = searchInput;
+			bool deletedSelected = false;
 
+			// Iterate only once through all entities that have NameComponent
 			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				auto& nameComp = e.get<ECSComponents::NameComponent>();
+				ECSComponents::NameComponent& nameComp = e.get<ECSComponents::NameComponent>();
+
+				if (!deletedSelected && e.getEntityID() == selectedEntityID) {
+					e.destroy();
+					selectedEntityID = 0;
+					deletedSelected = true;
+					std::cout << "Deleted selected entity\n";
+					continue;
+				}
+
 				if (nameComp.name == target) {
 					toDelete.push_back(e);
 				}
 			}
+
+			if (g_game)
+				g_game->markEntitiesDirty();
 		}
 	}
 	else if (FilterType == Filters::Last) {
@@ -458,30 +532,12 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 			}
 
 			if (!io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
-				ImVec2 mouse = io.MousePos;
-
-				for (ECS::Entity& e : engine_.getEntityManager().findEntity<
-					ECSComponents::TransformComponent,
-					ECSComponents::DrawInfoComponent>()) {
-
-					auto& tc = e.get<ECSComponents::TransformComponent>();
-					auto& dc = e.get<ECSComponents::DrawInfoComponent>();
-
-					// Since x and y coords are top left, we have to account for it by offsetting it by half its W and H
-					float halfW = dc.width * 0.5f;
-					float halfH = dc.height * 0.5f;
-					float left = tc.pos.x - halfW;
-					float right = tc.pos.x + halfW;
-					float top = tc.pos.y - halfH;
-					float bottom = tc.pos.y + halfH;
-
-					if (mouse.x >= left && mouse.x <= right && mouse.y >= top && mouse.y <= bottom) {
-						std::cout << "Deleted entity: " << e.getEntityID() << "\n";
-						toDelete.push_back(e);
-						if (g_game) g_game->markEntitiesDirty();
-						waitingForClick = false; // exit delete mode
-						break;
-					}
+				auto clicked = getEntityUnderMouse(engine_, io.MousePos);
+				if (clicked.has_value()) {
+					std::cout << "Deleted entity: " << clicked->getEntityID() << "\n";
+					toDelete.push_back(*clicked);
+					if (g_game) g_game->markEntitiesDirty();
+					waitingForClick = false;
 				}
 			}
 
@@ -507,6 +563,34 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 			g_game->markEntitiesDirty();
 		}
 	}
+}
+
+
+
+std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse)
+{
+	for (ECS::Entity& e : engine_.getEntityManager().findEntity<
+		ECSComponents::TransformComponent,
+		ECSComponents::DrawInfoComponent>())
+	{
+		auto& tc = e.get<ECSComponents::TransformComponent>();
+		auto& dc = e.get<ECSComponents::DrawInfoComponent>();
+
+		float halfW = dc.width * 0.5f;
+		float halfH = dc.height * 0.5f;
+		float left = tc.pos.x - halfW;
+		float right = tc.pos.x + halfW;
+		float top = tc.pos.y - halfH;
+		float bottom = tc.pos.y + halfH;
+
+		if (mouse.x >= left && mouse.x <= right &&
+			mouse.y >= top && mouse.y <= bottom)
+		{
+			return e;
+		}
+	}
+
+	return std::nullopt;
 }
 
 ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine)
@@ -665,44 +749,97 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 
 }
 
+void displayHierarchyTab(Engine::EnoEngine& engine_)
+{
+
+	std::vector<ECS::Entity> NamedEntityList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
+
+	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
+	ImGui::Separator();
+
+	// Iterate through each entity
+	for (ECS::Entity& e : NamedEntityList)
+	{
+		const auto& nameComp = e.get<ECSComponents::NameComponent>();
+		std::string name = nameComp.name;
+		bool selected = (selectedEntityID == e.getEntityID());
+		std::string label = std::to_string(e.getEntityID()) + ": " + name;
+		if (ImGui::Selectable(label.c_str(), selected))
+		{
+			selectedEntityID = e.getEntityID();
+		}
+	}
+}
+
 void displayAssetTab(Engine::EnoEngine& engine_) {
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
-	std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>const& textures = loader.getAllTextures();
+	const auto& textures = loader.getAllTextures();
+	auto& g_droppedFiles = Window::EnoWindow::GetDroppedFiles();
 
 	ImGui::Text("=== Loaded Textures ===");
 	ImGui::Separator();
 
 	static std::string selectedTexture;
-	// Begin the list box
-	// The first argument is a unique label (can be "##hidden_label" for no visible label)
-	// The second argument is the size of the list box (ImVec2(width, height))
-	ImGui::Text("Loaded Textures:");
-	if (ImGui::BeginListBox("##TextureList", ImVec2(0, 200))) {
-		// Structured bindings to extract name from the texture list
-		for (auto& [name, texture] : textures) {
-			bool isSelected = (selectedTexture == name);
-			if (ImGui::Selectable(name.c_str(), isSelected)) {
-				selectedTexture = name;
-			}
-			// Start drag operation
-			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-				// This turns each texture name into a draggable payload
-				ImGui::SetDragDropPayload("ASSET_TEXTURE", name.c_str(), name.size() + 1);
-				ImGui::Text("Dragging %s", name.c_str());
-				ImGui::EndDragDropSource();
+
+	// --- Handle newly dropped files ---
+	if (!g_droppedFiles.empty()) {
+		std::cout << "[DEBUG] Processing dropped files...\n";
+
+		for (auto& path : g_droppedFiles) {
+			std::filesystem::path filePath(path);
+			auto ext = filePath.extension().string();
+
+			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
+				std::cout << "[DEBUG] Loading: " << path << std::endl;
+
+				auto tex = std::make_shared<Graphics::EnoTexture>();
+				if (tex->loadFromFile(path)) {
+					std::string name = filePath.stem().string();
+					loader.addTexture(name, tex);
+					std::cout << "[DEBUG] Imported: " << name << std::endl;
+				}
+				else {
+					std::cout << "[ERROR] Failed to load: " << path << std::endl;
+				}
 			}
 		}
-		ImGui::EndListBox();
+
+		g_droppedFiles.clear();
+	}
+
+	// --- Inline preview list (thumbnail + name in one line) ---
+	ImGui::Text("Loaded Textures:");
+	for (auto& [name, texture] : textures) {
+		if (!texture || !texture->isValid())
+			continue;
+
+		// Draw thumbnail first
+		ImGui::Image((void*)(intptr_t)texture->getID(), ImVec2(48, 48));
+
+		// Keep texture name on same horizontal line
+		ImGui::SameLine();
+
+		// Make name selectable for preview/application
+		bool isSelected = (selectedTexture == name);
+		if (ImGui::Selectable(name.c_str(), isSelected, 0, ImVec2(200, 48))) {
+			selectedTexture = name;
+		}
+
+		// Add spacing between rows
+		ImGui::Spacing();
+		ImGui::Separator();
 	}
 
 	ImGui::Separator();
-	// Preview and replace button
+
+
+	// --- Preview & Apply Button ---
 	if (!selectedTexture.empty()) {
 		ImGui::Text("Selected: %s", selectedTexture.c_str());
 
-		// Apply texture to player
 		ImGui::Button("Apply to Player", ImVec2(200, 40));
-		// Accept drag-drop payload while hovering
+
+		// Handle drag-drop texture application
 		if (ImGui::BeginDragDropTarget()) {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_TEXTURE")) {
 				const char* droppedName = static_cast<const char*>(payload->Data);
@@ -715,7 +852,7 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 			ImGui::EndDragDropTarget();
 		}
 
-		// Separate click logic for normal apply button
+		// Handle direct button click (apply selected texture)
 		if (ImGui::IsItemClicked()) {
 			if (playerSpawned_ && playerSystem_) {
 				auto newTex = loader.getTexture(selectedTexture);
@@ -726,7 +863,6 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 			}
 		}
 	}
-
 }
 
 void imGuiTerminate() {
