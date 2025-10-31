@@ -420,7 +420,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 					selectedEntityID = 0;
 					deletedSelected = true;
 					std::cout << "Deleted selected entity\n";
-					continue; 
+					continue;
 				}
 
 				if (nameComp.name == target) {
@@ -474,30 +474,12 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 			}
 
 			if (!io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
-				ImVec2 mouse = io.MousePos;
-
-				for (ECS::Entity& e : engine_.getEntityManager().findEntity<
-					ECSComponents::TransformComponent,
-					ECSComponents::DrawInfoComponent>()) {
-
-					auto& tc = e.get<ECSComponents::TransformComponent>();
-					auto& dc = e.get<ECSComponents::DrawInfoComponent>();
-
-					// Since x and y coords are top left, we have to account for it by offsetting it by half its W and H
-					float halfW = dc.width * 0.5f;
-					float halfH = dc.height * 0.5f;
-					float left = tc.pos.x - halfW;
-					float right = tc.pos.x + halfW;
-					float top = tc.pos.y - halfH;
-					float bottom = tc.pos.y + halfH;
-
-					if (mouse.x >= left && mouse.x <= right && mouse.y >= top && mouse.y <= bottom) {
-						std::cout << "Deleted entity: " << e.getEntityID() << "\n";
-						toDelete.push_back(e);
-						if (g_game) g_game->markEntitiesDirty();
-						waitingForClick = false; // exit delete mode
-						break;
-					}
+				auto clicked = getEntityUnderMouse(engine_, io.MousePos);
+				if (clicked.has_value()) {
+					std::cout << "Deleted entity: " << clicked->getEntityID() << "\n";
+					toDelete.push_back(*clicked);
+					if (g_game) g_game->markEntitiesDirty();
+					waitingForClick = false;
 				}
 			}
 
@@ -523,6 +505,34 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 			g_game->markEntitiesDirty();
 		}
 	}
+}
+
+
+
+std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse)
+{
+	for (ECS::Entity& e : engine_.getEntityManager().findEntity<
+		ECSComponents::TransformComponent,
+		ECSComponents::DrawInfoComponent>())
+	{
+		auto& tc = e.get<ECSComponents::TransformComponent>();
+		auto& dc = e.get<ECSComponents::DrawInfoComponent>();
+
+		float halfW = dc.width * 0.5f;
+		float halfH = dc.height * 0.5f;
+		float left = tc.pos.x - halfW;
+		float right = tc.pos.x + halfW;
+		float top = tc.pos.y - halfH;
+		float bottom = tc.pos.y + halfH;
+
+		if (mouse.x >= left && mouse.x <= right &&
+			mouse.y >= top && mouse.y <= bottom)
+		{
+			return e;
+		}
+	}
+
+	return std::nullopt;
 }
 
 ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine)
@@ -683,7 +693,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 
 void displayHierarchyTab(Engine::EnoEngine& engine_)
 {
-	
+
 	std::vector<ECS::Entity> NamedEntityList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
 
 	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
