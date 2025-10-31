@@ -15,33 +15,33 @@
 
 extern GameApplication game;
 
-//collision system
+// Collision system
 std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
 std::unique_ptr<Player::PlayerSystem> playerSystem_;
 bool showColliders_ = true;
 
 GameApplication* g_game = nullptr;
 
-// player entity ID (to track the player)
+// Player entity ID (to track the player)
 uint32_t playerEntityID_ = 0;
 bool playerSpawned_ = false;
 
-//containers (time display)
+// Containers for time display
 std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
-//indicator
+// Red Indicator
 float indicatorX_ = 600.0f;
 float indicatorY_ = 425.0f;
 float moveSpeed_ = 200.0f; // pixels per second
 
 
-//Option Menu
+// Option Menu
 const char* shapes[] = { "Rectangle" };
 const char* colors[] = { "Green"  ,     "Red" };
 const char* colliderShapes[] = { "None", "Circle", "Rectangle" };
 
-//Values to set for entities
+// Values to set for entities
 static float           eWidth = 10;
 static float           eHeight = 10;
 static int             eColor = Color::Green;
@@ -51,17 +51,23 @@ static float           colliderWidth = 10.0f;
 static float           colliderHeight = 10.0f;
 static float           colliderRadius = 5.0f;
 
-//Player Scale Variables
+// Player Scale Variables
 float pScaleX = 1.0f;
 float pScaleY = 1.0f;
 
-//time
+// Time
 static float shown_fps = 0.0f;
 static double next_update = 0.0;         // next time we refresh the text
 
-//entity counter
+// Entity counter
 size_t entity_count{};
 static uint32_t selectedEntityID;
+
+// Drag-Drop Gizmos
+static bool isDragging = false;
+static uint32_t draggedEntityID = 0;
+static ImVec2 dragOffset;
+
 #pragma endregion
 
 float randomFloat(float min, float max) {
@@ -232,7 +238,6 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			std::cout << "Player destroyed\n";
 		}
 	}
-
 	ImGui::Separator();
 
 	// ==================== SPAWN POSITION INDICATOR ====================
@@ -314,7 +319,58 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 		if (g_game) g_game->markEntitiesDirty();
 		(void)e; // to silence compiler warning for unused param
 	}
+	// Intentional: To only be able to drag and Drop in Main Tab
+	ImGuiIO& io = ImGui::GetIO();
 
+	// --- begin drag ---
+	if (!io.WantCaptureMouse && ImGui::IsMouseClicked(0) && !isDragging)
+	{
+		auto clicked = getEntityUnderMouse(engine_, io.MousePos);
+		if (clicked)
+		{
+			draggedEntityID = clicked->getEntityID();
+			isDragging = true;
+
+			auto& tc = clicked->get<ECSComponents::TransformComponent>();
+			dragOffset.x = io.MousePos.x - tc.pos.x;
+			dragOffset.y = io.MousePos.y - tc.pos.y;
+		}
+	}
+
+	// --- while dragging ---
+	if (isDragging && ImGui::IsMouseDown(0))
+	{
+		auto all = engine_.getEntityManager().findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+		for (auto& e : all)
+		{
+			if (e.getEntityID() == draggedEntityID)
+			{
+				auto& tc = e.get<ECSComponents::TransformComponent>();
+				auto& dc = e.get<ECSComponents::DrawInfoComponent>();
+
+				// Update transform
+				tc.pos.x = io.MousePos.x - dragOffset.x;
+				tc.pos.y = io.MousePos.y - dragOffset.y;
+
+				// Sync DrawInfo so renderer knows the new position
+				dc.xPos = tc.pos.x - (dc.width * 0.5f);
+				dc.yPos = tc.pos.y - (dc.height * 0.5f);
+
+				if (g_game)
+					g_game->markEntitiesDirty();
+				break;
+			}
+		}
+	}
+
+	// --- drop ---
+	if (isDragging && ImGui::IsMouseReleased(0))
+	{
+		std::cout << "Entity " << draggedEntityID
+			<< " dropped at (" << io.MousePos.x << ", " << io.MousePos.y << ")\n";
+		isDragging = false;
+		draggedEntityID = 0;
+	}
 
 
 	//Clone Button
