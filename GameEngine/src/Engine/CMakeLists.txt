@@ -1,7 +1,7 @@
 set(ENGINE_NAME Engine)
 
 file(GLOB_RECURSE ENGINE_SRC_FILES
-    ${CMAKE_CURRENT_LIST_DIR}/*.[ch]pp
+    ${CMAKE_CURRENT_LIST_DIR}/*.[cht]pp
     ${CMAKE_CURRENT_LIST_DIR}/*.[ch]
 )
 
@@ -33,7 +33,6 @@ endif()
 target_include_directories(${ENGINE_NAME} SYSTEM PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories(${ENGINE_NAME} PUBLIC
     ${FMOD_INCLUDE_DIRS}
-    ${rapidjson_SOURCE_DIR}/include
 )
 target_compile_definitions(${ENGINE_NAME} 
     PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
