@@ -260,11 +260,11 @@ namespace Collision
 		* \param[in]  ECSComponents::TransformComponent const& transformB - Second transform
 		* \return     CollisionResult - Contains collision information
 		*//*========================================================================================*/
-		static CollisionResult CheckRectangleRectangleSAT(
-			const CollisionComponent& colliderA,
-			const ECSComponents::TransformComponent& transformA,
-			const CollisionComponent& colliderB,
-			const ECSComponents::TransformComponent& transformB);
+		//static CollisionResult CheckRectangleRectangleSAT(
+		//	const CollisionComponent& colliderA,
+		//	const ECSComponents::TransformComponent& transformA,
+		//	const CollisionComponent& colliderB,
+		//	const ECSComponents::TransformComponent& transformB);
 	private:
 		/*============================================================================================
 		// Collision detection functions

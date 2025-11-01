@@ -196,7 +196,7 @@ namespace Collision {
 			scaledRectB.width *= transformB.scale.x;
 			scaledRectB.height *= transformB.scale.y;
 
-			return CheckRectangleRectangleSAT(colliderA, transformA, colliderB, transformB);
+			return CheckRectangleRectangle(posA, scaledRectA, posB, scaledRectB);
 		}
 
 		// Scenario 3: if collider A is a circle, and collider B is a rectangle
@@ -1011,140 +1011,140 @@ namespace Collision {
 		std::cout << "\n=== Test Complete ===" << std::endl;
 	}
 
-	// ====================== SAT COLLISION IMPLEMENTATION ===========================/
-
-	// OBB constructor
-	CollisionDetection::OBB::OBB(const ECSComponents::TransformComponent& transform, const CollisionComponent& collision)
-	{
-		// Set center position (transform position + collision offset)
-		center.v1 = transform.pos.x + collision.offset.v1;
-		center.v2 = transform.pos.y + collision.offset.v2;
-
-		// Set half extents (scaled by transform scale)
-		halfExtents.v1 = (collision.data.rectangle.width * transform.scale.x) * 0.5f;
-		halfExtents.v2 = (collision.data.rectangle.height * transform.scale.y) * 0.5f;
-
-		// Calculate rotation angle from transform (assuming Z rotation)
-		float angle = transform.rot.z;
-		float cosAngle = std::cos(angle);
-		float sinAngle = std::sin(angle);
-
-		// Set local axes based on rotation
-		axes[0].v1 = cosAngle;	// X-axis
-		axes[0].v2 = sinAngle;
-		axes[1].v1 = -sinAngle;	// Y-axis
-		axes[1].v2 = cosAngle;
-	}
-
-	void CollisionDetection::OBB::GetCorners(Math::eVec2<float> corners[4]) const
-	{
-		// Calculate corner offsets
-		Math::eVec2<float> xOffset = { axes[0].v1 * halfExtents.v1, axes[0].v2 * halfExtents.v1 };
-		Math::eVec2<float> yOffset = { axes[1].v1 * halfExtents.v2, axes[1].v2 * halfExtents.v2 };
-
-		// Calculate 4 corners
-		corners[0] = { center.v1 - xOffset.v1 - yOffset.v1, center.v2 - xOffset.v2 - yOffset.v2 };
-		corners[1] = { center.v1 + xOffset.v1 - yOffset.v1, center.v2 + xOffset.v2 - yOffset.v2 };
-		corners[2] = { center.v1 + xOffset.v1 + yOffset.v1, center.v2 + xOffset.v2 + yOffset.v2 };
-		corners[3] = { center.v1 - xOffset.v1 + yOffset.v1, center.v2 - xOffset.v2 + yOffset.v2 };
-
-	}
-
-	void CollisionDetection::ProjectOBB(const OBB& obb, const Math::eVec2<float>& axis, float& min, float& max)
-	{
-		Math::eVec2<float> corners[4];
-		obb.GetCorners(corners);
-		
-		min = max = Math::eVec2DotProduct(corners[0], axis);
-
-		for (int i = 1; i < 4; ++i)
-		{
-			float projection = Math::eVec2DotProduct(corners[i], axis);
-			if (projection < min) min = projection;
-			if (projection > max) max = projection;
-		}
-	}
-
-	CollisionResult CollisionDetection::CheckRectangleRectangleSAT(
-		const CollisionComponent& colliderA,
-		const ECSComponents::TransformComponent& transformA,
-		const CollisionComponent& colliderB,
-		const ECSComponents::TransformComponent& transformB)
-	{
-		CollisionResult result;
-		result.hasCollision = false;
-		result.penetrationDepth = 0.0f;
-		result.contactPoint = { 0.0f, 0.0f };
-		result.penetrationVector = { 0.0f, 0.0f };
-
-		// Create OBBs
-		OBB obbA(transformA, colliderA);
-		OBB obbB(transformB, colliderB);
-
-		// Text aces (2 from each OBB)
-		Math::eVec2<float> axes[4] = {
-			obbA.axes[0], obbA.axes[1],
-			obbB.axes[0], obbB.axes[1]
-		};
-
-		float minOverlap = std::numeric_limits<float>::max();
-		Math::eVec2<float> minOverlapAxis = { 0.0f, 0.0f };
-
-		// SAT: Test all axes
-		for (int i = 0; i < 4; ++i)
-		{
-			Math::eVec2<float> axis = axes[i];
-
-			// Normalize axis
-			float length = std::sqrt(axis.v1 * axis.v1 + axis.v2 * axis.v2);
-			if (length < 0.0001f) continue;
-
-			axis.v1 /= length;
-			axis.v2 /= length;
-
-			// Project both OBBs
-			float minA, maxA, minB, maxB;
-			ProjectOBB(obbA, axis, minA, maxA);
-			ProjectOBB(obbB, axis, minB, maxB);
-
-			// Check overlap
-			if (!ProjectionsOverlap(minA, maxA, minB, maxB))
-			{
-				// Separating axis found - no collision!
-				return result;
-			}
-
-			// Track minimum overlap
-			float overlap = GetOverlap(minA, maxA, minB, maxB);
-
-			if (overlap < minOverlap)
-			{
-				minOverlap = overlap;
-				minOverlapAxis = axis;
-
-				// Ensure axis points from A to B
-				Math::eVec2<float> centerDiff = {
-					obbB.center.v1 - obbA.center.v1,
-					obbB.center.v2 - obbA.center.v2
-				};
-
-				if (Math::eVec2DotProduct(centerDiff, axis) < 0.0f)
-				{
-					minOverlapAxis.v1 = -minOverlapAxis.v1;
-					minOverlapAxis.v2 = -minOverlapAxis.v2;
-				}
-			}
-		}
-
-		// Collision Detected!
-		result.hasCollision = true;
-		result.penetrationDepth = minOverlap;
-		result.penetrationVector.v1 = minOverlapAxis.v1 * minOverlap;
-		result.penetrationVector.v2 = minOverlapAxis.v2 * minOverlap;
-		result.contactPoint.v1 = (obbA.center.v1 + obbB.center.v1) * 0.5f;
-		result.contactPoint.v2 = (obbA.center.v2 + obbB.center.v2) * 0.5f;
-
-		return result;
-	}
+	//// ====================== SAT COLLISION IMPLEMENTATION ===========================/
+	//
+	//// OBB constructor
+	//CollisionDetection::OBB::OBB(const ECSComponents::TransformComponent& transform, const CollisionComponent& collision)
+	//{
+	//	// Set center position (transform position + collision offset)
+	//	center.v1 = transform.pos.x + collision.offset.v1;
+	//	center.v2 = transform.pos.y + collision.offset.v2;
+	//
+	//	// Set half extents (scaled by transform scale)
+	//	halfExtents.v1 = (collision.data.rectangle.width * transform.scale.x) * 0.5f;
+	//	halfExtents.v2 = (collision.data.rectangle.height * transform.scale.y) * 0.5f;
+	//
+	//	// Calculate rotation angle from transform (assuming Z rotation)
+	//	float angle = transform.rot.z;
+	//	float cosAngle = std::cos(angle);
+	//	float sinAngle = std::sin(angle);
+	//
+	//	// Set local axes based on rotation
+	//	axes[0].v1 = cosAngle;	// X-axis
+	//	axes[0].v2 = sinAngle;
+	//	axes[1].v1 = -sinAngle;	// Y-axis
+	//	axes[1].v2 = cosAngle;
+	//}
+	//
+	//void CollisionDetection::OBB::GetCorners(Math::eVec2<float> corners[4]) const
+	//{
+	//	// Calculate corner offsets
+	//	Math::eVec2<float> xOffset = { axes[0].v1 * halfExtents.v1, axes[0].v2 * halfExtents.v1 };
+	//	Math::eVec2<float> yOffset = { axes[1].v1 * halfExtents.v2, axes[1].v2 * halfExtents.v2 };
+	//
+	//	// Calculate 4 corners
+	//	corners[0] = { center.v1 - xOffset.v1 - yOffset.v1, center.v2 - xOffset.v2 - yOffset.v2 };
+	//	corners[1] = { center.v1 + xOffset.v1 - yOffset.v1, center.v2 + xOffset.v2 - yOffset.v2 };
+	//	corners[2] = { center.v1 + xOffset.v1 + yOffset.v1, center.v2 + xOffset.v2 + yOffset.v2 };
+	//	corners[3] = { center.v1 - xOffset.v1 + yOffset.v1, center.v2 - xOffset.v2 + yOffset.v2 };
+	//
+	//}
+	//
+	//void CollisionDetection::ProjectOBB(const OBB& obb, const Math::eVec2<float>& axis, float& min, float& max)
+	//{
+	//	Math::eVec2<float> corners[4];
+	//	obb.GetCorners(corners);
+	//	
+	//	min = max = Math::eVec2DotProduct(corners[0], axis);
+	//
+	//	for (int i = 1; i < 4; ++i)
+	//	{
+	//		float projection = Math::eVec2DotProduct(corners[i], axis);
+	//		if (projection < min) min = projection;
+	//		if (projection > max) max = projection;
+	//	}
+	//}
+	//
+	//CollisionResult CollisionDetection::CheckRectangleRectangleSAT(
+	//	const CollisionComponent& colliderA,
+	//	const ECSComponents::TransformComponent& transformA,
+	//	const CollisionComponent& colliderB,
+	//	const ECSComponents::TransformComponent& transformB)
+	//{
+	//	CollisionResult result;
+	//	result.hasCollision = false;
+	//	result.penetrationDepth = 0.0f;
+	//	result.contactPoint = { 0.0f, 0.0f };
+	//	result.penetrationVector = { 0.0f, 0.0f };
+	//
+	//	// Create OBBs
+	//	OBB obbA(transformA, colliderA);
+	//	OBB obbB(transformB, colliderB);
+	//
+	//	// Text aces (2 from each OBB)
+	//	Math::eVec2<float> axes[4] = {
+	//		obbA.axes[0], obbA.axes[1],
+	//		obbB.axes[0], obbB.axes[1]
+	//	};
+	//
+	//	float minOverlap = std::numeric_limits<float>::max();
+	//	Math::eVec2<float> minOverlapAxis = { 0.0f, 0.0f };
+	//
+	//	// SAT: Test all axes
+	//	for (int i = 0; i < 4; ++i)
+	//	{
+	//		Math::eVec2<float> axis = axes[i];
+	//
+	//		// Normalize axis
+	//		float length = std::sqrt(axis.v1 * axis.v1 + axis.v2 * axis.v2);
+	//		if (length < 0.0001f) continue;
+	//
+	//		axis.v1 /= length;
+	//		axis.v2 /= length;
+	//
+	//		// Project both OBBs
+	//		float minA, maxA, minB, maxB;
+	//		ProjectOBB(obbA, axis, minA, maxA);
+	//		ProjectOBB(obbB, axis, minB, maxB);
+	//
+	//		// Check overlap
+	//		if (!ProjectionsOverlap(minA, maxA, minB, maxB))
+	//		{
+	//			// Separating axis found - no collision!
+	//			return result;
+	//		}
+	//
+	//		// Track minimum overlap
+	//		float overlap = GetOverlap(minA, maxA, minB, maxB);
+	//
+	//		if (overlap < minOverlap)
+	//		{
+	//			minOverlap = overlap;
+	//			minOverlapAxis = axis;
+	//
+	//			// Ensure axis points from A to B
+	//			Math::eVec2<float> centerDiff = {
+	//				obbB.center.v1 - obbA.center.v1,
+	//				obbB.center.v2 - obbA.center.v2
+	//			};
+	//
+	//			if (Math::eVec2DotProduct(centerDiff, axis) < 0.0f)
+	//			{
+	//				minOverlapAxis.v1 = -minOverlapAxis.v1;
+	//				minOverlapAxis.v2 = -minOverlapAxis.v2;
+	//			}
+	//		}
+	//	}
+	//
+	//	// Collision Detected!
+	//	result.hasCollision = true;
+	//	result.penetrationDepth = minOverlap;
+	//	result.penetrationVector.v1 = minOverlapAxis.v1 * minOverlap;
+	//	result.penetrationVector.v2 = minOverlapAxis.v2 * minOverlap;
+	//	result.contactPoint.v1 = (obbA.center.v1 + obbB.center.v1) * 0.5f;
+	//	result.contactPoint.v2 = (obbA.center.v2 + obbB.center.v2) * 0.5f;
+	//
+	//	return result;
+	//}
 
 } // namespace Collision

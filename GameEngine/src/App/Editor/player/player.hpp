@@ -20,11 +20,6 @@
 
 namespace Player
 {
-    // Player rendering and collision constants
-    constexpr float PLAYER_SPRITE_WIDTH = 48.0f;
-    constexpr float PLAYER_SPRITE_HEIGHT = 48.0f;
-    constexpr float PLAYER_COLLIDER_WIDTH = 48.0f;
-    constexpr float PLAYER_COLLIDER_HEIGHT = 48.0f;
 
     /*============================================================================================
     * \brief       Component that marks an entity as the player character. Attach this to an
@@ -36,7 +31,13 @@ namespace Player
         float moveSpeed;                    // Movement speed in pixels per second
         bool canMove;                       // Can the player move? (for stun effects, etc)
 
-        // dashing properties
+        // Sprite and collision dimensions (loaded from config instead of hardcoded constants)
+        float spriteWidth;                  // Visual sprite width
+        float spriteHeight;                 // Visual sprite height
+        float colliderWidth;                // Collision box width
+        float colliderHeight;               // Collision box height
+
+        // Dashing properties
         bool isDashing;                     // Is the player currently dashing?
         float dashTimer;                    // Current time in the dash
         float dashDuration;                 // How long the dash lasts (e.g., 0.2 seconds)
@@ -48,12 +49,16 @@ namespace Player
 
 
         /*============================================================================================
-        * \brief       Constructor with default values
+        * \brief       Constructor with default values (FALLBACK if config not loaded)
         * \param[in]   float speed - Movement speed (default: 200.0f pixels/sec)
         *//*========================================================================================*/        
         PlayerComponent(float speed = 200.0f)
             : moveSpeed(speed)
             , canMove(true)
+            , spriteWidth(48.0f)
+            , spriteHeight(48.0f)
+            , colliderWidth(48.0f)
+            , colliderHeight(48.0f)
             , isDashing(false)
             , dashTimer(0.0f)
             , dashDuration(0.3f)            // Dash lasts 0.3 seconds
@@ -66,12 +71,16 @@ namespace Player
         }
         
         /*============================================================================================
-        * \brief       Constructor from JSON configuration
-        * \param[in]   PlayerConfig const& confid - Configuration loaded from JSON
+        * \brief       Constructor from configuration file
+        * \param[in]   PlayerConfig const& config - Configuration loaded from text file
         *//*========================================================================================*/
         PlayerComponent(const PlayerConfig& config)
             : moveSpeed(config.moveSpeed)
             , canMove(config.canMove)
+            , spriteWidth(config.spriteWidth)
+            , spriteHeight(config.spriteHeight)
+            , colliderWidth(config.colliderWidth)
+            , colliderHeight(config.colliderHeight)
             , isDashing(false)
             , dashTimer(0.0f)
             , dashDuration(config.dashDuration)
