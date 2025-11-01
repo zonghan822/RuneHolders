@@ -1,0 +1,50 @@
+# ====================================
+# Player Configuration File
+# ====================================
+# Edit these values to adjust player behavior
+# without recompiling the game.
+#
+# Format: key = value
+# Lines starting with # are comments
+# ====================================
+
+# Movement Settings
+# --------------------
+# Base Movement speed in pixels per second
+moveSpeed = 200.0
+
+# Whether player can move initially (true/false)
+canMove = true
+
+# Sprite Dimentsions
+# --------------------
+# Visual Sprite dimensions in pixels
+spriteWidth = 48.0
+spriteHeight = 48.0
+
+# Collision Dimensions
+# --------------------
+# Collision box dimensions in pixels
+# Usually same as sprite, but can be smaller for tighter collisions
+colliderWidth = 48.0
+colliderHeight = 48.0
+
+# Dash Mechanics
+# --------------------
+# How long the dash lasts in seconds
+dashDuration = 0.3
+
+# Distance covered during dash in pixels
+dashDistance = 150.0
+
+# Cooldown time between dashes in seconds
+dashCooldown = 0.5
+
+# ====================================
+# Notes for changing variables:
+#
+# - Higher moveSpeed = faster base movement
+# - Lower dashCooldown = dash more frequently
+# - Higher dashDistance = dash farther
+# - Smaller collider = easier to dodge
+# ====================================
