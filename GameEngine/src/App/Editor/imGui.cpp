@@ -10,6 +10,7 @@
 #include <filesystem>
 #include "imGui.hpp"
 #include "game_logic.hpp"
+#include "player/player_config.hpp"
 
 #pragma region Game Variables
 
@@ -100,6 +101,19 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+
+	// Load player config once
+	static Player::PlayerConfig playerConfig;
+	static bool configLoaded = false;
+	if (!configLoaded) {
+		configLoaded = playerConfig.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
+		if (configLoaded) {
+			std::cout << "[ImGui] Player config loaded successfully" << std::endl;
+		}
+		else {
+			std::cout << "[ImGui] Using defauly player config values" << std::endl;
+		}
+	}
 
 	// (kim) get delta time for smooth movement
 	ImGuiIO& io = ImGui::GetIO();
@@ -194,6 +208,8 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 	if (!playerSpawned_) {
 		if (ImGui::Button("Spawn Player")) {
 
+			Player::PlayerConfig playerConfig;
+			playerConfig.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
 
 			// create player entity at indicator position
 			ECSComponents::TransformComponent transform{
@@ -204,13 +220,13 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 
 			// create player with rectangle collider (can change to circle if u want)
 			Collision::CollisionComponent playerCollider(
-				Player::PLAYER_COLLIDER_WIDTH,
-				Player::PLAYER_COLLIDER_HEIGHT
-			); // 10x10 rectangle
+				playerConfig.colliderWidth,
+				playerConfig.colliderHeight
+			); // Size from player_config.txt
 
 			// for circle: (uncomment if u want circle!)
 			// Collision::CollisionComponent playerCollider(5.0f); // radius 5.0
-			Player::PlayerComponent playerComp(moveSpeed_);
+			Player::PlayerComponent playerComp(playerConfig);
 
 			// Create entity with TransformComponent first
 			ECS::Entity entity = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
