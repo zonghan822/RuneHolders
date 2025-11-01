@@ -28,7 +28,12 @@ namespace Player
     *//*========================================================================================*/
     struct PlayerComponent
     {
-        float moveSpeed;                    // Movement speed in pixels per second
+        // Physics properties (velocity-based movement)
+        Math::eVec2<float> velocity;        // Current velocity in pixels per second
+        float acceleration;                 // Acceleration when moving (pixels/sec^2)
+        float friction;                     // Friction coefficient (0-1, higher = more friction)
+        float maxSpeed;                     // Maximum movement speed (pixels/sec)
+        
         bool canMove;                       // Can the player move? (for stun effects, etc)
 
         // Sprite and collision dimensions (loaded from config instead of hardcoded constants)
@@ -53,7 +58,10 @@ namespace Player
         * \param[in]   float speed - Movement speed (default: 200.0f pixels/sec)
         *//*========================================================================================*/        
         PlayerComponent(float speed = 200.0f)
-            : moveSpeed(speed)
+            : velocity{0.0f, 0.0f}
+            , acceleration(800.0f)          // Acceleration rate (pixels/sec^2)
+            , friction(4.0f)                // Friction coefficient
+            , maxSpeed(speed)               // Max speed f
             , canMove(true)
             , spriteWidth(48.0f)
             , spriteHeight(48.0f)
@@ -75,7 +83,10 @@ namespace Player
         * \param[in]   PlayerConfig const& config - Configuration loaded from text file
         *//*========================================================================================*/
         PlayerComponent(const PlayerConfig& config)
-            : moveSpeed(config.moveSpeed)
+            : velocity{ 0.0f, 0.0f }
+            , acceleration(config.acceleration)          // Acceleration rate (pixels/sec^2)
+            , friction(config.friction)                // Friction coefficient
+            , maxSpeed(config.maxSpeed)               // Max speed f
             , canMove(config.canMove)
             , spriteWidth(config.spriteWidth)
             , spriteHeight(config.spriteHeight)

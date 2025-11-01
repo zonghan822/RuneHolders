@@ -164,23 +164,55 @@ namespace Player
                 continue;
             }
 
-            // ====== NORMAL MOVEMENT (when not dashing) ======
+            // ====== VELOCITY-BASED PHYSICS MOVEMENT ======
             if (!playerComp.canMove) continue;
 
             // Get input from EnoInputManager (WASD keys)
             Math::eVec2<float> input = GetMovementInput(inputManager);
 
-            // Calculate desired movement based on input and move speed
-            // deltaTime ensures smooth movement regardless of framerate
-            Math::eVec2<float> movement = {
-                input.x * playerComp.moveSpeed * deltaTime,
-                input.y * playerComp.moveSpeed * deltaTime
+            // Apply Acceleration
+            // Input creates acceleration in the desired direction
+            if (Math::eVec2SquaredLength(input) > 0.01f)
+            {
+                // Apply acceleration in input direction
+                Math::eVec2<float> acceleration = {
+                input.x * playerComp.acceleration * deltaTime,
+                input.y * playerComp.acceleration * deltaTime
+                };
+
+                playerComp.velocity.x += acceleration.x;
+                playerComp.velocity.y += acceleration.y;
+            }
+            
+            // Apply friction
+            // Friction slows down the player over time (exponential decay)
+            float frictionFactor = 1.0f - (playerComp.friction * deltaTime);
+            if (frictionFactor < 0.0f) frictionFactor = 0.0f;   // Clamp to prevent negative
+            playerComp.velocity.x *= frictionFactor;
+            playerComp.velocity.y *= frictionFactor;
+
+            // Clamp velocity to max speed
+            float speedSquared = Math::eVec2SquaredLength(playerComp.velocity);
+            float maxSpeedSquared = playerComp.maxSpeed * playerComp.maxSpeed;
+            if (speedSquared > maxSpeedSquared)
+            {
+                float speed = sqrtf(speedSquared);
+                playerComp.velocity.x = (playerComp.velocity.x / speed) * playerComp.maxSpeed;
+                playerComp.velocity.y = (playerComp.velocity.y / speed) * playerComp.maxSpeed;
+            }
+
+            // Integrate velocity
+            // Calculate predicted pos based on current velocity
+            Math::eVec2<float> displacement = {
+                playerComp.velocity.x * deltaTime,
+                playerComp.velocity.y * deltaTime
             };
 
-            // Calculate target position after movement
+            // Axis-separated collision response with velocity modification
+            // First, try moving on both axes together (diagonal movement)
             Math::eVec2<float> targetPosBoth = {
-                transform.pos.x + movement.x,
-                transform.pos.y + movement.y
+                transform.pos.x + displacement.x,
+                transform.pos.y + displacement.y
             };
 
             // Check if the target position is valid (no collision with solid objects)
@@ -196,7 +228,7 @@ namespace Player
 
                 // Try X-Axis movement only (horizontal sliding)
                 Math::eVec2<float> targetPosX = {
-                    transform.pos.x + movement.x,
+                    transform.pos.x + displacement.x,
                     transform.pos.y // Keep Y unchanged
                 };
 
@@ -207,12 +239,18 @@ namespace Player
                 // Try Y-Axis movement only (vertical sliding)
                 Math::eVec2<float> targetPosY = {
                     transform.pos.x, // Use current X (which may have just moved)
-                    transform.pos.y + movement.y
+                    transform.pos.y + displacement.y
                 };
 
                 if (CanMoveTo(entityLoc, collider, targetPosY, entityManager))
                 {
+                    // Can move on Y-axis - update position
                     transform.pos.y = targetPosY.y;
+                }
+                else
+                {
+                    // Y-axis blocked - zero out Y velocity (stop vertical movement)
+                    playerComp.velocity.y = 0.0f;
                 }
 
                 // Player slides along the obstacle surface on whicever axis is free
@@ -264,7 +302,7 @@ namespace Player
         testTransform.pos.x = targetPos.x;
         testTransform.pos.y = targetPos.y;
         testTransform.rot = { 0.0f, 0.0f };   // apply rotation
-        testTransform.scale = { scaleSize, scaleSize}; // apply scale
+        testTransform.scale = { scaleSize, scaleSize }; // apply scale
 
         // Check collision with all other entities
         auto& entityMap = entityManager.getMap();

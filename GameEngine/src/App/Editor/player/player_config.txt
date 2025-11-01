@@ -8,15 +8,27 @@
 # Lines starting with # are comments
 # ====================================
 
-# Movement Settings
+# Physics Properties
 # --------------------
-# Base Movement speed in pixels per second
-moveSpeed = 200.0
+# Acceleration rate when moving (pixels per second²)
+# Higher = faster speed-up, more responsive
+# Lower = slower speed-up, more "heavy" feeling
+acceleration = 800.0
+
+# Friction coefficient (dimensionless, 0-20 typical range)
+# Higher = stops faster when releasing keys
+# Lower = more "slippery" movement, longer slide
+# Recommended: 6-10 for responsive feel, 2-4 for ice physics
+friction = 4.0
+
+# Maximum movement speed (pixels per second)
+# This is the top speed the player can reach
+maxSpeed = 200.0
 
 # Whether player can move initially (true/false)
 canMove = true
 
-# Sprite Dimentsions
+# Sprite Dimensions
 # --------------------
 # Visual Sprite dimensions in pixels
 spriteWidth = 48.0
@@ -47,4 +59,26 @@ dashCooldown = 0.5
 # - Lower dashCooldown = dash more frequently
 # - Higher dashDistance = dash farther
 # - Smaller collider = easier to dodge
+#
+# Physics Tuning Guide:
+#
+# RESPONSIVE MOVEMENT (Default):
+#   acceleration = 800.0
+#   friction = 8.0
+#   maxSpeed = 200.0
+#
+# ICE PHYSICS (Slippery):
+#   acceleration = 400.0
+#   friction = 2.0
+#   maxSpeed = 250.0
+#
+# HEAVY CHARACTER:
+#   acceleration = 500.0
+#   friction = 12.0
+#   maxSpeed = 150.0
+#
+# FAST & AGILE (Speedster):
+#   acceleration = 1200.0
+#   friction = 10.0
+#   maxSpeed = 300.0
 # ====================================

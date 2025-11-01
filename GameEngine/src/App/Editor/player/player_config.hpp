@@ -21,7 +21,11 @@ namespace Player
 	struct PlayerConfig
 	{
 		// Movement properties
-		float moveSpeed;			// Base movement speed in pixels per second
+		Math::eVec2<float> velocity;        // Current velocity in pixels per second
+		float acceleration;                 // Acceleration when moving (pixels/sec^2)
+		float friction;                     // Friction coefficient (0-1, higher = more friction)
+		float maxSpeed;                     // Maximum movement speed (pixels/sec)
+
 		bool canMove;				// Initial move state (usually true)
 
 		// Sprite and collider dimensions
@@ -39,7 +43,9 @@ namespace Player
 		* \brief       Default constructor with fallback values if file loading fails
 		*//*========================================================================================*/
 		PlayerConfig()
-			: moveSpeed(200.0f)
+			: velocity{ 0.0f, 0.0f }
+			, acceleration(800.0f)          // Acceleration rate (pixels/sec^2)
+			, friction(8.0f)                // Friction coefficient
 			, canMove(true)
 			, spriteWidth(48.0f)
 			, spriteHeight(48.0f)
@@ -90,11 +96,20 @@ namespace Player
 				}
 
 				// Parse the value based on the key
-				if (key == "moveSpeed")
+				if (key == "acceleration")
 				{
-					if (!(iss >> moveSpeed))
-						std::cerr << "[PlayerConfig] Line " << lineNum << ": Invalid value for moveSpeed" << std::endl;
-				} 
+					if (!(iss >> acceleration))
+						std::cerr << "[PlayerConfig] Line " << lineNum << ": Invalid value for acceleration" << std::endl;
+				}
+				else if (key == "friction") {
+					if (!(iss >> friction))
+						std::cerr << "[PlayerConfig] Line " << lineNum << ": Invalid value for friction" << std::endl;
+				}
+				else if (key == "maxSpeed") {
+					if (!(iss >> maxSpeed))
+						std::cerr << "[PlayerConfig] Line " << lineNum << ": Invalid value for maxSpeed" << std::endl;
+				}
+
 				else if (key == "canMove") {
 					std::string value;
 					if (iss >> value) {
@@ -152,7 +167,6 @@ namespace Player
 		*//*========================================================================================*/
 		void PrintConfig() const {
 			std::cout << "\n=== Player Configuration ===" << std::endl;
-			std::cout << "Move Speed: " << moveSpeed << " px/s" << std::endl;
 			std::cout << "Can Move: " << (canMove ? "true" : "false") << std::endl;
 			std::cout << "Sprite: " << spriteWidth << "x" << spriteHeight << " px" << std::endl;
 			std::cout << "Collider: " << colliderWidth << "x" << colliderHeight << " px" << std::endl;
