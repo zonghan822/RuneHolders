@@ -73,6 +73,7 @@ namespace Collision {
 		comp.offset = colliderOffset;
 		comp.isTrigger = trigger;
 		comp.isActive = true;
+		comp.rotation = 0.0f;
 		return comp;
 	}
 
@@ -200,8 +201,8 @@ namespace Collision {
 			scaledRectB.width *= transformB.scale.x;
 			scaledRectB.height *= transformB.scale.y;
 
-			return CheckRectangleRectangleSAT(posA, scaledRectA, transformA.rot.y,
-											  posB, scaledRectB, transformB.rot.y);
+			return CheckRectangleRectangleSAT(posA, scaledRectA, colliderA.rotation,
+											  posB, scaledRectB, colliderB.rotation);
 		}
 
 		// Scenario 3: if collider A is a circle, and collider B is a rectangle
