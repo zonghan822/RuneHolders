@@ -178,17 +178,45 @@ namespace Player
             };
 
             // Calculate target position after movement
-            Math::eVec2<float> targetPos = {
+            Math::eVec2<float> targetPosBoth = {
                 transform.pos.x + movement.x,
                 transform.pos.y + movement.y
             };
 
             // Check if the target position is valid (no collision with solid objects)
-            if (CanMoveTo(entityLoc, collider, targetPos, entityManager))
+            if (CanMoveTo(entityLoc, collider, targetPosBoth, entityManager))
             {
                 // Movement is valid - update transform position
-                transform.pos.x = targetPos.x;
-                transform.pos.y = targetPos.y;
+                transform.pos.x = targetPosBoth.x;
+                transform.pos.y = targetPosBoth.y;
+            }
+            else
+            {
+                // Diagonal movement blocked - try sliding along each axis independently
+
+                // Try X-Axis movement only (horizontal sliding)
+                Math::eVec2<float> targetPosX = {
+                    transform.pos.x + movement.x,
+                    transform.pos.y // Keep Y unchanged
+                };
+
+                if (CanMoveTo(entityLoc, collider, targetPosX, entityManager)) {
+                    transform.pos.x = targetPosX.x;
+                }
+
+                // Try Y-Axis movement only (vertical sliding)
+                Math::eVec2<float> targetPosY = {
+                    transform.pos.x, // Use current X (which may have just moved)
+                    transform.pos.y + movement.y
+                };
+
+                if (CanMoveTo(entityLoc, collider, targetPosY, entityManager))
+                {
+                    transform.pos.y = targetPosY.y;
+                }
+
+                // Player slides along the obstacle surface on whicever axis is free
+                // If both axes blocked (stuck in corner), player stays in place
             }
             // If collision detected, player stays at current position (blocked)
         }
