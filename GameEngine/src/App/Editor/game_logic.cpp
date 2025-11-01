@@ -21,18 +21,15 @@ void GameApplication::initialize() {
 	setupGameEvents();
 	setupGameMath();
 	setupImGui();
-    // Setup all game content
-    setupGameEntities();
-    setupGameAudio();
-    setupGameEvents();
-    setupGameMath();
     setupAnimations();
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
     // This is for dynamic collision test object
     createTestObject(engine_.getEntityManager());
-    
+
+	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
+	gameFramebuffer_->create(1280, 720); // Initial size
 
     std::cout << "Game initialized successfully!" << std::endl;
 }
@@ -188,31 +185,41 @@ void GameApplication::setupImGui() {
 }
 
 void GameApplication::updateGameLogic() {
-    // This is called every frame (replaces your while loop in eno_engine.cpp run())
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
+	double deltaTime = engine_.getDeltaTime();
 
-    // Calculate delta time
-    double deltaTime = engine_.getDeltaTime();
+	// Bind game framebuffer
+	if (gameFramebuffer_) {
+		gameFramebuffer_->bind();
+	}
 
-	// Get window dimensions from config
+	// Clear the framebuffer
+	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	auto windowDim = engine_.getWindowManager().getWindowSize();
 	Math::eVec2<float> windowSize{
 		static_cast<float>(windowDim.first),
 		static_cast<float>(windowDim.second)
 	};
 
-	// ===== UPDATE PLAYER ANIMATION =====
-	if (playerTexture_ && playerSpawned_)
-	{
+	if (playerTexture_ && playerSpawned_) {
 		playerAnimController_.update(static_cast<float>(deltaTime));
 	}
 
-    updateEntities();
-    drawShapes();
+	updateEntities();
+	drawShapes();
 	drawPlayerAndIndicator();
 	engine_.getGraphicsManager().flush();
-	updateImGui();
 	drawText(windowSize);
+
+	// Unbind framebuffer (back to default)
+	if (gameFramebuffer_) {
+		gameFramebuffer_->unbind();
+	}
+
+	// Now render ImGui (which will display the framebuffer texture)
+	updateImGui();
 }
 
 void GameApplication::updateEntities() {

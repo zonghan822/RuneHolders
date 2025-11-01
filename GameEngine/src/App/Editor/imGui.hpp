@@ -146,6 +146,16 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_);
 *//*========================================================================================*/
 void displayFPSTab(Engine::EnoEngine& engine_);
 
+// docking shi
+
+void displayGameView(Engine::EnoEngine& engine_);
+
+void imGuiSetupDefaultLayout();
+
+void imGuiBeginDockspace();
+
+void imGuiEndDockspace();
+
 
 /*============================================================================================
  * \brief       Displays FPS tab

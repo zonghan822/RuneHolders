@@ -87,7 +87,8 @@ void imGuiInit(GLFWwindow* window) {
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.ConfigDockingNoSplit = false;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
@@ -95,92 +96,79 @@ void imGuiInit(GLFWwindow* window) {
 
 
 void imGuiDisplay(Engine::EnoEngine& engine_) {
-
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	// (kim) get delta time for smooth movement
+	// Apply default layout once
+	static bool layoutApplied = false;
+	if (!layoutApplied) {
+		imGuiSetupDefaultLayout();
+		layoutApplied = true;
+	}
+
+	// BEGIN DOCKSPACE
+	imGuiBeginDockspace();
+
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
-
-	// (kim) WASD movement for indicator 
 	float moveDelta = moveSpeed_ * deltaTime;
 
-	// (kim) changed to ARROW KEYS for indicator control 
 	auto& inputManager = engine_.getInputManager();
 	if (inputManager.isKeyPressed(GLFW_KEY_UP)) indicatorY_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_DOWN)) indicatorY_ += moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
-	// Assuming that there will only be 1 entity with player component
-	for (ECS::Entity player : engine_.getEntityManager().findEntity<Player::PlayerComponent>())
-	{
+	// Update player entity
+	for (ECS::Entity player : engine_.getEntityManager().findEntity<Player::PlayerComponent>()) {
 		playerEntityID_ = player.getEntityID();
 	}
 
-
-	double now = ImGui::GetTime();           // imgui monotonic time (seconds)
+	// FPS display throttling
+	double now = ImGui::GetTime();
 	if (now >= next_update) {
-		shown_fps = io.Framerate;            // sample current FPS
+		shown_fps = io.Framerate;
 		throttledTimes_ = systemTimes_;
-		next_update = now + 0.5;             // update every 0.5s (tune this)
+		next_update = now + 0.5;
 	}
 
-	if (ImGui::Button("Main"))     activeWindow = WindowID::Main;
-	if (ImGui::Button("Edit"))     activeWindow = WindowID::Edit;
-	if (ImGui::Button("FPS"))      activeWindow = WindowID::FPS;
-	if (ImGui::Button("Prefabs"))  activeWindow = WindowID::Prefabs;
-	if (ImGui::Button("Assets"))   activeWindow = WindowID::Assets;
-	//FPS and Time Staggering for Displaying FPS
-#pragma region IMGUI Main
-	if (activeWindow == WindowID::Main) {
-		ImGui::Begin("Main");
-		displayMainTab(engine_);
-		ImGui::End();
-	}
-#pragma endregion
-#pragma region IMGUI Edit
+	// ========== RENDER ALL WINDOWS IN ORDER ==========
 
-	if (activeWindow == WindowID::Edit) {
-		ImGui::Begin("Edit");
-		displayEditTab(engine_);
-		displayHierarchyTab(engine_);
-		ImGui::End();
-	}
-#pragma endregion
-#pragma region IMGUI FPS
-	if (activeWindow == WindowID::FPS) {
-		ImGui::Begin("FPS");
-		displayFPSTab(engine_);
-		ImGui::End();
-	}
-#pragma endregion
-#pragma region IMGUI Prefabs
-	if (activeWindow == WindowID::Prefabs) {
-		ImGui::Begin("Prefabs");
-		displayPrefabsTab(engine_);
-		ImGui::End();
-	}
-#pragma endregion
-#pragma region IMGUI Assets
-	if (activeWindow == WindowID::Assets) {
-		ImGui::Begin("Assets Browser");
+	// LEFT TOP: Edit (Hierarchy)
+	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayEditTab(engine_);
+	displayHierarchyTab(engine_);
+	ImGui::End();
 
-		// Display all loaded assets here
-		displayAssetTab(engine_);
+	// LEFT MIDDLE: Prefabs
+	ImGui::Begin("Prefabs", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayPrefabsTab(engine_);
+	ImGui::End();
 
-		ImGui::End();
-	}
+	// LEFT BOTTOM: Main Controls
+	ImGui::Begin("Main Controls", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayMainTab(engine_);
+	ImGui::End();
 
+	// CENTER: Game View
+	ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
+	displayGameView(engine_);
+	ImGui::End();
 
-#pragma endregion
+	// RIGHT: Assets Browser
+	ImGui::Begin("Assets Browser", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayAssetTab(engine_);
+	ImGui::End();
 
+	// BOTTOM: FPS
+	ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayFPSTab(engine_);
+	ImGui::End();
 
-
-
+	// END DOCKSPACE
+	imGuiEndDockspace();
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -863,6 +851,120 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 			}
 		}
 	}
+}
+
+// docking shi
+
+void imGuiBeginDockspace() {
+	// Get the main viewport
+	ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+	// Set the dockspace to cover the entire viewport
+	ImGui::SetNextWindowPos(viewport->WorkPos);
+	ImGui::SetNextWindowSize(viewport->WorkSize);
+	ImGui::SetNextWindowViewport(viewport->ID);
+
+	// Configure the dockspace window flags
+	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
+	window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
+	window_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+	window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+	window_flags |= ImGuiWindowFlags_NoBackground;
+
+	// Push style vars to remove padding and borders
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
+	// Begin the dockspace window
+	bool open = true;
+	ImGui::Begin("EnoEngine Dockspace", nullptr, window_flags);
+	ImGui::PopStyleVar(3);
+
+	// Create the dockspace
+	ImGuiID dockspace_id = ImGui::GetID("MainDockspace");
+	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+}
+
+void displayGameView(Engine::EnoEngine& engine_) {
+	ImVec2 contentSize = ImGui::GetContentRegionAvail();
+
+	// Game controls
+	//if (ImGui::Button("Play")) { /* Play logic */ }
+	//ImGui::SameLine();
+	//if (ImGui::Button("Pause")) { /* Pause logic */ }
+	//ImGui::SameLine();
+	//if (ImGui::Button("Stop")) { /* Stop logic */ }
+
+	//ImGui::Separator();
+
+	// Display the game framebuffer texture
+	if (g_game && g_game->getGameFramebuffer()) {
+		auto* fb = g_game->getGameFramebuffer();
+
+		// Resize framebuffer if window size changed
+		if (contentSize.x > 0 && contentSize.y > 0) {
+			fb->resize((int)contentSize.x, (int)contentSize.y);
+
+			// Display the texture
+			ImGui::Image(
+				(void*)(intptr_t)fb->getTextureID(),
+				contentSize,
+				ImVec2(0, 1), // UV start (flipped Y)
+				ImVec2(1, 0)  // UV end (flipped Y)
+			);
+		}
+	}
+}
+
+void imGuiSetupDefaultLayout() {
+	static bool firstRun = true;
+	if (!firstRun) return;
+	firstRun = false;
+
+	// Get main viewport
+	ImGuiViewport* viewport = ImGui::GetMainViewport();
+	float screenWidth = viewport->Size.x;
+	float screenHeight = viewport->Size.y;
+
+	// Define layout proportions
+	const float leftWidth = screenWidth * 0.20f;     // 20% left
+	const float rightWidth = screenWidth * 0.25f;    // 25% right
+	const float centerWidth = screenWidth - leftWidth - rightWidth;
+	const float bottomHeight = screenHeight * 0.20f; // 20% bottom
+	const float mainHeight = screenHeight - bottomHeight;
+
+	// Set initial window positions and sizes
+
+	// LEFT PANEL - Edit (top 1/3 of left area)
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.33f));
+
+	// LEFT PANEL - Prefabs (middle 1/3 of left area)
+	ImGui::SetNextWindowPos(ImVec2(0, mainHeight * 0.33f));
+	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.33f));
+
+	// LEFT PANEL - Main Controls (bottom 1/3 of left area)
+	ImGui::SetNextWindowPos(ImVec2(0, mainHeight * 0.66f));
+	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.34f));
+
+	// CENTER - Game View (main area)
+	ImGui::SetNextWindowPos(ImVec2(leftWidth, 0));
+	ImGui::SetNextWindowSize(ImVec2(centerWidth, mainHeight));
+
+	// RIGHT PANEL - Assets
+	ImGui::SetNextWindowPos(ImVec2(leftWidth + centerWidth, 0));
+	ImGui::SetNextWindowSize(ImVec2(rightWidth, mainHeight));
+
+	// BOTTOM PANEL - FPS/Console
+	ImGui::SetNextWindowPos(ImVec2(0, mainHeight));
+	ImGui::SetNextWindowSize(ImVec2(screenWidth, bottomHeight));
+
+	std::cout << "Default layout applied to windows" << std::endl;
+}
+
+void imGuiEndDockspace() {
+	ImGui::End();
 }
 
 void imGuiTerminate() {

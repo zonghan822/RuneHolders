@@ -39,6 +39,8 @@ private:
     Animation::AnimationController playerAnimController_;
     int playerFacingDirection_ = 1;
 
+    std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
+
     // Font
     std::shared_ptr<Font::EnoFont> pixelifyFont_;
     std::shared_ptr<Font::EnoFont> timesFont_;
@@ -58,6 +60,8 @@ public:
 
     // Yun Qi's IMGUI sandbox
     void setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex);
+
+    Graphics::EnoFramebuffer* getGameFramebuffer() { return gameFramebuffer_.get(); }
 
 
 private:
