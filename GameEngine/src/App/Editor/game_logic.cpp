@@ -130,6 +130,10 @@ void GameApplication::setupGameMath() {
 
 	// initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
+
+	// Load player config
+	playerConfig_.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
+	std::cout << "[GameLogic] Player configg loaded" << std::endl;
 }
 
 void GameApplication::setupAnimations() {
@@ -447,8 +451,8 @@ void GameApplication::drawPlayerAndIndicator() {
 				if (currentTexture && currentTexture->isValid()) {
 					
 					// calculate scaled dimensions (match the collider size)
-					float scaledWidth = (Player::PLAYER_SPRITE_WIDTH * scaleSize);
-					float scaledHeight = (Player::PLAYER_SPRITE_HEIGHT * scaleSize);
+					float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
+					float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
 					
 					// convert center position to top-left for drawing
 					Math::eVec2<float> topLeft = {
