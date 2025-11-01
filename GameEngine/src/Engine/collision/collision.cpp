@@ -196,7 +196,8 @@ namespace Collision {
 			scaledRectB.width *= transformB.scale.x;
 			scaledRectB.height *= transformB.scale.y;
 
-			return CheckRectangleRectangle(posA, scaledRectA, posB, scaledRectB);
+			return CheckRectangleRectangleSAT(posA, scaledRectA, colliderA.rotation,
+											  posB, scaledRectB, colliderB.rotation);
 		}
 
 		// Scenario 3: if collider A is a circle, and collider B is a rectangle
@@ -1065,86 +1066,209 @@ namespace Collision {
 	//	}
 	//}
 	//
-	//CollisionResult CollisionDetection::CheckRectangleRectangleSAT(
-	//	const CollisionComponent& colliderA,
-	//	const ECSComponents::TransformComponent& transformA,
-	//	const CollisionComponent& colliderB,
-	//	const ECSComponents::TransformComponent& transformB)
-	//{
-	//	CollisionResult result;
-	//	result.hasCollision = false;
-	//	result.penetrationDepth = 0.0f;
-	//	result.contactPoint = { 0.0f, 0.0f };
-	//	result.penetrationVector = { 0.0f, 0.0f };
-	//
-	//	// Create OBBs
-	//	OBB obbA(transformA, colliderA);
-	//	OBB obbB(transformB, colliderB);
-	//
-	//	// Text aces (2 from each OBB)
-	//	Math::eVec2<float> axes[4] = {
-	//		obbA.axes[0], obbA.axes[1],
-	//		obbB.axes[0], obbB.axes[1]
-	//	};
-	//
-	//	float minOverlap = std::numeric_limits<float>::max();
-	//	Math::eVec2<float> minOverlapAxis = { 0.0f, 0.0f };
-	//
-	//	// SAT: Test all axes
-	//	for (int i = 0; i < 4; ++i)
-	//	{
-	//		Math::eVec2<float> axis = axes[i];
-	//
-	//		// Normalize axis
-	//		float length = std::sqrt(axis.v1 * axis.v1 + axis.v2 * axis.v2);
-	//		if (length < 0.0001f) continue;
-	//
-	//		axis.v1 /= length;
-	//		axis.v2 /= length;
-	//
-	//		// Project both OBBs
-	//		float minA, maxA, minB, maxB;
-	//		ProjectOBB(obbA, axis, minA, maxA);
-	//		ProjectOBB(obbB, axis, minB, maxB);
-	//
-	//		// Check overlap
-	//		if (!ProjectionsOverlap(minA, maxA, minB, maxB))
-	//		{
-	//			// Separating axis found - no collision!
-	//			return result;
-	//		}
-	//
-	//		// Track minimum overlap
-	//		float overlap = GetOverlap(minA, maxA, minB, maxB);
-	//
-	//		if (overlap < minOverlap)
-	//		{
-	//			minOverlap = overlap;
-	//			minOverlapAxis = axis;
-	//
-	//			// Ensure axis points from A to B
-	//			Math::eVec2<float> centerDiff = {
-	//				obbB.center.v1 - obbA.center.v1,
-	//				obbB.center.v2 - obbA.center.v2
-	//			};
-	//
-	//			if (Math::eVec2DotProduct(centerDiff, axis) < 0.0f)
-	//			{
-	//				minOverlapAxis.v1 = -minOverlapAxis.v1;
-	//				minOverlapAxis.v2 = -minOverlapAxis.v2;
-	//			}
-	//		}
-	//	}
-	//
-	//	// Collision Detected!
-	//	result.hasCollision = true;
-	//	result.penetrationDepth = minOverlap;
-	//	result.penetrationVector.v1 = minOverlapAxis.v1 * minOverlap;
-	//	result.penetrationVector.v2 = minOverlapAxis.v2 * minOverlap;
-	//	result.contactPoint.v1 = (obbA.center.v1 + obbB.center.v1) * 0.5f;
-	//	result.contactPoint.v2 = (obbA.center.v2 + obbB.center.v2) * 0.5f;
-	//
-	//	return result;
-	//}
+	
+	// ====================== SAT COLLISION DETECTION HELPER FUNCTIONS ===========================/
+	
+	/*============================================================================================
+	* \brief       Get the corners of a rotated rectangle in world space
+	* \param[in]   Math::eVec2<float> const& center - Center position of the rectangle
+	* \param[in]   float width - Width of the rectangle
+	* \param[in]   float height - Height of the rectangle
+	* \param[in]   float rotation - Rotation angle in radians
+	* \param[out]  Math::eVec2<float> corners[4] - Array to store the 4 corners
+	* \return      void
+	*===========================================================================================*/
+	void GetRotatedRectangleCorners(
+		const Math::eVec2<float>& center,
+		float width,
+		float height,
+		float rotation,
+		Math::eVec2<float> corners[4])
+	{
+		// Calculate half extents
+		float halfWidth = width * 0.5f;
+		float halfHeight = height * 0.5f;
 
+		// Pre-calculate sin and cos
+		float cosAngle = std::cos(rotation);
+		float sinAngle = std::sin(rotation);
+
+		// Local corner positions (before rotation)
+		Math::eVec2<float> localCorners[4] = {
+			{ -halfWidth, -halfHeight }, // Bottom-left
+			{ halfWidth, -halfHeight }, // Bottom-right
+			{ halfWidth, halfHeight },   // Top-right
+			{ -halfWidth, halfHeight }, // Top-left
+		};
+
+		// Rotate and translate each corner
+		for (int i = 0; i < 4; ++i){
+			// Rotate the corner
+			float rotatedX = localCorners[i].x * cosAngle - localCorners[i].y * sinAngle;
+			float rotatedY = localCorners[i].x * sinAngle + localCorners[i].y * cosAngle;
+
+			// Translate to world position
+			corners[i].x = center.x + rotatedX;
+			corners[i].y = center.y + rotatedY;
+		}
+	}
+
+	/*============================================================================================
+	* \brief       Get the two perpendicular axes for a rotated rectangle (for SAT)
+	* \param[in]   float rotation - Rotation angle in radians
+	* \param[out]  Math::eVec2<float> axes[2] - Array to store the 2 perpendicular axes
+	* \return      void
+	*===========================================================================================*/
+	void GetRectangleAxes(float rotation, Math::eVec2<float> axes[2])
+	{
+		// Pre-calculate sin and cos
+		float cosAngle = std::cos(rotation);
+		float sinAngle = std::sin(rotation);
+
+		// First axis (direction of width)
+		axes[0].x = cosAngle;
+		axes[0].y = sinAngle;
+
+		// Second axis (direction of height) - perpendicular to first
+		axes[1].x = -sinAngle;
+		axes[1].y = cosAngle;
+	}
+
+	/*============================================================================================
+	* \brief       Project a polygon onto an axis and get min/max scalar projections
+	* \param[in]   Math::eVec2<float> const corners[] - Array of corner points
+	* \param[in]   int numCorners - Number of corners
+	* \param[in]   Math::eVec2<float> const& axis - Axis to project onto (must be normalized)
+	* \param[out]  float& min - Minimum projection value
+	* \param[out]  float& max - Maximum projection value
+	* \return      void
+	*===========================================================================================*/
+	void ProjectPolygonOntoAxis(
+		const Math::eVec2<float> corners[],
+		int numCorners,
+		const Math::eVec2<float>& axis,
+		float& min,
+		float& max)
+	{
+		// Project first corner
+		min = max = Math::eVec2DotProduct(corners[0], axis);
+
+		// Project remaining corners
+		for (int i = 1; i < numCorners; ++i) {
+			float projection = Math::eVec2DotProduct(corners[i], axis);
+			if (projection < min) min = projection;
+			if (projection > max) max = projection;
+		}
+	}
+
+	/*============================================================================================
+	* \brief       Check if two projection ranges overlap on an axis
+	* \param[in]   float minA - Minimum projection of shape A
+	* \param[in]   float maxA - Maximum projection of shape A
+	* \param[in]   float minB - Minimum projection of shape B
+	* \param[in]   float maxB - Maximum projection of shape B
+	* \return      float - Overlap amount (positive if overlapping, negative if separated)
+	*===========================================================================================*/
+	float GetProjectionOverlap(float minA, float maxA, float minB, float maxB)
+	{
+		// Check if there's any overlap
+		if (maxA < minB || maxB < minA) {
+			return -1.0f; // No overlap - shapres are separated on this axis
+		}
+
+		// Calculate overlap amount
+		float overlap1 = maxA - minB;	// A's max exceeds B's min
+		float overlap2 = maxB - minA;	// B's max exceeds A's min
+
+		// Return the smaller overlap (this is the penetration depth)
+		return std::min(overlap1, overlap2);
+	}
+
+	/*============================================================================================
+	* \brief       SAT collision detection for two rotated rectangles (OBB vs OBB)
+	* \param[in]   Math::eVec2<float> const& posA - Center position of rectangle A
+	* \param[in]   CollisionComponent::ColliderData::RectangleData const& rectA - Size data of rectangle A
+	* \param[in]   float rotationA - Rotation angle of rectangle A in radians
+	* \param[in]   Math::eVec2<float> const& posB - Center position of rectangle B
+	* \param[in]   CollisionComponent::ColliderData::RectangleData const& rectB - Size data of rectangle B
+	* \param[in]   float rotationB - Rotation angle of rectangle B in radians
+	* \return      CollisionResult - Contains collision information (hasCollision, penetration vector, etc.)
+	*===========================================================================================*/
+
+	CollisionResult CollisionDetection::CheckRectangleRectangleSAT(
+		const Math::eVec2<float>& posA,
+		const CollisionComponent::ColliderData::RectangleData& rectA,
+		float rotationA,
+		const Math::eVec2<float>& posB,
+		const CollisionComponent::ColliderData::RectangleData& rectB,
+		float rotationB)
+	{
+		CollisionResult result;
+
+		// Get corners of both rectangles in world space
+		Math::eVec2<float> cornersA[4];
+		Math::eVec2<float> cornersB[4];
+		GetRotatedRectangleCorners(posA, rectA.width, rectA.height, rotationA, cornersA);
+		GetRotatedRectangleCorners(posB, rectB.width, rectB.height, rotationB, cornersB);
+
+		// Get the axes to test (perpendicular edges of both rectangles)
+		Math::eVec2<float> axesA[2];
+		Math::eVec2<float> axesB[2];
+		GetRectangleAxes(rotationA, axesA);
+		GetRectangleAxes(rotationB, axesB);
+
+		// Track the minimum overlap and the axis it occurred on
+		float minOverlap = std::numeric_limits<float>::max();
+		Math::eVec2<float> separationAxis = { 0.0f, 0.0f };
+
+		// Test all 4 axes (2 from each rectangle)
+		Math::eVec2<float> allAxes[4] = { axesA[0], axesA[1], axesB[0], axesB[1] };
+
+		for (int i = 0; i < 4; ++i) {
+			// Project both rectangles onto this axis
+			float minA, maxA, minB, maxB;
+			ProjectPolygonOntoAxis(cornersA, 4, allAxes[i], minA, maxA);
+			ProjectPolygonOntoAxis(cornersB, 4, allAxes[i], minB, maxB);
+
+			// Check for overlap on this axis
+			float overlap = GetProjectionOverlap(minA, maxA, minB, maxB);
+
+			// If no overlap on any axis, shapes don't collide (SAT theorem)
+			if (overlap < 0) {
+				result.hasCollision = false;
+				return result;
+			}
+
+			// Track the axis with minimum overlap (this is the MTV - Minimum Translation Vector)
+			if (overlap < minOverlap) {
+				minOverlap = overlap;
+				separationAxis = allAxes[i];
+			}
+		}
+
+		// If we get here, all axes overlapped - collision detected!
+		result.hasCollision = true;
+		result.penetrationDepth = minOverlap;
+
+		// Determine the direction of the separation axis
+		// Make sure the penetration vector points from A to B
+		Math::eVec2<float> centerToCenter = posB - posA;
+		if (Math::eVec2DotProduct(separationAxis, centerToCenter) < 0) {
+			// Flip the axis if it points in the wrong direction
+			separationAxis.x = -separationAxis.x;
+			separationAxis.y = -separationAxis.y;
+		}
+
+		// Set the penetration vector (multiply axis by depth)
+		result.penetrationVector.x = separationAxis.x * minOverlap;
+		result.penetrationVector.y = separationAxis.y * minOverlap;
+
+		// Calculate contact point (approximate as midpoint between centers along separation axis)
+		// For a more accurate contact point, we would need to find the actual collision edge
+		result.contactPoint.x = (posA.x + posB.x) * 0.5f;
+		result.contactPoint.y = (posA.y + posB.y) * 0.5f;
+
+		return result;
+	
+	}
 } // namespace Collision
