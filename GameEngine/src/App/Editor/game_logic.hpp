@@ -14,7 +14,7 @@
 #include <memory>  
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
-
+#include "player/player.hpp"
 
 class GameApplication {
 private:

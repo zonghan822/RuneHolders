@@ -20,6 +20,7 @@ namespace Collision {
 		, offset{ 0.0f, 0.0f }
 		, isTrigger(false)
 		, isActive(true)
+		, rotation(0.0f)
 	{
 		data.circle.radius = 1.0f;
 	}
@@ -30,6 +31,7 @@ namespace Collision {
 		, offset(colliderOffset)
 		, isTrigger(trigger)
 		, isActive(true)
+		, rotation(0.0f)
 	{
 		data.circle.radius = radius;
 	}
@@ -40,6 +42,7 @@ namespace Collision {
 		, offset(colliderOffset)
 		, isTrigger(trigger)
 		, isActive(true)
+		, rotation(0.0f)
 	{
 		data.rectangle.width = width;
 		data.rectangle.height = height;
@@ -51,6 +54,7 @@ namespace Collision {
 		, offset{ 0.f, 0.f }
 		, isTrigger(trigger)
 		, isActive(true)
+		, rotation(0.0f)
 	{
 		data.line.p1 = point1;
 		data.line.p2 = point2;
@@ -196,8 +200,8 @@ namespace Collision {
 			scaledRectB.width *= transformB.scale.x;
 			scaledRectB.height *= transformB.scale.y;
 
-			return CheckRectangleRectangleSAT(posA, scaledRectA, colliderA.rotation,
-											  posB, scaledRectB, colliderB.rotation);
+			return CheckRectangleRectangleSAT(posA, scaledRectA, transformA.rot.y,
+											  posB, scaledRectB, transformB.rot.y);
 		}
 
 		// Scenario 3: if collider A is a circle, and collider B is a rectangle
@@ -827,7 +831,8 @@ namespace Collision {
 						topLeft,
 						Math::eVec2<float>{scaledWidth, scaledHeight},
 						color,
-						false // Not filled, just outline
+						false,				// Not filled, just outline
+						collision.rotation		// Use transform rotation
 					);
 
 					break;

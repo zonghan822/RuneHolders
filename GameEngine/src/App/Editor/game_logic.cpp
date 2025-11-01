@@ -431,13 +431,18 @@ void GameApplication::drawPlayerAndIndicator() {
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
 					rotationRadians += static_cast < float>(3.0f * 0.0174533 * 0.01667);
-					//playerTransform.rot.z = rotationRadians;
+					
+					auto& playerCollider = playerSystem_->GetCollision(it->second);
+					playerCollider.rotation = rotationRadians;
+
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
 					rotationRadians -= static_cast < float>(3.0f * 0.0174533 * 0.01667);
-					//playerTransform.rot.z = rotationRadians;
+
+					auto& playerCollider = playerSystem_->GetCollision(it->second);
+					playerCollider.rotation = rotationRadians;
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
 

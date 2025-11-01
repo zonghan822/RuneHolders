@@ -124,6 +124,13 @@ namespace Player
         *//*========================================================================================*/        
         ECSComponents::TransformComponent& GetTransform(const ECS::EntityLoc& entityLoc);
 
+        /*============================================================================================
+       * \brief       Helper to get collision component from entity location
+       * \param[in]   ECS::EntityLoc const& entityLoc - Entity location information
+       * \return      Collision::CollisionComponent& - Reference to entity's collision component
+       *//*========================================================================================*/
+        Collision::CollisionComponent& GetCollision(const ECS::EntityLoc& entityLoc);
+
     private:
         /*============================================================================================
         * \brief       Get movement input from WASD keys using EnoInputManager
@@ -147,12 +154,7 @@ namespace Player
             const Math::eVec2<float>& targetPos,
             ECS::EntityManager& entityManager);
 
-        /*============================================================================================
-        * \brief       Helper to get collision component from entity location
-        * \param[in]   ECS::EntityLoc const& entityLoc - Entity location information
-        * \return      Collision::CollisionComponent& - Reference to entity's collision component
-        *//*========================================================================================*/        
-        Collision::CollisionComponent& GetCollision(const ECS::EntityLoc& entityLoc);
+       
     };
 
 } // namespace Player
