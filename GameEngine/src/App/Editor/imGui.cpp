@@ -133,36 +133,34 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 		throttledTimes_ = systemTimes_;
 		next_update = now + 0.5;
 	}
-
-	// ========== RENDER ALL WINDOWS IN ORDER ==========
-
-	// LEFT TOP: Edit (Hierarchy)
+	
+	// Edit (Hierarchy)
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_);
 	displayHierarchyTab(engine_);
 	ImGui::End();
 
-	// LEFT MIDDLE: Prefabs
+	// Prefabs
 	ImGui::Begin("Prefabs", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayPrefabsTab(engine_);
 	ImGui::End();
 
-	// LEFT BOTTOM: Main Controls
+	// Main Controls
 	ImGui::Begin("Main Controls", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayMainTab(engine_);
 	ImGui::End();
 
-	// CENTER: Game View
+	// Game View
 	ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	displayGameView(engine_);
 	ImGui::End();
 
-	// RIGHT: Assets Browser
+	// Assets Browser
 	ImGui::Begin("Assets Browser", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayAssetTab(engine_);
 	ImGui::End();
 
-	// BOTTOM: FPS
+	// FPS
 	ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayFPSTab(engine_);
 	ImGui::End();
@@ -853,7 +851,7 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 	}
 }
 
-// docking shi
+// Docking shi
 
 void imGuiBeginDockspace() {
 	// Get the main viewport
@@ -889,13 +887,12 @@ void imGuiBeginDockspace() {
 void displayGameView(Engine::EnoEngine& engine_) {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
-	// Game controls
+	// Game controls/ can do some shenanigans here @caven
 	//if (ImGui::Button("Play")) { /* Play logic */ }
 	//ImGui::SameLine();
 	//if (ImGui::Button("Pause")) { /* Pause logic */ }
 	//ImGui::SameLine();
 	//if (ImGui::Button("Stop")) { /* Stop logic */ }
-
 	//ImGui::Separator();
 
 	// Display the game framebuffer texture
@@ -917,7 +914,7 @@ void displayGameView(Engine::EnoEngine& engine_) {
 	}
 }
 
-void imGuiSetupDefaultLayout() {
+void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of space the docking takes
 	static bool firstRun = true;
 	if (!firstRun) return;
 	firstRun = false;
@@ -936,27 +933,27 @@ void imGuiSetupDefaultLayout() {
 
 	// Set initial window positions and sizes
 
-	// LEFT PANEL - Edit (top 1/3 of left area)
+	// LEFT PANEL 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.33f));
 
-	// LEFT PANEL - Prefabs (middle 1/3 of left area)
+	// LEFT PANEL
 	ImGui::SetNextWindowPos(ImVec2(0, mainHeight * 0.33f));
 	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.33f));
 
-	// LEFT PANEL - Main Controls (bottom 1/3 of left area)
+	// LEFT PANEL
 	ImGui::SetNextWindowPos(ImVec2(0, mainHeight * 0.66f));
 	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.34f));
 
-	// CENTER - Game View (main area)
+	// CENTER
 	ImGui::SetNextWindowPos(ImVec2(leftWidth, 0));
 	ImGui::SetNextWindowSize(ImVec2(centerWidth, mainHeight));
 
-	// RIGHT PANEL - Assets
+	// RIGHT PANEL
 	ImGui::SetNextWindowPos(ImVec2(leftWidth + centerWidth, 0));
 	ImGui::SetNextWindowSize(ImVec2(rightWidth, mainHeight));
 
-	// BOTTOM PANEL - FPS/Console
+	// BOTTOM PANEL 
 	ImGui::SetNextWindowPos(ImVec2(0, mainHeight));
 	ImGui::SetNextWindowSize(ImVec2(screenWidth, bottomHeight));
 
