@@ -875,11 +875,23 @@ namespace Graphics
     void EnoGraphicsManager::setProjectionMatrix(int windowWidth, int windowHeight)
     {
         setupProjectionMatrix(windowWidth, windowHeight);
+
+        // Update the shader uniform with the new projection matrix
+        if (defaultShader_ && defaultShader_->isValid()) {
+            defaultShader_->use();
+            defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
+        }
     }
 
     void EnoGraphicsManager::setProjectionMatrix(const float* matrix)
     {
         std::copy(matrix, matrix + 16, projectionMatrix_.begin());
+
+        // Update the shader uniform with the new projection matrix
+        if (defaultShader_ && defaultShader_->isValid()) {
+            defaultShader_->use();
+            defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
+        }
     }
 
     bool EnoGraphicsManager::createDefaultShader()

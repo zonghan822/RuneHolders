@@ -219,6 +219,13 @@ void GameApplication::updateGameLogic() {
 	// Unbind framebuffer (back to default)
 	if (gameFramebuffer_) {
 		gameFramebuffer_->unbind();
+
+		// CRITICAL: Restore viewport to window size for ImGui rendering
+		auto windowSize = engine_.getWindowManager().getFramebufferSize();
+		glViewport(0, 0, windowSize.first, windowSize.second);
+
+		// Restore projection matrix to window size
+		engine_.getGraphicsManager().setProjectionMatrix(windowSize.first, windowSize.second);
 	}
 
 	// Now render ImGui (which will display the framebuffer texture)
