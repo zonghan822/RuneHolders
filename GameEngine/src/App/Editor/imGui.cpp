@@ -235,11 +235,11 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			// Store ID by finding the last created entity in the map
 			// Get the entity map and find the most recent entity
 
-			// Then add CollisionComponent
-			entity.add<Collision::CollisionComponent>(playerCollider);
-
-			// Then add PlayerComponent
+			//(YunQi) this needs to be added from the playerComp but im using this to test the deletion of player and it works
+			entity.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("Player"));
+			
 			entity.add<Player::PlayerComponent>(playerComp);
+			entity.add<Collision::CollisionComponent>(playerCollider);
 
 			playerSpawned_ = true;
 
@@ -491,7 +491,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 				ECSComponents::NameComponent& nameComp = e.get<ECSComponents::NameComponent>();
 
 				if (!deletedSelected && e.getEntityID() == selectedEntityID) {
-					e.destroy();
+					toDelete.push_back(e);
 					selectedEntityID = 0;
 					deletedSelected = true;
 					std::cout << "Deleted selected entity\n";
@@ -501,6 +501,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 				if (nameComp.name == target) {
 					toDelete.push_back(e);
 				}
+
 			}
 
 			if (g_game)
@@ -575,14 +576,25 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 			a.destroy();
 		}
 
+		bool playerWasDeleted = false;
+		for (auto& e : toDelete) {
+			if (e.getEntityID() == playerEntityID_) {
+				playerWasDeleted = true;
+				break;
+			}
+		}
+
+		if (playerWasDeleted) {
+			playerSpawned_ = false;
+			playerEntityID_ = 0;
+		}
 		// FIX: Mark cache as dirty after deletion
 		if (g_game) {
 			g_game->markEntitiesDirty();
 		}
 	}
+
 }
-
-
 
 std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse)
 {
