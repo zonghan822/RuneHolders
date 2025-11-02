@@ -11,6 +11,7 @@
 #include "imGui.hpp"
 #include "game_logic.hpp"
 #include "player/player_config.hpp"
+#include "player/player_archetype_config.hpp"
 
 #pragma region Game Variables
 
@@ -199,41 +200,23 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 	if (!playerSpawned_) {
 		if (ImGui::Button("Spawn Player")) {
 
+			// Load player configuration from file
 			Player::PlayerConfig playerConfig;
 			playerConfig.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
 
-			// create player entity at indicator position
-			ECSComponents::TransformComponent transform{
-				{indicatorX_, indicatorY_},
-				{0.0f, 0.0f},
-				{1.0f, 1.0f}
-			};
+			// Create complete player entity using the config
+			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
+				engine_.getEntityManager(),
+				Math::eVec2<float>{indicatorX_, indicatorY_},
+				playerConfig
+			);
 
-			// create player with rectangle collider (can change to circle if u want)
-			Collision::CollisionComponent playerCollider(
-				playerConfig.colliderWidth,
-				playerConfig.colliderHeight
-			); // Size from player_config.txt
-
-			// for circle: (uncomment if u want circle!)
-			// Collision::CollisionComponent playerCollider(5.0f); // radius 5.0
-			Player::PlayerComponent playerComp(playerConfig);
-
-			// Create entity with TransformComponent first
-			ECS::Entity entity = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
-
-			// Store ID by finding the last created entity in the map
-			// Get the entity map and find the most recent entity
-
-			// Then add CollisionComponent
-			entity.add<Collision::CollisionComponent>(playerCollider);
-
-			// Then add PlayerComponent
-			entity.add<Player::PlayerComponent>(playerComp);
-
+			// Store player ID for reference
+			playerEntityID_ = player.getEntityID();
 			playerSpawned_ = true;
 
-			std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")\n";
+			std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")" << std::endl;
+			std::cout << "Player ID: " << playerEntityID_ << std::endl;
 		}
 	}
 	else {

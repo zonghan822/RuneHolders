@@ -1,0 +1,170 @@
+/*============================================================================================
+* @file         collision_component.hpp
+* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio)
+* @date         02-11-2025
+* @brief        Collision component for ECS. Stores collision shape data including type,
+*               dimensions, offset, and trigger status for collision detection system.
+*===========================================================================================*/
+
+#pragma once
+
+#include "../../math/math.hpp"
+
+namespace ECSComponents
+{
+    /*============================================================================================
+     * \brief       Defines the type of collision shape for a collider
+     *===========================================================================================*/
+    enum class ColliderType
+    {
+        CIRCLE = 0,     // Circular collision areas (round objects)
+        RECTANGLE = 1,  // Rectangular collision areas (AABB)
+        LINE = 2,       // Line segment
+        POINT = 3       // Point collision (projectiles, click detection)
+    };
+
+    /*============================================================================================
+     * \brief       Component that stores collision information for entities. Supports different
+     *              collision shapes and can be configured as either a solid collider (blocks
+     *              movement) or trigger (detects overlap only)
+     *===========================================================================================*/
+    struct CollisionComponent
+    {
+        ColliderType type;              // What shape is the collider?
+        Math::eVec2<float> offset;      // Offset from entity's transform position
+        bool isTrigger;                 // Is this a trigger (no physics response) or solid collider?
+        bool isActive;                  // Can this collider currently participate in collision detection
+        float rotation;                 // Rotation angle in radians
+
+        /*============================================================================================
+         * \brief       Union to store different collision shape data efficiently. Only stores the
+         *              data needed for the current collider type.
+         *===========================================================================================*/
+        union ColliderData
+        {
+            struct CircleData {
+                float radius;           // Radius for circle collider
+            } circle;
+
+            struct RectangleData {
+                float width;            // Width of rectangle collider
+                float height;           // Height of rectangle collider
+            } rectangle;
+
+            struct LineData {
+                Math::eVec2<float> p1;          // First point of line collider
+                Math::eVec2<float> p2;          // Second point of line collider
+                Math::eVec2<float> pNormal;     // Normalized outward normal of line collider
+            } line;
+            // Point collider doesn't need additional data beyond its position
+        } data;
+
+        /*============================================================================================
+         * \brief       Default constructor - creates a basic circle collider
+         *===========================================================================================*/
+        CollisionComponent()
+            : type(ColliderType::CIRCLE)
+            , offset{ 0.0f, 0.0f }
+            , isTrigger(false)
+            , isActive(true)
+            , rotation(0.0f)
+        {
+            data.circle.radius = 10.0f;
+        }
+
+        /*============================================================================================
+         * \brief       Create a CIRCLE collider
+         * \param[in]   float radius - Size of the circular collision area
+         * \param[in]   Math::eVec2<float> const& colliderOffset - Offset from entity's transform
+         * \param[in]   bool trigger - If TRUE, won't block movement but will detect overlaps
+         *===========================================================================================*/
+        CollisionComponent(
+            float radius,
+            const Math::eVec2<float>& colliderOffset = { 0.0f, 0.0f },
+            bool trigger = false
+        )
+            : type(ColliderType::CIRCLE)
+            , offset(colliderOffset)
+            , isTrigger(trigger)
+            , isActive(true)
+            , rotation(0.0f)
+        {
+            data.circle.radius = radius;
+        }
+
+        /*============================================================================================
+         * \brief       Create a RECTANGLE collider
+         * \param[in]   float width - Width of the rectangular collision area
+         * \param[in]   float height - Height of the rectangular collision area
+         * \param[in]   Math::eVec2<float> const& colliderOffset - Offset from entity's transform
+         * \param[in]   bool trigger - If TRUE, won't block movement but will detect overlaps
+         *===========================================================================================*/
+        CollisionComponent(
+            float width,
+            float height,
+            const Math::eVec2<float>& colliderOffset = { 0.0f, 0.0f },
+            bool trigger = false
+        )
+            : type(ColliderType::RECTANGLE)
+            , offset(colliderOffset)
+            , isTrigger(trigger)
+            , isActive(true)
+            , rotation(0.0f)
+        {
+            data.rectangle.width = width;
+            data.rectangle.height = height;
+        }
+
+        /*============================================================================================
+         * \brief       Create a LINE collider
+         * \param[in]   Math::eVec2<float> const& point1 - Start point of line
+         * \param[in]   Math::eVec2<float> const& point2 - End point of line
+         * \param[in]   bool trigger - If TRUE, won't block movement but will detect overlaps
+         *===========================================================================================*/
+        CollisionComponent(
+            const Math::eVec2<float>& point1,
+            const Math::eVec2<float>& point2,
+            bool trigger = false
+        )
+            : type(ColliderType::LINE)
+            , offset{ 0.0f, 0.0f }
+            , isTrigger(trigger)
+            , isActive(true)
+            , rotation(0.0f)
+        {
+            data.line.p1 = point1;
+            data.line.p2 = point2;
+
+            // Calculate normal
+            Math::eVec2<float> lineVec = point2 - point1;
+            data.line.pNormal = Math::eVec2<float>{ -lineVec.y, lineVec.x };
+            float length = sqrt(data.line.pNormal.x * data.line.pNormal.x +
+                data.line.pNormal.y * data.line.pNormal.y);
+            if (length > 0.0f) {
+                data.line.pNormal.x /= length;
+                data.line.pNormal.y /= length;
+            }
+        }
+
+        /*============================================================================================
+         * \brief       Create a point collider (e.g., bullets, mouse clicks, etc.)
+         * \param[in]   Math::eVec2<float> const& colliderOffset - Offset from entity's transform
+         * \param[in]   bool trigger - If TRUE, won't block movement but will detect overlaps
+         * \return      CollisionComponent - Point collider instance
+         *===========================================================================================*/
+        static CollisionComponent CreatePointCollider(
+            const Math::eVec2<float>& colliderOffset = { 0.0f, 0.0f },
+            bool trigger = false
+        )
+        {
+            CollisionComponent comp;
+            comp.type = ColliderType::POINT;
+            comp.offset = colliderOffset;
+            comp.isTrigger = trigger;
+            comp.isActive = true;
+            comp.rotation = 0.0f;
+            return comp;
+        }
+    };
+
+} // namespace ECSComponents
