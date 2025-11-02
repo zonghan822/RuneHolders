@@ -29,7 +29,7 @@ void GameApplication::initialize() {
     createTestObject(engine_.getEntityManager());
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
-	gameFramebuffer_->create(1280, 720); // Initial size
+	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
 
     std::cout << "Game initialized successfully!" << std::endl;
 }
@@ -188,20 +188,23 @@ void GameApplication::updateGameLogic() {
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
 
-	// Bind game framebuffer
+	// Use FIXED virtual resolution for consistent rendering
+	Math::eVec2<float> renderSize{
+		static_cast<float>(VIRTUAL_WIDTH),
+		static_cast<float>(VIRTUAL_HEIGHT)
+	};
+
 	if (gameFramebuffer_) {
+		// CRITICAL: Set projection matrix to fixed virtual resolution
+		engine_.getGraphicsManager().setProjectionMatrix(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+		// Bind framebuffer for rendering
 		gameFramebuffer_->bind();
 	}
 
 	// Clear the framebuffer
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	auto windowDim = engine_.getWindowManager().getWindowSize();
-	Math::eVec2<float> windowSize{
-		static_cast<float>(windowDim.first),
-		static_cast<float>(windowDim.second)
-	};
 
 	if (playerTexture_ && playerSpawned_) {
 		playerAnimController_.update(static_cast<float>(deltaTime));
@@ -211,7 +214,7 @@ void GameApplication::updateGameLogic() {
 	drawShapes();
 	drawPlayerAndIndicator();
 	engine_.getGraphicsManager().flush();
-	drawText(windowSize);
+	drawText(renderSize);
 
 	// Unbind framebuffer (back to default)
 	if (gameFramebuffer_) {
@@ -229,16 +232,17 @@ void GameApplication::updateEntities() {
 	float deltaTime = io.DeltaTime;
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
-	auto windowDim = engine_.getConfigManager().getWindowDim();
-	Math::eVec2<float> windowSize{
-			static_cast<float>(windowDim.first),
-			static_cast<float>(windowDim.second)
+
+	// Use fixed virtual resolution for consistent rendering
+	Math::eVec2<float> renderSize{
+		static_cast<float>(VIRTUAL_WIDTH),
+		static_cast<float>(VIRTUAL_HEIGHT)
 	};
 
 	// Draw background
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
-		windowSize,                                // Full screen size from config
+		renderSize,                                // Use fixed virtual resolution
 		backgroundTexture_,
 		Math::eVec2<float>{0.0f, 0.0f},           // UV start
 		Math::eVec2<float>{1.0f, 1.0f},           // UV end

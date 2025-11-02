@@ -586,9 +586,13 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 
 	const PrefabData& prefab = prefabRegistry[name];
 
-	// center position if your prefab uses width/height as top-left reference
-	float centerX = x + prefab.width * 0.5f;
-	float centerY = y + prefab.height * 0.5f;
+	// Treat x,y as the CENTER of where the user clicked
+	float centerX = x;
+	float centerY = y;
+
+	// Calculate top-left for DrawInfo (which uses top-left coordinates)
+	float topLeftX = x - prefab.width * 0.5f;
+	float topLeftY = y - prefab.height * 0.5f;
 
 	// create the entity
 	ECS::Entity e = engine.getEntityManager().create<>();
@@ -596,7 +600,7 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	// attach components
 	e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent(prefab.name.c_str()));
 
-	// transform
+	// transform uses center position
 	ECSComponents::TransformComponent transform{
 		{centerX, centerY},
 		{0.0f, 0.0f},
@@ -604,9 +608,9 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	};
 	e.add<ECSComponents::TransformComponent>(transform);
 
-	// draw info
+	// draw info uses top-left position
 	ECSComponents::DrawInfoComponent draw{
-		x, y, prefab.width, prefab.height,
+		topLeftX, topLeftY, prefab.width, prefab.height,
 		prefab.shape == 0 ? "Circle" : "Rectangle",
 		prefab.color
 	};
@@ -889,46 +893,66 @@ void displayGameView(Engine::EnoEngine& engine_) {
 		auto* fb = g_game->getGameFramebuffer();
 
 		if (contentSize.x > 0 && contentSize.y > 0) {
-			fb->resize((int)contentSize.x, (int)contentSize.y);
+			// Get fixed virtual resolution from game
+			float virtualWidth = static_cast<float>(g_game->getVirtualWidth());
+			float virtualHeight = static_cast<float>(g_game->getVirtualHeight());
+			float virtualAspect = virtualWidth / virtualHeight;
 
-			int fbWidth = fb->getWidth();
-			int fbHeight = fb->getHeight();
+			// Calculate aspect-ratio-preserving size to fit in the Game View
+			float contentAspect = contentSize.x / contentSize.y;
+			ImVec2 displaySize;
+			ImVec2 offset(0, 0);
 
-			// Display the texture
+			if (contentAspect > virtualAspect) {
+				// Content is wider - fit to height, add horizontal letterboxing
+				displaySize.y = contentSize.y;
+				displaySize.x = contentSize.y * virtualAspect;
+				offset.x = (contentSize.x - displaySize.x) * 0.5f; // Center horizontally
+			} else {
+				// Content is taller - fit to width, add vertical letterboxing
+				displaySize.x = contentSize.x;
+				displaySize.y = contentSize.x / virtualAspect;
+				offset.y = (contentSize.y - displaySize.y) * 0.5f; // Center vertically
+			}
+
+			// Draw black letterbox bars
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			ImVec2 windowPos = ImGui::GetCursorScreenPos();
+
+			// Fill entire content area with black
+			drawList->AddRectFilled(
+				windowPos,
+				ImVec2(windowPos.x + contentSize.x, windowPos.y + contentSize.y),
+				IM_COL32(0, 0, 0, 255)
+			);
+
+			// Position the image with offset (centered with letterboxing)
+			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
+
+			// Display the framebuffer texture scaled to fit
 			ImGui::Image(
 				(void*)(intptr_t)fb->getTextureID(),
-				contentSize,
-				ImVec2(0, 1),
+				displaySize,
+				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
 				ImVec2(1, 0)
 			);
 
+			// Handle prefab placement with corrected mouse coordinates
 			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {
 				ImVec2 mousePos = ImGui::GetMousePos();
-
-				// Get the rendered image bounds
 				ImVec2 imageMin = ImGui::GetItemRectMin();
 				ImVec2 imageMax = ImGui::GetItemRectMax();
 
-				// Calculate the displayed image size (might be smaller due to aspect ratio)
-				float displayedWidth = imageMax.x - imageMin.x;
-				float displayedHeight = imageMax.y - imageMin.y;
+				// Mouse position relative to the scaled image (0 to 1)
+				float relX = (mousePos.x - imageMin.x) / (imageMax.x - imageMin.x);
+				float relY = (mousePos.y - imageMin.y) / (imageMax.y - imageMin.y);
 
-				std::cout << "Image bounds: (" << imageMin.x << ", " << imageMin.y << ") to ("
-					<< imageMax.x << ", " << imageMax.y << ")\n";
-				std::cout << "Displayed size: " << displayedWidth << " x " << displayedHeight << "\n";
-				std::cout << "Content region: " << contentSize.x << " x " << contentSize.y << "\n";
-
-				// Convert mouse to coordinates relative to the displayed image
-				float relX = (mousePos.x - imageMin.x) / displayedWidth;
-				float relY = (mousePos.y - imageMin.y) / displayedHeight;
-
-				// Clamp to ensure we're within the texture bounds
 				relX = std::clamp(relX, 0.0f, 1.0f);
 				relY = std::clamp(relY, 0.0f, 1.0f);
 
-				// Convert to framebuffer coordinates
-				float gameX = relX * fbWidth;
-				float gameY = relY * fbHeight;
+				// Convert to actual game coordinates (fixed virtual resolution)
+				float gameX = relX * virtualWidth;
+				float gameY = relY * virtualHeight;
 
 				spawnPrefabAt(gameX, gameY, g_selectedPrefabForPlacement, engine_);
 				g_selectedPrefabForPlacement.clear();
@@ -936,7 +960,7 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				std::cout << "Mouse: (" << mousePos.x << ", " << mousePos.y << ")"
 					<< " | Relative: (" << relX << ", " << relY << ")"
 					<< " | Game: (" << gameX << ", " << gameY << ")"
-					<< " | FB: " << fbWidth << "x" << fbHeight << "\n";
+					<< " | Virtual: " << virtualWidth << "x" << virtualHeight << "\n";
 			}
 
 			if (ImGui::IsItemHovered() && !g_selectedPrefabForPlacement.empty()) {
