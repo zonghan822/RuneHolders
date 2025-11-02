@@ -47,6 +47,7 @@ namespace Collision
 		Math::eVec2<float> offset;	// Offset from entity's transform position
 		bool isTrigger;				// Is this a trigger (no physics response) or solid collider?
 		bool isActive;				// Can this collider currently participate in collision detection
+		float rotation;				// Rotation angle in radians
 
 		/*============================================================================================
 		* \brief       Union to store different collision shape data efficiently. Only stores the
@@ -282,6 +283,24 @@ namespace Collision
 			const Math::eVec2<float>& posB, const CollisionComponent::ColliderData::RectangleData& rectB);
 
 		/*============================================================================================
+		* \brief       Check collision between two rotated rectangles using SAT (OBB vs OBB)
+		* \param[in]   Math::eVec2<float> const& posA - Position of first rectangle center
+		* \param[in]   CollisionComponent::ColliderData::RectangleData const& rectA - Size data of first rectangle
+		* \param[in]   float rotationA - Rotation angle of first rectangle in radians
+		* \param[in]   Math::eVec2<float> const& posB - Position of second rectangle center
+		* \param[in]   CollisionComponent::ColliderData::RectangleData const& rectB - Size data of second rectangle
+		* \param[in]   float rotationB - Rotation angle of second rectangle in radians
+		* \return      CollisionResult - Contains collision details
+		*//*========================================================================================*/
+		static CollisionResult CheckRectangleRectangleSAT(
+			const Math::eVec2<float>& posA,
+			const CollisionComponent::ColliderData::RectangleData& rectA,
+			float rotationA,
+			const Math::eVec2<float>& posB,
+			const CollisionComponent::ColliderData::RectangleData& rectB,
+			float rotationB);
+
+		/*============================================================================================
 		 * \brief       Check collision between a circle and a rectangle
 		 * \param[in]   Math::eVec2<float> const& circlePos - Position of circle center
 		 * \param[in]   float radius - Radius of circle
@@ -336,7 +355,36 @@ namespace Collision
 			const Math::eVec2<float>& posB, const Math::eVec2<float>& velB, float radiusB,
 			Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi);
 		
+		/*============================================================================================
+		* \brief       Oriented Bounding Box structure for SAT
+		*//*========================================================================================*/
+		struct OBB {
+			Math::eVec2<float> center;
+			Math::eVec2<float> halfExtents;
+			Math::eVec2<float> axes[2];
 
+			//OBB(const ECSComponents::TransformComponent& transform, const CollisionComponent& collision);
+			//void GetCorners(Math::eVec2<float> corners[4]) const;
+		};
+
+		/*============================================================================================
+		* \brief       Projects OBB onto axis
+		*//*========================================================================================*/
+		//static void ProjectOBB(const OBB& obb, const Math::eVec2<float>& axis, float& min, float& max);
+
+		/*============================================================================================
+		* \brief       Checks if 2 projection ranges overlap
+		*//*========================================================================================*/
+		static inline bool ProjectionsOverlap(float minA, float maxA, float minB, float maxB) {
+			return !(maxA < minB || maxB < minA);
+		}
+
+		/*============================================================================================
+		* \brief       Calculates overlap amount between 2 ranges
+		*//*========================================================================================*/
+		static inline float GetOverlap(float minA, float maxA, float minB, float maxB) {
+			return std::min(maxA, maxB) - std::max(minA, minB);
+		}
 	};
 
 	// COLLISION EVENTS

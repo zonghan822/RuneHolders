@@ -1,0 +1,84 @@
+# ====================================
+# Player Configuration File
+# ====================================
+# Edit these values to adjust player behavior
+# without recompiling the game.
+#
+# Format: key = value
+# Lines starting with # are comments
+# ====================================
+
+# Physics Properties
+# --------------------
+# Acceleration rate when moving (pixels per second²)
+# Higher = faster speed-up, more responsive
+# Lower = slower speed-up, more "heavy" feeling
+acceleration = 800.0
+
+# Friction coefficient (dimensionless, 0-20 typical range)
+# Higher = stops faster when releasing keys
+# Lower = more "slippery" movement, longer slide
+# Recommended: 6-10 for responsive feel, 2-4 for ice physics
+friction = 4.0
+
+# Maximum movement speed (pixels per second)
+# This is the top speed the player can reach
+maxSpeed = 200.0
+
+# Whether player can move initially (true/false)
+canMove = true
+
+# Sprite Dimensions
+# --------------------
+# Visual Sprite dimensions in pixels
+spriteWidth = 48.0
+spriteHeight = 48.0
+
+# Collision Dimensions
+# --------------------
+# Collision box dimensions in pixels
+# Usually same as sprite, but can be smaller for tighter collisions
+colliderWidth = 48.0
+colliderHeight = 48.0
+
+# Dash Mechanics
+# --------------------
+# How long the dash lasts in seconds
+dashDuration = 0.3
+
+# Distance covered during dash in pixels
+dashDistance = 150.0
+
+# Cooldown time between dashes in seconds
+dashCooldown = 0.5
+
+# ====================================
+# Notes for changing variables:
+#
+# - Higher moveSpeed = faster base movement
+# - Lower dashCooldown = dash more frequently
+# - Higher dashDistance = dash farther
+# - Smaller collider = easier to dodge
+#
+# Physics Tuning Guide:
+#
+# RESPONSIVE MOVEMENT (Default):
+#   acceleration = 800.0
+#   friction = 8.0
+#   maxSpeed = 200.0
+#
+# ICE PHYSICS (Slippery):
+#   acceleration = 400.0
+#   friction = 2.0
+#   maxSpeed = 250.0
+#
+# HEAVY CHARACTER:
+#   acceleration = 500.0
+#   friction = 12.0
+#   maxSpeed = 150.0
+#
+# FAST & AGILE (Speedster):
+#   acceleration = 1200.0
+#   friction = 10.0
+#   maxSpeed = 300.0
+# ====================================

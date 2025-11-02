@@ -130,6 +130,10 @@ void GameApplication::setupGameMath() {
 
 	// initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
+
+	// Load player config
+	playerConfig_.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
+	std::cout << "[GameLogic] Player configg loaded" << std::endl;
 }
 
 void GameApplication::setupAnimations() {
@@ -427,13 +431,18 @@ void GameApplication::drawPlayerAndIndicator() {
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
 					rotationRadians += static_cast < float>(3.0f * 0.0174533 * 0.01667);
-					//playerTransform.rot.z = rotationRadians;
+					
+					auto& playerCollider = playerSystem_->GetCollision(it->second);
+					playerCollider.rotation = rotationRadians;
+
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
 					rotationRadians -= static_cast < float>(3.0f * 0.0174533 * 0.01667);
-					//playerTransform.rot.z = rotationRadians;
+
+					auto& playerCollider = playerSystem_->GetCollision(it->second);
+					playerCollider.rotation = rotationRadians;
 					std::cout << "rotation in Radians:" << rotationRadians << '\n';
 				}
 
@@ -447,8 +456,8 @@ void GameApplication::drawPlayerAndIndicator() {
 				if (currentTexture && currentTexture->isValid()) {
 					
 					// calculate scaled dimensions (match the collider size)
-					float scaledWidth = (Player::PLAYER_SPRITE_WIDTH * scaleSize);
-					float scaledHeight = (Player::PLAYER_SPRITE_HEIGHT * scaleSize);
+					float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
+					float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
 					
 					// convert center position to top-left for drawing
 					Math::eVec2<float> topLeft = {
