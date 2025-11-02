@@ -1,30 +1,35 @@
 /*============================================================================================
 * @file         player_component.hpp
-* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio)
-* @date         02-11-2025
-* @brief        Player component for ECS. Stores player-specific data including movement
-*               physics, dash mechanics, and visual dimensions. This component marks an
-*               entity as the player character.
+* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @date         03-11-2025
+* @brief        Player component for ECS. Stores player-specific force-based movement
+*               parameters, dash mechanics, and visual dimensions. Works with PhysicsComponent
+*               for proper Newtonian physics (Force ? Acceleration ? Velocity ? Position).
 *===========================================================================================*/
 
 #pragma once
 
-#include "../../math/math.hpp"
+#include "../../../Engine/math/math.hpp"
 
 namespace ECSComponents
 {
     /*============================================================================================
-     * \brief       Component that marks an entity as the player character and stores all
-     *              player-specific data including physics properties, dash mechanics, and
-     *              sprite/collider dimensions
+     * \brief       Component that marks an entity as the player character. Stores player-specific
+     *              force-based movement parameters and dash mechanics. Velocity/acceleration/force
+     *              are stored in PhysicsComponent for proper physics simulation.
      *===========================================================================================*/
     struct PlayerComponent
     {
-        // Physics properties (velocity-based movement)
-        Math::eVec2<float> velocity;        // Current velocity in pixels per second
-        float acceleration;                 // Acceleration when moving (pixels/sec^2)
-        float friction;                     // Friction coefficient (0-1, higher = more friction)
-        float maxSpeed;                     // Maximum movement speed (pixels/sec)
+        // Force-based movement parameters (works with PhysicsComponent)
+        // NOTE: Actual velocity, acceleration, and forces live in PhysicsComponent
+        // These are player-specific tuning parameters
+        Math::eVec2<float> velocity;
+        float movementForce;                // Force magnitude applied when moving (N or arbitrary units)
+        float acceleration;                 // Acceleration rate (pixels/sec^2)
+        float friction;                     // Friction coefficient for drag and deceleration
+        float mass;                         // Player mass (affects acceleration calculation)
+        float maxSpeed;                     // Maximum movement speed clamp (pixels/sec)
+        float frictionCoefficient;          // Friction coefficient for drag (0-1, higher = more friction)
 
         bool canMove;                       // Can the player move? (for stun effects, etc)
 
@@ -46,13 +51,16 @@ namespace ECSComponents
 
         /*============================================================================================
          * \brief       Default constructor with fallback values
-         * \param[in]   float speed - Movement speed (default: 200.0f pixels/sec)
+         * \param[in]   float speed - Max movement speed (default: 200.0f pixels/sec)
          *===========================================================================================*/
         PlayerComponent(float speed = 200.0f)
             : velocity{ 0.0f, 0.0f }
-            , acceleration(800.0f)          // Acceleration rate (pixels/sec^2)
-            , friction(4.0f)                // Friction coefficient
-            , maxSpeed(speed)               // Max speed
+            , movementForce(800.0f)         // Force applied when moving
+            , acceleration(800.0f)          // Acceleration rate
+            , friction(0.15f)               // Friction coefficient
+            , mass(1.0f)                    // Player mass
+            , maxSpeed(speed)               // Max speed clamp
+            , frictionCoefficient(0.15f)    // Friction for smooth deceleration
             , canMove(true)
             , spriteWidth(48.0f)
             , spriteHeight(48.0f)

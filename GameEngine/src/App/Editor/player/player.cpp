@@ -1,11 +1,11 @@
 /*============================================================================================
 * @file         player.cpp
 * @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
-* @date         03-10-2025
-* @brief        Implementation of player system including movement logic with collision
-*               detection, dash mechanics with easing, and helper functions for component
-*               retrieval from the ECS architecture.
-*//*========================================================================================*/
+* @date         03-11-2025
+* @brief        Implementation of force-based player physics system. Uses proper Newtonian
+*               physics: Force ? Acceleration ? Velocity ? Position. Works with both
+*               PlayerComponent and PhysicsComponent for realistic movement.
+*===========================================================================================*/
 
 #include "player.hpp"
 #include <GLFW/glfw3.h>
@@ -16,11 +16,11 @@ namespace Player
     // HELPER FUNCTIONS
 
     /*============================================================================================
-    * \brief       Manual power function for integer exponents
-    * \param[in]   float base - Base value
-    * \param[in]   int exponent - Integer exponent
-    * \return      float - Result of base raised to exponent
-    *//*========================================================================================*/
+     * \brief       Manual power function for integer exponents
+     * \param[in]   float base - Base value
+     * \param[in]   int exponent - Integer exponent
+     * \return      float - Result of base raised to exponent
+     *===========================================================================================*/
     float Pow(float base, int exponent)
     {
         if (exponent == 0) return 1.0f;
@@ -37,16 +37,32 @@ namespace Player
     }
 
     /*============================================================================================
-    * \brief       Easing function for smooth dash deceleration using cubic easing
-    * \param[in]   float x - Progress value (0.0 to 1.0)
-    * \return      float - Eased value using formula: 1 - (1-x)³
-    *//*========================================================================================*/
-    float EaseOutCubic(float x) {
-
+     * \brief       Easing function for smooth dash deceleration using cubic easing
+     * \param[in]   float x - Progress value (0.0 to 1.0)
+     * \return      float - Eased value using formula: 1 - (1-x)³
+     *===========================================================================================*/
+    float EaseOutCubic(float x)
+    {
         float oneMinusX = 1.0f - x;
         return 1.0f - Pow(oneMinusX, 3);
     }
 
+    /*============================================================================================
+     * \brief       Main update function implementing force-based physics movement
+     * \param[in]   ECS::EntityManager& entityManager - Entity manager for accessing entities
+     * \param[in]   Input::EnoInputManager& inputManager - Input system for WASD/Space controls
+     * \param[in]   float deltaTime - Time elapsed since last frame (seconds)
+     * \return      void
+     *
+     * Physics Implementation:
+     * 1. Apply input forces to PhysicsComponent.force
+     * 2. Apply friction as opposing force
+     * 3. PhysicsComponent auto-calculates: acceleration = force / mass
+     * 4. Integrate: velocity += acceleration * dt
+     * 5. Clamp velocity to maxSpeed
+     * 6. Integrate: position += velocity * dt (with collision)
+     * 7. Clear forces for next frame
+     *===========================================================================================*/
     void PlayerSystem::Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime)
     {
         // Get the entity map which contains all entities with their locations
@@ -55,26 +71,30 @@ namespace Player
         // Iterate through ALL entities in the world
         for (auto& [entityID, entityLoc] : entityMap)
         {
-            // Check if this entity has a PlayerComponent
-            // We need to check if the archetype contains the ECSComponents::PlayerComponent type
+            // Check if this entity has BOTH PlayerComponent AND PhysicsComponent
             bool hasPlayer = false;
+            bool hasPhysics = false;
+
             for (const auto& type : entityLoc.archetype->types_)
             {
                 if (type == std::type_index(typeid(ECSComponents::PlayerComponent)))
-                {
                     hasPlayer = true;
-                    break;
-                }
+                else if (type == std::type_index(typeid(ECSComponents::PhysicsComponent)))
+                    hasPhysics = true;
             }
 
-            // Skip entities that don't have a PlayerComponent
-            if (!hasPlayer)
+            // Skip entities that don't have both components
+            if (!hasPlayer || !hasPhysics)
                 continue;
 
-            // Get the player component for this entity
+            // Get the player and physics components for this entity
             size_t playerIndex = entityLoc.archetype->findComponentIndex<ECSComponents::PlayerComponent>();
             auto& playerComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::PlayerComponent>(
                 playerIndex, entityLoc.entityIndexInChunk);
+
+            size_t physicsIndex = entityLoc.archetype->findComponentIndex<ECSComponents::PhysicsComponent>();
+            auto& physicsComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::PhysicsComponent>(
+                physicsIndex, entityLoc.entityIndexInChunk);
 
             // Skip if player cannot move (e.g., stunned, frozen)
             if (!playerComp.canMove)
@@ -84,7 +104,7 @@ namespace Player
             auto& transform = GetTransform(entityLoc);
             auto& collider = GetCollision(entityLoc);
 
-            // Update Dash Cooldown
+            // ====== UPDATE DASH COOLDOWN ======
             if (playerComp.dashCooldownTimer > 0.0f)
             {
                 playerComp.dashCooldownTimer -= deltaTime;
@@ -92,7 +112,7 @@ namespace Player
                     playerComp.dashCooldownTimer = 0.0f;
             }
 
-            // Dash logic
+            // ====== DASH LOGIC (kinematic movement, ignores physics) ======
             if (playerComp.isDashing)
             {
                 // Update dash timer
@@ -108,6 +128,9 @@ namespace Player
                     playerComp.isDashing = false;
                     playerComp.dashTimer = 0.0f;
                     playerComp.dashCooldownTimer = playerComp.dashCooldown;
+
+                    // Reset velocity after dash ends (prevents momentum carry-over)
+                    physicsComp.velocity = { 0.0f, 0.0f };
                 }
 
                 // Apply easing function
@@ -126,28 +149,38 @@ namespace Player
                     transform.pos.x = targetPos.x;
                     transform.pos.y = targetPos.y;
                 }
-                else {
+                else
+                {
                     // Hit something - end dash early
                     playerComp.isDashing = false;
                     playerComp.dashTimer = 0.0f;
                     playerComp.dashCooldownTimer = playerComp.dashCooldown;
+                    physicsComp.velocity = { 0.0f, 0.0f };
                 }
 
                 // Skip normal movement during dash
                 continue;
             }
 
-            // Initiate Dash with Spacebar Key
+            // ====== INITIATE DASH WITH SPACEBAR KEY ======
             if (inputManager.isKeyPressed(GLFW_KEY_SPACE) && playerComp.dashCooldownTimer <= 0.0f && playerComp.canMove)
             {
                 // Get current movement input to determine dash direction
                 Math::eVec2<float> input = GetMovementInput(inputManager);
 
-                // If no input, dash in last faced direction (or default forward)
+                // If no input, dash in last movement direction (use velocity direction)
                 if (Math::eVec2SquaredLength(input) < 0.01f)
                 {
-                    // Default dash forward (down in screen space)
-                    input = { 0.0f, 1.0f };
+                    // Use current velocity direction, or default to down
+                    float velLenSq = Math::eVec2SquaredLength(physicsComp.velocity);
+                    if (velLenSq > 0.01f)
+                    {
+                        Math::eVec2Normalize(input, physicsComp.velocity);
+                    }
+                    else
+                    {
+                        input = { 0.0f, 1.0f };  // Default dash down
+                    }
                 }
 
                 // Normalize the direction
@@ -160,57 +193,92 @@ namespace Player
                 playerComp.dashDirection = dashDir;
                 playerComp.dashStartPos = { transform.pos.x, transform.pos.y };
 
+                // Zero out velocity during dash
+                physicsComp.velocity = { 0.0f, 0.0f };
+
                 // Skip normal movement this frame
                 continue;
             }
 
-            // ====== VELOCITY-BASED PHYSICS MOVEMENT ======
-            if (!playerComp.canMove) continue;
+            // ====== FORCE-BASED PHYSICS MOVEMENT ======
 
-            // Get input from EnoInputManager (WASD keys)
+            // Clear forces from last frame
+            physicsComp.ClearForces();
+
+            // Apply movement force based on input (Force = direction * magnitude)
             Math::eVec2<float> input = GetMovementInput(inputManager);
 
-            // Apply Acceleration
-            // Input creates acceleration in the desired direction
             if (Math::eVec2SquaredLength(input) > 0.01f)
             {
-                // Apply acceleration in input direction
-                Math::eVec2<float> acceleration = {
-                input.x * playerComp.acceleration * deltaTime,
-                input.y * playerComp.acceleration * deltaTime
+                // Apply movement force in input direction
+                // Force = movementForce * normalized_direction
+                Math::eVec2<float> movementForceVec =
+                {
+                    input.x * playerComp.movementForce,
+                    input.y * playerComp.movementForce
                 };
 
-                playerComp.velocity.x += acceleration.x;
-                playerComp.velocity.y += acceleration.y;
+                physicsComp.AddForce(movementForceVec);
             }
 
-            // Apply friction
-            // Friction slows down the player over time (exponential decay)
-            float frictionFactor = 1.0f - (playerComp.friction * deltaTime);
-            if (frictionFactor < 0.0f) frictionFactor = 0.0f;   // Clamp to prevent negative
-            playerComp.velocity.x *= frictionFactor;
-            playerComp.velocity.y *= frictionFactor;
+            // pply friction force (opposes velocity)
+            // Friction force = -frictionCoeff * velocity
+            // This creates smooth deceleration when no input is applied
+            Math::eVec2<float> frictionForce;
+            if (Math::eVec2SquaredLength(input) < 0.01f) {
+                // Higher friction when no input
+                frictionForce = {
+                    -physicsComp.velocity.x * (playerComp.frictionCoefficient * 2.0f) * physicsComp.mass,
+                    -physicsComp.velocity.y * (playerComp.frictionCoefficient * 2.0f) * physicsComp.mass
+                };
+            }
+            else {
+                // Normal friction during movement
+                frictionForce = {
+                    -physicsComp.velocity.x * playerComp.frictionCoefficient * physicsComp.mass,
+                    -physicsComp.velocity.y * playerComp.frictionCoefficient * physicsComp.mass
+                };
+            }
+
+            // If velocity is very low, just set it to zero
+            if (Math::eVec2SquaredLength(physicsComp.velocity) < 0.1f) {
+                physicsComp.velocity = { 0.0f, 0.0f };
+            }
+            physicsComp.AddForce(frictionForce);
+
+            // Calculate acceleration from accumulated forces
+            // Newton's Second Law: F = ma ? a = F/m
+            physicsComp.acceleration.x = physicsComp.force.x / physicsComp.mass;
+            physicsComp.acceleration.y = physicsComp.force.y / physicsComp.mass;
+
+            // Integrate acceleration into velocity (Semi-implicit Euler)
+            // v(t+dt) = v(t) + a * dt
+            physicsComp.velocity.x += physicsComp.acceleration.x * deltaTime;
+            physicsComp.velocity.y += physicsComp.acceleration.y * deltaTime;
 
             // Clamp velocity to max speed
-            float speedSquared = Math::eVec2SquaredLength(playerComp.velocity);
+            float speedSquared = Math::eVec2SquaredLength(physicsComp.velocity);
             float maxSpeedSquared = playerComp.maxSpeed * playerComp.maxSpeed;
+
             if (speedSquared > maxSpeedSquared)
             {
                 float speed = sqrtf(speedSquared);
-                playerComp.velocity.x = (playerComp.velocity.x / speed) * playerComp.maxSpeed;
-                playerComp.velocity.y = (playerComp.velocity.y / speed) * playerComp.maxSpeed;
+                physicsComp.velocity.x = (physicsComp.velocity.x / speed) * playerComp.maxSpeed;
+                physicsComp.velocity.y = (physicsComp.velocity.y / speed) * playerComp.maxSpeed;
             }
 
-            // Integrate velocity
-            // Calculate predicted pos based on current velocity
-            Math::eVec2<float> displacement = {
-                playerComp.velocity.x * deltaTime,
-                playerComp.velocity.y * deltaTime
+            // Integrate velocity into position (with collision response)
+            // p(t+dt) = p(t) + v * dt
+            Math::eVec2<float> displacement =
+            {
+                physicsComp.velocity.x * deltaTime,
+                physicsComp.velocity.y * deltaTime
             };
 
             // Axis-separated collision response with velocity modification
-            // First, try moving on both axes together (diagonal movement)
-            Math::eVec2<float> targetPosBoth = {
+            // Try moving on both axes together first (diagonal movement)
+            Math::eVec2<float> targetPosBoth =
+            {
                 transform.pos.x + displacement.x,
                 transform.pos.y + displacement.y
             };
@@ -227,18 +295,26 @@ namespace Player
                 // Diagonal movement blocked - try sliding along each axis independently
 
                 // Try X-Axis movement only (horizontal sliding)
-                Math::eVec2<float> targetPosX = {
+                Math::eVec2<float> targetPosX =
+                {
                     transform.pos.x + displacement.x,
-                    transform.pos.y // Keep Y unchanged
+                    transform.pos.y  // Keep Y unchanged
                 };
 
-                if (CanMoveTo(entityLoc, collider, targetPosX, entityManager)) {
+                if (CanMoveTo(entityLoc, collider, targetPosX, entityManager))
+                {
                     transform.pos.x = targetPosX.x;
+                }
+                else
+                {
+                    // X-axis blocked - zero out X velocity (stop horizontal movement)
+                    physicsComp.velocity.x = 0.0f;
                 }
 
                 // Try Y-Axis movement only (vertical sliding)
-                Math::eVec2<float> targetPosY = {
-                    transform.pos.x, // Use current X (which may have just moved)
+                Math::eVec2<float> targetPosY =
+                {
+                    transform.pos.x,  // Use current X (which may have just moved)
                     transform.pos.y + displacement.y
                 };
 
@@ -250,17 +326,23 @@ namespace Player
                 else
                 {
                     // Y-axis blocked - zero out Y velocity (stop vertical movement)
-                    playerComp.velocity.y = 0.0f;
+                    physicsComp.velocity.y = 0.0f;
                 }
 
-                // Player slides along the obstacle surface on whicever axis is free
+                // Player slides along the obstacle surface on whichever axis is free
                 // If both axes blocked (stuck in corner), player stays in place
             }
-            // If collision detected, player stays at current position (blocked)
+
+            // STEP 8: Forces are automatically cleared at start of next frame
+            // (see ClearForces() call at beginning of loop)
         }
     }
 
-
+    /*============================================================================================
+     * \brief       Get normalized WASD movement input from keyboard
+     * \param[in]   Input::EnoInputManager& inputManager - Input system reference
+     * \return      Math::eVec2<float> - Normalized movement direction (-1 to 1 on each axis)
+     *===========================================================================================*/
     Math::eVec2<float> PlayerSystem::GetMovementInput(Input::EnoInputManager& inputManager)
     {
         Math::eVec2<float> input = { 0.0f, 0.0f };
@@ -288,6 +370,14 @@ namespace Player
         return input;
     }
 
+    /*============================================================================================
+     * \brief       Check if player can move to target position without collision
+     * \param[in]   ECS::EntityLoc const& playerEntity - Player entity location
+     * \param[in]   Collision::CollisionComponent const& playerCollider - Player collision box
+     * \param[in]   Math::eVec2<float> const& targetPos - Desired position to move to
+     * \param[in]   ECS::EntityManager& entityManager - Entity manager for collision checks
+     * \return      bool - True if movement is valid (no collision), false otherwise
+     *===========================================================================================*/
     bool PlayerSystem::CanMoveTo(
         const ECS::EntityLoc& playerEntity,
         const Collision::CollisionComponent& playerCollider,
@@ -301,8 +391,8 @@ namespace Player
         ECSComponents::TransformComponent testTransform;
         testTransform.pos.x = targetPos.x;
         testTransform.pos.y = targetPos.y;
-        testTransform.rot = { 0.0f, 0.0f };   // apply rotation
-        testTransform.scale = { scaleSize, scaleSize }; // apply scale
+        testTransform.rot = { 0.0f, 0.0f };             // Apply rotation
+        testTransform.scale = { scaleSize, scaleSize }; // Apply scale
 
         // Check collision with all other entities
         auto& entityMap = entityManager.getMap();
@@ -342,10 +432,9 @@ namespace Player
                 otherCollider, otherTransform
             );
 
-
-
             // If collision detected, can't move there
-            if (result.hasCollision) {
+            if (result.hasCollision)
+            {
                 return false;
             }
         }
@@ -354,7 +443,11 @@ namespace Player
         return true;
     }
 
-    // GET TRANSFORM - Helper to retrieve Transform component from EntityLoc
+    /*============================================================================================
+     * \brief       Helper to retrieve Transform component from EntityLoc
+     * \param[in]   ECS::EntityLoc const& entityLoc - Entity location in ECS
+     * \return      ECSComponents::TransformComponent& - Reference to transform component
+     *===========================================================================================*/
     ECSComponents::TransformComponent& PlayerSystem::GetTransform(const ECS::EntityLoc& entityLoc)
     {
         // Find the Transform component's index in this entity's archetype
@@ -365,11 +458,14 @@ namespace Player
             index, entityLoc.entityIndexInChunk);
     }
 
-    // GET COLLISION - Helper to retrieve Collision component from EntityLoc
+    /*============================================================================================
+     * \brief       Helper to retrieve Collision component from EntityLoc
+     * \param[in]   ECS::EntityLoc const& entityLoc - Entity location in ECS
+     * \return      Collision::CollisionComponent& - Reference to collision component
+     *===========================================================================================*/
     Collision::CollisionComponent& PlayerSystem::GetCollision(const ECS::EntityLoc& entityLoc)
     {
         // Find the Collision component's index in this entity's archetype
-        // We use ECSComponents:: for the registry lookup
         size_t index = entityLoc.archetype->findComponentIndex<ECSComponents::CollisionComponent>();
 
         // Retrieve and cast to Collision:: for compatibility with collision system

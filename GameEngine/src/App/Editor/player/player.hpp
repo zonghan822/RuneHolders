@@ -15,8 +15,11 @@
 #include "../Engine/input/eno_input.hpp"
 #include "../Engine/engine/eno_engine.hpp"
 #include "player_config.hpp"
+#include "../Engine/component/components/player_component.hpp"
 
 #include <GLFW/glfw3.h>
+// Use the PlayerComponent from ECSComponents namespace
+using PlayerComponent = ECSComponents::PlayerComponent;
 
 namespace Player
 {
@@ -26,96 +29,19 @@ namespace Player
     *              entity to designate it as the player. The entity should also have Transform
     *              and Collision components.
     *//*========================================================================================*/
-    struct PlayerComponent
-    {
-        // Physics properties (velocity-based movement)
-        Math::eVec2<float> velocity;        // Current velocity in pixels per second
-        float acceleration;                 // Acceleration when moving (pixels/sec^2)
-        float friction;                     // Friction coefficient (0-1, higher = more friction)
-        float maxSpeed;                     // Maximum movement speed (pixels/sec)
-        
-        bool canMove;                       // Can the player move? (for stun effects, etc)
-
-        // Sprite and collision dimensions (loaded from config instead of hardcoded constants)
-        float spriteWidth;                  // Visual sprite width
-        float spriteHeight;                 // Visual sprite height
-        float colliderWidth;                // Collision box width
-        float colliderHeight;               // Collision box height
-
-        // Dashing properties
-        bool isDashing;                     // Is the player currently dashing?
-        float dashTimer;                    // Current time in the dash
-        float dashDuration;                 // How long the dash lasts (e.g., 0.2 seconds)
-        float dashDistance;                 // How far to dash (e.g, 150 pixels)
-        float dashCooldown;                 // Cooldown time before next dash (e.g., 1.0 second)
-        float dashCooldownTimer;            // Tracks cooldown
-        Math::eVec2<float> dashDirection;   // Direction of the dash
-        Math::eVec2<float> dashStartPos;    // Starting position of dash
-
-
-        /*============================================================================================
-        * \brief       Constructor with default values (FALLBACK if config not loaded)
-        * \param[in]   float speed - Movement speed (default: 200.0f pixels/sec)
-        *//*========================================================================================*/        
-        PlayerComponent(float speed = 200.0f)
-            : velocity{0.0f, 0.0f}
-            , acceleration(800.0f)          // Acceleration rate (pixels/sec^2)
-            , friction(4.0f)                // Friction coefficient
-            , maxSpeed(speed)               // Max speed f
-            , canMove(true)
-            , spriteWidth(48.0f)
-            , spriteHeight(48.0f)
-            , colliderWidth(48.0f)
-            , colliderHeight(48.0f)
-            , isDashing(false)
-            , dashTimer(0.0f)
-            , dashDuration(0.3f)            // Dash lasts 0.3 seconds
-            , dashDistance(150.0f)          // Dash 150 pixels
-            , dashCooldown(0.5f)            // 0.5 second cooldown
-            , dashCooldownTimer(0.0f)
-            , dashDirection{0.0f, 0.0f}
-            , dashStartPos{0.0f, 0.0f}
-        {
-        }
-        
-        /*============================================================================================
-        * \brief       Constructor from configuration file
-        * \param[in]   PlayerConfig const& config - Configuration loaded from text file
-        *//*========================================================================================*/
-        PlayerComponent(const PlayerConfig& config)
-            : velocity{ 0.0f, 0.0f }
-            , acceleration(config.acceleration)          // Acceleration rate (pixels/sec^2)
-            , friction(config.friction)                // Friction coefficient
-            , maxSpeed(config.maxSpeed)               // Max speed f
-            , canMove(config.canMove)
-            , spriteWidth(config.spriteWidth)
-            , spriteHeight(config.spriteHeight)
-            , colliderWidth(config.colliderWidth)
-            , colliderHeight(config.colliderHeight)
-            , isDashing(false)
-            , dashTimer(0.0f)
-            , dashDuration(config.dashDuration)
-            , dashDistance(config.dashDistance)
-            , dashCooldown(config.dashCooldown)
-            , dashCooldownTimer(0.0f)
-            , dashDirection{ 0.0f, 0.0f }
-            , dashStartPos{ 0.0f, 0.0f }
-        {
-        }
-    };
 
     /*============================================================================================
     * \brief       System that handles player movement with collision response. This system reads
     *              WASD input for movement, calculates desired position, checks for collisions at
     *              new position, and only moves if no collision (collision response). Also handles
     *              dash mechanics with spacebar input.
-    *//*========================================================================================*/    
+    *//*========================================================================================*/
     class PlayerSystem
     {
     public:
         /*============================================================================================
         * \brief       Default constructor for PlayerSystem
-        *//*========================================================================================*/        
+        *//*========================================================================================*/
         PlayerSystem() = default;
 
         /*============================================================================================
@@ -125,14 +51,14 @@ namespace Player
         * \param[in]   Input::EnoInputManager& inputManager - Reference to input manager for reading controls
         * \param[in]   float deltaTime - Time since last frame in seconds
         * \return      void
-        *//*========================================================================================*/        
+        *//*========================================================================================*/
         void Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime);
 
         /*============================================================================================
         * \brief       Helper to get transform component from entity (made public for game_logic access)
         * \param[in]   ECS::EntityLoc const& entityLoc - Entity location information
         * \return      ECSComponents::TransformComponent& - Reference to entity's transform component
-        *//*========================================================================================*/        
+        *//*========================================================================================*/
         ECSComponents::TransformComponent& GetTransform(const ECS::EntityLoc& entityLoc);
 
         /*============================================================================================
@@ -158,14 +84,16 @@ namespace Player
         * \param[in]   Math::eVec2<float> const& targetPos - Desired new position
         * \param[in]   ECS::EntityManager& entityManager - Entity manager reference
         * \return      bool - True if position is valid (no collisions)
-        *//*========================================================================================*/        
+        *//*========================================================================================*/
         bool CanMoveTo(
             const ECS::EntityLoc& playerEntity,
             const Collision::CollisionComponent& playerCollider,
             const Math::eVec2<float>& targetPos,
             ECS::EntityManager& entityManager);
 
-       
+
     };
 
 } // namespace Player
+    // Use the PlayerComponent from ECSComponents namespace
+using PlayerComponent = ECSComponents::PlayerComponent;
