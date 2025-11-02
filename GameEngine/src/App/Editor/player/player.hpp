@@ -138,7 +138,7 @@ namespace Player
         /*============================================================================================
        * \brief       Helper to get collision component from entity location
        * \param[in]   ECS::EntityLoc const& entityLoc - Entity location information
-       * \return      Collision::CollisionComponent& - Reference to entity's collision component
+       * \return      ECSComponents::CollisionComponent& - Reference to entity's collision component
        *//*========================================================================================*/
         Collision::CollisionComponent& GetCollision(const ECS::EntityLoc& entityLoc);
 
@@ -154,7 +154,7 @@ namespace Player
         * \brief       Check if player can move to a new position without colliding. Tests if the
         *              player's collider would overlap with any solid colliders at the target position.
         * \param[in]   ECS::EntityLoc const& playerEntity - The player entity location
-        * \param[in]   Collision::CollisionComponent const& playerCollider - Player's collision component
+        * \param[in]   ECSComponents::CollisionComponent const& playerCollider - Player's collision component
         * \param[in]   Math::eVec2<float> const& targetPos - Desired new position
         * \param[in]   ECS::EntityManager& entityManager - Entity manager reference
         * \return      bool - True if position is valid (no collisions)

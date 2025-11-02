@@ -14,13 +14,13 @@ namespace Player
 {
 
     // HELPER FUNCTIONS
-    
+
     /*============================================================================================
     * \brief       Manual power function for integer exponents
     * \param[in]   float base - Base value
     * \param[in]   int exponent - Integer exponent
     * \return      float - Result of base raised to exponent
-    *//*========================================================================================*/    
+    *//*========================================================================================*/
     float Pow(float base, int exponent)
     {
         if (exponent == 0) return 1.0f;
@@ -40,9 +40,9 @@ namespace Player
     * \brief       Easing function for smooth dash deceleration using cubic easing
     * \param[in]   float x - Progress value (0.0 to 1.0)
     * \return      float - Eased value using formula: 1 - (1-x)³
-    *//*========================================================================================*/    
+    *//*========================================================================================*/
     float EaseOutCubic(float x) {
-        
+
         float oneMinusX = 1.0f - x;
         return 1.0f - Pow(oneMinusX, 3);
     }
@@ -56,11 +56,11 @@ namespace Player
         for (auto& [entityID, entityLoc] : entityMap)
         {
             // Check if this entity has a PlayerComponent
-            // We need to check if the archetype contains the Player::PlayerComponent type
+            // We need to check if the archetype contains the ECSComponents::PlayerComponent type
             bool hasPlayer = false;
             for (const auto& type : entityLoc.archetype->types_)
             {
-                if (type == std::type_index(typeid(Player::PlayerComponent)))
+                if (type == std::type_index(typeid(ECSComponents::PlayerComponent)))
                 {
                     hasPlayer = true;
                     break;
@@ -72,8 +72,8 @@ namespace Player
                 continue;
 
             // Get the player component for this entity
-            size_t playerIndex = entityLoc.archetype->findComponentIndex<Player::PlayerComponent>();
-            auto& playerComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<Player::PlayerComponent>(
+            size_t playerIndex = entityLoc.archetype->findComponentIndex<ECSComponents::PlayerComponent>();
+            auto& playerComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::PlayerComponent>(
                 playerIndex, entityLoc.entityIndexInChunk);
 
             // Skip if player cannot move (e.g., stunned, frozen)
@@ -183,7 +183,7 @@ namespace Player
                 playerComp.velocity.x += acceleration.x;
                 playerComp.velocity.y += acceleration.y;
             }
-            
+
             // Apply friction
             // Friction slows down the player over time (exponential decay)
             float frictionFactor = 1.0f - (playerComp.friction * deltaTime);
@@ -260,7 +260,7 @@ namespace Player
         }
     }
 
-     
+
     Math::eVec2<float> PlayerSystem::GetMovementInput(Input::EnoInputManager& inputManager)
     {
         Math::eVec2<float> input = { 0.0f, 0.0f };
@@ -321,7 +321,7 @@ namespace Player
             {
                 if (type == std::type_index(typeid(ECSComponents::TransformComponent)))
                     hasTransform = true;
-                else if (type == std::type_index(typeid(Collision::CollisionComponent)))
+                else if (type == std::type_index(typeid(ECSComponents::CollisionComponent)))
                     hasCollision = true;
             }
 
@@ -347,7 +347,7 @@ namespace Player
             // If collision detected, can't move there
             if (result.hasCollision) {
                 return false;
-            }              
+            }
         }
 
         // No collisions - movement is valid
@@ -369,11 +369,15 @@ namespace Player
     Collision::CollisionComponent& PlayerSystem::GetCollision(const ECS::EntityLoc& entityLoc)
     {
         // Find the Collision component's index in this entity's archetype
-        size_t index = entityLoc.archetype->findComponentIndex<Collision::CollisionComponent>();
+        // We use ECSComponents:: for the registry lookup
+        size_t index = entityLoc.archetype->findComponentIndex<ECSComponents::CollisionComponent>();
 
-        // Retrieve and return the component from the appropriate chunk
-        return entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<Collision::CollisionComponent>(
-            index, entityLoc.entityIndexInChunk);
+        // Retrieve and cast to Collision:: for compatibility with collision system
+        // Both types have identical memory layout, so this cast is safe
+        return reinterpret_cast<Collision::CollisionComponent&>(
+            entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::CollisionComponent>(
+                index, entityLoc.entityIndexInChunk)
+            );
     }
 
 } // namespace Player

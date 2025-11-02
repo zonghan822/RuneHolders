@@ -30,7 +30,7 @@ struct AABB
      *              to determine the min and max positions of the object using its coords and dimensions
     *//*========================================================================================*/
 
-    AABB(ECSComponents::TransformComponent transform, Collision::CollisionComponent coll);
+    AABB(ECSComponents::TransformComponent transform, ECSComponents::CollisionComponent coll);
 
 };
 
@@ -41,9 +41,9 @@ struct AABB
  * boxes will collide during the current frame. Calculates the time of impact and collision
  * normal for physics response.
  *
- * \param[in] Collision::CollisionComponent const& colA - Collision component of first object
+ * \param[in] ECSComponents::CollisionComponent const& colA - Collision component of first object
  * \param[in] ECSComponents::TransformComponent const& transformA - Transform of first object
- * \param[in] Collision::CollisionComponent const& colB - Collision component of second object
+ * \param[in] ECSComponents::CollisionComponent const& colB - Collision component of second object
  * \param[in] ECSComponents::TransformComponent const& transformB - Transform of second object
  * \param[out] float& colTi - Time of collision in range [0,1] where 0 is frame start
  * \param[out] Math::eVec2<float>& normal - Normalized collision normal vector
@@ -51,9 +51,9 @@ struct AABB
  * \return bool - True if collision detected during frame, false otherwise
  *//*========================================================================================*/
 bool CheckDynamicSquare(
-    const Collision::CollisionComponent& colA,
+    const ECSComponents::CollisionComponent& colA,
     const ECSComponents::TransformComponent& transformA,
-    const Collision::CollisionComponent& colB,
+    const ECSComponents::CollisionComponent& colB,
     const ECSComponents::TransformComponent& transformB,
     float& colTi,                 // time of collision (output)
     Math::eVec2<float>& normal,

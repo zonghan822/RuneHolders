@@ -123,7 +123,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
 	// Assuming that there will only be 1 entity with player component
-	for (ECS::Entity player : engine_.getEntityManager().findEntity<Player::PlayerComponent>())
+	for (ECS::Entity player : engine_.getEntityManager().findEntity<ECSComponents::PlayerComponent>())
 	{
 		playerEntityID_ = player.getEntityID();
 	}
@@ -288,13 +288,13 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 
 			// then add appropriate collider
 			if (selectedCollider == 1) {//circle
-				e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderRadius));
+				e.add<ECSComponents::CollisionComponent>(ECSComponents::CollisionComponent(colliderRadius));
 				if (e.has<ECSComponents::DrawInfoComponent>()) {
 					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
 				}
 			}
 			else if (selectedCollider == 2) { // rectangle
-				e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderWidth, colliderHeight));
+				e.add<ECSComponents::CollisionComponent>(ECSComponents::CollisionComponent(colliderWidth, colliderHeight));
 				if (e.has<ECSComponents::DrawInfoComponent>()) {
 					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
 				}
@@ -541,8 +541,8 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 
 	// collider (optional)
 	if (prefab.hasCollider) {
-		e.add<Collision::CollisionComponent>(
-			Collision::CollisionComponent(prefab.width, prefab.height));
+		e.add<ECSComponents::CollisionComponent>(
+			ECSComponents::CollisionComponent(prefab.width, prefab.height));
 	}
 
 	// update render cache
