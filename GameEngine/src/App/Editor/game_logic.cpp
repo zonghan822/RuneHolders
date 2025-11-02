@@ -538,41 +538,30 @@ void GameApplication::drawShapes() {
 
 }
 
-
 void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex)
 {
-	if (!newTex || !newTex->isValid()) {
-		std::cerr << "Invalid texture passed to setPlayerTexture()" << std::endl;
-		return;
-	}
+	if (!newTex || !newTex->isValid()) { /* guard */ return; }
 
 	playerTexture_ = newTex;
 	playerWalkTexture_ = newTex;
 
-	int sheetWidth = newTex->getWidth();
-	int sheetHeight = newTex->getHeight();
+	const int sheetWidth = newTex->getWidth();
+	const int sheetHeight = newTex->getHeight();
+	const int fw = 96, fh = 96;
 
-	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
-		96, 96,           // frame size
-		sheetWidth, sheetHeight,
-		0, 24,            // start + frame count
-		0.1f
-	);
-	playerIdleAnim.setLooping(true);
+	//to make sure that i do not hit the grey frames(out of bounds)
+	int idleFrames = std::max(1, sheetWidth / fw);
+	int walkFrames = std::max(1, sheetWidth / fw);
 
-	auto playerWalkAnim = Animation::createSpriteSheetAnimation(
-		96, 96,
-		sheetWidth, sheetHeight,
-		0, 4,
-		0.08f
-	);
-	playerWalkAnim.setLooping(true);
+	auto idle = Animation::createSpriteSheetAnimation(fw, fh, sheetWidth, sheetHeight, 0, idleFrames, 0.1f);
+	idle.setLooping(true);
 
+	auto walk = Animation::createSpriteSheetAnimation(fw, fh, sheetWidth, sheetHeight, 0, walkFrames, 0.08f);
+	walk.setLooping(true);
 
-	playerAnimController_.addAnimation("idle", playerIdleAnim);
-	playerAnimController_.addAnimation("walk", playerWalkAnim);
+	playerAnimController_.addAnimation("idle", idle);
+	playerAnimController_.addAnimation("walk", walk);
 
-	// Keep the same current state
 	if (playerAnimController_.getCurrentAnimationName().empty())
 		playerAnimController_.setAnimation("idle");
 }
