@@ -70,6 +70,8 @@ static bool isDragging = false;
 static uint32_t draggedEntityID = 0;
 static ImVec2 dragOffset;
 
+// Prefab placement
+static std::string g_selectedPrefabForPlacement = "";
 #pragma endregion
 
 float randomFloat(float min, float max) {
@@ -695,32 +697,22 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 				statusMessage = "Loaded prefab: " + name;
 				strncpy(prefabName, name.c_str(), sizeof(prefabName));
 				prefabName[sizeof(prefabName) - 1] = '\0';
+				g_selectedPrefabForPlacement = name;
 			}
 		}
 		ImGui::EndListBox();
+	}
 
-		// Handle prefab placement overlay
-		if (selectedPrefabName.size()) {
-			ImVec2 mouse = ImGui::GetMousePos();
-			ImGuiIO& io = ImGui::GetIO();
-
-			// Only place if user releases mouse outside ImGui windows
-			if (!io.WantCaptureMouse && ImGui::IsMouseReleased(0)) {
-				spawnPrefabAt(mouse.x, mouse.y, selectedPrefabName, engine_);
-			}
-
-			// Show tooltip only when hovering outside ImGui
-			if (!io.WantCaptureMouse) {
-				ImGui::SetNextWindowPos(ImVec2(mouse.x + 20, mouse.y + 20));
-				ImGui::Begin("Placement Tooltip", nullptr,
-					ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
-					ImGuiWindowFlags_NoInputs);
-				ImGui::Text("Placing %s", selectedPrefabName.c_str());
-				ImGui::End();
+	// Show selected prefab status
+	if (!selectedPrefabName.empty()) {
+		ImGui::Text("Selected: %s", selectedPrefabName.c_str());
+		if (!g_selectedPrefabForPlacement.empty()) {
+			ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Click in Game View to place");
+			if (ImGui::Button("Cancel Placement")) {
+				g_selectedPrefabForPlacement.clear();
 			}
 		}
 	}
-
 
 	//Spawn desired prefab
 	ImGui::Separator();
@@ -883,33 +875,75 @@ void imGuiBeginDockspace() {
 	ImGuiID dockspace_id = ImGui::GetID("MainDockspace");
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
-
+// Game controls/ can do some shenanigans here @caven
+//if (ImGui::Button("Play")) { /* Play logic */ }
+//ImGui::SameLine();
+//if (ImGui::Button("Pause")) { /* Pause logic */ }
+//ImGui::SameLine();
+//if (ImGui::Button("Stop")) { /* Stop logic */ }
+//ImGui::Separator();
 void displayGameView(Engine::EnoEngine& engine_) {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
-	// Game controls/ can do some shenanigans here @caven
-	//if (ImGui::Button("Play")) { /* Play logic */ }
-	//ImGui::SameLine();
-	//if (ImGui::Button("Pause")) { /* Pause logic */ }
-	//ImGui::SameLine();
-	//if (ImGui::Button("Stop")) { /* Stop logic */ }
-	//ImGui::Separator();
-
-	// Display the game framebuffer texture
 	if (g_game && g_game->getGameFramebuffer()) {
 		auto* fb = g_game->getGameFramebuffer();
 
-		// Resize framebuffer if window size changed
 		if (contentSize.x > 0 && contentSize.y > 0) {
 			fb->resize((int)contentSize.x, (int)contentSize.y);
+
+			int fbWidth = fb->getWidth();
+			int fbHeight = fb->getHeight();
 
 			// Display the texture
 			ImGui::Image(
 				(void*)(intptr_t)fb->getTextureID(),
 				contentSize,
-				ImVec2(0, 1), // UV start (flipped Y)
-				ImVec2(1, 0)  // UV end (flipped Y)
+				ImVec2(0, 1),
+				ImVec2(1, 0)
 			);
+
+			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {
+				ImVec2 mousePos = ImGui::GetMousePos();
+
+				// Get the rendered image bounds
+				ImVec2 imageMin = ImGui::GetItemRectMin();
+				ImVec2 imageMax = ImGui::GetItemRectMax();
+
+				// Calculate the displayed image size (might be smaller due to aspect ratio)
+				float displayedWidth = imageMax.x - imageMin.x;
+				float displayedHeight = imageMax.y - imageMin.y;
+
+				std::cout << "Image bounds: (" << imageMin.x << ", " << imageMin.y << ") to ("
+					<< imageMax.x << ", " << imageMax.y << ")\n";
+				std::cout << "Displayed size: " << displayedWidth << " x " << displayedHeight << "\n";
+				std::cout << "Content region: " << contentSize.x << " x " << contentSize.y << "\n";
+
+				// Convert mouse to coordinates relative to the displayed image
+				float relX = (mousePos.x - imageMin.x) / displayedWidth;
+				float relY = (mousePos.y - imageMin.y) / displayedHeight;
+
+				// Clamp to ensure we're within the texture bounds
+				relX = std::clamp(relX, 0.0f, 1.0f);
+				relY = std::clamp(relY, 0.0f, 1.0f);
+
+				// Convert to framebuffer coordinates
+				float gameX = relX * fbWidth;
+				float gameY = relY * fbHeight;
+
+				spawnPrefabAt(gameX, gameY, g_selectedPrefabForPlacement, engine_);
+				g_selectedPrefabForPlacement.clear();
+
+				std::cout << "Mouse: (" << mousePos.x << ", " << mousePos.y << ")"
+					<< " | Relative: (" << relX << ", " << relY << ")"
+					<< " | Game: (" << gameX << ", " << gameY << ")"
+					<< " | FB: " << fbWidth << "x" << fbHeight << "\n";
+			}
+
+			if (ImGui::IsItemHovered() && !g_selectedPrefabForPlacement.empty()) {
+				ImGui::BeginTooltip();
+				ImGui::Text("Click to place: %s", g_selectedPrefabForPlacement.c_str());
+				ImGui::EndTooltip();
+			}
 		}
 	}
 }

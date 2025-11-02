@@ -103,6 +103,8 @@ namespace Graphics
         void resize(int width, int height);
 
         GLuint getTextureID() const { return textureID_; }
+        int getWidth() const { return width_; }
+        int getHeight() const { return height_; }
         bool isValid() const { return fbo_ != 0; }
 
     private:
