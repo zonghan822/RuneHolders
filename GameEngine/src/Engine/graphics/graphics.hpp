@@ -91,6 +91,24 @@ namespace Graphics
     };
 
 
+    struct TextureData {
+        std::shared_ptr<EnoTexture> texture;
+        int rows = 1;
+        int cols = 1;
+
+        // Derived frame size
+        int frameWidth = 0;
+        int frameHeight = 0;
+
+        void computeFrameSize() {
+            if (texture && texture->getWidth() > 0 && texture->getHeight() > 0) {
+                frameWidth = texture->getWidth() / cols;
+                frameHeight = texture->getHeight() / rows;
+            }
+        }
+    };
+
+
     // Shader management class
     class EnoShader
     {

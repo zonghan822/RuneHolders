@@ -71,6 +71,7 @@ static bool isDragging = false;
 static uint32_t draggedEntityID = 0;
 static ImVec2 dragOffset;
 
+
 #pragma endregion
 
 float randomFloat(float min, float max) {
@@ -796,87 +797,89 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 	ImGui::Separator();
 
 	static std::string selectedTexture;
+	static Graphics::TextureData textureData;
+	static int inputRows = 1, inputCols = 1;
+	static int inputFrameW = 96, inputFrameH = 96;
+	static int mode = 0; // 0 = Rows/Cols, 1 = Pixels
 
-	// --- Handle newly dropped files ---
+	// --- Handle dropped files ---
 	if (!g_droppedFiles.empty()) {
-		std::cout << "[DEBUG] Processing dropped files...\n";
-
 		for (auto& path : g_droppedFiles) {
 			std::filesystem::path filePath(path);
 			auto ext = filePath.extension().string();
 
 			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
-				std::cout << "[DEBUG] Loading: " << path << std::endl;
-
 				auto tex = std::make_shared<Graphics::EnoTexture>();
 				if (tex->loadFromFile(path)) {
 					std::string name = filePath.stem().string();
 					loader.addTexture(name, tex);
 					std::cout << "[DEBUG] Imported: " << name << std::endl;
 				}
-				else {
-					std::cout << "[ERROR] Failed to load: " << path << std::endl;
-				}
 			}
 		}
-
 		g_droppedFiles.clear();
 	}
 
-	// --- Inline preview list (thumbnail + name in one line) ---
-	ImGui::Text("Loaded Textures:");
+	// Texture list
 	for (auto& [name, texture] : textures) {
 		if (!texture || !texture->isValid())
 			continue;
 
-		// Draw thumbnail first
 		ImGui::Image((void*)(intptr_t)texture->getID(), ImVec2(48, 48));
-
-		// Keep texture name on same horizontal line
 		ImGui::SameLine();
-
-		// Make name selectable for preview/application
 		bool isSelected = (selectedTexture == name);
 		if (ImGui::Selectable(name.c_str(), isSelected, 0, ImVec2(200, 48))) {
 			selectedTexture = name;
+			textureData.texture = texture;
 		}
-
-		// Add spacing between rows
 		ImGui::Spacing();
 		ImGui::Separator();
 	}
 
 	ImGui::Separator();
 
-
-	// --- Preview & Apply Button ---
+	// If texture selected
 	if (!selectedTexture.empty()) {
 		ImGui::Text("Selected: %s", selectedTexture.c_str());
 
-		ImGui::Button("Apply to Player", ImVec2(200, 40));
+		// Mode selector
+		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
+		ImGui::Combo("Input Mode", &mode, modes, IM_ARRAYSIZE(modes));
 
-		// Handle drag-drop texture application
-		if (ImGui::BeginDragDropTarget()) {
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_TEXTURE")) {
-				const char* droppedName = static_cast<const char*>(payload->Data);
-				auto newTex = loader.getTexture(droppedName);
-				if (newTex && newTex->isValid()) {
-					g_game->setPlayerTexture(newTex);
-					std::cout << "Dropped texture applied: " << droppedName << std::endl;
-				}
+		if (mode == 0) {
+			// ROWS/COLS MODE
+			ImGui::InputInt("Rows", &inputRows);
+			ImGui::InputInt("Columns", &inputCols);
+
+			if (ImGui::Button("Apply Texture (Rows/Cols)")) {
+				textureData.rows = std::max(1, inputRows);
+				textureData.cols = std::max(1, inputCols);
+				textureData.computeFrameSize();
+
+				if (g_game)
+					g_game->applyTextureToPlayer(textureData);
 			}
-			ImGui::EndDragDropTarget();
+
+			ImGui::Text("Frame Size: %d x %d",
+				textureData.frameWidth, textureData.frameHeight);
 		}
+		else {
+			// PIXEL INPUT MODE
+			ImGui::InputInt("Frame Width", &inputFrameW);
+			ImGui::InputInt("Frame Height", &inputFrameH);
 
-		// Handle direct button click (apply selected texture)
-		if (ImGui::IsItemClicked()) {
-			if (playerSpawned_ && playerSystem_) {
-				auto newTex = loader.getTexture(selectedTexture);
-				if (newTex && newTex->isValid()) {
-					g_game->setPlayerTexture(newTex);
-					std::cout << "Applied new texture: " << selectedTexture << std::endl;
-				}
+			if (ImGui::Button("Apply Texture (Pixels)")) {
+				textureData.rows = textureData.texture->getHeight() / std::max(1, inputFrameH);
+				textureData.cols = textureData.texture->getWidth() / std::max(1, inputFrameW);
+				textureData.frameWidth = inputFrameW;
+				textureData.frameHeight = inputFrameH;
+
+				if (g_game)
+					g_game->applyTextureToPlayer(textureData);
 			}
+
+			ImGui::Text("Grid: %d rows × %d cols",
+				textureData.rows, textureData.cols);
 		}
 	}
 }

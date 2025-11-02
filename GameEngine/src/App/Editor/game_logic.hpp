@@ -61,7 +61,8 @@ public:
     void markEntitiesDirty() { entitiesDirty_ = true; }
 
     // Yun Qi's IMGUI sandbox
-    void setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex);
+    //void setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex);
+    void applyTextureToPlayer(const Graphics::TextureData& texData);
 
 
 private:
@@ -84,7 +85,7 @@ private:
 
 
 
-    void drawShapes(); // jsut to test
+    void drawShapes(); 
 
     void drawText(Math::eVec2<float> windowSize);
 };
