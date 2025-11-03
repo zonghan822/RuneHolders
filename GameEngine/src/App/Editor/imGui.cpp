@@ -122,7 +122,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	static Player::PlayerConfig playerConfig;
 	static bool configLoaded = false;
 	if (!configLoaded) {
-		configLoaded = playerConfig.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
+		configLoaded = playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
 		if (configLoaded) {
 			std::cout << "[ImGui] Player config loaded successfully" << std::endl;
 		}
@@ -204,7 +204,7 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 
 			// Load player configuration from file
 			Player::PlayerConfig playerConfig;
-			playerConfig.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
+			playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
 
 			// Create complete player entity using the config
 			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
@@ -493,7 +493,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 			a.destroy();
 		}
 
-		// FIX: Mark cache as dirty after deletion
+		// Mark cache as dirty after deletion
 		if (g_game) {
 			g_game->markEntitiesDirty();
 		}
@@ -1022,45 +1022,34 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	if (!firstRun) return;
 	firstRun = false;
 
-	// Get main viewport
-	ImGuiViewport* viewport = ImGui::GetMainViewport();
-	float screenWidth = viewport->Size.x;
-	float screenHeight = viewport->Size.y;
+	ImGuiID dockspace_id = ImGui::GetID("MainDockspace");
 
-	// Define layout proportions
-	const float leftWidth = screenWidth * 0.20f;     // 20% left
-	const float rightWidth = screenWidth * 0.25f;    // 25% right
-	const float centerWidth = screenWidth - leftWidth - rightWidth;
-	const float bottomHeight = screenHeight * 0.20f; // 20% bottom
-	const float mainHeight = screenHeight - bottomHeight;
+	// Clear any existing layout
+	ImGui::DockBuilderRemoveNode(dockspace_id);
+	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+	ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
 
-	// Set initial window positions and sizes
+	// Split the dockspace into sections
+	ImGuiID dock_main_id = dockspace_id;
+	ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
+	ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.31f, nullptr, &dock_main_id);
+	ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.25f, nullptr, &dock_main_id);
 
-	// LEFT PANEL 
-	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.33f));
+	// Split the left panel into three vertical sections
+	ImGuiID dock_id_left_top = ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Up, 0.33f, nullptr, &dock_id_left);
+	ImGuiID dock_id_left_middle = ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Up, 0.50f, nullptr, &dock_id_left);
 
-	// LEFT PANEL
-	ImGui::SetNextWindowPos(ImVec2(0, mainHeight * 0.33f));
-	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.33f));
+	// Dock windows to their respective nodes
+	ImGui::DockBuilderDockWindow("Main Controls", dock_id_left_top);
+	ImGui::DockBuilderDockWindow("Edit", dock_id_left_middle);
+	ImGui::DockBuilderDockWindow("Prefabs", dock_id_left);
+	ImGui::DockBuilderDockWindow("Game View", dock_main_id);
+	ImGui::DockBuilderDockWindow("FPS", dock_id_right);
+	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_bottom);
 
-	// LEFT PANEL
-	ImGui::SetNextWindowPos(ImVec2(0, mainHeight * 0.66f));
-	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.34f));
+	ImGui::DockBuilderFinish(dockspace_id);
 
-	// CENTER
-	ImGui::SetNextWindowPos(ImVec2(leftWidth, 0));
-	ImGui::SetNextWindowSize(ImVec2(centerWidth, mainHeight));
-
-	// RIGHT PANEL
-	ImGui::SetNextWindowPos(ImVec2(leftWidth + centerWidth, 0));
-	ImGui::SetNextWindowSize(ImVec2(rightWidth, mainHeight));
-
-	// BOTTOM PANEL 
-	ImGui::SetNextWindowPos(ImVec2(0, mainHeight));
-	ImGui::SetNextWindowSize(ImVec2(screenWidth, bottomHeight));
-
-	std::cout << "Default layout applied to windows" << std::endl;
+	std::cout << "Default dockspace layout applied" << std::endl;
 }
 
 void imGuiEndDockspace() {

@@ -129,7 +129,7 @@ void GameApplication::setupGameMath() {
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 
 	// Load player config
-	playerConfig_.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
+	playerConfig_.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
 	std::cout << "[GameLogic] Player configg loaded" << std::endl;
 }
 
