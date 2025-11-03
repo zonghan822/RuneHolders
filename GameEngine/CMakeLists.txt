@@ -24,5 +24,12 @@ set(rapidjson_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/lib/rapidjson)
 # Set dotnet SDK
 set_dotnet()
 
+# Build c# project
+build_csharp_scripts(
+    GameScripts
+    ${CMAKE_SOURCE_DIR}/scripts/GameScripts/GameScripts.csproj
+    ${CMAKE_BINARY_DIR}/scripts/GameScripts
+)
+
 ADD_SUBDIRECTORY(src/Engine ${CMAKE_BINARY_DIR}/projects/Engine)
 ADD_SUBDIRECTORY(src/App ${CMAKE_BINARY_DIR}/projects/App)

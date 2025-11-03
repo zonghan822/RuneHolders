@@ -159,6 +159,21 @@ function(set_dotnet)
     set(DOTNET_CMD "${DOTNET_LOCAL_BIN}" PARENT_SCOPE)
 endfunction()
 
+function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
+    file(MAKE_DIRECTORY ${OUTPUT_DIR})
+
+    add_custom_command(
+        OUTPUT ${OUTPUT_DIR}/${TARGET_NAME}.dll
+        COMMAND ${DOTNET_CMD} build ${CS_PROJECT_PATH}
+                --configuration Release
+                --output ${OUTPUT_DIR}
+        COMMENT "Building ${TARGET_NAME} C# project..."
+    )
+
+    add_custom_target(${TARGET_NAME}_cs ALL DEPENDS ${OUTPUT_DIR}/${TARGET_NAME}.dll)
+endfunction()
+
+
 # Helper to group libraries in VS Solution Explorer
 function(set_library_folder target)
     if (TARGET ${target})
