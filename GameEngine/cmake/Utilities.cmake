@@ -103,22 +103,28 @@ macro(set_fmod)
 endmacro()
 
 # =========================================================
-# .NET SDK
+# .NET SDK setup helper function
 # =========================================================
-function(set_dotnet)
+function(set_dotnet_sdk)
     message(STATUS "Checking for .NET SDK installation...")
 
     # Check for system installation
     execute_process(
-        COMMAND dotnet --version
+        COMMAND dotnet --info
         RESULT_VARIABLE DOTNET_RESULT
-        OUTPUT_VARIABLE DOTNET_VERSION
+        OUTPUT_VARIABLE DOTNET_INFO
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
 
     if (DOTNET_RESULT EQUAL 0)
-        message(STATUS ".NET SDK found: version ${DOTNET_VERSION}")
+        string(REGEX MATCH "Base Path:[ \t]*([^\r\n]+)" _match "${DOTNET_INFO}")
+        set(BASE_PATH_LINE "${CMAKE_MATCH_1}")
+
+        # Strip the trailing "\sdk\9.0.306\" part to get "C:\Program Files\dotnet\"
+        string(REGEX REPLACE "[/\\]sdk[/\\][^/\\]+[/\\]?$" "" DOTNET_ROOT "${BASE_PATH_LINE}")
+        message(STATUS "Detected .NET at: ${DOTNET_ROOT}")
+        set(DOTNET_PATH "${DOTNET_ROOT}" PARENT_SCOPE)
         set(DOTNET_CMD "dotnet" PARENT_SCOPE)
         return()
     endif()
@@ -129,6 +135,7 @@ function(set_dotnet)
     set(DOTNET_LOCAL_BIN "${DOTNET_LOCAL_DIR}/dotnet.exe")
     if (EXISTS "${DOTNET_LOCAL_BIN}")
         message(STATUS ".NET SDK found at ${DOTNET_LOCAL_BIN}")
+        set(DOTNET_PATH "${DOTNET_LOCAL_DIR}" PARENT_SCOPE)
         set(DOTNET_CMD "${DOTNET_LOCAL_BIN}" PARENT_SCOPE)
         return()
     endif()
@@ -156,8 +163,52 @@ function(set_dotnet)
     endif()
 
     message(STATUS ".NET SDK successfully installed at ${DOTNET_LOCAL_BIN}")
+    set(DOTNET_PATH "${DOTNET_LOCAL_DIR}" PARENT_SCOPE)
     set(DOTNET_CMD "${DOTNET_LOCAL_BIN}" PARENT_SCOPE)
 endfunction()
+
+# =========================================================
+# .NET setup
+# =========================================================
+macro(set_dotnet)
+    set_dotnet_sdk()
+    file(GLOB DOTNET_NATIVE_DIRS
+        "${DOTNET_PATH}/packs/Microsoft.NETCore.App.Host.win-x64/*/runtimes/win-x64/native"
+    )
+    # get the latest version (last element)
+    list(GET DOTNET_NATIVE_DIRS -1 DOTNET_NATIVE_DIR)
+
+    if(NOT DOTNET_NATIVE_DIR)
+        message(FATAL_ERROR "Could not find .NET native host folder under ${DOTNET_ROOT}")
+    endif()
+
+     # Create INTERFACE target for .NET host
+    add_library(dotnet_host INTERFACE)
+
+    target_include_directories(dotnet_host INTERFACE
+        ${DOTNET_NATIVE_DIR}
+    )
+
+    target_link_libraries(dotnet_host INTERFACE
+        ${DOTNET_NATIVE_DIR}/nethost.lib
+    )
+
+    set_library_folder(dotnet_host)
+
+    file(GLOB DOTNET_HOST_DIRS
+        "${DOTNET_PATH}/host/fxr/*"
+    )
+    # get the latest version (last element)
+    list(GET DOTNET_HOST_DIRS -1 DOTNET_HOST_DIR)
+
+    function(_dotnet_copy_dll TARGET)
+        add_custom_command(TARGET ${TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${DOTNET_HOST_DIR}/hostfxr.dll"
+                "$<TARGET_FILE_DIR:${TARGET}>"
+        )
+    endfunction()
+endmacro()
 
 function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
     file(MAKE_DIRECTORY ${OUTPUT_DIR})

@@ -50,9 +50,11 @@ target_link_libraries(${ENGINE_NAME}
     fmod::studio
     freetype
     stb_image
+    dotnet_host
 )
 
 _fmod_copy_dll(${ENGINE_NAME})
+_dotnet_copy_dll(${ENGINE_NAME})
 
 # Call the function to copy assets
 set(ASSETS_SOURCE_DIR "${CMAKE_SOURCE_DIR}/assets")
