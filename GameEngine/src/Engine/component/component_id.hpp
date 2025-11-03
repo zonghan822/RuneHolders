@@ -15,3 +15,6 @@
 	X(VisibilityComponent) \
 	X(TransformComponent) \
 	X(LayerComponent) \
+    X(PlayerComponent) \
+	X(CollisionComponent) \
+	X(PhysicsComponent) \

@@ -16,7 +16,7 @@
 //double min(double a, double b) { return a < b ? a : b; }
 //double max(double a, double b) { return a > b ? a : b; }
 
-AABB::AABB(ECSComponents::TransformComponent transform, Collision::CollisionComponent coll)
+AABB::AABB(ECSComponents::TransformComponent transform, ECSComponents::CollisionComponent coll)
 {
 	float minx = transform.pos.x - coll.data.rectangle.width / 2.0f;
 	float miny = transform.pos.y - coll.data.rectangle.height / 2.0f;
@@ -30,9 +30,9 @@ AABB::AABB(ECSComponents::TransformComponent transform, Collision::CollisionComp
 
 
 bool CheckDynamicSquare(
-	const Collision::CollisionComponent& colA,
+	const ECSComponents::CollisionComponent& colA,
 	const ECSComponents::TransformComponent& transformA,
-	const Collision::CollisionComponent& colB,
+	const ECSComponents::CollisionComponent& colB,
 	const ECSComponents::TransformComponent& transformB,
 	float& colTi,                 // Time of collision (output)
 	Math::eVec2<float>& normal,
@@ -216,10 +216,10 @@ void createTestObject(ECS::EntityManager& ent) {
 		TC.vel = { vel.x, vel.y };
 		-vel;
 
-		Collision::CollisionComponent cc{ radius };
+		ECSComponents::CollisionComponent cc{ radius };
 
 		ECS::Entity circle = ent.create<ECSComponents::DrawInfoComponent, ECSComponents::NameComponent, ECSComponents::TransformComponent>(DIC, NC, TC);
-		circle.add<Collision::CollisionComponent>(cc);
+		circle.add<ECSComponents::CollisionComponent>(cc);
 		//std::cout << circle.get<ECSComponents::DrawInfoComponent>();
 	}
 
@@ -242,11 +242,11 @@ void createTestObject(ECS::EntityManager& ent) {
 		// Name componenet
 		ECSComponents::NameComponent lineNC{ "testcaven"};
 		// Create collision component
-		Collision::CollisionComponent lineCC{ linePos[i].first, linePos[i].second};
+		ECSComponents::CollisionComponent lineCC{ linePos[i].first, linePos[i].second};
 		ECS::Entity wall = ent.create<ECSComponents::TransformComponent, ECSComponents::NameComponent>(lineTC, lineNC);
-		wall.add<Collision::CollisionComponent>(lineCC);
+		wall.add<ECSComponents::CollisionComponent>(lineCC);
 		// Debugging
-		//std::cout << wall.get<Collision::CollisionComponent>() << std::endl;
+		//std::cout << wall.get<ECSComponents::CollisionComponent>() << std::endl;
 	}
 #endif
 
@@ -274,10 +274,10 @@ void createTestObject(ECS::EntityManager& ent) {
 		TC.scale = { 1.0f, 1.0f };
 		TC.vel = { squareVel[i].x, squareVel[i].y };
 
-		Collision::CollisionComponent SC{ width, height };
+		ECSComponents::CollisionComponent SC{ width, height };
 
 		ECS::Entity square = ent.create<ECSComponents::DrawInfoComponent, ECSComponents::NameComponent, ECSComponents::TransformComponent>(DIC, NC, TC);
-		square.add<Collision::CollisionComponent>(SC);
+		square.add<ECSComponents::CollisionComponent>(SC);
 	}
 }
 
@@ -296,9 +296,9 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 		for (auto& entity : entityList)
 		{
-			auto& collision = entity.get<Collision::CollisionComponent>();
+			auto& collision = entity.get<ECSComponents::CollisionComponent>();
 			// Skip non circle objects
-			if (collision.type != Collision::ColliderType::CIRCLE) continue;
+			if (collision.type != ECSComponents::ColliderType::CIRCLE) continue;
 
 			auto& transform = entity.get<ECSComponents::TransformComponent>();
 			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
@@ -323,12 +323,12 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				// Skip same entity
 				if (&entity == &other) continue;
 
-				auto& otherCollision = other.get<Collision::CollisionComponent>();
+				auto& otherCollision = other.get<ECSComponents::CollisionComponent>();
 				auto& otherTransform = other.get<ECSComponents::TransformComponent>();
 
 
 				// Check collision with line
-				if (otherCollision.type == Collision::ColliderType::LINE)
+				if (otherCollision.type == ECSComponents::ColliderType::LINE)
 				{
 					if (Collision::CollisionDetection::CheckDynamicCollision(
 						collision,
@@ -355,7 +355,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 					}
 
 				}
-				else if (otherCollision.type == Collision::ColliderType::CIRCLE)
+				else if (otherCollision.type == ECSComponents::ColliderType::CIRCLE)
 				{
 
 					// Check circle to circle collision
@@ -401,7 +401,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 		for (auto& entity : entityList)
 		{
 
-			auto& collision = entity.get<Collision::CollisionComponent>();
+			auto& collision = entity.get<ECSComponents::CollisionComponent>();
 			auto& transform = entity.get<ECSComponents::TransformComponent>();
 			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
 
@@ -418,17 +418,17 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				// Skip self
 				if (&entity == &other) continue;
 
-				auto& otherCollision = other.get<Collision::CollisionComponent>();
+				auto& otherCollision = other.get<ECSComponents::CollisionComponent>();
 				auto& otherTransform = other.get<ECSComponents::TransformComponent>();
 
 				// Check type of collision
 				switch (collision.type)
 				{
-					case Collision::ColliderType::RECTANGLE:
+					case ECSComponents::ColliderType::RECTANGLE:
 					{
 						switch (otherCollision.type)
 						{
-							case Collision::ColliderType::RECTANGLE:
+							case ECSComponents::ColliderType::RECTANGLE:
 							{
 								// Call check collision function for dynamic rect rect
 								if (CheckDynamicSquare(collision, transform, otherCollision, otherTransform,

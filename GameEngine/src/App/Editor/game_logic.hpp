@@ -14,7 +14,8 @@
 #include <memory>
 #include <imgui.h>
 #include "movementTest.hpp"
-
+#include "player/player_config.hpp"
+#include "player/player.hpp"
 
 class GameApplication {
 private:
@@ -49,6 +50,9 @@ private:
     // Font
     std::shared_ptr<Font::EnoFont> pixelifyFont_;
     std::shared_ptr<Font::EnoFont> timesFont_;
+
+    // Player
+    Player::PlayerConfig playerConfig_;
 
 public:
     // Constructors
