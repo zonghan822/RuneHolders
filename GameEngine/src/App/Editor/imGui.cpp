@@ -143,10 +143,14 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
 	// Assuming that there will only be 1 entity with player component
+	bool playerFound = false;
 	for (ECS::Entity player : engine_.getEntityManager().findEntity<ECSComponents::PlayerComponent>())
 	{
 		playerEntityID_ = player.getEntityID();
+		playerFound = true;
 	}
+	// Sync playerSpawned_ flag with actual player existence in ECS
+	playerSpawned_ = playerFound;
 
 	// FPS display throttling
 	double now = ImGui::GetTime();
@@ -424,6 +428,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 				ECSComponents::NameComponent& nameComp = e.get<ECSComponents::NameComponent>();
 
 				if (!deletedSelected && e.getEntityID() == selectedEntityID) {
+					if (playerEntityID_ == e.getEntityID()) playerSpawned_ = false;
 					e.destroy();
 					selectedEntityID = 0;
 					deletedSelected = true;
@@ -432,6 +437,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 				}
 
 				if (nameComp.name == target) {
+					if (playerEntityID_ == e.getEntityID()) playerSpawned_ = false;
 					toDelete.push_back(e);
 				}
 			}
