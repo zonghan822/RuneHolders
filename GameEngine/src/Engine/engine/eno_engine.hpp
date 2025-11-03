@@ -140,6 +140,8 @@ namespace Engine
 		*//*========================================================================================*/
 		void updateTime(double fpsCalcInt = 1.0);
 
+		// Dotnet
+
 		// Services & Tools
 		Config::EnoConfigManager configMng_;
 		Event::EnoEventBus bus_;
