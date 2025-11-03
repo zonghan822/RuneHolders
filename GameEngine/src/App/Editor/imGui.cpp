@@ -713,9 +713,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 	// Get all entities that have a NameComponent
 	std::vector<ECS::Entity> NamedEntityList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
 
-	// Track the selected entity by ID only (safe, no dangling pointer)
-	static uint32_t selectedEntityID = 0;
-
 	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
 	ImGui::Separator();
 
