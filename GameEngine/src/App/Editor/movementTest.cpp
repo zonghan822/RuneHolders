@@ -447,15 +447,21 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 										relVel.y * normalAtCol.y;
 
 									// Don't resolve if velocities are separating
-									//if (velAlongNormal > 0)
-									//continue;
+									if (velAlongNormal > 0)
+									continue;
 
 									// Subtract the component along that direction
 									transform.vel.x -= velAlongNormal * normalAtCol.x;
 									transform.vel.y -= velAlongNormal * normalAtCol.y;
 
-									otherTransform.vel.x -= velAlongNormal * normalAtCol.x;
-									otherTransform.vel.y -= velAlongNormal * normalAtCol.y;
+									//transform.pos.x = static_cast<float>(transform.pos.x + transform.vel.x * dt);
+									//transform.pos.y = static_cast<float>(transform.pos.y + transform.vel.y * dt);
+
+									//transform.pos.x = static_cast<float>(transform.pos.x + transform.vel.x );
+									//transform.pos.y = static_cast<float>(transform.pos.y + transform.vel.y );
+
+									otherTransform.vel.x += velAlongNormal * normalAtCol.x;
+									otherTransform.vel.y += velAlongNormal * normalAtCol.y;
 
 									hasCollided = true;
 

@@ -590,6 +590,7 @@ void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> new
 		playerAnimController_.setAnimation("idle");
 }
 
+// Eventually i would want to restore scene state through serialization
 void GameApplication::UpdateResetPos()
 {
 	// Get list of entities to store current pos to reset later
@@ -603,6 +604,7 @@ void GameApplication::UpdateResetPos()
 		{
 			// Store reset pos
 			e.get<ECSComponents::TransformComponent>().resetPos = e.get<ECSComponents::TransformComponent>().pos;
+			e.get<ECSComponents::TransformComponent>().resetVel = e.get<ECSComponents::TransformComponent>().vel;
 
 			//std::cout << "Reset pos: " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
 		}
@@ -613,6 +615,7 @@ void GameApplication::UpdateResetPos()
 		{
 			//std::cout << "Before reset : " << e.get<ECSComponents::TransformComponent>().pos << std::endl;
 			e.get<ECSComponents::TransformComponent>().pos = e.get<ECSComponents::TransformComponent>().resetPos;
+			e.get<ECSComponents::TransformComponent>().vel = e.get<ECSComponents::TransformComponent>().resetVel;
 			//std::cout << "After reset : " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
 		}
 		// Clear list

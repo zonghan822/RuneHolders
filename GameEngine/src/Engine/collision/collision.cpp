@@ -628,7 +628,7 @@ namespace Collision {
 		// New position = collision point + reflected penetration
 		reflected = nextPos - interPt;
 
-		// Return normalized reflection directionkr
+		// Return normalized reflection direction
 		Math::eVec2Normalize(reflected, reflected);
 
 	}

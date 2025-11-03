@@ -155,12 +155,6 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_);
 *//*========================================================================================*/
 void displayFPSTab(Engine::EnoEngine& engine_);
 
-/*============================================================================================
- * \brief       Displays Toolbar in window
- * \param[in]   Engine::EnoEngine& engine_
- * \return      void
-*//*========================================================================================*/
-void displayToolbar(Engine::EnoEngine& engine_);
 
 // docking shi
 void displayGameView(Engine::EnoEngine& engine_);
