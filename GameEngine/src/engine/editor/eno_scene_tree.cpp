@@ -12,7 +12,7 @@ namespace Editor
 		node->nestedLayer_ = 0;
 		node->parent_ = parent;
 		node->enabled_ = true;
-		node->script_ = nullptr;
+		//node->script_ = nullptr;
 
 		Node* unode = node.get();
 		tree_[node->sceneObjectID_] = std::move(node);
@@ -181,24 +181,18 @@ namespace Editor
 	}
 
 	// Attach a script to a node
-	void EnoSceneTree::attachScript(Node* node, std::unique_ptr<Script::EnoScript>&& script)
-	{
-		if (node)
-			node->script_ = std::move(script);
-	}
+	//void EnoSceneTree::attachScript(Node* node, std::unique_ptr<Script::EnoScript>&& script)
+	//{
+	//	if (node)
+	//		node->script_ = std::move(script);
+	//}
 
-	// Attach a script to the selected Node
-	void EnoSceneTree::attachScript(std::unique_ptr<Script::EnoScript>&& script)
-	{
-		if (selectedNode_)
-			selectedNode_->script_ = std::move(script);
-	}
-
-	// Detach a script and release it
-	void detachScript(std::unique_ptr<Script::EnoScript>&& script)
-	{
-		script.release();
-	}
+	//// Attach a script to the selected Node
+	//void EnoSceneTree::attachScript(std::unique_ptr<Script::EnoScript>&& script)
+	//{
+	//	if (selectedNode_)
+	//		selectedNode_->script_ = std::move(script);
+	//}
 
 	// View node information
 	void EnoSceneTree::nodeView(const Node* node)
@@ -218,7 +212,7 @@ namespace Editor
 	void EnoSceneTree::treeView()
 	{
 		std::cout << "Node Count: " << tree_.size() << std::endl <<
-			"________________" << std::endl;
+					 "________________" << std::endl;
 
 		for (const auto& node : tree_)
 		{
