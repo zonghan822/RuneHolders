@@ -37,6 +37,7 @@ target_include_directories(${ENGINE_NAME} PUBLIC
 )
 target_compile_definitions(${ENGINE_NAME} 
     PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
+    PRIVATE SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}/"
     -DGLEW_STATIC
     -D_CRT_NONSTDC_NO_DEPRECATE
 )

@@ -56,10 +56,19 @@ namespace Core
 	void EnoCoreHost::init()
 	{
 		// Load hostfxr module
+		char_t hfLibPath[MAX_PATH];
+		size_t hfLibPath_size = sizeof(hfLibPath) / sizeof(char_t);
+
+		int rc = get_hostfxr_path(hfLibPath, &hfLibPath_size, nullptr);
+		if (rc != 0)
+		{
+			throw std::runtime_error("Failed to locate hostfxr");
+		}
+
 		hfLib_ = LoadLibraryW(hfLibPath);
 		if (!hfLib_)
 		{
-			std::cerr << "Failed to load hostfxr.dll" << std::endl;
+			throw std::runtime_error("Failed to load hostfxr.dll");
 		}
 	}
 
@@ -84,7 +93,8 @@ namespace Core
 	void EnoCoreHost::initCoreCLR()
 	{
 		// Get runtime context handle for CoreCLR
-		int returnCode = initfp_(runtConfigJson, nullptr, &hfHandle_);
+		std::wstring wRuntConfigJson{ runtConfigJson.begin(), runtConfigJson.end() };
+		int returnCode = initfp_(wRuntConfigJson.c_str(), nullptr, &hfHandle_);
 
 		// If returnCode != 0,
 		// runtime context was not initialized properly

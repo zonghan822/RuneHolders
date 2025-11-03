@@ -1,19 +1,19 @@
 #pragma once
 
 // Engine Component(s)
-#include "../event/eno_event_bus.hpp"
+#include "../event/event_bus.hpp"
 
 // Field
-#include "../scripting/eno_field.hpp"
+#include "../scripting/eno_field_value.hpp"
 
 // Events
 #include "../input/input_events.hpp"
 
 // Windows | CoreClr
 #include <Windows.h>
-#include "../libs/headers/coreclr_delegates.h"
-#include "../libs/headers/nethost.h"
-#include "../libs/headers/hostfxr.h"
+#include <coreclr_delegates.h>
+#include <nethost.h>
+#include <hostfxr.h>
 
 // stds
 #include <string>
@@ -29,9 +29,8 @@ namespace Core
 	class EnoCoreHost
 	{
 	private:
-		const std::string dllPath{ "scripting/GameScripts/Publish/GameScripts.dll" };
-		const wchar_t* runtConfigJson{ L"scripting/GameScripts/Publish/GameScripts.runtimeconfig.json" };
-		const wchar_t* hfLibPath{ L"libs/dotnet/hostfxr.dll" };
+		const std::string dllPath{ SCRIPT_BIN_PATH "GameScripts.dll" };
+		const std::string runtConfigJson{ SCRIPT_BIN_PATH "GameScripts.runtimeconfig.json" };
 	public:
 
 		// Define it as a pointer to a delegate type
