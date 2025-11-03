@@ -33,6 +33,7 @@ endif()
 target_include_directories(${ENGINE_NAME} SYSTEM PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories(${ENGINE_NAME} PUBLIC
     ${FMOD_INCLUDE_DIRS}
+    ${rapidjson_INCLUDE_DIRS}
 )
 target_compile_definitions(${ENGINE_NAME} 
     PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"

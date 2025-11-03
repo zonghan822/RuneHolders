@@ -15,6 +15,9 @@
 #include "../component/components/transform.hpp"
 #include "../component/components/visibility.hpp"
 #include "../component/components/drawInfo.hpp"
+#include "../component/components/player_component.hpp"
+#include "../component/components/collision_component.hpp"
+#include "../component/components/physics_component.hpp"
 
 //stds
 #include <tuple>

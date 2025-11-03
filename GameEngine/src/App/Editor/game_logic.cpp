@@ -21,18 +21,15 @@ void GameApplication::initialize() {
 	setupGameEvents();
 	setupGameMath();
 	setupImGui();
-    // Setup all game content
-    setupGameEntities();
-    setupGameAudio();
-    setupGameEvents();
-    setupGameMath();
     setupAnimations();
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
     // This is for dynamic collision test object
     createTestObject(engine_.getEntityManager());
-    
+
+	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
+	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
 
     std::cout << "Game initialized successfully!" << std::endl;
 }
@@ -116,23 +113,24 @@ void GameApplication::setupGameEvents() {
 }
 
 void GameApplication::setupGameMath() {
-	// math lib and maybe collision
-	std::cout << "Calling math function\n";
-	Math::eVec2 vec{ 1.1f, 1.2f };
-	Math::eVec2 vec2{ 1.3f, 2.f };
-	vec += vec2;
-	std::cout << "vector : " << vec.x << ", " << vec.y << std::endl;
+	
+	// Math lib and maybe collision
+	//std::cout << "Calling math function\n";
+	//Math::eVec2 vec{ 1.1f, 1.2f };
+	//Math::eVec2 vec2{ 1.3f, 2.f };
+	//vec += vec2;
+	//std::cout << "vector : " << vec.x << ", " << vec.y << std::endl;
 
 	Collision::RunBasicCollisionTest();
 
-	//initialize collision system
+	// Initialize collision system
 	collisionSystem_ = std::make_unique<Collision::CollisionSystem>(engine_.getEventBus());
 
-	// initialize player system
+	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 
 	// Load player config
-	playerConfig_.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
+	playerConfig_.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
 	std::cout << "[GameLogic] Player configg loaded" << std::endl;
 }
 
@@ -192,31 +190,51 @@ void GameApplication::setupImGui() {
 }
 
 void GameApplication::updateGameLogic() {
-    // This is called every frame (replaces your while loop in eno_engine.cpp run())
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
+	double deltaTime = engine_.getDeltaTime();
 
-    // Calculate delta time
-    double deltaTime = engine_.getDeltaTime();
-
-	// Get window dimensions from config
-	auto windowDim = engine_.getWindowManager().getWindowSize();
-	Math::eVec2<float> windowSize{
-		static_cast<float>(windowDim.first),
-		static_cast<float>(windowDim.second)
+	// Use FIXED virtual resolution for consistent rendering
+	Math::eVec2<float> renderSize{
+		static_cast<float>(VIRTUAL_WIDTH),
+		static_cast<float>(VIRTUAL_HEIGHT)
 	};
 
-	// ===== UPDATE PLAYER ANIMATION =====
-	if (playerTexture_ && playerSpawned_)
-	{
+	if (gameFramebuffer_) {
+		// CRITICAL: Set projection matrix to fixed virtual resolution
+		engine_.getGraphicsManager().setProjectionMatrix(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+		// Bind framebuffer for rendering
+		gameFramebuffer_->bind();
+	}
+
+	// Clear the framebuffer
+	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	if (playerTexture_ && playerSpawned_) {
 		playerAnimController_.update(static_cast<float>(deltaTime));
 	}
 
-    updateEntities();
-    drawShapes();
+	updateEntities();
+	drawShapes();
 	drawPlayerAndIndicator();
 	engine_.getGraphicsManager().flush();
+	drawText(renderSize);
+
+	// Unbind framebuffer (back to default)
+	if (gameFramebuffer_) {
+		gameFramebuffer_->unbind();
+
+		// CRITICAL: Restore viewport to window size for ImGui rendering
+		auto windowSize = engine_.getWindowManager().getFramebufferSize();
+		glViewport(0, 0, windowSize.first, windowSize.second);
+
+		// Restore projection matrix to window size
+		engine_.getGraphicsManager().setProjectionMatrix(windowSize.first, windowSize.second);
+	}
+
+	// Now render ImGui (which will display the framebuffer texture)
 	updateImGui();
-	drawText(windowSize);
 }
 
 void GameApplication::updateEntities() {
@@ -226,16 +244,17 @@ void GameApplication::updateEntities() {
 	float deltaTime = io.DeltaTime;
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
-	auto windowDim = engine_.getConfigManager().getWindowDim();
-	Math::eVec2<float> windowSize{
-			static_cast<float>(windowDim.first),
-			static_cast<float>(windowDim.second)
+
+	// Use fixed virtual resolution for consistent rendering
+	Math::eVec2<float> renderSize{
+		static_cast<float>(VIRTUAL_WIDTH),
+		static_cast<float>(VIRTUAL_HEIGHT)
 	};
 
 	// Draw background
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
-		windowSize,                                // Full screen size from config
+		renderSize,                                // Use fixed virtual resolution
 		backgroundTexture_,
 		Math::eVec2<float>{0.0f, 0.0f},           // UV start
 		Math::eVec2<float>{1.0f, 1.0f},           // UV end
@@ -288,70 +307,59 @@ void GameApplication::updateEntities() {
 		collisionSystem_->Update(engine_.getEntityManager());
 	}
 	
-	static bool frameUpdate = false;
 	static bool keyFrameMode = false;
+	static bool playAfterStop = true;
 
-	if (inputManager.isKeyDown(GLFW_KEY_M))
+	//std::cout << "outside Editor state: " << _editorState << std::endl;
+	// Editor state = play game
+	switch (getEditorState())
 	{
-		// Get list of entities which I want to store current pos
-		auto& ent = engine_.getEntityManager();
-		std::vector<ECS::Entity> entityList = ent.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
-
-		// This toggles keyframe mode
-		keyFrameMode = !keyFrameMode;
-
-		// If true, store all the positions
-		if (keyFrameMode)
+	case Playing:
 		{
-
-			if (!entityList.empty())
+			std::cout << "Editor state: " << getEditorState() << std::endl;
+			// Get list of entities to store current pos to reset later
+			// Check that the last frame editor state was 'Stopped'
+			if (playAfterStop)
 			{
-				for (auto& e : entityList)
-				{
-					e.get<ECSComponents::TransformComponent>().resetPos = e.get<ECSComponents::TransformComponent>().pos;
-					std::cout << "Reset pos: " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
-				}
-
+				UpdateResetPos();
+				playAfterStop = false;
 			}
 
-		}
-		else
-		{
-			std::cout << "keyframe off! \n";
-			// Reset all object positions
-			for (auto& e : entityList)
-			{
-				std::cout << "Before reset : " << e.get<ECSComponents::TransformComponent>().pos << std::endl;
-				e.get<ECSComponents::TransformComponent>().pos = e.get<ECSComponents::TransformComponent>().resetPos;
-				std::cout << "After reset : " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
-			}
-			
-		}
-	}
-	// In key frame mode, wait for trigger to update
-	if (keyFrameMode)
-	{
-
-		if (inputManager.isKeyDown(GLFW_KEY_N))
-		{
-			// Frame update 
-			frameUpdate = true;
-		}
-
-		if (frameUpdate)
-		{
-			// Update one time
+			// Update dynamic objects
 			updateTestObject(engine_.getEntityManager(), engine_);
-
-			// Set it back to false
-			frameUpdate = false;
+			break;
 		}
-	}
-	else
-	{
-		//not in key frame mode, update normally
-		updateTestObject(engine_.getEntityManager(), engine_);
-	}
+		case Paused:
+		{
+			// This toggles keyframe mode
+			keyFrameMode = true;
+			break;
+		}
+		case NextKeyFrame:
+		{
+			// Check if key frame mode is true
+			if (keyFrameMode)
+			{
+				// Update one time
+				updateTestObject(engine_.getEntityManager(), engine_);
+
+				// Reset variables
+				setEditorState(Paused);
+			}
+			break;
+		}
+		case Stopped:
+		{
+			// Reset all object positions
+			// This condition ensures resetting of pos comes after play
+			if (!playAfterStop)
+			{
+				UpdateResetPos();
+				playAfterStop = true;
+			}
+			break;
+		}
+	}	
 }
 
 
@@ -516,6 +524,11 @@ void GameApplication::drawShapes() {
 		// Skip if entity was destroyed
 		try {
 			if (entity.has<ECSComponents::DrawInfoComponent>()) {
+				// Skip rendering for player entities (they're drawn separately with sprite/animation)
+				if (entity.has<ECSComponents::PlayerComponent>()) {
+					continue;
+				}
+
 				graphics.drawRect(
 					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
 					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
@@ -558,6 +571,58 @@ void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData)
 	);
 	playerIdleAnim.setLooping(true);
 	playerAnimController_.addAnimation("idle", playerIdleAnim);
-	playerAnimController_.setAnimation("idle");
+	playerAnimController_.addAnimation("walk", playerWalkAnim);
+
+	// Keep the same current state
+	if (playerAnimController_.getCurrentAnimationName().empty())
+		playerAnimController_.setAnimation("idle");
 }
 
+// Eventually i would want to restore scene state through serialization
+void GameApplication::UpdateResetPos()
+{
+	// Get list of entities to store current pos to reset later
+	auto& ent = engine_.getEntityManager();
+	static std::vector<ECS::Entity> entityList;
+	// If empty, store pos, else reset
+	if (entityList.empty())
+	{
+		entityList = ent.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven")); // This will change to all dynamic entities in future
+		for (auto& e : entityList)
+		{
+			// Store reset pos
+			e.get<ECSComponents::TransformComponent>().resetPos = e.get<ECSComponents::TransformComponent>().pos;
+			e.get<ECSComponents::TransformComponent>().resetVel = e.get<ECSComponents::TransformComponent>().vel;
+
+			//std::cout << "Reset pos: " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
+		}
+	}
+	else
+	{
+		for (auto& e : entityList)
+		{
+			//std::cout << "Before reset : " << e.get<ECSComponents::TransformComponent>().pos << std::endl;
+			e.get<ECSComponents::TransformComponent>().pos = e.get<ECSComponents::TransformComponent>().resetPos;
+			e.get<ECSComponents::TransformComponent>().vel = e.get<ECSComponents::TransformComponent>().resetVel;
+			//std::cout << "After reset : " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
+		}
+		// Clear list
+		entityList.clear();
+	}
+	
+}
+
+// Accessor and mutators to access editor state
+EditorState GameApplication::getEditorState() const
+{
+	return g_editorState;
+}
+EditorState GameApplication::getEditorState()
+{
+	return g_editorState;
+}
+
+void GameApplication::setEditorState(EditorState state)
+{
+	g_editorState = state;
+}

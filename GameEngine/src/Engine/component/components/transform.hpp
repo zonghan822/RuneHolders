@@ -24,8 +24,9 @@ namespace ECSComponents
 		
 		Math::eVec2<float> vel{};	// remove this after rewriting movementtest
 
-		// Reset for pause play feature
+		// Reset for play stop state
 		Math::eVec2<float> resetPos{};
+		Math::eVec2<float> resetVel{};
 
 		// Default constructor
 		TransformComponent() = default;

@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         game_logic.hpp
 * @author       Name (@digipen.edu)
 * @date         DD-MM-YYYY
@@ -11,10 +11,19 @@
 
 #include "engine/eno_engine.hpp"
 #include <iostream>
-#include <memory>  
+#include <memory>
+#include <imgui.h>
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
+
+// Enum for different editor states
+enum EditorState {
+    Stopped = 1,
+    Playing,
+    Paused,
+    NextKeyFrame
+};
 
 class GameApplication {
 private:
@@ -40,12 +49,22 @@ private:
     Animation::AnimationController playerAnimController_;
     int playerFacingDirection_ = 1;
 
+    std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
+
+    // Fixed virtual resolution (game always renders to this size)
+    static constexpr int VIRTUAL_WIDTH = 1280;
+    static constexpr int VIRTUAL_HEIGHT = 720;
+
     // Font
     std::shared_ptr<Font::EnoFont> pixelifyFont_;
     std::shared_ptr<Font::EnoFont> timesFont_;
 
     // Player
     Player::PlayerConfig playerConfig_;
+
+    // Editor State
+    EditorState g_editorState = Stopped;
+
 
 public:
     // Constructors
@@ -63,6 +82,17 @@ public:
     // Yun Qi's IMGUI sandbox
     //void setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex);
     void applyTextureToPlayer(const Graphics::TextureData& texData);
+
+    // Accessor and mutators to access editor state
+    EditorState getEditorState() const;
+    EditorState getEditorState();
+
+    void setEditorState(EditorState state);
+    Graphics::EnoFramebuffer* getGameFramebuffer() { return gameFramebuffer_.get(); }
+
+    // Get fixed virtual resolution
+    int getVirtualWidth() const { return VIRTUAL_WIDTH; }
+    int getVirtualHeight() const { return VIRTUAL_HEIGHT; }
 
 
 private:
@@ -83,7 +113,8 @@ private:
     void drawPlayerAndIndicator();
     
 
-
+    // Helper function to store entity positions during change in editor state
+    void UpdateResetPos();
 
     void drawShapes(); 
 

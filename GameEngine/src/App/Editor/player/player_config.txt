@@ -1,5 +1,5 @@
 # ====================================
-# Player Configuration File
+# Player Configuration File (Force-Based Physics)
 # ====================================
 # Edit these values to adjust player behavior
 # without recompiling the game.
@@ -8,22 +8,33 @@
 # Lines starting with # are comments
 # ====================================
 
-# Physics Properties
+# Force-Based Physics Properties
 # --------------------
-# Acceleration rate when moving (pixels per second²)
-# Higher = faster speed-up, more responsive
-# Lower = slower speed-up, more "heavy" feeling
-acceleration = 800.0
+# Movement force magnitude applied when pressing WASD (arbitrary units or Newtons)
+# Higher = faster acceleration, more responsive
+# Lower = slower acceleration, more "heavy" feeling
+# Recommended: 600-1200 for responsive feel
+movementForce = 800.0
 
-# Friction coefficient (dimensionless, 0-20 typical range)
-# Higher = stops faster when releasing keys
+# Friction coefficient for drag/deceleration (0-1 range, dimensionless)
+# This creates smooth deceleration when releasing keys
+# Higher = stops faster (more friction)
 # Lower = more "slippery" movement, longer slide
-# Recommended: 6-10 for responsive feel, 2-4 for ice physics
-friction = 4.0
+# Recommended: 0.10-0.20 for smooth feel
+# Note: This is DIFFERENT from old friction - much smaller values!
+frictionCoefficient = 0.8
 
-# Maximum movement speed (pixels per second)
+# Maximum movement speed clamp (pixels per second)
 # This is the top speed the player can reach
+# Higher = faster top speed
+# Lower = slower, more controlled movement
 maxSpeed = 200.0
+
+# Player mass (affects acceleration from forces)
+# Default is 1.0, increase for "heavier" feel
+# Mass affects: acceleration = force / mass
+# Higher mass = same force produces less acceleration
+mass = 1.0
 
 # Whether player can move initially (true/false)
 canMove = true
@@ -53,32 +64,37 @@ dashDistance = 150.0
 dashCooldown = 0.5
 
 # ====================================
-# Notes for changing variables:
+# Notes for Tuning:
 #
-# - Higher moveSpeed = faster base movement
-# - Lower dashCooldown = dash more frequently
-# - Higher dashDistance = dash farther
-# - Smaller collider = easier to dodge
-#
-# Physics Tuning Guide:
-#
-# RESPONSIVE MOVEMENT (Default):
-#   acceleration = 800.0
-#   friction = 8.0
+# RESPONSIVE MOVEMENT (Current Default):
+#   movementForce = 800.0
+#   frictionCoefficient = 0.15
 #   maxSpeed = 200.0
+#   mass = 1.0
 #
 # ICE PHYSICS (Slippery):
-#   acceleration = 400.0
-#   friction = 2.0
+#   movementForce = 600.0
+#   frictionCoefficient = 0.05
 #   maxSpeed = 250.0
+#   mass = 0.8
 #
-# HEAVY CHARACTER:
-#   acceleration = 500.0
-#   friction = 12.0
+# HEAVY CHARACTER (Tank-like):
+#   movementForce = 1000.0
+#   frictionCoefficient = 0.25
 #   maxSpeed = 150.0
+#   mass = 2.0
 #
 # FAST & AGILE (Speedster):
-#   acceleration = 1200.0
-#   friction = 10.0
+#   movementForce = 1200.0
+#   frictionCoefficient = 0.20
 #   maxSpeed = 300.0
+#   mass = 0.7
+#
+# Physics Explanation:
+# Force → Acceleration → Velocity → Position
+# 1. Input creates movement force
+# 2. Friction opposes velocity
+# 3. Net force calculates acceleration (F = ma)
+# 4. Acceleration changes velocity
+# 5. Velocity moves position
 # ====================================
