@@ -262,119 +262,71 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 
 	//Spawn Button (with optional collider)
 	if (ImGui::Button("Spawn Entity")) {
+		// Calculate center position from top-left for transform
+		float centerX = indicatorX_ + (eWidth * 0.5f);
+		float centerY = indicatorY_ + (eHeight * 0.5f);
+
+		// ALWAYS add TransformComponent (required for drag-drop functionality)
+		ECSComponents::TransformComponent transform{
+			{centerX, centerY},
+			{0.0f, 0.0f},
+			{1.0f, 1.0f}
+		};
+
 		ECSComponents::DrawInfoComponent DIC{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor };
-		ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
+
+		// Create entity with both Transform and DrawInfo components
+		ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
+		e.add<ECSComponents::DrawInfoComponent>(DIC);
 		e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
 
-
-		// add collider if selected
+		// Add collider if selected
 		if (selectedCollider != 0) {
-
-			// calculate center position from top-left
-			float centerX = indicatorX_ + (eWidth * 0.5f);
-			float centerY = indicatorY_ + (eHeight * 0.5f);
-
-			// add transform component (required for collision)
-			ECSComponents::TransformComponent transform{
-				{centerX, centerY},
-				{0.0f, 0.0f},
-				{1.0f, 1.0f}
-			};
-
-			e.add<ECSComponents::TransformComponent>(transform);
-
-			// then add appropriate collider
+			// Add appropriate collider
 			if (selectedCollider == 1) {//circle
 				e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderRadius));
-				if (e.has<ECSComponents::DrawInfoComponent>()) {
-					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
-				}
 			}
 			else if (selectedCollider == 2) { // rectangle
 				e.add<Collision::CollisionComponent>(Collision::CollisionComponent(colliderWidth, colliderHeight));
-				if (e.has<ECSComponents::DrawInfoComponent>()) {
-					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
-				}
-
 			}
 
 			std::cout << "Spawned entity WITH collider\n";
 		}
-
-
 		else {
 			std::cout << "Spawned entity without collider\n";
-			//if (e.has<ECSComponents::DrawInfoComponent>())std::cout << "drawcomponent XY: " << e.get<ECSComponents::DrawInfoComponent>() << "\n";
 		}
+
 		if (g_game) g_game->markEntitiesDirty();
 		(void)e; // to silence compiler warning for unused param
 	}
-	// Intentional: To only be able to drag and Drop in Main Tab
-	ImGuiIO& io = ImGui::GetIO();
-
-	// --- begin drag ---
-	if (!io.WantCaptureMouse && ImGui::IsMouseClicked(0) && !isDragging)
-	{
-		auto clicked = getEntityUnderMouse(engine_, io.MousePos);
-		if (clicked)
-		{
-			draggedEntityID = clicked->getEntityID();
-			isDragging = true;
-
-			auto& tc = clicked->get<ECSComponents::TransformComponent>();
-			dragOffset.x = io.MousePos.x - tc.pos.x;
-			dragOffset.y = io.MousePos.y - tc.pos.y;
-		}
-	}
-
-	// --- while dragging ---
-	if (isDragging && ImGui::IsMouseDown(0))
-	{
-		auto all = engine_.getEntityManager().findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
-		for (auto& e : all)
-		{
-			if (e.getEntityID() == draggedEntityID)
-			{
-				auto& tc = e.get<ECSComponents::TransformComponent>();
-				auto& dc = e.get<ECSComponents::DrawInfoComponent>();
-
-				// Update transform
-				tc.pos.x = io.MousePos.x - dragOffset.x;
-				tc.pos.y = io.MousePos.y - dragOffset.y;
-
-				// Sync DrawInfo so renderer knows the new position
-				dc.xPos = tc.pos.x - (dc.width * 0.5f);
-				dc.yPos = tc.pos.y - (dc.height * 0.5f);
-
-				if (g_game)
-					g_game->markEntitiesDirty();
-				break;
-			}
-		}
-	}
-
-	// --- drop ---
-	if (isDragging && ImGui::IsMouseReleased(0))
-	{
-		std::cout << "Entity " << draggedEntityID
-			<< " dropped at (" << io.MousePos.x << ", " << io.MousePos.y << ")\n";
-		isDragging = false;
-		draggedEntityID = 0;
-	}
+	// NOTE: Drag-drop logic moved to Game View window to work with framebuffer coordinates
 
 
 	//Clone Button
 	if (ImGui::Button("Spawn 2500 Entities")) {
 		for (size_t i = 0; i < 2500; i++) {
-			float randX = randomFloat(0.0f, 1200.0f); //screen width 
+			float randX = randomFloat(0.0f, 1200.0f); //screen width
 			float randY = randomFloat(0.0f, 900.0f); // screen height
 			float randScalar = randomFloat(0, 10.f);
 			float randW = eWidth + randScalar;
 			float randH = eHeight + randScalar;
 			Color randC = (randomFloat(0, 1.0f) < 0.5f ? Color::Green : Color::Red);
-			//HARDCODED(COPIED) SPAWN CODE INTO HERE
+
+			// Calculate center position for transform
+			float centerX = randX + (randW * 0.5f);
+			float centerY = randY + (randH * 0.5f);
+
+			// Create entity with TransformComponent so it can be dragged
+			ECSComponents::TransformComponent transform{
+				{centerX, centerY},
+				{0.0f, 0.0f},
+				{1.0f, 1.0f}
+			};
+			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
+
+			// Add DrawInfoComponent
 			ECSComponents::DrawInfoComponent DIC{ randX, randY, randW, randH, shapes[eShapeIndex], randC };
-			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::DrawInfoComponent>(DIC);
+			e.add<ECSComponents::DrawInfoComponent>(DIC);
 			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
 		}
 		entity_count += 2500;
@@ -879,13 +831,7 @@ void imGuiBeginDockspace() {
 	ImGuiID dockspace_id = ImGui::GetID("MainDockspace");
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
-// Game controls/ can do some shenanigans here @caven
-//if (ImGui::Button("Play")) { /* Play logic */ }
-//ImGui::SameLine();
-//if (ImGui::Button("Pause")) { /* Pause logic */ }
-//ImGui::SameLine();
-//if (ImGui::Button("Stop")) { /* Stop logic */ }
-//ImGui::Separator();
+
 void displayGameView(Engine::EnoEngine& engine_) {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
@@ -961,6 +907,71 @@ void displayGameView(Engine::EnoEngine& engine_) {
 					<< " | Relative: (" << relX << ", " << relY << ")"
 					<< " | Game: (" << gameX << ", " << gameY << ")"
 					<< " | Virtual: " << virtualWidth << "x" << virtualHeight << "\n";
+			}
+
+			// ========== ENTITY DRAG-DROP LOGIC (with coordinate conversion) ==========
+			// Helper function to convert screen coordinates to game coordinates
+			auto screenToGameCoords = [&](ImVec2 screenPos) -> ImVec2 {
+				ImVec2 imageMin = ImGui::GetItemRectMin();
+				ImVec2 imageMax = ImGui::GetItemRectMax();
+
+				float relX = (screenPos.x - imageMin.x) / (imageMax.x - imageMin.x);
+				float relY = (screenPos.y - imageMin.y) / (imageMax.y - imageMin.y);
+
+				relX = std::clamp(relX, 0.0f, 1.0f);
+				relY = std::clamp(relY, 0.0f, 1.0f);
+
+				return ImVec2(relX * virtualWidth, relY * virtualHeight);
+			};
+
+			// --- Begin drag ---
+			if (g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging) {
+				ImVec2 gamePos = screenToGameCoords(ImGui::GetMousePos());
+				auto clicked = getEntityUnderMouse(engine_, gamePos);
+				if (clicked) {
+					draggedEntityID = clicked->getEntityID();
+					isDragging = true;
+
+					auto& tc = clicked->get<ECSComponents::TransformComponent>();
+					dragOffset.x = gamePos.x - tc.pos.x;
+					dragOffset.y = gamePos.y - tc.pos.y;
+
+					std::cout << "Started dragging entity " << draggedEntityID << "\n";
+				}
+			}
+
+			// --- While dragging ---
+			if (isDragging && ImGui::IsMouseDown(0)) {
+				ImVec2 gamePos = screenToGameCoords(ImGui::GetMousePos());
+
+				auto all = engine_.getEntityManager().findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+				for (auto& e : all) {
+					if (e.getEntityID() == draggedEntityID) {
+						auto& tc = e.get<ECSComponents::TransformComponent>();
+						auto& dc = e.get<ECSComponents::DrawInfoComponent>();
+
+						// Update transform
+						tc.pos.x = gamePos.x - dragOffset.x;
+						tc.pos.y = gamePos.y - dragOffset.y;
+
+						// Sync DrawInfo so renderer knows the new position
+						dc.xPos = tc.pos.x - (dc.width * 0.5f);
+						dc.yPos = tc.pos.y - (dc.height * 0.5f);
+
+						if (g_game)
+							g_game->markEntitiesDirty();
+						break;
+					}
+				}
+			}
+
+			// --- Drop ---
+			if (isDragging && ImGui::IsMouseReleased(0)) {
+				ImVec2 gamePos = screenToGameCoords(ImGui::GetMousePos());
+				std::cout << "Entity " << draggedEntityID
+					<< " dropped at game coords (" << gamePos.x << ", " << gamePos.y << ")\n";
+				isDragging = false;
+				draggedEntityID = 0;
 			}
 
 			if (ImGui::IsItemHovered() && !g_selectedPrefabForPlacement.empty()) {
