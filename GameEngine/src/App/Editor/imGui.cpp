@@ -759,6 +759,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 #endif
 
 
+#if 0
 void displayEntityInspector(ECS::Entity& entity)
 {
 	if (!entity.getEntityID())
@@ -779,26 +780,72 @@ void displayEntityInspector(ECS::Entity& entity)
 		if (ImGui::InputText("Name", buffer, IM_ARRAYSIZE(buffer))) {
 			strncpy_s(nameComp.name, buffer, sizeof(nameComp.name) - 1);
 			nameComp.name[sizeof(nameComp.name) - 1] = '\0';
-
 			if (g_game) g_game->markEntitiesDirty();
 		}
 	}
 
-	// --- TransformComponent ---
-	if (entity.has<ECSComponents::TransformComponent>()) {
-		auto& transform = entity.get<ECSComponents::TransformComponent>();
-		ImGui::SeparatorText("Transform");
-		ImGui::DragFloat2("Position", (float*)&transform.pos, 0.5f);
-		ImGui::DragFloat2("Scale", (float*)&transform.scale, 0.05f, 0.1f, 10.0f);
-		ImGui::DragFloat2("Velocity", (float*)&transform.vel, 0.5f);
-	}
+	// --- Transform + Draw sync section ---
+	ECSComponents::TransformComponent* transformPtr = nullptr;
+	ECSComponents::DrawInfoComponent* drawPtr = nullptr;
 
-	// --- DrawInfoComponent ---
-	if (entity.has<ECSComponents::DrawInfoComponent>()) {
-		auto& draw = entity.get<ECSComponents::DrawInfoComponent>();
-		ImGui::SeparatorText("Draw Info");
-		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
-		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+	if (entity.has<ECSComponents::TransformComponent>())
+		transformPtr = &entity.get<ECSComponents::TransformComponent>();
+	if (entity.has<ECSComponents::DrawInfoComponent>())
+		drawPtr = &entity.get<ECSComponents::DrawInfoComponent>();
+
+	if (transformPtr && drawPtr)
+	{
+		auto& transform = *transformPtr;
+		auto& draw = *drawPtr;
+
+		ImGui::SeparatorText("Transform (Center-Based)");
+		bool posChanged = ImGui::DragFloat2("Center Position", (float*)&transform.pos, 0.5f);
+		bool scaleChanged = ImGui::DragFloat2("Scale", (float*)&transform.scale, 0.05f, 0.1f, 10.0f);
+		bool velChanged = ImGui::DragFloat2("Velocity", (float*)&transform.vel, 0.5f);
+
+		// Reflect transform → draw (center → top-left)
+		if (posChanged || scaleChanged)
+		{
+			draw.xPos = transform.pos.x - (draw.width * 0.5f);
+			draw.yPos = transform.pos.y - (draw.height * 0.5f);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		ImGui::SeparatorText("Draw Info (Top-Left-Based)");
+		bool widthChanged = ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+		bool heightChanged = ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+		bool xChanged = ImGui::DragFloat("X Pos", &draw.xPos, 0.5f, 0.0f, 2000.0f);
+		bool yChanged = ImGui::DragFloat("Y Pos", &draw.yPos, 0.5f, 0.0f, 2000.0f);
+
+		// Reflect draw → transform (top-left → center)
+		if (xChanged || yChanged || widthChanged || heightChanged)
+		{
+			transform.pos.x = draw.xPos + (draw.width * 0.5f);
+			transform.pos.y = draw.yPos + (draw.height * 0.5f);
+			transform.scale.x = draw.width;
+			transform.scale.y = draw.height;
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+	else
+	{
+		// --- Fallbacks if only one exists ---
+		if (entity.has<ECSComponents::TransformComponent>()) {
+			auto& transform = entity.get<ECSComponents::TransformComponent>();
+			ImGui::SeparatorText("Transform");
+			ImGui::DragFloat2("Position", (float*)&transform.pos, 0.5f);
+			ImGui::DragFloat2("Scale", (float*)&transform.scale, 0.05f, 0.1f, 10.0f);
+			ImGui::DragFloat2("Velocity", (float*)&transform.vel, 0.5f);
+		}
+
+		if (entity.has<ECSComponents::DrawInfoComponent>()) {
+			auto& draw = entity.get<ECSComponents::DrawInfoComponent>();
+			ImGui::SeparatorText("Draw Info");
+			ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+			ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+			ImGui::DragFloat("X Pos", &draw.xPos, 0.5f, 0.0f, 2000.0f);
+			ImGui::DragFloat("Y Pos", &draw.yPos, 0.5f, 0.0f, 2000.0f);
+		}
 	}
 
 	// --- CollisionComponent ---
@@ -806,7 +853,6 @@ void displayEntityInspector(ECS::Entity& entity)
 		auto& collider = entity.get<Collision::CollisionComponent>();
 		ImGui::SeparatorText("Collider");
 
-		// Collider type selector
 		const char* colliderTypes[] = { "Circle", "Rectangle", "Line", "Point" };
 		int currentType = static_cast<int>(collider.type);
 		if (ImGui::Combo("Type", &currentType, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
@@ -821,27 +867,23 @@ void displayEntityInspector(ECS::Entity& entity)
 		if (ImGui::DragFloat2("Offset", (float*)&collider.offset, 0.5f))
 			if (g_game) g_game->markEntitiesDirty();
 
-		// Show relevant data based on collider type
 		switch (collider.type) {
 		case Collision::ColliderType::CIRCLE:
 			if (ImGui::DragFloat("Radius", &collider.data.circle.radius, 0.5f, 0.1f, 500.0f))
 				if (g_game) g_game->markEntitiesDirty();
 			break;
-
 		case Collision::ColliderType::RECTANGLE:
 			if (ImGui::DragFloat("Width", &collider.data.rectangle.width, 0.5f, 0.1f, 500.0f))
 				if (g_game) g_game->markEntitiesDirty();
 			if (ImGui::DragFloat("Height", &collider.data.rectangle.height, 0.5f, 0.1f, 500.0f))
 				if (g_game) g_game->markEntitiesDirty();
 			break;
-
 		case Collision::ColliderType::LINE:
 			ImGui::DragFloat2("Line p1", (float*)&collider.data.line.p1, 0.5f);
 			ImGui::DragFloat2("Line p2", (float*)&collider.data.line.p2, 0.5f);
 			ImGui::DragFloat2("Normal", (float*)&collider.data.line.pNormal, 0.5f);
 			if (g_game) g_game->markEntitiesDirty();
 			break;
-
 		case Collision::ColliderType::POINT:
 			ImGui::Text("Point collider (no size parameters)");
 			break;
@@ -851,6 +893,104 @@ void displayEntityInspector(ECS::Entity& entity)
 	ImGui::End();
 }
 
+#else
+void displayEntityInspector(ECS::Entity& entity)
+{
+	if (!entity.getEntityID())
+		return;
+
+	ImGui::Begin("Entity Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Text("Entity ID: %u", entity.getEntityID());
+
+	// --- NameComponent ---
+	if (entity.has<ECSComponents::NameComponent>()) {
+		auto& nameComp = entity.get<ECSComponents::NameComponent>();
+		char buffer[32];
+		strncpy_s(buffer, nameComp.name, sizeof(buffer) - 1);
+		buffer[sizeof(buffer) - 1] = '\0';
+
+		if (ImGui::InputText("Name", buffer, IM_ARRAYSIZE(buffer))) {
+			strncpy_s(nameComp.name, buffer, sizeof(nameComp.name) - 1);
+			nameComp.name[sizeof(nameComp.name) - 1] = '\0';
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+
+	// --- TransformComponent (authoritative) ---
+	if (entity.has<ECSComponents::TransformComponent>()) {
+		auto& transform = entity.get<ECSComponents::TransformComponent>();
+		ImGui::SeparatorText("Transform (Authoritative)");
+
+		bool posChanged = ImGui::DragFloat2("Position (Center)", (float*)&transform.pos, 0.5f);
+		bool scaleChanged = ImGui::DragFloat2("Scale", (float*)&transform.scale, 0.05f, 0.1f, 10.0f);
+		bool velChanged = ImGui::DragFloat2("Velocity", (float*)&transform.vel, 0.5f);
+
+		// Only update DrawInfo visually
+		if ((posChanged || scaleChanged) && entity.has<ECSComponents::DrawInfoComponent>()) {
+			auto& draw = entity.get<ECSComponents::DrawInfoComponent>();
+			draw.width = transform.scale.x;
+			draw.height = transform.scale.y;
+			draw.xPos = transform.pos.x - (draw.width * 0.5f);
+			draw.yPos = transform.pos.y - (draw.height * 0.5f);
+		}
+
+		if (posChanged || scaleChanged || velChanged) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+
+	// --- DrawInfoComponent (visual only, read/edit local copy) ---
+	if (entity.has<ECSComponents::DrawInfoComponent>()) {
+		auto& draw = entity.get<ECSComponents::DrawInfoComponent>();
+		ImGui::SeparatorText("Draw Info (Visual Only)");
+
+		ImGui::Text("Top-Left: (%.2f, %.2f)", draw.xPos, draw.yPos);
+		ImGui::Text("Size: (%.2f × %.2f)", draw.width, draw.height);
+		ImGui::Text("Color: %d", draw.color);
+	}
+
+	// --- CollisionComponent ---
+	if (entity.has<Collision::CollisionComponent>()) {
+		auto& collider = entity.get<Collision::CollisionComponent>();
+		ImGui::SeparatorText("Collider");
+
+		const char* colliderTypes[] = { "Circle", "Rectangle", "Line", "Point" };
+		int currentType = static_cast<int>(collider.type);
+		if (ImGui::Combo("Type", &currentType, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
+			collider.type = static_cast<Collision::ColliderType>(currentType);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		ImGui::Checkbox("Is Active", &collider.isActive);
+		ImGui::Checkbox("Is Trigger", &collider.isTrigger);
+		ImGui::DragFloat("Rotation (radians)", &collider.rotation, 0.01f);
+		ImGui::DragFloat2("Offset", (float*)&collider.offset, 0.5f);
+
+		switch (collider.type) {
+		case Collision::ColliderType::CIRCLE:
+			ImGui::DragFloat("Radius", &collider.data.circle.radius, 0.5f, 0.1f, 500.0f);
+			break;
+		case Collision::ColliderType::RECTANGLE:
+			ImGui::DragFloat("Width", &collider.data.rectangle.width, 0.5f, 0.1f, 500.0f);
+			ImGui::DragFloat("Height", &collider.data.rectangle.height, 0.5f, 0.1f, 500.0f);
+			break;
+		case Collision::ColliderType::LINE:
+			ImGui::DragFloat2("Line p1", (float*)&collider.data.line.p1, 0.5f);
+			ImGui::DragFloat2("Line p2", (float*)&collider.data.line.p2, 0.5f);
+			ImGui::DragFloat2("Normal", (float*)&collider.data.line.pNormal, 0.5f);
+			break;
+		case Collision::ColliderType::POINT:
+			ImGui::Text("Point collider (no parameters)");
+			break;
+		}
+
+		if (g_game) g_game->markEntitiesDirty();
+	}
+
+	ImGui::End();
+}
+
+#endif
 
 void displayAssetTab(Engine::EnoEngine& engine_) {
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
