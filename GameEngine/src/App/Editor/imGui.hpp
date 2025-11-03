@@ -119,6 +119,13 @@ void displayEditTab(Engine::EnoEngine& engine_);
 void displayHierarchyTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
+ * \brief       Displays Entity Inspector
+ * \param[in]   ECS::Entity&
+ * \return      void
+*//*========================================================================================*/
+void displayEntityInspector(ECS::Entity& entity);
+
+/*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void

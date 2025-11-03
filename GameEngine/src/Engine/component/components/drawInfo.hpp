@@ -60,9 +60,12 @@ namespace ECSComponents
 
 		}
 
-		float xPos, yPos, width, height;
+		float xPos = 0.0f;
+		float yPos = 0.0f;
+		float width = 10.0f;
+		float height = 10.0f;
 		char shape[32] = "Rectangle";
-		Graphics::Color color = Graphics::Color::Blue;
+		Graphics::Color color = Graphics::Color::Green;
 		
 	};
 

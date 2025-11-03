@@ -778,6 +778,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 
 }
 
+#if 0
 void displayHierarchyTab(Engine::EnoEngine& engine_)
 {
 
@@ -799,6 +800,154 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 		}
 	}
 }
+
+#else
+void displayHierarchyTab(Engine::EnoEngine& engine_)
+{
+	// Get all entities that have a NameComponent
+	std::vector<ECS::Entity> NamedEntityList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
+
+	// Track the selected entity by ID only (safe, no dangling pointer)
+	static uint32_t selectedEntityID = 0;
+
+	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
+	ImGui::Separator();
+
+	// --- Entity selection list ---
+	for (ECS::Entity& e : NamedEntityList)
+	{
+		const auto& nameComp = e.get<ECSComponents::NameComponent>();
+		std::string name = nameComp.name;
+		bool selected = (selectedEntityID == e.getEntityID());
+
+		std::string label = std::to_string(e.getEntityID()) + ": " + name;
+		if (ImGui::Selectable(label.c_str(), selected))
+		{
+			selectedEntityID = e.getEntityID();
+		}
+	}
+
+	// --- Display inspector if selected entity still exists ---
+	if (selectedEntityID != 0)
+	{
+		// Revalidate that the entity is still alive
+		ECS::Entity* foundEntity = nullptr;
+		for (ECS::Entity& e : NamedEntityList)
+		{
+			if (e.getEntityID() == selectedEntityID)
+			{
+				foundEntity = &e;
+				break;
+			}
+		}
+
+		if (foundEntity)
+		{
+			displayEntityInspector(*foundEntity);
+		}
+		else
+		{
+			// Entity no longer exists — clear selection
+			selectedEntityID = 0;
+		}
+	}
+}
+
+#endif
+
+
+void displayEntityInspector(ECS::Entity& entity)
+{
+	if (!entity.getEntityID())
+		return;
+
+	ImGui::Begin("Entity Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+	ImGui::Text("Entity ID: %u", entity.getEntityID());
+
+	// --- NameComponent ---
+	if (entity.has<ECSComponents::NameComponent>()) {
+		auto& nameComp = entity.get<ECSComponents::NameComponent>();
+
+		char buffer[32];
+		strncpy_s(buffer, nameComp.name, sizeof(buffer) - 1);
+		buffer[sizeof(buffer) - 1] = '\0';
+
+		if (ImGui::InputText("Name", buffer, IM_ARRAYSIZE(buffer))) {
+			strncpy_s(nameComp.name, buffer, sizeof(nameComp.name) - 1);
+			nameComp.name[sizeof(nameComp.name) - 1] = '\0';
+
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+
+	// --- TransformComponent ---
+	if (entity.has<ECSComponents::TransformComponent>()) {
+		auto& transform = entity.get<ECSComponents::TransformComponent>();
+		ImGui::SeparatorText("Transform");
+		ImGui::DragFloat2("Position", (float*)&transform.pos, 0.5f);
+		ImGui::DragFloat2("Scale", (float*)&transform.scale, 0.05f, 0.1f, 10.0f);
+		ImGui::DragFloat2("Velocity", (float*)&transform.vel, 0.5f);
+	}
+
+	// --- DrawInfoComponent ---
+	if (entity.has<ECSComponents::DrawInfoComponent>()) {
+		auto& draw = entity.get<ECSComponents::DrawInfoComponent>();
+		ImGui::SeparatorText("Draw Info");
+		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+	}
+
+	// --- CollisionComponent ---
+	if (entity.has<Collision::CollisionComponent>()) {
+		auto& collider = entity.get<Collision::CollisionComponent>();
+		ImGui::SeparatorText("Collider");
+
+		// Collider type selector
+		const char* colliderTypes[] = { "Circle", "Rectangle", "Line", "Point" };
+		int currentType = static_cast<int>(collider.type);
+		if (ImGui::Combo("Type", &currentType, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
+			collider.type = static_cast<Collision::ColliderType>(currentType);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		ImGui::Checkbox("Is Active", &collider.isActive);
+		ImGui::Checkbox("Is Trigger", &collider.isTrigger);
+		if (ImGui::DragFloat("Rotation (radians)", &collider.rotation, 0.01f))
+			if (g_game) g_game->markEntitiesDirty();
+		if (ImGui::DragFloat2("Offset", (float*)&collider.offset, 0.5f))
+			if (g_game) g_game->markEntitiesDirty();
+
+		// Show relevant data based on collider type
+		switch (collider.type) {
+		case Collision::ColliderType::CIRCLE:
+			if (ImGui::DragFloat("Radius", &collider.data.circle.radius, 0.5f, 0.1f, 500.0f))
+				if (g_game) g_game->markEntitiesDirty();
+			break;
+
+		case Collision::ColliderType::RECTANGLE:
+			if (ImGui::DragFloat("Width", &collider.data.rectangle.width, 0.5f, 0.1f, 500.0f))
+				if (g_game) g_game->markEntitiesDirty();
+			if (ImGui::DragFloat("Height", &collider.data.rectangle.height, 0.5f, 0.1f, 500.0f))
+				if (g_game) g_game->markEntitiesDirty();
+			break;
+
+		case Collision::ColliderType::LINE:
+			ImGui::DragFloat2("Line p1", (float*)&collider.data.line.p1, 0.5f);
+			ImGui::DragFloat2("Line p2", (float*)&collider.data.line.p2, 0.5f);
+			ImGui::DragFloat2("Normal", (float*)&collider.data.line.pNormal, 0.5f);
+			if (g_game) g_game->markEntitiesDirty();
+			break;
+
+		case Collision::ColliderType::POINT:
+			ImGui::Text("Point collider (no size parameters)");
+			break;
+		}
+	}
+
+	ImGui::End();
+}
+
 
 void displayAssetTab(Engine::EnoEngine& engine_) {
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
