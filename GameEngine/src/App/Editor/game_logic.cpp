@@ -113,19 +113,20 @@ void GameApplication::setupGameEvents() {
 }
 
 void GameApplication::setupGameMath() {
-	// math lib and maybe collision
-	std::cout << "Calling math function\n";
-	Math::eVec2 vec{ 1.1f, 1.2f };
-	Math::eVec2 vec2{ 1.3f, 2.f };
-	vec += vec2;
-	std::cout << "vector : " << vec.x << ", " << vec.y << std::endl;
+	
+	// Math lib and maybe collision
+	//std::cout << "Calling math function\n";
+	//Math::eVec2 vec{ 1.1f, 1.2f };
+	//Math::eVec2 vec2{ 1.3f, 2.f };
+	//vec += vec2;
+	//std::cout << "vector : " << vec.x << ", " << vec.y << std::endl;
 
 	Collision::RunBasicCollisionTest();
 
-	//initialize collision system
+	// Initialize collision system
 	collisionSystem_ = std::make_unique<Collision::CollisionSystem>(engine_.getEventBus());
 
-	// initialize player system
+	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 
 	// Load player config
@@ -306,70 +307,59 @@ void GameApplication::updateEntities() {
 		collisionSystem_->Update(engine_.getEntityManager());
 	}
 	
-	static bool frameUpdate = false;
 	static bool keyFrameMode = false;
+	static bool playAfterStop = true;
 
-	if (inputManager.isKeyDown(GLFW_KEY_M))
+	//std::cout << "outside Editor state: " << _editorState << std::endl;
+	// Editor state = play game
+	switch (getEditorState())
 	{
-		// Get list of entities which I want to store current pos
-		auto& ent = engine_.getEntityManager();
-		std::vector<ECS::Entity> entityList = ent.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
-
-		// This toggles keyframe mode
-		keyFrameMode = !keyFrameMode;
-
-		// If true, store all the positions
-		if (keyFrameMode)
+	case Playing:
 		{
-
-			if (!entityList.empty())
+			std::cout << "Editor state: " << getEditorState() << std::endl;
+			// Get list of entities to store current pos to reset later
+			// Check that the last frame editor state was 'Stopped'
+			if (playAfterStop)
 			{
-				for (auto& e : entityList)
-				{
-					e.get<ECSComponents::TransformComponent>().resetPos = e.get<ECSComponents::TransformComponent>().pos;
-					std::cout << "Reset pos: " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
-				}
-
+				UpdateResetPos();
+				playAfterStop = false;
 			}
 
-		}
-		else
-		{
-			std::cout << "keyframe off! \n";
-			// Reset all object positions
-			for (auto& e : entityList)
-			{
-				std::cout << "Before reset : " << e.get<ECSComponents::TransformComponent>().pos << std::endl;
-				e.get<ECSComponents::TransformComponent>().pos = e.get<ECSComponents::TransformComponent>().resetPos;
-				std::cout << "After reset : " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
-			}
-			
-		}
-	}
-	// In key frame mode, wait for trigger to update
-	if (keyFrameMode)
-	{
-
-		if (inputManager.isKeyDown(GLFW_KEY_N))
-		{
-			// Frame update 
-			frameUpdate = true;
-		}
-
-		if (frameUpdate)
-		{
-			// Update one time
+			// Update dynamic objects
 			updateTestObject(engine_.getEntityManager(), engine_);
-
-			// Set it back to false
-			frameUpdate = false;
+			break;
 		}
-	}
-	else
-	{
-		//not in key frame mode, update normally
-		updateTestObject(engine_.getEntityManager(), engine_);
-	}
+		case Paused:
+		{
+			// This toggles keyframe mode
+			keyFrameMode = true;
+			break;
+		}
+		case NextKeyFrame:
+		{
+			// Check if key frame mode is true
+			if (keyFrameMode)
+			{
+				// Update one time
+				updateTestObject(engine_.getEntityManager(), engine_);
+
+				// Reset variables
+				setEditorState(Paused);
+			}
+			break;
+		}
+		case Stopped:
+		{
+			// Reset all object positions
+			// This condition ensures resetting of pos comes after play
+			if (!playAfterStop)
+			{
+				UpdateResetPos();
+				playAfterStop = true;
+			}
+			break;
+		}
+	}	
 }
 
 
@@ -598,4 +588,53 @@ void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> new
 	// Keep the same current state
 	if (playerAnimController_.getCurrentAnimationName().empty())
 		playerAnimController_.setAnimation("idle");
+}
+
+// Eventually i would want to restore scene state through serialization
+void GameApplication::UpdateResetPos()
+{
+	// Get list of entities to store current pos to reset later
+	auto& ent = engine_.getEntityManager();
+	static std::vector<ECS::Entity> entityList;
+	// If empty, store pos, else reset
+	if (entityList.empty())
+	{
+		entityList = ent.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven")); // This will change to all dynamic entities in future
+		for (auto& e : entityList)
+		{
+			// Store reset pos
+			e.get<ECSComponents::TransformComponent>().resetPos = e.get<ECSComponents::TransformComponent>().pos;
+			e.get<ECSComponents::TransformComponent>().resetVel = e.get<ECSComponents::TransformComponent>().vel;
+
+			//std::cout << "Reset pos: " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
+		}
+	}
+	else
+	{
+		for (auto& e : entityList)
+		{
+			//std::cout << "Before reset : " << e.get<ECSComponents::TransformComponent>().pos << std::endl;
+			e.get<ECSComponents::TransformComponent>().pos = e.get<ECSComponents::TransformComponent>().resetPos;
+			e.get<ECSComponents::TransformComponent>().vel = e.get<ECSComponents::TransformComponent>().resetVel;
+			//std::cout << "After reset : " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
+		}
+		// Clear list
+		entityList.clear();
+	}
+	
+}
+
+// Accessor and mutators to access editor state
+EditorState GameApplication::getEditorState() const
+{
+	return g_editorState;
+}
+EditorState GameApplication::getEditorState()
+{
+	return g_editorState;
+}
+
+void GameApplication::setEditorState(EditorState state)
+{
+	g_editorState = state;
 }

@@ -59,6 +59,15 @@ struct SystemTimer {
     }
 };
 
+// Enum for different editor states
+//enum EditorState {
+//    Stopped = 1,
+//    Playing,
+//    Paused,
+//    NextKeyFrame
+//};
+//
+//EditorState _editorState;
 
 
 // ImGui functions
@@ -147,8 +156,8 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_);
 *//*========================================================================================*/
 void displayFPSTab(Engine::EnoEngine& engine_);
 
-// docking shi
 
+// docking shi
 void displayGameView(Engine::EnoEngine& engine_);
 
 void imGuiSetupDefaultLayout();
