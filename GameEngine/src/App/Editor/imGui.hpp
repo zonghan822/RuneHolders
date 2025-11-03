@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         imGui.hpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
 * @date         01-10-2025
@@ -121,6 +121,13 @@ void displayEntityCount(Engine::EnoEngine& engine_);
 void displayEditTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
+ * \brief       Displays HierachyTab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayHierarchyTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
@@ -154,3 +161,20 @@ void displayFPSTab(Engine::EnoEngine& engine_);
  * \return      void
 *//*========================================================================================*/
 void displayToolbar(Engine::EnoEngine& engine_);
+
+// docking shi
+void displayGameView(Engine::EnoEngine& engine_);
+
+void imGuiSetupDefaultLayout();
+
+void imGuiBeginDockspace();
+
+void imGuiEndDockspace();
+
+
+/*============================================================================================
+ * \brief       Displays FPS tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse);

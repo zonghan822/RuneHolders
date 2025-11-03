@@ -182,7 +182,7 @@ namespace Collision {
 
 		// Scenario 1: if both colliders are circles
 		if (colliderA.type == ColliderType::CIRCLE && colliderB.type == ColliderType::CIRCLE)
-		{	
+		{
 			// Scale the radii
 			float radiusA = colliderA.data.circle.radius * transformA.scale.x;
 			float radiusB = colliderB.data.circle.radius * transformB.scale.x;
@@ -202,7 +202,7 @@ namespace Collision {
 			scaledRectB.height *= transformB.scale.y;
 
 			return CheckRectangleRectangleSAT(posA, scaledRectA, colliderA.rotation,
-											  posB, scaledRectB, colliderB.rotation);
+				posB, scaledRectB, colliderB.rotation);
 		}
 
 		// Scenario 3: if collider A is a circle, and collider B is a rectangle
@@ -275,9 +275,9 @@ namespace Collision {
 		if (colliderA.type == ColliderType::CIRCLE && colliderB.type == ColliderType::CIRCLE)
 		{
 			//std::cout << "CIRCLE RADIUS ::: " << colliderA.data.circle.radius << std::endl;
-			return CheckDynamicCircleCircle(posA, { transformA.vel.x, transformA.vel.y }, colliderA.data.circle.radius, 
-											posB, { transformB.vel.x, transformB.vel.y }, colliderB.data.circle.radius, 
-											colPoint, normalAtCol, colTi);
+			return CheckDynamicCircleCircle(posA, { transformA.vel.x, transformA.vel.y }, colliderA.data.circle.radius,
+				posB, { transformB.vel.x, transformB.vel.y }, colliderB.data.circle.radius,
+				colPoint, normalAtCol, colTi);
 		}
 		return false;
 	}
@@ -332,7 +332,7 @@ namespace Collision {
 
 	CollisionResult CollisionDetection::CheckRectangleRectangle(
 		const Math::eVec2<float>& posA, const CollisionComponent::ColliderData::RectangleData& rectA,
-		const Math::eVec2<float>& posB, const CollisionComponent::ColliderData::RectangleData& rectB) 
+		const Math::eVec2<float>& posB, const CollisionComponent::ColliderData::RectangleData& rectB)
 	{
 		CollisionResult result;
 
@@ -365,7 +365,7 @@ namespace Collision {
 				// Contact point is on the edge of rectangle A
 				float contactX = (distance.x < 0) ? posA.x - halfWidthA : posA.x + halfWidthA;
 				result.contactPoint = Math::eVec2<float>{ contactX , posA.y };
-				
+
 			}
 			else {
 				// Separate along y-axis
@@ -414,7 +414,7 @@ namespace Collision {
 			float actualDistance = Math::eVec2Length(distance);
 
 			if (actualDistance > 0.001f) {
-				
+
 				// Normal case: circle is outside or touching the rectangle edge
 				Math::eVec2<float> normalizedDistance = distance / actualDistance;
 				result.penetrationDepth = radius - actualDistance;
@@ -456,75 +456,75 @@ namespace Collision {
 		return result;
 
 	} //Definition for CheckCircleRectangle
-	
+
 	CollisionResult CollisionDetection::CheckPointCollider(
-		const Math::eVec2<float>& pointPos, const CollisionComponent& collider, 
+		const Math::eVec2<float>& pointPos, const CollisionComponent& collider,
 		const Math::eVec2<float>& colliderPos)
 	{
 		CollisionResult result;
-		
-		switch (collider.type) 
+
+		switch (collider.type)
 		{
-			case ColliderType::CIRCLE: {
-				// Point vs circle: check if point is within circle radius
-				Math::eVec2<float> distance = pointPos - colliderPos;
-				float distanceSquared = Math::eVec2SquaredLength(distance);
-				float radiusSquared = collider.data.circle.radius * collider.data.circle.radius;
+		case ColliderType::CIRCLE: {
+			// Point vs circle: check if point is within circle radius
+			Math::eVec2<float> distance = pointPos - colliderPos;
+			float distanceSquared = Math::eVec2SquaredLength(distance);
+			float radiusSquared = collider.data.circle.radius * collider.data.circle.radius;
 
-				if (distanceSquared <= radiusSquared) {
-					result.hasCollision = true;
-					result.contactPoint = pointPos;
+			if (distanceSquared <= radiusSquared) {
+				result.hasCollision = true;
+				result.contactPoint = pointPos;
 
-					// Calculate penetration for point inside circle
-					float actualDistance = Math::eVec2Length(distance);
-					if (actualDistance > 0.001f) {
-						Math::eVec2<float> normalizedDistance = distance / actualDistance;
-						result.penetrationDepth = collider.data.circle.radius - actualDistance;
-						result.penetrationVector = normalizedDistance * result.penetrationDepth;
-					}
+				// Calculate penetration for point inside circle
+				float actualDistance = Math::eVec2Length(distance);
+				if (actualDistance > 0.001f) {
+					Math::eVec2<float> normalizedDistance = distance / actualDistance;
+					result.penetrationDepth = collider.data.circle.radius - actualDistance;
+					result.penetrationVector = normalizedDistance * result.penetrationDepth;
 				}
-				break;
+			}
+			break;
+		}
+
+		case ColliderType::RECTANGLE:
+		{
+			// Point vs rectangle: check if point is within rectangle bounds
+			float halfWidth = collider.data.rectangle.width * 0.5f;
+			float halfHeight = collider.data.rectangle.height * 0.5f;
+
+			bool insideX = (pointPos.x >= colliderPos.x - halfWidth) && (pointPos.x <= colliderPos.x + halfWidth);
+			bool insideY = (pointPos.y >= colliderPos.y - halfHeight) && (pointPos.y <= colliderPos.y + halfHeight);
+
+			if (insideX && insideY) {
+				result.hasCollision = true;
+				result.contactPoint = pointPos;
+
+				// For point collisions, penetration info is usually not needed
+				result.penetrationDepth = 0.0f;
+				result.penetrationVector = Math::eVec2<float>{ 0.0f, 0.0f };
 			}
 
-			case ColliderType::RECTANGLE:
+			break;
+
+		}
+
+		case ColliderType::POINT:
+		{
+			// Point vs point: check if they're in the same position
+			Math::eVec2<float> distance = pointPos - colliderPos;
+			float distanceSquared = Math::eVec2SquaredLength(distance);
+
+			if (distanceSquared < 0.001f)
 			{
-				// Point vs rectangle: check if point is within rectangle bounds
-				float halfWidth = collider.data.rectangle.width * 0.5f;
-				float halfHeight = collider.data.rectangle.height * 0.5f;
+				result.hasCollision = true;
+				result.contactPoint = pointPos;
+				result.penetrationDepth = 0.0f;
+				result.penetrationVector = Math::eVec2<float>{ 0.0f, 0.0f };
 
-				bool insideX = (pointPos.x >= colliderPos.x - halfWidth) && (pointPos.x <= colliderPos.x + halfWidth);
-				bool insideY = (pointPos.y >= colliderPos.y - halfHeight) && (pointPos.y <= colliderPos.y + halfHeight);
-
-				if (insideX && insideY) {
-					result.hasCollision = true;
-					result.contactPoint = pointPos;
-
-					// For point collisions, penetration info is usually not needed
-					result.penetrationDepth = 0.0f;
-					result.penetrationVector = Math::eVec2<float>{ 0.0f, 0.0f };
-				}
-
-				break;
-
-			} 
-			
-			case ColliderType::POINT:
-			{
-				// Point vs point: check if they're in the same position
-				Math::eVec2<float> distance = pointPos - colliderPos;
-				float distanceSquared = Math::eVec2SquaredLength(distance);
-
-				if (distanceSquared < 0.001f)
-				{
-					result.hasCollision = true;
-					result.contactPoint = pointPos;
-					result.penetrationDepth = 0.0f;
-					result.penetrationVector = Math::eVec2<float>{ 0.0f, 0.0f };
-
-				}
-
-				break;
 			}
+
+			break;
+		}
 		}
 
 		return result;
@@ -613,11 +613,11 @@ namespace Collision {
 
 		return false;
 	}
-		
+
 	void CollisionDetection::CollisionReflection(const Math::eVec2<float>& interPt,
-												 const Math::eVec2<float>& normal,
-												 Math::eVec2<float>& nextPos,
-												 Math::eVec2<float>& reflected)
+		const Math::eVec2<float>& normal,
+		Math::eVec2<float>& nextPos,
+		Math::eVec2<float>& reflected)
 	{
 
 		// Penetration = BiBe
@@ -632,7 +632,7 @@ namespace Collision {
 		Math::eVec2Normalize(reflected, reflected);
 
 	}
-	
+
 	bool CollisionDetection::CheckDynamicCircleCircle(
 		const Math::eVec2<float>& posA, const Math::eVec2<float>& velA, float radiusA,
 		const Math::eVec2<float>& posB, const Math::eVec2<float>& velB, float radiusB,
@@ -768,14 +768,14 @@ namespace Collision {
 		}
 	}
 
-	void CollisionSystem::AddCollisionCallback(std::function<void(const CollisionEvent&)> callback) 
+	void CollisionSystem::AddCollisionCallback(std::function<void(const CollisionEvent&)> callback)
 	{
 		collisionCallbacks_.push_back(callback);
 	}
 
 	void CollisionSystem::VisualizeColliders(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager)
 	{
-		auto& entityMap = entityManager.getMap(); 
+		auto& entityMap = entityManager.getMap();
 
 		// Iterate through all entities
 		for (auto& [entityID, entityLoc] : entityMap)
@@ -804,56 +804,56 @@ namespace Collision {
 			// Draw based on collider type
 			switch (collision.type)
 			{
-				case ColliderType::CIRCLE:graphics.drawCircle(
-					worldPos,
-					collision.data.circle.radius * transform.scale.x,  // Scale the radius
+			case ColliderType::CIRCLE:graphics.drawCircle(
+				worldPos,
+				collision.data.circle.radius * transform.scale.x,  // Scale the radius
+				color,
+				false,
+				32
+			);
+				break;
+
+			case ColliderType::RECTANGLE:
+			{
+
+				// Apply transform scale to the visualization
+				float scaledWidth = collision.data.rectangle.width * transform.scale.x;
+				float scaledHeight = collision.data.rectangle.height * transform.scale.y;
+
+
+				// Calculate top-left corner (drawRect uses top-left pos), but worldPos is CENTER
+				Math::eVec2<float> topLeft = {
+					worldPos.x - (scaledWidth * 0.5f),
+					worldPos.y - (scaledHeight * 0.5f)
+				};
+
+
+				graphics.drawRect(
+					topLeft,
+					Math::eVec2<float>{scaledWidth, scaledHeight},
 					color,
-					false,
-					32
+					false,				// Not filled, just outline
+					collision.rotation		// Use transform rotation
 				);
-					break;
 
-				case ColliderType::RECTANGLE:
-				{
-					
-					// Apply transform scale to the visualization
-					float scaledWidth = collision.data.rectangle.width * transform.scale.x;
-					float scaledHeight = collision.data.rectangle.height * transform.scale.y;
-					
-					
-					// Calculate top-left corner (drawRect uses top-left pos), but worldPos is CENTER
-					Math::eVec2<float> topLeft = {
-						worldPos.x - (scaledWidth * 0.5f),
-						worldPos.y - (scaledHeight * 0.5f)
-					};
+				break;
+			}
 
+			case ColliderType::LINE:
+			{
 
-					graphics.drawRect(
-						topLeft,
-						Math::eVec2<float>{scaledWidth, scaledHeight},
-						color,
-						false,				// Not filled, just outline
-						collision.rotation		// Use transform rotation
-					);
+				graphics.drawLine(
+					collision.data.line.p1,
+					collision.data.line.p2,
+					color,
+					1.0f
+				);
+				break;
+			}
 
-					break;
-				}
-
-				case ColliderType::LINE:
-				{
-
-					graphics.drawLine(
-						collision.data.line.p1,
-						collision.data.line.p2,
-						color,
-						1.0f
-					);
-					break;
-				}
-
-				case ColliderType::POINT:
-					graphics.drawPoint(worldPos, color, 5.0f);
-					break;
+			case ColliderType::POINT:
+				graphics.drawPoint(worldPos, color, 5.0f);
+				break;
 
 			}
 
@@ -862,7 +862,7 @@ namespace Collision {
 
 	void CollisionSystem::ClearCallbacks()
 	{
-		collisionCallbacks_.clear(); 
+		collisionCallbacks_.clear();
 	}
 
 	bool CollisionSystem::HasRequiredComponents(const ECS::EntityLoc& entityLoc) {
@@ -876,7 +876,7 @@ namespace Collision {
 			{
 				hasTransform = true;
 			}
-			else if (type == std::type_index(typeid(CollisionComponent)))
+			else if (type == std::type_index(typeid(ECSComponents::CollisionComponent)))
 			{
 				hasCollision = true;
 			}
@@ -886,38 +886,38 @@ namespace Collision {
 		return hasTransform && hasCollision;
 	}
 
- void CollisionSystem::CheckEntityCollision(
-        uint32_t entityA_ID, const ECS::EntityLoc& entityA_Loc,
-        uint32_t entityB_ID, const ECS::EntityLoc& entityB_Loc)
-    {
-        try
-        {
-            // Get the required components from both entities
-            auto& transformA = GetTransformComponent(entityA_Loc);
-            auto& transformB = GetTransformComponent(entityB_Loc);
-            auto& collisionA = GetCollisionComponent(entityA_Loc);
-            auto& collisionB = GetCollisionComponent(entityB_Loc);
+	void CollisionSystem::CheckEntityCollision(
+		uint32_t entityA_ID, const ECS::EntityLoc& entityA_Loc,
+		uint32_t entityB_ID, const ECS::EntityLoc& entityB_Loc)
+	{
+		try
+		{
+			// Get the required components from both entities
+			auto& transformA = GetTransformComponent(entityA_Loc);
+			auto& transformB = GetTransformComponent(entityB_Loc);
+			auto& collisionA = GetCollisionComponent(entityA_Loc);
+			auto& collisionB = GetCollisionComponent(entityB_Loc);
 
-            // Perform the actual collision detection
-            CollisionResult result = CollisionDetection::CheckCollision(
-                collisionA, transformA,
-                collisionB, transformB
-            );
+			// Perform the actual collision detection
+			CollisionResult result = CollisionDetection::CheckCollision(
+				collisionA, transformA,
+				collisionB, transformB
+			);
 
-            // If a collision was detected, handle it
-            if (result.hasCollision)
-            {
-                HandleCollision(entityA_ID, entityB_ID, collisionA, collisionB, result);
-            }
-        }
-        catch (const std::exception& e)
-        {
-            // Log errors but don't crash the game
-            std::cerr << "Error in collision detection between entities " 
-                      << entityA_ID << " and " << entityB_ID 
-                      << ": " << e.what() << std::endl;
-        }
-    }
+			// If a collision was detected, handle it
+			if (result.hasCollision)
+			{
+				HandleCollision(entityA_ID, entityB_ID, collisionA, collisionB, result);
+			}
+		}
+		catch (const std::exception& e)
+		{
+			// Log errors but don't crash the game
+			std::cerr << "Error in collision detection between entities "
+				<< entityA_ID << " and " << entityB_ID
+				<< ": " << e.what() << std::endl;
+		}
+	}
 
 
 	void CollisionSystem::HandleCollision(
@@ -971,11 +971,14 @@ namespace Collision {
 	CollisionComponent& CollisionSystem::GetCollisionComponent(const ECS::EntityLoc& entityLoc)
 	{
 		// Find the Collision component's index in this entity's archetype
-		size_t collisionIndex = entityLoc.archetype->findComponentIndex<CollisionComponent>();
+		// Use ECSComponents namespace for registry lookup
+		size_t collisionIndex = entityLoc.archetype->findComponentIndex<ECSComponents::CollisionComponent>();
 
-		// Retrieve the component from the appropriate chunk
-		return entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<CollisionComponent>(
-			collisionIndex, entityLoc.entityIndexInChunk);
+		// Retrieve and cast to Collision namespace for compatibility
+		return reinterpret_cast<CollisionComponent&>(
+			entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::CollisionComponent>(
+				collisionIndex, entityLoc.entityIndexInChunk)
+			);
 	}
 
 	// UTILITY FUNCTIONS IMPLEMENTATION
@@ -1072,9 +1075,9 @@ namespace Collision {
 	//	}
 	//}
 	//
-	
+
 	// ====================== SAT COLLISION DETECTION HELPER FUNCTIONS ===========================/
-	
+
 	/*============================================================================================
 	* \brief       Get the corners of a rotated rectangle in world space
 	* \param[in]   Math::eVec2<float> const& center - Center position of the rectangle
@@ -1108,7 +1111,7 @@ namespace Collision {
 		};
 
 		// Rotate and translate each corner
-		for (int i = 0; i < 4; ++i){
+		for (int i = 0; i < 4; ++i) {
 			// Rotate the corner
 			float rotatedX = localCorners[i].x * cosAngle - localCorners[i].y * sinAngle;
 			float rotatedY = localCorners[i].x * sinAngle + localCorners[i].y * cosAngle;
@@ -1275,6 +1278,6 @@ namespace Collision {
 		result.contactPoint.y = (posA.y + posB.y) * 0.5f;
 
 		return result;
-	
+
 	}
 } // namespace Collision

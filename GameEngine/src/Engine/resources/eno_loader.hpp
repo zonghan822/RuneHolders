@@ -204,6 +204,22 @@ namespace Resources
 		}
 
 		/*============================================================================================
+		* \brief	checks if there is texture in a vector. 
+		* \author   YunQi
+		*//*========================================================================================*/
+		bool hasTexture(const std::string& name) const {
+			return textures_.find(name) != textures_.end();
+		}
+
+		/*============================================================================================
+		* \brief	Adds image textures (PNG/JPG) from a directory.
+		* \param[in] path	Directory path for textures.
+		*//*========================================================================================*/
+		void addTexture(const std::string& name, std::shared_ptr<Graphics::EnoTexture> tex) {
+			textures_[name] = tex;
+		}
+
+		/*============================================================================================
 		* \brief	Load image textures (PNG/JPG) from a directory.
 		* \param[in] path	Directory path for textures.
 		*//*========================================================================================*/
@@ -227,6 +243,6 @@ namespace Resources
 		* \param[in] event	RequestSound event containing sound name.
 		*//*========================================================================================*/
 		void onSoundRequest(const Audio::RequestSound& event);
-	
+
 	};
 }

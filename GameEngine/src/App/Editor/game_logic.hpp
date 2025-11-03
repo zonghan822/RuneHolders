@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         game_logic.hpp
 * @author       Name (@digipen.edu)
 * @date         DD-MM-YYYY
@@ -11,7 +11,8 @@
 
 #include "engine/eno_engine.hpp"
 #include <iostream>
-#include <memory>  
+#include <memory>
+#include <imgui.h>
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
@@ -48,6 +49,12 @@ private:
     Animation::AnimationController playerAnimController_;
     int playerFacingDirection_ = 1;
 
+    std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
+
+    // Fixed virtual resolution (game always renders to this size)
+    static constexpr int VIRTUAL_WIDTH = 1280;
+    static constexpr int VIRTUAL_HEIGHT = 720;
+
     // Font
     std::shared_ptr<Font::EnoFont> pixelifyFont_;
     std::shared_ptr<Font::EnoFont> timesFont_;
@@ -80,6 +87,12 @@ public:
     EditorState getEditorState();
 
     void setEditorState(EditorState state);
+    Graphics::EnoFramebuffer* getGameFramebuffer() { return gameFramebuffer_.get(); }
+
+    // Get fixed virtual resolution
+    int getVirtualWidth() const { return VIRTUAL_WIDTH; }
+    int getVirtualHeight() const { return VIRTUAL_HEIGHT; }
+
 
 private:
     // Setup (called during initialize())

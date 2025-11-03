@@ -21,18 +21,16 @@ void GameApplication::initialize() {
 	setupGameEvents();
 	setupGameMath();
 	setupImGui();
-    // Setup all game content
-    setupGameEntities();
-    setupGameAudio();
-    setupGameEvents();
-    setupGameMath();
     setupAnimations();
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
     // This is for dynamic collision test object
     createTestObject(engine_.getEntityManager());
-    
+
+	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
+	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
+
     std::cout << "Game initialized successfully!" << std::endl;
 }
 
@@ -192,31 +190,51 @@ void GameApplication::setupImGui() {
 }
 
 void GameApplication::updateGameLogic() {
-    // This is called every frame (replaces your while loop in eno_engine.cpp run())
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
+	double deltaTime = engine_.getDeltaTime();
 
-    // Calculate delta time
-    double deltaTime = engine_.getDeltaTime();
-
-	// Get window dimensions from config
-	auto windowDim = engine_.getWindowManager().getWindowSize();
-	Math::eVec2<float> windowSize{
-		static_cast<float>(windowDim.first),
-		static_cast<float>(windowDim.second)
+	// Use FIXED virtual resolution for consistent rendering
+	Math::eVec2<float> renderSize{
+		static_cast<float>(VIRTUAL_WIDTH),
+		static_cast<float>(VIRTUAL_HEIGHT)
 	};
 
-	// ===== UPDATE PLAYER ANIMATION =====
-	if (playerTexture_ && playerSpawned_)
-	{
+	if (gameFramebuffer_) {
+		// CRITICAL: Set projection matrix to fixed virtual resolution
+		engine_.getGraphicsManager().setProjectionMatrix(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+		// Bind framebuffer for rendering
+		gameFramebuffer_->bind();
+	}
+
+	// Clear the framebuffer
+	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	if (playerTexture_ && playerSpawned_) {
 		playerAnimController_.update(static_cast<float>(deltaTime));
 	}
 
-    updateEntities();
-    drawShapes();
+	updateEntities();
+	drawShapes();
 	drawPlayerAndIndicator();
 	engine_.getGraphicsManager().flush();
+	drawText(renderSize);
+
+	// Unbind framebuffer (back to default)
+	if (gameFramebuffer_) {
+		gameFramebuffer_->unbind();
+
+		// CRITICAL: Restore viewport to window size for ImGui rendering
+		auto windowSize = engine_.getWindowManager().getFramebufferSize();
+		glViewport(0, 0, windowSize.first, windowSize.second);
+
+		// Restore projection matrix to window size
+		engine_.getGraphicsManager().setProjectionMatrix(windowSize.first, windowSize.second);
+	}
+
+	// Now render ImGui (which will display the framebuffer texture)
 	updateImGui();
-	drawText(windowSize);
 }
 
 void GameApplication::updateEntities() {
@@ -226,16 +244,17 @@ void GameApplication::updateEntities() {
 	float deltaTime = io.DeltaTime;
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
-	auto windowDim = engine_.getConfigManager().getWindowDim();
-	Math::eVec2<float> windowSize{
-			static_cast<float>(windowDim.first),
-			static_cast<float>(windowDim.second)
+
+	// Use fixed virtual resolution for consistent rendering
+	Math::eVec2<float> renderSize{
+		static_cast<float>(VIRTUAL_WIDTH),
+		static_cast<float>(VIRTUAL_HEIGHT)
 	};
 
 	// Draw background
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
-		windowSize,                                // Full screen size from config
+		renderSize,                                // Use fixed virtual resolution
 		backgroundTexture_,
 		Math::eVec2<float>{0.0f, 0.0f},           // UV start
 		Math::eVec2<float>{1.0f, 1.0f},           // UV end
@@ -279,7 +298,6 @@ void GameApplication::updateEntities() {
 				playerAnimController_.setAnimation("idle");
 			}
 		}
-
 		// Update player movement
 		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
@@ -506,6 +524,11 @@ void GameApplication::drawShapes() {
 		// Skip if entity was destroyed
 		try {
 			if (entity.has<ECSComponents::DrawInfoComponent>()) {
+				// Skip rendering for player entities (they're drawn separately with sprite/animation)
+				if (entity.has<ECSComponents::PlayerComponent>()) {
+					continue;
+				}
+
 				graphics.drawRect(
 					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
 					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
@@ -529,9 +552,42 @@ void GameApplication::drawShapes() {
 }
 
 
-void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex) {
+void GameApplication::setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex)
+{
+	if (!newTex || !newTex->isValid()) {
+		std::cerr << "Invalid texture passed to setPlayerTexture()" << std::endl;
+		return;
+	}
+
 	playerTexture_ = newTex;
 	playerWalkTexture_ = newTex;
+
+	int sheetWidth = newTex->getWidth();
+	int sheetHeight = newTex->getHeight();
+
+	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
+		96, 96,           // frame size
+		sheetWidth, sheetHeight,
+		0, 24,            // start + frame count
+		0.1f
+	);
+	playerIdleAnim.setLooping(true);
+
+	auto playerWalkAnim = Animation::createSpriteSheetAnimation(
+		96, 96,
+		sheetWidth, sheetHeight,
+		0, 4,
+		0.08f
+	);
+	playerWalkAnim.setLooping(true);
+
+
+	playerAnimController_.addAnimation("idle", playerIdleAnim);
+	playerAnimController_.addAnimation("walk", playerWalkAnim);
+
+	// Keep the same current state
+	if (playerAnimController_.getCurrentAnimationName().empty())
+		playerAnimController_.setAnimation("idle");
 }
 
 void GameApplication::UpdateResetPos()

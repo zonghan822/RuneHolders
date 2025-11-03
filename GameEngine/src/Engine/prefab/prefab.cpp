@@ -85,8 +85,8 @@ ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engin
 
     if (prefab.hasCollider) {
 
-        e.add<Collision::CollisionComponent>(
-            Collision::CollisionComponent(prefab.width, prefab.height)
+        e.add<ECSComponents::CollisionComponent>(
+            ECSComponents::CollisionComponent(prefab.width, prefab.height)
         );
     }
     return e;
