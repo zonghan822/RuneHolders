@@ -81,6 +81,7 @@ void imGuiInit(GLFWwindow* window) {
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
+
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
@@ -185,7 +186,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 
 
-
+	// Display toolbar for PLAY/PAUSE/STOP
+	displayToolbar(engine_);
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -744,6 +746,54 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 	}
 
 }
+
+void displayToolbar(Engine::EnoEngine& engine_)
+{
+	// Toolbar size
+	ImGui::SetNextWindowSize(ImVec2(200.0f, 100.0f), ImGuiCond_FirstUseEver); // Condition is forever fixed
+	ImGui::Begin("##Toolbar");
+
+	// Switching between play and stop
+	static bool isPlaying = false;
+	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
+		// Play/Stop game
+		isPlaying = !isPlaying;
+		g_game->setEditorState(isPlaying ? Playing : Stopped);
+		//std::cout << "imgui Editor state: " << g_game->getEditorState() << std::endl;
+	}
+	ImGui::SameLine();
+	// Pause button should only work if editor state is not in stopped mode
+	if (ImGui::Button("()Pause")) 
+	{  
+		if (g_game->getEditorState() != Stopped)
+		{
+			// Toggle pause game/keyframe mode
+			g_game->setEditorState(g_game->getEditorState() == Playing ? Paused : Playing);
+			//std::cout << "imgui Editor state: " << g_game->getEditorState() << std::endl;
+		}
+		
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Next")) 
+	{ 
+		// Next button should only work if editor state is in paused
+		if (g_game->getEditorState() == Paused)
+		{
+			// Next keyframe
+			g_game->setEditorState(NextKeyFrame);
+			//std::cout << "imgui Editor state: " << g_game->getEditorState() << std::endl;
+		}
+	
+	}
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("TEHTHE", ImGuiDir_Right))
+	{
+		std::cout << "SAS";
+	}
+
+	ImGui::End();
+}
+
 
 void imGuiTerminate() {
 	ImGui_ImplOpenGL3_Shutdown();

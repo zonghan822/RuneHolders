@@ -252,8 +252,8 @@ void createTestObject(ECS::EntityManager& ent) {
 
 	// Square config
 	const int numSquares = 2;
-	Math::eVec2<float> squarePos[numSquares] = { {700.0f, 400.0f}, {1000.0f, 400.0f} };
-	Math::eVec2<float> squareVel[numSquares] = { {50.0f, 0.0f}, { -50.0f, 0.0f } };
+	Math::eVec2<float> squarePos[numSquares] = { {200.0f, 650.0f}, {1000.0f, 650.0f} };
+	Math::eVec2<float> squareVel[numSquares] = { {100.0f, 0.0f}, { -100.0f, 0.0f } };
 	const char* objName = { "testcaven" };
 	const char* shapeName = { "Rectangle" };
 	float width = 100.f;
@@ -453,6 +453,9 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 									// Subtract the component along that direction
 									transform.vel.x -= velAlongNormal * normalAtCol.x;
 									transform.vel.y -= velAlongNormal * normalAtCol.y;
+
+									otherTransform.vel.x -= velAlongNormal * normalAtCol.x;
+									otherTransform.vel.y -= velAlongNormal * normalAtCol.y;
 
 									hasCollided = true;
 

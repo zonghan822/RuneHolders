@@ -58,6 +58,15 @@ struct SystemTimer {
     }
 };
 
+// Enum for different editor states
+//enum EditorState {
+//    Stopped = 1,
+//    Playing,
+//    Paused,
+//    NextKeyFrame
+//};
+//
+//EditorState _editorState;
 
 
 // ImGui functions
@@ -138,3 +147,10 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_);
  * \return      void
 *//*========================================================================================*/
 void displayFPSTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays Toolbar in window
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayToolbar(Engine::EnoEngine& engine_);

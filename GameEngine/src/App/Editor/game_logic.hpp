@@ -16,6 +16,14 @@
 #include "player/player_config.hpp"
 #include "player/player.hpp"
 
+// Enum for different editor states
+enum EditorState {
+    Stopped = 1,
+    Playing,
+    Paused,
+    NextKeyFrame
+};
+
 class GameApplication {
 private:
     // Engine instance
@@ -47,6 +55,10 @@ private:
     // Player
     Player::PlayerConfig playerConfig_;
 
+    // Editor State
+    EditorState g_editorState = Stopped;
+
+
 public:
     // Constructors
     GameApplication() = default;
@@ -63,6 +75,11 @@ public:
     // Yun Qi's IMGUI sandbox
     void setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex);
 
+    // Accessor and mutators to access editor state
+    EditorState getEditorState() const;
+    EditorState getEditorState();
+
+    void setEditorState(EditorState state);
 
 private:
     // Setup (called during initialize())
@@ -82,7 +99,8 @@ private:
     void drawPlayerAndIndicator();
     
 
-
+    // Helper function to store entity positions during change in editor state
+    void UpdateResetPos();
 
     void drawShapes(); // jsut to test
 
