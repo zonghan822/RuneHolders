@@ -26,7 +26,7 @@ namespace Script
 
 	public:
 		// Open scripts folder and browse for a script
-		std::optional<std::unique_ptr<EnoScript>> selectScript();
+		std::unique_ptr<EnoScript> selectScript();
 		
 		// Create a CS script
 		std::unique_ptr<EnoScript> createScript(const std::string&);

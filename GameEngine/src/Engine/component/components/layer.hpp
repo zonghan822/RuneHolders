@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration/definition file for the layer component
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once
@@ -32,6 +32,28 @@ namespace ECSComponents
 		}
 
 		char layer[32] = "NULL";
+
+				// For serialization purposes
+		// Generalized way of using reflection to access and iterate
+		// over fields!
+		// 
+		// The idea is to (in a function call) create a lambda that will be a "visitor",
+		// and extract all information as parameters of that lambda. Each call over a
+		// field of the component is used to extract metadata on 1 field [name, value, type]
+		// 
+		// Source: https://stackoverflow.com/questions/41453/how-can-i-add-reflection-to-a-c-application
+		// Additional learning: https://refactoring.guru/design-patterns/visitor
+		template <typename Visitor>
+		void reflect(Visitor&& l)
+		{
+			l("Layer", layer, "char32");
+		}
+
+		template <typename Visitor>
+		void reflect(Visitor&& l) const
+		{
+			l("Layer", layer, "char32");
+		}
 	};
 
 	/*============================================================================================
