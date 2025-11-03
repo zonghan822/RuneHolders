@@ -534,6 +534,11 @@ void GameApplication::drawShapes() {
 		// Skip if entity was destroyed
 		try {
 			if (entity.has<ECSComponents::DrawInfoComponent>()) {
+				// Skip rendering for player entities (they're drawn separately with sprite/animation)
+				if (entity.has<ECSComponents::PlayerComponent>()) {
+					continue;
+				}
+
 				graphics.drawRect(
 					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
 					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},

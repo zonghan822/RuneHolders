@@ -74,6 +74,9 @@ static ImVec2 dragOffset;
 
 // Prefab placement
 static std::string g_selectedPrefabForPlacement = "";
+
+// Entity deletion by click
+static bool g_waitingForEntityDeletion = false;
 #pragma endregion
 
 float randomFloat(float min, float max) {
@@ -296,14 +299,14 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
 				}
 
-			std::cout << "Spawned entity WITH collider\n";
+				std::cout << "Spawned entity WITH collider\n";
+			}
+			else {
+				std::cout << "Spawned entity without collider\n";
+			}
 		}
-		else {
-			std::cout << "Spawned entity without collider\n";
-		}
-
-		if (g_game) g_game->markEntitiesDirty();
-		(void)e; // to silence compiler warning for unused param
+			if (g_game) g_game->markEntitiesDirty();
+			(void)e; // to silence compiler warning for unused param
 	}
 	// NOTE: Drag-drop logic moved to Game View window to work with framebuffer coordinates
 
@@ -462,31 +465,17 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 		}
 	}
 	else if (FilterType == Filters::Select) {
-		static bool waitingForClick = false;
-		ImGuiIO& io = ImGui::GetIO();
-
-		if (!waitingForClick) {
+		if (!g_waitingForEntityDeletion) {
 			if (ImGui::Button("Delete an Entity by Click")) {
-				waitingForClick = true;
+				g_waitingForEntityDeletion = true;
 			}
 		}
 		else {
-			ImGui::TextColored(ImVec4(1, 0.5f, 0, 1), "Click anywhere to delete an entity");
+			ImGui::TextColored(ImVec4(1, 0.5f, 0, 1), "Click in Game View to delete an entity");
 			// Cancel option
 			if (ImGui::Button("Cancel")) {
-				waitingForClick = false;
+				g_waitingForEntityDeletion = false;
 			}
-
-			if (!io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
-				auto clicked = getEntityUnderMouse(engine_, io.MousePos);
-				if (clicked.has_value()) {
-					std::cout << "Deleted entity: " << clicked->getEntityID() << "\n";
-					toDelete.push_back(*clicked);
-					if (g_game) g_game->markEntitiesDirty();
-					waitingForClick = false;
-				}
-			}
-
 		}
 	}
 	else if (FilterType == Filters::All) {
@@ -889,6 +878,37 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				ImVec2(1, 0)
 			);
 
+			// Handle entity deletion by click with corrected mouse coordinates
+			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
+				ImVec2 mousePos = ImGui::GetMousePos();
+				ImVec2 imageMin = ImGui::GetItemRectMin();
+				ImVec2 imageMax = ImGui::GetItemRectMax();
+
+				// Mouse position relative to the scaled image (0 to 1)
+				float relX = (mousePos.x - imageMin.x) / (imageMax.x - imageMin.x);
+				float relY = (mousePos.y - imageMin.y) / (imageMax.y - imageMin.y);
+
+				relX = std::clamp(relX, 0.0f, 1.0f);
+				relY = std::clamp(relY, 0.0f, 1.0f);
+
+				// Convert to actual game coordinates (fixed virtual resolution)
+				float gameX = relX * virtualWidth;
+				float gameY = relY * virtualHeight;
+
+				// Check for entity at this position
+				auto clicked = getEntityUnderMouse(engine_, ImVec2(gameX, gameY));
+				if (clicked.has_value()) {
+					std::cout << "Deleted entity: " << clicked->getEntityID()
+						<< " at game coords (" << gameX << ", " << gameY << ")\n";
+					clicked->destroy();
+					if (g_game) g_game->markEntitiesDirty();
+				} else {
+					std::cout << "No entity found at game coords (" << gameX << ", " << gameY << ")\n";
+				}
+
+				g_waitingForEntityDeletion = false;
+			}
+
 			// Handle prefab placement with corrected mouse coordinates
 			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {
 				ImVec2 mousePos = ImGui::GetMousePos();
@@ -931,7 +951,7 @@ void displayGameView(Engine::EnoEngine& engine_) {
 			};
 
 			// --- Begin drag ---
-			if (g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging) {
+			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging) {
 				ImVec2 gamePos = screenToGameCoords(ImGui::GetMousePos());
 				auto clicked = getEntityUnderMouse(engine_, gamePos);
 				if (clicked) {
@@ -980,10 +1000,18 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				draggedEntityID = 0;
 			}
 
-			if (ImGui::IsItemHovered() && !g_selectedPrefabForPlacement.empty()) {
-				ImGui::BeginTooltip();
-				ImGui::Text("Click to place: %s", g_selectedPrefabForPlacement.c_str());
-				ImGui::EndTooltip();
+			// Tooltips for different interaction modes
+			if (ImGui::IsItemHovered()) {
+				if (g_waitingForEntityDeletion) {
+					ImGui::BeginTooltip();
+					ImGui::Text("Click on an entity to delete it");
+					ImGui::EndTooltip();
+				}
+				else if (!g_selectedPrefabForPlacement.empty()) {
+					ImGui::BeginTooltip();
+					ImGui::Text("Click to place: %s", g_selectedPrefabForPlacement.c_str());
+					ImGui::EndTooltip();
+				}
 			}
 		}
 	}

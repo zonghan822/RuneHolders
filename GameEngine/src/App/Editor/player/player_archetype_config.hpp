@@ -13,6 +13,7 @@
 #include "../Engine/component/components/player_component.hpp"
 #include "../Engine/component/components/collision_component.hpp"
 #include "../Engine/component/components/physics_component.hpp"
+#include "../Engine/component/components/drawInfo.hpp"
 #include "../Engine/ecs/entity.hpp"
 
 // Forward declare PlayerConfig to avoid circular dependency
@@ -86,6 +87,18 @@ namespace Player
         player.add<ECSComponents::PlayerComponent>(playerComp);
         player.add<ECSComponents::CollisionComponent>(collisionComp);
         player.add<ECSComponents::PhysicsComponent>(physicsComp);
+
+        // Create DrawInfoComponent with proper initialization for dragging
+        // Calculate top-left position from center position
+        float topLeftX = position.x - (colliderWidth * 0.5f);
+        float topLeftY = position.y - (colliderHeight * 0.5f);
+        ECSComponents::DrawInfoComponent drawComp(
+            topLeftX, topLeftY,
+            colliderWidth, colliderHeight,
+            "Rectangle",
+            Color::Green
+        );
+        player.add<ECSComponents::DrawInfoComponent>(drawComp);
 
         return player;
     }
