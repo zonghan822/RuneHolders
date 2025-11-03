@@ -108,15 +108,15 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	// Apply default layout once
+	// BEGIN DOCKSPACE
+	imGuiBeginDockspace();
+
+	// Apply default layout once after dockspace is created
 	static bool layoutApplied = false;
 	if (!layoutApplied) {
 		imGuiSetupDefaultLayout();
 		layoutApplied = true;
 	}
-
-	// BEGIN DOCKSPACE
-	imGuiBeginDockspace();
 
 	// Load player config once
 	static Player::PlayerConfig playerConfig;
@@ -1032,20 +1032,23 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	// Split the dockspace into sections
 	ImGuiID dock_main_id = dockspace_id;
 	ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
-	ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.31f, nullptr, &dock_main_id);
-	ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.25f, nullptr, &dock_main_id);
-
-	// Split the left panel into three vertical sections
-	ImGuiID dock_id_left_top = ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Up, 0.33f, nullptr, &dock_id_left);
-	ImGuiID dock_id_left_middle = ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Up, 0.50f, nullptr, &dock_id_left);
+	ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.25f, nullptr, &dock_main_id);
+	ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.32f, nullptr, &dock_main_id);
 
 	// Dock windows to their respective nodes
-	ImGui::DockBuilderDockWindow("Main Controls", dock_id_left_top);
-	ImGui::DockBuilderDockWindow("Edit", dock_id_left_middle);
+	// Left side - all three windows docked to same node will appear as tabs
+	ImGui::DockBuilderDockWindow("Main Controls", dock_id_left);
 	ImGui::DockBuilderDockWindow("Prefabs", dock_id_left);
+	ImGui::DockBuilderDockWindow("Edit", dock_id_left);
+
+	// Center - Game View
 	ImGui::DockBuilderDockWindow("Game View", dock_main_id);
-	ImGui::DockBuilderDockWindow("FPS", dock_id_right);
-	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_bottom);
+
+	// Right side - Assets Browser
+	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_right);
+
+	// Bottom - FPS
+	ImGui::DockBuilderDockWindow("FPS", dock_id_bottom);
 
 	ImGui::DockBuilderFinish(dockspace_id);
 
