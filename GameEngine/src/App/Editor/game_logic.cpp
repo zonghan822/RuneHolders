@@ -26,7 +26,7 @@ void GameApplication::initialize() {
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
     // This is for dynamic collision test object
-    // createTestObject(engine_.getEntityManager());
+    createTestObject(engine_.getEntityManager());
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
