@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         drawInfo.hpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
 * @date         01-10-2025
@@ -37,13 +37,15 @@ enum Filters {
 
 namespace ECSComponents
 {
-	struct DrawInfoComponent
+	// RenderComponent: Stores ONLY rendering properties (size, color, texture)
+	// Position/rotation/scale are in TransformComponent
+	struct RenderComponent
 	{
-		DrawInfoComponent() = default;
+		RenderComponent() = default;
 
-		//	Ctor for DrawInfoComponent
-		DrawInfoComponent(float xPosition, float yPosition, float w, float h, const char* n, int c):
-			xPos{ xPosition }, yPos{ yPosition }, width{w}, height{h}
+		// Constructor for basic rendering (no position - use TransformComponent!)
+		RenderComponent(float w, float h, const char* n, int c)
+			: width{w}, height{h}
 		{
 			strncpy_s(shape, n, sizeof(shape) - 1);
 			shape[sizeof(shape) - 1] = '\0';
@@ -57,28 +59,30 @@ namespace ECSComponents
 			else {
 				color = Graphics::Color::Blue;
 			}
-
 		}
 
-		float xPos, yPos, width, height;
+		// Rendering properties
+		float width = 10.0f;
+		float height = 10.0f;
 		char shape[32] = "Rectangle";
-		Graphics::Color color = Graphics::Color::Blue;
-		
+		Graphics::Color color = Graphics::Color::Green;
+
+		// Texture support
+		std::shared_ptr<Graphics::EnoTexture> texture = nullptr;
+		int texID = 0;  // For sprite sheet indexing
 	};
 
-	inline std::ostream& operator<<(std::ostream& os, const DrawInfoComponent& draw)
-	{
-		
-		auto& shape   = draw.shape;
-		auto& xPos    = draw.xPos;
-		auto& yPos    = draw.yPos;
-		auto& width   = draw.width;
-		auto& height  = draw.height;
+	// Keep DrawInfoComponent as alias for backwards compatibility
+	using DrawInfoComponent = RenderComponent;
 
-		std::cout 
+	inline std::ostream& operator<<(std::ostream& os, const RenderComponent& render)
+	{
+		auto& shape   = render.shape;
+		auto& width   = render.width;
+		auto& height  = render.height;
+
+		std::cout
 		<< "SHAPE: "	<< shape  << '\n'
-		<< "x: "		<< xPos   << '\n'
-		<< "y: "		<< yPos   << '\n'
 		<< "width: "	<< width  << '\n'
 		<< "height: "	<< height << '\n';
 

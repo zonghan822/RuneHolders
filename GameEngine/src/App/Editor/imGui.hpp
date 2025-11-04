@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         imGui.hpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
 * @date         01-10-2025
@@ -10,8 +10,9 @@
 
 #pragma once
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h> 
+#include <imgui_impl_opengl3.h>
 #include <chrono>
 #include <random>
 #include <unordered_map>
@@ -58,6 +59,15 @@ struct SystemTimer {
     }
 };
 
+// Enum for different editor states
+//enum EditorState {
+//    Stopped = 1,
+//    Playing,
+//    Paused,
+//    NextKeyFrame
+//};
+//
+//EditorState _editorState;
 
 
 // ImGui functions
@@ -112,6 +122,20 @@ void displayEntityCount(Engine::EnoEngine& engine_);
 void displayEditTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
+ * \brief       Displays HierachyTab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayHierarchyTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays Entity Inspector
+ * \param[in]   ECS::Entity&
+ * \return      void
+*//*========================================================================================*/
+void displayEntityInspector(ECS::Entity& entity);
+
+/*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
@@ -138,3 +162,21 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_);
  * \return      void
 *//*========================================================================================*/
 void displayFPSTab(Engine::EnoEngine& engine_);
+
+
+// docking shi
+void displayGameView(Engine::EnoEngine& engine_);
+
+void imGuiSetupDefaultLayout();
+
+void imGuiBeginDockspace();
+
+void imGuiEndDockspace();
+
+
+/*============================================================================================
+ * \brief       Displays FPS tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse);

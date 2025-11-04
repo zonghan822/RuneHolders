@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         collision.hpp
 * @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
 * @date         03-10-2025
@@ -12,6 +12,7 @@
 // Engine includes
 #include "../math/math.hpp"
 #include "../component/components/transform.hpp"
+#include "../component/components/physics_component.hpp"
 #include "../ecs/entity.hpp"
 #include "../event/event_bus.hpp"
 
@@ -227,17 +228,19 @@ namespace Collision
 		*              a reflected vector if any.
 		* \param[in]   CollisionComponent const& colliderA - First collision component
 		* \param[in]   ECSComponents::TransformComponent const& transformA - Transform of first entity (for position)
+		* \param[in]   ECSComponents::PhysicsComponent const& physicsA - Physics component of first entity (for velocity)
 		* \param[in]   CollisionComponent const& colliderB - Second collision component
 		* \param[in]   ECSComponents::TransformComponent const& transformB - Transform of second entity (for position)
+		* \param[in]   ECSComponents::PhysicsComponent const& physicsB - Physics component of second entity (for velocity)
 		* \param[in]   Math::eVec2<float> const& endPos - Next position of object
 		* \param[out]  Math::eVec2<float>& colPoint - Point of collision
 		* \param[out]  Math::eVec2<float>& normalAtCol - Normalized outward normal at collision point
 		* \param[out]  float& colTi - Time till collision
 		* \return      bool - Returns true if collision occurs
-		//*========================================================================================*/		
+		//*========================================================================================*/
 		static bool CheckDynamicCollision(
-			const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA,
-			const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB,
+			const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA, const ECSComponents::PhysicsComponent& physicsA,
+			const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB, const ECSComponents::PhysicsComponent& physicsB,
 			const Math::eVec2<float>& endPos, Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi);
 
 		/*============================================================================================

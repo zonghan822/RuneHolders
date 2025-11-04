@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         prefab.cpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
 * @date         01-10-2025
@@ -70,11 +70,10 @@ ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engin
     };
 
     e.add<ECSComponents::TransformComponent>(transform);
-    // add draw info
+    // add draw info - RenderComponent only takes width, height, shape name, and color
+    // Position comes from TransformComponent now
     ECSComponents::DrawInfoComponent DIC{
-        prefab.x, 
-        prefab.y, 
-        prefab.width, 
+        prefab.width,
         prefab.height,
         prefab.shape == 0 ? "Circle" : "Rectangle",
         prefab.color

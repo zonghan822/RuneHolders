@@ -36,6 +36,7 @@ namespace Graphics
     class EnoShader;
     class EnoVertexBuffer;
     class EnoTexture;
+    class EnoFrameBuffer;
 
     // Color struct for drawing functions, basic colours alr added
     struct Color
@@ -88,6 +89,47 @@ namespace Graphics
     private:
         GLuint textureID_;
         int width_, height_, channels_;
+    };
+
+    class EnoFramebuffer
+    {
+    public:
+        EnoFramebuffer();
+        ~EnoFramebuffer();
+
+        bool create(int width, int height);
+        void bind() const;
+        void unbind() const;
+        void resize(int width, int height);
+
+        GLuint getTextureID() const { return textureID_; }
+        int getWidth() const { return width_; }
+        int getHeight() const { return height_; }
+        bool isValid() const { return fbo_ != 0; }
+
+    private:
+        GLuint fbo_;
+        GLuint textureID_;
+        GLuint rbo_;
+        int width_, height_;
+    };
+
+
+    struct TextureData {
+        std::shared_ptr<EnoTexture> texture;
+        int rows = 1;
+        int cols = 1;
+
+        // Derived frame size
+        int frameWidth = 0;
+        int frameHeight = 0;
+
+        void computeFrameSize() {
+            if (texture && texture->getWidth() > 0 && texture->getHeight() > 0) {
+                frameWidth = texture->getWidth() / cols;
+                frameHeight = texture->getHeight() / rows;
+            }
+        }
     };
 
 

@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         collision.cpp
 * @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
 * @date         03-10-2025
@@ -60,7 +60,7 @@ namespace Collision {
 		data.line.p2 = point2;
 		// Calculate edge vector (from p1 to p2)
 		Math::eVec2<float> edge = data.line.p2 - data.line.p1;
-		// Calculate perpendicular (rotate 90° counter-clockwise)
+		// Calculate perpendicular (rotate 90ï¿½ counter-clockwise)
 		Math::eVec2<float> perpendicular = { -edge.y, edge.x };
 		// Normalize to get the outward normal
 		Math::eVec2Normalize(data.line.pNormal, perpendicular);
@@ -246,8 +246,8 @@ namespace Collision {
 	}
 
 	bool CollisionDetection::CheckDynamicCollision(
-		const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA,
-		const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB,
+		const CollisionComponent& colliderA, const ECSComponents::TransformComponent& transformA, const ECSComponents::PhysicsComponent& physicsA,
+		const CollisionComponent& colliderB, const ECSComponents::TransformComponent& transformB, const ECSComponents::PhysicsComponent& physicsB,
 		const Math::eVec2<float>& endPos, Math::eVec2<float>& colPoint, Math::eVec2<float>& normalAtCol, float& colTi)
 	{
 
@@ -275,8 +275,8 @@ namespace Collision {
 		if (colliderA.type == ColliderType::CIRCLE && colliderB.type == ColliderType::CIRCLE)
 		{
 			//std::cout << "CIRCLE RADIUS ::: " << colliderA.data.circle.radius << std::endl;
-			return CheckDynamicCircleCircle(posA, { transformA.vel.x, transformA.vel.y }, colliderA.data.circle.radius,
-				posB, { transformB.vel.x, transformB.vel.y }, colliderB.data.circle.radius,
+			return CheckDynamicCircleCircle(posA, { physicsA.velocity.x, physicsA.velocity.y }, colliderA.data.circle.radius,
+				posB, { physicsB.velocity.x, physicsB.velocity.y }, colliderB.data.circle.radius,
 				colPoint, normalAtCol, colTi);
 		}
 		return false;
@@ -550,7 +550,7 @@ namespace Collision {
 			Math::eVec2Normalize(mVel, tmp);
 
 			// Calculate end points of imaginary line as p1' and p2'
-			// P1' = P1 – R*N and P2' = P2 – R*N 
+			// P1' = P1 ï¿½ R*N and P2' = P2 ï¿½ R*N 
 
 			Math::eVec2<float> innerP1 = lineCol.data.line.p1 - (lineCol.data.line.pNormal * radius);
 			Math::eVec2<float> innerP2 = lineCol.data.line.p2 - (lineCol.data.line.pNormal * radius);
@@ -628,7 +628,7 @@ namespace Collision {
 		// New position = collision point + reflected penetration
 		reflected = nextPos - interPt;
 
-		// Return normalized reflection directionkr
+		// Return normalized reflection direction
 		Math::eVec2Normalize(reflected, reflected);
 
 	}

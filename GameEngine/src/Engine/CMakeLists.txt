@@ -1,7 +1,7 @@
 set(ENGINE_NAME Engine)
 
 file(GLOB_RECURSE ENGINE_SRC_FILES
-    ${CMAKE_CURRENT_LIST_DIR}/*.[ch]pp
+    ${CMAKE_CURRENT_LIST_DIR}/*.[cht]pp
     ${CMAKE_CURRENT_LIST_DIR}/*.[ch]
 )
 

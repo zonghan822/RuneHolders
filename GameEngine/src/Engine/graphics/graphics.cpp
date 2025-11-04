@@ -875,11 +875,23 @@ namespace Graphics
     void EnoGraphicsManager::setProjectionMatrix(int windowWidth, int windowHeight)
     {
         setupProjectionMatrix(windowWidth, windowHeight);
+
+        // Update the shader uniform with the new projection matrix
+        if (defaultShader_ && defaultShader_->isValid()) {
+            defaultShader_->use();
+            defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
+        }
     }
 
     void EnoGraphicsManager::setProjectionMatrix(const float* matrix)
     {
         std::copy(matrix, matrix + 16, projectionMatrix_.begin());
+
+        // Update the shader uniform with the new projection matrix
+        if (defaultShader_ && defaultShader_->isValid()) {
+            defaultShader_->use();
+            defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
+        }
     }
 
     bool EnoGraphicsManager::createDefaultShader()
@@ -1061,5 +1073,86 @@ namespace Graphics
                 boundTextures_[i]->bind(static_cast<unsigned int>(i));
             }
         }
+    }
+
+    EnoFramebuffer::EnoFramebuffer()
+        : fbo_(0), textureID_(0), rbo_(0), width_(0), height_(0) {
+    }
+
+    EnoFramebuffer::~EnoFramebuffer() {
+        if (fbo_) glDeleteFramebuffers(1, &fbo_);
+        if (textureID_) glDeleteTextures(1, &textureID_);
+        if (rbo_) glDeleteRenderbuffers(1, &rbo_);
+    }
+
+    bool EnoFramebuffer::create(int width, int height) {
+        width_ = width;
+        height_ = height;
+
+        // Create framebuffer
+        glGenFramebuffers(1, &fbo_);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+
+        // Create color texture
+        glGenTextures(1, &textureID_);
+        glBindTexture(GL_TEXTURE_2D, textureID_);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0);
+
+        // Create renderbuffer for depth/stencil
+        glGenRenderbuffers(1, &rbo_);
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo_);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo_);
+
+        // Check framebuffer is complete
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            std::cerr << "Framebuffer not complete!" << std::endl;
+            return false;
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        return true;
+    }
+
+    void EnoFramebuffer::bind() const {
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+        glViewport(0, 0, width_, height_);
+    }
+
+    void EnoFramebuffer::unbind() const {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void EnoFramebuffer::resize(int width, int height) {
+        if (width_ == width && height_ == height) return;
+
+        // Cleanup old resources
+        if (textureID_) glDeleteTextures(1, &textureID_);
+        if (rbo_) glDeleteRenderbuffers(1, &rbo_);
+
+        // Recreate with new size
+        width_ = width;
+        height_ = height;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+
+        // Recreate texture
+        glGenTextures(1, &textureID_);
+        glBindTexture(GL_TEXTURE_2D, textureID_);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0);
+
+        // Recreate renderbuffer
+        glGenRenderbuffers(1, &rbo_);
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo_);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo_);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 }
