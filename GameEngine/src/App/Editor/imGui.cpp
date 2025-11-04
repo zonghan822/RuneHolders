@@ -149,7 +149,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	bool playerFound = false;
 	for (ECS::Entity player : entityManager.findEntity<ECSComponents::PlayerComponent>())
 	{
-		playerEntityID_ = player.getEntityID();
+		playerEntityID_ = player.id();
 		playerFound = true;
 	}
 	// Sync playerSpawned_ flag with actual player existence in ECS
@@ -203,6 +203,9 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 }
 
 void displayMainTab(Engine::EnoEngine& engine_) {
+
+	auto& entityManager = engine_.getEntityManager();
+
 	//=======================PLAYER CONTROLS =======================
 	ImGui::Text("=== PLAYER CONTROLS ===");
 	ImGui::Text("WASD to move player");
@@ -289,21 +292,21 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 
 		// Create entity with both Transform and DrawInfo components
 		ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
-		e.add<ECSComponents::DrawInfoComponent>(DIC);
-		e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
+		e.add<ECSComponents::DrawInfoComponent>(entityManager, DIC);
+		e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("John"));
 
 		// Add collider if selected
 		if (selectedCollider != 0) {
 			// Add appropriate collider
 			if (selectedCollider == 1) {//circle
-				e.add<ECSComponents::CollisionComponent>(ECSComponents::CollisionComponent(colliderRadius));
-				if (e.has<ECSComponents::DrawInfoComponent>()) {
+				e.add<ECSComponents::CollisionComponent>(entityManager, ECSComponents::CollisionComponent(colliderRadius));
+				if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
 					// DrawInfo already set above (now uses only width, height, shape, color - no position)
 				}
 			}
 			else if (selectedCollider == 2) { // rectangle
-				e.add<ECSComponents::CollisionComponent>(ECSComponents::CollisionComponent(colliderWidth, colliderHeight));
-				if (e.has<ECSComponents::DrawInfoComponent>()) {
+				e.add<ECSComponents::CollisionComponent>(entityManager, ECSComponents::CollisionComponent(colliderWidth, colliderHeight));
+				if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
 					// DrawInfo already set above (now uses only width, height, shape, color - no position)
 				}
 
@@ -343,8 +346,8 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 
 			// Add DrawInfoComponent
 			ECSComponents::RenderComponent DIC{ randW, randH, shapes[eShapeIndex], randC };
-			e.add<ECSComponents::DrawInfoComponent>(DIC);
-			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
+			e.add<ECSComponents::DrawInfoComponent>(entityManager, DIC);
+			e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("John"));
 		}
 		entity_count += 2500;
 		if (g_game) g_game->markEntitiesDirty();
@@ -385,9 +388,10 @@ void displayFPSTab(Engine::EnoEngine& engine_) {
 }
 
 void displayEntityCount(Engine::EnoEngine& engine_) {
+	auto& entityManager = engine_.getEntityManager();
 	size_t counter = 0;
 
-	std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<>();
+	std::vector<ECS::Entity> EntityList = entityManager.findEntity<>();
 	for (ECS::Entity const& e : EntityList) {
 		counter++;
 		(void)e; // silence unused warning
@@ -401,6 +405,8 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_) {
 }
 
 void displayEditTab(Engine::EnoEngine& engine_) {
+
+	auto& entityManager = engine_.getEntityManager();
 	const char* filters[] = { "Architype" , "Last Spawned", "Mouse Select", "All" };
 	static int FilterType = Filters::Architype;
 
@@ -412,7 +418,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 	if (FilterType == Filters::Architype) {
 		if (ImGui::Button("DEBUG: List Named Entities")) {
 			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				auto& nameComp = e.get<ECSComponents::NameComponent>();
+				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
 				std::cout << "Entity " << e.id() << " name: '" << nameComp.name << "'\n";
 			}
 		}
@@ -428,11 +434,11 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 			// Iterate only once through all entities that have NameComponent
 			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				ECSComponents::NameComponent& nameComp = e.get<ECSComponents::NameComponent>();
+				ECSComponents::NameComponent& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
 
-				if (!deletedSelected && e.getEntityID() == selectedEntityID) {
-					if (playerEntityID_ == e.getEntityID()) playerSpawned_ = false;
-					e.destroy();
+				if (!deletedSelected && e.id() == selectedEntityID) {
+					if (playerEntityID_ == e.id()) playerSpawned_ = false;
+					e.destroy(entityManager);
 					selectedEntityID = 0;
 					deletedSelected = true;
 					std::cout << "Deleted selected entity\n";
@@ -440,7 +446,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 				}
 
 				if (nameComp.name == target) {
-					if (playerEntityID_ == e.getEntityID()) playerSpawned_ = false;
+					if (playerEntityID_ == e.id()) playerSpawned_ = false;
 					toDelete.push_back(e);
 				}
 
@@ -457,7 +463,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 				ECS::spawnHistory.pop_back();  // remove from history
 
 				bool found = false;
-				for (auto& e : engine_.getEntityManager().findEntity<>()) {
+				for (auto& e : entityManager.findEntity<>()) {
 					if (e.id() == lastID) {
 						if (playerEntityID_ == lastID) playerSpawned_ = false;
 						toDelete.push_back(e);
@@ -491,7 +497,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 	}
 	else if (FilterType == Filters::All) {
 		if (ImGui::Button("Delete ALL Entities")) {
-			for (auto& e : engine_.getEntityManager().findEntity<>()) {
+			for (auto& e : entityManager.findEntity<>()) {
 				toDelete.push_back(e);
 			}
 			playerSpawned_ = false;
@@ -501,7 +507,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 	if (!toDelete.empty()) {
 		for (auto& a : toDelete) {
-			a.destroy();
+			a.destroy(entityManager);
 		}
 
 		// Mark cache as dirty after deletion
@@ -514,6 +520,8 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse)
 {
+	auto& entityManager = engine_.getEntityManager();
+
 	// Collect all entities that contain the mouse position
 	std::vector<ECS::Entity> matchingEntities;
 
@@ -521,8 +529,8 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 		ECSComponents::TransformComponent,
 		ECSComponents::DrawInfoComponent>())
 	{
-		auto& tc = e.get<ECSComponents::TransformComponent>();
-		auto& dc = e.get<ECSComponents::DrawInfoComponent>();
+		auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+		auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 
 		// TransformComponent.pos is the CENTER of the entity
 		float halfW = dc.width * 0.5f;
@@ -549,6 +557,7 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 
 ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine)
 {
+	auto& entityManager = engine.getEntityManager();
 
 	const PrefabData& prefab = prefabRegistry[name];
 
@@ -561,10 +570,10 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	float topLeftY = y - prefab.height * 0.5f;
 
 	// create the entity
-	ECS::Entity e = engine.getEntityManager().create<>();
+	ECS::Entity e = entityManager.create<>();
 
 	// attach components
-	e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent(prefab.name.c_str()));
+	e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(prefab.name.c_str()));
 
 	// transform uses center position
 	ECSComponents::TransformComponent transform{
@@ -572,7 +581,7 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 		{0.0f, 0.0f},
 		{1.0f, 1.0f}
 	};
-	e.add<ECSComponents::TransformComponent>(transform);
+	e.add<ECSComponents::TransformComponent>(entityManager, transform);
 
 	// draw info uses top-left position
 	ECSComponents::RenderComponent draw{
@@ -580,11 +589,12 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 		prefab.shape == 0 ? "Circle" : "Rectangle",
 		prefab.color
 	};
-	e.add<ECSComponents::DrawInfoComponent>(draw);
+	e.add<ECSComponents::DrawInfoComponent>(entityManager, draw);
 
 	// collider (optional)
 	if (prefab.hasCollider) {
 		e.add<ECSComponents::CollisionComponent>(
+			entityManager,
 			ECSComponents::CollisionComponent(prefab.width, prefab.height));
 	}
 
@@ -599,6 +609,8 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 
 void displayPrefabsTab(Engine::EnoEngine& engine_) {
 
+	auto& entityManager = engine_.getEntityManager();
+
 	static PrefabData currentPrefab{};  // local editable prefab
 	static char prefabName[64] = "";
 	static bool hasCollider = false;
@@ -610,15 +622,12 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	static std::string selectedPrefabName{};
 
 
+
 	ImGui::Text("==========PREFABS TAB==========");
 
 	ImGui::Text("Prefab name:");
 	ImGui::InputText("##Prefab Name", prefabName, sizeof(prefabName));
 	currentPrefab.name = prefabName;
-
-
-
-
 
 	ImGui::Separator();
 	ImGui::Text("Transform / Size");
@@ -688,13 +697,12 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	ImGui::Separator();
 	if (ImGui::Button("Spawn Prefab")) {
 		if (prefabRegistry.count(selectedPrefabName)) {
-			ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], engine_);
+			ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], entityManager);
 			if (g_game) g_game->markEntitiesDirty();
 			std::cout << "Spawned prefab: " << selectedPrefabName << "\n";
 
 		}
 	}
-
 }
 
 #if 0
@@ -711,11 +719,11 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 	{
 		const auto& nameComp = e.get<ECSComponents::NameComponent>();
 		std::string name = nameComp.name;
-		bool selected = (selectedEntityID == e.getEntityID());
-		std::string label = std::to_string(e.getEntityID()) + ": " + name;
+		bool selected = (selectedEntityID == e.id());
+		std::string label = std::to_string(e.id()) + ": " + name;
 		if (ImGui::Selectable(label.c_str(), selected))
 		{
-			selectedEntityID = e.getEntityID();
+			selectedEntityID = e.id();
 		}
 	}
 }
@@ -723,8 +731,10 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 #else
 void displayHierarchyTab(Engine::EnoEngine& engine_)
 {
+	auto& entityManager = engine_.getEntityManager();
+
 	// Get all entities that have a NameComponent
-	std::vector<ECS::Entity> NamedEntityList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
+	std::vector<ECS::Entity> NamedEntityList = entityManager.findEntity<ECSComponents::NameComponent>();
 
 	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
 	ImGui::Separator();
@@ -732,14 +742,14 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 	// --- Entity selection list ---
 	for (ECS::Entity& e : NamedEntityList)
 	{
-		const auto& nameComp = e.get<ECSComponents::NameComponent>();
+		const auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
 		std::string name = nameComp.name;
-		bool selected = (selectedEntityID == e.getEntityID());
+		bool selected = (selectedEntityID == e.id());
 
-		std::string label = std::to_string(e.getEntityID()) + ": " + name;
+		std::string label = std::to_string(e.id()) + ": " + name;
 		if (ImGui::Selectable(label.c_str(), selected))
 		{
-			selectedEntityID = e.getEntityID();
+			selectedEntityID = e.id();
 		}
 	}
 
@@ -750,7 +760,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 		ECS::Entity* foundEntity = nullptr;
 		for (ECS::Entity& e : NamedEntityList)
 		{
-			if (e.getEntityID() == selectedEntityID)
+			if (e.id() == selectedEntityID)
 			{
 				foundEntity = &e;
 				break;
@@ -759,7 +769,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 
 		if (foundEntity)
 		{
-			displayEntityInspector(*foundEntity);
+			displayEntityInspector(entityManager, *foundEntity);
 		}
 		else
 		{
@@ -772,18 +782,18 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 #endif
 
 
-void displayEntityInspector(ECS::Entity& entity)
+void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 {
-	if (!entity.getEntityID())
+	if (!entity.id())
 		return;
 
 	ImGui::Begin("Entity Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-	ImGui::Text("Entity ID: %u", entity.getEntityID());
+	ImGui::Text("Entity ID: %u", entity.id());
 
 	// --- NameComponent ---
-	if (entity.has<ECSComponents::NameComponent>()) {
-		auto& nameComp = entity.get<ECSComponents::NameComponent>();
+	if (entity.has<ECSComponents::NameComponent>(entMng)) {
+		auto& nameComp = entity.get<ECSComponents::NameComponent>(entMng);
 
 		char buffer[32];
 		strncpy_s(buffer, nameComp.name, sizeof(buffer) - 1);
@@ -798,16 +808,16 @@ void displayEntityInspector(ECS::Entity& entity)
 	}
 
 	// --- TransformComponent ---
-	if (entity.has<ECSComponents::TransformComponent>()) {
-		auto& transform = entity.get<ECSComponents::TransformComponent>();
+	if (entity.has<ECSComponents::TransformComponent>(entMng)) {
+		auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
 		ImGui::SeparatorText("Transform");
 		ImGui::DragFloat2("Position", (float*)&transform.pos, 0.5f);
 		ImGui::DragFloat2("Scale", (float*)&transform.scale, 0.05f, 0.1f, 10.0f);
 	}
 
 	// --- PhysicsComponent ---
-	if (entity.has<ECSComponents::PhysicsComponent>()) {
-		auto& physics = entity.get<ECSComponents::PhysicsComponent>();
+	if (entity.has<ECSComponents::PhysicsComponent>(entMng)) {
+		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
 		ImGui::SeparatorText("Physics");
 		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
 		ImGui::DragFloat("Mass", &physics.mass, 0.1f, 0.1f, 100.0f);
@@ -816,16 +826,16 @@ void displayEntityInspector(ECS::Entity& entity)
 	}
 
 	// --- DrawInfoComponent ---
-	if (entity.has<ECSComponents::DrawInfoComponent>()) {
-		auto& draw = entity.get<ECSComponents::DrawInfoComponent>();
+	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
+		auto& draw = entity.get<ECSComponents::DrawInfoComponent>(entMng);
 		ImGui::SeparatorText("Draw Info");
 		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
 		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
 	}
 
 	// --- CollisionComponent ---
-	if (entity.has<Collision::CollisionComponent>()) {
-		auto& collider = entity.get<Collision::CollisionComponent>();
+	if (entity.has<Collision::CollisionComponent>(entMng)) {
+		auto& collider = entity.get<Collision::CollisionComponent>(entMng);
 		ImGui::SeparatorText("Collider");
 
 		// Collider type selector
@@ -1005,6 +1015,7 @@ void imGuiBeginDockspace() {
 
 void displayGameView(Engine::EnoEngine& engine_) {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
+	auto& entityManager = engine_.getEntityManager();
 
 	// Display toolbar for PLAY/PAUSE/STOP
 	// Switching between play and stop
@@ -1110,9 +1121,9 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				// Check for entity at this position
 				auto clicked = getEntityUnderMouse(engine_, ImVec2(gameX, gameY));
 				if (clicked.has_value()) {
-					std::cout << "Deleted entity: " << clicked->getEntityID()
+					std::cout << "Deleted entity: " << clicked->id()
 						<< " at game coords (" << gameX << ", " << gameY << ")\n";
-					clicked->destroy();
+					clicked->destroy(entityManager);
 					if (g_game) g_game->markEntitiesDirty();
 				} else {
 					std::cout << "No entity found at game coords (" << gameX << ", " << gameY << ")\n";
@@ -1167,10 +1178,10 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				ImVec2 gamePos = screenToGameCoords(ImGui::GetMousePos());
 				auto clicked = getEntityUnderMouse(engine_, gamePos);
 				if (clicked) {
-					draggedEntityID = clicked->getEntityID();
+					draggedEntityID = clicked->id();
 					isDragging = true;
 
-					auto& tc = clicked->get<ECSComponents::TransformComponent>();
+					auto& tc = clicked->get<ECSComponents::TransformComponent>(entityManager);
 					dragOffset.x = gamePos.x - tc.pos.x;
 					dragOffset.y = gamePos.y - tc.pos.y;
 
@@ -1182,10 +1193,10 @@ void displayGameView(Engine::EnoEngine& engine_) {
 			if (isDragging && ImGui::IsMouseDown(0)) {
 				ImVec2 gamePos = screenToGameCoords(ImGui::GetMousePos());
 
-				auto all = engine_.getEntityManager().findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+				auto all = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 				for (auto& e : all) {
-					if (e.getEntityID() == draggedEntityID) {
-						auto& tc = e.get<ECSComponents::TransformComponent>();
+					if (e.id() == draggedEntityID) {
+						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
 
 						// Update transform (position is now ONLY in TransformComponent)
 						tc.pos.x = gamePos.x - dragOffset.x;

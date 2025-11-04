@@ -45,9 +45,9 @@ PrefabData loadPrefab(const std::string& filename) {
     return prefab;
 }
 
-ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine) {
+ECS::Entity instantiatePrefab(const PrefabData& prefab, ECS::EntityManager& entMng) {
 
-    ECS::Entity e = engine.getEntityManager().create<>();
+    ECS::Entity e = entMng.create<>();
 
     char name[50]{};
     size_t counter{};
@@ -56,7 +56,7 @@ ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engin
         counter++;
     }
 
-    e.add<ECSComponents::NameComponent>(static_cast<char*>(name));
+    e.add<ECSComponents::NameComponent>(entMng, static_cast<char*>(name));
     //std::cout << "name of this entity: " << e.get<ECSComponents::NameComponent>().name << "\n;
 
     // Calculate CENTER position from DrawInfo's top-left
@@ -69,7 +69,7 @@ ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engin
             {1.0f, 1.0f}
     };
 
-    e.add<ECSComponents::TransformComponent>(transform);
+    e.add<ECSComponents::TransformComponent>(entMng, transform);
     // add draw info - RenderComponent only takes width, height, shape name, and color
     // Position comes from TransformComponent now
     ECSComponents::DrawInfoComponent DIC{
@@ -79,12 +79,13 @@ ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engin
         prefab.color
     };
 
-    e.add<ECSComponents::DrawInfoComponent>(DIC);
-    std::cout << e.get<ECSComponents::DrawInfoComponent>() << "\n";
+    e.add<ECSComponents::DrawInfoComponent>(entMng, DIC);
+    std::cout << e.get<ECSComponents::DrawInfoComponent>(entMng) << "\n";
 
     if (prefab.hasCollider) {
 
         e.add<ECSComponents::CollisionComponent>(
+            entMng,
             ECSComponents::CollisionComponent(prefab.width, prefab.height)
         );
     }

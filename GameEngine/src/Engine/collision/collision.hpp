@@ -102,7 +102,7 @@ namespace Collision
 		CollisionComponent(
 			float width, 
 			float height, 
-			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f, }, 
+			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f }, 
 			bool trigger = false);
 
 		/*============================================================================================
