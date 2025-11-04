@@ -44,6 +44,8 @@ target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/${ENGINE_
 target_compile_definitions(${APP_NAME} PRIVATE
     ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
     CONFIG_DIR_PATH="${CMAKE_SOURCE_DIR}/src/App/${APP_NAME}/"
+    SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}"
+    SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}"
 )
 
 # Link the library to the executable using the CMake target

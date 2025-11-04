@@ -1672,11 +1672,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "X:\\RuneHolders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj",
+      "projectUniqueName": "C:\\Users\\zongh\\Repos\\School\\Trimester 4\\RuneHolders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj",
       "projectName": "GameScripts",
-      "projectPath": "X:\\RuneHolders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj",
+      "projectPath": "C:\\Users\\zongh\\Repos\\School\\Trimester 4\\RuneHolders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj",
       "packagesPath": "C:\\Users\\zongh\\.nuget\\packages\\",
-      "outputPath": "X:\\RuneHolders\\GameEngine\\scripts\\GameScripts\\obj\\",
+      "outputPath": "C:\\Users\\zongh\\Repos\\School\\Trimester 4\\RuneHolders\\GameEngine\\scripts\\GameScripts\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

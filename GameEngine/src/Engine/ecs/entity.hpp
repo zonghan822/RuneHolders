@@ -383,7 +383,7 @@ namespace ECS
 						// are now being compared
 						bool match = std::apply([&](auto&&... vals)
 							{
-								return ((ent.template get<Components>() == vals) && ...);
+								return ((ent.template get<Components>(*this) == vals) && ...);
 							}, valueTup);
 
 						if (match)
