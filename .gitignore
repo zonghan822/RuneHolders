@@ -89,3 +89,6 @@ Debug/
 Release/
 dist/
 *.dSYM/
+
+# Specifically ignore GameScripts intermediates
+GameEngine/scripts/GameScripts/obj/

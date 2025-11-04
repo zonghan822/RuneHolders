@@ -110,14 +110,17 @@ function(set_dotnet_sdk)
 
     # Check for system installation
     execute_process(
-        COMMAND dotnet --info
+        COMMAND dotnet --version
         RESULT_VARIABLE DOTNET_RESULT
-        OUTPUT_VARIABLE DOTNET_INFO
-        OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
 
     if (DOTNET_RESULT EQUAL 0)
+        execute_process(
+            COMMAND dotnet --info
+            OUTPUT_VARIABLE DOTNET_INFO
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
         string(REGEX MATCH "Base Path:[ \t]*([^\r\n]+)" _match "${DOTNET_INFO}")
         set(BASE_PATH_LINE "${CMAKE_MATCH_1}")
 
