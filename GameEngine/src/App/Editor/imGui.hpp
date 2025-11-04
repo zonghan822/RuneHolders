@@ -166,6 +166,7 @@ void displayFPSTab(Engine::EnoEngine& engine_);
 
 // docking shi
 void displayGameView(Engine::EnoEngine& engine_);
+void displayEditorView(Engine::EnoEngine& engine_);
 
 void imGuiSetupDefaultLayout();
 

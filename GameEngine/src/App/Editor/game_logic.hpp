@@ -50,10 +50,18 @@ private:
     int playerFacingDirection_ = 1;
 
     std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
+    std::unique_ptr<Graphics::EnoFramebuffer> editorFramebuffer_;
 
     // Fixed virtual resolution (game always renders to this size)
     static constexpr int VIRTUAL_WIDTH = 1280;
     static constexpr int VIRTUAL_HEIGHT = 720;
+
+    // Editor camera settings (zoomed in view)
+    static constexpr int EDITOR_WIDTH = 640;   // Half width for zoomed view
+    static constexpr int EDITOR_HEIGHT = 360;   // Half height for zoomed view
+    float editorCameraX_ = 0.0f;  // Camera offset X
+    float editorCameraY_ = 0.0f;  // Camera offset Y
+    float editorCameraSpeed_ = 300.0f;  // Camera movement speed
 
     // Font
     std::shared_ptr<Font::EnoFont> pixelifyFont_;
@@ -89,10 +97,17 @@ public:
 
     void setEditorState(EditorState state);
     Graphics::EnoFramebuffer* getGameFramebuffer() { return gameFramebuffer_.get(); }
+    Graphics::EnoFramebuffer* getEditorFramebuffer() { return editorFramebuffer_.get(); }
 
     // Get fixed virtual resolution
     int getVirtualWidth() const { return VIRTUAL_WIDTH; }
     int getVirtualHeight() const { return VIRTUAL_HEIGHT; }
+    int getEditorWidth() const { return EDITOR_WIDTH; }
+    int getEditorHeight() const { return EDITOR_HEIGHT; }
+
+    // Get editor camera position
+    float getEditorCameraX() const { return editorCameraX_; }
+    float getEditorCameraY() const { return editorCameraY_; }
 
 
 private:
