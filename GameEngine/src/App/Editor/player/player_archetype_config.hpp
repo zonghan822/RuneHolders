@@ -92,8 +92,7 @@ namespace Player
         // Calculate top-left position from center position
         float topLeftX = position.x - (colliderWidth * 0.5f);
         float topLeftY = position.y - (colliderHeight * 0.5f);
-        ECSComponents::DrawInfoComponent drawComp(
-            topLeftX, topLeftY,
+        ECSComponents::RenderComponent drawComp(
             colliderWidth, colliderHeight,
             "Rectangle",
             Color::Green

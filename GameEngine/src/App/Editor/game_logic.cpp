@@ -529,10 +529,20 @@ void GameApplication::drawShapes() {
 					continue;
 				}
 
+				// Get position from TransformComponent (spatial data)
+				// Get rendering info from DrawInfoComponent (size, color, etc.)
+				auto& transform = entity.get<ECSComponents::TransformComponent>();
+				auto& renderInfo = entity.get<drawInfo>();
+
+				// TransformComponent.pos is the CENTER, but drawRect expects TOP-LEFT
+				// Convert from center to top-left
+				float topLeftX = transform.pos.x - (renderInfo.width * 0.5f);
+				float topLeftY = transform.pos.y - (renderInfo.height * 0.5f);
+
 				graphics.drawRect(
-					Math::eVec2<float>{entity.get<drawInfo>().xPos, entity.get<drawInfo>().yPos},
-					Math::eVec2<float>{entity.get<drawInfo>().width, entity.get<drawInfo>().height},
-					entity.get<drawInfo>().color,
+					Math::eVec2<float>{topLeftX, topLeftY},  // Top-left position for drawRect
+					Math::eVec2<float>{renderInfo.width, renderInfo.height},
+					renderInfo.color,
 					true
 				);
 			}
@@ -605,7 +615,13 @@ void GameApplication::UpdateResetPos()
 		{
 			// Store reset pos
 			e.get<ECSComponents::TransformComponent>().resetPos = e.get<ECSComponents::TransformComponent>().pos;
-			e.get<ECSComponents::TransformComponent>().resetVel = e.get<ECSComponents::TransformComponent>().vel;
+
+			// Store reset velocity if entity has physics component
+			if (e.has<ECSComponents::PhysicsComponent>())
+			{
+				// Store current velocity for reset (you may want to add resetVelocity to PhysicsComponent)
+				// For now we'll just reset to zero velocity
+			}
 
 			//std::cout << "Reset pos: " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
 		}
@@ -616,7 +632,12 @@ void GameApplication::UpdateResetPos()
 		{
 			//std::cout << "Before reset : " << e.get<ECSComponents::TransformComponent>().pos << std::endl;
 			e.get<ECSComponents::TransformComponent>().pos = e.get<ECSComponents::TransformComponent>().resetPos;
-			e.get<ECSComponents::TransformComponent>().vel = e.get<ECSComponents::TransformComponent>().resetVel;
+
+			// Reset velocity if entity has physics component
+			if (e.has<ECSComponents::PhysicsComponent>())
+			{
+				e.get<ECSComponents::PhysicsComponent>().velocity = { 0.0f, 0.0f };
+			}
 			//std::cout << "After reset : " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
 		}
 		// Clear list

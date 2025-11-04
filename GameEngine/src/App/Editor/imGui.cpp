@@ -281,7 +281,8 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			{1.0f, 1.0f}
 		};
 
-		ECSComponents::DrawInfoComponent DIC{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor };
+		// RenderComponent stores only rendering properties (no position!)
+	ECSComponents::DrawInfoComponent DIC{ eWidth, eHeight, shapes[eShapeIndex], eColor };
 
 		// Create entity with both Transform and DrawInfo components
 		ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
@@ -294,13 +295,13 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			if (selectedCollider == 1) {//circle
 				e.add<ECSComponents::CollisionComponent>(ECSComponents::CollisionComponent(colliderRadius));
 				if (e.has<ECSComponents::DrawInfoComponent>()) {
-					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+					// DrawInfo already set above (now uses only width, height, shape, color - no position)
 				}
 			}
 			else if (selectedCollider == 2) { // rectangle
 				e.add<ECSComponents::CollisionComponent>(ECSComponents::CollisionComponent(colliderWidth, colliderHeight));
 				if (e.has<ECSComponents::DrawInfoComponent>()) {
-					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+					// DrawInfo already set above (now uses only width, height, shape, color - no position)
 				}
 
 				std::cout << "Spawned entity WITH collider\n";
@@ -338,7 +339,7 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
 
 			// Add DrawInfoComponent
-			ECSComponents::DrawInfoComponent DIC{ randX, randY, randW, randH, shapes[eShapeIndex], randC };
+			ECSComponents::RenderComponent DIC{ randW, randH, shapes[eShapeIndex], randC };
 			e.add<ECSComponents::DrawInfoComponent>(DIC);
 			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
 		}
@@ -510,6 +511,9 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse)
 {
+	// Collect all entities that contain the mouse position
+	std::vector<ECS::Entity> matchingEntities;
+
 	for (ECS::Entity& e : engine_.getEntityManager().findEntity<
 		ECSComponents::TransformComponent,
 		ECSComponents::DrawInfoComponent>())
@@ -517,6 +521,7 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 		auto& tc = e.get<ECSComponents::TransformComponent>();
 		auto& dc = e.get<ECSComponents::DrawInfoComponent>();
 
+		// TransformComponent.pos is the CENTER of the entity
 		float halfW = dc.width * 0.5f;
 		float halfH = dc.height * 0.5f;
 		float left = tc.pos.x - halfW;
@@ -527,8 +532,13 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 		if (mouse.x >= left && mouse.x <= right &&
 			mouse.y >= top && mouse.y <= bottom)
 		{
-			return e;
+			matchingEntities.push_back(e);
 		}
+	}
+
+	// Return the LAST matching entity (most recently created, drawn on top)
+	if (!matchingEntities.empty()) {
+		return matchingEntities.back();
 	}
 
 	return std::nullopt;
@@ -562,8 +572,8 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	e.add<ECSComponents::TransformComponent>(transform);
 
 	// draw info uses top-left position
-	ECSComponents::DrawInfoComponent draw{
-		topLeftX, topLeftY, prefab.width, prefab.height,
+	ECSComponents::RenderComponent draw{
+		prefab.width, prefab.height,
 		prefab.shape == 0 ? "Circle" : "Rectangle",
 		prefab.color
 	};
@@ -790,7 +800,16 @@ void displayEntityInspector(ECS::Entity& entity)
 		ImGui::SeparatorText("Transform");
 		ImGui::DragFloat2("Position", (float*)&transform.pos, 0.5f);
 		ImGui::DragFloat2("Scale", (float*)&transform.scale, 0.05f, 0.1f, 10.0f);
-		ImGui::DragFloat2("Velocity", (float*)&transform.vel, 0.5f);
+	}
+
+	// --- PhysicsComponent ---
+	if (entity.has<ECSComponents::PhysicsComponent>()) {
+		auto& physics = entity.get<ECSComponents::PhysicsComponent>();
+		ImGui::SeparatorText("Physics");
+		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
+		ImGui::DragFloat("Mass", &physics.mass, 0.1f, 0.1f, 100.0f);
+		ImGui::DragFloat("Drag", &physics.drag, 0.01f, 0.0f, 1.0f);
+		ImGui::Checkbox("Use Gravity", &physics.useGravity);
 	}
 
 	// --- DrawInfoComponent ---
@@ -1164,15 +1183,12 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				for (auto& e : all) {
 					if (e.getEntityID() == draggedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>();
-						auto& dc = e.get<ECSComponents::DrawInfoComponent>();
 
-						// Update transform
+						// Update transform (position is now ONLY in TransformComponent)
 						tc.pos.x = gamePos.x - dragOffset.x;
 						tc.pos.y = gamePos.y - dragOffset.y;
 
-						// Sync DrawInfo so renderer knows the new position
-						dc.xPos = tc.pos.x - (dc.width * 0.5f);
-						dc.yPos = tc.pos.y - (dc.height * 0.5f);
+						// No need to sync DrawInfo - renderer reads position from Transform now
 
 						if (g_game)
 							g_game->markEntitiesDirty();
