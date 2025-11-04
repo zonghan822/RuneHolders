@@ -269,24 +269,59 @@ void createTestObject(ECS::EntityManager& ent) {
 
 	static float squareSpeed = 200.0f;
 
+	std::cout << "[DEBUG] Creating " << numSquares << " test square entities...\n";
+	std::cout << "[DEBUG] sizeof(DrawInfoComponent) = " << sizeof(ECSComponents::DrawInfoComponent) << " bytes\n";
+	std::cout << "[DEBUG] sizeof(TransformComponent) = " << sizeof(ECSComponents::TransformComponent) << " bytes\n";
+	std::cout << "[DEBUG] sizeof(NameComponent) = " << sizeof(ECSComponents::NameComponent) << " bytes\n";
+
 	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numSquares; ++i)
 	{
-		ECSComponents::DrawInfoComponent DIC{ width, height, shapeName, color };  // No position - use TransformComponent!
+		// Create components
+		ECSComponents::DrawInfoComponent DIC{ width, height, shapeName, color };
 		ECSComponents::NameComponent NC{ objName };
 		ECSComponents::TransformComponent TC{};
 		TC.pos.x = squarePos[i].x;
 		TC.pos.y = squarePos[i].y;
 		TC.rot = { 0.0f, 0.0f };
 		TC.scale = { 1.0f, 1.0f };
-		// velocity removed from Transform - consider using PhysicsComponent instead
-		// For now, storing velocity temporarily in a separate system or as custom component
+
+		// Debug: Print component values before creation
+		std::cout << "[DEBUG] Entity " << i << " - Before creation:\n";
+		std::cout << "  DrawInfo: width=" << DIC.width << ", height=" << DIC.height << ", shape=" << DIC.shape
+				  << ", color=(" << DIC.color.r << "," << DIC.color.g << "," << DIC.color.b << ")\n";
+		std::cout << "  DrawInfo texture ptr: " << DIC.texture.get() << ", texID=" << DIC.texID << "\n";
+		std::cout << "  Transform: pos=(" << TC.pos.x << ", " << TC.pos.y << "), scale=(" << TC.scale.x << ", " << TC.scale.y << ")\n";
+		std::cout << "  Name: " << NC.name << "\n";
 
 		ECSComponents::CollisionComponent SC{ width, height };
 
+		// Create entity with all components
 		ECS::Entity square = ent.create<ECSComponents::DrawInfoComponent, ECSComponents::NameComponent, ECSComponents::TransformComponent>(DIC, NC, TC);
 		square.add<ECSComponents::CollisionComponent>(SC);
+
+		// Debug: Verify components after creation
+		std::cout << "[DEBUG] Entity " << i << " (ID: " << square.getEntityID() << ") - After creation:\n";
+		if (square.has<ECSComponents::DrawInfoComponent>()) {
+			auto& drawComp = square.get<ECSComponents::DrawInfoComponent>();
+			std::cout << "  DrawInfo: width=" << drawComp.width << ", height=" << drawComp.height << ", shape=" << drawComp.shape << "\n";
+		} else {
+			std::cout << "  ERROR: Missing DrawInfoComponent!\n";
+		}
+		if (square.has<ECSComponents::TransformComponent>()) {
+			auto& transComp = square.get<ECSComponents::TransformComponent>();
+			std::cout << "  Transform: pos=(" << transComp.pos.x << ", " << transComp.pos.y << ")\n";
+		} else {
+			std::cout << "  ERROR: Missing TransformComponent!\n";
+		}
+		if (square.has<ECSComponents::NameComponent>()) {
+			auto& nameComp = square.get<ECSComponents::NameComponent>();
+			std::cout << "  Name: " << nameComp.name << "\n";
+		} else {
+			std::cout << "  ERROR: Missing NameComponent!\n";
+		}
 	}
+	std::cout << "[DEBUG] Test entities created successfully.\n";
 }
 
 void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)

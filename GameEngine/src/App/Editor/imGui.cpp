@@ -65,7 +65,7 @@ static double next_update = 0.0;         // next time we refresh the text
 
 // Entity counter
 size_t entity_count{};
-static uint32_t selectedEntityID;
+static uint32_t selectedEntityID = UINT32_MAX;  // Use max value to indicate "no selection" since 0 is valid
 
 // Drag-Drop Gizmos
 static bool isDragging = false;
@@ -282,11 +282,11 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 		};
 
 		// RenderComponent stores only rendering properties (no position!)
-	ECSComponents::DrawInfoComponent DIC{ eWidth, eHeight, shapes[eShapeIndex], eColor };
+		ECSComponents::RenderComponent renderComp{ eWidth, eHeight, shapes[eShapeIndex], eColor };
 
 		// Create entity with both Transform and DrawInfo components
 		ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
-		e.add<ECSComponents::DrawInfoComponent>(DIC);
+		e.add<ECSComponents::DrawInfoComponent>(renderComp);
 		e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
 
 		// Add collider if selected
@@ -339,8 +339,8 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
 
 			// Add DrawInfoComponent
-			ECSComponents::RenderComponent DIC{ randW, randH, shapes[eShapeIndex], randC };
-			e.add<ECSComponents::DrawInfoComponent>(DIC);
+			ECSComponents::RenderComponent renderComp{ randW, randH, shapes[eShapeIndex], randC };
+			e.add<ECSComponents::DrawInfoComponent>(renderComp);
 			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
 		}
 		entity_count += 2500;
@@ -430,7 +430,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 				if (!deletedSelected && e.getEntityID() == selectedEntityID) {
 					if (playerEntityID_ == e.getEntityID()) playerSpawned_ = false;
 					e.destroy();
-					selectedEntityID = 0;
+					selectedEntityID = UINT32_MAX;  // Clear selection (0 is a valid entity ID)
 					deletedSelected = true;
 					std::cout << "Deleted selected entity\n";
 					continue;
@@ -740,28 +740,27 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 		}
 	}
 
-	// --- Display inspector if selected entity still exists ---
-	if (selectedEntityID != 0)
+	// --- Display inspector if selected entity exists ---
+	// Note: Entity ID 0 is valid, so we check if any entity was selected
+	if (selectedEntityID != UINT32_MAX)
 	{
-		// Revalidate that the entity is still alive
-		ECS::Entity* foundEntity = nullptr;
+		// Find and display the selected entity
+		bool entityFound = false;
 		for (ECS::Entity& e : NamedEntityList)
 		{
 			if (e.getEntityID() == selectedEntityID)
 			{
-				foundEntity = &e;
+				// Found the entity - display inspector immediately
+				displayEntityInspector(e);
+				entityFound = true;
 				break;
 			}
 		}
 
-		if (foundEntity)
+		// If entity was not found, clear selection
+		if (!entityFound)
 		{
-			displayEntityInspector(*foundEntity);
-		}
-		else
-		{
-			// Entity no longer exists — clear selection
-			selectedEntityID = 0;
+			selectedEntityID = UINT32_MAX;
 		}
 	}
 }
@@ -771,12 +770,17 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 
 void displayEntityInspector(ECS::Entity& entity)
 {
-	if (!entity.getEntityID())
-		return;
-
+	// Note: Entity ID 0 is valid, so don't early return based on ID
 	ImGui::Begin("Entity Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
 	ImGui::Text("Entity ID: %u", entity.getEntityID());
+
+	// Debug output to console when inspector opens
+	static uint32_t lastInspectedID = UINT32_MAX;
+	if (lastInspectedID != entity.getEntityID()) {
+		lastInspectedID = entity.getEntityID();
+		std::cout << "\n[INSPECTOR DEBUG] Inspecting Entity ID: " << entity.getEntityID() << "\n";
+	}
 
 	// --- NameComponent ---
 	if (entity.has<ECSComponents::NameComponent>()) {
@@ -815,9 +819,48 @@ void displayEntityInspector(ECS::Entity& entity)
 	// --- DrawInfoComponent ---
 	if (entity.has<ECSComponents::DrawInfoComponent>()) {
 		auto& draw = entity.get<ECSComponents::DrawInfoComponent>();
+
+		// Debug output to console - always print to catch changes
+		std::cout << "[INSPECTOR] Entity " << entity.getEntityID()
+				  << " DrawInfo: width=" << draw.width
+				  << ", height=" << draw.height
+				  << ", shape='" << draw.shape << "'"
+				  << ", color=(" << draw.color.r << "," << draw.color.g << "," << draw.color.b << "," << draw.color.a << ")\n";
+
 		ImGui::SeparatorText("Draw Info");
 		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
 		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+
+		// Display shape (read-only for now)
+		ImGui::Text("Shape: %s", draw.shape);
+
+		// Display color as RGBA values and visual indicator
+		ImVec4 colorVec(draw.color.r, draw.color.g, draw.color.b, draw.color.a);
+
+		// Identify common colors by their RGB values
+		if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
+			ImGui::Text("Color: Green");
+		} else if (draw.color.r == 1.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
+			ImGui::Text("Color: Red");
+		} else if (draw.color.r == 0.0f && draw.color.g == 0.0f && draw.color.b == 1.0f) {
+			ImGui::Text("Color: Blue");
+		} else if (draw.color.r == 1.0f && draw.color.g == 1.0f && draw.color.b == 1.0f) {
+			ImGui::Text("Color: White");
+		} else if (draw.color.r == 0.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
+			ImGui::Text("Color: Black");
+		} else {
+			ImGui::Text("Color: Custom (%.2f, %.2f, %.2f, %.2f)",
+				draw.color.r, draw.color.g, draw.color.b, draw.color.a);
+		}
+		ImGui::ColorButton("##color", colorVec, 0, ImVec2(20, 20));
+
+		// Display texture info if present
+		if (draw.texture != nullptr && draw.texture->isValid()) {
+			ImGui::Text("Texture ID: %d", draw.texID);
+			ImGui::Image((void*)(intptr_t)draw.texture->getID(), ImVec2(64, 64));
+		} else {
+			ImGui::TextDisabled("No texture assigned");
+		}
 	}
 
 	// --- CollisionComponent ---
