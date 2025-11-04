@@ -74,7 +74,73 @@ namespace ECSComponents
             , dashCooldownTimer(0.0f)
             , dashDirection{ 0.0f, 0.0f }
             , dashStartPos{ 0.0f, 0.0f }
+        {}
+
+
+        // For serialization purposes
+        // Generalized way of using reflection to access and iterate
+        // over fields!
+        // 
+        // The idea is to (in a function call) create a lambda that will be a "visitor",
+        // and extract all information as parameters of that lambda. Each call over a
+        // field of the component is used to extract metadata on 1 field [name, value, type]
+        // 
+        // Source: https://stackoverflow.com/questions/41453/how-can-i-add-reflection-to-a-c-application
+        // Additional learning: https://refactoring.guru/design-patterns/visitor
+        template <typename Visitor>
+        void reflect(Visitor&& l)
         {
+            //l("Velocity", velocity, "eVec2(float)");
+            l("Movement Force", movementForce, "float");
+            l("acceleration", acceleration, "float");
+            l("friction", friction, "float");
+            l("mass", mass, "float");
+            l("maxSpeed", maxSpeed, "float");
+            l("frictionCoefficient", frictionCoefficient, "float");
+            
+            l("canMove", canMove, "bool");
+            
+            l("spriteWidth", spriteWidth, "float");
+            l("spriteHeight", spriteHeight, "float");
+            l("colliderWidth", colliderWidth, "float");
+            l("colliderHeight", colliderHeight, "float");
+           
+            l("isDashing", isDashing, "bool");
+            l("dashTimer", dashTimer, "float");
+            l("dashDuration", dashDuration, "float");
+            l("dashDistance", dashDistance, "float");
+            l("dashCooldown", dashCooldown, "float");
+            l("dashCooldownTimer", dashCooldownTimer, "float");
+            //l("dashDirection", dashDirection, "eVec2(float)");
+            //l("dashStartPos", dashStartPos, "eVec2(float)");
+        }
+
+        template <typename Visitor>
+        void reflect(Visitor&& l) const
+        {
+            l("Velocity", velocity, "eVec2(float)");
+            l("Movement Force", movementForce, "float");
+            l("acceleration", acceleration, "float");
+            l("friction", friction, "float");
+            l("mass", mass, "float");
+            l("maxSpeed", maxSpeed, "float");
+            l("frictionCoefficient", frictionCoefficient, "float");
+
+            l("canMove", canMove, "bool");
+
+            l("spriteWidth", spriteWidth, "float");
+            l("spriteHeight", spriteHeight, "float");
+            l("colliderWidth", colliderWidth, "float");
+            l("colliderHeight", colliderHeight, "float");
+
+            l("isDashing", isDashing, "bool");
+            l("dashTimer", dashTimer, "float");
+            l("dashDuration", dashDuration, "float");
+            l("dashDistance", dashDistance, "float");
+            l("dashCooldown", dashCooldown, "float");
+            l("dashCooldownTimer", dashCooldownTimer, "float");
+            l("dashDirection", dashDirection, "eVec2(float)");
+            l("dashStartPos", dashStartPos, "eVec2(float)");
         }
     };
 

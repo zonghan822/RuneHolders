@@ -53,8 +53,7 @@ namespace ECSComponents
             , freezeRotation(true)          // Prevent rotation by default
             , velocityMin{ -1000.0f, -1000.0f }
             , velocityMax{ 1000.0f, 1000.0f }
-        {
-        }
+        {}
 
         /*============================================================================================
          * \brief       Add a force to be applied this frame
@@ -90,6 +89,55 @@ namespace ECSComponents
             // Clamp Y velocity
             if (velocity.y < velocityMin.y) velocity.y = velocityMin.y;
             if (velocity.y > velocityMax.y) velocity.y = velocityMax.y;
+        }
+
+
+        // For serialization purposes
+        // Generalized way of using reflection to access and iterate
+        // over fields!
+        // 
+        // The idea is to (in a function call) create a lambda that will be a "visitor",
+        // and extract all information as parameters of that lambda. Each call over a
+        // field of the component is used to extract metadata on 1 field [name, value, type]
+        // 
+        // Source: https://stackoverflow.com/questions/41453/how-can-i-add-reflection-to-a-c-application
+        // Additional learning: https://refactoring.guru/design-patterns/visitor
+        template <typename Visitor>
+        void reflect(Visitor&& l)
+        {
+            //l("velocity", velocity, "eVec2(float)");
+            //l("acceleration", acceleration, "eVec2(float)");
+            //l("force", force, "eVec2(float)");
+
+            l("mass", force, "float");
+            l("drag", force, "float");
+            l("restitution", force, "float");
+
+            l("useGravity", useGravity, "bool");
+            l("isKinematic", isKinematic, "bool");
+            l("freezeRotation", freezeRotation, "bool");
+
+            //l("velocityMin", velocityMin, "eVec2(float)");
+            //l("velocityMax", velocityMax, "eVec2(float)");
+        }
+
+        template <typename Visitor>
+        void reflect(Visitor&& l) const
+        {
+            //l("velocity", velocity, "eVec2(float)");
+            //l("acceleration", acceleration, "eVec2(float)");
+            //l("force", force, "eVec2(float)");
+
+            l("mass", force, "float");
+            l("drag", force, "float");
+            l("restitution", force, "float");
+
+            l("useGravity", useGravity, "bool");
+            l("isKinematic", isKinematic, "bool");
+            l("freezeRotation", freezeRotation, "bool");
+
+            //l("velocityMin", velocityMin, "eVec2(float)");
+            //l("velocityMax", velocityMax, "eVec2(float)");
         }
     };
 

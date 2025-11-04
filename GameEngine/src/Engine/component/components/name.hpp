@@ -33,7 +33,8 @@ namespace ECSComponents
 
 		char name[32] = "DefaultName";
 
-				// For serialization purposes
+
+		// For serialization purposes
 		// Generalized way of using reflection to access and iterate
 		// over fields!
 		// 

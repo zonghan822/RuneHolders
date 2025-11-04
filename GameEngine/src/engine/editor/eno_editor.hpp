@@ -70,17 +70,17 @@ namespace Editor
 			//auto script = scriptMng_.selectScript();
 			//tree_.attachScript(node5, std::move(script));
 
-			//tree_.save("Scene Data");
-			tree_.load("Scene Data");
+			tree_.save("Scene Data");
+			//tree_.load("Scene Data");
 
-			auto nodes = tree_.getAllNodes();
-			auto vis = nodes[0]->entity_.get<ECSComponents::VisibilityComponent>(entMng_);
-			auto lay = nodes[0]->entity_.get<ECSComponents::LayerComponent>(entMng_);
+			//auto nodes = tree_.getAllNodes();
+			//auto vis = nodes[0]->entity_.get<ECSComponents::VisibilityComponent>(entMng_);
+			//auto lay = nodes[0]->entity_.get<ECSComponents::LayerComponent>(entMng_);
 
-			entMng_.viewMap();
-			std::cout << "Visibility Z Index: " << vis.z_index << std::endl;
-			std::cout << "Visibility Enabled?: " << vis.visible << std::endl;
-			std::cout << "Layer: " << lay.layer << std::endl;
+			//entMng_.viewMap();
+			//std::cout << "Visibility Z Index: " << vis.z_index << std::endl;
+			//std::cout << "Visibility Enabled?: " << vis.visible << std::endl;
+			//std::cout << "Layer: " << lay.layer << std::endl;
 
 
 			// Call script delegate to get exposed fields

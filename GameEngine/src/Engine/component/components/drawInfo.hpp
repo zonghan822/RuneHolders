@@ -70,6 +70,39 @@ namespace ECSComponents
 		// Texture support
 		std::shared_ptr<Graphics::EnoTexture> texture = nullptr;
 		int texID = 0;  // For sprite sheet indexing
+
+
+		// For serialization purposes
+		// Generalized way of using reflection to access and iterate
+		// over fields!
+		// 
+		// The idea is to (in a function call) create a lambda that will be a "visitor",
+		// and extract all information as parameters of that lambda. Each call over a
+		// field of the component is used to extract metadata on 1 field [name, value, type]
+		// 
+		// Source: https://stackoverflow.com/questions/41453/how-can-i-add-reflection-to-a-c-application
+		// Additional learning: https://refactoring.guru/design-patterns/visitor
+		template <typename Visitor>
+		void reflect(Visitor&& l)
+		{
+			l("width", width, "float");
+			l("height", height, "float");
+			l("shape", shape, "char32");
+			//l("color", color, "Color");
+
+			l("texID", texID, "int");
+		}
+
+		template <typename Visitor>
+		void reflect(Visitor&& l) const
+		{
+			l("width", width, "float");
+			l("height", height, "float");
+			l("shape", shape, "char32");
+			//l("color", color, "Color");
+
+			l("texID", texID, "int");
+		}
 	};
 
 	// Keep DrawInfoComponent as alias for backwards compatibility
