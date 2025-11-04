@@ -53,5 +53,6 @@ target_link_libraries(${APP_NAME} PUBLIC
     ${ENGINE_NAME}
 )
 _fmod_copy_dll(${APP_NAME})
+_dotnet_copy_dll(${APP_NAME})
 
 ENDMACRO(SETUP_APP)

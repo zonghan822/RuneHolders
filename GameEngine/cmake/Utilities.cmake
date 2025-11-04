@@ -205,6 +205,7 @@ macro(set_dotnet)
         add_custom_command(TARGET ${TARGET} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${DOTNET_HOST_DIR}/hostfxr.dll"
+                "${DOTNET_NATIVE_DIR}/nethost.dll"
                 "$<TARGET_FILE_DIR:${TARGET}>"
         )
     endfunction()
