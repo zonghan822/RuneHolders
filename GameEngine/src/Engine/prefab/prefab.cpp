@@ -56,8 +56,8 @@ ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engin
         counter++;
     }
 
-    e.add<ECSComponents::NameComponent>(static_cast<char*>(name));
-    //std::cout << "name of this entity: " << e.get<ECSComponents::NameComponent>().name << "\n;
+    //e.add<ECSComponents::NameComponent>(static_cast<char*>(name));
+    e.add<ECSComponents::NameComponent>(prefab.name.c_str());
 
     // Calculate CENTER position from DrawInfo's top-left
     float centerX = prefab.x + (prefab.width * 0.5f);

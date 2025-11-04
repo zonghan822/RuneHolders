@@ -1189,7 +1189,7 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 	// Right side - Assets Browser
 	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_right);
-
+	
 	// Bottom - FPS
 	ImGui::DockBuilderDockWindow("FPS", dock_id_bottom);
 

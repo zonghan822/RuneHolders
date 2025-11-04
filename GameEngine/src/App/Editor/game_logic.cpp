@@ -571,17 +571,18 @@ void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData)
 	);
 	playerIdleAnim.setLooping(true);
 
-	//auto playerWalkAnim = Animation::createSpriteSheetAnimation(
-	//	texData.frameWidth,
-	//	texData.frameHeight,
-	//	texData.texture->getWidth(),
-	//	texData.texture->getHeight(),
-	//	0,
-	//	texData.rows * texData.cols,
-	//	0.8f
-	//);
-	//playerWalkAnim.setLooping(true);
-
+#if 0
+	auto playerWalkAnim = Animation::createSpriteSheetAnimation(
+		texData.frameWidth,
+		texData.frameHeight,
+		texData.texture->getWidth(),
+		texData.texture->getHeight(),
+		0,
+		texData.rows * texData.cols,
+		0.8f
+	);
+	playerWalkAnim.setLooping(true);
+#endif
 
 	playerAnimController_.addAnimation("idle", playerIdleAnim);
 	//playerAnimController_.addAnimation("walk", playerWalkAnim);
