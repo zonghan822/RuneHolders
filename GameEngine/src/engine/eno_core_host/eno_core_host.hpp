@@ -21,12 +21,10 @@
 #include <filesystem>
 #include <optional>
 #include <variant>
-
+#include <cstdlib>
 
 namespace Core
 {
-	_putenv_s("DOTNET_ROOT", DOTNET_ROOT);
-
 	// Source: https://learn.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting
 	class EnoCoreHost
 	{
