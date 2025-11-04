@@ -3,7 +3,7 @@
 * @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
 * @brief        Declaration/definition file for a scene tree
-* 
+*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
@@ -92,11 +92,29 @@ namespace GameInstance
 				if (node.parentID == 0) {
 					roots.push_back(id);
 				}
-			} 
+			}
 			return roots;
 		}
 
+		void removeNodeAndDestroyEntity(uint32_t entityID, ECS::EntityManager& em)
+		{
+			auto it = nodes_.find(entityID);
+			if (it == nodes_.end())
+				return;
 
+			// Recursively delete children first
+			for (uint32_t childID : it->second.children) {
+				removeNodeAndDestroyEntity(childID, em);
+			}
+
+			// Destroy the actual ECS entity
+			em.destroyEntity(entityID);
+
+			// Remove from hierarchy
+			nodes_.erase(it);
+		}
+
+#if 0
 		void removeNode(uint32_t entityID)
 		{
 			// If the node doesn't exist, return and exit
@@ -133,14 +151,45 @@ namespace GameInstance
 		}
 
 
+#else
+		void removeNode(uint32_t id)
+		{
+			// --- Find the node first ---
+			auto it = nodes_.find(id);
+			if (it == nodes_.end())
+				return; // nothing to remove
+
+			Node& node = it->second;
+
+			// --- Recursively remove all children ---
+			for (uint32_t childID : node.children)
+			{
+				removeNode(childID);
+			}
+
+			// --- Remove this node from its parent's children list ---
+			if (node.parentID != 0 && nodes_.count(node.parentID))
+			{
+				auto& parentChildren = nodes_[node.parentID].children;
+				parentChildren.erase(
+					std::remove(parentChildren.begin(), parentChildren.end(), id),
+					parentChildren.end());
+			}
+
+			// --- Finally remove this node from the map ---
+			nodes_.erase(it);
+		}
+
+#endif
+
 		const std::unordered_map<uint32_t, Node>& getAllNodes() const {
-			return nodes_; 
+			return nodes_;
 		}
 
 
 	private:
 		//std::vector<Node> nodes_;
-		
+
 		//YunQi
 		std::unordered_map<uint32_t, Node> nodes_;
 	};
