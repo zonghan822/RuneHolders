@@ -1273,7 +1273,7 @@ void displayEditorView(Engine::EnoEngine& engine_) {
 			if (isDragging && ImGui::IsMouseDown(0)) {
 				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 
-				auto all = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>(entityManager);
+				auto all = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 				for (auto& e : all) {
 					if (e.id() == draggedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
