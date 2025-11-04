@@ -34,6 +34,12 @@ namespace Editor
 
 			// First scene will be selected first
 			selectedScene_ = scenes_.front().get();
+
+			// *** TBD when operation isnt needed! ***
+			bus_.subscribe<Editor::TestTree>([&](const Editor::TestTree)
+				{
+					operation();
+				});
 		}
 
 		// Testing the scene tree
@@ -70,9 +76,22 @@ namespace Editor
 			//auto script = scriptMng_.selectScript();
 			//tree_.attachScript(node5, std::move(script));
 
-			tree_.save("Scene Data");
-			//tree_.load("Scene Data");
+			Node* node1 = tree_.create();
+			Node* node2 = tree_.create();
+			tree_.save(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+			
+			//tree_.load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 
+			//auto nodes = tree_.getAllNodes();
+			//auto collioffset = nodes[0]->entity_.get<ECSComponents::CollisionComponent>(entMng_).offset.x; // should give me 5
+			//auto colliRectWidth = nodes[0]->entity_.get<ECSComponents::CollisionComponent>(entMng_).data.rectangle.width; // should give me 10
+			//auto physicsVelMin = nodes[0]->entity_.get<ECSComponents::PhysicsComponent>(entMng_).velocityMin; // should give me -1000
+			//auto physicsVelMax = nodes[0]->entity_.get<ECSComponents::PhysicsComponent>(entMng_).velocityMax; // should give me 1000
+
+			//std::cout << "Collision offset: " << collioffset << std::endl <<
+			//	"Collision rect width: " << colliRectWidth << std::endl <<
+			//	"Velocity min: " << physicsVelMin << std::endl <<
+			//	"Velocity max: " << physicsVelMax << std::endl;
 			//auto nodes = tree_.getAllNodes();
 			//auto vis = nodes[0]->entity_.get<ECSComponents::VisibilityComponent>(entMng_);
 			//auto lay = nodes[0]->entity_.get<ECSComponents::LayerComponent>(entMng_);

@@ -1,5 +1,7 @@
 #include "eno_scene_tree.hpp"
 
+#include "../math/math.hpp"
+
 namespace Editor
 {
 	EnoSceneTree::EnoSceneTree(ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost)
@@ -28,7 +30,17 @@ namespace Editor
 		node->name_ = "Node" + std::to_string(id);
 		node->sceneObjectID_ = id;
 		node->nestedLayer_ = 0;
-		node->entity_ = entMng_.create<ECSComponents::VisibilityComponent, ECSComponents::LayerComponent>(ECSComponents::VisibilityComponent{ 10, true }, "Environment");
+		node->entity_ = entMng_.create<
+			ECSComponents::CollisionComponent, ECSComponents::RenderComponent,
+			ECSComponents::PhysicsComponent, ECSComponents::PlayerComponent,
+			ECSComponents::TransformComponent>(
+				ECSComponents::CollisionComponent{ 10.f, 10.f, Math::eVec2{5.f, 5.f}, true },
+				ECSComponents::RenderComponent{ 20.f, 20.f, "Trapezoid", 9 },
+				ECSComponents::PhysicsComponent{ 1.f },
+				ECSComponents::PlayerComponent{  },
+				ECSComponents::TransformComponent{ Math::eVec2{7.f, 7.f }, Math::eVec2{9.f, 9.f }, Math::eVec2{11.f, 11.f } }
+				);
+
 		node->parent_ = parent;
 		node->enabled_ = true;
 		node->script_ = nullptr;

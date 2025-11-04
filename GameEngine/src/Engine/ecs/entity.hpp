@@ -14,6 +14,9 @@
 #include "archetype.hpp"
 #include "archetype_presets.hpp"
 
+// Math
+#include "../math/math.hpp"
+
 // stds
 #include <iostream>
 #include <algorithm>
@@ -27,7 +30,6 @@
 
 namespace ECS
 {
-
 	//(YunQi)
 	static std::vector<uint32_t> spawnHistory;
 	static uint32_t lastSpawnedID = 0;
@@ -37,12 +39,21 @@ namespace ECS
 	//
 	// Refer to loadJson()
 	using DataField = std::variant<
+		
+		// Primitive types
 		int,
 		float,
 		double,
 		bool,
 		uint32_t,
-		std::string		// Not actually to store a string, but to store a fixed char array!!!
+		std::string,		// Not actually to store a string, but to store a fixed char array!!!
+		
+		// Non-primitive Math types
+		Math::eVec2<float>,
+
+		// Enums
+		Color,
+		ECSComponents::ColliderType
 	>;
 
 	// Entity forward declaration

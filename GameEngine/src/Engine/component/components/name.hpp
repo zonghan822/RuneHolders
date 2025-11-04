@@ -47,13 +47,13 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
-			l("name", name, "char32");
+			l("Name", name, "char32");
 		}
 
 		template <typename Visitor>
 		void reflect(Visitor&& l) const
 		{
-			l("name", name, "char32");
+			l("Name", name, "char32");
 		}
 	};
 

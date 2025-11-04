@@ -1,6 +1,5 @@
 #include "entity.hpp"
 
-#include <variant>
 
 namespace ECS
 {
@@ -414,18 +413,23 @@ namespace ECS
 		// Convert to lowercase for consistency
 		std::transform(std::begin(ttype), std::end(ttype), std::begin(ttype), ::tolower);
 
+		// int
 		if (ttype == "int")
 			return std::stoi(tvalue);
 
+		// uint32_t
 		if (ttype == "uint32_t")
 			return static_cast<uint32_t>(std::stoul(tvalue));
 
+		// float
 		if (ttype == "float")
 			return std::stof(tvalue);
 
+		// double
 		if (ttype == "double")
 			return std::stod(tvalue);
 
+		// bool
 		if (ttype == "bool")
 		{
 			if (tvalue == "true" || tvalue == "1") return true;
@@ -434,11 +438,94 @@ namespace ECS
 			throw std::runtime_error("Unknown string set as bool value in save!");
 		}
 
+		// char[32]
 		if (ttype == "char32")
 		{
 			return tvalue;
 		}
 
-		throw std::runtime_error("Unknown type has been set in the save file!");
+
+		// ---------------- Enums ----------------
+		
+		// Color
+		if (ttype == "color")
+		{
+			const std::unordered_map<std::string, Color> colorMap =
+			{
+				{ "Green", Color::Green },
+				{ "Red", Color::Red }
+			};
+
+			auto it = colorMap.find(tvalue);
+			if (it != colorMap.end())
+			{
+				return it->second;
+			}
+		}
+
+		// Collider Type
+		if (ttype == "collidertype")
+		{
+			const std::unordered_map<std::string, ECSComponents::ColliderType> colliderMap =
+			{
+				{ "Circle",			ECSComponents::ColliderType::CIRCLE },
+				{ "Line",			ECSComponents::ColliderType::LINE },
+				{ "Point",			ECSComponents::ColliderType::POINT },
+				{ "Rectangle",		ECSComponents::ColliderType::RECTANGLE },
+			};
+
+			auto it = colliderMap.find(tvalue);
+			if (it != colliderMap.end())
+			{
+				return it->second;
+			}
+		}
+
+		// ------------- Custom Math -------------
+		// eVec2<float>
+		if (ttype == "evec2(float)")
+		{
+			// First value
+			float fv{}, sv{};
+			size_t vstart = tvalue.find_first_of(':');
+			size_t vend{};
+			if (vstart != std::string::npos)
+			{
+				++vstart;
+				
+				// skip whitespaces to value
+				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
+
+				vend = tvalue.find_first_of('|', vstart);
+				if (vend != std::string::npos)
+				{
+					fv = std::stof(tvalue.substr(vstart, vend - vstart));
+				}
+			}
+
+			// Second value
+			vstart = tvalue.find(':', vstart);
+			if (vstart != std::string::npos)
+			{
+				++vstart;
+
+				// skip whitespaces to value
+				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
+
+				vend = tvalue.find_first_of('|', vend + 1);
+				if (vend != std::string::npos)
+				{
+					sv = std::stof(tvalue.substr(vstart, vend - vstart));
+				}
+				else if (vend == std::string::npos)
+				{
+					sv = std::stof(tvalue.substr(vstart));
+				}
+			}
+
+			return Math::eVec2{ fv, sv };
+		}
+
+		throw std::runtime_error("Unknown type { " + ttype + " } has been set in the save file!");
 	}
 }

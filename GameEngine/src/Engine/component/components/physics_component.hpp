@@ -105,39 +105,39 @@ namespace ECSComponents
         template <typename Visitor>
         void reflect(Visitor&& l)
         {
-            //l("velocity", velocity, "eVec2(float)");
-            //l("acceleration", acceleration, "eVec2(float)");
-            //l("force", force, "eVec2(float)");
+            l("Velocity",           velocity,           "eVec2(float)");
+            l("Acceleration",       acceleration,       "eVec2(float)");
+            l("Force",              force,              "eVec2(float)");
 
-            l("mass", force, "float");
-            l("drag", force, "float");
-            l("restitution", force, "float");
+            l("Mass",               mass,               "float");
+            l("Drag",               drag,               "float");
+            l("Restitution",        restitution,        "float");
 
-            l("useGravity", useGravity, "bool");
-            l("isKinematic", isKinematic, "bool");
-            l("freezeRotation", freezeRotation, "bool");
+            l("UseGravity",         useGravity,         "bool");
+            l("IsKinematic",        isKinematic,        "bool");
+            l("FreezeRotation",     freezeRotation,     "bool");
 
-            //l("velocityMin", velocityMin, "eVec2(float)");
-            //l("velocityMax", velocityMax, "eVec2(float)");
+            l("VelocityMin",        velocityMin,        "eVec2(float)");
+            l("VelocityMax",        velocityMax,        "eVec2(float)");
         }
 
         template <typename Visitor>
         void reflect(Visitor&& l) const
         {
-            //l("velocity", velocity, "eVec2(float)");
-            //l("acceleration", acceleration, "eVec2(float)");
-            //l("force", force, "eVec2(float)");
+            l("Velocity",           velocity,           "eVec2(float)");
+            l("Acceleration",       acceleration,       "eVec2(float)");
+            l("Force",              force,              "eVec2(float)");
 
-            l("mass", force, "float");
-            l("drag", force, "float");
-            l("restitution", force, "float");
+            l("Mass",               mass,               "float");
+            l("Drag",               drag,               "float");
+            l("Restitution",        restitution,        "float");
 
-            l("useGravity", useGravity, "bool");
-            l("isKinematic", isKinematic, "bool");
-            l("freezeRotation", freezeRotation, "bool");
+            l("UseGravity",         useGravity,         "bool");
+            l("IsKinematic",        isKinematic,        "bool");
+            l("FreezeRotation",     freezeRotation,     "bool");
 
-            //l("velocityMin", velocityMin, "eVec2(float)");
-            //l("velocityMax", velocityMax, "eVec2(float)");
+            l("VelocityMin",        velocityMin,        "eVec2(float)");
+            l("VelocityMax",        velocityMax,        "eVec2(float)");
         }
     };
 
