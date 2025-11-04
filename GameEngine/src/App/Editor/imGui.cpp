@@ -32,7 +32,8 @@ bool playerSpawned_ = false;
 std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
-
+// Hierarchy tree
+static GameInstance::EnoSceneTree sceneTree;
 
 // Red Indicator
 float indicatorX_ = 600.0f;
@@ -163,8 +164,13 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	// Edit (Hierarchy)
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_);
-	displayHierarchyTab(engine_);
+	displayAllEntitiesTab(engine_);
 	ImGui::End();
+
+	ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayHierarchyTab(engine_, sceneTree);
+	ImGui::End();
+
 
 	// Prefabs
 	ImGui::Begin("Prefabs", nullptr, ImGuiWindowFlags_NoCollapse);
@@ -695,7 +701,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 }
 
 
-void displayHierarchyTab(Engine::EnoEngine& engine_)
+void displayAllEntitiesTab(Engine::EnoEngine& engine_)
 {
 	// Get all entities that have a NameComponent
 	std::vector<ECS::Entity> NamedEntityList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
@@ -808,7 +814,87 @@ void displayEntityInspector(ECS::Entity& entity)
 	ImGui::End();
 }
 
+void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree)
+{
+	ImGui::Text("=== Scene Hierarchy ===");
+	ImGui::Separator();
 
+	if (ImGui::Button("Add Root Node")) {
+		uint32_t newID = static_cast<uint32_t>(sceneTree.getAllNodes().size() + 1);
+		sceneTree.addNode(newID);
+		std::cout << "Added Root Node (Entity " << newID << ")\n";
+	}
+
+	ImGui::SameLine();
+
+	static uint32_t parentToAdd = 1;
+	ImGui::InputInt("Parent ID", (int*)&parentToAdd);
+
+	if (ImGui::Button("Add Child")) {
+		uint32_t newID = static_cast<uint32_t>(sceneTree.getAllNodes().size() + 1);
+		sceneTree.addNode(newID);
+		sceneTree.setParent(newID, parentToAdd);
+		std::cout << "Added Child Node (Entity " << newID << ") to Parent " << parentToAdd << "\n";
+	}
+
+	ImGui::Separator();
+
+	const auto& allNodes = sceneTree.getAllNodes();
+	bool anyNode = false;
+	for (const auto& [id, node] : allNodes) {
+		if (node.parentID == 0) {
+			drawNodeRecursive(sceneTree, id);
+			anyNode = true;
+		}
+	}
+
+	if (!anyNode)
+		ImGui::TextDisabled("(no nodes to display)");
+
+	ImGui::Separator();
+
+	if (ImGui::Button("Print Tree to Console")) {
+		const auto& all = sceneTree.getAllNodes();
+		for (auto& [id, node] : all) {
+			std::cout << "Entity " << node.entityID
+				<< " | Parent: " << node.parentID
+				<< " | Children: ";
+			for (uint32_t c : node.children) std::cout << c << " ";
+			std::cout << "\n";
+		}
+	}
+}
+
+void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID)
+{
+	using namespace GameInstance;
+	GameInstance::Node* node = sceneTree.getNode(nodeID);
+	if (!node) return;
+
+	std::string label = "Entity " + std::to_string(node->entityID);
+
+	// If node has children -> use TreeNodeEx
+	if (node->children.empty()) {
+		bool selected = (selectedEntityID == node->entityID);
+		if (ImGui::Selectable(label.c_str(), selected))
+			selectedEntityID = node->entityID;
+	}
+	else {
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
+		if (selectedEntityID == node->entityID)
+			flags |= ImGuiTreeNodeFlags_Selected;
+
+		bool open = ImGui::TreeNodeEx(label.c_str(), flags);
+		if (ImGui::IsItemClicked())
+			selectedEntityID = node->entityID;
+
+		if (open) {
+			for (uint32_t childID : node->children)
+				drawNodeRecursive(sceneTree, childID);
+			ImGui::TreePop();
+		}
+	}
+}
 
 void displayAssetTab(Engine::EnoEngine& engine_) {
 	Resources::EnoLoader& loader = engine_.getResourceLoader();

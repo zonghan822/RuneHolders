@@ -16,8 +16,6 @@
 #include <chrono>
 #include <random>
 #include <unordered_map>
-
-
 #include "player/player.hpp"
 #include "game_logic.hpp"
 
@@ -122,11 +120,25 @@ void displayEntityCount(Engine::EnoEngine& engine_);
 void displayEditTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
- * \brief       Displays HierachyTab
+ * \brief       Displays Hierachy Tab
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void displayHierarchyTab(Engine::EnoEngine& engine_);
+void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree);
+
+/*============================================================================================
+ * \brief       Displays all Nodes in a recursive order
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID);
+
+/*============================================================================================
+ * \brief       Displays All Entities View Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayAllEntitiesTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
  * \brief       Displays Entity Inspector

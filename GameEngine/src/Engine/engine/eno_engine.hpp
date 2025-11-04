@@ -26,7 +26,7 @@
 #include "../prefab/prefab.hpp"
 #include "../crashlog/crashlogger.hpp"
 #include "../graphics/animation/animation.hpp"
-
+#include "../game_instance/eno_scene_tree.hpp"
 
 // stds
 #include <functional>
