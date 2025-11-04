@@ -159,7 +159,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 		throttledTimes_ = systemTimes_;
 		next_update = now + 0.5;
 	}
-	
+
 	// Edit (Hierarchy)
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_);
@@ -281,7 +281,8 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			{1.0f, 1.0f}
 		};
 
-		ECSComponents::DrawInfoComponent DIC{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor };
+		// RenderComponent stores only rendering properties (no position!)
+		ECSComponents::DrawInfoComponent DIC{ eWidth, eHeight, shapes[eShapeIndex], eColor };
 
 		// Create entity with both Transform and DrawInfo components
 		ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
@@ -294,13 +295,13 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			if (selectedCollider == 1) {//circle
 				e.add<ECSComponents::CollisionComponent>(ECSComponents::CollisionComponent(colliderRadius));
 				if (e.has<ECSComponents::DrawInfoComponent>()) {
-					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+					// DrawInfo already set above (now uses only width, height, shape, color - no position)
 				}
 			}
 			else if (selectedCollider == 2) { // rectangle
 				e.add<ECSComponents::CollisionComponent>(ECSComponents::CollisionComponent(colliderWidth, colliderHeight));
 				if (e.has<ECSComponents::DrawInfoComponent>()) {
-					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+					// DrawInfo already set above (now uses only width, height, shape, color - no position)
 				}
 
 				std::cout << "Spawned entity WITH collider\n";
@@ -309,8 +310,8 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 				std::cout << "Spawned entity without collider\n";
 			}
 		}
-			if (g_game) g_game->markEntitiesDirty();
-			(void)e; // to silence compiler warning for unused param
+		if (g_game) g_game->markEntitiesDirty();
+		(void)e; // to silence compiler warning for unused param
 	}
 	// NOTE: Drag-drop logic moved to Game View window to work with framebuffer coordinates
 
@@ -338,7 +339,7 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
 
 			// Add DrawInfoComponent
-			ECSComponents::DrawInfoComponent DIC{ randX, randY, randW, randH, shapes[eShapeIndex], randC };
+			ECSComponents::RenderComponent DIC{ randW, randH, shapes[eShapeIndex], randC };
 			e.add<ECSComponents::DrawInfoComponent>(DIC);
 			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
 		}
@@ -510,6 +511,9 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse)
 {
+	// Collect all entities that contain the mouse position
+	std::vector<ECS::Entity> matchingEntities;
+
 	for (ECS::Entity& e : engine_.getEntityManager().findEntity<
 		ECSComponents::TransformComponent,
 		ECSComponents::DrawInfoComponent>())
@@ -517,6 +521,7 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 		auto& tc = e.get<ECSComponents::TransformComponent>();
 		auto& dc = e.get<ECSComponents::DrawInfoComponent>();
 
+		// TransformComponent.pos is the CENTER of the entity
 		float halfW = dc.width * 0.5f;
 		float halfH = dc.height * 0.5f;
 		float left = tc.pos.x - halfW;
@@ -527,8 +532,13 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 		if (mouse.x >= left && mouse.x <= right &&
 			mouse.y >= top && mouse.y <= bottom)
 		{
-			return e;
+			matchingEntities.push_back(e);
 		}
+	}
+
+	// Return the LAST matching entity (most recently created, drawn on top)
+	if (!matchingEntities.empty()) {
+		return matchingEntities.back();
 	}
 
 	return std::nullopt;
@@ -562,8 +572,8 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	e.add<ECSComponents::TransformComponent>(transform);
 
 	// draw info uses top-left position
-	ECSComponents::DrawInfoComponent draw{
-		topLeftX, topLeftY, prefab.width, prefab.height,
+	ECSComponents::RenderComponent draw{
+		prefab.width, prefab.height,
 		prefab.shape == 0 ? "Circle" : "Rectangle",
 		prefab.color
 	};
@@ -753,52 +763,47 @@ void displayEntityInspector(ECS::Entity& entity)
 		buffer[sizeof(buffer) - 1] = '\0';
 
 		ImGui::Text("Name: %s", nameComp.name);
-		
+
 	}
 
-	// --- Transform + Draw sync section ---
-	ECSComponents::TransformComponent* transformPtr = nullptr;
-	ECSComponents::DrawInfoComponent* drawPtr = nullptr;
+	// --- TransformComponent ---
+	if (entity.has<ECSComponents::TransformComponent>()) {
+		auto& transform = entity.get<ECSComponents::TransformComponent>();
+		ImGui::SeparatorText("Transform");
+		ImGui::DragFloat2("Position", (float*)&transform.pos, 0.5f);
+		ImGui::DragFloat2("Scale", (float*)&transform.scale, 0.05f, 0.1f, 10.0f);
+	}
 
-	if (entity.has<ECSComponents::TransformComponent>())
-		transformPtr = &entity.get<ECSComponents::TransformComponent>();
-	if (entity.has<ECSComponents::DrawInfoComponent>())
-		drawPtr = &entity.get<ECSComponents::DrawInfoComponent>();
+	// --- PhysicsComponent ---
+	if (entity.has<ECSComponents::PhysicsComponent>()) {
+		auto& physics = entity.get<ECSComponents::PhysicsComponent>();
+		ImGui::SeparatorText("Physics");
+		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
+		ImGui::DragFloat("Mass", &physics.mass, 0.1f, 0.1f, 100.0f);
+		ImGui::DragFloat("Drag", &physics.drag, 0.01f, 0.0f, 1.0f);
+		ImGui::Checkbox("Use Gravity", &physics.useGravity);
+	}
 
-	if (transformPtr && drawPtr)
-	{
-		auto& transform = *transformPtr;
-		auto& draw = *drawPtr;
+	// --- DrawInfoComponent ---
+	if (entity.has<ECSComponents::DrawInfoComponent>()) {
+		auto& draw = entity.get<ECSComponents::DrawInfoComponent>();
+		ImGui::SeparatorText("Draw Info");
+		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+	}
 
-		ImGui::SeparatorText("Transform (Center-Based)");
-		bool posChanged = ImGui::DragFloat2("Center Position", (float*)&transform.pos, 0.5f);
+	// --- CollisionComponent ---
+	if (entity.has<Collision::CollisionComponent>()) {
+		auto& collider = entity.get<Collision::CollisionComponent>();
+		ImGui::SeparatorText("Collider");
 
-
-		float newScale = 1.0f; // relative scale factor (1.0 = original size)
-		bool scaleChanged = ImGui::DragFloat("Visual Scale", &newScale, 0.01f, 0.1f, 10.0f);
-
-		if (posChanged || scaleChanged)
-		{
-			if (scaleChanged)
-			{
-				// Compute proportional scaling
-				draw.width *= newScale;
-				draw.height *= newScale;
-
-				// Recalculate top-left based on center
-				draw.xPos = transform.pos.x - (draw.width * 0.5f);
-				draw.yPos = transform.pos.y - (draw.height * 0.5f);
-			}
-
-			if (posChanged)
-			{
-				draw.xPos = transform.pos.x - (draw.width * 0.5f);
-				draw.yPos = transform.pos.y - (draw.height * 0.5f);
-			}
-
+		// Collider type selector
+		const char* colliderTypes[] = { "Circle", "Rectangle", "Line", "Point" };
+		int currentType = static_cast<int>(collider.type);
+		if (ImGui::Combo("Type", &currentType, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
+			collider.type = static_cast<Collision::ColliderType>(currentType);
 			if (g_game) g_game->markEntitiesDirty();
 		}
-
 	}
 	ImGui::End();
 }
@@ -992,7 +997,8 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				displaySize.y = contentSize.y;
 				displaySize.x = contentSize.y * virtualAspect;
 				offset.x = (contentSize.x - displaySize.x) * 0.5f; // Center horizontally
-			} else {
+			}
+			else {
 				// Content is taller - fit to width, add vertical letterboxing
 				displaySize.x = contentSize.x;
 				displaySize.y = contentSize.x / virtualAspect;
@@ -1045,7 +1051,8 @@ void displayGameView(Engine::EnoEngine& engine_) {
 						<< " at game coords (" << gameX << ", " << gameY << ")\n";
 					clicked->destroy();
 					if (g_game) g_game->markEntitiesDirty();
-				} else {
+				}
+				else {
 					std::cout << "No entity found at game coords (" << gameX << ", " << gameY << ")\n";
 				}
 
@@ -1091,7 +1098,7 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				relY = std::clamp(relY, 0.0f, 1.0f);
 
 				return ImVec2(relX * virtualWidth, relY * virtualHeight);
-			};
+				};
 
 			// --- Begin drag ---
 			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging) {
@@ -1117,15 +1124,12 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				for (auto& e : all) {
 					if (e.getEntityID() == draggedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>();
-						auto& dc = e.get<ECSComponents::DrawInfoComponent>();
 
-						// Update transform
+						// Update transform (position is now ONLY in TransformComponent)
 						tc.pos.x = gamePos.x - dragOffset.x;
 						tc.pos.y = gamePos.y - dragOffset.y;
 
-						// Sync DrawInfo so renderer knows the new position
-						dc.xPos = tc.pos.x - (dc.width * 0.5f);
-						dc.yPos = tc.pos.y - (dc.height * 0.5f);
+						// No need to sync DrawInfo - renderer reads position from Transform now
 
 						if (g_game)
 							g_game->markEntitiesDirty();
@@ -1189,7 +1193,7 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 	// Right side - Assets Browser
 	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_right);
-	
+
 	// Bottom - FPS
 	ImGui::DockBuilderDockWindow("FPS", dock_id_bottom);
 

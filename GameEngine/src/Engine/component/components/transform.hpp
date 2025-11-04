@@ -11,28 +11,20 @@ namespace ECSComponents
 {
 	struct TransformComponent
 	{
-		
-		/*glm::vec3 pos;
-		glm::vec3 rot;
-		glm::vec3 scale;
-		glm::vec2 vel;*/
-
-		// Zero initialized values
+		// Spatial properties only - position, rotation, scale
 		Math::eVec2<float> pos{};
 		Math::eVec2<float> rot{};
-		Math::eVec2<float> scale{};
-		
-		Math::eVec2<float> vel{};	// remove this after rewriting movementtest
+		Math::eVec2<float> scale{ 1.0f, 1.0f };  // Default to unit scale
 
-		// Reset for play stop state
+		// Reset for play/stop state (editor functionality)
 		Math::eVec2<float> resetPos{};
-		Math::eVec2<float> resetVel{};
 
 		// Default constructor
 		TransformComponent() = default;
 
 		// Constructor
-		TransformComponent(Math::eVec2<float> _pos, Math::eVec2<float> _rot, Math::eVec2<float> _scale) : pos(_pos), rot(_rot), scale(_scale) {};
+		TransformComponent(Math::eVec2<float> _pos, Math::eVec2<float> _rot, Math::eVec2<float> _scale)
+			: pos(_pos), rot(_rot), scale(_scale) {}
 
 	};
 

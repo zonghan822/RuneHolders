@@ -5,7 +5,7 @@
 * @brief        This file creates objects using ECS to then test for various dynamic collision
 *				scenarios, such as moving circle and line, circle to circle and square to square
 * 
-* * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* * All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 #pragma once
 
@@ -39,6 +39,9 @@ bool CheckDynamicSquare(
 	const double& dt
 )
 {
+	// NOTE: This function is deprecated - TransformComponent no longer stores velocity
+	// Velocity should be retrieved from PhysicsComponent instead
+	// This code needs to be updated to use PhysicsComponent.velocity
 
 	AABB aabb1{ transformA, colA };
 	AABB aabb2{ transformB, colB };
@@ -49,13 +52,18 @@ bool CheckDynamicSquare(
 	double tFirstY = 0.f;
 	double tLastY = dt;
 
+	// FIXME: TransformComponent no longer has velocity - use PhysicsComponent
 	// Calculate relative velocity between the two objects
-	Math::eVec2<float> relVel{
-		transformA.vel.x - transformB.vel.x,
-		transformA.vel.y - transformB.vel.y
-	};
+	Math::eVec2<float> relVel{ 0.0f, 0.0f };
+	// relVel = {
+	//     physicsA.velocity.x - physicsB.velocity.x,
+	//     physicsA.velocity.y - physicsB.velocity.y
+	// };
 
 	//std::cout << "rev vel" << relVel << std::endl;
+
+	// Note: velocity moved from TransformComponent to PhysicsComponent
+	// If using physics-based movement, get velocity from PhysicsComponent instead
 
 	// X-axis collision checks
 	if (relVel.x < 0.f)
@@ -205,15 +213,14 @@ void createTestObject(ECS::EntityManager& ent) {
 	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numCircles; ++i)
 	{
-		ECSComponents::DrawInfoComponent DIC{ pos[i].x, pos[i].y, radius, radius, shapeName, color};
+		ECSComponents::DrawInfoComponent DIC{ radius, radius, shapeName, color};  // No position - use TransformComponent!
 		ECSComponents::NameComponent NC{ objName };
 		ECSComponents::TransformComponent TC{};
 		TC.pos.x = pos[i].x;
 		TC.pos.y = pos[i].y;
-		TC.pos.z = 0.0f;
-		TC.rot = { 0.0f, 0.0f, 0.0f };
-		TC.scale = { 1.0f, 1.0f, 1.0f };
-		TC.vel = { vel.x, vel.y };
+		TC.rot = { 0.0f, 0.0f };
+		TC.scale = { 1.0f, 1.0f };
+		// velocity removed from Transform - add PhysicsComponent if needed
 		-vel;
 
 		ECSComponents::CollisionComponent cc{ radius };
@@ -265,14 +272,15 @@ void createTestObject(ECS::EntityManager& ent) {
 	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numSquares; ++i)
 	{
-		ECSComponents::DrawInfoComponent DIC{ squarePos[i].x, squarePos[i].y, width, height, shapeName, color };
+		ECSComponents::DrawInfoComponent DIC{ width, height, shapeName, color };  // No position - use TransformComponent!
 		ECSComponents::NameComponent NC{ objName };
 		ECSComponents::TransformComponent TC{};
 		TC.pos.x = squarePos[i].x;
 		TC.pos.y = squarePos[i].y;
 		TC.rot = { 0.0f, 0.0f };
 		TC.scale = { 1.0f, 1.0f };
-		TC.vel = { squareVel[i].x, squareVel[i].y };
+		// velocity removed from Transform - consider using PhysicsComponent instead
+		// For now, storing velocity temporarily in a separate system or as custom component
 
 		ECSComponents::CollisionComponent SC{ width, height };
 
@@ -303,11 +311,15 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			auto& transform = entity.get<ECSComponents::TransformComponent>();
 			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
 
+			// Skip entities without physics component
+			if (!entity.has<ECSComponents::PhysicsComponent>()) continue;
+			auto& physics = entity.get<ECSComponents::PhysicsComponent>();
+
 			//std::cout << "object found: " << entity.get<ECSComponents::NameComponent>() << std::endl;
 			// Update movement here
 			Math::eVec2<float> nextPos;
-			nextPos.x = transform.pos.x + transform.vel.x * dt;
-			nextPos.y = transform.pos.y + transform.vel.y * dt;
+			nextPos.x = transform.pos.x + physics.velocity.x * dt;
+			nextPos.y = transform.pos.y + physics.velocity.y * dt;
 
 			Math::eVec2<float> oldPos = { transform.pos.x, transform.pos.y };
 			Math::eVec2<float> BeA;
@@ -326,6 +338,9 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				auto& otherCollision = other.get<ECSComponents::CollisionComponent>();
 				auto& otherTransform = other.get<ECSComponents::TransformComponent>();
 
+				// Skip entities without physics component
+				if (!other.has<ECSComponents::PhysicsComponent>()) continue;
+				auto& otherPhysics = other.get<ECSComponents::PhysicsComponent>();
 
 				// Check collision with line
 				if (otherCollision.type == ECSComponents::ColliderType::LINE)
@@ -333,8 +348,10 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 					if (Collision::CollisionDetection::CheckDynamicCollision(
 						collision,
 						transform,
+						physics,
 						otherCollision,
 						otherTransform,
+						otherPhysics,
 						nextPos,
 						colPoint,
 						normalAtCol,
@@ -348,8 +365,8 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 							nextPos,
 							reflectedVec);
 
-						transform.vel.x = reflectedVec.x * 100.f * 0.99f;
-						transform.vel.y = reflectedVec.y * 100.f * 0.99f;
+						physics.velocity.x = reflectedVec.x * 100.f * 0.99f;
+						physics.velocity.y = reflectedVec.y * 100.f * 0.99f;
 						hadCollision = true;
 
 					}
@@ -360,7 +377,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 					// Check circle to circle collision
 					if (Collision::CollisionDetection::CheckDynamicCollision(
-						collision, transform, otherCollision, otherTransform,
+						collision, transform, physics, otherCollision, otherTransform, otherPhysics,
 						nextPos, BeA, BeB, colTi))
 					{
 
@@ -373,7 +390,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 						std::cout << "bia: " << BeB << std::endl;
 						hadCollision = true;
 
-					}	
+					}
 
 				}
 
@@ -386,10 +403,8 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				transform.pos.y = nextPos.y;
 			}
 
-			// Update draw info component for the new pos
-			entity.get<ECSComponents::DrawInfoComponent>().xPos = entity.get<ECSComponents::TransformComponent>().pos.x;
-			entity.get<ECSComponents::DrawInfoComponent>().yPos = entity.get<ECSComponents::TransformComponent>().pos.y;
-			
+			// No need to sync position to DrawInfo - rendering uses TransformComponent now
+
 		}
 	}
 #endif
@@ -405,9 +420,13 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			auto& transform = entity.get<ECSComponents::TransformComponent>();
 			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
 
+			// Skip entities without physics component
+			if (!entity.has<ECSComponents::PhysicsComponent>()) continue;
+			auto& physics = entity.get<ECSComponents::PhysicsComponent>();
+
 			Math::eVec2<float> nextPos;
-			nextPos.x = static_cast<float>(transform.pos.x + transform.vel.x * dt);
-			nextPos.y = static_cast<float>(transform.pos.y + transform.vel.y * dt);
+			nextPos.x = static_cast<float>(transform.pos.x + physics.velocity.x * dt);
+			nextPos.y = static_cast<float>(transform.pos.y + physics.velocity.y * dt);
 			float colTi;
 			Math::eVec2<float> normalAtCol;
 			bool hasCollided = false;
@@ -420,6 +439,10 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 				auto& otherCollision = other.get<ECSComponents::CollisionComponent>();
 				auto& otherTransform = other.get<ECSComponents::TransformComponent>();
+
+				// Skip entities without physics component
+				if (!other.has<ECSComponents::PhysicsComponent>()) continue;
+				auto& otherPhysics = other.get<ECSComponents::PhysicsComponent>();
 
 				// Check type of collision
 				switch (collision.type)
@@ -436,8 +459,8 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 								{
 									// Calculate relative velocity
 									Math::eVec2<float> relVel{
-										transform.vel.x - otherTransform.vel.x,
-										transform.vel.y - otherTransform.vel.y
+										physics.velocity.x - otherPhysics.velocity.x,
+										physics.velocity.y - otherPhysics.velocity.y
 									};
 
 									//std::cout << "relvel = :" << relVel << std::endl;
@@ -451,17 +474,17 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 									continue;
 
 									// Subtract the component along that direction
-									transform.vel.x -= velAlongNormal * normalAtCol.x;
-									transform.vel.y -= velAlongNormal * normalAtCol.y;
+									physics.velocity.x -= velAlongNormal * normalAtCol.x;
+									physics.velocity.y -= velAlongNormal * normalAtCol.y;
 
-									//transform.pos.x = static_cast<float>(transform.pos.x + transform.vel.x * dt);
-									//transform.pos.y = static_cast<float>(transform.pos.y + transform.vel.y * dt);
+									//transform.pos.x = static_cast<float>(transform.pos.x + physics.velocity.x * dt);
+									//transform.pos.y = static_cast<float>(transform.pos.y + physics.velocity.y * dt);
 
-									//transform.pos.x = static_cast<float>(transform.pos.x + transform.vel.x );
-									//transform.pos.y = static_cast<float>(transform.pos.y + transform.vel.y );
+									//transform.pos.x = static_cast<float>(transform.pos.x + physics.velocity.x );
+									//transform.pos.y = static_cast<float>(transform.pos.y + physics.velocity.y );
 
-									otherTransform.vel.x += velAlongNormal * normalAtCol.x;
-									otherTransform.vel.y += velAlongNormal * normalAtCol.y;
+									otherPhysics.velocity.x += velAlongNormal * normalAtCol.x;
+									otherPhysics.velocity.y += velAlongNormal * normalAtCol.y;
 
 									hasCollided = true;
 
@@ -482,9 +505,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				transform.pos.y = nextPos.y;
 			}
 
-			// Update draw info component for the new pos
-			drawInfo.xPos = transform.pos.x;
-			drawInfo.yPos = transform.pos.y;
+			// No need to sync position to DrawInfo - rendering uses TransformComponent now
 		}
 
 	}
