@@ -49,10 +49,13 @@ namespace GameInstance
 		//	nodes_.push_back(node);
 		//}
 
-		Node& addNode(uint32_t entityID) {
-			auto& node = nodes_[entityID];
-			node.entityID = entityID;
-			node.parentID = 0; // root of nodes
+		Node& addEntityNode(ECS::Entity entity)
+		{
+			uint32_t id = entity.getEntityID();
+
+			auto& node = nodes_[id];
+			node.entityID = id;
+			node.parentID = 0; // root by default
 			return node;
 		}
 

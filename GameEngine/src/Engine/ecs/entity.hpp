@@ -3,7 +3,7 @@
 * @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
 * @brief        Declaration/definition file for the entity and entity manager
-* 
+*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
@@ -28,7 +28,6 @@ namespace ECS
 	//(YunQi)
 	static std::vector<uint32_t> spawnHistory;
 	static uint32_t lastSpawnedID = 0;
-
 	// Entity forward declaration
 	class Entity;
 
@@ -50,6 +49,12 @@ namespace ECS
 		* \brief			Entity id to be set
 		*//*========================================================================================*/
 		inline static uint32_t id = 0;
+
+		/*============================================================================================
+		* \author			YunQi
+		* \brief			sceneTree for deletion of Nodes
+		*//*========================================================================================*/
+	    GameInstance::EnoSceneTree* sceneTree_;
 
 		/*============================================================================================
 		* \brief			Entity map getter
@@ -338,7 +343,7 @@ namespace ECS
 			out.write(header, sizeof(header));
 
 			// Engine Version
-			out.write(Config::engine_version, 
+			out.write(Config::engine_version,
 				sizeof(Config::engine_version));
 
 			for (auto& [archetypeKey, upArchetype] : archetypeMng_.getArchetypes())
@@ -408,7 +413,7 @@ namespace ECS
 			{
 				throw std::runtime_error("Opened file is not an ECS data file for the EnoEngine!");
 			}
-			
+
 			// Handled per archetype
 			while (in.peek() != EOF)
 			{
@@ -760,6 +765,7 @@ namespace ECS
 		}
 	};
 
+
 	class Entity
 	{
 	public:
@@ -785,7 +791,7 @@ namespace ECS
 		/*============================================================================================
 		* \brief		Entity getter
 		*//*========================================================================================*/
-		uint32_t getEntityID() const{
+		uint32_t getEntityID() const {
 			return this->id_;
 		}
 

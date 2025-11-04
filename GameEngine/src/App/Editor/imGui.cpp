@@ -164,13 +164,9 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	// Edit (Hierarchy)
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_);
+	displayHierarchyTab(engine_, sceneTree);
 	displayAllEntitiesTab(engine_);
 	ImGui::End();
-
-	ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayHierarchyTab(engine_, sceneTree);
-	ImGui::End();
-
 
 	// Prefabs
 	ImGui::Begin("Prefabs", nullptr, ImGuiWindowFlags_NoCollapse);
@@ -820,9 +816,16 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 	ImGui::Separator();
 
 	if (ImGui::Button("Add Root Node")) {
-		uint32_t newID = static_cast<uint32_t>(sceneTree.getAllNodes().size() + 1);
-		sceneTree.addNode(newID);
-		std::cout << "Added Root Node (Entity " << newID << ")\n";
+		auto& entityManager = engine_.getEntityManager();
+		ECS::Entity newEntity = entityManager.create<
+			ECSComponents::TransformComponent,
+			ECSComponents::DrawInfoComponent,
+			ECSComponents::NameComponent
+		>();
+
+		sceneTree.addEntityNode(newEntity);
+		if (g_game) g_game->markEntitiesDirty();
+		std::cout << "[DEBUG] Added ECS entity + node " << newEntity.getEntityID() << "\n";
 	}
 
 	ImGui::SameLine();
@@ -831,10 +834,16 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 	ImGui::InputInt("Parent ID", (int*)&parentToAdd);
 
 	if (ImGui::Button("Add Child")) {
-		uint32_t newID = static_cast<uint32_t>(sceneTree.getAllNodes().size() + 1);
-		sceneTree.addNode(newID);
-		sceneTree.setParent(newID, parentToAdd);
-		std::cout << "Added Child Node (Entity " << newID << ") to Parent " << parentToAdd << "\n";
+		auto& entityManager = engine_.getEntityManager();
+		ECS::Entity childEntity = entityManager.create<
+			ECSComponents::TransformComponent,
+			ECSComponents::DrawInfoComponent,
+			ECSComponents::NameComponent
+		>();
+
+		sceneTree.addEntityNode(childEntity);
+		if (g_game) g_game->markEntitiesDirty();
+		sceneTree.setParent(childEntity.getEntityID(), parentToAdd);
 	}
 
 	ImGui::Separator();
