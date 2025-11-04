@@ -197,6 +197,7 @@ void GameApplication::setupImGui() {
 }
 
 void GameApplication::updateGameLogic() {
+	auto& entityManager = engine_.getEntityManager();
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
 
@@ -277,13 +278,13 @@ void GameApplication::updateGameLogic() {
 		// Draw all entities (with camera offset - convert world space to screen space)
 		for (ECS::Entity& entity : cachedDrawableEntities_) {
 			try {
-				if (entity.has<ECSComponents::DrawInfoComponent>()) {
-					if (entity.has<ECSComponents::PlayerComponent>()) {
+				if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+					if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
 						continue; // Skip player, drawn separately
 					}
 
-					auto& transform = entity.get<ECSComponents::TransformComponent>();
-					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>();
+					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
 
 					// Convert world position to screen position (relative to camera)
 					float screenX = transform.pos.x - editorCameraX_;

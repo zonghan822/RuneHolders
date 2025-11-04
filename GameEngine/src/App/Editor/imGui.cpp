@@ -773,7 +773,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 			if (e.id() == selectedEntityID)
 			{
 				// Found the entity - display inspector immediately
-				displayEntityInspector(e);
+				displayEntityInspector(entityManager, e);
 				entityFound = true;
 				break;
 			}
@@ -1229,7 +1229,7 @@ void displayEditorView(Engine::EnoEngine& engine_) {
 				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 
 				auto clicked = getEntityUnderMouse(engine_, worldPos);
-				if (clicked.has_value(entityManager)) {
+				if (clicked.has_value()) {
 					std::cout << "Deleted entity: " << clicked->id()
 						<< " at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 					clicked->destroy(entityManager);

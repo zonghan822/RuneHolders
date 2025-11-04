@@ -295,21 +295,21 @@ void createTestObject(ECS::EntityManager& ent) {
 		square.add<ECSComponents::CollisionComponent>(ent, SC);
 
 		// Debug: Verify components after creation
-		std::cout << "[DEBUG] Entity " << i << " (ID: " << square.getEntityID() << ") - After creation:\n";
-		if (square.has<ECSComponents::DrawInfoComponent>()) {
-			auto& drawComp = square.get<ECSComponents::DrawInfoComponent>();
+		std::cout << "[DEBUG] Entity " << i << " (ID: " << square.id() << ") - After creation:\n";
+		if (square.has<ECSComponents::DrawInfoComponent>(ent)) {
+			auto& drawComp = square.get<ECSComponents::DrawInfoComponent>(ent);
 			std::cout << "  DrawInfo: width=" << drawComp.width << ", height=" << drawComp.height << ", shape=" << drawComp.shape << "\n";
 		} else {
 			std::cout << "  ERROR: Missing DrawInfoComponent!\n";
 		}
-		if (square.has<ECSComponents::TransformComponent>()) {
-			auto& transComp = square.get<ECSComponents::TransformComponent>();
+		if (square.has<ECSComponents::TransformComponent>(ent)) {
+			auto& transComp = square.get<ECSComponents::TransformComponent>(ent);
 			std::cout << "  Transform: pos=(" << transComp.pos.x << ", " << transComp.pos.y << ")\n";
 		} else {
 			std::cout << "  ERROR: Missing TransformComponent!\n";
 		}
-		if (square.has<ECSComponents::NameComponent>()) {
-			auto& nameComp = square.get<ECSComponents::NameComponent>();
+		if (square.has<ECSComponents::NameComponent>(ent)) {
+			auto& nameComp = square.get<ECSComponents::NameComponent>(ent);
 			std::cout << "  Name: " << nameComp.name << "\n";
 		} else {
 			std::cout << "  ERROR: Missing NameComponent!\n";
@@ -453,10 +453,6 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			if (!entity.has<ECSComponents::PhysicsComponent>(ent)) continue;
 			auto& physics = entity.get<ECSComponents::PhysicsComponent>(ent);
 
-			// Skip entities without physics component
-			if (!entity.has<ECSComponents::PhysicsComponent>()) continue;
-			auto& physics = entity.get<ECSComponents::PhysicsComponent>();
-
 			Math::eVec2<float> nextPos;
 			nextPos.x = static_cast<float>(transform.pos.x + physics.velocity.x * dt);
 			nextPos.y = static_cast<float>(transform.pos.y + physics.velocity.y * dt);
@@ -476,10 +472,6 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				// Skip entities without physics component
 				if (!other.has<ECSComponents::PhysicsComponent>(ent)) continue;
 				auto& otherPhysics = other.get<ECSComponents::PhysicsComponent>(ent);
-
-				// Skip entities without physics component
-				if (!other.has<ECSComponents::PhysicsComponent>()) continue;
-				auto& otherPhysics = other.get<ECSComponents::PhysicsComponent>();
 
 				// Check type of collision
 				switch (collision.type)
