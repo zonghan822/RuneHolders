@@ -16,6 +16,7 @@
 #include <chrono>
 #include <random>
 #include <unordered_map>
+#include <algorithm>
 
 
 #include "player/player.hpp"
@@ -133,7 +134,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_);
  * \param[in]   ECS::Entity&
  * \return      void
 *//*========================================================================================*/
-void displayEntityInspector(ECS::Entity& entity);
+void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity);
 
 /*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab

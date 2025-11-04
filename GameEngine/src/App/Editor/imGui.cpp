@@ -13,6 +13,9 @@
 #include "player/player_config.hpp"
 #include "player/player_archetype_config.hpp"
 
+#undef min
+#undef max
+
 #pragma region Game Variables
 
 extern GameApplication game;

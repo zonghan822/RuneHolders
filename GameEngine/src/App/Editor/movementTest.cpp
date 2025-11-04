@@ -285,7 +285,7 @@ void createTestObject(ECS::EntityManager& ent) {
 		ECSComponents::CollisionComponent SC{ width, height };
 
 		ECS::Entity square = ent.create<ECSComponents::DrawInfoComponent, ECSComponents::NameComponent, ECSComponents::TransformComponent>(DIC, NC, TC);
-		square.add<ECSComponents::CollisionComponent>(SC);
+		square.add<ECSComponents::CollisionComponent>(ent, SC);
 	}
 }
 
@@ -416,13 +416,13 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 		for (auto& entity : entityList)
 		{
 
-			auto& collision = entity.get<ECSComponents::CollisionComponent>();
-			auto& transform = entity.get<ECSComponents::TransformComponent>();
-			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
+			auto& collision = entity.get<ECSComponents::CollisionComponent>(ent);
+			auto& transform = entity.get<ECSComponents::TransformComponent>(ent);
+			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>(ent);
 
 			// Skip entities without physics component
-			if (!entity.has<ECSComponents::PhysicsComponent>()) continue;
-			auto& physics = entity.get<ECSComponents::PhysicsComponent>();
+			if (!entity.has<ECSComponents::PhysicsComponent>(ent)) continue;
+			auto& physics = entity.get<ECSComponents::PhysicsComponent>(ent);
 
 			Math::eVec2<float> nextPos;
 			nextPos.x = static_cast<float>(transform.pos.x + physics.velocity.x * dt);
@@ -437,12 +437,12 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				// Skip self
 				if (&entity == &other) continue;
 
-				auto& otherCollision = other.get<ECSComponents::CollisionComponent>();
-				auto& otherTransform = other.get<ECSComponents::TransformComponent>();
+				auto& otherCollision = other.get<ECSComponents::CollisionComponent>(ent);
+				auto& otherTransform = other.get<ECSComponents::TransformComponent>(ent);
 
 				// Skip entities without physics component
-				if (!other.has<ECSComponents::PhysicsComponent>()) continue;
-				auto& otherPhysics = other.get<ECSComponents::PhysicsComponent>();
+				if (!other.has<ECSComponents::PhysicsComponent>(ent)) continue;
+				auto& otherPhysics = other.get<ECSComponents::PhysicsComponent>(ent);
 
 				// Check type of collision
 				switch (collision.type)

@@ -23,6 +23,9 @@
 #include <cmath>
 #include <algorithm>
 
+#undef min
+#undef max
+
 namespace Collision
 {
 	/*============================================================================================
