@@ -255,7 +255,7 @@ void createTestObject(ECS::EntityManager& ent) {
 		// Debugging
 		//std::cout << wall.get<ECSComponents::CollisionComponent>() << std::endl;
 	}
-#endif
+
 
 	// Square config
 	const int numSquares = 2;
@@ -316,6 +316,7 @@ void createTestObject(ECS::EntityManager& ent) {
 		}
 	}
 	std::cout << "[DEBUG] Test entities created successfully.\n";
+#endif
 }
 
 void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
