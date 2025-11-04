@@ -40,15 +40,15 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
-			l("z_index", z_index, "uint32");
-			l("visible", visible, "bool");
+			l("Z Index", z_index, "uint32");
+			l("Visible", visible, "bool");
 		}
 
 		template <typename Visitor>
 		void reflect(Visitor&& l) const
 		{
-			l("z_index", z_index, "uint32");
-			l("visible", visible, "bool");
+			l("Z Index", z_index, "uint32");
+			l("Visible", visible, "bool");
 		}
 	};
 

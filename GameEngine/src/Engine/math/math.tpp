@@ -259,8 +259,7 @@ namespace Math
 	template<typename Type>
 	std::ostream& operator<<(std::ostream& os, const eVec2<Type>& vec1)
 	{
-		std::cout << "x : " << vec1.x << " | y : " << vec1.y << std::endl;
-		return os;
+		return os << "x : " << vec1.x << " | y : " << vec1.y;
 	}
 
 	// -------------------------------- 3x3 MATRICES ------------------------------

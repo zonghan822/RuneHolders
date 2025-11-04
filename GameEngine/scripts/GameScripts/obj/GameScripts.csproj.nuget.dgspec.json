@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\zongh\\Repos\\School\\Trimester 4\\RuneHolders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj": {}
+    "C:\\Users\\leezh\\OneDrive\\Desktop\\Github_Projects\\csd2401f25_team_runeholders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj": {}
   },
   "projects": {
-    "C:\\Users\\zongh\\Repos\\School\\Trimester 4\\RuneHolders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj": {
+    "C:\\Users\\leezh\\OneDrive\\Desktop\\Github_Projects\\csd2401f25_team_runeholders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\zongh\\Repos\\School\\Trimester 4\\RuneHolders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj",
+        "projectUniqueName": "C:\\Users\\leezh\\OneDrive\\Desktop\\Github_Projects\\csd2401f25_team_runeholders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj",
         "projectName": "GameScripts",
-        "projectPath": "C:\\Users\\zongh\\Repos\\School\\Trimester 4\\RuneHolders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj",
-        "packagesPath": "C:\\Users\\zongh\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\zongh\\Repos\\School\\Trimester 4\\RuneHolders\\GameEngine\\scripts\\GameScripts\\obj\\",
+        "projectPath": "C:\\Users\\leezh\\OneDrive\\Desktop\\Github_Projects\\csd2401f25_team_runeholders\\GameEngine\\scripts\\GameScripts\\GameScripts.csproj",
+        "packagesPath": "C:\\Users\\leezh\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\leezh\\OneDrive\\Desktop\\Github_Projects\\csd2401f25_team_runeholders\\GameEngine\\scripts\\GameScripts\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\zongh\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\leezh\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -75,7 +75,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {

@@ -180,57 +180,103 @@ namespace ECSComponents
         template <typename Visitor>
         void reflect(Visitor&& l)
         {
-            //switch (type)
-            //{
-            //case ColliderType::CIRCLE:
-            //    l("type", type, "ColliderType::Circle");
-            //    break;
-            //case ColliderType::LINE:
-            //    l("type", type, "ColliderType::Line");
-            //    break;
-            //case ColliderType::POINT:
-            //    l("type", type, "ColliderType::Point");
-            //    break;
-            //case ColliderType::RECTANGLE:
-            //    l("type", type, "ColliderType::Rectangle");
-            //    break;
-            //default:
-            //    throw std::runtime_error("Unreflected type specified!");
-            //}
+            switch (type)
+            {
+            case ColliderType::CIRCLE:
+                l("Type", type, "ColliderType");
+                break;
 
-            //l("offset", offset, "eVec2(float)");
-            l("isTrigger", isTrigger, "bool");
-            l("isActive", isActive, "bool");
-            l("rotation", rotation, "float");
+            case ColliderType::LINE:
+                l("Type", type, "ColliderType");
+                break;
+
+            case ColliderType::POINT:
+                l("Type", type, "ColliderType");
+                break;
+
+            case ColliderType::RECTANGLE:
+                l("Type", type, "ColliderType");
+                break;
+
+            default:
+                throw std::runtime_error("Unreflected type specified!");
+            }
+
+            l("Offset",             offset,                 "eVec2(float)");
+            l("Is Trigger",         isTrigger,              "bool");
+            l("Is Trigger",         isActive,               "bool");
+            l("Rotation",           rotation,               "float");
+
+            switch (type)
+            {
+            case ColliderType::CIRCLE:
+                l("Radius",         data.circle.radius,     "float");
+                break;
+
+            case ColliderType::RECTANGLE:
+                l("Width",          data.rectangle.width,   "float");
+                l("Height",         data.rectangle.height,  "float");
+                break;
+
+            case ColliderType::LINE:
+                l("p1",             data.line.p1,           "eVec2(float)");
+                l("p2",             data.line.p2,           "eVec2(float)");
+                l("pNormal",        data.line.pNormal,      "eVec2(float)");
+                break;
+
+            case ColliderType::POINT:
+                break;
+
+            default:
+                throw std::runtime_error("Unreflected collider type specified!");
+            }
+
+
         }
 
         template <typename Visitor>
         void reflect(Visitor&& l) const
         {
-            //switch (type)
-            //{
-            //case ColliderType::CIRCLE:
-            //    l("type", type, "ColliderType::Circle");
-            //    break;
-            //case ColliderType::LINE:
-            //    l("type", type, "ColliderType::Line");
-            //    break;
-            //case ColliderType::POINT:
-            //    l("type", type, "ColliderType::Point");
-            //    break;
-            //case ColliderType::RECTANGLE:
-            //    l("type", type, "ColliderType::Rectangle");
-            //    break;
-            //default:
-            //    throw std::runtime_error("Unreflected type specified!");
-            //}
+            switch (type)
+            {
+            case ColliderType::CIRCLE:
+                l("Type", type, "ColliderType::Circle");
+                break;
 
-            //l("offset", offset, "eVec2(float)");
-            l("isTrigger", isTrigger, "bool");
-            l("isActive", isActive, "bool");
-            l("rotation", rotation, "float");
+            case ColliderType::LINE:
+                l("Type", type, "ColliderType::Line");
+                break;
+
+            case ColliderType::POINT:
+                l("Type", type, "ColliderType::Point");
+                break;
+
+            case ColliderType::RECTANGLE:
+                l("Type", type, "ColliderType::Rectangle");
+                break;
+
+            default:
+                throw std::runtime_error("Unreflected collider type specified!");
+            }
+
+            l("Offset",             offset,            "eVec2(float)");
+            l("Is Trigger",         isTrigger,         "bool");
+            l("Is Active",          isActive,          "bool");
+            l("Rotation",           rotation,          "float");
         }
 
     };
 
+    inline std::ostream& operator<<(std::ostream& os, const ColliderType& c)
+    {
+        switch (c)
+        {
+        case ColliderType::CIRCLE: return os << "Circle";
+        case ColliderType::LINE: return os << "Line";
+        case ColliderType::POINT: return os << "Point";
+        case ColliderType::RECTANGLE: return os << "Rectangle";
+
+        default:    return os << "Invalid collider type passed";
+        }
+    }
 } // namespace ECSComponents

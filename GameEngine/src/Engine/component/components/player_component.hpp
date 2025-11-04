@@ -90,29 +90,29 @@ namespace ECSComponents
         template <typename Visitor>
         void reflect(Visitor&& l)
         {
-            //l("Velocity", velocity, "eVec2(float)");
+            l("Velocity", velocity, "eVec2(float)");
             l("Movement Force", movementForce, "float");
-            l("acceleration", acceleration, "float");
-            l("friction", friction, "float");
-            l("mass", mass, "float");
-            l("maxSpeed", maxSpeed, "float");
-            l("frictionCoefficient", frictionCoefficient, "float");
+            l("Acceleration", acceleration, "float");
+            l("Friction", friction, "float");
+            l("Mass", mass, "float");
+            l("Max Speed", maxSpeed, "float");
+            l("Friction Coefficient", frictionCoefficient, "float");
             
-            l("canMove", canMove, "bool");
+            l("Can Move", canMove, "bool");
             
-            l("spriteWidth", spriteWidth, "float");
-            l("spriteHeight", spriteHeight, "float");
-            l("colliderWidth", colliderWidth, "float");
-            l("colliderHeight", colliderHeight, "float");
+            l("Sprite Width", spriteWidth, "float");
+            l("Sprite Height", spriteHeight, "float");
+            l("Collider Width", colliderWidth, "float");
+            l("Collider Height", colliderHeight, "float");
            
-            l("isDashing", isDashing, "bool");
-            l("dashTimer", dashTimer, "float");
-            l("dashDuration", dashDuration, "float");
-            l("dashDistance", dashDistance, "float");
-            l("dashCooldown", dashCooldown, "float");
-            l("dashCooldownTimer", dashCooldownTimer, "float");
-            //l("dashDirection", dashDirection, "eVec2(float)");
-            //l("dashStartPos", dashStartPos, "eVec2(float)");
+            l("Is Dashing", isDashing, "bool");
+            l("Dash Timer", dashTimer, "float");
+            l("Dash Duration", dashDuration, "float");
+            l("Dash Distance", dashDistance, "float");
+            l("Dash Cooldown", dashCooldown, "float");
+            l("Dash Cooldown Timer", dashCooldownTimer, "float");
+            l("Dash Direction", dashDirection, "eVec2(float)");
+            l("Dash Start Position", dashStartPos, "eVec2(float)");
         }
 
         template <typename Visitor>
@@ -120,27 +120,27 @@ namespace ECSComponents
         {
             l("Velocity", velocity, "eVec2(float)");
             l("Movement Force", movementForce, "float");
-            l("acceleration", acceleration, "float");
-            l("friction", friction, "float");
-            l("mass", mass, "float");
-            l("maxSpeed", maxSpeed, "float");
-            l("frictionCoefficient", frictionCoefficient, "float");
+            l("Acceleration", acceleration, "float");
+            l("Friction", friction, "float");
+            l("Mass", mass, "float");
+            l("Max Speed", maxSpeed, "float");
+            l("Friction Coefficient", frictionCoefficient, "float");
 
-            l("canMove", canMove, "bool");
+            l("Can Move", canMove, "bool");
 
-            l("spriteWidth", spriteWidth, "float");
-            l("spriteHeight", spriteHeight, "float");
-            l("colliderWidth", colliderWidth, "float");
-            l("colliderHeight", colliderHeight, "float");
+            l("Sprite Width", spriteWidth, "float");
+            l("Sprite Height", spriteHeight, "float");
+            l("Collider Width", colliderWidth, "float");
+            l("Collider Height", colliderHeight, "float");
 
-            l("isDashing", isDashing, "bool");
-            l("dashTimer", dashTimer, "float");
-            l("dashDuration", dashDuration, "float");
-            l("dashDistance", dashDistance, "float");
-            l("dashCooldown", dashCooldown, "float");
-            l("dashCooldownTimer", dashCooldownTimer, "float");
-            l("dashDirection", dashDirection, "eVec2(float)");
-            l("dashStartPos", dashStartPos, "eVec2(float)");
+            l("Is Dashing", isDashing, "bool");
+            l("Dash Timer", dashTimer, "float");
+            l("Dash Duration", dashDuration, "float");
+            l("Dash Distance", dashDistance, "float");
+            l("Dash Cooldown", dashCooldown, "float");
+            l("Dash Cooldown Timer", dashCooldownTimer, "float");
+            l("Dash Direction", dashDirection, "eVec2(float)");
+            l("Dash Start Position", dashStartPos, "eVec2(float)");
         }
     };
 

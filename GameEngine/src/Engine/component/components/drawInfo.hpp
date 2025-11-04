@@ -27,6 +27,16 @@ enum Color {
 	Red = 1
 };
 
+//inline std::ostream& operator<<(std::ostream& os, const Color& c)
+//{
+//	switch (c)
+//	{
+//	case Green: return os << "Green";
+//	case Red:	return os << "Red";
+//	default:    return os << static_cast<int>(c);
+//	}
+//}
+
 //supposed to be in edit but i'll put here for now -yunqi
 enum Filters {
 	Architype = 0,
@@ -109,23 +119,23 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
-			l("width", width, "float");
-			l("height", height, "float");
-			l("shape", shape, "char32");
-			//l("color", color, "Color");
+			l("Width",		width,		"float");
+			l("Height",		height,		"float");
+			l("Shape",		shape,		"char32");
+			//l("Color",		color,		"Color");
 
-			l("texID", texID, "int");
+			l("TexID",		texID,		"int");
 		}
 
 		template <typename Visitor>
 		void reflect(Visitor&& l) const
 		{
-			l("width", width, "float");
-			l("height", height, "float");
-			l("shape", shape, "char32");
-			//l("color", color, "Color");
+			l("Width",		width,		"float");
+			l("height",		height,		"float");
+			l("Shape",		shape,		"char32");
+			//l("Color",		color,		"Color");
 
-			l("texID", texID, "int");
+			l("TexID",		texID,		"int");
 		}
 	};
 

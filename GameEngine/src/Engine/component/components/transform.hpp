@@ -40,19 +40,19 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
-			//l("Position",		pos, "eVec2(float)");
-			//l("Rotation",		rot, "eVec2(float)");
-			//l("Scale",			scale, "eVec2(float)");
-			//l("Reset Position", resetPos, "eVec2(float)");
+			l("Position",		pos,		"eVec2(float)");
+			l("Rotation",		rot,		"eVec2(float)");
+			l("Scale",			scale,		"eVec2(float)");
+			l("Reset Position", resetPos,	"eVec2(float)");
 		}
 
 		template <typename Visitor>
 		void reflect(Visitor&& l) const
 		{
-			//l("Position", pos, "eVec2(float)");
-			//l("Rotation", rot, "eVec2(float)");
-			//l("Scale", scale, "eVec2(float)");
-			//l("Reset Position", resetPos, "eVec2(float)");
+			l("Position",		pos,		"eVec2(float)");
+			l("Rotation",		rot,		"eVec2(float)");
+			l("Scale",			scale,		"eVec2(float)");
+			l("Reset Position", resetPos,	"eVec2(float)");
 		}
 	};
 
