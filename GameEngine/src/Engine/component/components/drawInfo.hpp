@@ -41,11 +41,22 @@ namespace ECSComponents
 	// Position/rotation/scale are in TransformComponent
 	struct RenderComponent
 	{
+		// Rendering properties - DECLARED FIRST to match initialization order
+		float width = 10.0f;
+		float height = 10.0f;
+		char shape[32] = "Rectangle";
+		Graphics::Color color = Graphics::Color::Green;
+
+		// Texture support
+		std::shared_ptr<Graphics::EnoTexture> texture = nullptr;
+		int texID = 0;  // For sprite sheet indexing
+
+		// Default constructor
 		RenderComponent() = default;
 
 		// Constructor for basic rendering (no position - use TransformComponent!)
 		RenderComponent(float w, float h, const char* n, int c)
-			: width{w}, height{h}
+			: width(w), height(h), texture(nullptr), texID(0)
 		{
 			strncpy_s(shape, n, sizeof(shape) - 1);
 			shape[sizeof(shape) - 1] = '\0';
@@ -61,16 +72,29 @@ namespace ECSComponents
 			}
 		}
 
-		// Rendering properties
-		float width = 10.0f;
-		float height = 10.0f;
-		char shape[32] = "Rectangle";
-		Graphics::Color color = Graphics::Color::Green;
+		// Explicit copy constructor
+		RenderComponent(const RenderComponent& other)
+			: width(other.width), height(other.height), color(other.color),
+			  texture(other.texture), texID(other.texID)
+		{
+			strncpy_s(shape, other.shape, sizeof(shape) - 1);
+			shape[sizeof(shape) - 1] = '\0';
+		}
 
-		// Texture support
-		std::shared_ptr<Graphics::EnoTexture> texture = nullptr;
-		int texID = 0;  // For sprite sheet indexing
-
+		// Copy assignment operator
+		RenderComponent& operator=(const RenderComponent& other)
+		{
+			if (this != &other) {
+				width = other.width;
+				height = other.height;
+				strncpy_s(shape, other.shape, sizeof(shape) - 1);
+				shape[sizeof(shape) - 1] = '\0';
+				color = other.color;
+				texture = other.texture;
+				texID = other.texID;
+			}
+			return *this;
+		}
 
 		// For serialization purposes
 		// Generalized way of using reflection to access and iterate

@@ -99,6 +99,17 @@ namespace Player
         );
         player.add<ECSComponents::DrawInfoComponent>(entityManager, drawComp);
 
+        // Create DrawInfoComponent with proper initialization for dragging
+        // Calculate top-left position from center position
+        float topLeftX = position.x - (colliderWidth * 0.5f);
+        float topLeftY = position.y - (colliderHeight * 0.5f);
+        ECSComponents::RenderComponent drawComp(
+            colliderWidth, colliderHeight,
+            "Rectangle",
+            Color::Green
+        );
+        player.add<ECSComponents::DrawInfoComponent>(drawComp);
+
         return player;
     }
 
