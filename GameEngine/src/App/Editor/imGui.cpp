@@ -47,7 +47,7 @@ const char* colliderShapes[] = { "None", "Circle", "Rectangle" };
 static float           eWidth = 10;
 static float           eHeight = 10;
 static int             eColor = Color::Green;
-static int             eShapeIndex = Shapes::Rectangle;
+static int             eShapeIndex = Shapes::Rect;
 static int             selectedCollider = 0;         // for the newly spawned entity
 static float           colliderWidth = 10.0f;
 static float           colliderHeight = 10.0f;
@@ -95,6 +95,10 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
+	// get engine systems
+	auto& inputManager = engine_.getInputManager();
+	auto& entityManager = engine_.getEntityManager();
+
 	// Load player config once
 	static Player::PlayerConfig playerConfig;
 	static bool configLoaded = false;
@@ -116,16 +120,15 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	float moveDelta = moveSpeed_ * deltaTime;
 
 	// (kim) changed to ARROW KEYS for indicator control 
-	auto& inputManager = engine_.getInputManager();
 	if (inputManager.isKeyPressed(GLFW_KEY_UP)) indicatorY_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_DOWN)) indicatorY_ += moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
 	// Assuming that there will only be 1 entity with player component
-	for (ECS::Entity player : engine_.getEntityManager().findEntity<ECSComponents::PlayerComponent>())
+	for (ECS::Entity player : entityManager.findEntity<ECSComponents::PlayerComponent>())
 	{
-		playerEntityID_ = player.getEntityID();
+		playerEntityID_ = player.id();
 	}
 
 
@@ -212,7 +215,7 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			);
 
 			// Store player ID for reference
-			playerEntityID_ = player.getEntityID();
+			playerEntityID_ = player.id();
 			playerSpawned_ = true;
 
 			std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")" << std::endl;
@@ -396,7 +399,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 		if (ImGui::Button("DEBUG: List Named Entities")) {
 			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
 				auto& nameComp = e.get<ECSComponents::NameComponent>();
-				std::cout << "Entity " << e.getEntityID() << " name: '" << nameComp.name << "'\n";
+				std::cout << "Entity " << e.id() << " name: '" << nameComp.name << "'\n";
 			}
 		}
 
@@ -423,7 +426,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 				bool found = false;
 				for (auto& e : engine_.getEntityManager().findEntity<>()) {
-					if (e.getEntityID() == lastID) {
+					if (e.id() == lastID) {
 						if (playerEntityID_ == lastID) playerSpawned_ = false;
 						toDelete.push_back(e);
 						found = true;
@@ -475,7 +478,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 					float bottom = tc.pos.y + halfH;
 
 					if (mouse.x >= left && mouse.x <= right && mouse.y >= top && mouse.y <= bottom) {
-						std::cout << "Deleted entity: " << e.getEntityID() << "\n";
+						std::cout << "Deleted entity: " << e.id() << "\n";
 						toDelete.push_back(e);
 						if (g_game) g_game->markEntitiesDirty();
 						waitingForClick = false; // exit delete mode
@@ -559,7 +562,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	static PrefabData currentPrefab{};  // local editable prefab
 	static char prefabName[64] = "";
 	static bool hasCollider = false;
-	static int shapeIndex = Shapes::Rectangle;
+	static int shapeIndex = Shapes::Rect;
 	static int colorIndex = Color::Green;
 
 	// New implementation for dropdown scrollable UI for prefabs

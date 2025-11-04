@@ -17,6 +17,9 @@
 #include "../event/event_bus.hpp"
 #include "../window/window_events.hpp"
 
+// Events
+#include "eno_input_events.hpp"
+
 // Utility
 #include "../utility/eno_bimap.hpp"
 
@@ -210,7 +213,6 @@ namespace Input
 		* \return  Pair of (xOffset, yOffset).
 		*//*========================================================================================*/
 		std::pair<double, double> getScrollOffset() const;
-		
 
 	private:
 		Event::EnoEventBus& bus_;
@@ -267,5 +269,11 @@ namespace Input
 		* \param[in] yoffset  Vertical scroll offset.
 		*//*========================================================================================*/
 		void handleMouseScroll(double xoffset, double yoffset);
+
+		/*============================================================================================
+		* \brief   Publishes an input event for subscribers to listen to
+		* \return  Pair of (xOffset, yOffset).
+		*//*========================================================================================*/
+		void fireInput(const int&, const int&, const int&, const int&);
 	};
 }

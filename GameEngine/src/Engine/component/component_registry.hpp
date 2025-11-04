@@ -12,7 +12,7 @@
 
 // Engine Component(s)
 #include "../ecs/archetype_presets.hpp"
-#include "../component/component_id.hpp"
+#include "../component/component_list.hpp"
 
 // stds
 #include <cstdint>

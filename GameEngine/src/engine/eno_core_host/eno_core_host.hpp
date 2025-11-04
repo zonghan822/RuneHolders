@@ -4,10 +4,10 @@
 #include "../event/event_bus.hpp"
 
 // Field
-#include "../scripting/eno_field_value.hpp"
+#include "../scripting/eno_field.hpp"
 
 // Events
-#include "../input/input_events.hpp"
+#include "../input/eno_input_events.hpp"
 
 // Windows | CoreClr
 #include <Windows.h>
@@ -29,8 +29,8 @@ namespace Core
 	class EnoCoreHost
 	{
 	private:
-		const std::string dllPath{ SCRIPT_BIN_PATH "GameScripts.dll" };
-		const std::string runtConfigJson{ SCRIPT_BIN_PATH "GameScripts.runtimeconfig.json" };
+		const std::string dllPath = SCRIPT_BIN_PATH "/GameScripts.dll";
+		const std::string runtConfigJson = SCRIPT_BIN_PATH "/GameScripts.runtimeconfig.json";
 	public:
 
 		// Define it as a pointer to a delegate type

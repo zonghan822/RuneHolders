@@ -4,7 +4,7 @@
 #include "../editor/eno_scene.hpp"
 #include "../editor/eno_scene_tree.hpp"
 
-#include "../coreclr/eno_core_host.hpp"
+#include "../eno_core_host/eno_core_host.hpp"
 
 #include "../scripting/eno_script_manager.hpp"
 
@@ -22,14 +22,13 @@ namespace Editor
 		EnoEditor(const EnoEditor&) = delete;
 		EnoEditor(EnoEditor&&) = delete;
 
-		EnoEditor(Event::EnoEventBus& bus /* Core::EnoCoreHost& coreHost */)
+		EnoEditor(Event::EnoEventBus& bus, ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost)
 			:
 			bus_ { bus },
-			/*coreHost_{ coreHost },*/
+			entMng_{ entMng },
+			coreHost_{ coreHost },
 			playingScene_{ false }
 		{
-			eventSetup();
-
 			// Creates 1 scene by default if it is not loaded save data
 			createScene();
 
@@ -123,15 +122,6 @@ namespace Editor
 			//}
 		}
 
-		// Set up events
-		void eventSetup()
-		{
-			bus_.subscribe<TestTree>([this](const TestTree& event)
-				{
-					operation();
-				});
-		}
-
 		// Create and append a new scene
 		void createScene()
 		{
@@ -184,18 +174,20 @@ namespace Editor
 		std::vector<std::unique_ptr<EnoScene>> scenes_;
 		EnoScene* selectedScene_;
 
-		// Scene tree
-		EnoSceneTree tree_;
-
-		bool playingScene_;
-
-		// Scripting
-		Script::EnoScriptManager scriptMng_;
+		// Core Host
+		ECS::EntityManager& entMng_;
 
 		// Core Host
 		Core::EnoCoreHost& coreHost_;
 
+		// Scripting
+		Script::EnoScriptManager scriptMng_{ coreHost_ };
+
 		// Events
 		Event::EnoEventBus& bus_;
+
+		// Scene tree
+		EnoSceneTree tree_{ entMng_, coreHost_ };
+		bool playingScene_;
 	};
 }

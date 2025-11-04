@@ -55,7 +55,6 @@ namespace ECSComponents
 			l("name", name, "char32");
 		}
 	};
-	};
 
 	/*============================================================================================
 	 * \brief				Equality operator overload for the name component

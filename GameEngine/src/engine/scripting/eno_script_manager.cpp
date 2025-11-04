@@ -83,7 +83,7 @@ namespace Script
 						}
 						else
 						{
-							MessageBox(
+							MessageBoxW(
 								NULL,
 								L"Invalid file type selected! Please select a C# script(.cs)",
 								L"Invalid selection",

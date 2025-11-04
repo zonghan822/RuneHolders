@@ -3,7 +3,7 @@
 // Windows | Corehost
 #include <Windows.h>
 #include <ShObjIdl.h>
-#include "../coreclr/eno_core_host.hpp"
+#include "../eno_core_host/eno_core_host.hpp"
 
 // Field Struct
 #include "eno_field.hpp"

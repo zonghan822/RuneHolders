@@ -25,6 +25,20 @@ namespace ECSComponents
 
 		// Visibility
 		bool visible = false;
+
+		template <typename Visitor>
+		void reflect(Visitor&& l)
+		{
+			l("z_index", z_index, "uint32");
+			l("visible", visible, "bool");
+		}
+
+		template <typename Visitor>
+		void reflect(Visitor&& l) const
+		{
+			l("z_index", z_index, "uint32");
+			l("visible", visible, "bool");
+		}
 	};
 
 	/*============================================================================================

@@ -141,6 +141,7 @@ namespace Engine
 		void updateTime(double fpsCalcInt = 1.0);
 
 		// Dotnet
+		Core::EnoCoreHost coreHost_;
 
 		// Services & Tools
 		Config::EnoConfigManager configMng_;
@@ -148,7 +149,7 @@ namespace Engine
 		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
 		ECS::EntityManager entityMng_;
-		Editor::EnoEditor editor{ bus_ };
+		Editor::EnoEditor editor{ bus_, entityMng_, coreHost_ };
 		
 		// Systems
 		Input::EnoInputManager inputMng_{ bus_ };

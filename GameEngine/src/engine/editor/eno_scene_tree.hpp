@@ -1,10 +1,10 @@
 #pragma once
 
 // Engine Component(s)
-#include "../ecs/eno_entity_manager.hpp"
+#include "../ecs/entity.hpp"
 
 #include "../scripting/eno_script.hpp"
-#include "../coreclr/eno_core_host.hpp"
+#include "../eno_core_host/eno_core_host.hpp"
 
 
 // stds
