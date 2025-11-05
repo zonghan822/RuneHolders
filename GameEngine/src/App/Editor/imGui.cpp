@@ -170,8 +170,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 	// Edit (Hierarchy)
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayEditTab(engine_);
-	displayAllEntitiesTab(engine_);
+	displayEditTab(engine_, sceneTree);
+	displayAllEntitiesTab(engine_, sceneTree);
 	ImGui::End();
 
 	//
@@ -181,12 +181,12 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 	// Prefabs
 	ImGui::Begin("Prefabs", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayPrefabsTab(engine_);
+	displayPrefabsTab(engine_, sceneTree);
 	ImGui::End();
 
 	// Main Controls
 	ImGui::Begin("Main Controls", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayMainTab(engine_);
+	displayMainTab(engine_, sceneTree);
 	ImGui::End();
 
 	// Game View (full scene, bottom-right)
@@ -217,7 +217,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void displayMainTab(Engine::EnoEngine& engine_) {
+void displayMainTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree) {
 
 	auto& entityManager = engine_.getEntityManager();
 
@@ -331,6 +331,10 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 				std::cout << "Spawned entity without collider\n";
 			}
 		}
+
+		// Add entity to scene hierarchy as root node
+		sceneTree.addEntityNode(e);
+
 		if (g_game) g_game->markEntitiesDirty();
 		(void)e; // to silence compiler warning for unused param
 	}
@@ -419,7 +423,7 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_) {
 	engine_.getEntityManager().viewMap();
 }
 
-void displayEditTab(Engine::EnoEngine& engine_) {
+void displayEditTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree) {
 
 	auto& entityManager = engine_.getEntityManager();
 	const char* filters[] = { "Architype" , "Last Spawned", "Mouse Select", "All" };
@@ -453,7 +457,10 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 				if (!deletedSelected && e.id() == selectedEntityID) {
 					if (playerEntityID_ == e.id()) playerSpawned_ = false;
-					e.destroy(entityManager);
+
+					// Remove from scene hierarchy
+					sceneTree.removeNodeAndDestroyEntity(e.id(), entityManager);
+
 					selectedEntityID = UINT32_MAX;
 					deletedSelected = true;
 					std::cout << "Deleted selected entity\n";
@@ -522,7 +529,8 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 	if (!toDelete.empty()) {
 		for (auto& a : toDelete) {
-			a.destroy(entityManager);
+			// Remove from scene hierarchy
+			sceneTree.removeNodeAndDestroyEntity(a.id(), entityManager);
 		}
 
 		// Mark cache as dirty after deletion
@@ -570,7 +578,7 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 	return std::nullopt;
 }
 
-ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine)
+ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine, GameInstance::EnoSceneTree& sceneTree)
 {
 	auto& entityManager = engine.getEntityManager();
 
@@ -609,6 +617,9 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 			ECSComponents::CollisionComponent(prefab.width, prefab.height));
 	}
 
+	// Add entity to scene hierarchy as root node
+	sceneTree.addEntityNode(e);
+
 	// update render cache
 	if (g_game) g_game->markEntitiesDirty();
 
@@ -618,7 +629,7 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	return e;
 }
 
-void displayPrefabsTab(Engine::EnoEngine& engine_) {
+void displayPrefabsTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree) {
 
 	auto& entityManager = engine_.getEntityManager();
 
@@ -709,6 +720,10 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	if (ImGui::Button("Spawn Prefab")) {
 		if (prefabRegistry.count(selectedPrefabName)) {
 			ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], entityManager);
+
+			// Add entity to scene hierarchy as root node
+			sceneTree.addEntityNode(e);
+
 			if (g_game) g_game->markEntitiesDirty();
 			std::cout << "Spawned prefab: " << selectedPrefabName << "\n";
 
@@ -734,7 +749,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	//}
 }
 
-void displayAllEntitiesTab(Engine::EnoEngine& engine_)
+void displayAllEntitiesTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree)
 {
 	auto& entityManager = engine_.getEntityManager();
 
@@ -768,8 +783,21 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_)
 		{
 			if (e.id() == selectedEntityID)
 			{
-				// Found the entity - display inspector immediately
-				displayEntityInspector(entityManager, e);
+				// Check if this is a root node (Scene node)
+				GameInstance::Node* node = sceneTree.getNode(e.id());
+				bool isRootNode = (node && node->parentID == UINT32_MAX);  // UINT32_MAX means no parent
+
+				// Only display inspector if it's NOT a root node
+				if (!isRootNode) {
+					displayEntityInspector(entityManager, e);
+				}
+				else {
+					ImGui::Begin("Entity Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+					ImGui::Text("Scene nodes cannot be inspected");
+					ImGui::Text("Select a child entity to inspect");
+					ImGui::End();
+				}
+
 				entityFound = true;
 				break;
 			}
@@ -788,13 +816,35 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 	ImGui::Text("=== Scene Hierarchy ===");
 	ImGui::Separator();
 
+	static int sceneCounter = 1;  // Track scene numbering
+
 	if (ImGui::Button("Add Root Node")) {
 		auto& entityManager = engine_.getEntityManager();
-		ECS::Entity newEntity = entityManager.create<
-			ECSComponents::TransformComponent,
-			ECSComponents::DrawInfoComponent,
-			ECSComponents::NameComponent
-		>();
+
+		// Create transform with default position at center of screen
+		ECSComponents::TransformComponent transform{
+			{600.0f, 450.0f},  // Center position
+			{0.0f, 0.0f},      // Velocity
+			{1.0f, 1.0f}       // Scale
+		};
+
+		// Create render component with default size and color
+		ECSComponents::RenderComponent renderComp{
+			50.0f,        // Width
+			50.0f,        // Height
+			"Rectangle",  // Shape
+			Color::Green  // Color
+		};
+
+		ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
+		newEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
+		newEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
+
+		// Name root nodes as "Scene 1", "Scene 2", etc.
+		auto& nameComp = newEntity.get<ECSComponents::NameComponent>(entityManager);
+		std::string sceneName = "Scene " + std::to_string(sceneCounter++);
+		strncpy_s(nameComp.name, sceneName.c_str(), sizeof(nameComp.name) - 1);
+		nameComp.name[sizeof(nameComp.name) - 1] = '\0';
 
 		sceneTree.addEntityNode(newEntity);
 		if (g_game) g_game->markEntitiesDirty();
@@ -802,21 +852,63 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 
 	ImGui::SameLine();
 
-	static uint32_t parentToAdd = 1;
-	ImGui::InputInt("Parent ID", (int*)&parentToAdd);
+	static int entityCounter = 1;  // Track entity numbering for children
 
-	if (ImGui::Button("Add Child")) {
-		auto& entityManager = engine_.getEntityManager();
-		ECS::Entity childEntity = entityManager.create<
-			ECSComponents::TransformComponent,
-			ECSComponents::DrawInfoComponent,
-			ECSComponents::NameComponent
-		>();
+	if (ImGui::Button("Add Child Node")) {
+		if (selectedEntityID != UINT32_MAX) {
+			// Verify the parent node exists in the scene tree
+			if (!sceneTree.getNode(selectedEntityID)) {
+				std::cout << "[ERROR] Selected entity " << selectedEntityID << " not found in scene tree. Cannot add child.\n";
+			}
+			else {
+				auto& entityManager = engine_.getEntityManager();
 
-		sceneTree.addEntityNode(childEntity);
-		if (g_game) g_game->markEntitiesDirty();
+				// Create transform with default position at center of screen
+				ECSComponents::TransformComponent transform{
+					{600.0f, 450.0f},  // Center position
+					{0.0f, 0.0f},      // Velocity
+					{1.0f, 1.0f}       // Scale
+				};
 
-		sceneTree.setParent(childEntity.id(), parentToAdd);
+				// Create render component with default size and color
+				ECSComponents::RenderComponent renderComp{
+					50.0f,        // Width
+					50.0f,        // Height
+					"Rectangle",  // Shape
+					Color::Red    // Color (different from root nodes)
+				};
+
+				ECS::Entity childEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
+				childEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
+				childEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
+
+				// Name child nodes as "Entity 1", "Entity 2", etc.
+				auto& nameComp = childEntity.get<ECSComponents::NameComponent>(entityManager);
+				std::string entityName = "Entity " + std::to_string(entityCounter++);
+				strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
+				nameComp.name[sizeof(nameComp.name) - 1] = '\0';
+
+				// Add to scene tree
+				sceneTree.addEntityNode(childEntity);
+
+				// Set parent relationship
+				sceneTree.setParent(childEntity.id(), selectedEntityID);
+
+				if (g_game) g_game->markEntitiesDirty();
+
+				std::cout << "Added child node " << childEntity.id() << " ('" << nameComp.name
+					<< "') to parent " << selectedEntityID << "\n";
+
+				// Debug: verify the relationship was set
+				GameInstance::Node* childNode = sceneTree.getNode(childEntity.id());
+				if (childNode) {
+					std::cout << "  -> Child's parentID: " << childNode->parentID << "\n";
+				}
+			}
+		}
+		else {
+			std::cout << "No node selected. Please select a node first.\n";
+		}
 	}
 
 
@@ -828,7 +920,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 			if (sceneTree.getNode(selectedEntityID)) {
 				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " from hierarchy\n";
 				sceneTree.removeNodeAndDestroyEntity(selectedEntityID, em);
-				selectedEntityID = 0;
+				selectedEntityID = UINT32_MAX;  // Reset to "no selection"
 
 				if (g_game)
 					g_game->markEntitiesDirty();
@@ -841,11 +933,12 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 
 	ImGui::Separator();
 
+	auto& entityManager = engine_.getEntityManager();
 	const auto& allNodes = sceneTree.getAllNodes();
 	bool anyNode = false;
 	for (const auto& [id, node] : allNodes) {
-		if (node.parentID == 0) {
-			drawNodeRecursive(sceneTree, id);
+		if (node.parentID == UINT32_MAX) {  // UINT32_MAX means no parent (root node)
+			drawNodeRecursive(sceneTree, id, entityManager);
 			anyNode = true;
 		}
 	}
@@ -878,7 +971,6 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 	static uint32_t lastInspectedID = UINT32_MAX;
 	if (lastInspectedID != entity.id()) {
 		lastInspectedID = entity.id();
-		std::cout << "\n[INSPECTOR DEBUG] Inspecting Entity ID: " << entity.id() << "\n";
 	}
 
 	// --- NameComponent ---
@@ -914,13 +1006,6 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 	// --- DrawInfoComponent ---
 	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
 		auto& draw = entity.get<ECSComponents::DrawInfoComponent>(entMng);
-
-		// Debug output to console - always print to catch changes
-		std::cout << "[INSPECTOR] Entity " << entity.id()
-				  << " DrawInfo: width=" << draw.width
-				  << ", height=" << draw.height
-				  << ", shape='" << draw.shape << "'"
-				  << ", color=(" << draw.color.r << "," << draw.color.g << "," << draw.color.b << "," << draw.color.a << ")\n";
 
 		ImGui::SeparatorText("Draw Info");
 		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
@@ -974,13 +1059,27 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 	ImGui::End();
 }
 
-void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID)
+void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID, ECS::EntityManager& entityManager)
 {
 	using namespace GameInstance;
 	GameInstance::Node* node = sceneTree.getNode(nodeID);
 	if (!node) return;
 
+	// Get entity name from NameComponent if it exists
 	std::string label = "Entity " + std::to_string(node->entityID);
+
+	// Try to get the actual name from the entity
+	try {
+		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
+			if (e.id() == node->entityID) {
+				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
+				label = nameComp.name;
+				break;
+			}
+		}
+	} catch (...) {
+		// If we can't get the name, use the default
+	}
 
 	// If node has children -> use TreeNodeEx
 	if (node->children.empty()) {
@@ -999,7 +1098,7 @@ void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID)
 
 		if (open) {
 			for (uint32_t childID : node->children)
-				drawNodeRecursive(sceneTree, childID);
+				drawNodeRecursive(sceneTree, childID, entityManager);
 			ImGui::TreePop();
 		}
 	}
@@ -1301,7 +1400,11 @@ void displayEditorView(Engine::EnoEngine& engine_) {
 				if (clicked.has_value()) {
 					std::cout << "Deleted entity: " << clicked->id()
 						<< " at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
-					clicked->destroy(entityManager);
+
+					// Remove from scene hierarchy and destroy entity
+					extern GameInstance::EnoSceneTree sceneTree;
+					sceneTree.removeNodeAndDestroyEntity(clicked->id(), entityManager);
+
 					if (g_game) g_game->markEntitiesDirty();
 				} else {
 					std::cout << "No entity found at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
@@ -1314,7 +1417,9 @@ void displayEditorView(Engine::EnoEngine& engine_) {
 			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {
 				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 
-				spawnPrefabAt(worldPos.x, worldPos.y, g_selectedPrefabForPlacement, engine_);
+				// Need to access sceneTree - use external declaration
+				extern GameInstance::EnoSceneTree sceneTree;
+				spawnPrefabAt(worldPos.x, worldPos.y, g_selectedPrefabForPlacement, engine_, sceneTree);
 				g_selectedPrefabForPlacement.clear();
 
 				std::cout << "Placed prefab at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
