@@ -487,7 +487,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 			auto& collision = entity.get<ECSComponents::CollisionComponent>(ent);
 			auto& transform = entity.get<ECSComponents::TransformComponent>(ent);
-			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>(ent);
+			// auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>(ent);
 
 			// Skip entities without physics component
 			if (!entity.has<ECSComponents::PhysicsComponent>(ent)) continue;

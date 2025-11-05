@@ -265,10 +265,10 @@ namespace Player
      * \detail      Collision checking is now handled by PhysicsSystem during velocity integration
      *===========================================================================================*/
     bool PlayerSystem::CanMoveTo(
-        const ECS::EntityLoc& playerEntity,
-        const ECSComponents::CollisionComponent& playerCollider,
-        const Math::eVec2<float>& targetPos,
-        ECS::EntityManager& entityManager)
+        [[maybe_unused]] const ECS::EntityLoc& playerEntity,
+        [[maybe_unused]] const ECSComponents::CollisionComponent& playerCollider,
+        [[maybe_unused]] const Math::eVec2<float>& targetPos,
+        [[maybe_unused]] ECS::EntityManager& entityManager)
     {
         // This function is kept for backward compatibility but is no longer used
         // PhysicsSystem handles all collision detection now

@@ -409,7 +409,6 @@ void GameApplication::updateEntities() {
 	SystemTimer EntityTimer("Entities" , systemTimes_);
 
 	ImGuiIO& io = ImGui::GetIO();
-	float deltaTime = io.DeltaTime;
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
 
