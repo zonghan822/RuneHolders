@@ -115,6 +115,27 @@ namespace Graphics
     };
 
 
+    struct TextureData {
+        std::shared_ptr<EnoTexture> texture;
+        int rows = 1;
+        int cols = 1;
+
+        // Derived frame size
+        int frameWidth = 0;
+        int frameHeight = 0;
+
+        void computeFrameSize() {
+            if (texture && texture->getWidth() > 0 && texture->getHeight() > 0) {
+                frameWidth = texture->getWidth() / cols;
+                frameHeight = texture->getHeight() / rows;
+            }
+        }
+    };
+
+    struct TextureMapping {
+        std::string path;
+        std::shared_ptr<EnoTexture> tex;
+    };
     // Shader management class
     class EnoShader
     {
@@ -221,11 +242,16 @@ namespace Graphics
 
         // Getters
         bool isInitialized() const { return initialized_; }
+        std::unordered_map<std::string, std::shared_ptr<EnoTexture>> texMap() const { return texMap_; }
 
+        // Map texture
+        void mapTexture(const TextureMapping& e);
     private:
         // Core systems
         Event::EnoEventBus& bus_;
         bool initialized_;
+
+        std::unordered_map<std::string, std::shared_ptr<EnoTexture>> texMap_; // Texture path | Texture Shared_Ptr
 
         // Rendering components
         std::unique_ptr<EnoShader> defaultShader_;
@@ -254,6 +280,9 @@ namespace Graphics
         int getTextureSlot(std::shared_ptr<EnoTexture> texture);
         void bindTextures();
     };
+
+
+
 
     // Graphics events
     namespace Events

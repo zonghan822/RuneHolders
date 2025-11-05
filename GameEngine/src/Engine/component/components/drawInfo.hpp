@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         drawInfo.hpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
 * @date         01-10-2025
@@ -16,16 +16,29 @@
 //i would want to add the math and graphics library here
 #include "../../graphics/graphics.hpp"
 
+#define FILE_PATH_LEN 240
+
+
 enum WindowID { Main, Edit, FPS, Prefabs, Assets };
 static WindowID activeWindow = WindowID::Main;
 
 enum Shapes {
-	Rectangle = 0
+	Rect = 0
 };
 enum Color {
 	Green = 0,
 	Red = 1
 };
+
+//inline std::ostream& operator<<(std::ostream& os, const Color& c)
+//{
+//	switch (c)
+//	{
+//	case Green: return os << "Green";
+//	case Red:	return os << "Red";
+//	default:    return os << static_cast<int>(c);
+//	}
+//}
 
 //supposed to be in edit but i'll put here for now -yunqi
 enum Filters {
@@ -37,16 +50,32 @@ enum Filters {
 
 namespace ECSComponents
 {
-	struct DrawInfoComponent
+	// RenderComponent: Stores ONLY rendering properties (size, color, texture)
+	// Position/rotation/scale are in TransformComponent
+	struct RenderComponent
 	{
-		DrawInfoComponent() = default;
+		// Rendering properties - DECLARED FIRST to match initialization order
+		float width = 10.0f;
+		float height = 10.0f;
+		char shape[32] = "Rectangle";
+		Graphics::Color color = Graphics::Color::Green;
 
-		//	Ctor for DrawInfoComponent
-		DrawInfoComponent(float xPosition, float yPosition, float w, float h, const char* n, int c):
-			xPos{ xPosition }, yPos{ yPosition }, width{w}, height{h}
+		// Texture support
+		std::shared_ptr<Graphics::EnoTexture> texture = nullptr;
+		char texturePath[FILE_PATH_LEN];
+		int texID = 0;  // For sprite sheet indexing
+
+		// Default constructor
+		RenderComponent() = default;
+
+		// Constructor for basic rendering (no position - use TransformComponent!)
+		RenderComponent(float w, float h, const char* n, int c)
+			: width(w), height(h), texture(nullptr), texID(0)
 		{
 			strncpy_s(shape, n, sizeof(shape) - 1);
 			shape[sizeof(shape) - 1] = '\0';
+
+			memset(texturePath, 0, sizeof(texturePath));
 
 			if (c == Color::Green) {
 				color = Graphics::Color::Green;
@@ -57,28 +86,81 @@ namespace ECSComponents
 			else {
 				color = Graphics::Color::Blue;
 			}
-
 		}
 
-		float xPos, yPos, width, height;
-		char shape[32] = "Rectangle";
-		Graphics::Color color = Graphics::Color::Blue;
-		
+		// Explicit copy constructor
+		RenderComponent(const RenderComponent& other)
+			: width(other.width), height(other.height), color(other.color),
+			  texture(other.texture), texID(other.texID)
+		{
+			strncpy_s(shape, other.shape, sizeof(shape) - 1);
+			shape[sizeof(shape) - 1] = '\0';
+
+			strncpy_s(texturePath, other.texturePath, sizeof(texturePath) - 1);
+			texturePath[sizeof(texturePath) - 1] = '\0';
+		}
+
+		// Copy assignment operator
+		RenderComponent& operator=(const RenderComponent& other)
+		{
+			if (this != &other) {
+				width = other.width;
+				height = other.height;
+				strncpy_s(shape, other.shape, sizeof(shape) - 1);
+				shape[sizeof(shape) - 1] = '\0';
+				color = other.color;
+				texture = other.texture;
+				texID = other.texID;
+			}
+			return *this;
+		}
+
+		// For serialization purposes
+		// Generalized way of using reflection to access and iterate
+		// over fields!
+		// 
+		// The idea is to (in a function call) create a lambda that will be a "visitor",
+		// and extract all information as parameters of that lambda. Each call over a
+		// field of the component is used to extract metadata on 1 field [name, value, type]
+		// 
+		// Source: https://stackoverflow.com/questions/41453/how-can-i-add-reflection-to-a-c-application
+		// Additional learning: https://refactoring.guru/design-patterns/visitor
+		template <typename Visitor>
+		void reflect(Visitor&& l)
+		{
+			l("Width",			width,				"float");
+			l("Height",			height,				"float");
+			l("Shape",			shape,				"char32");
+			//l("Color",		color,		"Color");
+			
+			l("Texture Path",	texturePath,		"texchar240");
+			l("TexID",			texID,				"int");
+		}
+
+		template <typename Visitor>
+		void reflect(Visitor&& l) const
+		{
+			l("Width",			width,				"float");
+			l("height",			height,				"float");
+			l("Shape",			shape,				"char32");
+			//l("Color",		color,		"Color");
+			
+			l("Texture Path",	texturePath,		"texchar240");
+			l("TexID",			texID,				"int");
+		}
 	};
 
-	inline std::ostream& operator<<(std::ostream& os, const DrawInfoComponent& draw)
-	{
-		
-		auto& shape   = draw.shape;
-		auto& xPos    = draw.xPos;
-		auto& yPos    = draw.yPos;
-		auto& width   = draw.width;
-		auto& height  = draw.height;
+	// Keep DrawInfoComponent as alias for backwards compatibility
+	using DrawInfoComponent = RenderComponent;
 
-		std::cout 
+	inline std::ostream& operator<<(std::ostream& os, const RenderComponent& render)
+	{
+		auto& shape   = render.shape;
+		auto& width   = render.width;
+		auto& height  = render.height;
+
+		std::cout
 		<< "SHAPE: "	<< shape  << '\n'
-		<< "x: "		<< xPos   << '\n'
-		<< "y: "		<< yPos   << '\n'
 		<< "width: "	<< width  << '\n'
 		<< "height: "	<< height << '\n';
 

@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration/definition file for the component registry
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 
@@ -12,7 +12,7 @@
 
 // Engine Component(s)
 #include "../ecs/archetype_presets.hpp"
-#include "../component/component_id.hpp"
+#include "../component/component_list.hpp"
 
 // stds
 #include <cstdint>
@@ -142,6 +142,75 @@ namespace ECSComponents
 			}
 
 			return it->second.size;
+		}
+
+		// Deduce component type with type index
+		template <typename Lambda>
+		static void DeduceCompType(const std::type_index& typeIdx, Lambda&& f)
+		{
+			// Objective: Somehow iterate through the x macro list with the #define X(TYPE)
+			// => then somehow when we find the right component, perform x operations with it.
+			// 
+			// Ok so the thought process to this is that, a function can't return an auto type so
+			// I cant rely on returning. So somehow, I need to produce an environment
+			// which can iterate through specified components with the x macro, and use this
+			// environment to deduce the type of component passed, and perform all my operations
+			// inside it. 
+			// 
+			// I will be using a lambda here which is "wrapped" by this function (more like
+			// environment at this point I guess). 
+			// 
+			// We are passing in a type index to iterate through the component list x macro
+			// to get the actual type
+			//
+			// Cant use this function to return the deduced type, so the component
+			// will be accessed via the lambda specified
+			// 
+			// Access into the lambda is defined by the overload of the function call
+			// operator since I need to call add() and set(), which translates into
+			// something like add<VisibilityComponent>() when this component is being deduced
+			// and we just call the lambda on the spot. 
+			// 
+			// .template is used to tell the compiler that f is templated so I can
+			// "pass in" a flexible component type as "context"
+			// Source: https://stackoverflow.com/questions/8463368/template-dot-template-construction-usage
+			// 
+			// Returns when the right component type is found and throws the error
+			// when the same type cannot be found
+
+#define X(TYPE) \
+    if (typeIdx == std::type_index(typeid(TYPE))) \
+    { \
+        f.template operator()<TYPE>(); \
+        return; \
+    }
+
+	COMPONENT_LIST
+#undef X
+
+			throw std::runtime_error("Unknown component passed to be deduced!");
+		}
+
+		// Deduce component type with type name
+		template <typename Lambda>
+		static void DeduceCompType(const std::string& typeName, Lambda&& f)
+		{
+			// Main difference with this overload is to compare with the actual type with #TYPE
+			// #TYPE turns the component type into a string literal which can be used to compare
+			// with the name passed in
+			//
+			// Source: https://stackoverflow.com/questions/10507264/how-to-use-macro-argument-as-string-literal
+#define X(TYPE)	\
+	if (typeName == #TYPE)	\
+	{	\
+		f.template operator()<TYPE>();	\
+		return;	\
+	}
+
+	COMPONENT_LIST
+#undef X
+
+			throw std::runtime_error("Unknown component passed to be deduced!");
 		}
 	};
 }

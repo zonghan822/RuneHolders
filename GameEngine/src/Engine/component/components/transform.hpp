@@ -11,29 +11,49 @@ namespace ECSComponents
 {
 	struct TransformComponent
 	{
-		
-		/*glm::vec3 pos;
-		glm::vec3 rot;
-		glm::vec3 scale;
-		glm::vec2 vel;*/
-
-		// Zero initialized values
+		// Spatial properties only - position, rotation, scale
 		Math::eVec2<float> pos{};
 		Math::eVec2<float> rot{};
-		Math::eVec2<float> scale{};
-		
-		Math::eVec2<float> vel{};	// remove this after rewriting movementtest
+		Math::eVec2<float> scale{ 1.0f, 1.0f };  // Default to unit scale
 
-		// Reset for play stop state
+		// Reset for play/stop state (editor functionality)
 		Math::eVec2<float> resetPos{};
-		Math::eVec2<float> resetVel{};
 
 		// Default constructor
 		TransformComponent() = default;
 
 		// Constructor
-		TransformComponent(Math::eVec2<float> _pos, Math::eVec2<float> _rot, Math::eVec2<float> _scale) : pos(_pos), rot(_rot), scale(_scale) {};
+		TransformComponent(Math::eVec2<float> _pos, Math::eVec2<float> _rot, Math::eVec2<float> _scale)
+			: pos(_pos), rot(_rot), scale(_scale) {}
 
+
+		// For serialization purposes
+		// Generalized way of using reflection to access and iterate
+		// over fields!
+		// 
+		// The idea is to (in a function call) create a lambda that will be a "visitor",
+		// and extract all information as parameters of that lambda. Each call over a
+		// field of the component is used to extract metadata on 1 field [name, value, type]
+		// 
+		// Source: https://stackoverflow.com/questions/41453/how-can-i-add-reflection-to-a-c-application
+		// Additional learning: https://refactoring.guru/design-patterns/visitor
+		template <typename Visitor>
+		void reflect(Visitor&& l)
+		{
+			l("Position",		pos,		"eVec2(float)");
+			l("Rotation",		rot,		"eVec2(float)");
+			l("Scale",			scale,		"eVec2(float)");
+			l("Reset Position", resetPos,	"eVec2(float)");
+		}
+
+		template <typename Visitor>
+		void reflect(Visitor&& l) const
+		{
+			l("Position",		pos,		"eVec2(float)");
+			l("Rotation",		rot,		"eVec2(float)");
+			l("Scale",			scale,		"eVec2(float)");
+			l("Reset Position", resetPos,	"eVec2(float)");
+		}
 	};
 
 	// print overload

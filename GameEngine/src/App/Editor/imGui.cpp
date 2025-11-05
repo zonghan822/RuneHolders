@@ -13,6 +13,9 @@
 #include "player/player_config.hpp"
 #include "player/player_archetype_config.hpp"
 
+#undef min
+#undef max
+
 #pragma region Game Variables
 
 extern GameApplication game;
@@ -32,7 +35,8 @@ bool playerSpawned_ = false;
 std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
-
+// Hierarchy tree
+static GameInstance::EnoSceneTree sceneTree;
 
 // Red Indicator
 float indicatorX_ = 600.0f;
@@ -49,7 +53,7 @@ const char* colliderShapes[] = { "None", "Circle", "Rectangle" };
 static float           eWidth = 10;
 static float           eHeight = 10;
 static int             eColor = Color::Green;
-static int             eShapeIndex = Shapes::Rectangle;
+static int             eShapeIndex = Shapes::Rect;
 static int             selectedCollider = 0;         // for the newly spawned entity
 static float           colliderWidth = 10.0f;
 static float           colliderHeight = 10.0f;
@@ -65,7 +69,7 @@ static double next_update = 0.0;         // next time we refresh the text
 
 // Entity counter
 size_t entity_count{};
-static uint32_t selectedEntityID;
+static uint32_t selectedEntityID = UINT32_MAX;  // Use max value to indicate "no selection" since 0 is valid
 
 // Drag-Drop Gizmos
 static bool isDragging = false;
@@ -108,21 +112,25 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	// Apply default layout once
+	// get engine systems
+	auto& inputManager = engine_.getInputManager();
+	auto& entityManager = engine_.getEntityManager();
+	
+	// BEGIN DOCKSPACE
+	imGuiBeginDockspace();
+
+	// Apply default layout once after dockspace is created
 	static bool layoutApplied = false;
 	if (!layoutApplied) {
 		imGuiSetupDefaultLayout();
 		layoutApplied = true;
 	}
 
-	// BEGIN DOCKSPACE
-	imGuiBeginDockspace();
-
 	// Load player config once
 	static Player::PlayerConfig playerConfig;
 	static bool configLoaded = false;
 	if (!configLoaded) {
-		configLoaded = playerConfig.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
+		configLoaded = playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
 		if (configLoaded) {
 			std::cout << "[ImGui] Player config loaded successfully" << std::endl;
 		}
@@ -136,17 +144,21 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	float deltaTime = io.DeltaTime;
 	float moveDelta = moveSpeed_ * deltaTime;
 
-	auto& inputManager = engine_.getInputManager();
+	// (kim) changed to ARROW KEYS for indicator control 
 	if (inputManager.isKeyPressed(GLFW_KEY_UP)) indicatorY_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_DOWN)) indicatorY_ += moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
 	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
 	// Assuming that there will only be 1 entity with player component
-	for (ECS::Entity player : engine_.getEntityManager().findEntity<ECSComponents::PlayerComponent>())
+	bool playerFound = false;
+	for (ECS::Entity player : entityManager.findEntity<ECSComponents::PlayerComponent>())
 	{
-		playerEntityID_ = player.getEntityID();
+		playerEntityID_ = player.id();
+		playerFound = true;
 	}
+	// Sync playerSpawned_ flag with actual player existence in ECS
+	playerSpawned_ = playerFound;
 
 	// FPS display throttling
 	double now = ImGui::GetTime();
@@ -155,11 +167,16 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 		throttledTimes_ = systemTimes_;
 		next_update = now + 0.5;
 	}
-	
+
 	// Edit (Hierarchy)
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_);
-	displayHierarchyTab(engine_);
+	displayAllEntitiesTab(engine_);
+	ImGui::End();
+
+	//
+	ImGui::Begin("Heirarchy", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayHierarchyTab(engine_, sceneTree);
 	ImGui::End();
 
 	// Prefabs
@@ -172,9 +189,14 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	displayMainTab(engine_);
 	ImGui::End();
 
-	// Game View
+	// Game View (full scene, bottom-right)
 	ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	displayGameView(engine_);
+	ImGui::End();
+
+	// Editor View (zoomed in, center - replaces old Game View behavior)
+	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
+	displayEditorView(engine_);
 	ImGui::End();
 
 	// Assets Browser
@@ -196,6 +218,9 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 }
 
 void displayMainTab(Engine::EnoEngine& engine_) {
+
+	auto& entityManager = engine_.getEntityManager();
+
 	//=======================PLAYER CONTROLS =======================
 	ImGui::Text("=== PLAYER CONTROLS ===");
 	ImGui::Text("WASD to move player");
@@ -205,7 +230,7 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 
 			// Load player configuration from file
 			Player::PlayerConfig playerConfig;
-			playerConfig.LoadFromFile("../../../src/App/Editor/player/player_config.txt");
+			playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
 
 			// Create complete player entity using the config
 			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
@@ -215,11 +240,10 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			);
 
 			// Store player ID for reference
-			playerEntityID_ = player.getEntityID();
+			playerEntityID_ = player.id();
 			playerSpawned_ = true;
 
-			std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")" << std::endl;
-			std::cout << "Player ID: " << playerEntityID_ << std::endl;
+			std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")\n";
 		}
 	}
 	else {
@@ -278,26 +302,27 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			{1.0f, 1.0f}
 		};
 
-		ECSComponents::DrawInfoComponent DIC{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor };
+		// RenderComponent stores only rendering properties (no position!)
+		ECSComponents::RenderComponent renderComp{ eWidth, eHeight, shapes[eShapeIndex], eColor };
 
 		// Create entity with both Transform and DrawInfo components
-		ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
-		e.add<ECSComponents::DrawInfoComponent>(DIC);
-		e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
+		ECS::Entity e = entityManager.create<ECSComponents::TransformComponent>(transform);
+		e.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
+		e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("John"));
 
 		// Add collider if selected
 		if (selectedCollider != 0) {
 			// Add appropriate collider
 			if (selectedCollider == 1) {//circle
-				e.add<ECSComponents::CollisionComponent>(ECSComponents::CollisionComponent(colliderRadius));
-				if (e.has<ECSComponents::DrawInfoComponent>()) {
-					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+				e.add<ECSComponents::CollisionComponent>(entityManager, ECSComponents::CollisionComponent(colliderRadius));
+				if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+					// DrawInfo already set above (now uses only width, height, shape, color - no position)
 				}
 			}
 			else if (selectedCollider == 2) { // rectangle
-				e.add<ECSComponents::CollisionComponent>(ECSComponents::CollisionComponent(colliderWidth, colliderHeight));
-				if (e.has<ECSComponents::DrawInfoComponent>()) {
-					e.set<ECSComponents::DrawInfoComponent>(ECSComponents::DrawInfoComponent{ indicatorX_, indicatorY_, eWidth, eHeight, shapes[eShapeIndex], eColor });
+				e.add<ECSComponents::CollisionComponent>(entityManager, ECSComponents::CollisionComponent(colliderWidth, colliderHeight));
+				if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+					// DrawInfo already set above (now uses only width, height, shape, color - no position)
 				}
 
 				std::cout << "Spawned entity WITH collider\n";
@@ -306,8 +331,8 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 				std::cout << "Spawned entity without collider\n";
 			}
 		}
-			if (g_game) g_game->markEntitiesDirty();
-			(void)e; // to silence compiler warning for unused param
+		if (g_game) g_game->markEntitiesDirty();
+		(void)e; // to silence compiler warning for unused param
 	}
 	// NOTE: Drag-drop logic moved to Game View window to work with framebuffer coordinates
 
@@ -335,9 +360,9 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
 
 			// Add DrawInfoComponent
-			ECSComponents::DrawInfoComponent DIC{ randX, randY, randW, randH, shapes[eShapeIndex], randC };
-			e.add<ECSComponents::DrawInfoComponent>(DIC);
-			e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent("John"));
+			ECSComponents::RenderComponent renderComp{ randW, randH, shapes[eShapeIndex], randC };
+			e.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
+			e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("John"));
 		}
 		entity_count += 2500;
 		if (g_game) g_game->markEntitiesDirty();
@@ -378,9 +403,10 @@ void displayFPSTab(Engine::EnoEngine& engine_) {
 }
 
 void displayEntityCount(Engine::EnoEngine& engine_) {
+	auto& entityManager = engine_.getEntityManager();
 	size_t counter = 0;
 
-	std::vector<ECS::Entity> EntityList = engine_.getEntityManager().findEntity<>();
+	std::vector<ECS::Entity> EntityList = entityManager.findEntity<>();
 	for (ECS::Entity const& e : EntityList) {
 		counter++;
 		(void)e; // silence unused warning
@@ -394,6 +420,8 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_) {
 }
 
 void displayEditTab(Engine::EnoEngine& engine_) {
+
+	auto& entityManager = engine_.getEntityManager();
 	const char* filters[] = { "Architype" , "Last Spawned", "Mouse Select", "All" };
 	static int FilterType = Filters::Architype;
 
@@ -405,8 +433,8 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 	if (FilterType == Filters::Architype) {
 		if (ImGui::Button("DEBUG: List Named Entities")) {
 			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				auto& nameComp = e.get<ECSComponents::NameComponent>();
-				std::cout << "Entity " << e.getEntityID() << " name: '" << nameComp.name << "'\n";
+				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
+				std::cout << "Entity " << e.id() << " name: '" << nameComp.name << "'\n";
 			}
 		}
 
@@ -421,19 +449,22 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 			// Iterate only once through all entities that have NameComponent
 			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				ECSComponents::NameComponent& nameComp = e.get<ECSComponents::NameComponent>();
+				ECSComponents::NameComponent& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
 
-				if (!deletedSelected && e.getEntityID() == selectedEntityID) {
-					e.destroy();
-					selectedEntityID = 0;
+				if (!deletedSelected && e.id() == selectedEntityID) {
+					if (playerEntityID_ == e.id()) playerSpawned_ = false;
+					e.destroy(entityManager);
+					selectedEntityID = UINT32_MAX;
 					deletedSelected = true;
 					std::cout << "Deleted selected entity\n";
 					continue;
 				}
 
 				if (nameComp.name == target) {
+					if (playerEntityID_ == e.id()) playerSpawned_ = false;
 					toDelete.push_back(e);
 				}
+
 			}
 
 			if (g_game)
@@ -447,8 +478,8 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 				ECS::spawnHistory.pop_back();  // remove from history
 
 				bool found = false;
-				for (auto& e : engine_.getEntityManager().findEntity<>()) {
-					if (e.getEntityID() == lastID) {
+				for (auto& e : entityManager.findEntity<>()) {
+					if (e.id() == lastID) {
 						if (playerEntityID_ == lastID) playerSpawned_ = false;
 						toDelete.push_back(e);
 						found = true;
@@ -481,7 +512,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 	}
 	else if (FilterType == Filters::All) {
 		if (ImGui::Button("Delete ALL Entities")) {
-			for (auto& e : engine_.getEntityManager().findEntity<>()) {
+			for (auto& e : entityManager.findEntity<>()) {
 				toDelete.push_back(e);
 			}
 			playerSpawned_ = false;
@@ -491,27 +522,32 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 	if (!toDelete.empty()) {
 		for (auto& a : toDelete) {
-			a.destroy();
+			a.destroy(entityManager);
 		}
 
-		// FIX: Mark cache as dirty after deletion
+		// Mark cache as dirty after deletion
 		if (g_game) {
 			g_game->markEntitiesDirty();
 		}
 	}
+
 }
-
-
 
 std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse)
 {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Collect all entities that contain the mouse position
+	std::vector<ECS::Entity> matchingEntities;
+
 	for (ECS::Entity& e : engine_.getEntityManager().findEntity<
 		ECSComponents::TransformComponent,
 		ECSComponents::DrawInfoComponent>())
 	{
-		auto& tc = e.get<ECSComponents::TransformComponent>();
-		auto& dc = e.get<ECSComponents::DrawInfoComponent>();
+		auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+		auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 
+		// TransformComponent.pos is the CENTER of the entity
 		float halfW = dc.width * 0.5f;
 		float halfH = dc.height * 0.5f;
 		float left = tc.pos.x - halfW;
@@ -522,8 +558,13 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 		if (mouse.x >= left && mouse.x <= right &&
 			mouse.y >= top && mouse.y <= bottom)
 		{
-			return e;
+			matchingEntities.push_back(e);
 		}
+	}
+
+	// Return the LAST matching entity (most recently created, drawn on top)
+	if (!matchingEntities.empty()) {
+		return matchingEntities.back();
 	}
 
 	return std::nullopt;
@@ -531,6 +572,7 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 
 ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine)
 {
+	auto& entityManager = engine.getEntityManager();
 
 	const PrefabData& prefab = prefabRegistry[name];
 
@@ -538,15 +580,11 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	float centerX = x;
 	float centerY = y;
 
-	// Calculate top-left for DrawInfo (which uses top-left coordinates)
-	float topLeftX = x - prefab.width * 0.5f;
-	float topLeftY = y - prefab.height * 0.5f;
-
 	// create the entity
-	ECS::Entity e = engine.getEntityManager().create<>();
+	ECS::Entity e = entityManager.create<>();
 
 	// attach components
-	e.add<ECSComponents::NameComponent>(ECSComponents::NameComponent(prefab.name.c_str()));
+	e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(prefab.name.c_str()));
 
 	// transform uses center position
 	ECSComponents::TransformComponent transform{
@@ -554,19 +592,20 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 		{0.0f, 0.0f},
 		{1.0f, 1.0f}
 	};
-	e.add<ECSComponents::TransformComponent>(transform);
+	e.add<ECSComponents::TransformComponent>(entityManager, transform);
 
 	// draw info uses top-left position
-	ECSComponents::DrawInfoComponent draw{
-		topLeftX, topLeftY, prefab.width, prefab.height,
+	ECSComponents::RenderComponent draw{
+		prefab.width, prefab.height,
 		prefab.shape == 0 ? "Circle" : "Rectangle",
 		prefab.color
 	};
-	e.add<ECSComponents::DrawInfoComponent>(draw);
+	e.add<ECSComponents::DrawInfoComponent>(entityManager, draw);
 
 	// collider (optional)
 	if (prefab.hasCollider) {
 		e.add<ECSComponents::CollisionComponent>(
+			entityManager,
 			ECSComponents::CollisionComponent(prefab.width, prefab.height));
 	}
 
@@ -581,10 +620,12 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 
 void displayPrefabsTab(Engine::EnoEngine& engine_) {
 
+	auto& entityManager = engine_.getEntityManager();
+
 	static PrefabData currentPrefab{};  // local editable prefab
 	static char prefabName[64] = "";
 	static bool hasCollider = false;
-	static int shapeIndex = Shapes::Rectangle;
+	static int shapeIndex = Shapes::Rect;
 	static int colorIndex = Color::Green;
 
 	// New implementation for dropdown scrollable UI for prefabs
@@ -592,15 +633,12 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	static std::string selectedPrefabName{};
 
 
+
 	ImGui::Text("==========PREFABS TAB==========");
 
 	ImGui::Text("Prefab name:");
 	ImGui::InputText("##Prefab Name", prefabName, sizeof(prefabName));
 	currentPrefab.name = prefabName;
-
-
-
-
 
 	ImGui::Separator();
 	ImGui::Text("Transform / Size");
@@ -670,33 +708,299 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 	ImGui::Separator();
 	if (ImGui::Button("Spawn Prefab")) {
 		if (prefabRegistry.count(selectedPrefabName)) {
-			ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], engine_);
+			ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], entityManager);
 			if (g_game) g_game->markEntitiesDirty();
 			std::cout << "Spawned prefab: " << selectedPrefabName << "\n";
 
 		}
 	}
 
+	//std::vector<ECS::Entity> NamedEntityList = entityManager.findEntity<ECSComponents::NameComponent>();
+
+	//ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
+	//ImGui::Separator();
+
+	//// Iterate through each entity
+	//for (ECS::Entity& e : NamedEntityList)
+	//{
+	//	const auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
+	//	std::string name = nameComp.name;
+	//	bool selected = (selectedEntityID == e.id());
+	//	std::string label = std::to_string(e.id()) + ": " + name;
+	//	if (ImGui::Selectable(label.c_str(), selected))
+	//	{
+	//		selectedEntityID = e.id();
+	//	}
+	//}
 }
 
-void displayHierarchyTab(Engine::EnoEngine& engine_)
+void displayAllEntitiesTab(Engine::EnoEngine& engine_)
 {
+	auto& entityManager = engine_.getEntityManager();
 
-	std::vector<ECS::Entity> NamedEntityList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
+	// Get all entities that have a NameComponent
+	std::vector<ECS::Entity> NamedEntityList = entityManager.findEntity<ECSComponents::NameComponent>();
 
 	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
 	ImGui::Separator();
 
-	// Iterate through each entity
+	// --- Entity selection list ---
 	for (ECS::Entity& e : NamedEntityList)
 	{
-		const auto& nameComp = e.get<ECSComponents::NameComponent>();
+		const auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
 		std::string name = nameComp.name;
-		bool selected = (selectedEntityID == e.getEntityID());
-		std::string label = std::to_string(e.getEntityID()) + ": " + name;
+		bool selected = (selectedEntityID == e.id());
+
+		std::string label = std::to_string(e.id()) + ": " + name;
 		if (ImGui::Selectable(label.c_str(), selected))
 		{
-			selectedEntityID = e.getEntityID();
+			selectedEntityID = e.id();
+		}
+	}
+
+	// --- Display inspector if selected entity exists ---
+	// Note: Entity ID 0 is valid, so we check if any entity was selected
+	if (selectedEntityID != UINT32_MAX)
+	{
+		// Find and display the selected entity
+		bool entityFound = false;
+		for (ECS::Entity& e : NamedEntityList)
+		{
+			if (e.id() == selectedEntityID)
+			{
+				// Found the entity - display inspector immediately
+				displayEntityInspector(entityManager, e);
+				entityFound = true;
+				break;
+			}
+		}
+
+		// If entity was not found, clear selection
+		if (!entityFound)
+		{
+			selectedEntityID = UINT32_MAX;
+		}
+	}
+}
+
+void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree)
+{
+	ImGui::Text("=== Scene Hierarchy ===");
+	ImGui::Separator();
+
+	if (ImGui::Button("Add Root Node")) {
+		auto& entityManager = engine_.getEntityManager();
+		ECS::Entity newEntity = entityManager.create<
+			ECSComponents::TransformComponent,
+			ECSComponents::DrawInfoComponent,
+			ECSComponents::NameComponent
+		>();
+
+		sceneTree.addEntityNode(newEntity);
+		if (g_game) g_game->markEntitiesDirty();
+	}
+
+	ImGui::SameLine();
+
+	static uint32_t parentToAdd = 1;
+	ImGui::InputInt("Parent ID", (int*)&parentToAdd);
+
+	if (ImGui::Button("Add Child")) {
+		auto& entityManager = engine_.getEntityManager();
+		ECS::Entity childEntity = entityManager.create<
+			ECSComponents::TransformComponent,
+			ECSComponents::DrawInfoComponent,
+			ECSComponents::NameComponent
+		>();
+
+		sceneTree.addEntityNode(childEntity);
+		if (g_game) g_game->markEntitiesDirty();
+
+		sceneTree.setParent(childEntity.id(), parentToAdd);
+	}
+
+
+	ImGui::Separator();
+
+	// --- Delete Node Button ---
+	if (ImGui::Button("Delete Selected Node")) {
+			auto& em = engine_.getEntityManager();
+			if (sceneTree.getNode(selectedEntityID)) {
+				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " from hierarchy\n";
+				sceneTree.removeNodeAndDestroyEntity(selectedEntityID, em);
+				selectedEntityID = 0;
+
+				if (g_game)
+					g_game->markEntitiesDirty();
+			}
+			else {
+				std::cout << "[WARN] Selected node " << selectedEntityID << " not found in scene tree\n";
+			}
+	}
+
+
+	ImGui::Separator();
+
+	const auto& allNodes = sceneTree.getAllNodes();
+	bool anyNode = false;
+	for (const auto& [id, node] : allNodes) {
+		if (node.parentID == 0) {
+			drawNodeRecursive(sceneTree, id);
+			anyNode = true;
+		}
+	}
+
+	if (!anyNode)
+		ImGui::TextDisabled("(no nodes to display)");
+
+	ImGui::Separator();
+
+	if (ImGui::Button("Print Tree to Terminal")) {
+		const auto& all = sceneTree.getAllNodes();
+		for (auto& [id, node] : all) {
+			std::cout << "Entity " << node.entityID
+				<< " | Parent: " << node.parentID
+				<< " | Children: ";
+			for (uint32_t c : node.children) std::cout << c << " ";
+			std::cout << "\n";
+		}
+	}
+}
+
+void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
+{
+	// Note: Entity ID 0 is valid, so don't early return based on ID
+	ImGui::Begin("Entity Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+	ImGui::Text("Entity ID: %u", entity.id());
+
+	// Debug output to console when inspector opens
+	static uint32_t lastInspectedID = UINT32_MAX;
+	if (lastInspectedID != entity.id()) {
+		lastInspectedID = entity.id();
+		std::cout << "\n[INSPECTOR DEBUG] Inspecting Entity ID: " << entity.id() << "\n";
+	}
+
+	// --- NameComponent ---
+	if (entity.has<ECSComponents::NameComponent>(entMng)) {
+		auto& nameComp = entity.get<ECSComponents::NameComponent>(entMng);
+
+		char buffer[32];
+		strncpy_s(buffer, nameComp.name, sizeof(buffer) - 1);
+		buffer[sizeof(buffer) - 1] = '\0';
+
+		ImGui::Text("Name: %s", nameComp.name);
+
+	}
+
+	// --- TransformComponent ---
+	if (entity.has<ECSComponents::TransformComponent>(entMng)) {
+		auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
+		ImGui::SeparatorText("Transform");
+		ImGui::DragFloat2("Position", (float*)&transform.pos, 0.5f);
+		ImGui::DragFloat2("Scale", (float*)&transform.scale, 0.05f, 0.1f, 10.0f);
+	}
+
+	// --- PhysicsComponent ---
+	if (entity.has<ECSComponents::PhysicsComponent>(entMng)) {
+		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
+		ImGui::SeparatorText("Physics");
+		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
+		ImGui::DragFloat("Mass", &physics.mass, 0.1f, 0.1f, 100.0f);
+		ImGui::DragFloat("Drag", &physics.drag, 0.01f, 0.0f, 1.0f);
+		ImGui::Checkbox("Use Gravity", &physics.useGravity);
+	}
+
+	// --- DrawInfoComponent ---
+	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
+		auto& draw = entity.get<ECSComponents::DrawInfoComponent>(entMng);
+
+		// Debug output to console - always print to catch changes
+		std::cout << "[INSPECTOR] Entity " << entity.id()
+				  << " DrawInfo: width=" << draw.width
+				  << ", height=" << draw.height
+				  << ", shape='" << draw.shape << "'"
+				  << ", color=(" << draw.color.r << "," << draw.color.g << "," << draw.color.b << "," << draw.color.a << ")\n";
+
+		ImGui::SeparatorText("Draw Info");
+		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+
+		// Display shape (read-only for now)
+		ImGui::Text("Shape: %s", draw.shape);
+
+		// Display color as RGBA values and visual indicator
+		ImVec4 colorVec(draw.color.r, draw.color.g, draw.color.b, draw.color.a);
+
+		// Identify common colors by their RGB values
+		if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
+			ImGui::Text("Color: Green");
+		} else if (draw.color.r == 1.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
+			ImGui::Text("Color: Red");
+		} else if (draw.color.r == 0.0f && draw.color.g == 0.0f && draw.color.b == 1.0f) {
+			ImGui::Text("Color: Blue");
+		} else if (draw.color.r == 1.0f && draw.color.g == 1.0f && draw.color.b == 1.0f) {
+			ImGui::Text("Color: White");
+		} else if (draw.color.r == 0.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
+			ImGui::Text("Color: Black");
+		} else {
+			ImGui::Text("Color: Custom (%.2f, %.2f, %.2f, %.2f)",
+				draw.color.r, draw.color.g, draw.color.b, draw.color.a);
+		}
+		ImGui::ColorButton("##color", colorVec, 0, ImVec2(20, 20));
+
+		// Display texture info if present
+		if (draw.texture != nullptr && draw.texture->isValid()) {
+			ImGui::Text("Texture ID: %d", draw.texID);
+			ImGui::Image((void*)(intptr_t)draw.texture->getID(), ImVec2(64, 64));
+		} else {
+			ImGui::TextDisabled("No texture assigned");
+		}
+	}
+
+	// --- CollisionComponent ---
+	if (entity.has<Collision::CollisionComponent>(entMng)) {
+		auto& collider = entity.get<Collision::CollisionComponent>(entMng);
+		ImGui::SeparatorText("Collider");
+
+		// Collider type selector
+		const char* colliderTypes[] = { "Circle", "Rectangle", "Line", "Point" };
+		int currentType = static_cast<int>(collider.type);
+		if (ImGui::Combo("Type", &currentType, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
+			collider.type = static_cast<Collision::ColliderType>(currentType);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+	ImGui::End();
+}
+
+void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID)
+{
+	using namespace GameInstance;
+	GameInstance::Node* node = sceneTree.getNode(nodeID);
+	if (!node) return;
+
+	std::string label = "Entity " + std::to_string(node->entityID);
+
+	// If node has children -> use TreeNodeEx
+	if (node->children.empty()) {
+		bool selected = (selectedEntityID == node->entityID);
+		if (ImGui::Selectable(label.c_str(), selected))
+			selectedEntityID = node->entityID;
+	}
+	else {
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
+		if (selectedEntityID == node->entityID)
+			flags |= ImGuiTreeNodeFlags_Selected;
+
+		bool open = ImGui::TreeNodeEx(label.c_str(), flags);
+		if (ImGui::IsItemClicked())
+			selectedEntityID = node->entityID;
+
+		if (open) {
+			for (uint32_t childID : node->children)
+				drawNodeRecursive(sceneTree, childID);
+			ImGui::TreePop();
 		}
 	}
 }
@@ -710,87 +1014,89 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 	ImGui::Separator();
 
 	static std::string selectedTexture;
+	static Graphics::TextureData textureData;
+	static int inputRows = 1, inputCols = 1;
+	static int inputFrameW = 96, inputFrameH = 96;
+	static int mode = 0; // 0 = Rows/Cols, 1 = Pixels
 
-	// --- Handle newly dropped files ---
+	// --- Handle dropped files ---
 	if (!g_droppedFiles.empty()) {
-		std::cout << "[DEBUG] Processing dropped files...\n";
-
 		for (auto& path : g_droppedFiles) {
 			std::filesystem::path filePath(path);
 			auto ext = filePath.extension().string();
 
 			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
-				std::cout << "[DEBUG] Loading: " << path << std::endl;
-
 				auto tex = std::make_shared<Graphics::EnoTexture>();
 				if (tex->loadFromFile(path)) {
 					std::string name = filePath.stem().string();
 					loader.addTexture(name, tex);
 					std::cout << "[DEBUG] Imported: " << name << std::endl;
 				}
-				else {
-					std::cout << "[ERROR] Failed to load: " << path << std::endl;
-				}
 			}
 		}
-
 		g_droppedFiles.clear();
 	}
 
-	// --- Inline preview list (thumbnail + name in one line) ---
-	ImGui::Text("Loaded Textures:");
+	// Texture list
 	for (auto& [name, texture] : textures) {
 		if (!texture || !texture->isValid())
 			continue;
 
-		// Draw thumbnail first
 		ImGui::Image((void*)(intptr_t)texture->getID(), ImVec2(48, 48));
-
-		// Keep texture name on same horizontal line
 		ImGui::SameLine();
-
-		// Make name selectable for preview/application
 		bool isSelected = (selectedTexture == name);
 		if (ImGui::Selectable(name.c_str(), isSelected, 0, ImVec2(200, 48))) {
 			selectedTexture = name;
+			textureData.texture = texture;
 		}
-
-		// Add spacing between rows
 		ImGui::Spacing();
 		ImGui::Separator();
 	}
 
 	ImGui::Separator();
 
-
-	// --- Preview & Apply Button ---
+	// If texture selected
 	if (!selectedTexture.empty()) {
 		ImGui::Text("Selected: %s", selectedTexture.c_str());
 
-		ImGui::Button("Apply to Player", ImVec2(200, 40));
+		// Mode selector
+		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
+		ImGui::Combo("Input Mode", &mode, modes, IM_ARRAYSIZE(modes));
 
-		// Handle drag-drop texture application
-		if (ImGui::BeginDragDropTarget()) {
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_TEXTURE")) {
-				const char* droppedName = static_cast<const char*>(payload->Data);
-				auto newTex = loader.getTexture(droppedName);
-				if (newTex && newTex->isValid()) {
-					g_game->setPlayerTexture(newTex);
-					std::cout << "Dropped texture applied: " << droppedName << std::endl;
-				}
+		if (mode == 0) {
+			// ROWS/COLS MODE
+			ImGui::InputInt("Rows", &inputRows);
+			ImGui::InputInt("Columns", &inputCols);
+
+			if (ImGui::Button("Apply Texture (Rows/Cols)")) {
+				textureData.rows = std::max(1, inputRows);
+				textureData.cols = std::max(1, inputCols);
+				textureData.computeFrameSize();
+
+				if (g_game)
+					g_game->applyTextureToPlayer(textureData);
 			}
-			ImGui::EndDragDropTarget();
+
+			ImGui::Text("Frame Size: %d x %d",
+				textureData.frameWidth, textureData.frameHeight);
 		}
+		else {
+			// PIXEL INPUT MODE
+			ImGui::InputInt("Frame Width", &inputFrameW);
+			ImGui::InputInt("Frame Height", &inputFrameH);
 
-		// Handle direct button click (apply selected texture)
-		if (ImGui::IsItemClicked()) {
-			if (playerSpawned_ && playerSystem_) {
-				auto newTex = loader.getTexture(selectedTexture);
-				if (newTex && newTex->isValid()) {
-					g_game->setPlayerTexture(newTex);
-					std::cout << "Applied new texture: " << selectedTexture << std::endl;
-				}
+			if (ImGui::Button("Apply Texture (Pixels)")) {
+				textureData.rows = textureData.texture->getHeight() / std::max(1, inputFrameH);
+				textureData.cols = textureData.texture->getWidth() / std::max(1, inputFrameW);
+				textureData.frameWidth = inputFrameW;
+				textureData.frameHeight = inputFrameH;
+
+				if (g_game)
+					g_game->applyTextureToPlayer(textureData);
 			}
+
+			ImGui::Text("Grid: %d rows × %d cols",
+				textureData.rows, textureData.cols);
 		}
 	}
 }
@@ -819,7 +1125,6 @@ void imGuiBeginDockspace() {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
 	// Begin the dockspace window
-	bool open = true;
 	ImGui::Begin("EnoEngine Dockspace", nullptr, window_flags);
 	ImGui::PopStyleVar(3);
 
@@ -831,40 +1136,8 @@ void imGuiBeginDockspace() {
 void displayGameView(Engine::EnoEngine& engine_) {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
-	// Display toolbar for PLAY/PAUSE/STOP
-	// Switching between play and stop
-	static bool isPlaying = false;
-	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
-		// Play/Stop game
-		isPlaying = !isPlaying;
-		g_game->setEditorState(isPlaying ? Playing : Stopped);
-		//std::cout << "imgui Editor state: " << g_game->getEditorState() << std::endl;
-	}
-	ImGui::SameLine();
-	// Pause button should only work if editor state is not in stopped mode
-	if (ImGui::Button("Pause"))
-	{
-		if (g_game->getEditorState() != Stopped)
-		{
-			// Toggle pause game/keyframe mode
-			g_game->setEditorState(g_game->getEditorState() == Playing ? Paused : Playing);
-			//std::cout << "imgui Editor state: " << g_game->getEditorState() << std::endl;
-		}
-
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Next"))
-	{
-		// Next button should only work if editor state is in paused
-		if (g_game->getEditorState() == Paused)
-		{
-			// Next keyframe
-			g_game->setEditorState(NextKeyFrame);
-			//std::cout << "imgui Editor state: " << g_game->getEditorState() << std::endl;
-		}
-
-	}
-
+	// Display info text - this is now a read-only overview window
+	ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Game View - Full Scene Overview (Read-Only)");
 	ImGui::Separator();
 
 	if (g_game && g_game->getGameFramebuffer()) {
@@ -886,7 +1159,8 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				displaySize.y = contentSize.y;
 				displaySize.x = contentSize.y * virtualAspect;
 				offset.x = (contentSize.x - displaySize.x) * 0.5f; // Center horizontally
-			} else {
+			}
+			else {
 				// Content is taller - fit to width, add vertical letterboxing
 				displaySize.x = contentSize.x;
 				displaySize.y = contentSize.x / virtualAspect;
@@ -907,7 +1181,7 @@ void displayGameView(Engine::EnoEngine& engine_) {
 			// Position the image with offset (centered with letterboxing)
 			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
 
-			// Display the framebuffer texture scaled to fit
+			// Display the framebuffer texture scaled to fit (READ-ONLY - no interactions)
 			ImGui::Image(
 				(void*)(intptr_t)fb->getTextureID(),
 				displaySize,
@@ -915,111 +1189,165 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				ImVec2(1, 0)
 			);
 
-			// Handle entity deletion by click with corrected mouse coordinates
-			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
-				ImVec2 mousePos = ImGui::GetMousePos();
-				ImVec2 imageMin = ImGui::GetItemRectMin();
-				ImVec2 imageMax = ImGui::GetItemRectMax();
+			// Note: All interactions (drag-drop, delete, prefab placement) have been moved to Editor View
+			// This window is now read-only for observing the full game scene
+		}
+	}
+}
 
-				// Mouse position relative to the scaled image (0 to 1)
-				float relX = (mousePos.x - imageMin.x) / (imageMax.x - imageMin.x);
-				float relY = (mousePos.y - imageMin.y) / (imageMax.y - imageMin.y);
+void displayEditorView(Engine::EnoEngine& engine_) {
+	auto& entityManager = engine_.getEntityManager();
+	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
-				relX = std::clamp(relX, 0.0f, 1.0f);
-				relY = std::clamp(relY, 0.0f, 1.0f);
+	// Display toolbar for PLAY/PAUSE/STOP (moved from Game View)
+	static bool isPlaying = false;
+	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
+		isPlaying = !isPlaying;
+		g_game->setEditorState(isPlaying ? Playing : Stopped);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("()Pause")) {
+		if (g_game->getEditorState() != Stopped) {
+			g_game->setEditorState(g_game->getEditorState() == Playing ? Paused : Playing);
+		}
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Next")) {
+		if (g_game->getEditorState() == Paused) {
+			g_game->setEditorState(NextKeyFrame);
+		}
+	}
+	ImGui::Separator();
 
-				// Convert to actual game coordinates (fixed virtual resolution)
-				float gameX = relX * virtualWidth;
-				float gameY = relY * virtualHeight;
+	// Informational text
+	ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Editor View - Use WASD to move camera");
+	ImGui::Separator();
 
-				// Check for entity at this position
-				auto clicked = getEntityUnderMouse(engine_, ImVec2(gameX, gameY));
-				if (clicked.has_value()) {
-					std::cout << "Deleted entity: " << clicked->getEntityID()
-						<< " at game coords (" << gameX << ", " << gameY << ")\n";
-					clicked->destroy();
-					if (g_game) g_game->markEntitiesDirty();
-				} else {
-					std::cout << "No entity found at game coords (" << gameX << ", " << gameY << ")\n";
-				}
+	if (g_game && g_game->getEditorFramebuffer()) {
+		auto* fb = g_game->getEditorFramebuffer();
 
-				g_waitingForEntityDeletion = false;
+		if (contentSize.x > 0 && contentSize.y > 0) {
+			// Get editor resolution from game
+			float editorWidth = static_cast<float>(g_game->getEditorWidth());
+			float editorHeight = static_cast<float>(g_game->getEditorHeight());
+			float editorAspect = editorWidth / editorHeight;
+
+			// Calculate aspect-ratio-preserving size to fit in the Editor View
+			float contentAspect = contentSize.x / contentSize.y;
+			ImVec2 displaySize;
+			ImVec2 offset(0, 0);
+
+			if (contentAspect > editorAspect) {
+				displaySize.y = contentSize.y;
+				displaySize.x = contentSize.y * editorAspect;
+				offset.x = (contentSize.x - displaySize.x) * 0.5f;
+			} else {
+				displaySize.x = contentSize.x;
+				displaySize.y = contentSize.x / editorAspect;
+				offset.y = (contentSize.y - displaySize.y) * 0.5f;
 			}
 
-			// Handle prefab placement with corrected mouse coordinates
-			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {
-				ImVec2 mousePos = ImGui::GetMousePos();
+			// Draw black letterbox bars
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			ImVec2 windowPos = ImGui::GetCursorScreenPos();
+
+			drawList->AddRectFilled(
+				windowPos,
+				ImVec2(windowPos.x + contentSize.x, windowPos.y + contentSize.y),
+				IM_COL32(0, 0, 0, 255)
+			);
+
+			// Position the image with offset (centered with letterboxing)
+			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
+
+			// Display the editor framebuffer texture scaled to fit
+			ImGui::Image(
+				(void*)(intptr_t)fb->getTextureID(),
+				displaySize,
+				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
+				ImVec2(1, 0)
+			);
+
+			// ========== ALL EDITOR INTERACTIONS (moved from Game View) ==========
+
+			// Helper function to convert screen coordinates to world coordinates (accounting for camera)
+			auto screenToWorldCoords = [&](ImVec2 screenPos) -> ImVec2 {
 				ImVec2 imageMin = ImGui::GetItemRectMin();
 				ImVec2 imageMax = ImGui::GetItemRectMax();
 
-				// Mouse position relative to the scaled image (0 to 1)
-				float relX = (mousePos.x - imageMin.x) / (imageMax.x - imageMin.x);
-				float relY = (mousePos.y - imageMin.y) / (imageMax.y - imageMin.y);
-
-				relX = std::clamp(relX, 0.0f, 1.0f);
-				relY = std::clamp(relY, 0.0f, 1.0f);
-
-				// Convert to actual game coordinates (fixed virtual resolution)
-				float gameX = relX * virtualWidth;
-				float gameY = relY * virtualHeight;
-
-				spawnPrefabAt(gameX, gameY, g_selectedPrefabForPlacement, engine_);
-				g_selectedPrefabForPlacement.clear();
-
-				std::cout << "Mouse: (" << mousePos.x << ", " << mousePos.y << ")"
-					<< " | Relative: (" << relX << ", " << relY << ")"
-					<< " | Game: (" << gameX << ", " << gameY << ")"
-					<< " | Virtual: " << virtualWidth << "x" << virtualHeight << "\n";
-			}
-
-			// ========== ENTITY DRAG-DROP LOGIC (with coordinate conversion) ==========
-			// Helper function to convert screen coordinates to game coordinates
-			auto screenToGameCoords = [&](ImVec2 screenPos) -> ImVec2 {
-				ImVec2 imageMin = ImGui::GetItemRectMin();
-				ImVec2 imageMax = ImGui::GetItemRectMax();
-
+				// Get mouse position relative to the image (0.0 to 1.0)
 				float relX = (screenPos.x - imageMin.x) / (imageMax.x - imageMin.x);
 				float relY = (screenPos.y - imageMin.y) / (imageMax.y - imageMin.y);
 
 				relX = std::clamp(relX, 0.0f, 1.0f);
 				relY = std::clamp(relY, 0.0f, 1.0f);
 
-				return ImVec2(relX * virtualWidth, relY * virtualHeight);
+				// Convert to screen space coordinates (within the editor viewport)
+				float screenX = relX * editorWidth;
+				float screenY = relY * editorHeight;
+
+				// Add camera offset to convert screen space to world space
+				float worldX = screenX + g_game->getEditorCameraX();
+				float worldY = screenY + g_game->getEditorCameraY();
+
+				return ImVec2(worldX, worldY);
 			};
 
-			// --- Begin drag ---
-			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging) {
-				ImVec2 gamePos = screenToGameCoords(ImGui::GetMousePos());
-				auto clicked = getEntityUnderMouse(engine_, gamePos);
+			// --- Handle entity deletion by click ---
+			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
+				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
+
+				auto clicked = getEntityUnderMouse(engine_, worldPos);
+				if (clicked.has_value()) {
+					std::cout << "Deleted entity: " << clicked->id()
+						<< " at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
+					clicked->destroy(entityManager);
+					if (g_game) g_game->markEntitiesDirty();
+				} else {
+					std::cout << "No entity found at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
+				}
+
+				g_waitingForEntityDeletion = false;
+			}
+
+			// --- Handle prefab placement ---
+			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {
+				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
+
+				spawnPrefabAt(worldPos.x, worldPos.y, g_selectedPrefabForPlacement, engine_);
+				g_selectedPrefabForPlacement.clear();
+
+				std::cout << "Placed prefab at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
+			}
+
+			// --- Entity drag-drop logic ---
+			// Begin drag
+			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
+				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging) {
+				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
+				auto clicked = getEntityUnderMouse(engine_, worldPos);
 				if (clicked) {
-					draggedEntityID = clicked->getEntityID();
+					draggedEntityID = clicked->id();
 					isDragging = true;
 
-					auto& tc = clicked->get<ECSComponents::TransformComponent>();
-					dragOffset.x = gamePos.x - tc.pos.x;
-					dragOffset.y = gamePos.y - tc.pos.y;
+					auto& tc = clicked->get<ECSComponents::TransformComponent>(entityManager);
+					dragOffset.x = worldPos.x - tc.pos.x;
+					dragOffset.y = worldPos.y - tc.pos.y;
 
 					std::cout << "Started dragging entity " << draggedEntityID << "\n";
 				}
 			}
 
-			// --- While dragging ---
+			// While dragging
 			if (isDragging && ImGui::IsMouseDown(0)) {
-				ImVec2 gamePos = screenToGameCoords(ImGui::GetMousePos());
+				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 
-				auto all = engine_.getEntityManager().findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+				auto all = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 				for (auto& e : all) {
-					if (e.getEntityID() == draggedEntityID) {
-						auto& tc = e.get<ECSComponents::TransformComponent>();
-						auto& dc = e.get<ECSComponents::DrawInfoComponent>();
-
-						// Update transform
-						tc.pos.x = gamePos.x - dragOffset.x;
-						tc.pos.y = gamePos.y - dragOffset.y;
-
-						// Sync DrawInfo so renderer knows the new position
-						dc.xPos = tc.pos.x - (dc.width * 0.5f);
-						dc.yPos = tc.pos.y - (dc.height * 0.5f);
+					if (e.id() == draggedEntityID) {
+						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+						tc.pos.x = worldPos.x - dragOffset.x;
+						tc.pos.y = worldPos.y - dragOffset.y;
 
 						if (g_game)
 							g_game->markEntitiesDirty();
@@ -1028,11 +1356,11 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				}
 			}
 
-			// --- Drop ---
+			// Drop
 			if (isDragging && ImGui::IsMouseReleased(0)) {
-				ImVec2 gamePos = screenToGameCoords(ImGui::GetMousePos());
+				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 				std::cout << "Entity " << draggedEntityID
-					<< " dropped at game coords (" << gamePos.x << ", " << gamePos.y << ")\n";
+					<< " dropped at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 				isDragging = false;
 				draggedEntityID = 0;
 			}
@@ -1059,45 +1387,43 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	if (!firstRun) return;
 	firstRun = false;
 
-	// Get main viewport
-	ImGuiViewport* viewport = ImGui::GetMainViewport();
-	float screenWidth = viewport->Size.x;
-	float screenHeight = viewport->Size.y;
+	ImGuiID dockspace_id = ImGui::GetID("MainDockspace");
 
-	// Define layout proportions
-	const float leftWidth = screenWidth * 0.20f;     // 20% left
-	const float rightWidth = screenWidth * 0.25f;    // 25% right
-	const float centerWidth = screenWidth - leftWidth - rightWidth;
-	const float bottomHeight = screenHeight * 0.20f; // 20% bottom
-	const float mainHeight = screenHeight - bottomHeight;
+	// Clear any existing layout
+	ImGui::DockBuilderRemoveNode(dockspace_id);
+	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+	ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
 
-	// Set initial window positions and sizes
+	// Split the dockspace into sections
+	ImGuiID dock_main_id = dockspace_id;
+	ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
+	ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.25f, nullptr, &dock_main_id);
+	ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.32f, nullptr, &dock_main_id);
 
-	// LEFT PANEL 
-	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.33f));
+	// Split right side vertically to have Assets on top and Game View on bottom
+	ImGuiID dock_id_right_top = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Up, 0.5f, nullptr, &dock_id_right);
 
-	// LEFT PANEL
-	ImGui::SetNextWindowPos(ImVec2(0, mainHeight * 0.33f));
-	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.33f));
+	// Dock windows to their respective nodes
+	// Left side - all three windows docked to same node will appear as tabs
+	ImGui::DockBuilderDockWindow("Main Controls", dock_id_left);
+	ImGui::DockBuilderDockWindow("Prefabs", dock_id_left);
+	ImGui::DockBuilderDockWindow("Edit", dock_id_left);
 
-	// LEFT PANEL
-	ImGui::SetNextWindowPos(ImVec2(0, mainHeight * 0.66f));
-	ImGui::SetNextWindowSize(ImVec2(leftWidth, mainHeight * 0.34f));
+	// Center - Editor View (zoomed in, WASD camera control)
+	ImGui::DockBuilderDockWindow("Editor View", dock_main_id);
 
-	// CENTER
-	ImGui::SetNextWindowPos(ImVec2(leftWidth, 0));
-	ImGui::SetNextWindowSize(ImVec2(centerWidth, mainHeight));
+	// Right side top - Assets Browser
+	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_right_top);
 
-	// RIGHT PANEL
-	ImGui::SetNextWindowPos(ImVec2(leftWidth + centerWidth, 0));
-	ImGui::SetNextWindowSize(ImVec2(rightWidth, mainHeight));
+	// Right side bottom - Game View (full scene)
+	ImGui::DockBuilderDockWindow("Game View", dock_id_right);
 
-	// BOTTOM PANEL 
-	ImGui::SetNextWindowPos(ImVec2(0, mainHeight));
-	ImGui::SetNextWindowSize(ImVec2(screenWidth, bottomHeight));
+	// Bottom - FPS
+	ImGui::DockBuilderDockWindow("FPS", dock_id_bottom);
 
-	std::cout << "Default layout applied to windows" << std::endl;
+	ImGui::DockBuilderFinish(dockspace_id);
+
+	std::cout << "Default dockspace layout applied" << std::endl;
 }
 
 void imGuiEndDockspace() {

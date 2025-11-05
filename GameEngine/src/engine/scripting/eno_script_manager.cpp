@@ -2,81 +2,106 @@
 
 namespace Script
 {
-	std::optional<std::unique_ptr<EnoScript>> EnoScriptManager::selectScript()
+	EnoScriptManager::EnoScriptManager(Core::EnoCoreHost& core) :
+		coreHost_{ core }
+	{}
+
+	// Select a script from a file dialog and 
+	// create a unique_ptr out of the script to be returned
+	std::unique_ptr<EnoScript> EnoScriptManager::selectScript()
 	{
-		// Using COM for windows
-		HRESULT result = CoInitializeEx(NULL,
-			COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+		std::unique_ptr<EnoScript> script;
+		
+		HRESULT result = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 
 		if (FAILED(result))
 		{
+			CoUninitialize();
 			throw std::runtime_error("COM Init failed!");
 		}
-		else if (SUCCEEDED(result))
-		{
-			IFileOpenDialog* diag{ nullptr };
 
-			// Create FileOpenDialog
-			result = CoCreateInstance(
-				CLSID_FileOpenDialog,
-				NULL,
-				CLSCTX_ALL,
-				IID_IFileOpenDialog,
-				reinterpret_cast<void**>(&diag));
+		// Init file diag
+		// 
+		// Source: https://learn.microsoft.com/en-us/windows/win32/learnwin32/example--the-open-dialog-box
+		IFileDialog* diag{ nullptr };
+		result = CoCreateInstance(CLSID_FileOpenDialog,
+			NULL, CLSCTX_ALL, IID_IFileDialog, reinterpret_cast<void**>(&diag));
+
+		if (FAILED(result))
+		{
+			CoUninitialize();
+			throw std::runtime_error("COM Instance creation failed!");
+		}
+
+		// Filter for .cs files, but allow the user to view all files as well!
+		// 
+		// Source: https://cplusplus.com/forum/windows/275617/
+		COMDLG_FILTERSPEC filteredFiles[] = { { L"C# Files", L"*.cs"}, { L"All Files", L"*.*"} };
+		diag->SetFileTypes(ARRAYSIZE(filteredFiles), filteredFiles);
+
+		// Loop will run until the user exits out of the diag OR
+		// when the user picks a .cs file!!!
+		while (true)
+		{
+			result = diag->Show(NULL);
+
+			// User cancels the dialog, so we exit
+			if (result == HRESULT_FROM_WIN32(ERROR_CANCELLED))
+				break;
 
 			if (SUCCEEDED(result))
 			{
-				// Directory to open
-				IShellItem* folder{ nullptr };
-				std::filesystem::path scriptFolder = std::filesystem::absolute(scriptPath);
-				result = SHCreateItemFromParsingName(scriptFolder.wstring().c_str(), NULL, IID_PPV_ARGS(&folder));
+				IShellItem* file{ nullptr };
+				result = diag->GetResult(&file);
+
 				if (SUCCEEDED(result))
 				{
-					diag->SetFolder(folder);
-					folder->Release();
-				}
+					PWSTR filePath{ nullptr };
+					PWSTR fileName{ nullptr };
 
-				// Show dialog
-				result = diag->Show(NULL);
-				if (SUCCEEDED(result))
-				{
-					IShellItem* file;
-					result = diag->GetResult(&file);
-
-					// Succeeded in picking a file
-					// Extract information e.g filename
-					if (SUCCEEDED(result))
+					result = file->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
+					HRESULT result2 = file->GetDisplayName(SIGDN_NORMALDISPLAY, &fileName);
+					if (SUCCEEDED(result) && SUCCEEDED(result2))
 					{
-						PWSTR filePath{ nullptr };
-						PWSTR fileName{ nullptr };
+						std::filesystem::path path{ filePath };
 
-						result = file->GetDisplayName(SIGDN_FILESYSPATH, &filePath);
-						HRESULT result2 = file->GetDisplayName(SIGDN_NORMALDISPLAY, &fileName);
-						if (SUCCEEDED(result) && SUCCEEDED(result2))
+						// Ensure that this is a C# file.
+						if (path.extension() == L".cs")
 						{
-							auto script = std::make_unique<EnoScript>(fileName, filePath);
+							script = std::make_unique<EnoScript>(coreHost_, fileName, filePath);
 
+							// Cleanup
 							CoTaskMemFree(filePath);
 							CoTaskMemFree(fileName);
-
+							
 							file->Release();
 							diag->Release();
-
+							
 							CoUninitialize();
 
 							return script;
 						}
-
-						file->Release();
+						else
+						{
+							MessageBoxW(
+								NULL,
+								L"Invalid file type selected! Please select a C# script(.cs)",
+								L"Invalid selection",
+								MB_OK | MB_ICONWARNING);
+						}
 					}
+
+					if (filePath) CoTaskMemFree(filePath);
+					if (fileName) CoTaskMemFree(fileName);
+					file->Release();
 				}
 			}
-
-			diag->Release();
 		}
-
+		
+		diag->Release();
 		CoUninitialize();
-		return std::nullopt;
+
+		return script;
 	}
 
 	// Create a CS script in the user_scripts folder
@@ -99,8 +124,9 @@ namespace Script
 		// with the class name
 		file << prepareScript(name);
 
+		// Create and return the unique EnoScript
 		std::wstring wname{ name.begin(), name.end() };
-		auto script = std::make_unique<EnoScript>(wname, absPath.wstring());
+		auto script = std::make_unique<EnoScript>(coreHost_, wname, absPath.wstring());
 
 		return script;
 	}
@@ -114,12 +140,12 @@ namespace Script
 		std::filesystem::path absPath = std::filesystem::absolute(folder / filename);
 
 		// Create the script if it does not exist
-		if (!scriptExists(absPath.string()))
+		if (!scriptExists(name, absPath.string()))
 			createScript(name);
 
-		// Create and return EnoScript
+		// Create and return the unique EnoScript
 		std::wstring wname{ name.begin(), name.end() };
-		auto script = std::make_unique<EnoScript>(wname, absPath.wstring());
+		auto script = std::make_unique<EnoScript>(coreHost_, wname, absPath.wstring());
 		
 		openScript(absPath.string());
 
@@ -140,7 +166,8 @@ namespace Script
 		std::wcout << L"Opening: " << quotedPath << std::endl;
 
 		HINSTANCE result = ShellExecuteW(nullptr, L"open", L"code", quotedPath.c_str(), nullptr, SW_SHOWNORMAL);
-		if ((INT_PTR)result <= 32) {
+		if ((INT_PTR)result <= 32) 
+		{
 			std::cerr << "ShellExecute failed with code " << (INT_PTR)result << std::endl;
 		}
 	}
@@ -161,7 +188,7 @@ namespace Script
 	}
 
 	// Check if a script file exists in the specified location
-	bool EnoScriptManager::scriptExists(const std::string& loc)
+	bool EnoScriptManager::scriptExists(const std::string& name, const std::string& loc)
 	{
 		std::filesystem::path p = std::filesystem::absolute(loc);
 

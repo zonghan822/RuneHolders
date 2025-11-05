@@ -21,3 +21,8 @@
 [2025-10-25 21:55:00] Failed to find the sound Water_Drip
 [2025-10-25 21:56:21] Failed to find the groupSFX
 [2025-10-25 22:27:28] No Event is associated with this input!
+[2025-11-03 20:11:55] Failed to find this entity in the Entity Map!
+[2025-11-04 21:18:30] Unknown component passed to be deduced!
+[2025-11-04 23:13:07] Unknown type has been set in the save file!
+[2025-11-04 23:22:48] Unknown typeevec2(float) has been set in the save file!
+[2025-11-04 23:25:18] Unknown type { collidertype } has been set in the save file!

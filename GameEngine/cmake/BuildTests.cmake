@@ -41,12 +41,19 @@ endif()
 # Set common include directories
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/${ENGINE_NAME})
-target_compile_definitions(${APP_NAME} PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/")
+target_compile_definitions(${APP_NAME} PRIVATE
+    ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
+    CONFIG_DIR_PATH="${CMAKE_SOURCE_DIR}/src/App/${APP_NAME}/"
+    SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}"
+    SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}"
+    DOTNET_ROOT="${DOTNET_PATH}"
+)
 
 # Link the library to the executable using the CMake target
 target_link_libraries(${APP_NAME} PUBLIC
     ${ENGINE_NAME}
 )
 _fmod_copy_dll(${APP_NAME})
+_dotnet_copy_dll(${APP_NAME})
 
 ENDMACRO(SETUP_APP)

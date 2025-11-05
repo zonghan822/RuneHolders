@@ -26,7 +26,7 @@
 #include "../prefab/prefab.hpp"
 #include "../crashlog/crashlogger.hpp"
 #include "../graphics/animation/animation.hpp"
-
+#include "../game_instance/eno_scene_tree.hpp"
 
 // stds
 #include <functional>
@@ -145,8 +145,9 @@ namespace Engine
 		Event::EnoEventBus bus_;
 		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
-		ECS::EntityManager entityMng_;
-		Editor::EnoEditor editor{ bus_ };
+		ECS::EntityManager entityMng_{ bus_ };
+		Core::EnoCoreHost coreHost_{ bus_ };
+		Editor::EnoEditor editor{ bus_, entityMng_, coreHost_ };
 		
 		// Systems
 		Input::EnoInputManager inputMng_{ bus_ };

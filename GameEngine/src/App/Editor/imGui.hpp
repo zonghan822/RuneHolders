@@ -10,11 +10,13 @@
 
 #pragma once
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h> 
+#include <imgui_impl_opengl3.h>
 #include <chrono>
 #include <random>
 #include <unordered_map>
+#include <algorithm>
 
 
 #include "player/player.hpp"
@@ -121,11 +123,32 @@ void displayEntityCount(Engine::EnoEngine& engine_);
 void displayEditTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
- * \brief       Displays HierachyTab
+ * \brief       Displays Hierachy Tab
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void displayHierarchyTab(Engine::EnoEngine& engine_);
+void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree);
+
+/*============================================================================================
+ * \brief       Displays all Nodes in a recursive order
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID);
+
+/*============================================================================================
+ * \brief       Displays All Entities View Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayAllEntitiesTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays Entity Inspector
+ * \param[in]   ECS::Entity&
+ * \return      void
+*//*========================================================================================*/
+void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity);
 
 /*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab
@@ -158,6 +181,7 @@ void displayFPSTab(Engine::EnoEngine& engine_);
 
 // docking shi
 void displayGameView(Engine::EnoEngine& engine_);
+void displayEditorView(Engine::EnoEngine& engine_);
 
 void imGuiSetupDefaultLayout();
 
