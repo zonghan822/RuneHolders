@@ -435,8 +435,6 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 				if (!deletedSelected && e.getEntityID() == selectedEntityID) {
 					if (playerEntityID_ == e.getEntityID()) playerSpawned_ = false;
-					//sceneTree.removeNode(e.getEntityID());
-					//sceneTree.removeNodeAndDestroyEntity(e.getEntityID(), engine_.getEntityManager());
 					e.destroy();
 					selectedEntityID = 0;
 					deletedSelected = true;
@@ -446,9 +444,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 				if (nameComp.name == target) {
 					if (playerEntityID_ == e.getEntityID()) playerSpawned_ = false;
-					//sceneTree.removeNode(e.getEntityID());
-					sceneTree.removeNodeAndDestroyEntity(e.getEntityID(), engine_.getEntityManager());
-					//toDelete.push_back(e);
+					toDelete.push_back(e);
 				}
 
 			}
@@ -467,9 +463,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 				for (auto& e : engine_.getEntityManager().findEntity<>()) {
 					if (e.getEntityID() == lastID) {
 						if (playerEntityID_ == lastID) playerSpawned_ = false;
-						//sceneTree.removeNode(lastID);
-						sceneTree.removeNodeAndDestroyEntity(lastID, engine_.getEntityManager());
-						//toDelete.push_back(e);
+						toDelete.push_back(e);
 						found = true;
 						if (g_game) g_game->markEntitiesDirty();
 						std::cout << "Deleted last spawned entity (ID: " << lastID << ")\n";
@@ -501,9 +495,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 	else if (FilterType == Filters::All) {
 		if (ImGui::Button("Delete ALL Entities")) {
 			for (auto& e : engine_.getEntityManager().findEntity<>()) {
-				//sceneTree.removeNode(e.getEntityID());
-				sceneTree.removeNodeAndDestroyEntity(e.getEntityID(), engine_.getEntityManager());
-				//toDelete.push_back(e);
+				toDelete.push_back(e);
 			}
 			playerSpawned_ = false;
 		}
@@ -512,9 +504,7 @@ void displayEditTab(Engine::EnoEngine& engine_) {
 
 	if (!toDelete.empty()) {
 		for (auto& a : toDelete) {
-		//	//sceneTree.removeNode(a.getEntityID());
-			sceneTree.removeNodeAndDestroyEntity(a.getEntityID(), engine_.getEntityManager());
-		//	//a.destroy();
+			a.destroy();
 		}
 
 		// Mark cache as dirty after deletion
@@ -863,12 +853,10 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 	}
 
 
-	//BUTTON START
 	ImGui::Separator();
 
 	// --- Delete Node Button ---
 	if (ImGui::Button("Delete Selected Node")) {
-		if (selectedEntityID != 0) {
 			auto& em = engine_.getEntityManager();
 			if (sceneTree.getNode(selectedEntityID)) {
 				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " from hierarchy\n";
@@ -881,12 +869,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 			else {
 				std::cout << "[WARN] Selected node " << selectedEntityID << " not found in scene tree\n";
 			}
-		}
-		else {
-			std::cout << "[WARN] No node selected for deletion\n";
-		}
 	}
-	//BUTTON END
 
 
 	ImGui::Separator();
@@ -1187,9 +1170,7 @@ void displayGameView(Engine::EnoEngine& engine_) {
 				if (clicked.has_value()) {
 					std::cout << "Deleted entity: " << clicked->getEntityID()
 						<< " at game coords (" << gameX << ", " << gameY << ")\n";
-					//clicked->destroy();
-					//sceneTree.removeNode(clicked->getEntityID());
-					sceneTree.removeNodeAndDestroyEntity(clicked->getEntityID(), engine_.getEntityManager());
+					clicked->destroy();
 					if (g_game) g_game->markEntitiesDirty();
 				}
 				else {

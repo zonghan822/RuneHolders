@@ -115,7 +115,7 @@ namespace GameInstance
 			}
 			std::cout << "\n";
 
-			// First, remove this node from its parent's children list
+			// Remove this node from its parent's children list
 			uint32_t parentID = nodeIt->second.parentID;
 			if (parentID != 0) {
 				auto parentIt = nodes_.find(parentID);
@@ -128,12 +128,11 @@ namespace GameInstance
 				}
 			}
 
-			// Now process deletion in REVERSE order (children first, then parent)
-			// This ensures children are destroyed before their parents
+			// Now process deletion in reverse order (children first, then parent) so that children are destroyed before their parents
 			for (auto it = nodesToDelete.rbegin(); it != nodesToDelete.rend(); ++it) {
 				uint32_t idToDelete = *it;
 
-				// First check if entity exists in EntityManager before trying to destroy
+				// Check if entity exists in EntityManager before trying to destroy
 				try {
 					// Check if entity exists in the entity manager's map
 					auto& entityMap = em.getMap();
@@ -145,7 +144,7 @@ namespace GameInstance
 					std::cout << " Exception while destroying entity " << idToDelete << ": " << e.what() << "\n";
 				}
 
-				// Remove from scene tree (this should always succeed if node was collected)
+				// Remove from scene tree
 				auto eraseIt = nodes_.find(idToDelete);
 				if (eraseIt != nodes_.end()) {
 					nodes_.erase(eraseIt);
