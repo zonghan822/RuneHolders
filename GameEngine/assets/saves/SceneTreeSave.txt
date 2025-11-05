@@ -19,6 +19,7 @@
 				"Width": <float> { 20 }
 				"Height": <float> { 20 }
 				"Shape": <char32> { Trapezoid }
+				"Texture Path": <texchar240> {  }
 				"TexID": <int> { 0 }
 			}
 
@@ -97,6 +98,7 @@
 				"Width": <float> { 20 }
 				"Height": <float> { 20 }
 				"Shape": <char32> { Trapezoid }
+				"Texture Path": <texchar240> {  }
 				"TexID": <int> { 0 }
 			}
 

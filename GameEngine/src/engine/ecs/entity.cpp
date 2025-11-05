@@ -526,6 +526,19 @@ namespace ECS
 			return Math::eVec2{ fv, sv };
 		}
 
+		// File path types
+		if (ttype == "texchar240")
+		{
+			auto tex = std::make_shared<Graphics::EnoTexture>();
+
+			// Map Texture
+			bus_.publish<Graphics::TextureMapping>(Graphics::TextureMapping{ tvalue, tex });
+
+			// Load
+			tex->loadFromFile(tvalue);
+			return tex;
+		}
+
 		throw std::runtime_error("Unknown type { " + ttype + " } has been set in the save file!");
 	}
 }

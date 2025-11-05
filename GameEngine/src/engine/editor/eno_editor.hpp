@@ -83,10 +83,10 @@ namespace Editor
 			//tree_.load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 
 			//auto nodes = tree_.getAllNodes();
-			//auto collioffset = nodes[0]->entity_.get<ECSComponents::CollisionComponent>(entMng_).offset.x; // should give me 5
-			//auto colliRectWidth = nodes[0]->entity_.get<ECSComponents::CollisionComponent>(entMng_).data.rectangle.width; // should give me 10
-			//auto physicsVelMin = nodes[0]->entity_.get<ECSComponents::PhysicsComponent>(entMng_).velocityMin; // should give me -1000
-			//auto physicsVelMax = nodes[0]->entity_.get<ECSComponents::PhysicsComponent>(entMng_).velocityMax; // should give me 1000
+			////auto collioffset = nodes[0]->entity_.get<ECSComponents::CollisionComponent>(entMng_).offset.x; // should give me 5
+			////auto colliRectWidth = nodes[0]->entity_.get<ECSComponents::CollisionComponent>(entMng_).data.rectangle.width; // should give me 10
+			////auto physicsVelMin = nodes[0]->entity_.get<ECSComponents::PhysicsComponent>(entMng_).velocityMin; // should give me -1000
+			////auto physicsVelMax = nodes[0]->entity_.get<ECSComponents::PhysicsComponent>(entMng_).velocityMax; // should give me 1000
 
 			//std::cout << "Collision offset: " << collioffset << std::endl <<
 			//	"Collision rect width: " << colliRectWidth << std::endl <<

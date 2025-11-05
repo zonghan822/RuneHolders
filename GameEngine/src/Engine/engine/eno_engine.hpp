@@ -145,7 +145,7 @@ namespace Engine
 		Event::EnoEventBus bus_;
 		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
-		ECS::EntityManager entityMng_;
+		ECS::EntityManager entityMng_{ bus_ };
 		Core::EnoCoreHost coreHost_{ bus_ };
 		Editor::EnoEditor editor{ bus_, entityMng_, coreHost_ };
 		

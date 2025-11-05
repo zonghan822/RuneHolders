@@ -16,6 +16,9 @@
 //i would want to add the math and graphics library here
 #include "../../graphics/graphics.hpp"
 
+#define FILE_PATH_LEN 240
+
+
 enum WindowID { Main, Edit, FPS, Prefabs, Assets };
 static WindowID activeWindow = WindowID::Main;
 
@@ -59,6 +62,7 @@ namespace ECSComponents
 
 		// Texture support
 		std::shared_ptr<Graphics::EnoTexture> texture = nullptr;
+		char texturePath[FILE_PATH_LEN];
 		int texID = 0;  // For sprite sheet indexing
 
 		// Default constructor
@@ -70,6 +74,8 @@ namespace ECSComponents
 		{
 			strncpy_s(shape, n, sizeof(shape) - 1);
 			shape[sizeof(shape) - 1] = '\0';
+
+			memset(texturePath, 0, sizeof(texturePath));
 
 			if (c == Color::Green) {
 				color = Graphics::Color::Green;
@@ -89,6 +95,9 @@ namespace ECSComponents
 		{
 			strncpy_s(shape, other.shape, sizeof(shape) - 1);
 			shape[sizeof(shape) - 1] = '\0';
+
+			strncpy_s(texturePath, other.texturePath, sizeof(texturePath) - 1);
+			texturePath[sizeof(texturePath) - 1] = '\0';
 		}
 
 		// Copy assignment operator
@@ -119,23 +128,25 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
-			l("Width",		width,		"float");
-			l("Height",		height,		"float");
-			l("Shape",		shape,		"char32");
+			l("Width",			width,				"float");
+			l("Height",			height,				"float");
+			l("Shape",			shape,				"char32");
 			//l("Color",		color,		"Color");
-
-			l("TexID",		texID,		"int");
+			
+			l("Texture Path",	texturePath,		"texchar240");
+			l("TexID",			texID,				"int");
 		}
 
 		template <typename Visitor>
 		void reflect(Visitor&& l) const
 		{
-			l("Width",		width,		"float");
-			l("height",		height,		"float");
-			l("Shape",		shape,		"char32");
+			l("Width",			width,				"float");
+			l("height",			height,				"float");
+			l("Shape",			shape,				"char32");
 			//l("Color",		color,		"Color");
-
-			l("TexID",		texID,		"int");
+			
+			l("Texture Path",	texturePath,		"texchar240");
+			l("TexID",			texID,				"int");
 		}
 	};
 

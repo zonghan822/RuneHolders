@@ -14,6 +14,8 @@
 #include "archetype.hpp"
 #include "archetype_presets.hpp"
 
+#include "../event/event_bus.hpp"
+
 // Math
 #include "../math/math.hpp"
 
@@ -53,7 +55,10 @@ namespace ECS
 
 		// Enums
 		Color,
-		ECSComponents::ColliderType
+		ECSComponents::ColliderType,
+
+		// File imported types
+		std::shared_ptr<Graphics::EnoTexture>
 	>;
 
 	// Entity forward declaration
@@ -72,6 +77,11 @@ namespace ECS
 	class EntityManager
 	{
 	public:
+
+		EntityManager(Event::EnoEventBus& bus)
+			: 
+			bus_{ bus }
+		{}
 
 		/*============================================================================================
 		* \brief			Entity id to be set
@@ -412,6 +422,8 @@ namespace ECS
 		std::unordered_map<uint32_t, EntityLoc> entityMap_;
 
 		std::vector<uint32_t> destroyedEntityIDs_;									// For the purpose of reusing ids
+
+		Event::EnoEventBus& bus_;
 
 		/*============================================================================================
 			* \brief		Helper for getting all entities from the entity map
