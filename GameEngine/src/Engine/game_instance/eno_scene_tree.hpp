@@ -52,7 +52,7 @@ namespace GameInstance
 
 		Node& addEntityNode(ECS::Entity entity)
 		{
-			uint32_t id = entity.getEntityID();
+			uint32_t id = entity.id();
 
 			auto& node = nodes_[id];
 			node.entityID = id;

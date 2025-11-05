@@ -580,10 +580,6 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	float centerX = x;
 	float centerY = y;
 
-	// Calculate top-left for DrawInfo (which uses top-left coordinates)
-	float topLeftX = x - prefab.width * 0.5f;
-	float topLeftY = y - prefab.height * 0.5f;
-
 	// create the entity
 	ECS::Entity e = entityManager.create<>();
 
@@ -718,30 +714,27 @@ void displayPrefabsTab(Engine::EnoEngine& engine_) {
 
 		}
 	}
+
+	//std::vector<ECS::Entity> NamedEntityList = entityManager.findEntity<ECSComponents::NameComponent>();
+
+	//ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
+	//ImGui::Separator();
+
+	//// Iterate through each entity
+	//for (ECS::Entity& e : NamedEntityList)
+	//{
+	//	const auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
+	//	std::string name = nameComp.name;
+	//	bool selected = (selectedEntityID == e.id());
+	//	std::string label = std::to_string(e.id()) + ": " + name;
+	//	if (ImGui::Selectable(label.c_str(), selected))
+	//	{
+	//		selectedEntityID = e.id();
+	//	}
+	//}
 }
 
-
-	std::vector<ECS::Entity> NamedEntityList = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>();
-
-	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
-	ImGui::Separator();
-
-	// Iterate through each entity
-	for (ECS::Entity& e : NamedEntityList)
-	{
-		const auto& nameComp = e.get<ECSComponents::NameComponent>();
-		std::string name = nameComp.name;
-		bool selected = (selectedEntityID == e.id());
-		std::string label = std::to_string(e.id()) + ": " + name;
-		if (ImGui::Selectable(label.c_str(), selected))
-		{
-			selectedEntityID = e.id();
-		}
-	}
-}
-
-#else
-void displayHierarchyTab(Engine::EnoEngine& engine_)
+void displayAllEntitiesTab(Engine::EnoEngine& engine_)
 {
 	auto& entityManager = engine_.getEntityManager();
 
@@ -790,7 +783,89 @@ void displayHierarchyTab(Engine::EnoEngine& engine_)
 	}
 }
 
+void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree)
+{
+	ImGui::Text("=== Scene Hierarchy ===");
+	ImGui::Separator();
 
+	if (ImGui::Button("Add Root Node")) {
+		auto& entityManager = engine_.getEntityManager();
+		ECS::Entity newEntity = entityManager.create<
+			ECSComponents::TransformComponent,
+			ECSComponents::DrawInfoComponent,
+			ECSComponents::NameComponent
+		>();
+
+		sceneTree.addEntityNode(newEntity);
+		if (g_game) g_game->markEntitiesDirty();
+	}
+
+	ImGui::SameLine();
+
+	static uint32_t parentToAdd = 1;
+	ImGui::InputInt("Parent ID", (int*)&parentToAdd);
+
+	if (ImGui::Button("Add Child")) {
+		auto& entityManager = engine_.getEntityManager();
+		ECS::Entity childEntity = entityManager.create<
+			ECSComponents::TransformComponent,
+			ECSComponents::DrawInfoComponent,
+			ECSComponents::NameComponent
+		>();
+
+		sceneTree.addEntityNode(childEntity);
+		if (g_game) g_game->markEntitiesDirty();
+
+		sceneTree.setParent(childEntity.id(), parentToAdd);
+	}
+
+
+	ImGui::Separator();
+
+	// --- Delete Node Button ---
+	if (ImGui::Button("Delete Selected Node")) {
+			auto& em = engine_.getEntityManager();
+			if (sceneTree.getNode(selectedEntityID)) {
+				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " from hierarchy\n";
+				sceneTree.removeNodeAndDestroyEntity(selectedEntityID, em);
+				selectedEntityID = 0;
+
+				if (g_game)
+					g_game->markEntitiesDirty();
+			}
+			else {
+				std::cout << "[WARN] Selected node " << selectedEntityID << " not found in scene tree\n";
+			}
+	}
+
+
+	ImGui::Separator();
+
+	const auto& allNodes = sceneTree.getAllNodes();
+	bool anyNode = false;
+	for (const auto& [id, node] : allNodes) {
+		if (node.parentID == 0) {
+			drawNodeRecursive(sceneTree, id);
+			anyNode = true;
+		}
+	}
+
+	if (!anyNode)
+		ImGui::TextDisabled("(no nodes to display)");
+
+	ImGui::Separator();
+
+	if (ImGui::Button("Print Tree to Terminal")) {
+		const auto& all = sceneTree.getAllNodes();
+		for (auto& [id, node] : all) {
+			std::cout << "Entity " << node.entityID
+				<< " | Parent: " << node.parentID
+				<< " | Children: ";
+			for (uint32_t c : node.children) std::cout << c << " ";
+			std::cout << "\n";
+		}
+	}
+}
 
 void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 {
@@ -897,90 +972,6 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 		}
 	}
 	ImGui::End();
-}
-
-void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree)
-{
-	ImGui::Text("=== Scene Hierarchy ===");
-	ImGui::Separator();
-
-	if (ImGui::Button("Add Root Node")) {
-		auto& entityManager = engine_.getEntityManager();
-		ECS::Entity newEntity = entityManager.create<
-			ECSComponents::TransformComponent,
-			ECSComponents::DrawInfoComponent,
-			ECSComponents::NameComponent
-		>();
-
-		sceneTree.addEntityNode(newEntity);
-		if (g_game) g_game->markEntitiesDirty();
-	}
-
-	ImGui::SameLine();
-
-	static uint32_t parentToAdd = 1;
-	ImGui::InputInt("Parent ID", (int*)&parentToAdd);
-
-	if (ImGui::Button("Add Child")) {
-		auto& entityManager = engine_.getEntityManager();
-		ECS::Entity childEntity = entityManager.create<
-			ECSComponents::TransformComponent,
-			ECSComponents::DrawInfoComponent,
-			ECSComponents::NameComponent
-		>();
-
-		sceneTree.addEntityNode(childEntity);
-		if (g_game) g_game->markEntitiesDirty();
-
-		sceneTree.setParent(childEntity.getEntityID(), parentToAdd);
-	}
-
-
-	ImGui::Separator();
-
-	// --- Delete Node Button ---
-	if (ImGui::Button("Delete Selected Node")) {
-			auto& em = engine_.getEntityManager();
-			if (sceneTree.getNode(selectedEntityID)) {
-				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " from hierarchy\n";
-				sceneTree.removeNodeAndDestroyEntity(selectedEntityID, em);
-				selectedEntityID = 0;
-
-				if (g_game)
-					g_game->markEntitiesDirty();
-			}
-			else {
-				std::cout << "[WARN] Selected node " << selectedEntityID << " not found in scene tree\n";
-			}
-	}
-
-
-	ImGui::Separator();
-
-	const auto& allNodes = sceneTree.getAllNodes();
-	bool anyNode = false;
-	for (const auto& [id, node] : allNodes) {
-		if (node.parentID == 0) {
-			drawNodeRecursive(sceneTree, id);
-			anyNode = true;
-		}
-	}
-
-	if (!anyNode)
-		ImGui::TextDisabled("(no nodes to display)");
-
-	ImGui::Separator();
-
-	if (ImGui::Button("Print Tree to Terminal")) {
-		const auto& all = sceneTree.getAllNodes();
-		for (auto& [id, node] : all) {
-			std::cout << "Entity " << node.entityID
-				<< " | Parent: " << node.parentID
-				<< " | Children: ";
-			for (uint32_t c : node.children) std::cout << c << " ";
-			std::cout << "\n";
-		}
-	}
 }
 
 void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID)
@@ -1134,7 +1125,6 @@ void imGuiBeginDockspace() {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
 	// Begin the dockspace window
-	bool open = true;
 	ImGui::Begin("EnoEngine Dockspace", nullptr, window_flags);
 	ImGui::PopStyleVar(3);
 

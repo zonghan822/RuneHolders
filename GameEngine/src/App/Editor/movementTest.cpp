@@ -453,10 +453,6 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 			if (!entity.has<ECSComponents::PhysicsComponent>(ent)) continue;
 			auto& physics = entity.get<ECSComponents::PhysicsComponent>(ent);
 
-			// Skip entities without physics component
-			if (!entity.has<ECSComponents::PhysicsComponent>()) continue;
-			auto& physics = entity.get<ECSComponents::PhysicsComponent>();
-
 			Math::eVec2<float> nextPos;
 			nextPos.x = static_cast<float>(transform.pos.x + physics.velocity.x * dt);
 			nextPos.y = static_cast<float>(transform.pos.y + physics.velocity.y * dt);
@@ -476,10 +472,6 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				// Skip entities without physics component
 				if (!other.has<ECSComponents::PhysicsComponent>(ent)) continue;
 				auto& otherPhysics = other.get<ECSComponents::PhysicsComponent>(ent);
-
-				// Skip entities without physics component
-				if (!other.has<ECSComponents::PhysicsComponent>()) continue;
-				auto& otherPhysics = other.get<ECSComponents::PhysicsComponent>();
 
 				// Check type of collision
 				switch (collision.type)
