@@ -124,35 +124,43 @@ namespace Player
                     playerComp.dashCooldownTimer = 0.0f;
             }
 
-            // ====== DASH LOGIC (applies large impulse force) ======
+            // ====== DASH LOGIC (instant burst) ======
             if (playerComp.isDashing)
             {
                 // Update dash timer
-                playerComp.dashTimer += deltaTime;
+                playerComp.dashTimer += deltaTime;     
 
-                // Calculate progress (0 to 1)
-                float progress = playerComp.dashTimer / playerComp.dashDuration;
-
-                if (progress >= 1.0f)
+                if (playerComp.dashTimer >= playerComp.dashDuration)
                 {
-                    // Dash complete
+                    // Dash complete - immediately stop dashing
                     playerComp.isDashing = false;
                     playerComp.dashTimer = 0.0f;
                     playerComp.dashCooldownTimer = playerComp.dashCooldown;
+
+                     // Get current input for immediate transition to normal movement
+                    Math::eVec2<float> currentInput = GetMovementInput(inputManager);
+
+                    if (Math::eVec2SquaredLength(currentInput) > 0.01f)
+                    {
+                        // Return to normal movement speed instantly
+                        physicsComp.velocity.x = currentInput.x * playerComp.maxSpeed;
+                        physicsComp.velocity.y = currentInput.y * playerComp.maxSpeed;
+                    }
+                    else 
+                    {
+                        // No input - stop instantly
+                        physicsComp.velocity.x = 0.0f;
+                        physicsComp.velocity.y = 0.0f;
+                    }
                 }
                 else
                 {
-                    // Apply dash force (large impulse in dash direction)
-                    // Calculate dash force magnitude based on desired dash distance and duration
-                    // Force needed: F = (distance / duration^2) * mass
-                    float dashForceMagnitude = (playerComp.dashDistance / (playerComp.dashDuration * playerComp.dashDuration)) * physicsComp.mass;
+                    
+                    float dashSpeed = playerComp.dashDistance / playerComp.dashDuration;
 
-                    Math::eVec2<float> dashForce = {
-                        playerComp.dashDirection.x * dashForceMagnitude,
-                        playerComp.dashDirection.y * dashForceMagnitude
-                    };
-
-                    physicsComp.AddForce(dashForce);
+                    // Set velocity to constant dash speed in dash direction
+                    physicsComp.velocity.x = playerComp.dashDirection.x * dashSpeed;
+                    physicsComp.velocity.y = playerComp.dashDirection.y * dashSpeed;
                 }
 
                 // During dash, skip normal movement input
@@ -198,53 +206,26 @@ namespace Player
             // NOTE: We do NOT clear forces here because PhysicsSystem will do it
             // This allows multiple systems to add forces in the same frame
 
-            // Get movement input (WASD keys)
             Math::eVec2<float> input = GetMovementInput(inputManager);
 
-            // STEP 1: Apply movement force based on player input
-            if (Math::eVec2SquaredLength(input) > 0.01f)
+            // INSTANT STOP: Zero velocity immediately when no input
+            if (Math::eVec2SquaredLength(input) < 0.01f)
             {
-                // Calculate movement force: F = direction * movementForce
-                // The player config's movementForce value determines responsiveness
-                Math::eVec2<float> movementForceVec = {
-                    input.x * playerComp.movementForce,
-                    input.y * playerComp.movementForce
+                physicsComp.velocity.x = 0.0f;
+                physicsComp.velocity.y = 0.0f;
+            }
+            else
+            {
+                // CONSTANT SPEED: Set velocity directly to max speed * direction
+                // No acceleration - instant full speed
+                Math::eVec2<float> targetVelocity = {
+                    input.x * playerComp.maxSpeed,
+                    input.y * playerComp.maxSpeed
                 };
 
-                // Add force to physics component (will be integrated by PhysicsSystem)
-                physicsComp.AddForce(movementForceVec);
+                physicsComp.velocity.x = targetVelocity.x;
+                physicsComp.velocity.y = targetVelocity.y;
             }
-
-            // STEP 2: Apply friction force to create smooth deceleration
-            // Friction opposes velocity: F_friction = -velocity * friction_coeff * mass
-            // Higher friction when no input = faster stopping
-            float frictionMultiplier = (Math::eVec2SquaredLength(input) < 0.01f) ? 2.0f : 1.0f;
-
-            Math::eVec2<float> frictionForce = {
-                -physicsComp.velocity.x * playerComp.frictionCoefficient * frictionMultiplier * physicsComp.mass,
-                -physicsComp.velocity.y * playerComp.frictionCoefficient * frictionMultiplier * physicsComp.mass
-            };
-
-            physicsComp.AddForce(frictionForce);
-
-            // Optional: If velocity is very small, add a small damping force to prevent jitter
-            if (Math::eVec2SquaredLength(physicsComp.velocity) < 1.0f)
-            {
-                Math::eVec2<float> dampingForce = {
-                    -physicsComp.velocity.x * 5.0f * physicsComp.mass,
-                    -physicsComp.velocity.y * 5.0f * physicsComp.mass
-                };
-                physicsComp.AddForce(dampingForce);
-            }
-
-            // IMPORTANT: We do NOT touch velocity or position here!
-            // PhysicsSystem will:
-            // - Integrate forces into acceleration
-            // - Integrate acceleration into velocity
-            // - Integrate velocity into position
-            // - Handle collision detection and response
-            // - Transfer momentum when pushing boxes
-            // - Clear forces for next frame
         }
     }
 
