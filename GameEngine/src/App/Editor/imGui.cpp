@@ -842,7 +842,7 @@ void displayGameView(Engine::EnoEngine& engine_) {
 	}
 	ImGui::SameLine();
 	// Pause button should only work if editor state is not in stopped mode
-	if (ImGui::Button("()Pause"))
+	if (ImGui::Button("Pause"))
 	{
 		if (g_game->getEditorState() != Stopped)
 		{

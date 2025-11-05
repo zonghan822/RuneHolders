@@ -344,6 +344,7 @@ void GameApplication::updateEntities() {
 				updateTestObject(engine_.getEntityManager(), engine_);
 
 				// Reset variables
+				keyFrameMode = false;
 				setEditorState(Paused);
 			}
 			break;
