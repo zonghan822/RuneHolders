@@ -249,7 +249,18 @@ void GameApplication::updateGameLogic() {
 		// This is intentional - allows you to navigate while keeping player in view
 		// To move ONLY the camera, pause the game or use arrow keys for indicator instead
 		auto& inputManager = engine_.getInputManager();
+
+		float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
+		if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
+		if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
+		if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
+		if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
+
 		float editorDT = static_cast<float>(deltaTime);
+
+		// Clamp camera to world bounds
+		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, static_cast<float>(VIRTUAL_WIDTH - EDITOR_WIDTH));
+		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, static_cast<float>(VIRTUAL_HEIGHT - EDITOR_HEIGHT));
 
 		// Update editor camera position based on arrow keys
 		if (inputManager.isKeyPressed(GLFW_KEY_UP)) {
