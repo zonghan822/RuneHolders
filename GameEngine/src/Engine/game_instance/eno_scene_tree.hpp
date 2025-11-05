@@ -10,6 +10,7 @@
 #pragma once
 
 #include "../ecs/entity.hpp"
+#include <set>
 
 namespace GameInstance
 {
@@ -98,60 +99,62 @@ namespace GameInstance
 
 		void removeNodeAndDestroyEntity(uint32_t entityID, ECS::EntityManager& em)
 		{
-			auto it = nodes_.find(entityID);
-			if (it == nodes_.end())
+			// Check if node exists in scene tree
+			auto nodeIt = nodes_.find(entityID);
+			if (nodeIt == nodes_.end()) {
 				return;
-
-			// Recursively delete children first
-			for (uint32_t childID : it->second.children) {
-				removeNodeAndDestroyEntity(childID, em);
 			}
 
-			// Destroy the actual ECS entity
-			em.destroyEntity(entityID);
+			// Collect all nodes to delete (this node and all descendants)
+			std::vector<uint32_t> nodesToDelete;
+			std::set<uint32_t> processedNodes; // Track what we've collected to avoid duplicates
+			collectNodeAndDescendantsWithCheck(entityID, nodesToDelete, processedNodes);
 
-			// Remove from hierarchy
-			nodes_.erase(it);
-		}
+			for (uint32_t id : nodesToDelete) {
+				std::cout << id << " ";
+			}
+			std::cout << "\n";
 
-#if 0
-		void removeNode(uint32_t entityID)
-		{
-			// If the node doesn't exist, return and exit
-			auto it = nodes_.find(entityID);
-			if (it == nodes_.end())
-				return;
-
-			std::vector<uint32_t> toDelete;
-			toDelete.push_back(entityID);
-
-			for (size_t i = 0; i < toDelete.size(); ++i)
-			{
-				uint32_t current = toDelete[i];
-				auto nodeIt = nodes_.find(current);
-				if (nodeIt != nodes_.end())
-				{
-					// virtually delete all childrent that parent holds
-					for (uint32_t childID : nodeIt->second.children)
-						toDelete.push_back(childID);
+			// First, remove this node from its parent's children list
+			uint32_t parentID = nodeIt->second.parentID;
+			if (parentID != 0) {
+				auto parentIt = nodes_.find(parentID);
+				if (parentIt != nodes_.end()) {
+					auto& parentChildren = parentIt->second.children;
+					auto removeIt = std::remove(parentChildren.begin(), parentChildren.end(), entityID);
+					if (removeIt != parentChildren.end()) {
+						parentChildren.erase(removeIt, parentChildren.end());
+					}
 				}
 			}
 
-			uint32_t parentID = it->second.parentID;
-			if (parentID != 0 && nodes_.count(parentID))
-			{
-				auto& siblings = nodes_[parentID].children;
-				siblings.erase(
-					std::remove(siblings.begin(), siblings.end(), entityID),
-					siblings.end());
-			}
+			// Now process deletion in REVERSE order (children first, then parent)
+			// This ensures children are destroyed before their parents
+			for (auto it = nodesToDelete.rbegin(); it != nodesToDelete.rend(); ++it) {
+				uint32_t idToDelete = *it;
 
-			for (uint32_t id : toDelete)
-				nodes_.erase(id);
+				// First check if entity exists in EntityManager before trying to destroy
+				try {
+					// Check if entity exists in the entity manager's map
+					auto& entityMap = em.getMap();
+					if (entityMap.find(idToDelete) != entityMap.end()) {
+						em.destroyEntity(idToDelete);
+					}
+				}
+				catch (const std::exception& e) {
+					std::cout << " Exception while destroying entity " << idToDelete << ": " << e.what() << "\n";
+				}
+
+				// Remove from scene tree (this should always succeed if node was collected)
+				auto eraseIt = nodes_.find(idToDelete);
+				if (eraseIt != nodes_.end()) {
+					nodes_.erase(eraseIt);
+					std::cout << "Removed node " << idToDelete << " from scene tree\n";
+				}
+			}
 		}
 
 
-#else
 		void removeNode(uint32_t id)
 		{
 			// --- Find the node first ---
@@ -180,8 +183,6 @@ namespace GameInstance
 			nodes_.erase(it);
 		}
 
-#endif
-
 		const std::unordered_map<uint32_t, Node>& getAllNodes() const {
 			return nodes_;
 		}
@@ -189,6 +190,31 @@ namespace GameInstance
 
 	private:
 		//std::vector<Node> nodes_;
+
+		void collectNodeAndDescendantsWithCheck(uint32_t nodeID, std::vector<uint32_t>& collection, std::set<uint32_t>& processed)
+		{
+			// Check if we've already processed this node (avoid duplicates/cycles)
+			if (processed.count(nodeID) > 0) {
+				return;
+			}
+
+			auto it = nodes_.find(nodeID);
+			if (it == nodes_.end()) {
+				return;
+			}
+
+			// Mark as processed and add to collection
+			processed.insert(nodeID);
+			collection.push_back(nodeID);
+
+			// Make a copy of children to avoid iterator invalidation
+			std::vector<uint32_t> childrenCopy = it->second.children;
+
+			// Recursively collect all children
+			for (uint32_t childID : childrenCopy) {
+				collectNodeAndDescendantsWithCheck(childID, collection, processed);
+			}
+		}
 
 		//YunQi
 		std::unordered_map<uint32_t, Node> nodes_;
