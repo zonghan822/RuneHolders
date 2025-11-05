@@ -18,6 +18,7 @@
 #include "../component/components/player_component.hpp"
 #include "../component/components/collision_component.hpp"
 #include "../component/components/physics_component.hpp"
+#include "../component/components/box_component.hpp"
 
 //stds
 #include <tuple>

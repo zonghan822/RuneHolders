@@ -26,7 +26,7 @@ void GameApplication::initialize() {
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
     // This is for dynamic collision test object
-    //createTestObject(engine_.getEntityManager());
+    createTestObject(engine_.getEntityManager());
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
@@ -200,6 +200,7 @@ void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
+	
 
 	// Use FIXED virtual resolution for consistent rendering
 	Math::eVec2<float> renderSize{
@@ -375,7 +376,7 @@ void GameApplication::updateGameLogic() {
 		engine_.getGraphicsManager().flush();
 		editorFramebuffer_->unbind();
 	}
-
+	
 	// CRITICAL: Restore viewport to window size for ImGui rendering
 	auto windowSize = engine_.getWindowManager().getFramebufferSize();
 	glViewport(0, 0, windowSize.first, windowSize.second);
@@ -457,6 +458,8 @@ void GameApplication::updateEntities() {
 		collisionSystem_->Update(engine_.getEntityManager());
 	}
 	
+	physicsSystem.Update(engine_.getEntityManager(), deltaTime);
+
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
 

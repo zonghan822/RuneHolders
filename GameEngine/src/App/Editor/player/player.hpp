@@ -21,6 +21,7 @@
 // Use the PlayerComponent from ECSComponents namespace
 using PlayerComponent = ECSComponents::PlayerComponent;
 
+
 namespace Player
 {
 
@@ -66,7 +67,7 @@ namespace Player
        * \param[in]   ECS::EntityLoc const& entityLoc - Entity location information
        * \return      ECSComponents::CollisionComponent& - Reference to entity's collision component
        *//*========================================================================================*/
-        Collision::CollisionComponent& GetCollision(const ECS::EntityLoc& entityLoc);
+        ECSComponents::CollisionComponent& GetCollision(const ECS::EntityLoc& entityLoc);
 
     private:
         /*============================================================================================
@@ -87,7 +88,7 @@ namespace Player
         *//*========================================================================================*/
         bool CanMoveTo(
             const ECS::EntityLoc& playerEntity,
-            const Collision::CollisionComponent& playerCollider,
+            const ECSComponents::CollisionComponent& playerCollider,
             const Math::eVec2<float>& targetPos,
             ECS::EntityManager& entityManager);
 
@@ -95,5 +96,3 @@ namespace Player
     };
 
 } // namespace Player
-    // Use the PlayerComponent from ECSComponents namespace
-using PlayerComponent = ECSComponents::PlayerComponent;
