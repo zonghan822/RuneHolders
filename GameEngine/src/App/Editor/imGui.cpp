@@ -829,7 +829,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 
 		sceneTree.addEntityNode(newEntity);
 		if (g_game) g_game->markEntitiesDirty();
-		std::cout << "[DEBUG] Added ECS entity + node " << newEntity.getEntityID() << "\n";
 	}
 
 	ImGui::SameLine();
@@ -847,7 +846,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 
 		sceneTree.addEntityNode(childEntity);
 		if (g_game) g_game->markEntitiesDirty();
-		std::cout << "[DEBUG] Added ECS entity + node " << childEntity.getEntityID() << "\n";
 
 		sceneTree.setParent(childEntity.getEntityID(), parentToAdd);
 	}
@@ -888,7 +886,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 
 	ImGui::Separator();
 
-	if (ImGui::Button("Print Tree to Console")) {
+	if (ImGui::Button("Print Tree to Terminal")) {
 		const auto& all = sceneTree.getAllNodes();
 		for (auto& [id, node] : all) {
 			std::cout << "Entity " << node.entityID
