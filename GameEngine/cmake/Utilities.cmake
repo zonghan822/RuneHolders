@@ -111,14 +111,13 @@ function(set_dotnet_sdk)
     # Check for system installation
     execute_process(
         COMMAND dotnet --info
-        RESULT_VARIABLE DOTNET_RESULT
         OUTPUT_VARIABLE DOTNET_INFO
+        RESULT_VARIABLE DOTNET_RESULT
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
-
-    if (DOTNET_RESULT EQUAL 0)
-        string(REGEX MATCH "Base Path:[ \t]*([^\r\n]+)" _match "${DOTNET_INFO}")
+    string(REGEX MATCH "Base Path:[ \t]*([^\r\n]+)" _match "${DOTNET_INFO}")
+    if (CMAKE_MATCH_COUNT GREATER 0)
         set(BASE_PATH_LINE "${CMAKE_MATCH_1}")
 
         # Strip the trailing "\sdk\9.0.306\" part to get "C:\Program Files\dotnet\"

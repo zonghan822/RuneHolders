@@ -21,7 +21,7 @@
 #include <filesystem>
 #include <optional>
 #include <variant>
-
+#include <cstdlib>
 
 namespace Core
 {

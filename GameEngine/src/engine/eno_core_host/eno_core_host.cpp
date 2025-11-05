@@ -55,6 +55,8 @@ namespace Core
 	// Initialize hostfxr library
 	void EnoCoreHost::init()
 	{
+		_putenv_s("DOTNET_ROOT", DOTNET_ROOT);
+		
 		// Load hostfxr module
 		char_t hfLibPath[MAX_PATH];
 		size_t hfLibPath_size = sizeof(hfLibPath) / sizeof(char_t);
