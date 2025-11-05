@@ -1,10 +1,10 @@
 /*============================================================================================
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         game_logic.hpp
-* @author       Name (@digipen.edu)
-* @date         DD-MM-YYYY
-* @brief        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-*               incididunt ut labore et dolore magna aliqua.
+* @author       Various Contributors (@digipen.edu)
+* @date         05-11-2025
+* @brief        Game application layer that manages game-specific logic, rendering, and entity
+*               management. Systems are now managed by EnoEngine for better architecture.
 *//*========================================================================================*/
 
 #pragma once
@@ -16,7 +16,6 @@
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
-#include "../Engine/physics/physics_system.hpp"
 
 // Enum for different editor states
 enum EditorState {
@@ -36,7 +35,7 @@ private:
     bool musicStarted_ = false;
 
     // For delta time calculation
-    float lastFrameTime_ = 0.0f;  
+    float lastFrameTime_ = 0.0f;
 
     // Caching
     std::vector<ECS::Entity> cachedDrawableEntities_;
@@ -74,7 +73,8 @@ private:
     // Editor State
     EditorState g_editorState = Stopped;
 
-    Physics::PhysicsSystem physicsSystem;
+    // NOTE: Systems (Physics, Collision, Player) are now managed by EnoEngine
+    // Access them via engine_.getPhysicsSystem(), engine_.getCollisionSystem(), engine_.getPlayerSystem()
 
 
 public:
@@ -112,6 +112,9 @@ public:
     float getEditorCameraX() const { return editorCameraX_; }
     float getEditorCameraY() const { return editorCameraY_; }
 
+    // Get engine reference for ImGui and other systems
+    Engine::EnoEngine& getEngine() { return engine_; }
+
 
 private:
     // Setup (called during initialize())
@@ -129,12 +132,12 @@ private:
     void updateImGui();         // Update code for imGui
 
     void drawPlayerAndIndicator();
-    
+
 
     // Helper function to store entity positions during change in editor state
     void UpdateResetPos();
 
-    void drawShapes(); 
+    void drawShapes();
 
     void drawText(Math::eVec2<float> windowSize);
 };
