@@ -26,6 +26,34 @@ namespace ECSComponents
 		TransformComponent(Math::eVec2<float> _pos, Math::eVec2<float> _rot, Math::eVec2<float> _scale)
 			: pos(_pos), rot(_rot), scale(_scale) {}
 
+
+		// For serialization purposes
+		// Generalized way of using reflection to access and iterate
+		// over fields!
+		// 
+		// The idea is to (in a function call) create a lambda that will be a "visitor",
+		// and extract all information as parameters of that lambda. Each call over a
+		// field of the component is used to extract metadata on 1 field [name, value, type]
+		// 
+		// Source: https://stackoverflow.com/questions/41453/how-can-i-add-reflection-to-a-c-application
+		// Additional learning: https://refactoring.guru/design-patterns/visitor
+		template <typename Visitor>
+		void reflect(Visitor&& l)
+		{
+			l("Position",		pos,		"eVec2(float)");
+			l("Rotation",		rot,		"eVec2(float)");
+			l("Scale",			scale,		"eVec2(float)");
+			l("Reset Position", resetPos,	"eVec2(float)");
+		}
+
+		template <typename Visitor>
+		void reflect(Visitor&& l) const
+		{
+			l("Position",		pos,		"eVec2(float)");
+			l("Rotation",		rot,		"eVec2(float)");
+			l("Scale",			scale,		"eVec2(float)");
+			l("Reset Position", resetPos,	"eVec2(float)");
+		}
 	};
 
 	// print overload

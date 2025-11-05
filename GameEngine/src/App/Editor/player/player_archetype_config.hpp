@@ -84,9 +84,9 @@ namespace Player
         >(transformComp, nameComp);
 
         // Add remaining components
-        player.add<ECSComponents::PlayerComponent>(playerComp);
-        player.add<ECSComponents::CollisionComponent>(collisionComp);
-        player.add<ECSComponents::PhysicsComponent>(physicsComp);
+        player.add<ECSComponents::PlayerComponent>(entityManager, playerComp);
+        player.add<ECSComponents::CollisionComponent>(entityManager, collisionComp);
+        player.add<ECSComponents::PhysicsComponent>(entityManager, physicsComp);
 
         // Create DrawInfoComponent with proper initialization for dragging
         // Calculate top-left position from center position
@@ -97,7 +97,7 @@ namespace Player
             "Rectangle",
             Color::Green
         );
-        player.add<ECSComponents::DrawInfoComponent>(drawComp);
+        player.add<ECSComponents::DrawInfoComponent>(entityManager, drawComp);
 
         return player;
     }

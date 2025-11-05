@@ -20,9 +20,16 @@ importDependencies()
 # Set External Libraries
 set_fmod()
 set(rapidjson_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/lib/rapidjson)
-
-# Set dotnet SDK
 set_dotnet()
+
+# Build c# project
+set(SCRIPT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/scripts/GameScripts)
+set(SCRIPT_BINARY_DIR ${CMAKE_BINARY_DIR}/scripts/GameScripts)
+build_csharp_scripts(
+    GameScripts
+    ${SCRIPT_SOURCE_DIR}/GameScripts.csproj
+    ${SCRIPT_BINARY_DIR}
+)
 
 ADD_SUBDIRECTORY(src/Engine ${CMAKE_BINARY_DIR}/projects/Engine)
 ADD_SUBDIRECTORY(src/App ${CMAKE_BINARY_DIR}/projects/App)

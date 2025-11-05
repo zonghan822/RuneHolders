@@ -35,8 +35,11 @@ target_include_directories(${ENGINE_NAME} PUBLIC
     ${FMOD_INCLUDE_DIRS}
     ${rapidjson_INCLUDE_DIRS}
 )
-target_compile_definitions(${ENGINE_NAME} 
-    PRIVATE ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
+target_compile_definitions(${ENGINE_NAME} PRIVATE 
+    ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets"
+    SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}"
+    SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}"
+    DOTNET_ROOT="${DOTNET_PATH}"
     -DGLEW_STATIC
     -D_CRT_NONSTDC_NO_DEPRECATE
 )
@@ -50,9 +53,11 @@ target_link_libraries(${ENGINE_NAME}
     fmod::studio
     freetype
     stb_image
+    dotnet_host
 )
 
 _fmod_copy_dll(${ENGINE_NAME})
+_dotnet_copy_dll(${ENGINE_NAME})
 
 # Call the function to copy assets
 set(ASSETS_SOURCE_DIR "${CMAKE_SOURCE_DIR}/assets")

@@ -27,7 +27,10 @@ namespace Graphics
     // EnoTexture Implementation - Texture loading and management
     // =============================================================================
 
-    EnoTexture::EnoTexture() : textureID_(0), width_(0), height_(0), channels_(0) { /*empty by design*/ }
+    EnoTexture::EnoTexture() : textureID_(0), width_(0), height_(0), channels_(0) 
+    { 
+
+    }
 
     EnoTexture::~EnoTexture()
     {
@@ -49,6 +52,8 @@ namespace Graphics
             return false;
         }
         fileCheck.close();
+
+        // Check if texture already has a shared pointer mapped
 
         std::cout << "File exists, attempting stbi_load..." << std::endl;
 
@@ -439,6 +444,12 @@ namespace Graphics
             }
         );
 
+        bus_.subscribe<TextureMapping>(
+            [this](const TextureMapping& e) {
+                mapTexture(e);
+            }
+        );
+
         // Create vertex buffer for batch rendering
         vertexBuffer_ = std::make_unique<EnoVertexBuffer>();
 
@@ -493,6 +504,19 @@ namespace Graphics
         }
 
         window.swapBuffers();
+    }
+
+    // Map texture
+    void EnoGraphicsManager::mapTexture(const TextureMapping& e)
+    {
+        auto it = texMap_.find(e.path);
+        
+        // Texture shared pointer does not exist
+        // Inserting
+        if (it == texMap_.end())
+        {
+            texMap_[e.path] = e.tex;
+        }
     }
 
     // Helper function for rotation

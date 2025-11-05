@@ -45,7 +45,7 @@ extern std::unordered_map<std::string, PrefabData> prefabRegistry;
  * \param[in]   Engine::EnoEngine& engine
  * \return      void
  *===========================================================================================*/
-ECS::Entity instantiatePrefab(const PrefabData& prefab, Engine::EnoEngine& engine);
+ECS::Entity instantiatePrefab(const PrefabData& prefab, ECS::EntityManager& entMng);
 
 /*============================================================================================
  * \brief       Saves a prefab to persistent storage.

@@ -28,9 +28,10 @@ if exist build\projects\App\Debug\Editor.exe (
     REM Check if Visual Studio Build Tools are available
     where cl >nul 2>&1
     if %errorlevel% neq 0 (
-        echo WARNING: Visual Studio Build Tools not found in PATH
+        echo ERROR: Visual Studio Build Tools not found in PATH
         echo Make sure you have Visual Studio or Build Tools installed
-        echo.
+        pause
+        exit /b 1
     )
 
     REM Clean previous build

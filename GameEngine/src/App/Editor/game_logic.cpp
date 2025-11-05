@@ -31,6 +31,13 @@ void GameApplication::initialize() {
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
 
+	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
+	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
+
+	// Center editor camera on the middle of the game world initially
+	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
+	editorCameraY_ = (VIRTUAL_HEIGHT - EDITOR_HEIGHT) / 2.0f;
+
     std::cout << "Game initialized successfully!" << std::endl;
 }
 
@@ -91,9 +98,9 @@ void GameApplication::setupGameAudio() {
 
 	// Sound Effects
 	// Intended to be played regardless of any background music playing at the time
-	inputMng.setupKey("Play SFX1", GLFW_KEY_A, glfwGetKeyScancode(GLFW_KEY_A), GLFW_RELEASE, 0);
-	inputMng.setupKey("Play SFX2", GLFW_KEY_S, glfwGetKeyScancode(GLFW_KEY_S), GLFW_RELEASE, 0);
-	inputMng.setupKey("Play SFX3", GLFW_KEY_D, glfwGetKeyScancode(GLFW_KEY_D), GLFW_RELEASE, 0);
+	inputMng.setupKey("Play SFX1", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, 0);
+	inputMng.setupKey("Play SFX2", GLFW_KEY_X, glfwGetKeyScancode(GLFW_KEY_X), GLFW_RELEASE, 0);
+	inputMng.setupKey("Play SFX3", GLFW_KEY_C, glfwGetKeyScancode(GLFW_KEY_C), GLFW_RELEASE, 0);
 	
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX1", "SFX", "Flask");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX2", "SFX", "Stone_Impact");
@@ -190,6 +197,7 @@ void GameApplication::setupImGui() {
 }
 
 void GameApplication::updateGameLogic() {
+	auto& entityManager = engine_.getEntityManager();
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
 
@@ -221,19 +229,161 @@ void GameApplication::updateGameLogic() {
 	engine_.getGraphicsManager().flush();
 	drawText(renderSize);
 
-	// Unbind framebuffer (back to default)
+	// Unbind game framebuffer
 	if (gameFramebuffer_) {
 		gameFramebuffer_->unbind();
-
-		// CRITICAL: Restore viewport to window size for ImGui rendering
-		auto windowSize = engine_.getWindowManager().getFramebufferSize();
-		glViewport(0, 0, windowSize.first, windowSize.second);
-
-		// Restore projection matrix to window size
-		engine_.getGraphicsManager().setProjectionMatrix(windowSize.first, windowSize.second);
 	}
 
-	// Now render ImGui (which will display the framebuffer texture)
+	// ==== RENDER EDITOR VIEW (ZOOMED IN WITH CAMERA) ====
+	if (editorFramebuffer_) {
+		// NOTE: WASD controls BOTH player movement AND editor camera
+		// This is intentional - allows you to navigate while keeping player in view
+		// To move ONLY the camera, pause the game or use arrow keys for indicator instead
+		auto& inputManager = engine_.getInputManager();
+		float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
+		if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
+		if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
+		if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
+		if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
+
+		// Clamp camera to world bounds
+		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, static_cast<float>(VIRTUAL_WIDTH - EDITOR_WIDTH));
+		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, static_cast<float>(VIRTUAL_HEIGHT - EDITOR_HEIGHT));
+
+		// Set projection for editor view
+		engine_.getGraphicsManager().setProjectionMatrix(EDITOR_WIDTH, EDITOR_HEIGHT);
+		editorFramebuffer_->bind();
+
+		// Clear editor framebuffer
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// Draw background - crop to visible camera area using UV coordinates
+		// Calculate what portion of the background texture is visible
+		float uvStartX = editorCameraX_ / static_cast<float>(VIRTUAL_WIDTH);
+		float uvStartY = editorCameraY_ / static_cast<float>(VIRTUAL_HEIGHT);
+		float uvEndX = (editorCameraX_ + EDITOR_WIDTH) / static_cast<float>(VIRTUAL_WIDTH);
+		float uvEndY = (editorCameraY_ + EDITOR_HEIGHT) / static_cast<float>(VIRTUAL_HEIGHT);
+
+		// Draw only the visible portion of the background at origin
+		engine_.getGraphicsManager().drawTexturedQuadUV(
+			Math::eVec2<float>{0.0f, 0.0f},  // Draw at origin (camera offset handled by UV)
+			Math::eVec2<float>{static_cast<float>(EDITOR_WIDTH), static_cast<float>(EDITOR_HEIGHT)},
+			backgroundTexture_,
+			Math::eVec2<float>{uvStartX, uvStartY},  // Crop texture start
+			Math::eVec2<float>{uvEndX, uvEndY},      // Crop texture end
+			Graphics::Color::White
+		);
+
+		// Draw all entities (with camera offset - convert world space to screen space)
+		for (ECS::Entity& entity : cachedDrawableEntities_) {
+			try {
+				if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+					if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
+						continue; // Skip player, drawn separately
+					}
+
+					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
+
+					// Convert world position to screen position (relative to camera)
+					float screenX = transform.pos.x - editorCameraX_;
+					float screenY = transform.pos.y - editorCameraY_;
+
+					// Only draw if entity is within visible camera bounds
+					float halfW = renderInfo.width * 0.5f;
+					float halfH = renderInfo.height * 0.5f;
+					if (screenX + halfW >= 0 && screenX - halfW < EDITOR_WIDTH &&
+						screenY + halfH >= 0 && screenY - halfH < EDITOR_HEIGHT) {
+
+						float topLeftX = screenX - halfW;
+						float topLeftY = screenY - halfH;
+
+						engine_.getGraphicsManager().drawRect(
+							Math::eVec2<float>{topLeftX, topLeftY},
+							Math::eVec2<float>{renderInfo.width, renderInfo.height},
+							renderInfo.color,
+							true
+						);
+					}
+				}
+			}
+			catch (...) {
+				entitiesDirty_ = true;
+				continue;
+			}
+		}
+
+		// Draw player in editor view (with camera offset - convert to screen space) - NO RED CURSOR
+		if (playerSpawned_) {
+			try {
+				auto& entityMap = engine_.getEntityManager().getMap();
+				auto it = entityMap.find(playerEntityID_);
+				if (it != entityMap.end()) {
+					auto& transform = playerSystem_->GetTransform(it->second);
+					auto &frame = playerAnimController_.getCurrentFrame();
+
+					std::shared_ptr<Graphics::EnoTexture> currentTexture;
+					if (playerAnimController_.getCurrentAnimationName() == "walk") {
+						currentTexture = playerWalkTexture_;
+					}
+					else {
+						currentTexture = playerTexture_;
+					}
+
+					Math::eVec2<float> uvStart = frame.uvStart;
+					Math::eVec2<float> uvEnd = frame.uvEnd;
+
+					if (playerFacingDirection_ == -1) {
+						std::swap(uvStart.x, uvEnd.x);
+					}
+
+					if (currentTexture && currentTexture->isValid()) {
+						float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
+						float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
+
+						// Convert world position to screen position (relative to camera)
+						float screenX = transform.pos.x - editorCameraX_;
+						float screenY = transform.pos.y - editorCameraY_;
+
+						Math::eVec2<float> topLeft = {
+							screenX - (scaledWidth * 0.5f),
+							screenY - (scaledHeight * 0.5f)
+						};
+
+						engine_.getGraphicsManager().drawTexturedQuadUV(
+							topLeft,
+							Math::eVec2<float>{scaledWidth, scaledHeight},
+							currentTexture,
+							uvStart,
+							uvEnd,
+							Graphics::Color::White,
+							rotationRadians
+						);
+					}
+				}
+			}
+			catch (...) {}
+		}
+
+		// Draw colliders in editor view (with camera offset)
+		if (showColliders_ && collisionSystem_) {
+			// TODO: This would need camera offset support in visualization
+			// For now, skip or implement camera-aware collider drawing
+		}
+
+		engine_.getGraphicsManager().flush();
+		editorFramebuffer_->unbind();
+	}
+
+	// CRITICAL: Restore viewport to window size for ImGui rendering
+	auto windowSize = engine_.getWindowManager().getFramebufferSize();
+	glViewport(0, 0, windowSize.first, windowSize.second);
+
+	// Restore projection matrix to window size
+	engine_.getGraphicsManager().setProjectionMatrix(windowSize.first, windowSize.second);
+
+	// Now render ImGui (which will display the framebuffer textures)
 	updateImGui();
 }
 
@@ -523,16 +673,16 @@ void GameApplication::drawShapes() {
 	for (ECS::Entity& entity : cachedDrawableEntities_) {
 		// Skip if entity was destroyed
 		try {
-			if (entity.has<ECSComponents::DrawInfoComponent>()) {
+			if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
 				// Skip rendering for player entities (they're drawn separately with sprite/animation)
-				if (entity.has<ECSComponents::PlayerComponent>()) {
+				if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
 					continue;
 				}
 
 				// Get position from TransformComponent (spatial data)
 				// Get rendering info from DrawInfoComponent (size, color, etc.)
-				auto& transform = entity.get<ECSComponents::TransformComponent>();
-				auto& renderInfo = entity.get<drawInfo>();
+				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+				auto& renderInfo = entity.get<drawInfo>(entityManager);
 
 				// TransformComponent.pos is the CENTER, but drawRect expects TOP-LEFT
 				// Convert from center to top-left
@@ -615,10 +765,10 @@ void GameApplication::UpdateResetPos()
 		for (auto& e : entityList)
 		{
 			// Store reset pos
-			e.get<ECSComponents::TransformComponent>().resetPos = e.get<ECSComponents::TransformComponent>().pos;
+			e.get<ECSComponents::TransformComponent>(ent).resetPos = e.get<ECSComponents::TransformComponent>(ent).pos;
 
 			// Store reset velocity if entity has physics component
-			if (e.has<ECSComponents::PhysicsComponent>())
+			if (e.has<ECSComponents::PhysicsComponent>(ent))
 			{
 				// Store current velocity for reset (you may want to add resetVelocity to PhysicsComponent)
 				// For now we'll just reset to zero velocity
@@ -632,12 +782,12 @@ void GameApplication::UpdateResetPos()
 		for (auto& e : entityList)
 		{
 			//std::cout << "Before reset : " << e.get<ECSComponents::TransformComponent>().pos << std::endl;
-			e.get<ECSComponents::TransformComponent>().pos = e.get<ECSComponents::TransformComponent>().resetPos;
+			e.get<ECSComponents::TransformComponent>(ent).pos = e.get<ECSComponents::TransformComponent>(ent).resetPos;
 
 			// Reset velocity if entity has physics component
-			if (e.has<ECSComponents::PhysicsComponent>())
+			if (e.has<ECSComponents::PhysicsComponent>(ent))
 			{
-				e.get<ECSComponents::PhysicsComponent>().velocity = { 0.0f, 0.0f };
+				e.get<ECSComponents::PhysicsComponent>(ent).velocity = { 0.0f, 0.0f };
 			}
 			//std::cout << "After reset : " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
 		}

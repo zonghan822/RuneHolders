@@ -269,10 +269,16 @@ void createTestObject(ECS::EntityManager& ent) {
 
 	static float squareSpeed = 200.0f;
 
+	std::cout << "[DEBUG] Creating " << numSquares << " test square entities...\n";
+	std::cout << "[DEBUG] sizeof(DrawInfoComponent) = " << sizeof(ECSComponents::DrawInfoComponent) << " bytes\n";
+	std::cout << "[DEBUG] sizeof(TransformComponent) = " << sizeof(ECSComponents::TransformComponent) << " bytes\n";
+	std::cout << "[DEBUG] sizeof(NameComponent) = " << sizeof(ECSComponents::NameComponent) << " bytes\n";
+
 	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numSquares; ++i)
 	{
-		ECSComponents::DrawInfoComponent DIC{ width, height, shapeName, color };  // No position - use TransformComponent!
+		// Create components
+		ECSComponents::DrawInfoComponent DIC{ width, height, shapeName, color };
 		ECSComponents::NameComponent NC{ objName };
 		ECSComponents::TransformComponent TC{};
 		TC.pos.x = squarePos[i].x;
@@ -284,9 +290,32 @@ void createTestObject(ECS::EntityManager& ent) {
 
 		ECSComponents::CollisionComponent SC{ width, height };
 
+		// Create entity with all components
 		ECS::Entity square = ent.create<ECSComponents::DrawInfoComponent, ECSComponents::NameComponent, ECSComponents::TransformComponent>(DIC, NC, TC);
-		square.add<ECSComponents::CollisionComponent>(SC);
+		square.add<ECSComponents::CollisionComponent>(ent, SC);
+
+		// Debug: Verify components after creation
+		std::cout << "[DEBUG] Entity " << i << " (ID: " << square.id() << ") - After creation:\n";
+		if (square.has<ECSComponents::DrawInfoComponent>(ent)) {
+			auto& drawComp = square.get<ECSComponents::DrawInfoComponent>(ent);
+			std::cout << "  DrawInfo: width=" << drawComp.width << ", height=" << drawComp.height << ", shape=" << drawComp.shape << "\n";
+		} else {
+			std::cout << "  ERROR: Missing DrawInfoComponent!\n";
+		}
+		if (square.has<ECSComponents::TransformComponent>(ent)) {
+			auto& transComp = square.get<ECSComponents::TransformComponent>(ent);
+			std::cout << "  Transform: pos=(" << transComp.pos.x << ", " << transComp.pos.y << ")\n";
+		} else {
+			std::cout << "  ERROR: Missing TransformComponent!\n";
+		}
+		if (square.has<ECSComponents::NameComponent>(ent)) {
+			auto& nameComp = square.get<ECSComponents::NameComponent>(ent);
+			std::cout << "  Name: " << nameComp.name << "\n";
+		} else {
+			std::cout << "  ERROR: Missing NameComponent!\n";
+		}
 	}
+	std::cout << "[DEBUG] Test entities created successfully.\n";
 }
 
 void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
@@ -416,9 +445,13 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 		for (auto& entity : entityList)
 		{
 
-			auto& collision = entity.get<ECSComponents::CollisionComponent>();
-			auto& transform = entity.get<ECSComponents::TransformComponent>();
-			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>();
+			auto& collision = entity.get<ECSComponents::CollisionComponent>(ent);
+			auto& transform = entity.get<ECSComponents::TransformComponent>(ent);
+			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>(ent);
+
+			// Skip entities without physics component
+			if (!entity.has<ECSComponents::PhysicsComponent>(ent)) continue;
+			auto& physics = entity.get<ECSComponents::PhysicsComponent>(ent);
 
 			// Skip entities without physics component
 			if (!entity.has<ECSComponents::PhysicsComponent>()) continue;
@@ -437,8 +470,12 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 				// Skip self
 				if (&entity == &other) continue;
 
-				auto& otherCollision = other.get<ECSComponents::CollisionComponent>();
-				auto& otherTransform = other.get<ECSComponents::TransformComponent>();
+				auto& otherCollision = other.get<ECSComponents::CollisionComponent>(ent);
+				auto& otherTransform = other.get<ECSComponents::TransformComponent>(ent);
+
+				// Skip entities without physics component
+				if (!other.has<ECSComponents::PhysicsComponent>(ent)) continue;
+				auto& otherPhysics = other.get<ECSComponents::PhysicsComponent>(ent);
 
 				// Skip entities without physics component
 				if (!other.has<ECSComponents::PhysicsComponent>()) continue;

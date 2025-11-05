@@ -16,6 +16,9 @@
 #include <chrono>
 #include <random>
 #include <unordered_map>
+#include <algorithm>
+
+
 #include "player/player.hpp"
 #include "game_logic.hpp"
 
@@ -145,7 +148,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_);
  * \param[in]   ECS::Entity&
  * \return      void
 *//*========================================================================================*/
-void displayEntityInspector(ECS::Entity& entity);
+void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity);
 
 /*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab
@@ -178,6 +181,7 @@ void displayFPSTab(Engine::EnoEngine& engine_);
 
 // docking shi
 void displayGameView(Engine::EnoEngine& engine_);
+void displayEditorView(Engine::EnoEngine& engine_);
 
 void imGuiSetupDefaultLayout();
 
