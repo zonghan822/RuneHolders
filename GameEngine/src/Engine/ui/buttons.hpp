@@ -9,7 +9,7 @@
 #include "imgui.h"
 
 // For editor state
-#include "../../src/App/Editor/game_logic.hpp"		
+//#include "../../src/App/Editor/game_logic.hpp"		
 
 namespace Buttons {
 
