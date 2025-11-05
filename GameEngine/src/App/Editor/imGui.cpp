@@ -325,12 +325,25 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 					// DrawInfo already set above (now uses only width, height, shape, color - no position)
 				}
 
+				// Add PhysicsComponent to make the entity pushable
+				ECSComponents::PhysicsComponent physicsComp(1.5f);  // Default mass: slightly heavier than player
+				physicsComp.drag = 0.5f;                  // Moderate friction when pushed
+				physicsComp.restitution = 0.0f;           // No bounce
+				physicsComp.isKinematic = false;          // Can be pushed (not static)
+				physicsComp.useGravity = false;           // No gravity for top-down game
+				e.add<ECSComponents::PhysicsComponent>(entityManager, physicsComp);
+
+				std::cout << "PhysicsComponent added - entity is now pushable!\n";
+
 				std::cout << "Spawned entity WITH collider\n";
 			}
 			else {
 				std::cout << "Spawned entity without collider\n";
 			}
 		}
+
+		
+
 		if (g_game) g_game->markEntitiesDirty();
 		(void)e; // to silence compiler warning for unused param
 	}

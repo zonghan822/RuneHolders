@@ -255,7 +255,7 @@ void createTestObject(ECS::EntityManager& ent) {
 		// Debugging
 		//std::cout << wall.get<ECSComponents::CollisionComponent>() << std::endl;
 	}
-#endif
+
 
 	// Square config
 	const int numSquares = 2;
@@ -316,6 +316,46 @@ void createTestObject(ECS::EntityManager& ent) {
 		}
 	}
 	std::cout << "[DEBUG] Test entities created successfully.\n";
+#endif
+
+	// Create a pushable box for testing physics
+	std::cout << "[DEBUG] Creating pushable box entity...\n";
+
+	ECS::Entity box = ent.create<>();
+
+	// Transform - Position in the middle of the screen
+	ECSComponents::TransformComponent boxTransform;
+	boxTransform.pos = { 600.0f, 400.0f};  // Center position
+	boxTransform.rot = { 0.0f, 0.0f};
+	boxTransform.scale = { 1.0f, 1.0f};
+	box.add<ECSComponents::TransformComponent>(ent, boxTransform);
+
+	// Physics - Mass 2.0 means heavier than player
+	ECSComponents::PhysicsComponent boxPhysics(2.0f);
+	boxPhysics.drag = 0.5f;                // Moderate drag
+	boxPhysics.restitution = 0.0f;         // No bounce
+	boxPhysics.isKinematic = false;        // Can be pushed
+	boxPhysics.useGravity = false;         // No gravity (top-down)
+	box.add<ECSComponents::PhysicsComponent>(ent, boxPhysics);
+
+	// Collision - 80x80 solid box
+	ECSComponents::CollisionComponent boxCollision(80.0f, 80.0f);
+	boxCollision.isTrigger = false;        // Solid collider
+	boxCollision.isActive = true;          // Collision enabled
+	box.add<ECSComponents::CollisionComponent>(ent, boxCollision);
+
+	// Box marker component
+	box.add<ECSComponents::BoxComponent>(ent);
+
+	// Name for debugging
+	ECSComponents::NameComponent boxName("pushable_box");
+	box.add<ECSComponents::NameComponent>(ent, boxName);
+
+	// DrawInfo to make it visible (using existing system)
+	ECSComponents::DrawInfoComponent boxDraw{ 80.0f, 80.0f, "Rectangle", 3 };  // Blue box
+	box.add<ECSComponents::DrawInfoComponent>(ent, boxDraw);
+
+	std::cout << "[DEBUG] Pushable box created successfully!\n";
 }
 
 void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
