@@ -258,6 +258,10 @@ namespace Physics
                     // Don't push kinematic objects (like walls)
                     if (!otherPhysics.isKinematic)
                     {
+                        // First, move to target position to initiate the push
+                        transform.pos.x = targetPos.x;
+                        transform.pos.y = targetPos.y;
+                        
                         // Resolve collision with momentum transfer (this enables pushing!)
                         ResolveCollision(
                             transform, physics, collision,
@@ -367,17 +371,20 @@ namespace Physics
 
         float velAlongNormal = relativeVel.x * normal.x + relativeVel.y * normal.y;
 
-        // Don't resolve if velocities are separating
-        if (velAlongNormal > 0)
-            return;
-
         // Calculate restitution (bounciness) - use minimum of both objects
         float restitution = (physicsA.restitution < physicsB.restitution) ?
             physicsA.restitution : physicsB.restitution;
 
+        // Check if object A is actively moving toward the collision
+        float pusherVelAlongNormal = physicsA.velocity.x * normal.x + physicsA.velocity.y * normal.y;
+
+        if (velAlongNormal > 0 && pusherVelAlongNormal >= 0)
+            return;
+
         // Calculate impulse scalar (momentum transfer magnitude)
         // Formula: j = -(1 + e) * velAlongNormal / (1/massA + 1/massB)
-        float impulseMagnitude = -(1.0f + restitution) * velAlongNormal;
+        float velocityForImpulse = (velAlongNormal > 0) ? pusherVelAlongNormal : velAlongNormal;
+        float impulseMagnitude = -(1.0f + restitution) * velocityForImpulse;
         impulseMagnitude /= (1.0f / physicsA.mass) + (1.0f / physicsB.mass);
 
         // Calculate impulse vector
