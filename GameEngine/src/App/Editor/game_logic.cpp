@@ -28,6 +28,8 @@ void GameApplication::initialize() {
     // This is for dynamic collision test object
     //createTestObject(engine_.getEntityManager());
 
+	//setEditorState(Stopped);
+
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
 
@@ -55,6 +57,7 @@ void GameApplication::run() {
 
 void GameApplication::setupGameEntities() {
 	// To setup the entities in our game
+
 }
 
 void GameApplication::setupGameAudio() {
@@ -237,15 +240,18 @@ void GameApplication::updateGameLogic() {
 	// ==== RENDER EDITOR VIEW (ZOOMED IN WITH CAMERA) ====
 	if (editorFramebuffer_) {
 		// NOTE: WASD controls BOTH player movement AND editor camera
-		// This is intentional - allows you to navigate while keeping player in view
-		// To move ONLY the camera, pause the game or use arrow keys for indicator instead
-		auto& inputManager = engine_.getInputManager();
-		float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
-		if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
-		if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
-		if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
-		if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
+		// To move ONLY the camera, stop the game
+		if (getEditorState() == Stopped)
+		{
+			auto& inputManager = engine_.getInputManager();
+			float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
+			if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
+			if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
+			if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
+			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
 
+		}
+		
 		// Clamp camera to world bounds
 		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, static_cast<float>(VIRTUAL_WIDTH - EDITOR_WIDTH));
 		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, static_cast<float>(VIRTUAL_HEIGHT - EDITOR_HEIGHT));
@@ -422,6 +428,7 @@ void GameApplication::updateEntities() {
 
 	// Check if player is moving and switch animation accordingly
 	if (playerSystem_ && playerSpawned_) {
+		if (getEditorState() != Playing) return;
 		// Check for WASD input
 		bool isMoving = 
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
@@ -466,13 +473,17 @@ void GameApplication::updateEntities() {
 	{
 	case Playing:
 		{
-			std::cout << "Editor state: " << getEditorState() << std::endl;
+			//std::cout << "Editor state: " << getEditorState() << std::endl;
 			// Get list of entities to store current pos to reset later
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
 			{
-				UpdateResetPos();
+				//UpdateResetPos();
+				// Save tree
+				engine_.getEnoSceneManager().getSceneTree().save(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 				playAfterStop = false;
+
+				
 			}
 
 			// Update dynamic objects
@@ -505,12 +516,43 @@ void GameApplication::updateEntities() {
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
-				UpdateResetPos();
+				//UpdateResetPos();
+				// Load tree
+				engine_.getEnoSceneManager().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 				playAfterStop = true;
 			}
 			break;
 		}
 	}	
+
+	// loop to check for UI button entities 
+		
+	std::vector<ECS::Entity> entityList = engine_.getEntityManager().findEntity<ECSComponents::ButtonComponent>();
+
+	for (auto& ent : entityList)
+	{
+		auto& v = ent.get<ECSComponents::VisibilityComponent>(engine_.getEntityManager());
+		auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
+		auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
+		auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
+
+		if (getEditorState() == Playing)
+		{
+			if (inputManager.isMousePressed(GLFW_MOUSE_BUTTON_LEFT))
+			{
+				if (b.onClick(inputManager, v, t, d))
+				{
+					
+					std::cout << "CLICK!" << std::endl;
+					setEditorState(Stopped);
+				}
+			}
+		}
+	
+
+		
+	}
+
 }
 
 
@@ -696,6 +738,13 @@ void GameApplication::drawShapes() {
 					renderInfo.color,
 					true
 				);
+
+				// Drawing of button text
+				/*if (entity.has<ECSComponents::ButtonComponent>(entityManager))
+				{
+					auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
+					graphics.drawText(timesFont_, b.getName(), Math::eVec2<float>(transform.pos.x, transform.pos.y), 0.5f, Graphics::Color::Black);
+				}*/
 			}
 		}
 		catch (...) {
@@ -803,7 +852,8 @@ EditorState GameApplication::getEditorState() const
 {
 	return g_editorState;
 }
-EditorState GameApplication::getEditorState()
+
+EditorState& GameApplication::getEditorState()
 {
 	return g_editorState;
 }

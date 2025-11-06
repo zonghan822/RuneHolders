@@ -27,6 +27,19 @@ namespace ECSComponents
 			: pos(_pos), rot(_rot), scale(_scale) {}
 
 
+		// Copy assignment operator
+		TransformComponent& operator=(const TransformComponent& other)
+		{
+			if (this != &other)
+			{
+				pos = other.pos;
+				rot = other.rot;
+				scale = other.scale;
+				resetPos = other.resetPos;
+			}
+			return *this;
+		}
+
 		// For serialization purposes
 		// Generalized way of using reflection to access and iterate
 		// over fields!

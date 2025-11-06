@@ -17,6 +17,7 @@
 #include "player/player_config.hpp"
 #include "player/player.hpp"
 
+
 // Enum for different editor states
 enum EditorState {
     Stopped = 1,
@@ -93,7 +94,7 @@ public:
 
     // Accessor and mutators to access editor state
     EditorState getEditorState() const;
-    EditorState getEditorState();
+    EditorState& getEditorState();
 
     void setEditorState(EditorState state);
     Graphics::EnoFramebuffer* getGameFramebuffer() { return gameFramebuffer_.get(); }

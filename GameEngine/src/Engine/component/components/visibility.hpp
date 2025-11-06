@@ -26,6 +26,19 @@ namespace ECSComponents
 		// Visibility
 		bool visible = false;
 
+		// Default constructor
+		VisibilityComponent() = default;
+
+		// Copy assignment operator
+		VisibilityComponent& operator=(const VisibilityComponent& other)
+		{
+			if (this != &other)
+			{
+				z_index = other.z_index;
+				visible = other.visible;
+			}
+			return *this;
+		}
 
 		// For serialization purposes
 		// Generalized way of using reflection to access and iterate

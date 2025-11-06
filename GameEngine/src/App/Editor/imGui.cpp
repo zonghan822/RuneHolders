@@ -609,6 +609,15 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 			ECSComponents::CollisionComponent(prefab.width, prefab.height));
 	}
 
+	if (prefab.name == "ExitButton")
+	{
+		ECSComponents::VisibilityComponent visibility;
+		visibility.visible = true;
+		e.add<ECSComponents::VisibilityComponent>(entityManager, visibility);
+
+		e.add<ECSComponents::ButtonComponent>(entityManager);
+	}
+
 	// update render cache
 	if (g_game) g_game->markEntitiesDirty();
 
@@ -1201,12 +1210,21 @@ void displayEditorView(Engine::EnoEngine& engine_) {
 
 	// Display toolbar for PLAY/PAUSE/STOP (moved from Game View)
 	static bool isPlaying = false;
+	if (g_game->getEditorState() == Playing)
+	{
+		isPlaying = true;
+	}
+	else
+	{
+		isPlaying = false;
+	}
+
 	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
 		isPlaying = !isPlaying;
 		g_game->setEditorState(isPlaying ? Playing : Stopped);
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("()Pause")) {
+	if (ImGui::Button(g_game->getEditorState() == Playing || g_game->getEditorState() == Stopped ? "Pause" : "Resume")) {
 		if (g_game->getEditorState() != Stopped) {
 			g_game->setEditorState(g_game->getEditorState() == Playing ? Paused : Playing);
 		}
