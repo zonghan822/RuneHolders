@@ -38,5 +38,13 @@ namespace ECSComponents
 			NameComponent,
 			VisibilityComponent,
 			LayerComponent>;
+
+		using PUSHABLE_BOX = std::tuple<
+			TransformComponent,
+			PhysicsComponent,
+			CollisionComponent,
+			BoxComponent,
+			DrawInfoComponent,
+			NameComponent>;
 	};
 }
