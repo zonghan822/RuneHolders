@@ -164,6 +164,23 @@ namespace Physics
             Math::eVec2<float>& normal, float& penetration) const;
 
         /*============================================================================================
+        * \brief       Calculate scaled collision dimensions from transform and collision component
+        * \param[in]   ECSComponents::TransformComponent const& transform - Entity's transform
+        * \param[in]   ECSComponents::CollisionComponent const& collision - Entity's collision
+        * \param[out]  float& scaledWidth - output: width * transform.scale.x
+        * \param[out]  float& scaledHeight - output: height * transform.scale.y 
+        * \return      void
+        * 
+        * Function ensures consistent scaling across all physics calculations.
+        * It applies the transform's scale to the collision component's dimensions.
+        *===========================================================================================*/
+        void GetScaledColliderDimensions(
+            const ECSComponents::TransformComponent& transform,
+            const ECSComponents::CollisionComponent& collision,
+            float& scaledWidth,
+            float& scaledHeight) const;
+
+        /*============================================================================================
          * \brief       Helper to get transform component from entity location
          * \param[in]   ECS::EntityLoc const& entityLoc - Entity location data
          * \return      ECSComponents::TransformComponent& - Reference to transform
