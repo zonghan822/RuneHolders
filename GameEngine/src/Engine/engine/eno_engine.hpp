@@ -4,7 +4,7 @@
 * @author		Muhammad Raziq Bin Mohd Rafig (),
 * @author		Law Zong Han (zonghan.law@digipen.edu)
 * @date         03-10-2025
-* @brief		Main engine class that orchestrates all engine systems and provides the core 
+* @brief		Main engine class that orchestrates all engine systems and provides the core
 				game loop
 *//*========================================================================================*/
 
@@ -27,11 +27,18 @@
 #include "../crashlog/crashlogger.hpp"
 #include "../graphics/animation/animation.hpp"
 #include "../game_instance/eno_scene_tree.hpp"
+#include "../physics/physics_system.hpp"
+#include "../../src/App/Editor/player/player.hpp"
+
+namespace Player {
+	class PlayerSystem;
+}
 
 // stds
 #include <functional>
 #include <chrono>
 #include <algorithm>
+#include <memory>
 
 
 namespace Engine
@@ -54,7 +61,7 @@ namespace Engine
 
 		/*============================================================================================
 		* \brief		Starts the main game loop with the provided update callback
-		* \param[in]	gameUpdateCallback 
+		* \param[in]	gameUpdateCallback
 		*		Function called each frame for game logic updates
 		*//*========================================================================================*/
 		void run(std::function<void()> gameUpdateCallback);
@@ -132,6 +139,24 @@ namespace Engine
 		*//*========================================================================================*/
 		double getFPS() const { return fps_; }
 
+		/*============================================================================================
+		* \brief		Gets the Physics System for physics updates
+		* \return		Pointer to PhysicsSystem instance (may be null if not initialized)
+		*//*========================================================================================*/
+		Physics::PhysicsSystem* getPhysicsSystem() { return physicsSys_.get(); }
+
+		/*============================================================================================
+		* \brief		Gets the Collision System for collision detection
+		* \return		Pointer to CollisionSystem instance (may be null if not initialized)
+		*//*========================================================================================*/
+		Collision::CollisionSystem* getCollisionSystem() { return collisionSys_.get(); }
+
+		/*============================================================================================
+		* \brief		Gets the Player System for player movement
+		* \return		Pointer to PlayerSystem instance (may be null if not initialized)
+		*//*========================================================================================*/
+		Player::PlayerSystem* getPlayerSystem() { return playerSys_.get(); }
+
 	private:
 
 		/*============================================================================================
@@ -140,8 +165,19 @@ namespace Engine
 		void setupResourceLoading();
 
 		/*============================================================================================
+		* \brief		Initializes game systems (physics, collision, player)
+		*//*========================================================================================*/
+		void setupGameSystems();
+
+		/*============================================================================================
+		* \brief		Updates all game systems in proper order
+		* \param[in]	deltaTime - Time elapsed since last frame
+		*//*========================================================================================*/
+		void updateGameSystems(float deltaTime);
+
+		/*============================================================================================
 		* \brief		Updates time calculations including delta time and FPS
-		* \param[in] fpsCalcInt 
+		* \param[in] fpsCalcInt
 		*		Interval in seconds for FPS calculation
 		*//*========================================================================================*/
 		void updateTime(double fpsCalcInt = 1.0);
@@ -153,12 +189,17 @@ namespace Engine
 		Resources::EnoLoader loader_{ bus_ };
 		ECS::EntityManager entityMng_{ bus_ };
 		Core::EnoCoreHost coreHost_{ bus_ };
-		Editor::EnoEditor editor_{ bus_, entityMng_, coreHost_ };
-		
+		Editor::EnoEditor editor{ bus_, entityMng_, coreHost_ };
+
 		// Systems
 		Input::EnoInputManager inputMng_{ bus_ };
 		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };
 		Audio::EnoAudioManager audioMng_{ bus_ };
+
+		// Game Systems (managed with unique_ptr for optional initialization)
+		std::unique_ptr<Physics::PhysicsSystem> physicsSys_;
+		std::unique_ptr<Collision::CollisionSystem> collisionSys_;
+		std::unique_ptr<Player::PlayerSystem> playerSys_;
 
 		// Time
 		double dt_ = 0.0;

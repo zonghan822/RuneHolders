@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration/definition file for archetype presets
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once
@@ -18,6 +18,7 @@
 #include "../component/components/player_component.hpp"
 #include "../component/components/collision_component.hpp"
 #include "../component/components/physics_component.hpp"
+#include "../component/components/box_component.hpp"
 #include "../component/components/buttons.hpp"
 
 //stds

@@ -36,7 +36,7 @@ std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
 // Hierarchy tree
-static GameInstance::EnoSceneTree sceneTree;
+static GameInstance::EnoSceneTree sceneTree_;
 
 // Red Indicator
 float indicatorX_ = 600.0f;
@@ -176,7 +176,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 	//
 	ImGui::Begin("Heirarchy", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayHierarchyTab(engine_, sceneTree);
+	displayHierarchyTab(engine_, sceneTree_);
 	ImGui::End();
 
 	// Prefabs
@@ -325,12 +325,25 @@ void displayMainTab(Engine::EnoEngine& engine_) {
 					// DrawInfo already set above (now uses only width, height, shape, color - no position)
 				}
 
+				// Add PhysicsComponent to make the entity pushable
+				ECSComponents::PhysicsComponent physicsComp(1.5f);  // Default mass: slightly heavier than player
+				physicsComp.drag = 0.5f;                  // Moderate friction when pushed
+				physicsComp.restitution = 0.0f;           // No bounce
+				physicsComp.isKinematic = false;          // Can be pushed (not static)
+				physicsComp.useGravity = false;           // No gravity for top-down game
+				e.add<ECSComponents::PhysicsComponent>(entityManager, physicsComp);
+
+				std::cout << "PhysicsComponent added - entity is now pushable!\n";
+
 				std::cout << "Spawned entity WITH collider\n";
 			}
 			else {
 				std::cout << "Spawned entity without collider\n";
 			}
 		}
+
+		
+
 		if (g_game) g_game->markEntitiesDirty();
 		(void)e; // to silence compiler warning for unused param
 	}
@@ -983,10 +996,10 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 	ImGui::End();
 }
 
-void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID)
+void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree_, uint32_t nodeID)
 {
 	using namespace GameInstance;
-	GameInstance::Node* node = sceneTree.getNode(nodeID);
+	GameInstance::Node* node = sceneTree_.getNode(nodeID);
 	if (!node) return;
 
 	std::string label = "Entity " + std::to_string(node->entityID);
@@ -1008,7 +1021,7 @@ void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID)
 
 		if (open) {
 			for (uint32_t childID : node->children)
-				drawNodeRecursive(sceneTree, childID);
+				drawNodeRecursive(sceneTree_, childID);
 			ImGui::TreePop();
 		}
 	}
@@ -1142,7 +1155,7 @@ void imGuiBeginDockspace() {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
 
-void displayGameView(Engine::EnoEngine& engine_) {
+void displayGameView([[maybe_unused]] Engine::EnoEngine& engine_) {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
 	// Display info text - this is now a read-only overview window
