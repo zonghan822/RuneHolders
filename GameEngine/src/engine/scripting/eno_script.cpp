@@ -70,12 +70,10 @@ namespace Script
 	// Free all fields allocated memory with IntPtr from C#
 	void EnoScript::cleanup(PortedField* data)
 	{
-		if (data) {
-			if (data->name_) CoTaskMemFree((LPVOID)data->name_);
-			if (data->type_) CoTaskMemFree((LPVOID)data->type_);
-			if (data->value_) CoTaskMemFree((LPVOID)data->value_);
-			if (data->origin_) CoTaskMemFree((LPVOID)data->origin_);
-		}
+		if (data->name_) CoTaskMemFree((LPVOID) data->name_);
+		if (data->type_) CoTaskMemFree((LPVOID) data->type_);
+		if (data->value_) CoTaskMemFree((LPVOID) data->value_);
+		if (data->origin_) CoTaskMemFree((LPVOID) data->origin_);
 	}
 
 	// Display revealed variables

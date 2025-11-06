@@ -37,7 +37,7 @@ target_include_directories(${ENGINE_NAME} PUBLIC
 )
 target_compile_definitions(${ENGINE_NAME} PRIVATE 
     ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets"
-    SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}/user_scripts/"
+    SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}"
     SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}"
     DOTNET_ROOT="${DOTNET_RUNTIME_PATH}"
     -DGLEW_STATIC
