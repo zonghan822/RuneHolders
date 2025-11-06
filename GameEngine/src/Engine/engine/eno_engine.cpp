@@ -26,6 +26,9 @@ namespace Engine
 		audioMng_.init();
 
 		setupResourceLoading();
+
+		// Initialize game systems
+		setupGameSystems();
 	}
 
 	// Thats why i added a callback version
@@ -37,7 +40,7 @@ namespace Engine
 			window_.pollEvents();
 			
 			// Handle window resize for graphics system
-			auto fbSize= window_.getFramebufferSize();
+			auto fbSize = window_.getFramebufferSize();
 			int width = fbSize.first, height = fbSize.second;
 			if (width > 0 && height > 0) {
 				graphicsMng_.setProjectionMatrix(width, height);
@@ -45,7 +48,10 @@ namespace Engine
 
 			// Begin graphics frame
 			graphicsMng_.beginFrame(Graphics::Color::Black);  // Clear to black
-			
+
+			// Update game systems first (physics, collision, player)
+			updateGameSystems(static_cast<float>(dt_), isPlaying_);
+
 			// Call game logic if provided
 			if (gameUpdateCallback) {
 				gameUpdateCallback();
@@ -82,6 +88,51 @@ namespace Engine
 
 		// Loading fonts
 		loader_.loadFonts(loader_.getFontPath(), 48);
+	}
+
+	/*============================================================================================
+	* \brief		Initializes game systems (physics, collision, player)
+	*//*========================================================================================*/
+	void EnoEngine::setupGameSystems()
+	{
+		// Initialize physics system
+		physicsSys_ = std::make_unique<Physics::PhysicsSystem>();
+
+		// Initialize collision system (needs event bus reference)
+		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
+
+		// Initialize player system
+		playerSys_ = std::make_unique<Player::PlayerSystem>();
+
+		std::cout << "[EnoEngine] Game systems initialized successfully" << std::endl;
+	}
+
+	/*============================================================================================
+	* \brief		Updates all game systems in proper order
+	* \param[in]	deltaTime - Time elapsed since last frame
+	* \param[in]	isPlaying - Whether the game is in playing mode (not editor mode)
+	*//*========================================================================================*/
+	void EnoEngine::updateGameSystems(float deltaTime, bool isPlaying)
+	{
+		// Update systems in correct order:
+		// 1. Player input/movement
+		// 2. Physics simulation
+		// 3. Collision detection
+
+		// Update player system (handles input and player movement)
+		if (playerSys_) {
+			playerSys_->Update(entityMng_, inputMng_, deltaTime, isPlaying);
+		}
+
+		// Update physics system (gravity, forces, velocity integration)
+		if (physicsSys_) {
+			physicsSys_->Update(entityMng_, deltaTime);
+		}
+
+		// Update collision system (collision detection and response)
+		if (collisionSys_) {
+			collisionSys_->Update(entityMng_);
+		}
 	}
 
 	void EnoEngine::updateTime(double fps_calc_interval) {

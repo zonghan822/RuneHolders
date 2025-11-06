@@ -1,10 +1,11 @@
 /*============================================================================================
 * All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         game_logic.hpp
-* @author       Name (@digipen.edu)
-* @date         DD-MM-YYYY
-* @brief        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-*               incididunt ut labore et dolore magna aliqua.
+* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @date         06-11-2025
+* @brief        Game application layer that manages game-specific logic, rendering, and entity
+*               management. Systems are now managed by EnoEngine for better architecture.
 *//*========================================================================================*/
 
 #pragma once
@@ -16,7 +17,6 @@
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
-
 
 // Enum for different editor states
 enum EditorState {
@@ -71,8 +71,8 @@ private:
     // Player
     Player::PlayerConfig playerConfig_;
 
-    // Systems
-    std::unique_ptr<Physics::PhysicsSystem> physicsSystem_;
+    // NOTE: Systems (Physics, Collision, Player) are now managed by EnoEngine
+    // Access them via engine_.getPhysicsSystem(), engine_.getCollisionSystem(), engine_.getPlayerSystem()
 
     // Editor State
     EditorState g_editorState = Stopped;
@@ -133,10 +133,6 @@ private:
     void updateImGui();         // Update code for imGui
 
     void drawPlayerAndIndicator();
-    
-
-    // Helper function to store entity positions during change in editor state
-    void UpdateResetPos();
 
     void drawShapes(); 
 

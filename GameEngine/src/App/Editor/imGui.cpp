@@ -44,14 +44,9 @@ std::unordered_map<std::string, double> throttledTimes_; //used for displaying t
 
 // Hierarchy tree removed - now passed as parameter
 
-// Red Indicator
-float indicatorX_ = 600.0f;
-float indicatorY_ = 425.0f;
-float moveSpeed_ = 200.0f; // pixels per second
-
 
 // Option Menu
-const char* shapes[] = { "Rectangle" };
+const char* shapes[] = { "Circle", "Rectangle" };
 const char* colors[] = { "Green"  ,     "Red" };
 const char* colliderShapes[] = { "None", "Circle", "Rectangle" };
 
@@ -81,6 +76,7 @@ static uint32_t selectedEntityID = UINT32_MAX;  // Use max value to indicate "no
 static bool isDragging = false;
 static uint32_t draggedEntityID = 0;
 static ImVec2 dragOffset;
+static ImVec2 lastDragPos;
 
 // Prefab placement
 static std::string g_selectedPrefabForPlacement = "";
@@ -145,16 +141,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 		}
 	}
 
-	// (kim) get delta time for smooth movement
+	// Get ImGui IO for FPS display
 	ImGuiIO& io = ImGui::GetIO();
-	float deltaTime = io.DeltaTime;
-	float moveDelta = moveSpeed_ * deltaTime;
-
-	// (kim) changed to ARROW KEYS for indicator control 
-	if (inputManager.isKeyPressed(GLFW_KEY_UP)) indicatorY_ -= moveDelta;
-	if (inputManager.isKeyPressed(GLFW_KEY_DOWN)) indicatorY_ += moveDelta;
-	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
-	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
 	// Assuming that there will only be 1 entity with player component
 	bool playerFound = false;
@@ -299,16 +287,17 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 				if (!deletedSelected && e.id() == selectedEntityID) {
 					if (playerEntityID_ == e.id()) playerSpawned_ = false;
 
-					// Remove from scene hierarchy
+					// Remove from scene hierarchy and destroy children
 					Node* node = sceneTree.getNodeByEntityID(e.id());
 					if (node) {
+						destroyChildrenRecursive(node, entityManager);
 						sceneTree.kill(node);
 					}
 					entityManager.destroyEntity(e.id());
 
 					selectedEntityID = UINT32_MAX;
 					deletedSelected = true;
-					std::cout << "Deleted selected entity\n";
+					std::cout << "Deleted selected entity and its children\n";
 					continue;
 				}
 
@@ -374,9 +363,10 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 
 	if (!toDelete.empty()) {
 		for (auto& a : toDelete) {
-			// Remove from scene hierarchy
+			// Remove from scene hierarchy and destroy children
 			Node* node = sceneTree.getNodeByEntityID(a.id());
 			if (node) {
+				destroyChildrenRecursive(node, entityManager);
 				sceneTree.kill(node);
 			}
 			entityManager.destroyEntity(a.id());
@@ -427,6 +417,41 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 	return std::nullopt;
 }
 
+void moveChildrenRecursive(Editor::Node* node, float deltaX, float deltaY, ECS::EntityManager& entityManager)
+{
+	if (!node) return;
+
+	// Move all children of this node
+	for (Editor::Node* child : node->children_)
+	{
+		// Get child's transform and move it
+		if (child->entity_.has<ECSComponents::TransformComponent>(entityManager))
+		{
+			auto& tc = child->entity_.get<ECSComponents::TransformComponent>(entityManager);
+			tc.pos.x += deltaX;
+			tc.pos.y += deltaY;
+		}
+
+		// Recursively move this child's children
+		moveChildrenRecursive(child, deltaX, deltaY, entityManager);
+	}
+}
+
+void destroyChildrenRecursive(Editor::Node* node, ECS::EntityManager& entityManager)
+{
+	if (!node) return;
+
+	// Recursively destroy all children first (depth-first)
+	for (Editor::Node* child : node->children_)
+	{
+		destroyChildrenRecursive(child, entityManager);
+
+		// Destroy the child entity
+		entityManager.destroyEntity(child->entity_.id());
+		std::cout << "[DEBUG] Destroyed child entity " << child->entity_.id() << "\n";
+	}
+}
+
 ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine, Editor::EnoSceneTree& sceneTree)
 {
 	auto& entityManager = engine.getEntityManager();
@@ -440,8 +465,11 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	// create the entity
 	ECS::Entity e = entityManager.create<>();
 
+	// Create unique name by appending entity ID
+	std::string uniqueName = prefab.name + " #" + std::to_string(e.id());
+
 	// attach components
-	e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(prefab.name.c_str()));
+	e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(uniqueName.c_str()));
 
 	// transform uses center position
 	ECSComponents::TransformComponent transform{
@@ -454,7 +482,7 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	// draw info uses top-left position
 	ECSComponents::RenderComponent draw{
 		prefab.width, prefab.height,
-		prefab.shape == 0 ? "Circle" : "Rectangle",
+		prefab.shape == 0 ? "Circle" : "Rectangle",  // 0=Circle, 1=Rectangle (matches dropdown order)
 		prefab.color
 	};
 	e.add<ECSComponents::DrawInfoComponent>(entityManager, draw);
@@ -464,6 +492,16 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 		e.add<ECSComponents::CollisionComponent>(
 			entityManager,
 			ECSComponents::CollisionComponent(prefab.width, prefab.height));
+	}
+
+	// Button component
+	if (prefab.name == "ExitButton")
+	{
+		ECSComponents::VisibilityComponent visibility;
+		visibility.visible = true;
+		e.add<ECSComponents::VisibilityComponent>(entityManager, visibility);
+
+		e.add<ECSComponents::ButtonComponent>(entityManager);
 	}
 
 	// Add entity to scene hierarchy as root node
@@ -485,7 +523,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	static PrefabData currentPrefab{};  // local editable prefab
 	static char prefabName[64] = "";
 	static bool hasCollider = false;
-	static int shapeIndex = Shapes::Rect;
+	static int shapeIndex = 1;  // 1 = Rectangle (default), 0 = Circle
 	static int colorIndex = Color::Green;
 
 	// New implementation for dropdown scrollable UI for prefabs
@@ -663,10 +701,14 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			Player::PlayerConfig playerConfig;
 			playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
 
+			// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
+			constexpr float centerX = 640.0f;
+			constexpr float centerY = 360.0f;
+
 			// Create complete player entity using the config
 			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
 				engine_.getEntityManager(),
-				Math::eVec2<float>{indicatorX_, indicatorY_},
+				Math::eVec2<float>{centerX, centerY},
 				playerConfig
 			);
 
@@ -677,23 +719,24 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			// Add player entity to scene tree as root node
 			sceneTree.createFromEntity(player, nullptr);
 
-			std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")\n";
+			std::cout << "Player spawned at center (" << centerX << ", " << centerY << ")\n";
 		}
 	}
 	else {
 		ImGui::Text("Player Active (ID: %u)", playerEntityID_);
 		if (ImGui::Button("Destroy Player")) {
 			if (playerSpawned_ == true) {
-				// Remove from scene hierarchy
+				// Remove from scene hierarchy and destroy children
 				Editor::Node* node = sceneTree.getNodeByEntityID(playerEntityID_);
 				if (node) {
+					destroyChildrenRecursive(node, engine_.getEntityManager());
 					sceneTree.kill(node);
 				}
 				engine_.getEntityManager().destroyEntity(playerEntityID_);
 			}
 			playerSpawned_ = false;
 			if (g_game) g_game->markEntitiesDirty();
-			std::cout << "Player destroyed\n";
+			std::cout << "Player and all children destroyed\n";
 		}
 	}
 	ImGui::Separator();
@@ -797,8 +840,15 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			auto& em = engine_.getEntityManager();
 			Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
 			if (node) {
-				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " from hierarchy\n";
+				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " and all children from hierarchy\n";
+
+				// First, destroy all child entities recursively
+				destroyChildrenRecursive(node, em);
+
+				// Then kill the scene tree nodes (removes from tree structure)
 				sceneTree.kill(node);
+
+				// Finally, destroy the parent entity
 				em.destroyEntity(selectedEntityID);
 				selectedEntityID = UINT32_MAX;  // Reset to "no selection"
 
@@ -1020,7 +1070,9 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 	// If node has children -> use TreeNodeEx
 	if (node->children_.empty()) {
 		bool selected = (selectedEntityID == node->entity_.id());
-		if (ImGui::Selectable(label.c_str(), selected))
+		// Use ## to separate visible label from unique ID
+		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
+		if (ImGui::Selectable(uniqueLabel.c_str(), selected))
 			selectedEntityID = node->entity_.id();
 	}
 	else {
@@ -1028,7 +1080,9 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 		if (selectedEntityID == node->entity_.id())
 			flags |= ImGuiTreeNodeFlags_Selected;
 
-		bool open = ImGui::TreeNodeEx(label.c_str(), flags);
+		// Use ## to separate visible label from unique ID
+		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
+		bool open = ImGui::TreeNodeEx(uniqueLabel.c_str(), flags);
 		if (ImGui::IsItemClicked())
 			selectedEntityID = node->entity_.id();
 
@@ -1236,6 +1290,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 	// Display toolbar for PLAY/PAUSE/STOP (moved from Game View)
 	static bool isPlaying = false;
+	isPlaying = (g_game->getEditorState() == Playing) ? true : false;
+
 	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
 		isPlaying = !isPlaying;
 		g_game->setEditorState(isPlaying ? Playing : Stopped);
@@ -1335,9 +1391,15 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				auto clicked = getEntityUnderMouse(engine_, worldPos);
 				if (clicked.has_value()) {
 					std::cout << "Deleted entity: " << clicked->id()
-						<< " at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
+						<< " and all children at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 
-					// Remove from scene hierarchy and destroy entity
+					// Get the node and destroy all child entities
+					Editor::Node* node = sceneTree.getNodeByEntityID(clicked->id());
+					if (node) {
+						destroyChildrenRecursive(node, entityManager);
+					}
+
+					// Remove from scene hierarchy and destroy parent entity
 					sceneTree.select(clicked->id());
 					sceneTree.kill();
 
@@ -1363,7 +1425,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			// --- Entity drag-drop logic ---
 			// Begin drag
 			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
-				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging) {
+				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && g_game->getEditorState() == Stopped) {
 				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 				auto clicked = getEntityUnderMouse(engine_, worldPos);
 				if (clicked) {
@@ -1373,6 +1435,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					auto& tc = clicked->get<ECSComponents::TransformComponent>(entityManager);
 					dragOffset.x = worldPos.x - tc.pos.x;
 					dragOffset.y = worldPos.y - tc.pos.y;
+					lastDragPos = ImVec2(tc.pos.x, tc.pos.y);
 
 					std::cout << "Started dragging entity " << draggedEntityID << "\n";
 				}
@@ -1386,8 +1449,25 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				for (auto& e : all) {
 					if (e.id() == draggedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
-						tc.pos.x = worldPos.x - dragOffset.x;
-						tc.pos.y = worldPos.y - dragOffset.y;
+
+						// Calculate delta movement
+						float newX = worldPos.x - dragOffset.x;
+						float newY = worldPos.y - dragOffset.y;
+						float deltaX = newX - lastDragPos.x;
+						float deltaY = newY - lastDragPos.y;
+
+						// Move parent entity
+						tc.pos.x = newX;
+						tc.pos.y = newY;
+
+						// Move all children recursively
+						Editor::Node* draggedNode = sceneTree.getNodeByEntityID(draggedEntityID);
+						if (draggedNode) {
+							moveChildrenRecursive(draggedNode, deltaX, deltaY, entityManager);
+						}
+
+						// Update last position
+						lastDragPos = ImVec2(newX, newY);
 
 						if (g_game)
 							g_game->markEntitiesDirty();
