@@ -199,6 +199,10 @@ namespace Editor
 			return tree_;
 		}
 
+		Script::EnoScriptManager& getScriptManager() {
+			return scriptMng_;
+		}
+
 	private:
 		// Scenes
 		std::vector<std::unique_ptr<EnoScene>> scenes_;

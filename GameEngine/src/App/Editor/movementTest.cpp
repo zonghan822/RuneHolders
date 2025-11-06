@@ -266,6 +266,7 @@ void createTestObject(ECS::EntityManager& ent) {
 		{900.0f, 300.0f},  // Right side
 		{950.0f, 400.0f}   // Right side
 	};
+	
 	const char* objName = { "testcaven" };
 	const char* shapeName = { "Rectangle" };
 	float width = 64.0f;

@@ -121,7 +121,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	// get engine systems
 	auto& inputManager = engine_.getInputManager();
 	auto& entityManager = engine_.getEntityManager();
-	
+
 	// BEGIN DOCKSPACE
 	imGuiBeginDockspace();
 
@@ -700,9 +700,13 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 	// ==================== HIERARCHY CONTROLS ====================
 	static int entityCounter = 1;  // Track entity numbering
+	static bool attachScript = false; // Checkbox state
 
+
+	ImGui::Checkbox("Attach Script to New Entity", &attachScript);
 	if (ImGui::Button("Add Root Node")) {
 		auto& entityManager = engine_.getEntityManager();
+		auto& scriptMng = engine_.getEnoEditor().getScriptManager();
 
 		// Create transform with default position at center of screen
 		ECSComponents::TransformComponent transform{
@@ -729,7 +733,15 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
 		nameComp.name[sizeof(nameComp.name) - 1] = '\0';
 
-		sceneTree.createFromEntity(newEntity, nullptr);
+		Node* createdNode = sceneTree.createFromEntity(newEntity, nullptr);
+		//sceneTree.createFromEntity(newEntity, nullptr);
+
+		if (attachScript) {
+			auto script = scriptMng.selectScript(); // file picker
+			if (script) { 
+				sceneTree.attachScript(createdNode, std::move(script));
+			}
+		}
 		if (g_game) g_game->markEntitiesDirty();
 	}
 
@@ -790,24 +802,26 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	}
 
 
+
+
 	ImGui::Separator();
 
 	// --- Delete Node Button ---
 	if (ImGui::Button("Delete Selected Node")) {
-			auto& em = engine_.getEntityManager();
-			Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
-			if (node) {
-				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " from hierarchy\n";
-				sceneTree.kill(node);
-				em.destroyEntity(selectedEntityID);
-				selectedEntityID = UINT32_MAX;  // Reset to "no selection"
+		auto& em = engine_.getEntityManager();
+		Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
+		if (node) {
+			std::cout << "[DEBUG] Deleting node " << selectedEntityID << " from hierarchy\n";
+			sceneTree.kill(node);
+			em.destroyEntity(selectedEntityID);
+			selectedEntityID = UINT32_MAX;  // Reset to "no selection"
 
-				if (g_game)
-					g_game->markEntitiesDirty();
-			}
-			else {
-				std::cout << "[WARN] Selected node " << selectedEntityID << " not found in scene tree\n";
-			}
+			if (g_game)
+				g_game->markEntitiesDirty();
+		}
+		else {
+			std::cout << "[WARN] Selected node " << selectedEntityID << " not found in scene tree\n";
+		}
 	}
 
 
@@ -908,14 +922,16 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 		int currentColorIndex = 0;
 		if (draw.color.r == 1.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
 			currentColorIndex = 1; // Red
-		} else if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
+		}
+		else if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
 			currentColorIndex = 0; // Green
 		}
 
 		if (ImGui::Combo("Color", &currentColorIndex, colorTypes, IM_ARRAYSIZE(colorTypes))) {
 			if (currentColorIndex == 0) {
 				draw.color = Graphics::Color::Green;
-			} else {
+			}
+			else {
 				draw.color = Graphics::Color::Red;
 			}
 			if (g_game) g_game->markEntitiesDirty();
@@ -929,7 +945,8 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 		if (draw.texture != nullptr && draw.texture->isValid()) {
 			ImGui::Text("Texture ID: %d", draw.texID);
 			ImGui::Image((void*)(intptr_t)draw.texture->getID(), ImVec2(64, 64));
-		} else {
+		}
+		else {
 			ImGui::TextDisabled("No texture assigned");
 		}
 	}
@@ -1003,7 +1020,7 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 
 	// Get entity name from NameComponent if it exists
 	std::string label = "Entity " + std::to_string(node->entity_.id());
-
+#if 1
 	// Try to get the actual name from the entity
 	try {
 		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
@@ -1013,10 +1030,23 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 				break;
 			}
 		}
-	} catch (...) {
+	}
+	catch (...) {
+		// If we can't get the name, use the default
+	}
+#else
+	try {
+		for (Node* node : sceneTree.getAllNodes()) {
+			label = node->name_;
+			break;
+		}
+	}
+	catch (...) {
 		// If we can't get the name, use the default
 	}
 
+
+#endif
 	// If node has children -> use TreeNodeEx
 	if (node->children_.empty()) {
 		bool selected = (selectedEntityID == node->entity_.id());
@@ -1276,7 +1306,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				displaySize.y = contentSize.y;
 				displaySize.x = contentSize.y * editorAspect;
 				offset.x = (contentSize.x - displaySize.x) * 0.5f;
-			} else {
+			}
+			else {
 				displaySize.x = contentSize.x;
 				displaySize.y = contentSize.x / editorAspect;
 				offset.y = (contentSize.y - displaySize.y) * 0.5f;
@@ -1326,7 +1357,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				float worldY = screenY + g_game->getEditorCameraY();
 
 				return ImVec2(worldX, worldY);
-			};
+				};
 
 			// --- Handle entity deletion by click ---
 			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
@@ -1342,7 +1373,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					sceneTree.kill();
 
 					if (g_game) g_game->markEntitiesDirty();
-				} else {
+				}
+				else {
 					std::cout << "No entity found at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 				}
 

@@ -206,7 +206,8 @@ void GameApplication::createTestObjectsAndAddToSceneTree() {
 	auto& entityManager = engine_.getEntityManager();
 
 	// Create the test objects (boxes)
-	createTestObject(entityManager);
+	 createTestObject(entityManager);
+
 
 	// Now add all entities with NameComponent "testcaven" to the scene tree
 	std::vector<ECS::Entity> testEntities = entityManager.findEntity<ECSComponents::NameComponent>(
