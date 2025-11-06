@@ -479,6 +479,7 @@ void GameApplication::updateEntities() {
 	
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
+	static bool hasBegun = false;
 
 	//std::cout << "outside Editor state: " << _editorState << std::endl;
 	// Editor state = play game
@@ -486,7 +487,15 @@ void GameApplication::updateEntities() {
 	{
 	case Playing:
 		{
-			std::cout << "Editor state: " << getEditorState() << std::endl;
+			//std::cout << "Editor state: " << getEditorState() << std::endl;
+			auto& coreHost = engine_.getCoreHost();
+			if (!hasBegun)
+			{
+				std::cout << " Calling CoreHost::begin()\n";
+				coreHost.begin();
+				hasBegun = true;
+			}
+
 			// Get list of entities to store current pos to reset later
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
@@ -496,6 +505,7 @@ void GameApplication::updateEntities() {
 			}
 
 			// Update dynamic objects
+			coreHost.update();
 			updateTestObject(engine_.getEntityManager(), engine_);
 			break;
 		}
@@ -527,6 +537,7 @@ void GameApplication::updateEntities() {
 				UpdateResetPos();
 				playAfterStop = true;
 			}
+			hasBegun = false;
 			break;
 		}
 	}	

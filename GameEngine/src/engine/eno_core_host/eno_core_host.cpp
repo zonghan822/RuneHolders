@@ -187,6 +187,12 @@ namespace Core
 			reinterpret_cast<void**>(&call)
 		);
 
+
+		std::wcout << "params asm: " << params.assemblyPath_.c_str() << '\n';
+		std::wcout << "params type: " << params.type_.c_str() << '\n';
+		std::wcout << "params method: " << params.method_.c_str() << '\n';
+
+
 		if (returnCode || !call)
 		{
 			std::cerr << "Failed to get function pointer" << std::endl;
@@ -247,16 +253,17 @@ namespace Core
 
 	void EnoCoreHost::begin()
 	{
-
-
 		// Calls Begin method on scripts
-#if 0
+#if 1
         std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
 		callDelegate(dele.value());
+		callDelegate(dele.value());
+		//std::optional<Del> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Begin", stateDelegate);
+		//callDelegate(dele1.value());
 
 #else
 		//for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
-		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/")) {
+		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
 
@@ -274,13 +281,22 @@ namespace Core
 
 			for (size_t i = 0; i < count; ++i) {
 
-				std::wstring fullType = classNames[i];
-				std::wstring fullTypeWithAsm = fullType + L", GameScripts";
+				//std::wstring fullType = classNames[i];
 
+				std::wstring fullName{ classNames[i]};
+				size_t dpos = fullName.find('.');
+
+				// Keep the class name which comes after the namespace name
+				// if it is present
+				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
+				std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
+
+				//std::wcout << "FullType with ASM shoot me: " << fullTypeWithAsm << "\n";
+				
 				std::optional<Del> beginDel = loadDelegate(fullTypeWithAsm.c_str(), L"Begin", stateDelegate);
 				if (beginDel) callDelegate(beginDel.value());
 
-				CoTaskMemFree(classNames[i]);  // Important: free each name
+				CoTaskMemFree(classNames[i]);
 			}
 			CoTaskMemFree(classNames);
 		}
@@ -290,13 +306,16 @@ namespace Core
 	// Handling Update on scripts
 	void EnoCoreHost::update()
 	{
-#if 0
+#if 1
 		// Calls Update method on scripts
 		std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate);
 		callDelegate(dele.value());
+		callDelegate(dele.value());
+		//std::optional<Del> dele1 = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate);
+		//callDelegate(dele1.value());
 #else
 		//for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
-		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/")) {
+		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
 
@@ -314,8 +333,15 @@ namespace Core
 
 			for (size_t i = 0; i < count; ++i) {
 
-				std::wstring fullType = classNames[i];
-				std::wstring fullTypeWithAsm = fullType + L", GameScripts";
+				std::wstring fullName{ classNames[i] };
+				size_t dpos = fullName.find('.');
+
+				// Keep the class name which comes after the namespace name
+				// if it is present
+				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
+				std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
+
+				//std::wcout << "FullType with ASM shoot me: " << fullTypeWithAsm << "\n";
 
 				std::optional<Del> updateDel = loadDelegate(fullTypeWithAsm.c_str(), L"Update", stateDelegate);
 				if (updateDel) callDelegate(updateDel.value());

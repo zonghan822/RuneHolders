@@ -34,6 +34,13 @@ namespace Eno
             //     Console.WriteLine("released up");
             // }
         }
+        
+       [UnmanagedCallersOnly]
+        public static void Update()
+        {
+            Console.WriteLine("Update Script");
+        }
+
 
         [UnmanagedCallersOnly]
         public static void _Input()
