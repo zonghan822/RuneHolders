@@ -516,7 +516,6 @@ void GameApplication::updateEntities() {
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
 
-	//std::cout << "outside Editor state: " << _editorState << std::endl;
 	// Editor state = play game
 	switch (getEditorState())
 	{
@@ -527,7 +526,7 @@ void GameApplication::updateEntities() {
 			{
 				// Save the current scene tree state before playing
 				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
-				//sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
+				sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
 				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
@@ -563,7 +562,7 @@ void GameApplication::updateEntities() {
 			{
 				// Load the saved scene tree state to restore positions
 				std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
-				//sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+				sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 				std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
 
 				// Mark entities as dirty to refresh the rendering cache

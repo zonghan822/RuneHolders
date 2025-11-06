@@ -40,7 +40,7 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
-			l("Z Index", z_index, "uint32");
+			l("Z Index", z_index, "uint32_t");
 			l("Visible", visible, "bool");
 		}
 

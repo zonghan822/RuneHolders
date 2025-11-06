@@ -1434,7 +1434,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			// --- Entity drag-drop logic ---
 			// Begin drag
 			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
-				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging) {
+				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && g_game->getEditorState() == Stopped) {
 				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 				auto clicked = getEntityUnderMouse(engine_, worldPos);
 				if (clicked) {
