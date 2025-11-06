@@ -23,14 +23,19 @@
 #include <variant>
 #include <cstdlib>
 
+
 namespace Core
 {
 	// Source: https://learn.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting
 	class EnoCoreHost
 	{
 	private:
-		const std::string dllPath = SCRIPT_BIN_PATH "/GameScripts.dll";
-		const std::string runtConfigJson = SCRIPT_BIN_PATH "/GameScripts.runtimeconfig.json";
+		const std::string asmDllPath = SCRIPT_BIN_PATH "/GameScripts.dll";
+		const wchar_t* runtConfigJson = SCRIPT_BIN_PATH L"/GameScripts.runtimeconfig.json";
+
+		const wchar_t* userScriptPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/user_scripts" };
+		const wchar_t* asmDllAbsPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/Publish/GameScripts.dll" };
+
 	public:
 
 		// Define it as a pointer to a delegate type
@@ -43,7 +48,8 @@ namespace Core
 				void* reserved,
 				void** delegate);
 
-		struct Del
+		// To call methods with no params
+		struct DelegateInfo
 		{
 			load_assembly_and_get_function_pointer_fn fn_;
 			std::wstring assemblyPath_;
@@ -51,7 +57,20 @@ namespace Core
 			std::wstring method_;
 		};
 
-		struct KeyDel
+		// For backend methods (such as compiling or reloading)
+		struct ScriptingDelegateInfo
+		{
+			load_assembly_and_get_function_pointer_fn fn_;
+			std::wstring assemblyPath_;
+			std::wstring type_;
+			std::wstring method_;
+
+			const wchar_t* userScriptsPath_;
+			const wchar_t* asmDLLPath_;
+		};
+
+		// For the InputBoarding method (streaming in input from engine end)
+		struct KeyDelegateInfo
 		{
 			load_assembly_and_get_function_pointer_fn fn_;
 			std::wstring assemblyPath_;
@@ -75,6 +94,7 @@ namespace Core
 		// so the VS compiler will not clean it
 		using Method = void(*)();
 		using InputMethod = void(*)(int, int, int, int);
+		using ScriptingMethod = void(*)(const wchar_t* scriptPath, const wchar_t* dllPath);
 		using GetScriptFieldsMethod = Script::PortedField* (__stdcall*)(const wchar_t* scriptName, int* count);
 		using GetFileClassNamesMethod = void* (*)(const wchar_t* pAssemblyPath, int* count);
 
@@ -88,26 +108,41 @@ namespace Core
 		GetFileClassNamesMethod cname() const;
 
 		// Loading a delegate without parameters
-		std::optional<Del> loadDelegate(const char_t*, const char_t*, void*);
+		std::optional<DelegateInfo> loadDelegate(const char_t*, const char_t*, void*);
+
+		// Loading a delegate with two additional path param
+		std::optional<EnoCoreHost::ScriptingDelegateInfo> loadDelegate(
+			const char_t*, const char_t*, void*,
+			const wchar_t*, const wchar_t*);
 
 		// Loading an input delegate
-		std::optional<KeyDel> loadDelegate(
+		std::optional<KeyDelegateInfo> loadDelegate(
 			const char_t*, const char_t*, void*,
 			const Input::InputSent&);
 
-		// Calling a delegate without any parameters
-		void callDelegate(Del&);
-
-		// Calling a delegate with input parameters
-		void callDelegate(KeyDel&);
-
+		// Calling a delegate to retrieve script vars
 		template <typename T>
-		std::optional<T> retrieveDelegate(Del& params);
+		std::optional<T> retrieveDelegate(DelegateInfo& params);
 
-		// Handling engine state
+		// Calling a script
+		template <typename DelegateInfoType>
+		void callScript(const wchar_t*, const wchar_t*, void*);
+
+		template <typename DelegateInfoType>
+		void callScript(const wchar_t*, const wchar_t*, void*, const wchar_t*, const wchar_t*);
+
+		// ---------  Handling script state based on engine state ---------
+
+		// Script backend (compilation and reloading)
+		void scriptingSetup();
+		void hotReload();
+
+		// Scripts frontend (user scripts)
 		void begin();
 		void update();
 		void frameEnd();
+
+		void areScriptsModified();
 
 		// ----------------------- Events -----------------------
 		void onInputReceived(const Input::InputSent&);
@@ -129,7 +164,9 @@ namespace Core
 		void* stateDelegate;								// Delegate for calling methods responsible for different game/engine states (e.g begin, update)
 		void* scriptDelegate_;								// Delegate for retrieving script fields
 		void* inputDelegate_;								// Delegate for communnicating input to C# end
-		void* cnameDelegate_;								// Delegate for getting 
+		void* cnameDelegate_;								// Delegate for getting class names
+		void* reloadDelegate_;								// Delegate for handling backend affairs such as script recompilation and reloading
+
 
 		GetScriptFieldsMethod fieldsHandle_;
 		GetFileClassNamesMethod cnameHandle_;
@@ -142,9 +179,18 @@ namespace Core
 		void getHFHandles();
 
 		// Initialize CoreCLR
-		void initCoreCLR();
+		void hostRTInit();
 
 		// Set CoreCLR delegate
 		void setDelegate(void**) const;
+
+		// Calling a delegate without any parameters
+		void callDelegate(DelegateInfo&);
+
+		// Calling a delegate with a script path parameter
+		void callDelegate(ScriptingDelegateInfo& params);
+
+		// Calling a delegate with input parameters
+		void callDelegate(KeyDelegateInfo&);
 	};
 }

@@ -8,7 +8,7 @@ namespace Core
 
 		getHFHandles();
 
-		initCoreCLR();
+		hostRTInit();
 
 		setDelegate(&stateDelegate);
 		setDelegate(&inputDelegate_);
@@ -19,7 +19,7 @@ namespace Core
 		// Namespace.Type(Type => Function to be called), Assembly(.dll)
 
 		// Test getting the variables from the Player Controller script
-		std::optional<Del> dele2 = loadDelegate(L"Eno.ScriptBase, GameScripts", L"GetScriptFields", scriptDelegate_);
+		std::optional<DelegateInfo> dele2 = loadDelegate(L"Eno.ScriptBase, GameScripts", L"GetScriptFields", scriptDelegate_);
 
 		// Setting up handle for retrieving fields
 		std::optional<GetScriptFieldsMethod> result;
@@ -30,7 +30,7 @@ namespace Core
 				fieldsHandle_ = result.value();
 		}
 
-		std::optional<Del> dele3 = loadDelegate(L"Eno.ScriptBase, GameScripts", L"GetFileClassNames", cnameDelegate_);
+		std::optional<DelegateInfo> dele3 = loadDelegate(L"Eno.ScriptBase, GameScripts", L"GetFileClassNames", cnameDelegate_);
 		std::optional<GetFileClassNamesMethod> result2;
 		if (dele3)
 		{
@@ -92,11 +92,16 @@ namespace Core
 	}
 
 	// Initialize CoreCLR
-	void EnoCoreHost::initCoreCLR()
+	void EnoCoreHost::hostRTInit()
 	{
-		// Get runtime context handle for CoreCLR
-		std::wstring wRuntConfigJson{ runtConfigJson.begin(), runtConfigJson.end() };
-		int returnCode = initfp_(wRuntConfigJson.c_str(), nullptr, &hfHandle_);
+		// Create and initilaize hostfxr runtime context
+		// 
+		// Prepares runtime environment for hostfxr to interface
+		// and load the .NET runtime (CoreCLR)
+		
+		
+
+		int returnCode = initfp_(runtConfigJson, nullptr, &hfHandle_);
 
 		// If returnCode != 0,
 		// runtime context was not initialized properly
@@ -121,15 +126,40 @@ namespace Core
 		}
 	}
 
+	// Loading an input delegate
+	std::optional<EnoCoreHost::ScriptingDelegateInfo> EnoCoreHost::loadDelegate(
+		const char_t* typeName, const char_t* methodName, void* d,
+		const wchar_t* usPath, const wchar_t* dllPath)
+	{
+		auto load = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(d);
+
+		// Get path to managed assembly
+		std::filesystem::path asmPath = std::filesystem::absolute(asmDllPath);
+		if (!std::filesystem::exists(asmPath))
+		{
+			std::cerr << "DLL not found!\n";
+			return std::nullopt;
+		}
+
+		// Set assembly path, 
+		//		type (namespace.class, assemblyName),
+		//		method to call
+		std::wstring assemblyPath = asmPath.wstring();
+
+		return ScriptingDelegateInfo({
+			load, std::wstring(assemblyPath), std::wstring(typeName), std::wstring(methodName),
+			usPath, dllPath });
+	}
+
 	// Loading a delegate without parameters
-	std::optional<EnoCoreHost::Del> EnoCoreHost::loadDelegate(
+	std::optional<EnoCoreHost::DelegateInfo> EnoCoreHost::loadDelegate(
 		const char_t* typeName, const char_t* methodName, 
 		void* d)
 	{
 		auto load = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(d);
 
 		// Get path to managed assembly
-		std::filesystem::path asmPath = std::filesystem::absolute(dllPath);
+		std::filesystem::path asmPath = std::filesystem::absolute(asmDllPath);
 		if (!std::filesystem::exists(asmPath))
 		{
 			std::cerr << "DLL not found!\n";
@@ -141,19 +171,19 @@ namespace Core
 		//		method to call
 		std::wstring assemblyPath = asmPath.wstring();
 
-		return Del({ 
+		return DelegateInfo({ 
 			load, std::wstring(assemblyPath), std::wstring(typeName), std::wstring(methodName) });
 	}
 
 	// Loading an input delegate
-	std::optional<EnoCoreHost::KeyDel> EnoCoreHost::loadDelegate(
+	std::optional<EnoCoreHost::KeyDelegateInfo> EnoCoreHost::loadDelegate(
 		const char_t* typeName, const char_t* methodName, void* d,
 		const Input::InputSent& input)
 	{
 		auto load = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(d);
 
 		// Get path to managed assembly
-		std::filesystem::path asmPath = std::filesystem::absolute(dllPath);
+		std::filesystem::path asmPath = std::filesystem::absolute(asmDllPath);
 		if (!std::filesystem::exists(asmPath))
 		{
 			std::cerr << "DLL not found!\n";
@@ -165,13 +195,13 @@ namespace Core
 		//		method to call
 		std::wstring assemblyPath = asmPath.wstring();
 
-		return KeyDel({ 
+		return KeyDelegateInfo({ 
 			load, std::wstring(assemblyPath), std::wstring(typeName), std::wstring(methodName),
 			input.key, input.scancode, input.action, input.mods });
 	}
 
 	// Calling a delegate without any parameters
-	void EnoCoreHost::callDelegate(Del& params)
+	void EnoCoreHost::callDelegate(DelegateInfo& params)
 	{
 		Method call{ nullptr };
 		int returnCode = params.fn_(
@@ -193,7 +223,31 @@ namespace Core
 	}
 
 	// Calling a delegate with input parameters
-	void EnoCoreHost::callDelegate(KeyDel& params)
+	void EnoCoreHost::callDelegate(ScriptingDelegateInfo& params)
+	{
+		ScriptingMethod call{ nullptr };
+		int returnCode = params.fn_(
+			params.assemblyPath_.c_str(),
+			params.type_.c_str(),
+			params.method_.c_str(),
+			UNMANAGEDCALLERSONLY_METHOD,
+			nullptr,
+			reinterpret_cast<void**>(&call)
+		);
+
+		if (returnCode || !call)
+		{
+			std::cerr << "Failed to get function pointer" << std::endl;
+			return;
+		}
+		else
+		{
+			call(params.userScriptsPath_, params.asmDLLPath_);
+		}
+	}
+
+	// Calling a delegate with input parameters
+	void EnoCoreHost::callDelegate(KeyDelegateInfo& params)
 	{
 		InputMethod call{ nullptr };
 		int returnCode = params.fn_(
@@ -218,7 +272,7 @@ namespace Core
 
 	// Retrieve script vars
 	template <typename T>
-	std::optional<T> EnoCoreHost::retrieveDelegate(Del& params)
+	std::optional<T> EnoCoreHost::retrieveDelegate(DelegateInfo& params)
 	{
 		T call{ nullptr };
 		int returnCode = params.fn_(
@@ -239,31 +293,79 @@ namespace Core
 		return call;
 	}
 
-	// Engine State
+	void EnoCoreHost::scriptingSetup()
+	{
+		// Load and start watching for changes made
+
+		// Detect if changes have been made to the assembly
+		// e.g modifying a .cs script
+		callScript<ScriptingDelegateInfo>(
+			L"Eno.Initiator, GameScripts", L"InitSequence", reloadDelegate_,
+			userScriptPath, asmDllAbsPath);
+	}
+
+	// Hot reload
+	void EnoCoreHost::hotReload()
+	{
+		std::cout << "Hot reloading is occurring!" << std::endl;
+		callScript<ScriptingDelegateInfo>(
+			L"Eno.Initiator, GameScripts", L"ReloadSequence", reloadDelegate_,
+			userScriptPath, asmDllAbsPath);
+	}
 
 	void EnoCoreHost::begin()
 	{
 		// Calls Begin method on scripts
-		std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
-
-		callDelegate(dele.value());
+		callScript<DelegateInfo>(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
 	}
 
 	// Handling Update on scripts
 	void EnoCoreHost::update()
 	{
 		// Calls Update method on scripts
-		std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate);
-
-		callDelegate(dele.value());
+		callScript<DelegateInfo>(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate);
 	}
 
 	// Handling state when frame has ended on the engine side
 	void EnoCoreHost::frameEnd()
 	{
 		// Resets input when no input is received
-		std::optional<Del> dele = loadDelegate(L"Eno.Input, GameScripts", L"noInputReceived", stateDelegate);
+		callScript<DelegateInfo>(L"Eno.Input, GameScripts", L"noInputReceived", stateDelegate);
+	}
 
+	// Detect change in script
+	void EnoCoreHost::areScriptsModified()
+	{
+		// Modify this with a map next time to map out scripts and times
+		static std::filesystem::file_time_type previousWriteTime{};
+
+		auto lastWrite = std::filesystem::last_write_time(asmDllPath);
+		if (lastWrite != previousWriteTime)
+		{
+			previousWriteTime = lastWrite;
+			hotReload();
+		}
+	}
+
+	// Call a method from a specified type (namespace.class, dll)
+	template <typename DelegateInfoType>
+	void EnoCoreHost::callScript(const wchar_t* type, const wchar_t* method, void* deletype)
+	{
+		std::optional<DelegateInfoType> dele = loadDelegate(type, method, deletype);
+
+		if (dele.has_value())
+			callDelegate(dele.value());
+		else
+			std::cerr << "Failed to retrieve delegate info upon loading!" << std::endl;
+	}
+
+	// Overload for calling scripting-related methods with 1 path argument
+	template <typename DelegateInfoType>
+	void EnoCoreHost::callScript(
+		const wchar_t* type, const wchar_t* method, void* deletype,
+		const wchar_t* usPath, const wchar_t* dllPath)
+	{
+		std::optional<ScriptingDelegateInfo> dele = loadDelegate(type, method, deletype, usPath, dllPath);
 		callDelegate(dele.value());
 	}
 
@@ -271,7 +373,7 @@ namespace Core
 
 	void EnoCoreHost::onInputReceived(const Input::InputSent& event)
 	{
-		KeyDel kd = loadDelegate(L"Eno.Input, GameScripts", L"InputBoarding", inputDelegate_, event).value();
+		KeyDelegateInfo kd = loadDelegate(L"Eno.Input, GameScripts", L"InputBoarding", inputDelegate_, event).value();
 
 		callDelegate(kd);
 	}
