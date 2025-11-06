@@ -27,7 +27,7 @@ set(SCRIPT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/scripts/GameScripts)
 set(SCRIPT_BINARY_DIR ${CMAKE_BINARY_DIR}/scripts/GameScripts)
 build_csharp_scripts(
     GameScripts
-    ${SCRIPT_SOURCE_DIR}/GameScripts.csproj
+    ${SCRIPT_SOURCE_DIR}
     ${SCRIPT_BINARY_DIR}
 )
 

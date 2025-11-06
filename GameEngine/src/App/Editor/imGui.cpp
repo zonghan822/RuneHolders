@@ -16,6 +16,13 @@
 #undef min
 #undef max
 
+// Forward declaration for Editor namespace
+namespace Editor {
+	struct Node;
+}
+
+using Editor::Node;
+
 #pragma region Game Variables
 
 extern GameApplication game;
@@ -35,8 +42,7 @@ bool playerSpawned_ = false;
 std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
-// Hierarchy tree
-static GameInstance::EnoSceneTree sceneTree;
+// Hierarchy tree removed - now passed as parameter
 
 // Red Indicator
 float indicatorX_ = 600.0f;
@@ -106,7 +112,7 @@ void imGuiInit(GLFWwindow* window) {
 }
 
 
-void imGuiDisplay(Engine::EnoEngine& engine_) {
+void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -168,25 +174,20 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 		next_update = now + 0.5;
 	}
 
-	// Edit (Hierarchy)
+	// Hierarchy
+	ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayHierarchyTab(engine_, sceneTree);
+	ImGui::End();
+
+	// Edit tab 
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_, sceneTree);
 	displayAllEntitiesTab(engine_, sceneTree);
 	ImGui::End();
 
-	//
-	ImGui::Begin("Heirarchy", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayHierarchyTab(engine_, sceneTree);
-	ImGui::End();
-
 	// Prefabs
 	ImGui::Begin("Prefabs", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayPrefabsTab(engine_, sceneTree);
-	ImGui::End();
-
-	// Main Controls
-	ImGui::Begin("Main Controls", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayMainTab(engine_, sceneTree);
 	ImGui::End();
 
 	// Game View (full scene, bottom-right)
@@ -196,7 +197,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 
 	// Editor View (zoomed in, center - replaces old Game View behavior)
 	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-	displayEditorView(engine_);
+	displayEditorView(engine_, sceneTree);
 	ImGui::End();
 
 	// Assets Browser
@@ -216,166 +217,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_) {
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
-
-void displayMainTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree) {
-
-	auto& entityManager = engine_.getEntityManager();
-
-	//=======================PLAYER CONTROLS =======================
-	ImGui::Text("=== PLAYER CONTROLS ===");
-	ImGui::Text("WASD to move player");
-
-	if (!playerSpawned_) {
-		if (ImGui::Button("Spawn Player")) {
-
-			// Load player configuration from file
-			Player::PlayerConfig playerConfig;
-			playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
-
-			// Create complete player entity using the config
-			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
-				engine_.getEntityManager(),
-				Math::eVec2<float>{indicatorX_, indicatorY_},
-				playerConfig
-			);
-
-			// Store player ID for reference
-			playerEntityID_ = player.id();
-			playerSpawned_ = true;
-
-			std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")\n";
-		}
-	}
-	else {
-		ImGui::Text("Player Active (ID: %u)", playerEntityID_);
-		if (ImGui::Button("Destroy Player")) {
-			if (playerSpawned_ == true) {
-				engine_.getEntityManager().destroyEntity(playerEntityID_);
-			}
-			playerSpawned_ = false;
-			if (g_game) g_game->markEntitiesDirty();
-			std::cout << "Player destroyed\n";
-		}
-	}
-	ImGui::Separator();
-
-	// ==================== SPAWN POSITION INDICATOR ====================
-	ImGui::Text("=== SPAWN POSITION INDICATOR ===");
-	ImGui::Text("Position (%.1f, %.1f)", indicatorX_, indicatorY_);
-	ImGui::DragFloat("Move Speed", &moveSpeed_, 10.0f, 50.0f, 500.0f);
-	//collision visualization toggle
-	ImGui::Checkbox("Show Colliders", &showColliders_);
-
-	// entity spawn settings
-	ImGui::Text("Entity Spawn Settings");
-	ImGui::DragFloat("Entity Width", &eWidth, 0.5f, 1.0f, 100.0f);
-	ImGui::DragFloat("Entity Height", &eHeight, 0.5f, 1.0f, 100.0f);
-	//dropdown menu
-	ImGui::Combo("Shape", &eShapeIndex, shapes, IM_ARRAYSIZE(shapes));
-	ImGui::Combo("Color", &eColor, colors, IM_ARRAYSIZE(colors));
-
-
-	//collider settings
-	ImGui::Text("Collider Settings");
-	ImGui::Combo("ColliderType", &selectedCollider, colliderShapes, IM_ARRAYSIZE(colliderShapes));
-
-	if (selectedCollider == 1) { // circle
-		ImGui::DragFloat("Collider Width", &colliderRadius, 0.5f, 1.0f, 100.0f);
-	}
-	else if (selectedCollider == 2) { // rectangle
-		ImGui::DragFloat("Collider Width", &colliderWidth, 0.5f, 1.0f, 100.0f);
-		ImGui::DragFloat("Collider Height", &colliderHeight, 0.5f, 1.0f, 100.0f);
-	}
-
-	ImGui::Separator();
-
-	//Spawn Button (with optional collider)
-	if (ImGui::Button("Spawn Entity")) {
-		// Calculate center position from top-left for transform
-		float centerX = indicatorX_ + (eWidth * 0.5f);
-		float centerY = indicatorY_ + (eHeight * 0.5f);
-
-		// ALWAYS add TransformComponent (required for drag-drop functionality)
-		ECSComponents::TransformComponent transform{
-			{centerX, centerY},
-			{0.0f, 0.0f},
-			{1.0f, 1.0f}
-		};
-
-		// RenderComponent stores only rendering properties (no position!)
-		ECSComponents::RenderComponent renderComp{ eWidth, eHeight, shapes[eShapeIndex], eColor };
-
-		// Create entity with both Transform and DrawInfo components
-		ECS::Entity e = entityManager.create<ECSComponents::TransformComponent>(transform);
-		e.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
-		e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("John"));
-
-		// Add collider if selected
-		if (selectedCollider != 0) {
-			// Add appropriate collider
-			if (selectedCollider == 1) {//circle
-				e.add<ECSComponents::CollisionComponent>(entityManager, ECSComponents::CollisionComponent(colliderRadius));
-				if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
-					// DrawInfo already set above (now uses only width, height, shape, color - no position)
-				}
-			}
-			else if (selectedCollider == 2) { // rectangle
-				e.add<ECSComponents::CollisionComponent>(entityManager, ECSComponents::CollisionComponent(colliderWidth, colliderHeight));
-				if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
-					// DrawInfo already set above (now uses only width, height, shape, color - no position)
-				}
-
-				std::cout << "Spawned entity WITH collider\n";
-			}
-			else {
-				std::cout << "Spawned entity without collider\n";
-			}
-		}
-
-		// Add entity to scene hierarchy as root node
-		sceneTree.addEntityNode(e);
-
-		if (g_game) g_game->markEntitiesDirty();
-		(void)e; // to silence compiler warning for unused param
-	}
-	// NOTE: Drag-drop logic moved to Game View window to work with framebuffer coordinates
-
-
-	//Clone Button
-	if (ImGui::Button("Spawn 2500 Entities")) {
-		for (size_t i = 0; i < 2500; i++) {
-			float randX = randomFloat(0.0f, 1200.0f); //screen width
-			float randY = randomFloat(0.0f, 900.0f); // screen height
-			float randScalar = randomFloat(0, 10.f);
-			float randW = eWidth + randScalar;
-			float randH = eHeight + randScalar;
-			Color randC = (randomFloat(0, 1.0f) < 0.5f ? Color::Green : Color::Red);
-
-			// Calculate center position for transform
-			float centerX = randX + (randW * 0.5f);
-			float centerY = randY + (randH * 0.5f);
-
-			// Create entity with TransformComponent so it can be dragged
-			ECSComponents::TransformComponent transform{
-				{centerX, centerY},
-				{0.0f, 0.0f},
-				{1.0f, 1.0f}
-			};
-			ECS::Entity e = engine_.getEntityManager().create<ECSComponents::TransformComponent>(transform);
-
-			// Add DrawInfoComponent
-			ECSComponents::RenderComponent renderComp{ randW, randH, shapes[eShapeIndex], randC };
-			e.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
-			e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("John"));
-		}
-		entity_count += 2500;
-		if (g_game) g_game->markEntitiesDirty();
-		std::cout << "Spawned " << entity_count << " Entities\n";
-	}
-
-
-}
-
 
 void displayFPSTab(Engine::EnoEngine& engine_) {
 	ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
@@ -423,10 +264,10 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_) {
 	engine_.getEntityManager().viewMap();
 }
 
-void displayEditTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree) {
+void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 
 	auto& entityManager = engine_.getEntityManager();
-	const char* filters[] = { "Architype" , "Last Spawned", "Mouse Select", "All" };
+	const char* filters[] = { "Archetype" , "Last Spawned", "Mouse Select", "All" };
 	static int FilterType = Filters::Architype;
 
 	std::vector<ECS::Entity> toDelete;
@@ -459,7 +300,11 @@ void displayEditTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& scen
 					if (playerEntityID_ == e.id()) playerSpawned_ = false;
 
 					// Remove from scene hierarchy
-					sceneTree.removeNodeAndDestroyEntity(e.id(), entityManager);
+					Node* node = sceneTree.getNodeByEntityID(e.id());
+					if (node) {
+						sceneTree.kill(node);
+					}
+					entityManager.destroyEntity(e.id());
 
 					selectedEntityID = UINT32_MAX;
 					deletedSelected = true;
@@ -530,7 +375,11 @@ void displayEditTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& scen
 	if (!toDelete.empty()) {
 		for (auto& a : toDelete) {
 			// Remove from scene hierarchy
-			sceneTree.removeNodeAndDestroyEntity(a.id(), entityManager);
+			Node* node = sceneTree.getNodeByEntityID(a.id());
+			if (node) {
+				sceneTree.kill(node);
+			}
+			entityManager.destroyEntity(a.id());
 		}
 
 		// Mark cache as dirty after deletion
@@ -578,7 +427,7 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 	return std::nullopt;
 }
 
-ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine, GameInstance::EnoSceneTree& sceneTree)
+ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine, Editor::EnoSceneTree& sceneTree)
 {
 	auto& entityManager = engine.getEntityManager();
 
@@ -618,7 +467,7 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	}
 
 	// Add entity to scene hierarchy as root node
-	sceneTree.addEntityNode(e);
+	sceneTree.createFromEntity(e, nullptr);
 
 	// update render cache
 	if (g_game) g_game->markEntitiesDirty();
@@ -629,7 +478,7 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	return e;
 }
 
-void displayPrefabsTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree) {
+void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 
 	auto& entityManager = engine_.getEntityManager();
 
@@ -722,7 +571,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& s
 			ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], entityManager);
 
 			// Add entity to scene hierarchy as root node
-			sceneTree.addEntityNode(e);
+			sceneTree.createFromEntity(e, nullptr);
 
 			if (g_game) g_game->markEntitiesDirty();
 			std::cout << "Spawned prefab: " << selectedPrefabName << "\n";
@@ -749,7 +598,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& s
 	//}
 }
 
-void displayAllEntitiesTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree)
+void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 {
 	auto& entityManager = engine_.getEntityManager();
 
@@ -783,21 +632,8 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTre
 		{
 			if (e.id() == selectedEntityID)
 			{
-				// Check if this is a root node (Scene node)
-				GameInstance::Node* node = sceneTree.getNode(e.id());
-				bool isRootNode = (node && node->parentID == UINT32_MAX);  // UINT32_MAX means no parent
-
-				// Only display inspector if it's NOT a root node
-				if (!isRootNode) {
-					displayEntityInspector(entityManager, e);
-				}
-				else {
-					ImGui::Begin("Entity Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-					ImGui::Text("Scene nodes cannot be inspected");
-					ImGui::Text("Select a child entity to inspect");
-					ImGui::End();
-				}
-
+				// Display inspector for all entities (including root nodes)
+				displayEntityInspector(entityManager, e);
 				entityFound = true;
 				break;
 			}
@@ -811,12 +647,59 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTre
 	}
 }
 
-void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree)
+void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 {
 	ImGui::Text("=== Scene Hierarchy ===");
 	ImGui::Separator();
 
-	static int sceneCounter = 1;  // Track scene numbering
+	// ==================== SPAWN PLAYER ====================
+	ImGui::Text("=== PLAYER CONTROLS ===");
+	ImGui::Text("WASD to move player");
+
+	if (!playerSpawned_) {
+		if (ImGui::Button("Spawn Player")) {
+
+			// Load player configuration from file
+			Player::PlayerConfig playerConfig;
+			playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
+
+			// Create complete player entity using the config
+			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
+				engine_.getEntityManager(),
+				Math::eVec2<float>{indicatorX_, indicatorY_},
+				playerConfig
+			);
+
+			// Store player ID for reference
+			playerEntityID_ = player.id();
+			playerSpawned_ = true;
+
+			// Add player entity to scene tree as root node
+			sceneTree.createFromEntity(player, nullptr);
+
+			std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")\n";
+		}
+	}
+	else {
+		ImGui::Text("Player Active (ID: %u)", playerEntityID_);
+		if (ImGui::Button("Destroy Player")) {
+			if (playerSpawned_ == true) {
+				// Remove from scene hierarchy
+				Editor::Node* node = sceneTree.getNodeByEntityID(playerEntityID_);
+				if (node) {
+					sceneTree.kill(node);
+				}
+				engine_.getEntityManager().destroyEntity(playerEntityID_);
+			}
+			playerSpawned_ = false;
+			if (g_game) g_game->markEntitiesDirty();
+			std::cout << "Player destroyed\n";
+		}
+	}
+	ImGui::Separator();
+
+	// ==================== HIERARCHY CONTROLS ====================
+	static int entityCounter = 1;  // Track entity numbering
 
 	if (ImGui::Button("Add Root Node")) {
 		auto& entityManager = engine_.getEntityManager();
@@ -840,24 +723,22 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 		newEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 		newEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
 
-		// Name root nodes as "Scene 1", "Scene 2", etc.
+		// Name root nodes as "Entity 1", "Entity 2", etc.
 		auto& nameComp = newEntity.get<ECSComponents::NameComponent>(entityManager);
-		std::string sceneName = "Scene " + std::to_string(sceneCounter++);
-		strncpy_s(nameComp.name, sceneName.c_str(), sizeof(nameComp.name) - 1);
+		std::string entityName = "Entity " + std::to_string(entityCounter++);
+		strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
 		nameComp.name[sizeof(nameComp.name) - 1] = '\0';
 
-		sceneTree.addEntityNode(newEntity);
+		sceneTree.createFromEntity(newEntity, nullptr);
 		if (g_game) g_game->markEntitiesDirty();
 	}
 
 	ImGui::SameLine();
 
-	static int entityCounter = 1;  // Track entity numbering for children
-
 	if (ImGui::Button("Add Child Node")) {
 		if (selectedEntityID != UINT32_MAX) {
 			// Verify the parent node exists in the scene tree
-			if (!sceneTree.getNode(selectedEntityID)) {
+			if (!sceneTree.getNodeByEntityID(selectedEntityID)) {
 				std::cout << "[ERROR] Selected entity " << selectedEntityID << " not found in scene tree. Cannot add child.\n";
 			}
 			else {
@@ -882,17 +763,15 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 				childEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 				childEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
 
-				// Name child nodes as "Entity 1", "Entity 2", etc.
+				// Name child nodes as "Entity #" using the same counter
 				auto& nameComp = childEntity.get<ECSComponents::NameComponent>(entityManager);
 				std::string entityName = "Entity " + std::to_string(entityCounter++);
 				strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
 				nameComp.name[sizeof(nameComp.name) - 1] = '\0';
 
-				// Add to scene tree
-				sceneTree.addEntityNode(childEntity);
-
-				// Set parent relationship
-				sceneTree.setParent(childEntity.id(), selectedEntityID);
+				// Get parent node and add child entity to scene tree
+				Editor::Node* parentNode = sceneTree.getNodeByEntityID(selectedEntityID);
+				Editor::Node* childNode = sceneTree.createFromEntity(childEntity, parentNode);
 
 				if (g_game) g_game->markEntitiesDirty();
 
@@ -900,9 +779,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 					<< "') to parent " << selectedEntityID << "\n";
 
 				// Debug: verify the relationship was set
-				GameInstance::Node* childNode = sceneTree.getNode(childEntity.id());
 				if (childNode) {
-					std::cout << "  -> Child's parentID: " << childNode->parentID << "\n";
+					std::cout << "  -> Child's parent: " << (childNode->parent_ ? std::to_string(childNode->parent_->sceneObjectID_) : "none") << "\n";
 				}
 			}
 		}
@@ -917,9 +795,11 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 	// --- Delete Node Button ---
 	if (ImGui::Button("Delete Selected Node")) {
 			auto& em = engine_.getEntityManager();
-			if (sceneTree.getNode(selectedEntityID)) {
+			Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
+			if (node) {
 				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " from hierarchy\n";
-				sceneTree.removeNodeAndDestroyEntity(selectedEntityID, em);
+				sceneTree.kill(node);
+				em.destroyEntity(selectedEntityID);
 				selectedEntityID = UINT32_MAX;  // Reset to "no selection"
 
 				if (g_game)
@@ -934,11 +814,11 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 	ImGui::Separator();
 
 	auto& entityManager = engine_.getEntityManager();
-	const auto& allNodes = sceneTree.getAllNodes();
+	auto allNodes = sceneTree.getAllNodes();
 	bool anyNode = false;
-	for (const auto& [id, node] : allNodes) {
-		if (node.parentID == UINT32_MAX) {  // UINT32_MAX means no parent (root node)
-			drawNodeRecursive(sceneTree, id, entityManager);
+	for (Editor::Node* node : allNodes) {
+		if (node->parent_ == nullptr) {  // nullptr means no parent (root node)
+			drawNodeRecursive(sceneTree, node->entity_.id(), entityManager);
 			anyNode = true;
 		}
 	}
@@ -949,12 +829,12 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree&
 	ImGui::Separator();
 
 	if (ImGui::Button("Print Tree to Terminal")) {
-		const auto& all = sceneTree.getAllNodes();
-		for (auto& [id, node] : all) {
-			std::cout << "Entity " << node.entityID
-				<< " | Parent: " << node.parentID
+		auto all = sceneTree.getAllNodes();
+		for (Editor::Node* node : all) {
+			std::cout << "Entity " << node->entity_.id()
+				<< " | Parent: " << (node->parent_ ? std::to_string(node->parent_->entity_.id()) : "none")
 				<< " | Children: ";
-			for (uint32_t c : node.children) std::cout << c << " ";
+			for (Editor::Node* c : node->children_) std::cout << c->entity_.id() << " ";
 			std::cout << "\n";
 		}
 	}
@@ -985,16 +865,19 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 
 	}
 
+	// Check if this is a player entity
+	bool isPlayer = entity.has<ECSComponents::PlayerComponent>(entMng);
+
 	// --- TransformComponent ---
 	if (entity.has<ECSComponents::TransformComponent>(entMng)) {
 		auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
 		ImGui::SeparatorText("Transform");
 		ImGui::DragFloat2("Position", (float*)&transform.pos, 0.5f);
-		ImGui::DragFloat2("Scale", (float*)&transform.scale, 0.05f, 0.1f, 10.0f);
+		// Scale removed - doesn't do anything currently
 	}
 
-	// --- PhysicsComponent ---
-	if (entity.has<ECSComponents::PhysicsComponent>(entMng)) {
+	// --- PhysicsComponent --- (skip for player)
+	if (!isPlayer && entity.has<ECSComponents::PhysicsComponent>(entMng)) {
 		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
 		ImGui::SeparatorText("Physics");
 		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
@@ -1003,35 +886,43 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 		ImGui::Checkbox("Use Gravity", &physics.useGravity);
 	}
 
-	// --- DrawInfoComponent ---
-	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
+	// --- DrawInfoComponent --- (skip for player)
+	if (!isPlayer && entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
 		auto& draw = entity.get<ECSComponents::DrawInfoComponent>(entMng);
 
 		ImGui::SeparatorText("Draw Info");
 		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
 		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
 
-		// Display shape (read-only for now)
-		ImGui::Text("Shape: %s", draw.shape);
-
-		// Display color as RGBA values and visual indicator
-		ImVec4 colorVec(draw.color.r, draw.color.g, draw.color.b, draw.color.a);
-
-		// Identify common colors by their RGB values
-		if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
-			ImGui::Text("Color: Green");
-		} else if (draw.color.r == 1.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
-			ImGui::Text("Color: Red");
-		} else if (draw.color.r == 0.0f && draw.color.g == 0.0f && draw.color.b == 1.0f) {
-			ImGui::Text("Color: Blue");
-		} else if (draw.color.r == 1.0f && draw.color.g == 1.0f && draw.color.b == 1.0f) {
-			ImGui::Text("Color: White");
-		} else if (draw.color.r == 0.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
-			ImGui::Text("Color: Black");
-		} else {
-			ImGui::Text("Color: Custom (%.2f, %.2f, %.2f, %.2f)",
-				draw.color.r, draw.color.g, draw.color.b, draw.color.a);
+		// Shape type selector (Circle or Rectangle)
+		const char* shapeTypes[] = { "Circle", "Rectangle" };
+		int currentShapeIndex = (strcmp(draw.shape, "Circle") == 0) ? 0 : 1;
+		if (ImGui::Combo("Shape", &currentShapeIndex, shapeTypes, IM_ARRAYSIZE(shapeTypes))) {
+			strncpy_s(draw.shape, shapeTypes[currentShapeIndex], sizeof(draw.shape) - 1);
+			draw.shape[sizeof(draw.shape) - 1] = '\0';
+			if (g_game) g_game->markEntitiesDirty();
 		}
+
+		// Color selector (Red or Green)
+		const char* colorTypes[] = { "Green", "Red" };
+		int currentColorIndex = 0;
+		if (draw.color.r == 1.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
+			currentColorIndex = 1; // Red
+		} else if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
+			currentColorIndex = 0; // Green
+		}
+
+		if (ImGui::Combo("Color", &currentColorIndex, colorTypes, IM_ARRAYSIZE(colorTypes))) {
+			if (currentColorIndex == 0) {
+				draw.color = Graphics::Color::Green;
+			} else {
+				draw.color = Graphics::Color::Red;
+			}
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		// Display color preview
+		ImVec4 colorVec(draw.color.r, draw.color.g, draw.color.b, draw.color.a);
 		ImGui::ColorButton("##color", colorVec, 0, ImVec2(20, 20));
 
 		// Display texture info if present
@@ -1044,34 +935,79 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 	}
 
 	// --- CollisionComponent ---
-	if (entity.has<Collision::CollisionComponent>(entMng)) {
-		auto& collider = entity.get<Collision::CollisionComponent>(entMng);
+	if (entity.has<ECSComponents::CollisionComponent>(entMng)) {
+		auto& collider = entity.get<ECSComponents::CollisionComponent>(entMng);
 		ImGui::SeparatorText("Collider");
 
-		// Collider type selector
-		const char* colliderTypes[] = { "Circle", "Rectangle", "Line", "Point" };
-		int currentType = static_cast<int>(collider.type);
-		if (ImGui::Combo("Type", &currentType, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
-			collider.type = static_cast<Collision::ColliderType>(currentType);
+		// Show Collider checkbox
+		if (ImGui::Checkbox("Show Collider", &showColliders_)) {
+			// Toggle visibility immediately
+		}
+
+		// Collider type selector (only Circle and Rectangle)
+		const char* colliderTypes[] = { "Circle", "Rectangle" };
+
+		// Map the current type to the combo index (0 = Circle, 1 = Rectangle)
+		int comboIndex = (collider.type == ECSComponents::ColliderType::CIRCLE) ? 0 : 1;
+
+		if (ImGui::Combo("Type", &comboIndex, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
+			ECSComponents::ColliderType newType = (comboIndex == 0) ?
+				ECSComponents::ColliderType::CIRCLE : ECSComponents::ColliderType::RECTANGLE;
+
+			// Only change if it's a different type
+			if (newType != collider.type) {
+				collider.type = newType;
+
+				// Initialize default values for the new collider type
+				if (newType == ECSComponents::ColliderType::CIRCLE) {
+					collider.data.circle.radius = 10.0f;
+				}
+				else if (newType == ECSComponents::ColliderType::RECTANGLE) {
+					collider.data.rectangle.width = 20.0f;
+					collider.data.rectangle.height = 20.0f;
+				}
+
+				if (g_game) g_game->markEntitiesDirty();
+			}
+		}
+
+		// Display and edit collider dimensions based on type
+		if (collider.type == ECSComponents::ColliderType::CIRCLE) {
+			ImGui::DragFloat("Collider Radius", &collider.data.circle.radius, 0.5f, 1.0f, 200.0f);
+		}
+		else if (collider.type == ECSComponents::ColliderType::RECTANGLE) {
+			ImGui::DragFloat("Collider Width", &collider.data.rectangle.width, 0.5f, 1.0f, 200.0f);
+			ImGui::DragFloat("Collider Height", &collider.data.rectangle.height, 0.5f, 1.0f, 200.0f);
+		}
+	}
+	else {
+		// Allow adding a collider if the entity doesn't have one
+		ImGui::SeparatorText("Collider");
+		ImGui::TextDisabled("No collider attached");
+
+		if (ImGui::Button("Add Collider")) {
+			// Add a default circle collider
+			entity.add<ECSComponents::CollisionComponent>(entMng, ECSComponents::CollisionComponent(10.0f));
 			if (g_game) g_game->markEntitiesDirty();
 		}
 	}
+
 	ImGui::End();
 }
 
-void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID, ECS::EntityManager& entityManager)
+void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
 {
-	using namespace GameInstance;
-	GameInstance::Node* node = sceneTree.getNode(nodeID);
+	using namespace Editor;
+	Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
 	if (!node) return;
 
 	// Get entity name from NameComponent if it exists
-	std::string label = "Entity " + std::to_string(node->entityID);
+	std::string label = "Entity " + std::to_string(node->entity_.id());
 
 	// Try to get the actual name from the entity
 	try {
 		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
-			if (e.id() == node->entityID) {
+			if (e.id() == node->entity_.id()) {
 				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
 				label = nameComp.name;
 				break;
@@ -1082,23 +1018,23 @@ void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID, E
 	}
 
 	// If node has children -> use TreeNodeEx
-	if (node->children.empty()) {
-		bool selected = (selectedEntityID == node->entityID);
+	if (node->children_.empty()) {
+		bool selected = (selectedEntityID == node->entity_.id());
 		if (ImGui::Selectable(label.c_str(), selected))
-			selectedEntityID = node->entityID;
+			selectedEntityID = node->entity_.id();
 	}
 	else {
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
-		if (selectedEntityID == node->entityID)
+		if (selectedEntityID == node->entity_.id())
 			flags |= ImGuiTreeNodeFlags_Selected;
 
 		bool open = ImGui::TreeNodeEx(label.c_str(), flags);
 		if (ImGui::IsItemClicked())
-			selectedEntityID = node->entityID;
+			selectedEntityID = node->entity_.id();
 
 		if (open) {
-			for (uint32_t childID : node->children)
-				drawNodeRecursive(sceneTree, childID, entityManager);
+			for (Editor::Node* child : node->children_)
+				drawNodeRecursive(sceneTree, child->entity_.id(), entityManager);
 			ImGui::TreePop();
 		}
 	}
@@ -1294,7 +1230,7 @@ void displayGameView(Engine::EnoEngine& engine_) {
 	}
 }
 
-void displayEditorView(Engine::EnoEngine& engine_) {
+void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	auto& entityManager = engine_.getEntityManager();
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
@@ -1402,8 +1338,8 @@ void displayEditorView(Engine::EnoEngine& engine_) {
 						<< " at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 
 					// Remove from scene hierarchy and destroy entity
-					extern GameInstance::EnoSceneTree sceneTree;
-					sceneTree.removeNodeAndDestroyEntity(clicked->id(), entityManager);
+					sceneTree.select(clicked->id());
+					sceneTree.kill();
 
 					if (g_game) g_game->markEntitiesDirty();
 				} else {
@@ -1417,8 +1353,7 @@ void displayEditorView(Engine::EnoEngine& engine_) {
 			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {
 				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 
-				// Need to access sceneTree - use external declaration
-				extern GameInstance::EnoSceneTree sceneTree;
+				// Spawn prefab at clicked position
 				spawnPrefabAt(worldPos.x, worldPos.y, g_selectedPrefabForPlacement, engine_, sceneTree);
 				g_selectedPrefabForPlacement.clear();
 
@@ -1510,7 +1445,7 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 	// Dock windows to their respective nodes
 	// Left side - all three windows docked to same node will appear as tabs
-	ImGui::DockBuilderDockWindow("Main Controls", dock_id_left);
+	ImGui::DockBuilderDockWindow("Heirarchy", dock_id_left);
 	ImGui::DockBuilderDockWindow("Prefabs", dock_id_left);
 	ImGui::DockBuilderDockWindow("Edit", dock_id_left);
 

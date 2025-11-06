@@ -115,6 +115,12 @@ namespace Engine
 		Input::EnoInputManager& getInputManager() { return inputMng_; }
 
 		/*============================================================================================
+		* \brief		Gets the Core Host for scripting operations
+		* \return		Reference to the EnoCoreHost instance
+		*//*========================================================================================*/
+		Core::EnoCoreHost& getCoreHost() { return coreHost_; }
+
+		/*============================================================================================
 		* \brief		Gets the time elapsed since the last frame
 		* \return		Delta time in seconds
 		*//*========================================================================================*/
