@@ -1235,6 +1235,7 @@ void displayEditorView(Engine::EnoEngine& engine_) {
 	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
 		isPlaying = !isPlaying;
 		g_game->setEditorState(isPlaying ? Playing : Stopped);
+		std::cout << "Button name changed" << std::endl;
 	}
 	ImGui::SameLine();
 	if (ImGui::Button(g_game->getEditorState() == Playing || g_game->getEditorState() == Stopped ? "Pause" : "Resume")) {

@@ -16,7 +16,7 @@ namespace ECSComponents{
 		// Get mouse position
 		std::pair<double, double> inputMousePos = input.getMousePosition();
 		Math::eVec2<float> mousePos(static_cast<float>(inputMousePos.first), static_cast<float>(inputMousePos.second));
-		std::cout << "mouse pos :" << mousePos << std::endl;
+		//std::cout << "mouse pos :" << mousePos << std::endl;
 
 		// Check if mousePos is within button 
 		if (mousePos.x >= (t.pos.x - (d.width * 0.5f)) &&	// Left limit

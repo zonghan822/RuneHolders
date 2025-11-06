@@ -37,8 +37,8 @@ void GameApplication::initialize() {
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
     // This is for dynamic collision test object
-    createTestObject(engine_.getEntityManager());
-
+    //createTestObject(engine_.getEntityManager());
+	engine_.getEnoSceneManager().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 	//setEditorState(Stopped);
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
@@ -248,11 +248,12 @@ void GameApplication::updateGameLogic() {
 
 	// ==== RENDER EDITOR VIEW (ZOOMED IN WITH CAMERA) ====
 	if (editorFramebuffer_) {
+		auto& inputManager = engine_.getInputManager();
 		// NOTE: WASD controls BOTH player movement AND editor camera
 		// To move ONLY the camera, stop the game
 		if (getEditorState() == Stopped)
 		{
-			auto& inputManager = engine_.getInputManager();
+			
 			float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
 			if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
@@ -570,7 +571,7 @@ void GameApplication::updateEntities() {
 
 		if (getEditorState() == Playing)
 		{
-			if (inputManager.isMousePressed(GLFW_MOUSE_BUTTON_LEFT))
+			if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
 			{
 				if (b.onClick(inputManager, v, t, d))
 				{
@@ -771,11 +772,11 @@ void GameApplication::drawShapes() {
 				);
 
 				// Drawing of button text
-				/*if (entity.has<ECSComponents::ButtonComponent>(entityManager))
+				if (entity.has<ECSComponents::ButtonComponent>(entityManager))
 				{
 					auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
-					graphics.drawText(timesFont_, b.getName(), Math::eVec2<float>(transform.pos.x, transform.pos.y), 0.5f, Graphics::Color::Black);
-				}*/
+					//graphics.drawText(timesFont_, b.getName(), Math::eVec2<float>(transform.pos.x, transform.pos.y), 0.5f, Graphics::Color::Red);
+				}
 			}
 		}
 		catch (...) {
