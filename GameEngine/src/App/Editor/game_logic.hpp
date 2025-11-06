@@ -126,6 +126,7 @@ private:
     void setupGameMath();       // math demonstration code
     void setupImGui();          // setup ImGui code
     void setupAnimations();
+    void createTestObjectsAndAddToSceneTree();  // Create test objects and add them to scene tree
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
