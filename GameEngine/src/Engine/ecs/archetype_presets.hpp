@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration/definition file for archetype presets
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once
@@ -37,5 +37,13 @@ namespace ECSComponents
 			NameComponent,
 			VisibilityComponent,
 			LayerComponent>;
+
+		using PUSHABLE_BOX = std::tuple<
+			TransformComponent,
+			PhysicsComponent,
+			CollisionComponent,
+			BoxComponent,
+			DrawInfoComponent,
+			NameComponent>;
 	};
 }

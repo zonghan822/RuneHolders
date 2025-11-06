@@ -31,8 +31,11 @@ void GameApplication::initialize() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
-    // This is for dynamic collision test object
-    //createTestObject(engine_.getEntityManager());
+	// REMOVED: Don't load scene tree on initialization - we'll create entities fresh
+	// engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+
+    // Create pushable box entities for testing and add them to scene tree
+    createTestObjectsAndAddToSceneTree();
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
@@ -139,6 +142,10 @@ void GameApplication::setupGameMath() {
 	// Initialize collision system
 	collisionSystem_ = std::make_unique<Collision::CollisionSystem>(engine_.getEventBus());
 
+	// Initialize physics system (for pushable boxes and physics-based movement)
+	physicsSystem_ = std::make_unique<Physics::PhysicsSystem>();
+	std::cout << "[GameLogic] Physics system initialized" << std::endl;
+
 	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 
@@ -193,6 +200,28 @@ void GameApplication::setupAnimations() {
 	playerAnimController_.setAnimation("idle");
 
 	std::cout << "Player animation setup complete!" << std::endl;
+}
+
+void GameApplication::createTestObjectsAndAddToSceneTree() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Create the test objects (boxes)
+	createTestObject(entityManager);
+
+	// Now add all entities with NameComponent "testcaven" to the scene tree
+	std::vector<ECS::Entity> testEntities = entityManager.findEntity<ECSComponents::NameComponent>(
+		ECSComponents::NameComponent("testcaven")
+	);
+
+	std::cout << "[GameLogic] Adding " << testEntities.size() << " test objects to scene tree..." << std::endl;
+
+	for (auto& entity : testEntities) {
+		// Add each entity to the scene tree as a root node
+		sceneTree_->createFromEntity(entity, nullptr);
+		std::cout << "[GameLogic] Added entity " << entity.id() << " to scene tree" << std::endl;
+	}
+
+	std::cout << "[GameLogic] Test objects added to scene tree successfully!" << std::endl;
 }
 
 void GameApplication::setupImGui() {
@@ -472,6 +501,11 @@ void GameApplication::updateEntities() {
 		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
 
+	// Update physics system (handles box pushing and physics-based movement)
+	if (physicsSystem_) {
+		physicsSystem_->Update(engine_.getEntityManager(), deltaTime);
+	}
+
 	// Update collision system
 	if (collisionSystem_) {
 		collisionSystem_->Update(engine_.getEntityManager());
@@ -500,7 +534,10 @@ void GameApplication::updateEntities() {
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
 			{
-				UpdateResetPos();
+				// Save the current scene tree state before playing
+				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
+				sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
+				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
 				playAfterStop = false;
 			}
 
@@ -534,7 +571,14 @@ void GameApplication::updateEntities() {
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
-				UpdateResetPos();
+				// Load the saved scene tree state to restore positions
+				std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
+				sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+				std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
+
+				// Mark entities as dirty to refresh the rendering cache
+				entitiesDirty_ = true;
+
 				playAfterStop = true;
 			}
 			hasBegun = false;
@@ -745,9 +789,6 @@ void GameApplication::drawShapes() {
 			continue;
 		}
 	}
-
-	// Note: Colliders are visualized in Editor View only, not in Game View
-
 }
 
 void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData) {

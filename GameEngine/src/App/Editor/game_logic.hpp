@@ -17,6 +17,7 @@
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
+#include "../../Engine/physics/physics_system.hpp"
 
 // Enum for different editor states
 enum EditorState {
@@ -71,6 +72,9 @@ private:
     // Player
     Player::PlayerConfig playerConfig_;
 
+    // Systems
+    std::unique_ptr<Physics::PhysicsSystem> physicsSystem_;
+
     // Editor State
     EditorState g_editorState = Stopped;
 
@@ -122,6 +126,7 @@ private:
     void setupGameMath();       // math demonstration code
     void setupImGui();          // setup ImGui code
     void setupAnimations();
+    void createTestObjectsAndAddToSceneTree();  // Create test objects and add them to scene tree
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop

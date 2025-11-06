@@ -402,13 +402,38 @@ namespace Editor
 		}
 
 		std::ifstream save{ filename };
+		if (!save.is_open())
+		{
+			std::cerr << "[EnoSceneTree] Failed to open save file: " << filename << std::endl;
+			return;
+		}
+
 		std::stringstream text;
 		text << save.rdbuf();
 		std::string data = text.str();
 
+		// Clear existing scene tree and destroy all entities before loading
+		std::cout << "[EnoSceneTree] Clearing existing scene tree before loading..." << std::endl;
+		std::vector<uint32_t> entitiesToDestroy;
+		for (auto& [id, node] : tree_)
+		{
+			entitiesToDestroy.push_back(node->entity_.id());
+		}
+
+		// Clear the tree
+		tree_.clear();
+		selectedNode_ = nullptr;
+
+		// Destroy all entities in the entity manager
+		for (uint32_t entityID : entitiesToDestroy)
+		{
+			entMng_.destroyEntity(entityID);
+		}
+		std::cout << "[EnoSceneTree] Cleared " << entitiesToDestroy.size() << " existing entities" << std::endl;
+
 		// Setup
 		// Relationships are set after all nodes are instantiated
-		
+
 		// parents => { node : parent of node, ... }
 		std::vector<std::pair<uint32_t, uint32_t>> parents;
 

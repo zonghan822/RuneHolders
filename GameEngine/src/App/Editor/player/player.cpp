@@ -39,7 +39,7 @@ namespace Player
     /*============================================================================================
      * \brief       Easing function for smooth dash deceleration using cubic easing
      * \param[in]   float x - Progress value (0.0 to 1.0)
-     * \return      float - Eased value using formula: 1 - (1-x)³
+     * \return      float - Eased value using formula: 1 - (1-x)ï¿½
      *===========================================================================================*/
     float EaseOutCubic(float x)
     {
@@ -112,7 +112,7 @@ namespace Player
                     playerComp.dashCooldownTimer = 0.0f;
             }
 
-            // ====== DASH LOGIC (kinematic movement, ignores physics) ======
+            // ====== DASH LOGIC (instant burst) ======
             if (playerComp.isDashing)
             {
                 // Update dash timer
@@ -205,67 +205,23 @@ namespace Player
             // Clear forces from last frame
             physicsComp.ClearForces();
 
-            // Apply movement force based on input (Force = direction * magnitude)
+            // Get movement input
             Math::eVec2<float> input = GetMovementInput(inputManager);
 
             if (Math::eVec2SquaredLength(input) > 0.01f)
             {
-                // Apply movement force in input direction
-                // Force = movementForce * normalized_direction
-                Math::eVec2<float> movementForceVec =
-                {
-                    input.x * playerComp.movementForce,
-                    input.y * playerComp.movementForce
-                };
-
-                physicsComp.AddForce(movementForceVec);
+                // Set velocity directly for instant, responsive movement (no acceleration)
+                physicsComp.velocity.x = input.x * playerComp.maxSpeed;
+                physicsComp.velocity.y = input.y * playerComp.maxSpeed;
             }
-
-            // pply friction force (opposes velocity)
-            // Friction force = -frictionCoeff * velocity
-            // This creates smooth deceleration when no input is applied
-            Math::eVec2<float> frictionForce;
-            if (Math::eVec2SquaredLength(input) < 0.01f) {
-                // Higher friction when no input
-                frictionForce = {
-                    -physicsComp.velocity.x * (playerComp.frictionCoefficient * 2.0f) * physicsComp.mass,
-                    -physicsComp.velocity.y * (playerComp.frictionCoefficient * 2.0f) * physicsComp.mass
-                };
-            }
-            else {
-                // Normal friction during movement
-                frictionForce = {
-                    -physicsComp.velocity.x * playerComp.frictionCoefficient * physicsComp.mass,
-                    -physicsComp.velocity.y * playerComp.frictionCoefficient * physicsComp.mass
-                };
-            }
-
-            // If velocity is very low, just set it to zero
-            if (Math::eVec2SquaredLength(physicsComp.velocity) < 0.1f) {
+            else
+            {
+                // No input - stop immediately
                 physicsComp.velocity = { 0.0f, 0.0f };
             }
-            physicsComp.AddForce(frictionForce);
 
-            // Calculate acceleration from accumulated forces
-            // Newton's Second Law: F = ma ? a = F/m
-            physicsComp.acceleration.x = physicsComp.force.x / physicsComp.mass;
-            physicsComp.acceleration.y = physicsComp.force.y / physicsComp.mass;
-
-            // Integrate acceleration into velocity (Semi-implicit Euler)
-            // v(t+dt) = v(t) + a * dt
-            physicsComp.velocity.x += physicsComp.acceleration.x * deltaTime;
-            physicsComp.velocity.y += physicsComp.acceleration.y * deltaTime;
-
-            // Clamp velocity to max speed
-            float speedSquared = Math::eVec2SquaredLength(physicsComp.velocity);
-            float maxSpeedSquared = playerComp.maxSpeed * playerComp.maxSpeed;
-
-            if (speedSquared > maxSpeedSquared)
-            {
-                float speed = sqrtf(speedSquared);
-                physicsComp.velocity.x = (physicsComp.velocity.x / speed) * playerComp.maxSpeed;
-                physicsComp.velocity.y = (physicsComp.velocity.y / speed) * playerComp.maxSpeed;
-            }
+            // Clear acceleration since we're setting velocity directly
+            physicsComp.acceleration = { 0.0f, 0.0f };
 
             // Integrate velocity into position (with collision response)
             // p(t+dt) = p(t) + v * dt
@@ -432,9 +388,58 @@ namespace Player
                 otherCollider, otherTransform
             );
 
-            // If collision detected, can't move there
+            // If collision detected
             if (result.hasCollision)
             {
+                // Check if other entity has PhysicsComponent and BoxComponent (pushable box)
+                bool hasPhysics = false;
+                bool hasBox = false;
+
+                for (const auto& type : otherLoc.archetype->types_)
+                {
+                    if (type == std::type_index(typeid(ECSComponents::PhysicsComponent)))
+                        hasPhysics = true;
+                    else if (type == std::type_index(typeid(ECSComponents::BoxComponent)))
+                        hasBox = true;
+                }
+
+                // If it's a pushable box, apply force to push it (but still block movement)
+                if (hasPhysics && hasBox)
+                {
+                    size_t physicsIndex = otherLoc.archetype->findComponentIndex<ECSComponents::PhysicsComponent>();
+                    auto& otherPhysics = otherLoc.archetype->chunks_[otherLoc.chunkIndex]->retrieve<ECSComponents::PhysicsComponent>(
+                        physicsIndex, otherLoc.entityIndexInChunk);
+
+                    size_t boxIndex = otherLoc.archetype->findComponentIndex<ECSComponents::BoxComponent>();
+                    auto& boxComp = otherLoc.archetype->chunks_[otherLoc.chunkIndex]->retrieve<ECSComponents::BoxComponent>(
+                        boxIndex, otherLoc.entityIndexInChunk);
+
+                    // Only push if box is pushable
+                    if (boxComp.isPushable && !otherPhysics.isKinematic)
+                    {
+                        // Calculate push direction (from player to box)
+                        Math::eVec2<float> pushDir;
+                        pushDir.x = otherTransform.pos.x - testTransform.pos.x;
+                        pushDir.y = otherTransform.pos.y - testTransform.pos.y;
+
+                        // Normalize direction
+                        float length = sqrtf(pushDir.x * pushDir.x + pushDir.y * pushDir.y);
+                        if (length > 0.0f)
+                        {
+                            pushDir.x /= length;
+                            pushDir.y /= length;
+                        }
+
+                        // Apply push force (reduced by box resistance)
+                        float pushForce = 1500.0f * (1.0f - boxComp.pushResistance);
+                        otherPhysics.AddForce(Math::eVec2<float>{
+                            pushDir.x * pushForce,
+                            pushDir.y * pushForce
+                        });
+                    }
+                }
+
+                // Block movement - player can't walk through objects
                 return false;
             }
         }

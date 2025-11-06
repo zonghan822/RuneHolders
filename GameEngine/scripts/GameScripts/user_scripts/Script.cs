@@ -16,23 +16,20 @@ namespace Eno
 
         public float speed = 5.10f;
 
+        private static CustomInput? customAct;
 
         [UnmanagedCallersOnly]
         public static void Begin()
         {
-            Console.WriteLine("Hello from .NET!");
+            // Creating a custom input
+            customAct = new CustomInput(
+                key: InputKey.Keycode_K,
+                action: InputAction.Press,
+                mod: InputMod.None);
 
-            SayBonk();
-        }
+            customAct.Enable();
 
-        public static void SayBonk()
-        {
-            Console.WriteLine("bonk");
-
-            // if (Input.isReleased())
-            // {
-            //     Console.WriteLine("released up");
-            // }
+            Console.WriteLine("Hello from Begin!");
         }
         
        [UnmanagedCallersOnly]
@@ -43,9 +40,30 @@ namespace Eno
 
 
         [UnmanagedCallersOnly]
-        public static void _Input()
+        public static void Update()
         {
-           SayBonk();
+            SayBonk();
+
+            if (customAct != null && customAct.pressed())
+            {
+                Console.WriteLine("Triggered custom!");
+            }
+        }
+
+        // Only bonk if b is held down
+        public static void SayBonk()
+        {
+            // Testing releasing a button
+            if (Input.GetKeyReleased(InputKey.Keycode_B))
+                Console.WriteLine("bonk");
+            
+            // Testing holding down a button
+            if (Input.GetKeyHeld(InputKey.Keycode_S))
+                Console.WriteLine("splash");
+        
+            // Testing pressing a button
+            if (Input.GetKeyPressed(InputKey.Keycode_A))
+                Console.WriteLine("atsuuuuuuuuuu");
         }
     }
 
@@ -53,5 +71,12 @@ namespace Eno
     {
         [Reveal(90, 210)]
         public double velocity = 100.5;
+
+        [UnmanagedCallersOnly]
+        public static void Begin()
+        {
+            Console.WriteLine("Hello from Begin2!");
+        }
+
     }
 }
