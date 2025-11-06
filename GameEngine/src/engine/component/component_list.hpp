@@ -19,4 +19,3 @@
     X(PlayerComponent) \
 	X(CollisionComponent) \
 	X(PhysicsComponent) \
-	X(BoxComponent) \

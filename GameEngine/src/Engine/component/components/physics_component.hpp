@@ -46,7 +46,7 @@ namespace ECSComponents
             , acceleration{ 0.0f, 0.0f }
             , force{ 0.0f, 0.0f }
             , mass(objectMass)
-            , drag(0.05f)                    // Light drag by default
+            , drag(0.1f)                    // Light drag by default
             , restitution(0.5f)             // Medium bounciness
             , useGravity(false)             // No gravity by default
             , isKinematic(false)            // Dynamic by default

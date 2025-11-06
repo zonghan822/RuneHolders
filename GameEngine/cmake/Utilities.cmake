@@ -152,7 +152,7 @@ function(set_dotnet_sdk)
     execute_process(
         COMMAND powershell -ExecutionPolicy Bypass
                 -File "${DOTNET_INSTALLER}"
-                -Version 8.0.415
+                -Version latest
                 -InstallDir "${DOTNET_LOCAL_DIR}"
         RESULT_VARIABLE install_result
     )
@@ -213,18 +213,14 @@ endmacro()
 function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
     file(MAKE_DIRECTORY ${OUTPUT_DIR})
 
-    # =========================================================
-    # Publish the C# project
-    # =========================================================
     add_custom_command(
         OUTPUT ${OUTPUT_DIR}/${TARGET_NAME}.dll
-        COMMAND ${DOTNET_CMD} publish ${CS_PROJECT_PATH}
-            -f net8.0
-            -c Release
-            --self-contained false
-            --output ${OUTPUT_DIR}
-        COMMENT "Publishing ${TARGET_NAME} C# project with dependencies..."
+        COMMAND ${DOTNET_CMD} build ${CS_PROJECT_PATH}
+                --configuration Release
+                --output ${OUTPUT_DIR}
+        COMMENT "Building ${TARGET_NAME} C# project..."
     )
+
     add_custom_target(${TARGET_NAME}_cs ALL DEPENDS ${OUTPUT_DIR}/${TARGET_NAME}.dll)
 endfunction()
 

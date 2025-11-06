@@ -4,7 +4,7 @@
 * @author		Law Zong Han (zonghan.law@digipen.edu)
 * @date         03-10-2025
 * @brief		Implementation of the core engine systems and main game loop
-*
+*				
 *				This file contains the implementation of the EnoEngine class which serves as
 *				the central coordinator for all engine subsystems. It manages the initialization,
 *				main game loop execution, resource loading, time management, and shutdown procedures.
@@ -26,9 +26,6 @@ namespace Engine
 		audioMng_.init();
 
 		setupResourceLoading();
-
-		// Initialize game systems
-		setupGameSystems();
 	}
 
 	// Thats why i added a callback version
@@ -38,21 +35,18 @@ namespace Engine
 		{
 			updateTime(1.0);
 			window_.pollEvents();
-
+			
 			// Handle window resize for graphics system
-			auto fbSize = window_.getFramebufferSize();
+			auto fbSize= window_.getFramebufferSize();
 			int width = fbSize.first, height = fbSize.second;
-			if (width > 0 && height > 0)
+			if (width > 0 && height > 0) 
 			{
 				graphicsMng_.setProjectionMatrix(width, height);
 			}
 
 			// Begin graphics frame
 			graphicsMng_.beginFrame(Graphics::Color::Black);  // Clear to black
-
-			// Update game systems first (physics, collision, player)
-			updateGameSystems(static_cast<float>(dt_));
-
+			
 			// Call game logic if provided
 			if (gameUpdateCallback) {
 				gameUpdateCallback();
@@ -87,50 +81,6 @@ namespace Engine
 
 		// Loading fonts
 		loader_.loadFonts(loader_.getFontPath(), 48);
-	}
-
-	/*============================================================================================
-	* \brief		Initializes game systems (physics, collision, player)
-	*//*========================================================================================*/
-	void EnoEngine::setupGameSystems()
-	{
-		// Initialize physics system
-		physicsSys_ = std::make_unique<Physics::PhysicsSystem>();
-
-		// Initialize collision system (needs event bus reference)
-		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
-
-		// Initialize player system
-		playerSys_ = std::make_unique<Player::PlayerSystem>();
-
-		std::cout << "[EnoEngine] Game systems initialized successfully" << std::endl;
-	}
-
-	/*============================================================================================
-	* \brief		Updates all game systems in proper order
-	* \param[in]	deltaTime - Time elapsed since last frame
-	*//*========================================================================================*/
-	void EnoEngine::updateGameSystems(float deltaTime)
-	{
-		// Update systems in correct order:
-		// 1. Player input/movement
-		// 2. Physics simulation
-		// 3. Collision detection
-
-		// Update player system (handles input and player movement)
-		if (playerSys_) {
-			playerSys_->Update(entityMng_, inputMng_, deltaTime);
-		}
-
-		// Update physics system (gravity, forces, velocity integration)
-		if (physicsSys_) {
-			physicsSys_->Update(entityMng_, deltaTime);
-		}
-
-		// Update collision system (collision detection and response)
-		if (collisionSys_) {
-			collisionSys_->Update(entityMng_);
-		}
 	}
 
 	void EnoEngine::updateTime(double fps_calc_interval) {

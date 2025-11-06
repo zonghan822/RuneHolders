@@ -74,7 +74,7 @@ namespace Player
         // Create PhysicsComponent (optional - for future physics integration)
         ECSComponents::PhysicsComponent physicsComp(1.0f);  // mass = 1.0
         physicsComp.useGravity = false;                     // No gravity for top-down
-        physicsComp.isKinematic = false;                      // Manually controlled
+        physicsComp.isKinematic = true;                      // Manually controlled
 
         // Create entity with all components
         // Note: We create with Transform and Name first, then add others

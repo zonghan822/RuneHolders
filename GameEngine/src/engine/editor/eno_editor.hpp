@@ -70,7 +70,7 @@ namespace Editor
 			//tree_.selectedNodeView();
 
 			//// Create and open a new script
-			scriptMng_.createAndOpenScript("EnemyController");
+			////scriptMng_.createAndOpenScript("EnemyController");
 
 			//// We attach the script onto node5 and open it
 			//auto script = scriptMng_.selectScript();
