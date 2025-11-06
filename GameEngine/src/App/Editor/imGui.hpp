@@ -1,14 +1,11 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         imGui.hpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
-* @date         05-11-2025
+* @date         01-10-2025
 * @brief        This file contains the functions that are required for Dear ImGui displays,
-*				which includes the init, update and terminate functions.
+*				which includes the init, update and terminate functions. 
 *     			There are also functions for spawning and counting entities.
-*
-*               NOTE: System pointers (collision, physics, player) are no longer global variables.
-*               Access them through engine_.getXXXSystem() methods.
 *//*========================================================================================*/
 
 #pragma once
@@ -27,10 +24,8 @@
 
 // Variables
 static std::mt19937 rng(std::random_device{}());
-
-// NOTE: Systems are now managed by EnoEngine, not as globals
-// Access via engine_.getCollisionSystem(), engine_.getPhysicsSystem(), engine_.getPlayerSystem()
-
+extern std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
+extern std::unique_ptr<Player::PlayerSystem> playerSystem_;
 extern bool showColliders_;
 extern GameApplication* g_game;
 
@@ -41,7 +36,7 @@ extern bool playerSpawned_;
 // Indicator control variables
 extern float indicatorX_;
 extern float indicatorY_;
-extern float moveSpeed_; // pixels per second
+extern float moveSpeed_ ; // pixels per second
 
 // Containers to store system timings
 extern std::unordered_map<std::string, double> systemTimes_; //actual system time
@@ -65,9 +60,20 @@ struct SystemTimer {
     }
 };
 
+// Enum for different editor states
+//enum EditorState {
+//    Stopped = 1,
+//    Playing,
+//    Paused,
+//    NextKeyFrame
+//};
+//
+//EditorState _editorState;
+
+
 // ImGui functions
 /*============================================================================================
- * \brief       Initialises Dear ImGui
+ * \brief       Initialises Dear ImGui 
  * \param[in]   GLFWwindow* window
  * \return      void
 *//*========================================================================================*/
@@ -76,9 +82,10 @@ void imGuiInit(GLFWwindow* window);
 /*============================================================================================
  * \brief       Updates and renders the ImGui control panel
  * \param[in]   Engine::EnoEngine& engine_
+ * \param[in]   Editor::EnoSceneTree& sceneTree
  * \return      void
 *//*========================================================================================*/
-void imGuiDisplay(Engine::EnoEngine& engine_);
+void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
 
 /*============================================================================================
  * \brief       Terminates Dear ImGui
@@ -96,46 +103,43 @@ void imGuiTerminate();
 float randomFloat(float min, float max);
 
 /*============================================================================================
- * \brief       Displays Main Tab
- * \param[in]   Engine::EnoEngine& engine_
- * \return      void
-*//*========================================================================================*/
-void displayMainTab(Engine::EnoEngine& engine_);
-
-/*============================================================================================
  * \brief       Displays total active entity count
  * \param[in]   Engine::EnoEngine& engine_
- * \return      void
+ * \return      void 
 *//*========================================================================================*/
 void displayEntityCount(Engine::EnoEngine& engine_);
 
 /*============================================================================================
  * \brief       Displays Edit tab
  * \param[in]   Engine::EnoEngine& engine_
+ * \param[in]   Editor::EnoSceneTree& sceneTree
  * \return      void
 *//*========================================================================================*/
-void displayEditTab(Engine::EnoEngine& engine_);
+void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
 
 /*============================================================================================
  * \brief       Displays Hierachy Tab
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void displayHierarchyTab(Engine::EnoEngine& engine_, GameInstance::EnoSceneTree& sceneTree);
+void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
 
 /*============================================================================================
  * \brief       Displays all Nodes in a recursive order
- * \param[in]   Engine::EnoEngine& engine_
+ * \param[in]   Editor::EnoSceneTree& sceneTree
+ * \param[in]   uint32_t nodeID
+ * \param[in]   ECS::EntityManager& entityManager
  * \return      void
 *//*========================================================================================*/
-void drawNodeRecursive(GameInstance::EnoSceneTree& sceneTree, uint32_t nodeID);
+void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t nodeID, ECS::EntityManager& entityManager);
 
 /*============================================================================================
  * \brief       Displays All Entities View Tab
  * \param[in]   Engine::EnoEngine& engine_
+ * \param[in]   Editor::EnoSceneTree& sceneTree
  * \return      void
 *//*========================================================================================*/
-void displayAllEntitiesTab(Engine::EnoEngine& engine_);
+void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
 
 /*============================================================================================
  * \brief       Displays Entity Inspector
@@ -147,9 +151,10 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity);
 /*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab
  * \param[in]   Engine::EnoEngine& engine_
+ * \param[in]   Editor::EnoSceneTree& sceneTree
  * \return      void
 *//*========================================================================================*/
-void displayPrefabsTab(Engine::EnoEngine& engine_);
+void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
 
 /*============================================================================================
  * \brief       Displays Assets in the Assets menu
@@ -175,7 +180,7 @@ void displayFPSTab(Engine::EnoEngine& engine_);
 
 // docking shi
 void displayGameView(Engine::EnoEngine& engine_);
-void displayEditorView(Engine::EnoEngine& engine_);
+void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
 
 void imGuiSetupDefaultLayout();
 

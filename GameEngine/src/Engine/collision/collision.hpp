@@ -467,8 +467,17 @@ namespace Collision
 		* \param[in]   Graphics::EnoGraphicsManager& graphics - Reference to graphics manager for drawing
 		* \param[in]   ECS::EntityManager& entityManager - Reference to entity manager
 		* \return      void
-		*//*========================================================================================*/		
+		*//*========================================================================================*/
 		void VisualizeColliders(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager);
+
+		/*============================================================================================
+		* \brief       Visualize all active colliders with camera offset (for editor view)
+		* \param[in]   Graphics::EnoGraphicsManager& graphics - Reference to graphics manager for drawing
+		* \param[in]   ECS::EntityManager& entityManager - Reference to entity manager
+		* \param[in]   Math::eVec2<float> cameraOffset - Camera position offset to apply
+		* \return      void
+		*//*========================================================================================*/
+		void VisualizeColliders(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager, Math::eVec2<float> cameraOffset);
 
 		/*============================================================================================
 		* \brief       Remove all collision callbacks

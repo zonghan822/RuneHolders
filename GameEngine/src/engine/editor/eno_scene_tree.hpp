@@ -49,6 +49,12 @@ namespace Editor
 		// Create a node
 		Node* create(Node* parent = nullptr);
 
+		// Create a node from an existing entity (for ImGui integration)
+		Node* createFromEntity(ECS::Entity entity, Node* parent = nullptr);
+
+		// Get a node by entity ID
+		Node* getNodeByEntityID(uint32_t entityID);
+
 		// Nest a node
 		void nest(Node*);
 		void nest(Node*, Node*);

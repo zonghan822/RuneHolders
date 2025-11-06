@@ -54,6 +54,40 @@ namespace Editor
 		return unode;
 	}
 
+	// Create a node from an existing entity (for ImGui integration)
+	Node* EnoSceneTree::createFromEntity(ECS::Entity entity, Node* parent)
+	{
+		auto node = std::make_unique<Node>();
+		uint32_t id = generateID();
+
+		node->name_ = "Node" + std::to_string(id);
+		node->sceneObjectID_ = id;
+		node->nestedLayer_ = parent ? parent->nestedLayer_ + 1 : 0;
+		node->entity_ = entity;
+		node->parent_ = parent;
+		node->enabled_ = true;
+		node->script_ = nullptr;
+
+		Node* unode = node.get();
+		tree_[node->sceneObjectID_] = std::move(node);
+
+		if (parent)
+			parent->children_.push_back(unode);
+
+		return unode;
+	}
+
+	// Get a node by entity ID
+	Node* EnoSceneTree::getNodeByEntityID(uint32_t entityID)
+	{
+		for (const auto& [id, node] : tree_)
+		{
+			if (node->entity_.id() == entityID)
+				return node.get();
+		}
+		return nullptr;
+	}
+
 	// Nest a node
 	void EnoSceneTree::nest(Node* node)
 	{
