@@ -44,7 +44,10 @@ void GameApplication::initialize() {
 
     // This is for dynamic collision test object
     //createTestObject(engine_.getEntityManager());
-	engine_.getEnoSceneManager().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+	std::cout << "Calling load function now" << std::endl;	
+	engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+	engine_.getEnoEditor().getSceneTree().treeView();
+	markEntitiesDirty();
 	//setEditorState(Stopped);
     // Create pushable box entities for testing
     createTestObject(engine_.getEntityManager());
@@ -466,6 +469,7 @@ void GameApplication::updateEntities() {
 
 	// Check if player is moving and switch animation accordingly
 	// Get player system from engine (no longer a global)
+#if 0
 	auto* playerSystem = engine_.getPlayerSystem();
 	if (playerSystem && playerSpawned_) {
 		
@@ -499,12 +503,16 @@ void GameApplication::updateEntities() {
 		// Update player movement
 		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
+<<<<<<< Updated upstream
 
 	// Update physics system (handles box pushing and physics-based movement)
 	if (physicsSystem_) {
 		physicsSystem_->Update(engine_.getEntityManager(), deltaTime);
 	}
 
+=======
+#endif
+>>>>>>> Stashed changes
 	// Update collision system
 	if (collisionSystem_) {
 		collisionSystem_->Update(engine_.getEntityManager());
@@ -526,7 +534,7 @@ void GameApplication::updateEntities() {
 			{
 				//UpdateResetPos();
 				// Save tree
-				engine_.getEnoSceneManager().getSceneTree().save(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+				engine_.getEnoEditor().getSceneTree().save(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 				playAfterStop = false;
 
 				
@@ -564,7 +572,7 @@ void GameApplication::updateEntities() {
 			{
 				//UpdateResetPos();
 				// Load tree
-				engine_.getEnoSceneManager().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+				engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 				playAfterStop = true;
 			}
 			break;
@@ -788,26 +796,29 @@ void GameApplication::drawShapes() {
 					float topLeftX = transform.pos.x - (renderInfo.width * 0.5f);
 					float topLeftY = transform.pos.y - (renderInfo.height * 0.5f);
 
-				graphics.drawRect(
-					Math::eVec2<float>{topLeftX, topLeftY},  // Top-left position for drawRect
-					Math::eVec2<float>{renderInfo.width, renderInfo.height},
-					renderInfo.color,
-					true
-				);
+					graphics.drawRect(
+						Math::eVec2<float>{topLeftX, topLeftY},  // Top-left position for drawRect
+						Math::eVec2<float>{renderInfo.width, renderInfo.height},
+						renderInfo.color,
+						true
+					);
 
-				// Drawing of button text
-				if (entity.has<ECSComponents::ButtonComponent>(entityManager))
-				{
-					auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
-					//graphics.drawText(timesFont_, b.getName(), Math::eVec2<float>(transform.pos.x, transform.pos.y), 0.5f, Graphics::Color::Red);
+					// Drawing of button text
+					if (entity.has<ECSComponents::ButtonComponent>(entityManager))
+					{
+						auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
+						//graphics.drawText(timesFont_, b.getName(), Math::eVec2<float>(transform.pos.x, transform.pos.y), 0.5f, Graphics::Color::Red);
+					}
 				}
 			}
 		}
-		catch (...) {
-			// Entity was destroyed, rebuild cache next frame
-			entitiesDirty_ = true;
-			continue;
-		}
+			catch (...) {
+				// Entity was destroyed, rebuild cache next frame
+				entitiesDirty_ = true;
+				continue;
+			}
+
+		// Note: Colliders are visualized in Editor View only, not in Game View
 	}
 }
 

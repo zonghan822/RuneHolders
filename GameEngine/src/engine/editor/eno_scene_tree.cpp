@@ -420,11 +420,11 @@ namespace Editor
 		while (start != std::string::npos)
 		{
 			auto node = std::make_unique<Node>();
-
+			
 			// Extract name
 			size_t end = data.find(']', start);
 			node->name_ = data.substr(start + 1, end - start - 1);
-
+			std::cout << node->name_ << "<< Node name" << std::endl;
 			// Find start and end braces of the indentation of context node
 			size_t nodeStart = data.find('{', end);
 			size_t nodeEnd = findMatchingBrace(data, nodeStart);
@@ -436,7 +436,7 @@ namespace Editor
 			// ID
 			auto any = extract<uint32_t>(data, "ID", nodeStart, nodeEnd);
 			(any.has_value()) ? node->sceneObjectID_ = any.value() : missingData = true;
-
+			std::cout << "ID : " << any.value() << std::endl;
 			// Layer
 			any = extract<uint32_t>(data, "Layer", nodeStart, nodeEnd);
 			(any.has_value()) ? node->nestedLayer_ = any.value() : missingData = true;

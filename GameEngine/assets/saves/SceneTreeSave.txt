@@ -1,3 +1,161 @@
 {
 
+	[Node0]
+	{
+		"ID": { 0 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 7 | y : 7 }
+				"Rotation": <eVec2(float)> { x : 9 | y : 9 }
+				"Scale": <eVec2(float)> { x : 11 | y : 11 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 20 }
+				"Height": <float> { 20 }
+				"Shape": <char32> { Trapezoid }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::PlayerComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Movement Force": <float> { 800 }
+				"Acceleration": <float> { 800 }
+				"Friction": <float> { 0.15 }
+				"Mass": <float> { 1 }
+				"Max Speed": <float> { 200 }
+				"Friction Coefficient": <float> { 0.15 }
+				"Can Move": <bool> { 1 }
+				"Sprite Width": <float> { 48 }
+				"Sprite Height": <float> { 48 }
+				"Collider Width": <float> { 48 }
+				"Collider Height": <float> { 48 }
+				"Is Dashing": <bool> { 0 }
+				"Dash Timer": <float> { 0 }
+				"Dash Duration": <float> { 0.3 }
+				"Dash Distance": <float> { 150 }
+				"Dash Cooldown": <float> { 0.5 }
+				"Dash Cooldown Timer": <float> { 0 }
+				"Dash Direction": <eVec2(float)> { x : 0 | y : 0 }
+				"Dash Start Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 5 | y : 5 }
+				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 10 }
+				"Height": <float> { 10 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0.1 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Enabled": { true }
+	}
+
+	[Node1]
+	{
+		"ID": { 1 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 7 | y : 7 }
+				"Rotation": <eVec2(float)> { x : 9 | y : 9 }
+				"Scale": <eVec2(float)> { x : 11 | y : 11 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 20 }
+				"Height": <float> { 20 }
+				"Shape": <char32> { Trapezoid }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::PlayerComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Movement Force": <float> { 800 }
+				"Acceleration": <float> { 800 }
+				"Friction": <float> { 0.15 }
+				"Mass": <float> { 1 }
+				"Max Speed": <float> { 200 }
+				"Friction Coefficient": <float> { 0.15 }
+				"Can Move": <bool> { 1 }
+				"Sprite Width": <float> { 48 }
+				"Sprite Height": <float> { 48 }
+				"Collider Width": <float> { 48 }
+				"Collider Height": <float> { 48 }
+				"Is Dashing": <bool> { 0 }
+				"Dash Timer": <float> { 0 }
+				"Dash Duration": <float> { 0.3 }
+				"Dash Distance": <float> { 150 }
+				"Dash Cooldown": <float> { 0.5 }
+				"Dash Cooldown Timer": <float> { 0 }
+				"Dash Direction": <eVec2(float)> { x : 0 | y : 0 }
+				"Dash Start Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 5 | y : 5 }
+				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 10 }
+				"Height": <float> { 10 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0.1 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Enabled": { true }
+	}
+
 }
