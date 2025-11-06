@@ -31,6 +31,8 @@ void GameApplication::initialize() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
+	engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+
     // Create pushable box entities for testing
     createTestObject(engine_.getEntityManager());
 
@@ -500,7 +502,8 @@ void GameApplication::updateEntities() {
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
 			{
-				UpdateResetPos();
+				//UpdateResetPos();
+				engine_.getEnoEditor().getSceneTree().save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
 				playAfterStop = false;
 			}
 
@@ -533,7 +536,8 @@ void GameApplication::updateEntities() {
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
-				UpdateResetPos();
+				//UpdateResetPos();
+				engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 				playAfterStop = true;
 			}
 			break;

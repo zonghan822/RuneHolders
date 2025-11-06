@@ -188,6 +188,11 @@ namespace Editor
 			}
 		}
 
+		EnoSceneTree& getSceneTree()
+		{
+			return tree_;
+		}
+
 	private:
 		// Scenes
 		std::vector<std::unique_ptr<EnoScene>> scenes_;
