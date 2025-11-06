@@ -243,10 +243,22 @@ namespace Core
 
 	void EnoCoreHost::begin()
 	{
-		// Calls Begin method on scripts
-		std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
 
-		callDelegate(dele.value());
+		beginDelegates_.clear();
+
+		// Store the directory of all the scripts I want to go through
+		for (auto& entry : std::filesystem::directory_iterator("../../../assets/scripts")) {
+			
+		
+		
+		}
+
+
+
+		// Calls Begin method on scripts
+		//std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
+
+		//callDelegate(dele.value());
 	}
 
 	// Handling Update on scripts
@@ -257,6 +269,22 @@ namespace Core
 
 		callDelegate(dele.value());
 	}
+		//All within cs
+	// L Eno ->Namespace     //L is an "alternate form" of char
+	// PlayerController -> Class
+	// GameScripts -> dll
+	// L widestring"Begin" -> Begin is the function to call
+	// stateDelegate is a void pointer (Delegate is a function to call from cs) // see as if its (*)(void)
+	
+	// todo 1: 
+	// Looping through filesystem to look for scripts.cs and run all begin^ and updatev functions
+	// Call them appropriately
+	
+	// todo 2: (optional for now...)
+	// To have a queue system for the begin
+	//
+
+
 
 	// Handling state when frame has ended on the engine side
 	void EnoCoreHost::frameEnd()
