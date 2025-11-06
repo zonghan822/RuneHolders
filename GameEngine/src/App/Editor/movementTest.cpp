@@ -258,8 +258,14 @@ void createTestObject(ECS::EntityManager& ent) {
 #endif
 
 	// Square config - Now creating pushable boxes with physics!
-	const int numSquares = 3;
-	Math::eVec2<float> squarePos[numSquares] = { {400.0f, 400.0f}, {600.0f, 400.0f}, {800.0f, 400.0f} };
+	const int numSquares = 4;
+	// Place boxes to the left and right of center, avoiding middle where player spawns
+	Math::eVec2<float> squarePos[numSquares] = {
+		{300.0f, 300.0f},  // Left side
+		{350.0f, 400.0f},  // Left side
+		{900.0f, 300.0f},  // Right side
+		{950.0f, 400.0f}   // Right side
+	};
 	const char* objName = { "testcaven" };
 	const char* shapeName = { "Rectangle" };
 	float width = 64.0f;
