@@ -860,6 +860,95 @@ namespace Collision {
 		}
 	}
 
+	void CollisionSystem::VisualizeColliders(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager, Math::eVec2<float> cameraOffset)
+	{
+		// Get entity map
+		auto& entityMap = entityManager.getMap();
+
+		// Iterate through all entities
+		for (auto& [entityID, entityLoc] : entityMap)
+		{
+			// Check if entity has required components
+			if (!HasRequiredComponents(entityLoc))
+				continue;
+
+			// Get transform and collision components
+			auto& transform = GetTransformComponent(entityLoc);
+			auto& collision = GetCollisionComponent(entityLoc);
+
+			// Skip if collider is inactive
+			if (!collision.isActive)
+				continue;
+
+			// Calculate world position
+			Math::eVec2<float> worldPos = {
+				transform.pos.x + collision.offset.x,
+				transform.pos.y + collision.offset.y
+			};
+
+			// Apply camera offset to convert to screen space
+			Math::eVec2<float> screenPos = {
+				worldPos.x - cameraOffset.x,
+				worldPos.y - cameraOffset.y
+			};
+
+			// Choose color based on trigger status
+			Graphics::Color color = collision.isTrigger ? Graphics::Color::Red : Graphics::Color::Red;
+
+			// Draw based on collider type
+			switch (collision.type)
+			{
+			case ColliderType::CIRCLE:
+				graphics.drawCircle(
+					screenPos,
+					collision.data.circle.radius * transform.scale.x,  // Scale the radius
+					color,
+					false,
+					32
+				);
+				break;
+
+			case ColliderType::RECTANGLE:
+			{
+				// Apply transform scale to the visualization
+				float scaledWidth = collision.data.rectangle.width * transform.scale.x;
+				float scaledHeight = collision.data.rectangle.height * transform.scale.y;
+
+				// Calculate top-left corner (drawRect uses top-left pos), but screenPos is CENTER
+				Math::eVec2<float> topLeft = {
+					screenPos.x - (scaledWidth * 0.5f),
+					screenPos.y - (scaledHeight * 0.5f)
+				};
+
+				graphics.drawRect(
+					topLeft,
+					Math::eVec2<float>{scaledWidth, scaledHeight},
+					color,
+					false,				// Not filled, just outline
+					collision.rotation		// Use transform rotation
+				);
+
+				break;
+			}
+
+			case ColliderType::LINE:
+			{
+				graphics.drawLine(
+					collision.data.line.p1,
+					collision.data.line.p2,
+					color,
+					1.0f
+				);
+				break;
+			}
+
+			case ColliderType::POINT:
+				graphics.drawPoint(screenPos, color, 5.0f);
+				break;
+			}
+		}
+	}
+
 	void CollisionSystem::ClearCallbacks()
 	{
 		collisionCallbacks_.clear();

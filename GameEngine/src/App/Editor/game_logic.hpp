@@ -10,6 +10,7 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
+#include "../../Engine/editor/eno_scene_tree.hpp"
 #include <iostream>
 #include <memory>
 #include <imgui.h>
@@ -73,6 +74,8 @@ private:
     // Editor State
     EditorState g_editorState = Stopped;
 
+    // Scene Tree (note: must be initialized after engine_ is initialized)
+    std::unique_ptr<Editor::EnoSceneTree> sceneTree_;
 
 public:
     // Constructors
