@@ -218,9 +218,9 @@ namespace Core
 		);
 
 
-		std::wcout << "params asm: " << params.assemblyPath_.c_str() << '\n';
-		std::wcout << "params type: " << params.type_.c_str() << '\n';
-		std::wcout << "params method: " << params.method_.c_str() << '\n';
+		//std::wcout << "params asm: " << params.assemblyPath_.c_str() << '\n';
+		//std::wcout << "params type: " << params.type_.c_str() << '\n';
+		//std::wcout << "params method: " << params.method_.c_str() << '\n';
 
 
 		if (returnCode || !call)
@@ -326,15 +326,16 @@ namespace Core
 	void EnoCoreHost::begin()
 	{
 		// Calls Begin method on scripts
-#if 1
+#if 0
         std::optional<DelegateInfo> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
 		callDelegate(dele.value());
-		callDelegate(dele.value());
+        std::optional<DelegateInfo> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Begin", stateDelegate);
+		callDelegate(dele1.value());
 		//std::optional<Del> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Begin", stateDelegate);
 		//callDelegate(dele1.value());
 
 #else
-		//for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+		//This calls every begin that exists as of current
 		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
@@ -353,20 +354,15 @@ namespace Core
 
 			for (size_t i = 0; i < count; ++i) {
 
-				//std::wstring fullType = classNames[i];
-
 				std::wstring fullName{ classNames[i]};
 				size_t dpos = fullName.find('.');
 
-				// Keep the class name which comes after the namespace name
-				// if it is present
 				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
 				std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
 
-				//std::wcout << "FullType with ASM shoot me: " << fullTypeWithAsm << "\n";
-				
 				std::optional<DelegateInfo> beginDel = loadDelegate(fullTypeWithAsm.c_str(), L"Begin", stateDelegate);
 				if (beginDel) callDelegate(beginDel.value());
+
 
 				CoTaskMemFree(classNames[i]);
 			}
@@ -378,15 +374,14 @@ namespace Core
 	// Handling Update on scripts
 	void EnoCoreHost::update()
 	{
-#if 1
+#if 0
 		// Calls Update method on scripts
 		std::optional<DelegateInfo> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate);
 		callDelegate(dele.value());
-		callDelegate(dele.value());
-		//std::optional<Del> dele1 = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate);
-		//callDelegate(dele1.value());
+
+		std::optional<DelegateInfo> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Update", stateDelegate);
+		callDelegate(dele1.value());
 #else
-		//for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
 		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
@@ -408,17 +403,14 @@ namespace Core
 				std::wstring fullName{ classNames[i] };
 				size_t dpos = fullName.find('.');
 
-				// Keep the class name which comes after the namespace name
-				// if it is present
 				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
 				std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
 
-				//std::wcout << "FullType with ASM shoot me: " << fullTypeWithAsm << "\n";
+				std::optional<DelegateInfo> beginDel = loadDelegate(fullTypeWithAsm.c_str(), L"Update", stateDelegate);
+				if (beginDel) callDelegate(beginDel.value());
 
-				std::optional<DelegateInfo> updateDel = loadDelegate(fullTypeWithAsm.c_str(), L"Update", stateDelegate);
-				if (updateDel) callDelegate(updateDel.value());
 
-				CoTaskMemFree(classNames[i]);  // Important: free each name
+				CoTaskMemFree(classNames[i]);
 			}
 			CoTaskMemFree(classNames);
 		}

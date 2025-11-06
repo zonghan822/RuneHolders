@@ -29,26 +29,26 @@ namespace Eno
 
             customAct.Enable();
 
-            Console.WriteLine("Hello from Begin!");
+            Console.WriteLine("Hello from Player controller");
         }
         
        [UnmanagedCallersOnly]
         public static void Update()
         {
-            Console.WriteLine("Update Script");
+            Console.WriteLine("Update Player Controller Script");
         }
 
 
-        [UnmanagedCallersOnly]
-        public static void Update()
-        {
-            SayBonk();
+        // [UnmanagedCallersOnly]
+        // public static void Update()
+        // {
+        //     SayBonk();
 
-            if (customAct != null && customAct.pressed())
-            {
-                Console.WriteLine("Triggered custom!");
-            }
-        }
+        //     if (customAct != null && customAct.pressed())
+        //     {
+        //         Console.WriteLine("Triggered custom!");
+        //     }
+        // }
 
         // Only bonk if b is held down
         public static void SayBonk()
@@ -75,7 +75,13 @@ namespace Eno
         [UnmanagedCallersOnly]
         public static void Begin()
         {
-            Console.WriteLine("Hello from Begin2!");
+            Console.WriteLine("Hello from ArmController!");
+        }
+
+               [UnmanagedCallersOnly]
+        public static void Update()
+        {
+            Console.WriteLine("Update Arm Controller");
         }
 
     }
