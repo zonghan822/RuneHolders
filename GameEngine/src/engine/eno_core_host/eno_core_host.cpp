@@ -250,12 +250,13 @@ namespace Core
 
 
 		// Calls Begin method on scripts
-#if 1
+#if 0
         std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
 		callDelegate(dele.value());
 
 #else
-		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+		//for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/")) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
 
@@ -289,12 +290,13 @@ namespace Core
 	// Handling Update on scripts
 	void EnoCoreHost::update()
 	{
-#if 1
+#if 0
 		// Calls Update method on scripts
 		std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate);
 		callDelegate(dele.value());
 #else
-		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+		//for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/")) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
 
