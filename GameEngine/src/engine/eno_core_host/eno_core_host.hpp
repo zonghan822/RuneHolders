@@ -22,7 +22,6 @@
 #include <optional>
 #include <variant>
 #include <cstdlib>
-#include <filesystem>
 
 
 namespace Core
@@ -120,6 +119,7 @@ namespace Core
 		std::optional<KeyDelegateInfo> loadDelegate(
 			const char_t*, const char_t*, void*,
 			const Input::InputSent&);
+
 
 		// Calling a delegate to retrieve script vars
 		template <typename T>

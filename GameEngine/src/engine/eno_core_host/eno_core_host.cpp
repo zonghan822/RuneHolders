@@ -204,6 +204,7 @@ namespace Core
 			input.key, input.scancode, input.action, input.mods });
 	}
 
+
 	// Calling a delegate without any parameters
 	void EnoCoreHost::callDelegate(DelegateInfo& params)
 	{

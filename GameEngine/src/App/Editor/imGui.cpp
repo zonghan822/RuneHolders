@@ -754,11 +754,44 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	static int entityCounter = 1;  // Track entity numbering
 	static bool attachScript = false; // Checkbox state
 
+	static int selectedScriptIndex = -1;	// Script dropdown
+	static std::vector<std::wstring> availableScripts; // List of available scripts
+	static bool scriptsLoaded = false;
+
+	Script::EnoScriptManager& scriptMng = engine_.getEnoEditor().getScriptManager();
 
 	ImGui::Checkbox("Attach Script to New Entity", &attachScript);
+
+	// Here i prepare the list for showcase of the scripts
+	if (attachScript) {
+		// Load scripts only once or when needed
+		if (!scriptsLoaded) {
+			availableScripts = scriptMng.getAvailableScripts();
+			scriptsLoaded = true;
+		}
+
+		if (!availableScripts.empty()) {
+			std::vector<std::string> scriptNames;
+			for (const auto& ws : availableScripts)
+				scriptNames.push_back(std::string(ws.begin(), ws.end()));
+
+			// Convert vector to array for ImGui Combo
+			std::vector<const char*> scriptItems;
+			for (auto& name : scriptNames)
+				scriptItems.push_back(name.c_str());
+
+			ImGui::Text("Select Script:");
+			ImGui::Combo("##ScriptCombo", &selectedScriptIndex, scriptItems.data(), (int)scriptItems.size());
+		}
+		else {
+			ImGui::Text("No scripts found.");
+		}
+	}
+
+
+
 	if (ImGui::Button("Add Root Node")) {
 		auto& entityManager = engine_.getEntityManager();
-		auto& scriptMng = engine_.getEnoEditor().getScriptManager();
 
 		// Create transform with default position at center of screen
 		ECSComponents::TransformComponent transform{
@@ -786,13 +819,14 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		nameComp.name[sizeof(nameComp.name) - 1] = '\0';
 
 		Node* createdNode = sceneTree.createFromEntity(newEntity, nullptr);
-		//sceneTree.createFromEntity(newEntity, nullptr);
 
-		if (attachScript) {
-			auto script = scriptMng.selectScript(); // file picker
-			if (script) { 
+		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created\n";
+		if (attachScript && selectedScriptIndex >= 0) {
+			std::wstring selectedScript = availableScripts[selectedScriptIndex];
+			std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
+			auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+			if (script)
 				sceneTree.attachScript(createdNode, std::move(script));
-			}
 		}
 		if (g_game) g_game->markEntitiesDirty();
 	}
@@ -837,6 +871,13 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				Editor::Node* parentNode = sceneTree.getNodeByEntityID(selectedEntityID);
 				Editor::Node* childNode = sceneTree.createFromEntity(childEntity, parentNode);
 
+				if (attachScript) {
+					auto script = scriptMng.selectScript(); // file picker
+					if (script) {
+						sceneTree.attachScript(childNode, std::move(script));
+					}
+				}
+
 				if (g_game) g_game->markEntitiesDirty();
 
 				std::cout << "Added child node " << childEntity.id() << " ('" << nameComp.name
@@ -860,20 +901,20 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 	// --- Delete Node Button ---
 	if (ImGui::Button("Delete Selected Node")) {
-			auto& em = engine_.getEntityManager();
-			Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
-			if (node) {
-				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " and all children from hierarchy\n";
+		auto& em = engine_.getEntityManager();
+		Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
+		if (node) {
+			std::cout << "[DEBUG] Deleting node " << selectedEntityID << " and all children from hierarchy\n";
 
-				// First, destroy all child entities recursively
-				destroyChildrenRecursive(node, em);
+			// First, destroy all child entities recursively
+			destroyChildrenRecursive(node, em);
 
-				// Then kill the scene tree nodes (removes from tree structure)
-				sceneTree.kill(node);
+			// Then kill the scene tree nodes (removes from tree structure)
+			sceneTree.kill(node);
 
-				// Finally, destroy the parent entity
-				em.destroyEntity(selectedEntityID);
-				selectedEntityID = UINT32_MAX;  // Reset to "no selection"
+			// Finally, destroy the parent entity
+			em.destroyEntity(selectedEntityID);
+			selectedEntityID = UINT32_MAX;  // Reset to "no selection"
 
 			if (g_game)
 				g_game->markEntitiesDirty();
