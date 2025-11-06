@@ -236,14 +236,20 @@ namespace Physics
             if (otherCollision.type != ECSComponents::ColliderType::RECTANGLE)
                 continue;
 
+            // Get scaled collision dimensions for both entities
+            float scaledWidthA, scaledHeightA;
+            float scaledWidthB, scaledHeightB;
+            GetScaledColliderDimensions(transform, collision, scaledWidthA, scaledHeightA);
+            GetScaledColliderDimensions(otherTransform, otherCollision, scaledWidthB, scaledHeightB);
+            
             // Check AABB overlap at target position
             bool overlaps = CheckAABBOverlap(
                 targetPos,
-                collision.data.rectangle.width,
-                collision.data.rectangle.height,
+                scaledWidthA,
+                scaledHeightA,
                 otherTransform.pos,
-                otherCollision.data.rectangle.width,
-                otherCollision.data.rectangle.height
+                scaledWidthB,
+                scaledHeightB
             );
 
             if (overlaps)
@@ -342,13 +348,19 @@ namespace Physics
         Math::eVec2<float> normal;
         float penetration;
 
+        // Get scaled collision dimensions for both entities
+        float scaledWidthA, scaledHeightA;
+        float scaledWidthB, scaledHeightB;
+        GetScaledColliderDimensions(transformA, collisionA, scaledWidthA, scaledHeightA);
+        GetScaledColliderDimensions(transformB, collisionB, scaledWidthB, scaledHeightB);
+
         CalculateAABBPenetration(
             transformA.pos,
-            collisionA.data.rectangle.width,
-            collisionA.data.rectangle.height,
+            scaledWidthA,
+            scaledHeightA,
             transformB.pos,
-            collisionB.data.rectangle.width,
-            collisionB.data.rectangle.height,
+            scaledWidthB,
+            scaledHeightB,
             normal,
             penetration
         );
@@ -446,8 +458,20 @@ namespace Physics
     }
 
     /*============================================================================================
-     * \brief       Helper functions to get components from entity location
-     *===========================================================================================*/
+    * \brief       Helper functions to get components from entity location
+    *===========================================================================================*/
+    void PhysicsSystem::GetScaledColliderDimensions(
+        const ECSComponents::TransformComponent& transform,
+        const ECSComponents::CollisionComponent& collision,
+        float& scaledWidth,
+        float& scaledHeight) const
+    {
+        // Apply transform scale to collision dimensions
+        // This ensures the collision box matches the visual sprite size
+        scaledWidth = collision.data.rectangle.width * transform.scale.x;
+        scaledHeight = collision.data.rectangle.height * transform.scale.y;
+    }
+ 
     ECSComponents::TransformComponent& PhysicsSystem::GetTransform(const ECS::EntityLoc& entityLoc)
     {
         size_t index = entityLoc.archetype->findComponentIndex<ECSComponents::TransformComponent>();
