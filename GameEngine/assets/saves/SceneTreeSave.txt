@@ -32,7 +32,7 @@
 			{
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Trigger": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 64 }
@@ -98,7 +98,7 @@
 			{
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Trigger": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 64 }
@@ -164,7 +164,7 @@
 			{
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Trigger": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 64 }
@@ -230,7 +230,7 @@
 			{
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Trigger": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 64 }
@@ -277,7 +277,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 543.133 | y : 425.405 }
+				"Position": <eVec2(float)> { x : 640 | y : 360 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -320,7 +320,7 @@
 			{
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Trigger": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 48 }

@@ -51,9 +51,10 @@ namespace Player
         * \param[in]   ECS::EntityManager& entityManager - Reference to entity manager
         * \param[in]   Input::EnoInputManager& inputManager - Reference to input manager for reading controls
         * \param[in]   float deltaTime - Time since last frame in seconds
+        * \param[in]   bool isPlaying - Whether the game is in playing mode (not editor mode)
         * \return      void
         *//*========================================================================================*/
-        void Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime);
+        void Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime, bool isPlaying = true);
 
         /*============================================================================================
         * \brief       Helper to get transform component from entity (made public for game_logic access)

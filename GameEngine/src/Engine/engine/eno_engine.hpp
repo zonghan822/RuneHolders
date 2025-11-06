@@ -162,6 +162,18 @@ namespace Engine
 		*//*========================================================================================*/
 		Player::PlayerSystem* getPlayerSystem() { return playerSys_.get(); }
 
+		/*============================================================================================
+		* \brief		Sets whether the game is in playing mode (affects player input processing)
+		* \param[in]	isPlaying - True if game is playing, false if in editor mode
+		*//*========================================================================================*/
+		void setIsPlaying(bool isPlaying) { isPlaying_ = isPlaying; }
+
+		/*============================================================================================
+		* \brief		Gets whether the game is in playing mode
+		* \return		True if game is playing, false if in editor mode
+		*//*========================================================================================*/
+		bool getIsPlaying() const { return isPlaying_; }
+
 
 	private:
 
@@ -178,8 +190,9 @@ namespace Engine
 		/*============================================================================================
 		* \brief		Updates all game systems in proper order
 		* \param[in]	deltaTime - Time elapsed since last frame
+		* \param[in]	isPlaying - Whether the game is in playing mode (not editor mode)
 		*//*========================================================================================*/
-		void updateGameSystems(float deltaTime);
+		void updateGameSystems(float deltaTime, bool isPlaying = true);
 
 
 		/*============================================================================================
@@ -208,6 +221,8 @@ namespace Engine
 		std::unique_ptr<Collision::CollisionSystem> collisionSys_;
 		std::unique_ptr<Player::PlayerSystem> playerSys_;
 
+		// Game state
+		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)
 
 		// Time
 		double dt_ = 0.0;

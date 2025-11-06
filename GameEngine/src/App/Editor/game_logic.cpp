@@ -242,6 +242,9 @@ void GameApplication::updateGameLogic() {
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
 
+	// Update engine playing state based on editor state
+	engine_.setIsPlaying(getEditorState() == Playing || getEditorState() == NextKeyFrame);
+
 	// Use FIXED virtual resolution for consistent rendering
 	Math::eVec2<float> renderSize{
 		static_cast<float>(VIRTUAL_WIDTH),
@@ -301,22 +304,42 @@ void GameApplication::updateGameLogic() {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Draw background - crop to visible camera area using UV coordinates
-		// Calculate what portion of the background texture is visible
-		float uvStartX = editorCameraX_ / static_cast<float>(VIRTUAL_WIDTH);
-		float uvStartY = editorCameraY_ / static_cast<float>(VIRTUAL_HEIGHT);
-		float uvEndX = (editorCameraX_ + EDITOR_WIDTH) / static_cast<float>(VIRTUAL_WIDTH);
-		float uvEndY = (editorCameraY_ + EDITOR_HEIGHT) / static_cast<float>(VIRTUAL_HEIGHT);
+		// Draw background texture with camera offset
+		// The background should be positioned in world space, then camera offset is applied
+		if (backgroundTexture_ && backgroundTexture_->isValid()) {
+			// Get background texture dimensions
+			int bgWidth = backgroundTexture_->getWidth();
+			int bgHeight = backgroundTexture_->getHeight();
 
-		// Draw only the visible portion of the background at origin
-		engine_.getGraphicsManager().drawTexturedQuadUV(
-			Math::eVec2<float>{0.0f, 0.0f},  // Draw at origin (camera offset handled by UV)
-			Math::eVec2<float>{static_cast<float>(EDITOR_WIDTH), static_cast<float>(EDITOR_HEIGHT)},
-			backgroundTexture_,
-			Math::eVec2<float>{uvStartX, uvStartY},  // Crop texture start
-			Math::eVec2<float>{uvEndX, uvEndY},      // Crop texture end
-			Graphics::Color::White
-		);
+			// Calculate how many times to tile the background to cover the virtual world
+			int tilesX = (VIRTUAL_WIDTH + bgWidth - 1) / bgWidth;  // Ceiling division
+			int tilesY = (VIRTUAL_HEIGHT + bgHeight - 1) / bgHeight;
+
+			// Draw tiled background
+			for (int ty = 0; ty < tilesY; ++ty) {
+				for (int tx = 0; tx < tilesX; ++tx) {
+					// World position of this tile
+					float worldX = tx * bgWidth;
+					float worldY = ty * bgHeight;
+
+					// Convert to screen space (apply camera offset)
+					float screenX = worldX - editorCameraX_;
+					float screenY = worldY - editorCameraY_;
+
+					// Only draw if tile is visible in editor view
+					if (screenX + bgWidth >= 0 && screenX < EDITOR_WIDTH &&
+						screenY + bgHeight >= 0 && screenY < EDITOR_HEIGHT) {
+
+						engine_.getGraphicsManager().drawTexturedQuad(
+							Math::eVec2<float>{screenX, screenY},
+							Math::eVec2<float>{static_cast<float>(bgWidth), static_cast<float>(bgHeight)},
+							backgroundTexture_,
+							Graphics::Color::White
+						);
+					}
+				}
+			}
+		}
 
 		// Draw all entities (with camera offset - convert world space to screen space)
 		for (ECS::Entity& entity : cachedDrawableEntities_) {
@@ -431,8 +454,9 @@ void GameApplication::updateGameLogic() {
 			// Get collision system from engine (no longer a global)
 			auto* collisionSystem = engine_.getCollisionSystem();
 			if (collisionSystem) {
-				// TODO: This would need camera offset support in visualization
-				// For now, skip or implement camera-aware collider drawing
+				// Visualize colliders with camera offset applied
+				Math::eVec2<float> cameraOffset = {editorCameraX_, editorCameraY_};
+				collisionSystem->VisualizeColliders(graphics_, engine_.getEntityManager(), cameraOffset);
 			}
 		}
 
@@ -744,14 +768,6 @@ void GameApplication::drawPlayerAndIndicator() {
 		}
 		catch (...) {}
 	}
-
-	// Draw red indicator
-	graphics.drawRect(
-		Math::eVec2<float>{indicatorX_, indicatorY_},
-		Math::eVec2<float>{10, 10},
-		Graphics::Color::Red,
-		true
-	);
 }
 
 void GameApplication::updateImGui() {

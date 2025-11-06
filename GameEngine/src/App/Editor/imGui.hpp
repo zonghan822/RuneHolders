@@ -38,11 +38,6 @@ extern GameApplication* g_game;
 extern uint32_t playerEntityID_;
 extern bool playerSpawned_;
 
-// Indicator control variables
-extern float indicatorX_;
-extern float indicatorY_;
-extern float moveSpeed_; // pixels per second
-
 // Containers to store system timings
 extern std::unordered_map<std::string, double> systemTimes_; //actual system time
 extern std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)

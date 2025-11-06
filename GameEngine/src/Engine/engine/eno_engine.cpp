@@ -49,9 +49,9 @@ namespace Engine
 
 			// Begin graphics frame
 			graphicsMng_.beginFrame(Graphics::Color::Black);  // Clear to black
-			
+
 			// Update game systems first (physics, collision, player)
-			updateGameSystems(static_cast<float>(dt_));
+			updateGameSystems(static_cast<float>(dt_), isPlaying_);
 
 			// Call game logic if provided
 			if (gameUpdateCallback) {
@@ -109,8 +109,9 @@ namespace Engine
 	/*============================================================================================
 	* \brief		Updates all game systems in proper order
 	* \param[in]	deltaTime - Time elapsed since last frame
+	* \param[in]	isPlaying - Whether the game is in playing mode (not editor mode)
 	*//*========================================================================================*/
-	void EnoEngine::updateGameSystems(float deltaTime)
+	void EnoEngine::updateGameSystems(float deltaTime, bool isPlaying)
 	{
 		// Update systems in correct order:
 		// 1. Player input/movement
@@ -119,7 +120,7 @@ namespace Engine
 
 		// Update player system (handles input and player movement)
 		if (playerSys_) {
-			playerSys_->Update(entityMng_, inputMng_, deltaTime);
+			playerSys_->Update(entityMng_, inputMng_, deltaTime, isPlaying);
 		}
 
 		// Update physics system (gravity, forces, velocity integration)
