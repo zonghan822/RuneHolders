@@ -54,6 +54,40 @@ namespace Editor
 		return unode;
 	}
 
+	// Create a node from an existing entity (for ImGui integration)
+	Node* EnoSceneTree::createFromEntity(ECS::Entity entity, Node* parent)
+	{
+		auto node = std::make_unique<Node>();
+		uint32_t id = generateID();
+
+		node->name_ = "Node" + std::to_string(id);
+		node->sceneObjectID_ = id;
+		node->nestedLayer_ = parent ? parent->nestedLayer_ + 1 : 0;
+		node->entity_ = entity;
+		node->parent_ = parent;
+		node->enabled_ = true;
+		node->script_ = nullptr;
+
+		Node* unode = node.get();
+		tree_[node->sceneObjectID_] = std::move(node);
+
+		if (parent)
+			parent->children_.push_back(unode);
+
+		return unode;
+	}
+
+	// Get a node by entity ID
+	Node* EnoSceneTree::getNodeByEntityID(uint32_t entityID)
+	{
+		for (const auto& [id, node] : tree_)
+		{
+			if (node->entity_.id() == entityID)
+				return node.get();
+		}
+		return nullptr;
+	}
+
 	// Nest a node
 	void EnoSceneTree::nest(Node* node)
 	{
@@ -368,13 +402,38 @@ namespace Editor
 		}
 
 		std::ifstream save{ filename };
+		if (!save.is_open())
+		{
+			std::cerr << "[EnoSceneTree] Failed to open save file: " << filename << std::endl;
+			return;
+		}
+
 		std::stringstream text;
 		text << save.rdbuf();
 		std::string data = text.str();
 
+		// Clear existing scene tree and destroy all entities before loading
+		std::cout << "[EnoSceneTree] Clearing existing scene tree before loading..." << std::endl;
+		std::vector<uint32_t> entitiesToDestroy;
+		for (auto& [id, node] : tree_)
+		{
+			entitiesToDestroy.push_back(node->entity_.id());
+		}
+
+		// Clear the tree
+		tree_.clear();
+		selectedNode_ = nullptr;
+
+		// Destroy all entities in the entity manager
+		for (uint32_t entityID : entitiesToDestroy)
+		{
+			entMng_.destroyEntity(entityID);
+		}
+		std::cout << "[EnoSceneTree] Cleared " << entitiesToDestroy.size() << " existing entities" << std::endl;
+
 		// Setup
 		// Relationships are set after all nodes are instantiated
-		
+
 		// parents => { node : parent of node, ... }
 		std::vector<std::pair<uint32_t, uint32_t>> parents;
 

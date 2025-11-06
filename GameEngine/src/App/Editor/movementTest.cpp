@@ -257,65 +257,68 @@ void createTestObject(ECS::EntityManager& ent) {
 	}
 #endif
 
-	// Square config
-	const int numSquares = 2;
-	Math::eVec2<float> squarePos[numSquares] = { {200.0f, 650.0f}, {1000.0f, 650.0f} };
-	Math::eVec2<float> squareVel[numSquares] = { {100.0f, 0.0f}, { -100.0f, 0.0f } };
+	// Square config - Now creating pushable boxes with physics!
+	const int numSquares = 4;
+	// Place boxes to the left and right of center, avoiding middle where player spawns
+	Math::eVec2<float> squarePos[numSquares] = {
+		{300.0f, 300.0f},  // Left side
+		{350.0f, 400.0f},  // Left side
+		{900.0f, 300.0f},  // Right side
+		{950.0f, 400.0f}   // Right side
+	};
 	const char* objName = { "testcaven" };
 	const char* shapeName = { "Rectangle" };
-	float width = 100.f;
-	float height = 100.f;
-	int color = 1; // Red
+	float width = 64.0f;
+	float height = 64.0f;
+	int color = 6; // Brown/Orange for boxes
 
-	static float squareSpeed = 200.0f;
+	std::cout << "[DEBUG] Creating " << numSquares << " pushable box entities...\n";
 
-	std::cout << "[DEBUG] Creating " << numSquares << " test square entities...\n";
-	std::cout << "[DEBUG] sizeof(DrawInfoComponent) = " << sizeof(ECSComponents::DrawInfoComponent) << " bytes\n";
-	std::cout << "[DEBUG] sizeof(TransformComponent) = " << sizeof(ECSComponents::TransformComponent) << " bytes\n";
-	std::cout << "[DEBUG] sizeof(NameComponent) = " << sizeof(ECSComponents::NameComponent) << " bytes\n";
-
-	// Now i want to create an entity with 3 different components, transform, drawinfo and name
+	// Create entities with physics and box components
 	for (int i = 0; i < numSquares; ++i)
 	{
 		// Create components
-		ECSComponents::DrawInfoComponent DIC{ width, height, shapeName, color };
-		ECSComponents::NameComponent NC{ objName };
 		ECSComponents::TransformComponent TC{};
 		TC.pos.x = squarePos[i].x;
 		TC.pos.y = squarePos[i].y;
 		TC.rot = { 0.0f, 0.0f };
 		TC.scale = { 1.0f, 1.0f };
-		// velocity removed from Transform - consider using PhysicsComponent instead
-		// For now, storing velocity temporarily in a separate system or as custom component
 
+		// Physics component - mass affects how hard it is to push
+		ECSComponents::PhysicsComponent PC(2.0f);  // Mass of 2.0 (heavier = harder to push)
+		PC.useGravity = false;  // No gravity for top-down game
+		PC.drag = 0.8f;  // High drag so boxes slow down quickly after being pushed
+
+		// Collision component
 		ECSComponents::CollisionComponent SC{ width, height };
 
-		// Create entity with all components
-		ECS::Entity square = ent.create<ECSComponents::DrawInfoComponent, ECSComponents::NameComponent, ECSComponents::TransformComponent>(DIC, NC, TC);
-		square.add<ECSComponents::CollisionComponent>(ent, SC);
+		// Box component - marks this as a pushable box
+		ECSComponents::BoxComponent BC(true, 0.3f);  // Pushable with moderate resistance
+
+		// Draw info for rendering
+		ECSComponents::DrawInfoComponent DIC{ width, height, shapeName, color };
+
+		// Name component
+		ECSComponents::NameComponent NC{ objName };
+
+		// Create entity with all components at once
+		ECS::Entity box = ent.create<
+			ECSComponents::TransformComponent,
+			ECSComponents::PhysicsComponent,
+			ECSComponents::CollisionComponent,
+			ECSComponents::BoxComponent,
+			ECSComponents::DrawInfoComponent,
+			ECSComponents::NameComponent
+		>(TC, PC, SC, BC, DIC, NC);
 
 		// Debug: Verify components after creation
-		std::cout << "[DEBUG] Entity " << i << " (ID: " << square.id() << ") - After creation:\n";
-		if (square.has<ECSComponents::DrawInfoComponent>(ent)) {
-			auto& drawComp = square.get<ECSComponents::DrawInfoComponent>(ent);
-			std::cout << "  DrawInfo: width=" << drawComp.width << ", height=" << drawComp.height << ", shape=" << drawComp.shape << "\n";
-		} else {
-			std::cout << "  ERROR: Missing DrawInfoComponent!\n";
-		}
-		if (square.has<ECSComponents::TransformComponent>(ent)) {
-			auto& transComp = square.get<ECSComponents::TransformComponent>(ent);
-			std::cout << "  Transform: pos=(" << transComp.pos.x << ", " << transComp.pos.y << ")\n";
-		} else {
-			std::cout << "  ERROR: Missing TransformComponent!\n";
-		}
-		if (square.has<ECSComponents::NameComponent>(ent)) {
-			auto& nameComp = square.get<ECSComponents::NameComponent>(ent);
-			std::cout << "  Name: " << nameComp.name << "\n";
-		} else {
-			std::cout << "  ERROR: Missing NameComponent!\n";
-		}
+		std::cout << "[DEBUG] Box Entity " << i << " (ID: " << box.id() << ") - Created with:\n";
+		std::cout << "  Transform: pos=(" << TC.pos.x << ", " << TC.pos.y << ")\n";
+		std::cout << "  Physics: mass=" << PC.mass << ", drag=" << PC.drag << "\n";
+		std::cout << "  Box: pushable=" << BC.isPushable << ", resistance=" << BC.pushResistance << "\n";
+		std::cout << "  Collision: width=" << width << ", height=" << height << "\n";
 	}
-	std::cout << "[DEBUG] Test entities created successfully.\n";
+	std::cout << "[DEBUG] Pushable box entities created successfully.\n";
 }
 
 void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)

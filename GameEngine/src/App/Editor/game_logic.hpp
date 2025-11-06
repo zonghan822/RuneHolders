@@ -10,12 +10,14 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
+#include "../../Engine/editor/eno_scene_tree.hpp"
 #include <iostream>
 #include <memory>
 #include <imgui.h>
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
+#include "../../Engine/physics/physics_system.hpp"
 
 // Enum for different editor states
 enum EditorState {
@@ -70,9 +72,14 @@ private:
     // Player
     Player::PlayerConfig playerConfig_;
 
+    // Systems
+    std::unique_ptr<Physics::PhysicsSystem> physicsSystem_;
+
     // Editor State
     EditorState g_editorState = Stopped;
 
+    // Scene Tree (note: must be initialized after engine_ is initialized)
+    std::unique_ptr<Editor::EnoSceneTree> sceneTree_;
 
 public:
     // Constructors
@@ -119,6 +126,7 @@ private:
     void setupGameMath();       // math demonstration code
     void setupImGui();          // setup ImGui code
     void setupAnimations();
+    void createTestObjectsAndAddToSceneTree();  // Create test objects and add them to scene tree
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop

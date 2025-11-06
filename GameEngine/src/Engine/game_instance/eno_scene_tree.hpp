@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration/definition file for a scene tree
 *
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once
@@ -27,9 +27,9 @@ namespace GameInstance
 		//ECS::Entity entity_;
 
 		//YunQi's implementation
-		uint32_t entityID = 0;       // ECS entity reference
-		uint32_t parentID = 0;	     // Parent Node(if any)
-		std::vector<uint32_t> children; // List of children
+		uint32_t entityID = 0;           // ECS entity reference
+		uint32_t parentID = UINT32_MAX;  // Parent Node (UINT32_MAX = no parent/root node)
+		std::vector<uint32_t> children;  // List of children
 
 
 	};
@@ -56,7 +56,7 @@ namespace GameInstance
 
 			auto& node = nodes_[id];
 			node.entityID = id;
-			node.parentID = 0; // root by default
+			node.parentID = UINT32_MAX; // root by default (UINT32_MAX means no parent)
 			return node;
 		}
 
@@ -65,7 +65,8 @@ namespace GameInstance
 			// Remove from old parent, if any
 			if (nodes_.count(childID)) {
 				uint32_t oldParent = nodes_[childID].parentID;
-				if (oldParent != 0 && nodes_.count(oldParent)) {
+				// Check if old parent exists in the tree (not checking for 0 since entity 0 can be a valid parent)
+				if (nodes_.count(oldParent)) {
 					auto& siblings = nodes_[oldParent].children;
 					siblings.erase(std::remove(siblings.begin(), siblings.end(), childID), siblings.end());
 				}
@@ -74,8 +75,8 @@ namespace GameInstance
 			// Assign new parent
 			nodes_[childID].parentID = parentID;
 
-			// Add child to new parent's list
-			if (parentID != 0 && nodes_.count(parentID)) {
+			// Add child to new parent's list (if parent exists in the tree)
+			if (nodes_.count(parentID)) {
 				nodes_[parentID].children.push_back(childID);
 			}
 		}
@@ -90,7 +91,7 @@ namespace GameInstance
 		std::vector<uint32_t> getRootNodes() const {
 			std::vector<uint32_t> roots;
 			for (const auto& [id, node] : nodes_) {
-				if (node.parentID == 0) {
+				if (node.parentID == UINT32_MAX) {  // UINT32_MAX means no parent (root node)
 					roots.push_back(id);
 				}
 			}
@@ -117,7 +118,7 @@ namespace GameInstance
 
 			// Remove this node from its parent's children list
 			uint32_t parentID = nodeIt->second.parentID;
-			if (parentID != 0) {
+			if (parentID != UINT32_MAX) {  // UINT32_MAX means no parent (root node)
 				auto parentIt = nodes_.find(parentID);
 				if (parentIt != nodes_.end()) {
 					auto& parentChildren = parentIt->second.children;
@@ -170,7 +171,7 @@ namespace GameInstance
 			}
 
 			// --- Remove this node from its parent's children list ---
-			if (node.parentID != 0 && nodes_.count(node.parentID))
+			if (node.parentID != UINT32_MAX && nodes_.count(node.parentID))  // UINT32_MAX means no parent
 			{
 				auto& parentChildren = nodes_[node.parentID].children;
 				parentChildren.erase(

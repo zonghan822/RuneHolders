@@ -14,6 +14,12 @@ void GameApplication::initialize() {
 	// Setup engine systems first
 	engine_.setup();
 
+	// Initialize scene tree (must be after engine setup)
+	sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
+		engine_.getEntityManager(),
+		engine_.getCoreHost()
+	);
+
 	// Setup all game content
 	setupGameEntities();
 	setupGameAudio();
@@ -25,8 +31,11 @@ void GameApplication::initialize() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
-    // This is for dynamic collision test object
-    //createTestObject(engine_.getEntityManager());
+	// REMOVED: Don't load scene tree on initialization - we'll create entities fresh
+	// engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+
+    // Create pushable box entities for testing and add them to scene tree
+    createTestObjectsAndAddToSceneTree();
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
@@ -133,6 +142,10 @@ void GameApplication::setupGameMath() {
 	// Initialize collision system
 	collisionSystem_ = std::make_unique<Collision::CollisionSystem>(engine_.getEventBus());
 
+	// Initialize physics system (for pushable boxes and physics-based movement)
+	physicsSystem_ = std::make_unique<Physics::PhysicsSystem>();
+	std::cout << "[GameLogic] Physics system initialized" << std::endl;
+
 	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 
@@ -189,6 +202,28 @@ void GameApplication::setupAnimations() {
 	std::cout << "Player animation setup complete!" << std::endl;
 }
 
+void GameApplication::createTestObjectsAndAddToSceneTree() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Create the test objects (boxes)
+	createTestObject(entityManager);
+
+	// Now add all entities with NameComponent "testcaven" to the scene tree
+	std::vector<ECS::Entity> testEntities = entityManager.findEntity<ECSComponents::NameComponent>(
+		ECSComponents::NameComponent("testcaven")
+	);
+
+	std::cout << "[GameLogic] Adding " << testEntities.size() << " test objects to scene tree..." << std::endl;
+
+	for (auto& entity : testEntities) {
+		// Add each entity to the scene tree as a root node
+		sceneTree_->createFromEntity(entity, nullptr);
+		std::cout << "[GameLogic] Added entity " << entity.id() << " to scene tree" << std::endl;
+	}
+
+	std::cout << "[GameLogic] Test objects added to scene tree successfully!" << std::endl;
+}
+
 void GameApplication::setupImGui() {
 	GLFWwindow* window = engine_.getWindowManager().getWindow();
 	imGuiInit(window);
@@ -198,6 +233,7 @@ void GameApplication::setupImGui() {
 
 void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
+	auto& graphics_ = engine_.getGraphicsManager();
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
 
@@ -226,7 +262,7 @@ void GameApplication::updateGameLogic() {
 	updateEntities();
 	drawShapes();
 	drawPlayerAndIndicator();
-	engine_.getGraphicsManager().flush();
+	graphics_.flush();
 	drawText(renderSize);
 
 	// Unbind game framebuffer
@@ -296,15 +332,29 @@ void GameApplication::updateGameLogic() {
 					if (screenX + halfW >= 0 && screenX - halfW < EDITOR_WIDTH &&
 						screenY + halfH >= 0 && screenY - halfH < EDITOR_HEIGHT) {
 
-						float topLeftX = screenX - halfW;
-						float topLeftY = screenY - halfH;
+						// Check shape type and draw accordingly
+						if (strcmp(renderInfo.shape, "Circle") == 0) {
+							// Draw circle at screen position (center)
+							engine_.getGraphicsManager().drawCircle(
+								Math::eVec2<float>{screenX, screenY},
+								renderInfo.width * 0.5f,  // Use width/2 as radius
+								renderInfo.color,
+								true,  // Filled
+								32     // Segments
+							);
+						}
+						else {
+							// Draw rectangle (top-left position)
+							float topLeftX = screenX - halfW;
+							float topLeftY = screenY - halfH;
 
-						engine_.getGraphicsManager().drawRect(
-							Math::eVec2<float>{topLeftX, topLeftY},
-							Math::eVec2<float>{renderInfo.width, renderInfo.height},
-							renderInfo.color,
-							true
-						);
+							engine_.getGraphicsManager().drawRect(
+								Math::eVec2<float>{topLeftX, topLeftY},
+								Math::eVec2<float>{renderInfo.width, renderInfo.height},
+								renderInfo.color,
+								true
+							);
+						}
 					}
 				}
 			}
@@ -368,8 +418,7 @@ void GameApplication::updateGameLogic() {
 
 		// Draw colliders in editor view (with camera offset)
 		if (showColliders_ && collisionSystem_) {
-			// TODO: This would need camera offset support in visualization
-			// For now, skip or implement camera-aware collider drawing
+			collisionSystem_->VisualizeColliders(graphics_, entityManager, Math::eVec2<float>{editorCameraX_, editorCameraY_});
 		}
 
 		engine_.getGraphicsManager().flush();
@@ -452,6 +501,11 @@ void GameApplication::updateEntities() {
 		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
 
+	// Update physics system (handles box pushing and physics-based movement)
+	if (physicsSystem_) {
+		physicsSystem_->Update(engine_.getEntityManager(), deltaTime);
+	}
+
 	// Update collision system
 	if (collisionSystem_) {
 		collisionSystem_->Update(engine_.getEntityManager());
@@ -471,7 +525,10 @@ void GameApplication::updateEntities() {
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
 			{
-				UpdateResetPos();
+				// Save the current scene tree state before playing
+				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
+				sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
+				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
 				playAfterStop = false;
 			}
 
@@ -504,7 +561,14 @@ void GameApplication::updateEntities() {
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
-				UpdateResetPos();
+				// Load the saved scene tree state to restore positions
+				std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
+				sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+				std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
+
+				// Mark entities as dirty to refresh the rendering cache
+				entitiesDirty_ = true;
+
 				playAfterStop = true;
 			}
 			break;
@@ -587,16 +651,14 @@ void GameApplication::drawPlayerAndIndicator() {
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
-					rotationRadians += static_cast < float>(3.0f * 0.0174533 * 0.01667);
-					
-					auto& playerCollider = playerSystem_->GetCollision(it->second);
-					playerCollider.rotation = rotationRadians;
+						rotationRadians += static_cast < float>(8.0f * 0.0174533 * 0.01667);
 
-					std::cout << "rotation in Radians:" << rotationRadians << '\n';
+						auto& playerCollider = playerSystem_->GetCollision(it->second);
+						playerCollider.rotation = rotationRadians;
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
-					rotationRadians -= static_cast < float>(3.0f * 0.0174533 * 0.01667);
+					rotationRadians -= static_cast < float>(8.0f * 0.0174533 * 0.01667);
 
 					auto& playerCollider = playerSystem_->GetCollision(it->second);
 					playerCollider.rotation = rotationRadians;
@@ -658,7 +720,7 @@ void GameApplication::drawPlayerAndIndicator() {
 
 void GameApplication::updateImGui() {
 	SystemTimer ImGuiTimer("ImGui", systemTimes_);
-	imGuiDisplay(engine_);
+	imGuiDisplay(engine_, *sceneTree_);
 }
 
 void GameApplication::drawShapes() {
@@ -684,17 +746,30 @@ void GameApplication::drawShapes() {
 				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 				auto& renderInfo = entity.get<drawInfo>(entityManager);
 
-				// TransformComponent.pos is the CENTER, but drawRect expects TOP-LEFT
-				// Convert from center to top-left
-				float topLeftX = transform.pos.x - (renderInfo.width * 0.5f);
-				float topLeftY = transform.pos.y - (renderInfo.height * 0.5f);
+				// Check shape type and draw accordingly
+				if (strcmp(renderInfo.shape, "Circle") == 0) {
+					// Draw circle at center position
+					graphics.drawCircle(
+						transform.pos,  // Center position
+						renderInfo.width * 0.5f,  // Use width/2 as radius
+						renderInfo.color,
+						true,  // Filled
+						32     // Segments
+					);
+				}
+				else {
+					// TransformComponent.pos is the CENTER, but drawRect expects TOP-LEFT
+					// Convert from center to top-left
+					float topLeftX = transform.pos.x - (renderInfo.width * 0.5f);
+					float topLeftY = transform.pos.y - (renderInfo.height * 0.5f);
 
-				graphics.drawRect(
-					Math::eVec2<float>{topLeftX, topLeftY},  // Top-left position for drawRect
-					Math::eVec2<float>{renderInfo.width, renderInfo.height},
-					renderInfo.color,
-					true
-				);
+					graphics.drawRect(
+						Math::eVec2<float>{topLeftX, topLeftY},  // Top-left position for drawRect
+						Math::eVec2<float>{renderInfo.width, renderInfo.height},
+						renderInfo.color,
+						true
+					);
+				}
 			}
 		}
 		catch (...) {
@@ -703,12 +778,6 @@ void GameApplication::drawShapes() {
 			continue;
 		}
 	}
-
-	// (kim) visualize colliders if enabled
-	if (showColliders_ && collisionSystem_) {
-		collisionSystem_->VisualizeColliders(graphics, entityManager);
-	}
-
 }
 
 void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData) {
