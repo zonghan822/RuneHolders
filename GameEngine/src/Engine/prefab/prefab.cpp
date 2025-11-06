@@ -89,5 +89,16 @@ ECS::Entity instantiatePrefab(const PrefabData& prefab, ECS::EntityManager& entM
             ECSComponents::CollisionComponent(prefab.width, prefab.height)
         );
     }
+
+    // Button component
+    if (prefab.name == "ExitButton")
+    {
+        ECSComponents::VisibilityComponent visibility;
+        visibility.visible = true;
+        e.add<ECSComponents::VisibilityComponent>(entMng, visibility);
+
+        e.add<ECSComponents::ButtonComponent>(entMng);
+    }
+
     return e;
 }
