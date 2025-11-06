@@ -26,5 +26,6 @@
 [2025-11-04 23:13:07] Unknown type has been set in the save file!
 [2025-11-04 23:22:48] Unknown typeevec2(float) has been set in the save file!
 [2025-11-04 23:25:18] Unknown type { collidertype } has been set in the save file!
-[2025-11-06 16:45:16] Failed to open a file in C:\Users\koeyu\source\repos\csd2401f25_team_runeholders\GameEngine\scripts\GameScriptsuser_scripts\EnemyController.cs
-[2025-11-06 19:51:16] Failed to initialize CoreCLR
+[2025-11-06 21:22:04] Unknown type { uint32 } has been set in the save file!
+[2025-11-06 21:22:37] Unknown type { uint32 } has been set in the save file!
+[2025-11-06 21:23:12] Unknown type { uint32 } has been set in the save file!

@@ -31,8 +31,8 @@ void GameApplication::initialize() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
-	// REMOVED: Don't load scene tree on initialization - we'll create entities fresh
-	// engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+	// Load entities from save file - CURRENTLY NOT IN USE TO INIT KIM'S TEST OBJECTS
+	//engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 
     // Create pushable box entities for testing and add them to scene tree
     createTestObjectsAndAddToSceneTree();
@@ -274,15 +274,17 @@ void GameApplication::updateGameLogic() {
 	// ==== RENDER EDITOR VIEW (ZOOMED IN WITH CAMERA) ====
 	if (editorFramebuffer_) {
 		// NOTE: WASD controls BOTH player movement AND editor camera
-		// This is intentional - allows you to navigate while keeping player in view
-		// To move ONLY the camera, pause the game or use arrow keys for indicator instead
+		// To move ONLY the camera, set the editor state to stopped (edit) mode
 		auto& inputManager = engine_.getInputManager();
-		float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
-		if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
-		if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
-		if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
-		if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
-
+		if (getEditorState() == Stopped)
+		{
+			float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
+			if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
+			if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
+			if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
+			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
+		}
+		
 		// Clamp camera to world bounds
 		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, static_cast<float>(VIRTUAL_WIDTH - EDITOR_WIDTH));
 		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, static_cast<float>(VIRTUAL_HEIGHT - EDITOR_HEIGHT));
@@ -470,8 +472,8 @@ void GameApplication::updateEntities() {
 		entitiesDirty_ = false;
 	}
 
-	// Check if player is moving and switch animation accordingly
-	if (playerSystem_ && playerSpawned_) {
+	// Check if editor state is in play and player is moving and switch animation accordingly
+	if (playerSystem_ && playerSpawned_ && getEditorState() == Playing) {
 		// Check for WASD input
 		bool isMoving = 
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
@@ -516,20 +518,19 @@ void GameApplication::updateEntities() {
 	static bool playAfterStop = true;
 	static bool hasBegun = false;
 
-	//std::cout << "outside Editor state: " << _editorState << std::endl;
 	// Editor state = play game
 	switch (getEditorState())
 	{
 	case Playing:
 		{
 			//std::cout << "Editor state: " << getEditorState() << std::endl;
-			auto& coreHost = engine_.getCoreHost();
-			if (!hasBegun)
-			{
-				std::cout << " Calling CoreHost::begin()\n";
-				coreHost.begin();
-				hasBegun = true;
-			}
+			// auto& coreHost = engine_.getCoreHost();
+			// if (!hasBegun)
+			// {
+			// 	std::cout << " Calling CoreHost::begin()\n";
+			// 	coreHost.begin();
+			// 	hasBegun = true;
+			// }
 
 			// Get list of entities to store current pos to reset later
 			// Check that the last frame editor state was 'Stopped'
@@ -539,6 +540,7 @@ void GameApplication::updateEntities() {
 				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
 				sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
 				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
+				// Toggle flag to make it a one time event
 				playAfterStop = false;
 			}
 
@@ -568,7 +570,6 @@ void GameApplication::updateEntities() {
 		}
 		case Stopped:
 		{
-			// Reset all object positions
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
@@ -579,13 +580,38 @@ void GameApplication::updateEntities() {
 
 				// Mark entities as dirty to refresh the rendering cache
 				entitiesDirty_ = true;
-
+				// Toggle flag
 				playAfterStop = true;
 			}
 			hasBegun = false;
 			break;
 		}
-	}	
+	}
+
+	// loop to check for UI button entities 
+	std::vector<ECS::Entity> entityList = engine_.getEntityManager().findEntity<ECSComponents::ButtonComponent>();
+
+	for (auto& ent : entityList)
+	{
+		auto& v = ent.get<ECSComponents::VisibilityComponent>(engine_.getEntityManager());
+		auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
+		auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
+		auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
+
+		if (getEditorState() == Playing)
+		{
+			if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
+			{
+				if (b.onClick(inputManager, v, t, d))
+				{
+
+					std::cout << "CLICK!" << std::endl;
+					setEditorState(Stopped);
+				}
+			}
+		}
+	}
+
 }
 
 
@@ -831,51 +857,6 @@ void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData)
 	// Keep the same current state
 	if (playerAnimController_.getCurrentAnimationName().empty())
 		playerAnimController_.setAnimation("idle");
-}
-
-// Eventually i would want to restore scene state through serialization
-void GameApplication::UpdateResetPos()
-{
-	// Get list of entities to store current pos to reset later
-	auto& ent = engine_.getEntityManager();
-	static std::vector<ECS::Entity> entityList;
-	// If empty, store pos, else reset
-	if (entityList.empty())
-	{
-		entityList = ent.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven")); // This will change to all dynamic entities in future
-		for (auto& e : entityList)
-		{
-			// Store reset pos
-			e.get<ECSComponents::TransformComponent>(ent).resetPos = e.get<ECSComponents::TransformComponent>(ent).pos;
-
-			// Store reset velocity if entity has physics component
-			if (e.has<ECSComponents::PhysicsComponent>(ent))
-			{
-				// Store current velocity for reset (you may want to add resetVelocity to PhysicsComponent)
-				// For now we'll just reset to zero velocity
-			}
-
-			//std::cout << "Reset pos: " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
-		}
-	}
-	else
-	{
-		for (auto& e : entityList)
-		{
-			//std::cout << "Before reset : " << e.get<ECSComponents::TransformComponent>().pos << std::endl;
-			e.get<ECSComponents::TransformComponent>(ent).pos = e.get<ECSComponents::TransformComponent>(ent).resetPos;
-
-			// Reset velocity if entity has physics component
-			if (e.has<ECSComponents::PhysicsComponent>(ent))
-			{
-				e.get<ECSComponents::PhysicsComponent>(ent).velocity = { 0.0f, 0.0f };
-			}
-			//std::cout << "After reset : " << e.get<ECSComponents::TransformComponent>().resetPos << std::endl;
-		}
-		// Clear list
-		entityList.clear();
-	}
-	
 }
 
 // Accessor and mutators to access editor state
