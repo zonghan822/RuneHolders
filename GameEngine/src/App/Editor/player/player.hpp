@@ -8,14 +8,15 @@
 *//*========================================================================================*/
 #pragma once
 
-#include "../Engine/math/math.hpp"
-#include "../Engine/component/components/transform.hpp"
-#include "../Engine/collision/collision.hpp"
-#include "../Engine/ecs/entity.hpp"
-#include "../Engine/input/eno_input.hpp"
-#include "../Engine/engine/eno_engine.hpp"
+#include "../../src/Engine/math/math.hpp"
+#include "../../src/Engine/component/components/transform.hpp"
+#include "../../src/Engine/collision/collision.hpp"
+#include "../../src/Engine/ecs/entity.hpp"
+#include "../../src/Engine/input/eno_input.hpp"
+#include "../../src/Engine/engine/eno_engine.hpp"
 #include "player_config.hpp"
-#include "../Engine/component/components/player_component.hpp"
+#include "../../src/Engine/component/components/player_component.hpp"
+
 
 #include <GLFW/glfw3.h>
 // Use the PlayerComponent from ECSComponents namespace

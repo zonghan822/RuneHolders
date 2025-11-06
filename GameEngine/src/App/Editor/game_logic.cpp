@@ -1,3 +1,14 @@
+/*============================================================================================
+* All content ? 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         game_logic.cpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author		Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @date         05-11-2025
+* @brief        Game application layer that handles game-specific logic, entity management,
+*               rendering, and ImGui integration. Systems are now managed by EnoEngine.
+*//*========================================================================================*/
+
 #include "game_logic.hpp"
 #include <GLFW/glfw3.h>
 #include "imGui.hpp"
@@ -11,8 +22,8 @@ float rotationRadians = 0.f;
 
 
 void GameApplication::initialize() {
-	// Setup engine systems first
-	engine_.setup();
+	// Setup engine systems first (this now includes game systems)
+	engine_.setup(); 
 
 	// Initialize scene tree (must be after engine setup)
 	sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
@@ -139,15 +150,8 @@ void GameApplication::setupGameMath() {
 
 	Collision::RunBasicCollisionTest();
 
-	// Initialize collision system
-	collisionSystem_ = std::make_unique<Collision::CollisionSystem>(engine_.getEventBus());
-
-	// Initialize physics system (for pushable boxes and physics-based movement)
-	physicsSystem_ = std::make_unique<Physics::PhysicsSystem>();
-	std::cout << "[GameLogic] Physics system initialized" << std::endl;
-
-	// Initialize player system
-	playerSystem_ = std::make_unique<Player::PlayerSystem>();
+	// NOTE: Systems are now initialized in eno_engine.cpp::setupGameSystems()
+	// No need to initialize them here anymore
 
 	// Load player config
 	playerConfig_.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
@@ -234,6 +238,7 @@ void GameApplication::setupImGui() {
 void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& graphics_ = engine_.getGraphicsManager();
+	auto& graphics = engine_.getGraphicsManager();
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
 
@@ -370,46 +375,49 @@ void GameApplication::updateGameLogic() {
 				auto& entityMap = engine_.getEntityManager().getMap();
 				auto it = entityMap.find(playerEntityID_);
 				if (it != entityMap.end()) {
-					auto& transform = playerSystem_->GetTransform(it->second);
-					auto &frame = playerAnimController_.getCurrentFrame();
+					// Get player system from engine (no longer a global)
+					auto* playerSystem = engine_.getPlayerSystem();
+					if (playerSystem) {
+						auto& transform = playerSystem->GetTransform(it->second);
+						auto& frame = playerAnimController_.getCurrentFrame();
 
-					std::shared_ptr<Graphics::EnoTexture> currentTexture;
-					if (playerAnimController_.getCurrentAnimationName() == "walk") {
-						currentTexture = playerWalkTexture_;
-					}
-					else {
-						currentTexture = playerTexture_;
-					}
+						std::shared_ptr<Graphics::EnoTexture> currentTexture;
+						if (playerAnimController_.getCurrentAnimationName() == "walk") {
+							currentTexture = playerWalkTexture_;
+						}
+						else {
+							currentTexture = playerTexture_;
+						}
 
-					Math::eVec2<float> uvStart = frame.uvStart;
-					Math::eVec2<float> uvEnd = frame.uvEnd;
+						Math::eVec2<float> uvStart = frame.uvStart;
+						Math::eVec2<float> uvEnd = frame.uvEnd;
 
-					if (playerFacingDirection_ == -1) {
-						std::swap(uvStart.x, uvEnd.x);
-					}
+						if (playerFacingDirection_ == -1) {
+							std::swap(uvStart.x, uvEnd.x);
+						}
 
-					if (currentTexture && currentTexture->isValid()) {
-						float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
-						float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
+						if (currentTexture && currentTexture->isValid()) {
+							float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
+							float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
 
-						// Convert world position to screen position (relative to camera)
-						float screenX = transform.pos.x - editorCameraX_;
-						float screenY = transform.pos.y - editorCameraY_;
+							// Apply camera offset to player position
+							float screenX = transform.pos.x - editorCameraX_;
+							float screenY = transform.pos.y - editorCameraY_;
+							Math::eVec2<float> topLeft = {
+								screenX - (scaledWidth * 0.5f),
+								screenY - (scaledHeight * 0.5f)
+							};
 
-						Math::eVec2<float> topLeft = {
-							screenX - (scaledWidth * 0.5f),
-							screenY - (scaledHeight * 0.5f)
-						};
-
-						engine_.getGraphicsManager().drawTexturedQuadUV(
-							topLeft,
-							Math::eVec2<float>{scaledWidth, scaledHeight},
-							currentTexture,
-							uvStart,
-							uvEnd,
-							Graphics::Color::White,
-							rotationRadians
-						);
+							graphics.drawTexturedQuadUV(
+								topLeft,
+								Math::eVec2<float>{scaledWidth, scaledHeight},
+								currentTexture,
+								uvStart,
+								uvEnd,
+								Graphics::Color::White,
+								rotationRadians
+							);
+						}
 					}
 				}
 			}
@@ -417,8 +425,13 @@ void GameApplication::updateGameLogic() {
 		}
 
 		// Draw colliders in editor view (with camera offset)
-		if (showColliders_ && collisionSystem_) {
-			collisionSystem_->VisualizeColliders(graphics_, entityManager, Math::eVec2<float>{editorCameraX_, editorCameraY_});
+		if (showColliders_) {
+			// Get collision system from engine (no longer a global)
+			auto* collisionSystem = engine_.getCollisionSystem();
+			if (collisionSystem) {
+				// TODO: This would need camera offset support in visualization
+				// For now, skip or implement camera-aware collider drawing
+			}
 		}
 
 		engine_.getGraphicsManager().flush();
@@ -470,7 +483,11 @@ void GameApplication::updateEntities() {
 	}
 
 	// Check if player is moving and switch animation accordingly
-	if (playerSystem_ && playerSpawned_) {
+
+	// Get player system from engine (no longer a global)
+	auto* playerSystem = engine_.getPlayerSystem();
+
+	if (playerSystem && playerSpawned_) {
 		// Check for WASD input
 		bool isMoving = 
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
@@ -497,20 +514,16 @@ void GameApplication::updateEntities() {
 				playerAnimController_.setAnimation("idle");
 			}
 		}
-		// Update player movement
-		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
-	}
+		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
+		// No need to call playerSystem->Update() here anymore
+		}
 
-	// Update physics system (handles box pushing and physics-based movement)
-	if (physicsSystem_) {
-		physicsSystem_->Update(engine_.getEntityManager(), deltaTime);
-	}
-
-	// Update collision system
-	if (collisionSystem_) {
-		collisionSystem_->Update(engine_.getEntityManager());
-	}
+	// NOTE: Collision system update is now done in eno_engine.cpp::updateGameSystems()
+	// No need to call collisionSystem->Update() here anymore
 	
+	// NOTE: Physics system update is now done in eno_engine.cpp::updateGameSystems()
+	// No need to call physicsSystem.Update() here anymore	
+
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
 
@@ -611,99 +624,97 @@ void GameApplication::drawPlayerAndIndicator() {
 		try {
 			auto& entityMap = engine_.getEntityManager().getMap();
 			auto it = entityMap.find(playerEntityID_);
-			if (it != entityMap.end()) {
-				auto& transform = playerSystem_->GetTransform(it->second);
+			if (it != entityMap.end())
+			{
+				// Get player system from engine (no longer a global)
+				auto* playerSystem = engine_.getPlayerSystem();
+				if (playerSystem) {
+					auto& transform = playerSystem->GetTransform(it->second);
+					auto& frame = playerAnimController_.getCurrentFrame();
 
-				// Get the current animation frame
-				auto &frame = playerAnimController_.getCurrentFrame();
+					std::shared_ptr<Graphics::EnoTexture> currentTexture;
+					if (playerAnimController_.getCurrentAnimationName() == "walk") {
+						currentTexture = playerWalkTexture_;
+					}
+					else {
+						currentTexture = playerTexture_;
+					}
 
-				// Select the correct texture based on current animation
-				std::shared_ptr<Graphics::EnoTexture> currentTexture;
-				if (playerAnimController_.getCurrentAnimationName() == "walk") {
-					currentTexture = playerWalkTexture_;
-				}
-				else {
-					currentTexture = playerTexture_;
-				}
+					// Calculate UV coordinates for current frame
+					Math::eVec2<float> uvStart = frame.uvStart;
+					Math::eVec2<float> uvEnd = frame.uvEnd;
 
-				// Flip UV coordinates based on facing direction
-				Math::eVec2<float> uvStart = frame.uvStart;
-				Math::eVec2<float> uvEnd = frame.uvEnd;
+					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
+						// I am placing it here first as a 4.0 scale speed * DT
+						scaleSize += static_cast<float>(3.0 * 0.01667);
+						scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
+						transform.scale.x = scaleSize;
+						transform.scale.y = scaleSize;
+						std::cout << "Scaling by: " << scaleSize << '\n';
+					}
 
-				// Get player transform
-				auto& playerTransform = playerSystem_->GetTransform(it->second);
-				
-				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
-					// I am placing it here first as a 4.0 scale speed * DT
-					scaleSize += static_cast<float>(3.0 * 0.01667);
-					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
-					playerTransform.scale.x = scaleSize;
-					playerTransform.scale.y = scaleSize;
-					std::cout << "Scaling by: " << scaleSize << '\n';				
-				}
+					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
+						scaleSize -= static_cast <float>(3.0 * 0.01667);
+						scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
+						transform.scale.x = scaleSize;
+						transform.scale.y = scaleSize;
+						std::cout << "Scaling by: " << scaleSize << '\n';
+					}
 
-				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
-					scaleSize -= static_cast < float>(3.0 * 0.01667);
-					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
-					playerTransform.scale.x = scaleSize;
-					playerTransform.scale.y = scaleSize;
-					std::cout << "Scaling by: " << scaleSize << '\n';
-				}
+					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
+						rotationRadians += static_cast <float>(3.0f * 0.0174533 * 0.01667);
 
-				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
-						rotationRadians += static_cast < float>(8.0f * 0.0174533 * 0.01667);
-
-						auto& playerCollider = playerSystem_->GetCollision(it->second);
+						auto& playerCollider = playerSystem->GetCollision(it->second);
 						playerCollider.rotation = rotationRadians;
-				}
+						std::cout << "rotation in Radians:" << rotationRadians << '\n';
+					}
 
-				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
-					rotationRadians -= static_cast < float>(8.0f * 0.0174533 * 0.01667);
+					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
+						rotationRadians -= static_cast <float>(3.0f * 0.0174533 * 0.01667);
+						auto& playerCollider = playerSystem->GetCollision(it->second);
+						playerCollider.rotation = rotationRadians;
+						std::cout << "rotation in Radians:" << rotationRadians << '\n';
+					}
 
-					auto& playerCollider = playerSystem_->GetCollision(it->second);
-					playerCollider.rotation = rotationRadians;
-					std::cout << "rotation in Radians:" << rotationRadians << '\n';
-				}
+					if (playerFacingDirection_ == -1) {
+						// Swap horizontal UV coordinates to flip the sprite
+						std::swap(uvStart.x, uvEnd.x);
+					}
+					// Draw with the correct texture
+					if (currentTexture && currentTexture->isValid()) {
 
+						// calculate scaled dimensions (match the collider size)
+						float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
+						float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
 
-				if (playerFacingDirection_ == -1) {
-					// Swap horizontal UV coordinates to flip the sprite
-					std::swap(uvStart.x, uvEnd.x);
-				}
+						// convert center position to top-left for drawing
+						Math::eVec2<float> topLeft = {
+							transform.pos.x - (scaledWidth * 0.5f),
+							transform.pos.y - (scaledHeight * 0.5f)
+						};
 
-				// Draw with the correct texture
-				if (currentTexture && currentTexture->isValid()) {
-					
-					// calculate scaled dimensions (match the collider size)
-					float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
-					float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
-					
-					// convert center position to top-left for drawing
-					Math::eVec2<float> topLeft = {
-						transform.pos.x - (scaledWidth * 0.5f),
-						transform.pos.y - (scaledHeight * 0.5f)
-					};
-					
-					graphics.drawTexturedQuadUV(
-						topLeft,
-						Math::eVec2<float>{scaledWidth, scaledHeight},
-						currentTexture,
-						uvStart,  // Use potentially flipped UV coords
-						uvEnd,    // Use potentially flipped UV coords
-						Graphics::Color::White,
-						rotationRadians
-					);
+						graphics.drawTexturedQuadUV(
+							topLeft,
+							Math::eVec2<float>{scaledWidth, scaledHeight},
+							currentTexture,
+							uvStart,  // Use potentially flipped UV coords
+							uvEnd,    // Use potentially flipped UV coords
+							Graphics::Color::White,
+							rotationRadians
+						);
+					}
+					else {
+						// Fallback to colored rect if texture invalid
+						graphics.drawRect(
+							Math::eVec2<float>{transform.pos.x, transform.pos.y},
+							Math::eVec2<float>{10 + scaleSize, 10 + scaleSize},
+							Graphics::Color::Blue,
+							true,
+							rotationRadians
+						);
+					}
 				}
-				else {
-					// Fallback to colored rect if texture invalid
-					graphics.drawRect(
-						Math::eVec2<float>{transform.pos.x, transform.pos.y},
-						Math::eVec2<float>{10 + scaleSize, 10 +scaleSize},
-						Graphics::Color::Blue,
-						true,
-						rotationRadians
-					);
-				}
+			
 			}
 		}
 		catch (...) {}
