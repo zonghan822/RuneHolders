@@ -46,17 +46,21 @@ namespace Core
 		FreeLibrary(hfLib_);
 	}
 
-	EnoCoreHost::GetScriptFieldsMethod EnoCoreHost::fields() const 
-	{ return fieldsHandle_; }
+	EnoCoreHost::GetScriptFieldsMethod EnoCoreHost::fields() const
+	{
+		return fieldsHandle_;
+	}
 
 	EnoCoreHost::GetFileClassNamesMethod EnoCoreHost::cname() const
-	{ return cnameHandle_; }
+	{
+		return cnameHandle_;
+	}
 
 	// Initialize hostfxr library
 	void EnoCoreHost::init()
 	{
 		_putenv_s("DOTNET_ROOT", DOTNET_ROOT);
-		
+
 		// Load hostfxr module
 		char_t hfLibPath[MAX_PATH];
 		size_t hfLibPath_size = sizeof(hfLibPath) / sizeof(char_t);
@@ -123,7 +127,7 @@ namespace Core
 
 	// Loading a delegate without parameters
 	std::optional<EnoCoreHost::Del> EnoCoreHost::loadDelegate(
-		const char_t* typeName, const char_t* methodName, 
+		const char_t* typeName, const char_t* methodName,
 		void* d)
 	{
 		auto load = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(d);
@@ -141,7 +145,7 @@ namespace Core
 		//		method to call
 		std::wstring assemblyPath = asmPath.wstring();
 
-		return Del({ 
+		return Del({
 			load, std::wstring(assemblyPath), std::wstring(typeName), std::wstring(methodName) });
 	}
 
@@ -165,7 +169,7 @@ namespace Core
 		//		method to call
 		std::wstring assemblyPath = asmPath.wstring();
 
-		return KeyDel({ 
+		return KeyDel({
 			load, std::wstring(assemblyPath), std::wstring(typeName), std::wstring(methodName),
 			input.key, input.scancode, input.action, input.mods });
 	}
@@ -188,7 +192,7 @@ namespace Core
 			std::cerr << "Failed to get function pointer" << std::endl;
 			return;
 		}
-		
+
 		call();
 	}
 
@@ -235,7 +239,7 @@ namespace Core
 			std::cerr << "Failed to get function pointer" << std::endl;
 			return std::nullopt;
 		}
-		
+
 		return call;
 	}
 
@@ -244,49 +248,100 @@ namespace Core
 	void EnoCoreHost::begin()
 	{
 
-		beginDelegates_.clear();
-
-		// Store the directory of all the scripts I want to go through
-		for (auto& entry : std::filesystem::directory_iterator("../../../assets/scripts")) {
-			
-		
-		
-		}
-
-
 
 		// Calls Begin method on scripts
-		//std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
+#if 1
+        std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
+		callDelegate(dele.value());
 
-		//callDelegate(dele.value());
+#else
+		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
+				continue;
+
+			// stores number of class names were returned.
+			int count{};
+			void* names = (cname())(entry.path().wstring().c_str(), &count);
+
+			//continue if there is no class names available
+			if (!names || count == 0)
+				continue;
+
+			// Cast and loop over each class name using double ptr 
+			wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
+
+
+			for (size_t i = 0; i < count; ++i) {
+
+				std::wstring fullType = classNames[i];
+				std::wstring fullTypeWithAsm = fullType + L", GameScripts";
+
+				std::optional<Del> beginDel = loadDelegate(fullTypeWithAsm.c_str(), L"Begin", stateDelegate);
+				if (beginDel) callDelegate(beginDel.value());
+
+				CoTaskMemFree(classNames[i]);  // Important: free each name
+			}
+			CoTaskMemFree(classNames);
+		}
+#endif
 	}
 
 	// Handling Update on scripts
 	void EnoCoreHost::update()
 	{
+#if 1
 		// Calls Update method on scripts
 		std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate);
-
 		callDelegate(dele.value());
+#else
+		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
+				continue;
+
+			// stores number of class names were returned.
+			int count{};
+			void* names = (cname())(entry.path().wstring().c_str(), &count);
+
+			//continue if there is no class names available
+			if (!names || count == 0)
+				continue;
+
+			// Cast and loop over each class name using double ptr 
+			wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
+
+
+			for (size_t i = 0; i < count; ++i) {
+
+				std::wstring fullType = classNames[i];
+				std::wstring fullTypeWithAsm = fullType + L", GameScripts";
+
+				std::optional<Del> updateDel = loadDelegate(fullTypeWithAsm.c_str(), L"Update", stateDelegate);
+				if (updateDel) callDelegate(updateDel.value());
+
+				CoTaskMemFree(classNames[i]);  // Important: free each name
+			}
+			CoTaskMemFree(classNames);
+		}
+#endif
 	}
-		//All within cs
-	// L Eno ->Namespace     //L is an "alternate form" of char
-	// PlayerController -> Class
-	// GameScripts -> dll
-	// L widestring"Begin" -> Begin is the function to call
-	// stateDelegate is a void pointer (Delegate is a function to call from cs) // see as if its (*)(void)
-	
-	// todo 1: 
-	// Looping through filesystem to look for scripts.cs and run all begin^ and updatev functions
-	// Call them appropriately
-	
-	// todo 2: (optional for now...)
-	// To have a queue system for the begin
-	//
+	//All within cs
+// L Eno ->Namespace     //L is an "alternate form" of char
+// PlayerController -> Class
+// GameScripts -> dll
+// L widestring"Begin" -> Begin is the function to call
+// stateDelegate is a void pointer (Delegate is a function to call from cs) // see as if its (*)(void)
+
+// todo 1: 
+// Looping through filesystem to look for scripts.cs and run all begin^ and updatev functions
+// Call them appropriately
+
+// todo 2: (optional for now...)
+// To have a queue system for the begin
+//
 
 
 
-	// Handling state when frame has ended on the engine side
+// Handling state when frame has ended on the engine side
 	void EnoCoreHost::frameEnd()
 	{
 		// Resets input when no input is received

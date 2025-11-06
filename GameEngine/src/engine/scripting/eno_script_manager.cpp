@@ -145,6 +145,10 @@ namespace Script
 
 		// Create and return the unique EnoScript
 		std::wstring wname{ name.begin(), name.end() };
+
+		std::wcout << "name: " << wname << std::endl <<
+			"path: " << absPath.wstring() << std::endl;
+
 		auto script = std::make_unique<EnoScript>(coreHost_, wname, absPath.wstring());
 		
 		openScript(absPath.string());

@@ -135,11 +135,6 @@ namespace Core
 		GetScriptFieldsMethod fieldsHandle_;
 		GetFileClassNamesMethod cnameHandle_;
 
-		std::vector<Del> beginDelegates_;
-		std::vector<Del> updateDelegates_;
-		std::vector<std::wstring> scriptNames_;
-
-
 		// Initialize hostfxr library
 		void init();
 

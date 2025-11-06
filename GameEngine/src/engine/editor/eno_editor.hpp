@@ -71,7 +71,8 @@ namespace Editor
 
 			//// Create and open a new script
 			////scriptMng_.createAndOpenScript("EnemyController");
-
+			//std::cout << "Script Source: " << SCRIPT_SRC_PATH << std::endl;
+			scriptMng_.createAndOpenScript("EnemyController");
 			//// We attach the script onto node5 and open it
 			//auto script = scriptMng_.selectScript();
 			//tree_.attachScript(node5, std::move(script));
