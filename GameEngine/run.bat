@@ -66,7 +66,7 @@ if exist build\projects\App\Debug\Editor.exe (
 
     REM Build the project
     echo [4/4] Building project...
-    cmake --build . --config Debug
+    cmake --build . --config Release
     if %errorlevel% neq 0 (
         echo ERROR: Build failed
         cd ..
