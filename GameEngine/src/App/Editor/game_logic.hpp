@@ -17,6 +17,7 @@
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
+#include "../../Engine/physics/physics_system.hpp"
 
 // Enum for different editor states
 enum EditorState {
@@ -70,6 +71,9 @@ private:
 
     // Player
     Player::PlayerConfig playerConfig_;
+
+    // Systems
+    std::unique_ptr<Physics::PhysicsSystem> physicsSystem_;
 
     // Editor State
     EditorState g_editorState = Stopped;

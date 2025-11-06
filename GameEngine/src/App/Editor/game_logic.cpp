@@ -31,8 +31,8 @@ void GameApplication::initialize() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
-    // This is for dynamic collision test object
-    //createTestObject(engine_.getEntityManager());
+    // Create pushable box entities for testing
+    createTestObject(engine_.getEntityManager());
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
@@ -138,6 +138,10 @@ void GameApplication::setupGameMath() {
 
 	// Initialize collision system
 	collisionSystem_ = std::make_unique<Collision::CollisionSystem>(engine_.getEventBus());
+
+	// Initialize physics system (for pushable boxes and physics-based movement)
+	physicsSystem_ = std::make_unique<Physics::PhysicsSystem>();
+	std::cout << "[GameLogic] Physics system initialized" << std::endl;
 
 	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
@@ -472,6 +476,11 @@ void GameApplication::updateEntities() {
 		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
 	}
 
+	// Update physics system (handles box pushing and physics-based movement)
+	if (physicsSystem_) {
+		physicsSystem_->Update(engine_.getEntityManager(), deltaTime);
+	}
+
 	// Update collision system
 	if (collisionSystem_) {
 		collisionSystem_->Update(engine_.getEntityManager());
@@ -734,9 +743,6 @@ void GameApplication::drawShapes() {
 			continue;
 		}
 	}
-
-	// Note: Colliders are visualized in Editor View only, not in Game View
-
 }
 
 void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData) {
