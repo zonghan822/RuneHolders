@@ -42,8 +42,6 @@ bool playerSpawned_ = false;
 std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
 
-// Hierarchy tree removed - now passed as parameter
-
 // Red Indicator
 float indicatorX_ = 600.0f;
 float indicatorY_ = 425.0f;
@@ -1168,7 +1166,7 @@ void imGuiBeginDockspace() {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
 
-void displayGameView(Engine::EnoEngine& engine_) {
+void displayGameView([[maybe_unused]] Engine::EnoEngine& engine_) {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
 	// Display info text - this is now a read-only overview window
