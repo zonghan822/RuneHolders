@@ -10,7 +10,7 @@ namespace Core
 
 		initCoreCLR();
 
-		setDelegate(&stateDelegate);
+		setDelegate(&stateDelegate_);
 		setDelegate(&inputDelegate_);
 		setDelegate(&scriptDelegate_);
 		setDelegate(&cnameDelegate_);
@@ -42,8 +42,27 @@ namespace Core
 
 	EnoCoreHost::~EnoCoreHost()
 	{
-		closefp_(hfHandle_);
-		FreeLibrary(hfLib_);
+		// Safely close the runtime context
+		if (closefp_ && hfHandle_)
+		{
+			closefp_(hfHandle_);
+			hfHandle_ = nullptr;
+		}
+
+		// Unload hostfxr.dll
+		if (hfLib_)
+		{
+			FreeLibrary(hfLib_);
+			hfLib_ = nullptr;
+		}
+
+		// Invalidate managed delegates
+		fieldsHandle_ = nullptr;
+		cnameHandle_ = nullptr;
+		stateDelegate_ = nullptr;
+		scriptDelegate_ = nullptr;
+		inputDelegate_ = nullptr;
+		cnameDelegate_ = nullptr;
 	}
 
 	EnoCoreHost::GetScriptFieldsMethod EnoCoreHost::fields() const 
@@ -102,8 +121,10 @@ namespace Core
 		// runtime context was not initialized properly
 		if (returnCode != 0 || !hfHandle_)
 		{
-			closefp_(hfHandle_);
-			FreeLibrary(hfLib_);
+			if (closefp_ && hfHandle_) closefp_(hfHandle_);
+			if (hfLib_) FreeLibrary(hfLib_);
+			hfHandle_ = nullptr;
+			hfLib_ = nullptr;
 			throw std::runtime_error("Failed to initialize CoreCLR");
 		}
 	}
@@ -111,12 +132,12 @@ namespace Core
 	// Set CoreCLR delegate
 	void EnoCoreHost::setDelegate(void** d) const
 	{
-		int returnCode = delegatefp_(hfHandle_, hdt_load_assembly_and_get_function_pointer, &*d);
+		int returnCode = delegatefp_(hfHandle_, hdt_load_assembly_and_get_function_pointer, d);
 
-		if (returnCode != 0 || !d)
+		if (returnCode != 0 || *d == nullptr)
 		{
-			closefp_(hfHandle_);
-			FreeLibrary(hfLib_);
+			if (closefp_ && hfHandle_) closefp_(hfHandle_);
+			if (hfLib_) FreeLibrary(hfLib_);
 			throw std::runtime_error("Failed to get load_assembly_and_get_function_pointer delegate");
 		}
 	}
@@ -244,7 +265,7 @@ namespace Core
 	void EnoCoreHost::begin()
 	{
 		// Calls Begin method on scripts
-		std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
+		std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate_);
 
 		callDelegate(dele.value());
 	}
@@ -253,7 +274,7 @@ namespace Core
 	void EnoCoreHost::update()
 	{
 		// Calls Update method on scripts
-		std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate);
+		std::optional<Del> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate_);
 
 		callDelegate(dele.value());
 	}
@@ -262,7 +283,7 @@ namespace Core
 	void EnoCoreHost::frameEnd()
 	{
 		// Resets input when no input is received
-		std::optional<Del> dele = loadDelegate(L"Eno.Input, GameScripts", L"noInputReceived", stateDelegate);
+		std::optional<Del> dele = loadDelegate(L"Eno.Input, GameScripts", L"noInputReceived", stateDelegate_);
 
 		callDelegate(dele.value());
 	}

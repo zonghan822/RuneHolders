@@ -19,6 +19,7 @@
 #include "../component/components/collision_component.hpp"
 #include "../component/components/physics_component.hpp"
 #include "../component/components/box_component.hpp"
+#include "../component/components/ai_component.hpp"
 
 //stds
 #include <tuple>

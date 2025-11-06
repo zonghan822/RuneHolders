@@ -10,14 +10,13 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
-#include "../../Engine/editor/eno_scene_tree.hpp"
 #include <iostream>
 #include <memory>
 #include <imgui.h>
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
-#include "../../Engine/physics/physics_system.hpp"
+
 
 // Enum for different editor states
 enum EditorState {

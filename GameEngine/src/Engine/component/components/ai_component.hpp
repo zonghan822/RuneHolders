@@ -1,0 +1,44 @@
+#pragma once
+#include <vector>
+#include "../../math/math.hpp"
+#include "../../ai/state/state_machine.hpp"
+
+namespace ECSComponents
+{
+    struct AIComponent
+    {
+        char currentState[32] = "Idle";
+        char nextState[32] = "Idle";
+
+        Math::eVec2<float> goal{};
+        std::vector<Math::eVec2<int>> path;
+
+        bool hasPath = false;
+        float awarenessRadius = 6.0f;
+        bool chasingPlayer = false;
+
+        AI::StateMachine* stateMachinePtr = nullptr;
+
+        template <typename Visitor>
+        void reflect(Visitor&& l)
+        {
+            l("currentState", currentState, "char32");
+            l("nextState", nextState, "char32");
+            l("goal", goal, "eVec2(float)");
+            l("hasPath", hasPath, "bool");
+            l("awarenessRadius", awarenessRadius, "float");
+            l("chasingPlayer", chasingPlayer, "bool");
+        }
+
+        template <typename Visitor>
+        void reflect(Visitor&& l) const
+        {
+            l("currentState", currentState, "char32");
+            l("nextState", nextState, "char32");
+            l("goal", goal, "eVec2(float)");
+            l("hasPath", hasPath, "bool");
+            l("awarenessRadius", awarenessRadius, "float");
+            l("chasingPlayer", chasingPlayer, "bool");
+        }
+    };;
+}

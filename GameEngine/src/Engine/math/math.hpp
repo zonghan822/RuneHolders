@@ -231,6 +231,12 @@ namespace Math
 	template<typename Type>
 	std::ostream& operator<<(std::ostream& os, const eVec2<Type>& vec1);
 
+	template <Arithmetic Type>
+	bool operator==(const eVec2<Type>& lhs, const eVec2<Type>& rhs);
+
+	template <Arithmetic Type>
+	bool operator!=(const eVec2<Type>& lhs, const eVec2<Type>& rhs);
+
 	// -------------------------------- 3D VECTORS --------------------------------
 	template <Arithmetic Type>
 	struct eVec3

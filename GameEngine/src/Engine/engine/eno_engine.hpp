@@ -16,6 +16,7 @@
 #include "../window/eno_window.hpp"
 #include "../input/eno_input.hpp"
 #include "../editor/eno_editor.hpp"
+#include "../editor/eno_scene_tree.hpp"
 #include "../ecs/entity.hpp"
 #include "../component/component_registry.hpp"
 #include "../event/signals.hpp"
@@ -27,6 +28,8 @@
 #include "../crashlog/crashlogger.hpp"
 #include "../graphics/animation/animation.hpp"
 #include "../game_instance/eno_scene_tree.hpp"
+#include "../ai/ai_manager.hpp"
+#include "../physics/physics_system.hpp"
 
 // stds
 #include <functional>
@@ -127,6 +130,12 @@ namespace Engine
 		Editor::EnoEditor& getEnoEditor() { return editor_; }
 
 		/*============================================================================================
+		* \brief		Gets the AI Manager for AI operations (State Manager)
+		* \return		Reference to the AIManager instance
+		*//*========================================================================================*/
+		AI::AIManager& getAIManager() { return aiMng_; }
+
+		/*============================================================================================
 		* \brief		Gets the time elapsed since the last frame
 		* \return		Delta time in seconds
 		*//*========================================================================================*/
@@ -165,6 +174,7 @@ namespace Engine
 		Input::EnoInputManager inputMng_{ bus_ };
 		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };
 		Audio::EnoAudioManager audioMng_{ bus_ };
+		AI::AIManager aiMng_{ bus_ };
 
 		// Time
 		double dt_ = 0.0;

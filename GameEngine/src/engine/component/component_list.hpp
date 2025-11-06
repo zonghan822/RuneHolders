@@ -20,3 +20,4 @@
 	X(CollisionComponent) \
 	X(PhysicsComponent) \
 	X(BoxComponent) \
+	X(AIComponent) \
