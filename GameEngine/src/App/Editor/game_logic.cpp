@@ -524,13 +524,13 @@ void GameApplication::updateEntities() {
 	case Playing:
 		{
 			//std::cout << "Editor state: " << getEditorState() << std::endl;
-			// auto& coreHost = engine_.getCoreHost();
-			// if (!hasBegun)
-			// {
-			// 	std::cout << " Calling CoreHost::begin()\n";
-			// 	coreHost.begin();
-			// 	hasBegun = true;
-			// }
+			 auto& coreHost = engine_.getCoreHost();
+			 if (!hasBegun)
+			 {
+			 	std::cout << " Calling CoreHost::begin()\n";
+			 	coreHost.begin();
+			 	hasBegun = true;
+			 }
 
 			// Get list of entities to store current pos to reset later
 			// Check that the last frame editor state was 'Stopped'
