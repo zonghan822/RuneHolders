@@ -238,7 +238,7 @@ void GameApplication::setupImGui() {
 void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& graphics_ = engine_.getGraphicsManager();
-	auto& graphics = engine_.getGraphicsManager();
+	// auto& graphics = engine_.getGraphicsManager();
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
 
@@ -410,7 +410,7 @@ void GameApplication::updateGameLogic() {
 								screenY - (scaledHeight * 0.5f)
 							};
 
-							graphics.drawTexturedQuadUV(
+							graphics_.drawTexturedQuadUV(
 								topLeft,
 								Math::eVec2<float>{scaledWidth, scaledHeight},
 								currentTexture,
@@ -490,7 +490,7 @@ void GameApplication::updateEntities() {
 	auto* playerSystem = engine_.getPlayerSystem();
 	
 	// Check if editor state is in play and player is moving and switch animation accordingly
-	if (playerSystem && playerSpawned_) {
+	if (playerSystem && playerSpawned_ && getEditorState() == Playing) {
 		// Check for WASD input
 		bool isMoving = 
 			inputManager.isKeyPressed(GLFW_KEY_W) ||

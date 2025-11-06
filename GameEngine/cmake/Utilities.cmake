@@ -204,7 +204,7 @@ macro(set_dotnet)
                 -Command "& {
                     $procs = Get-Process dotnet -ErrorAction SilentlyContinue;
                     foreach ($p in $procs) {
-                        if ($p.Path -like '*${DOTNET_PATH}\\*') {
+                        if ($p.Path -like '*${DOTNET_RUNTIME_PATH}\\*') {
                             Write-Host ('Terminating local dotnet process ID ' + $p.Id);
                             Stop-Process -Id $p.Id -Force;
                         }
@@ -289,6 +289,14 @@ endmacro()
 function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
     file(MAKE_DIRECTORY ${OUTPUT_DIR})
 
+    # Gather all C# source files in the project directory
+    file(GLOB_RECURSE CS_FILES
+        "${CS_PROJECT_PATH}/*.cs"
+    )
+
+    # Group files in IDE (so they appear in Visual Studio)
+    source_group(TREE ${CS_PROJECT_PATH} FILES ${CS_FILES})
+
     # =========================================================
     # Publish the C# project
     # =========================================================
@@ -299,7 +307,12 @@ function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
             -c Release
             --self-contained false
             --output ${OUTPUT_DIR}
+        DEPENDS
+            ${CS_FILES}
+            ${CS_PROJECT_PATH}/GameScripts.csproj
+            ${CS_PROJECT_PATH}/obj/project.assets.json
         COMMENT "Publishing ${TARGET_NAME} C# project with dependencies..."
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
     add_custom_target(${TARGET_NAME}_cs ALL DEPENDS ${OUTPUT_DIR}/${TARGET_NAME}.dll)
 endfunction()
