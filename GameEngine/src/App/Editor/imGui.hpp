@@ -190,8 +190,27 @@ void imGuiEndDockspace();
 
 
 /*============================================================================================
- * \brief       Displays FPS tab
+ * \brief       Gets entity under mouse cursor
  * \param[in]   Engine::EnoEngine& engine_
- * \return      void
+ * \param[in]   ImVec2 mouse
+ * \return      std::optional<ECS::Entity>
 *//*========================================================================================*/
 std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse);
+
+/*============================================================================================
+ * \brief       Moves child entities relative to parent movement
+ * \param[in]   Editor::Node* node
+ * \param[in]   float deltaX
+ * \param[in]   float deltaY
+ * \param[in]   ECS::EntityManager& entityManager
+ * \return      void
+*//*========================================================================================*/
+void moveChildrenRecursive(Editor::Node* node, float deltaX, float deltaY, ECS::EntityManager& entityManager);
+
+/*============================================================================================
+ * \brief       Destroys all child entities recursively
+ * \param[in]   Editor::Node* node
+ * \param[in]   ECS::EntityManager& entityManager
+ * \return      void
+*//*========================================================================================*/
+void destroyChildrenRecursive(Editor::Node* node, ECS::EntityManager& entityManager);

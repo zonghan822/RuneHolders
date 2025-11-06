@@ -49,14 +49,10 @@ ECS::Entity instantiatePrefab(const PrefabData& prefab, ECS::EntityManager& entM
 
     ECS::Entity e = entMng.create<>();
 
-    // char name[50]{};
-    // size_t counter{};
-    // for (const char& a : prefab.name) {
-    //     name[counter] = a;
-    //     counter++;
-    // }
+    // Create unique name by appending entity ID
+    std::string uniqueName = prefab.name + " #" + std::to_string(e.id());
 
-    e.add<ECSComponents::NameComponent>(entMng, prefab.name.c_str());
+    e.add<ECSComponents::NameComponent>(entMng, uniqueName.c_str());
     //std::cout << "name of this entity: " << e.get<ECSComponents::NameComponent>().name << "\n;
 
     // Calculate CENTER position from DrawInfo's top-left
