@@ -134,10 +134,6 @@ private:
     void updateImGui();         // Update code for imGui
 
     void drawPlayerAndIndicator();
-    
-
-    // Helper function to store entity positions during change in editor state
-    void UpdateResetPos();
 
     void drawShapes(); 
 

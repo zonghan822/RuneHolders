@@ -507,6 +507,16 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 			ECSComponents::CollisionComponent(prefab.width, prefab.height));
 	}
 
+	// Button component
+	if (prefab.name == "ExitButton")
+	{
+		ECSComponents::VisibilityComponent visibility;
+		visibility.visible = true;
+		e.add<ECSComponents::VisibilityComponent>(entityManager, visibility);
+
+		e.add<ECSComponents::ButtonComponent>(entityManager);
+	}
+
 	// Add entity to scene hierarchy as root node
 	sceneTree.createFromEntity(e, nullptr);
 
@@ -1289,6 +1299,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 	// Display toolbar for PLAY/PAUSE/STOP (moved from Game View)
 	static bool isPlaying = false;
+	isPlaying = (g_game->getEditorState() == Playing) ? true : false;
+
 	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
 		isPlaying = !isPlaying;
 		g_game->setEditorState(isPlaying ? Playing : Stopped);
@@ -1422,7 +1434,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			// --- Entity drag-drop logic ---
 			// Begin drag
 			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
-				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging) {
+				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && g_game->getEditorState() == Stopped) {
 				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 				auto clicked = getEntityUnderMouse(engine_, worldPos);
 				if (clicked) {
