@@ -32,7 +32,7 @@
 			{
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Trigger": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 64 }
@@ -98,7 +98,7 @@
 			{
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Trigger": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 64 }
@@ -164,7 +164,7 @@
 			{
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Trigger": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 64 }
@@ -230,7 +230,7 @@
 			{
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Trigger": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 64 }
@@ -272,18 +272,12 @@
 		{
 			[struct ECSComponents::NameComponent]
 			{
-				"Name": <char32> { ExitButton #4 }
-			}
-
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
+				"Name": <char32> { Player }
 			}
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 617.632 | y : 402.454 }
+				"Position": <eVec2(float)> { x : 640 | y : 360 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -291,16 +285,61 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 100 }
-				"Height": <float> { 50 }
+				"Width": <float> { 48 }
+				"Height": <float> { 48 }
 				"Shape": <char32> { Rectangle }
 				"Texture Path": <texchar240> {  }
 				"TexID": <int> { 0 }
 			}
 
-			[struct ECSComponents::ButtonComponent]
+			[struct ECSComponents::PlayerComponent]
 			{
-				"BtnText": <char32> { Button }
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Movement Force": <float> { 800 }
+				"Acceleration": <float> { -1.07374e+08 }
+				"Friction": <float> { -1.07374e+08 }
+				"Mass": <float> { 1 }
+				"Max Speed": <float> { 200 }
+				"Friction Coefficient": <float> { 0.15 }
+				"Can Move": <bool> { 1 }
+				"Sprite Width": <float> { 48 }
+				"Sprite Height": <float> { 48 }
+				"Collider Width": <float> { 48 }
+				"Collider Height": <float> { 48 }
+				"Is Dashing": <bool> { 0 }
+				"Dash Timer": <float> { 0 }
+				"Dash Duration": <float> { 0.3 }
+				"Dash Distance": <float> { 150 }
+				"Dash Cooldown": <float> { 0.5 }
+				"Dash Cooldown Timer": <float> { 0 }
+				"Dash Direction": <eVec2(float)> { x : 0 | y : 0 }
+				"Dash Start Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Trigger": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 48 }
+				"Height": <float> { 48 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0.1 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 1 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
 			}
 		}
 		"Script": { }

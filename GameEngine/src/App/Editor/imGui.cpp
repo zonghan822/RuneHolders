@@ -44,11 +44,6 @@ std::unordered_map<std::string, double> throttledTimes_; //used for displaying t
 
 // Hierarchy tree removed - now passed as parameter
 
-// Red Indicator
-float indicatorX_ = 600.0f;
-float indicatorY_ = 425.0f;
-float moveSpeed_ = 200.0f; // pixels per second
-
 
 // Option Menu
 const char* shapes[] = { "Circle", "Rectangle" };
@@ -146,16 +141,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 		}
 	}
 
-	// (kim) get delta time for smooth movement
+	// Get ImGui IO for FPS display
 	ImGuiIO& io = ImGui::GetIO();
-	float deltaTime = io.DeltaTime;
-	float moveDelta = moveSpeed_ * deltaTime;
-
-	// (kim) changed to ARROW KEYS for indicator control 
-	if (inputManager.isKeyPressed(GLFW_KEY_UP)) indicatorY_ -= moveDelta;
-	if (inputManager.isKeyPressed(GLFW_KEY_DOWN)) indicatorY_ += moveDelta;
-	if (inputManager.isKeyPressed(GLFW_KEY_LEFT)) indicatorX_ -= moveDelta;
-	if (inputManager.isKeyPressed(GLFW_KEY_RIGHT)) indicatorX_ += moveDelta;
 
 	// Assuming that there will only be 1 entity with player component
 	bool playerFound = false;
@@ -714,10 +701,14 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			Player::PlayerConfig playerConfig;
 			playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
 
+			// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
+			constexpr float centerX = 640.0f;
+			constexpr float centerY = 360.0f;
+
 			// Create complete player entity using the config
 			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
 				engine_.getEntityManager(),
-				Math::eVec2<float>{indicatorX_, indicatorY_},
+				Math::eVec2<float>{centerX, centerY},
 				playerConfig
 			);
 
@@ -728,7 +719,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			// Add player entity to scene tree as root node
 			sceneTree.createFromEntity(player, nullptr);
 
-			std::cout << "Player spawned at (" << indicatorX_ << ", " << indicatorY_ << ")\n";
+			std::cout << "Player spawned at center (" << centerX << ", " << centerY << ")\n";
 		}
 	}
 	else {
