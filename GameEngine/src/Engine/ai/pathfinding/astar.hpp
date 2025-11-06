@@ -9,6 +9,9 @@
 #include "path.hpp"
 #include "../../math/math.hpp"
 
+#undef min
+#undef max
+
 namespace AI {
 
     class PathfindingSystem {

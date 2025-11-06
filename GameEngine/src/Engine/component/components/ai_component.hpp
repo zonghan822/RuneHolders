@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include "../../math/math.hpp"
-#include "../../ai/state/state_machine.hpp"
 
 namespace ECSComponents
 {
@@ -17,7 +16,7 @@ namespace ECSComponents
         float awarenessRadius = 6.0f;
         bool chasingPlayer = false;
 
-        AI::StateMachine* stateMachinePtr = nullptr;
+        void* stateMachinePtr = nullptr;
 
         template <typename Visitor>
         void reflect(Visitor&& l)

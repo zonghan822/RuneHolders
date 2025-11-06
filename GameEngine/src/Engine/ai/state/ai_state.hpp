@@ -6,8 +6,6 @@
 
 namespace AI {
 
-    class AIAgent;
-
     class AIState {
     public:
         virtual ~AIState() = default;
