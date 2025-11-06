@@ -357,6 +357,12 @@ void GameApplication::updateGameLogic() {
 								true
 							);
 						}
+						// Draw text for button component
+						//if (entity.has<ECSComponents::ButtonComponent>(entityManager))
+						//{
+						//	auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
+						//	graphics_.drawText(timesFont_, b.getName(), transform.pos, 0.5f, Color::Red);
+						//}
 					}
 				}
 			}
@@ -794,6 +800,13 @@ void GameApplication::drawShapes() {
 						true
 					);
 				}
+				//// Draw text for button component
+				//if (entity.has<ECSComponents::ButtonComponent>(entityManager))
+				//{
+				//	auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
+				//	graphics.drawText(timesFont_, b.getName(), transform.pos, 0.5f, Color::Red);
+				//}
+
 			}
 		}
 		catch (...) {
