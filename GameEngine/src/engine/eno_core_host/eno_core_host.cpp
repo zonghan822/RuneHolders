@@ -324,6 +324,29 @@ namespace Core
 			userScriptPath, asmDllAbsPath);
 	}
 
+	// Can change this later but its 4.50 am method can be either begin or update
+
+	void EnoCoreHost::runScriptMethod(const std::wstring& className, const wchar_t* method)
+	{
+		std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
+		std::optional<DelegateInfo> del = loadDelegate(fullTypeWithAsm.c_str(), method, stateDelegate);
+
+
+
+		if (del)
+		{
+			std::wcout << L"[DEBUG] Running " << method << L"() for " << fullTypeWithAsm << L"\n";
+			callDelegate(del.value());
+		}
+		else
+		{
+			std::wcerr << L"[WARN] Could not load delegate for " << fullTypeWithAsm << L" (" << method << L")\n";
+		}
+	}
+
+
+
+
 	void EnoCoreHost::begin()
 	{
 		// Calls Begin method on scripts
@@ -335,7 +358,8 @@ namespace Core
 		//std::optional<Del> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Begin", stateDelegate);
 		//callDelegate(dele1.value());
 
-#else
+		// seperator
+
 		//This calls every begin that exists as of current
 		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
@@ -369,6 +393,14 @@ namespace Core
 			}
 			CoTaskMemFree(classNames);
 		}
+#else
+		if (hasBegun_) return;
+		hasBegun_ = true;
+
+		// Potentially load any delegates necessary for Begin
+		std::wcout << L"[CoreHost] Begin scripts" << std::endl;
+		// Example: call global Init delegate if needed
+
 #endif
 	}
 
@@ -382,7 +414,8 @@ namespace Core
 
 		std::optional<DelegateInfo> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Update", stateDelegate);
 		callDelegate(dele1.value());
-#else
+
+		//seperator
 		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
@@ -415,6 +448,10 @@ namespace Core
 			}
 			CoTaskMemFree(classNames);
 		}
+#else
+		if (!hasBegun_) return;
+		// Run per-frame update delegates if applicable 
+		// Example: could be called by ScriptManager
 #endif
 	}
 	//All within cs

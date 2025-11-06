@@ -36,6 +36,7 @@ namespace Core
 		const wchar_t* userScriptPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/user_scripts" };
 		const wchar_t* asmDllAbsPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/Publish/GameScripts.dll" };
 
+		bool hasBegun_ = false;
 	public:
 
 		// Define it as a pointer to a delegate type
@@ -144,6 +145,10 @@ namespace Core
 		void frameEnd();
 
 		void areScriptsModified();
+
+		void runScriptMethod(const std::wstring& className, const wchar_t* method);
+
+
 
 		// ----------------------- Events -----------------------
 		void onInputReceived(const Input::InputSent&);

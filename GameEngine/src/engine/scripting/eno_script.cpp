@@ -116,6 +116,8 @@ namespace Script
 	}
 #endif
 
+
+
 	// Extract the class name
 	std::wstring EnoScript::extrClassName(wchar_t* name)
 	{

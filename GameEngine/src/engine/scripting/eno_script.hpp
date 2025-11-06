@@ -29,17 +29,18 @@ namespace Script
 		void cleanup(PortedField*);
 		Field mimicField(const PortedField&);
 		Value deduceType(const wchar_t*, const wchar_t*);
-
+		std::wstring getName() const;
 		// Accessor(s)
 		std::string path();
 
 		// Modifier(s)
 		void modValue(const std::wstring&, const Value&);
 
+		//YunQi moved this out
+		std::wstring name_;
 	private:
 		Core::EnoCoreHost& coreHost_;
 
-		std::wstring name_;
 		std::wstring path_;
 		std::unordered_map<std::wstring, Field> vars_;		// namespace.class | (varname, value)
 

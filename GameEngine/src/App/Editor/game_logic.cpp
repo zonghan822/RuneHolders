@@ -27,15 +27,15 @@ void GameApplication::initialize() {
 	setupGameEvents();
 	setupGameMath();
 	setupImGui();
-    setupAnimations();
+	setupAnimations();
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
 	// Load entities from save file - CURRENTLY NOT IN USE TO INIT KIM'S TEST OBJECTS
 	//engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 
-    // Create pushable box entities for testing and add them to scene tree
-    createTestObjectsAndAddToSceneTree();
+	// Create pushable box entities for testing and add them to scene tree
+	createTestObjectsAndAddToSceneTree();
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
@@ -47,7 +47,7 @@ void GameApplication::initialize() {
 	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
 	editorCameraY_ = (VIRTUAL_HEIGHT - EDITOR_HEIGHT) / 2.0f;
 
-    std::cout << "Game initialized successfully!" << std::endl;
+	std::cout << "Game initialized successfully!" << std::endl;
 }
 
 void GameApplication::run() {
@@ -100,7 +100,7 @@ void GameApplication::setupGameAudio() {
 	inputMng.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
 	inputMng.setupKey("Set New Music 1", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
 	inputMng.setupKey("Set New Music 2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
-	
+
 	inputMng.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
 	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 1", "Close_To_The_End");
 	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 2", "Across_The_Horizon");
@@ -110,7 +110,7 @@ void GameApplication::setupGameAudio() {
 	inputMng.setupKey("Play SFX1", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, 0);
 	inputMng.setupKey("Play SFX2", GLFW_KEY_X, glfwGetKeyScancode(GLFW_KEY_X), GLFW_RELEASE, 0);
 	inputMng.setupKey("Play SFX3", GLFW_KEY_C, glfwGetKeyScancode(GLFW_KEY_C), GLFW_RELEASE, 0);
-	
+
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX1", "SFX", "Flask");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX2", "SFX", "Stone_Impact");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX3", "SFX", "Water_Drip");
@@ -129,7 +129,7 @@ void GameApplication::setupGameEvents() {
 }
 
 void GameApplication::setupGameMath() {
-	
+
 	// Math lib and maybe collision
 	//std::cout << "Calling math function\n";
 	//Math::eVec2 vec{ 1.1f, 1.2f };
@@ -155,7 +155,7 @@ void GameApplication::setupGameMath() {
 }
 
 void GameApplication::setupAnimations() {
-    // Load the sprite sheet texture
+	// Load the sprite sheet texture
 	backgroundTexture_ = engine_.getResourceLoader().getTexture("Background");
 	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
 	playerWalkTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Walk-Sheet");
@@ -206,7 +206,7 @@ void GameApplication::createTestObjectsAndAddToSceneTree() {
 	auto& entityManager = engine_.getEntityManager();
 
 	// Create the test objects (boxes)
-	 createTestObject(entityManager);
+	createTestObject(entityManager);
 
 
 	// Now add all entities with NameComponent "testcaven" to the scene tree
@@ -284,7 +284,7 @@ void GameApplication::updateGameLogic() {
 			if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
 		}
-		
+
 		// Clamp camera to world bounds
 		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, static_cast<float>(VIRTUAL_WIDTH - EDITOR_WIDTH));
 		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, static_cast<float>(VIRTUAL_HEIGHT - EDITOR_HEIGHT));
@@ -374,7 +374,7 @@ void GameApplication::updateGameLogic() {
 				auto it = entityMap.find(playerEntityID_);
 				if (it != entityMap.end()) {
 					auto& transform = playerSystem_->GetTransform(it->second);
-					auto &frame = playerAnimController_.getCurrentFrame();
+					auto& frame = playerAnimController_.getCurrentFrame();
 
 					std::shared_ptr<Graphics::EnoTexture> currentTexture;
 					if (playerAnimController_.getCurrentAnimationName() == "walk") {
@@ -440,7 +440,7 @@ void GameApplication::updateGameLogic() {
 }
 
 void GameApplication::updateEntities() {
-	SystemTimer EntityTimer("Entities" , systemTimes_);
+	SystemTimer EntityTimer("Entities", systemTimes_);
 
 	ImGuiIO& io = ImGui::GetIO();
 	float deltaTime = io.DeltaTime;
@@ -463,7 +463,7 @@ void GameApplication::updateEntities() {
 		Graphics::Color::White
 	);
 
-	
+
 
 	// REBUILD CACHE ONLY WHEN DIRTY (optimization)
 	if (entitiesDirty_) {
@@ -475,7 +475,7 @@ void GameApplication::updateEntities() {
 	// Check if editor state is in play and player is moving and switch animation accordingly
 	if (playerSystem_ && playerSpawned_ && getEditorState() == Playing) {
 		// Check for WASD input
-		bool isMoving = 
+		bool isMoving =
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
 			inputManager.isKeyPressed(GLFW_KEY_A) ||
 			inputManager.isKeyPressed(GLFW_KEY_S) ||
@@ -513,7 +513,7 @@ void GameApplication::updateEntities() {
 	if (collisionSystem_) {
 		collisionSystem_->Update(engine_.getEntityManager());
 	}
-	
+
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
 	static bool hasBegun = false;
@@ -522,70 +522,85 @@ void GameApplication::updateEntities() {
 	switch (getEditorState())
 	{
 	case Playing:
+	{
+		//std::cout << "Editor state: " << getEditorState() << std::endl;
+		auto& coreHost = engine_.getCoreHost();
+
+
+		if (!hasBegun)
 		{
-			//std::cout << "Editor state: " << getEditorState() << std::endl;
-			 auto& coreHost = engine_.getCoreHost();
-			 if (!hasBegun)
-			 {
-			 	std::cout << " Calling CoreHost::begin()\n";
-			 	coreHost.begin();
-			 	hasBegun = true;
-			 }
-
-			// Get list of entities to store current pos to reset later
-			// Check that the last frame editor state was 'Stopped'
-			if (playAfterStop)
+			for (auto* node : sceneTree_->getAllNodes())
 			{
-				// Save the current scene tree state before playing
-				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
-				sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
-				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
-				// Toggle flag to make it a one time event
-				playAfterStop = false;
+				if (!node->script_)continue;
+				std::wstring className = node->script_->extrClassName(node->script_->name_.data());
+				std::wcout << L"[DEBUG] Entity ID " << node->entity_.id()
+					<< L" running Begin for class: " << node->script_->extrClassName(node->script_->name_.data())
+					<< std::endl;
+				coreHost.runScriptMethod(className, L"Begin");
 			}
+			hasBegun = true;
+		}
 
-			// Update dynamic objects
-			coreHost.update();
+		// Get list of entities to store current pos to reset later
+		// Check that the last frame editor state was 'Stopped'
+		if (playAfterStop)
+		{
+			// Save the current scene tree state before playing
+			std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
+			sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
+			std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
+			// Toggle flag to make it a one time event
+			playAfterStop = false;
+		}
+
+		for (auto* node : sceneTree_->getAllNodes())
+		{
+			if (!node->script_) continue;
+
+			std::wstring className = node->script_->extrClassName(node->script_->name_.data());
+			coreHost.runScriptMethod(className, L"Update");
+		}
+		updateTestObject(engine_.getEntityManager(), engine_);
+
+		break;
+	}
+	case Paused:
+	{
+		// This toggles keyframe mode
+		keyFrameMode = true;
+		break;
+	}
+	case NextKeyFrame:
+	{
+		// Check if key frame mode is true
+		if (keyFrameMode)
+		{
+			// Update one time
 			updateTestObject(engine_.getEntityManager(), engine_);
-			break;
-		}
-		case Paused:
-		{
-			// This toggles keyframe mode
-			keyFrameMode = true;
-			break;
-		}
-		case NextKeyFrame:
-		{
-			// Check if key frame mode is true
-			if (keyFrameMode)
-			{
-				// Update one time
-				updateTestObject(engine_.getEntityManager(), engine_);
 
-				// Reset variables
-				setEditorState(Paused);
-			}
-			break;
+			// Reset variables
+			setEditorState(Paused);
 		}
-		case Stopped:
+		break;
+	}
+	case Stopped:
+	{
+		// This condition ensures resetting of pos comes after play
+		if (!playAfterStop)
 		{
-			// This condition ensures resetting of pos comes after play
-			if (!playAfterStop)
-			{
-				// Load the saved scene tree state to restore positions
-				std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
-				sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
-				std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
+			// Load the saved scene tree state to restore positions
+			std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
+			sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+			std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
 
-				// Mark entities as dirty to refresh the rendering cache
-				entitiesDirty_ = true;
-				// Toggle flag
-				playAfterStop = true;
-			}
-			hasBegun = false;
-			break;
+			// Mark entities as dirty to refresh the rendering cache
+			entitiesDirty_ = true;
+			// Toggle flag
+			playAfterStop = true;
 		}
+		hasBegun = false;
+		break;
+	}
 	}
 
 	// loop to check for UI button entities 
@@ -637,7 +652,7 @@ void GameApplication::drawText(Math::eVec2<float> windowSize) {
 	fpsSs << std::fixed;     // fixed-point notation
 	fpsSs << "FPS: " << engine_.getFPS();
 	graphics.drawText(timesFont_, text, { 25.f , 50.f }, 1.f, Graphics::Color::Black);
-	graphics.drawText(timesFont_, fpsSs.str(), {windowSize.x - 125.f , 25.f}, 0.5f, Graphics::Color::Red);
+	graphics.drawText(timesFont_, fpsSs.str(), { windowSize.x - 125.f , 25.f }, 0.5f, Graphics::Color::Red);
 	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.x / 2.f, windowSize.y - 25.f }, 0.75f, Graphics::Color::Blue);
 }
 
@@ -653,7 +668,7 @@ void GameApplication::drawPlayerAndIndicator() {
 				auto& transform = playerSystem_->GetTransform(it->second);
 
 				// Get the current animation frame
-				auto &frame = playerAnimController_.getCurrentFrame();
+				auto& frame = playerAnimController_.getCurrentFrame();
 
 				// Select the correct texture based on current animation
 				std::shared_ptr<Graphics::EnoTexture> currentTexture;
@@ -670,18 +685,18 @@ void GameApplication::drawPlayerAndIndicator() {
 
 				// Get player transform
 				auto& playerTransform = playerSystem_->GetTransform(it->second);
-				
+
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
 					// I am placing it here first as a 4.0 scale speed * DT
 					scaleSize += static_cast<float>(3.0 * 0.01667);
 					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					playerTransform.scale.x = scaleSize;
 					playerTransform.scale.y = scaleSize;
-					std::cout << "Scaling by: " << scaleSize << '\n';				
+					std::cout << "Scaling by: " << scaleSize << '\n';
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
-					scaleSize -= static_cast < float>(3.0 * 0.01667);
+					scaleSize -= static_cast <float>(3.0 * 0.01667);
 					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 					playerTransform.scale.x = scaleSize;
 					playerTransform.scale.y = scaleSize;
@@ -689,14 +704,14 @@ void GameApplication::drawPlayerAndIndicator() {
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
-						rotationRadians += static_cast < float>(8.0f * 0.0174533 * 0.01667);
+					rotationRadians += static_cast <float>(8.0f * 0.0174533 * 0.01667);
 
-						auto& playerCollider = playerSystem_->GetCollision(it->second);
-						playerCollider.rotation = rotationRadians;
+					auto& playerCollider = playerSystem_->GetCollision(it->second);
+					playerCollider.rotation = rotationRadians;
 				}
 
 				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
-					rotationRadians -= static_cast < float>(8.0f * 0.0174533 * 0.01667);
+					rotationRadians -= static_cast <float>(8.0f * 0.0174533 * 0.01667);
 
 					auto& playerCollider = playerSystem_->GetCollision(it->second);
 					playerCollider.rotation = rotationRadians;
@@ -711,17 +726,17 @@ void GameApplication::drawPlayerAndIndicator() {
 
 				// Draw with the correct texture
 				if (currentTexture && currentTexture->isValid()) {
-					
+
 					// calculate scaled dimensions (match the collider size)
 					float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
 					float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
-					
+
 					// convert center position to top-left for drawing
 					Math::eVec2<float> topLeft = {
 						transform.pos.x - (scaledWidth * 0.5f),
 						transform.pos.y - (scaledHeight * 0.5f)
 					};
-					
+
 					graphics.drawTexturedQuadUV(
 						topLeft,
 						Math::eVec2<float>{scaledWidth, scaledHeight},
@@ -736,7 +751,7 @@ void GameApplication::drawPlayerAndIndicator() {
 					// Fallback to colored rect if texture invalid
 					graphics.drawRect(
 						Math::eVec2<float>{transform.pos.x, transform.pos.y},
-						Math::eVec2<float>{10 + scaleSize, 10 +scaleSize},
+						Math::eVec2<float>{10 + scaleSize, 10 + scaleSize},
 						Graphics::Color::Blue,
 						true,
 						rotationRadians
