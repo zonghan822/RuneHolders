@@ -490,7 +490,7 @@ void GameApplication::updateEntities() {
 	auto* playerSystem = engine_.getPlayerSystem();
 	
 	// Check if editor state is in play and player is moving and switch animation accordingly
-	if (playerSystem_ && playerSpawned_ && getEditorState() == Playing) {
+	if (playerSystem && playerSpawned_) {
 		// Check for WASD input
 		bool isMoving = 
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
