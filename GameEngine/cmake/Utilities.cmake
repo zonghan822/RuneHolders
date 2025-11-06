@@ -204,7 +204,7 @@ macro(set_dotnet)
                 -Command "& {
                     $procs = Get-Process dotnet -ErrorAction SilentlyContinue;
                     foreach ($p in $procs) {
-                        if ($p.Path -like '*${DOTNET_PATH}\\*') {
+                        if ($p.Path -like '*${DOTNET_RUNTIME_PATH}\\*') {
                             Write-Host ('Terminating local dotnet process ID ' + $p.Id);
                             Stop-Process -Id $p.Id -Force;
                         }

@@ -3,7 +3,7 @@ REM ===============================================
 REM          Windows Build and Run Script
 REM ===============================================
 
-if exist build\projects\App\Debug\Editor.exe (
+if exist build\projects\App\Release\Editor.exe (
     echo Application found...
     cd build
 
@@ -84,7 +84,7 @@ if exist build\projects\App\Debug\Editor.exe (
 REM Run the Imgui editor
 echo Running Imgui Editor...
 echo.
-cd projects\App\Debug
+cd projects\App\Release
 Editor.exe
 if %errorlevel% neq 0 (
     echo.
