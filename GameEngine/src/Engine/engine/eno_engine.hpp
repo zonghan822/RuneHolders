@@ -115,7 +115,7 @@ namespace Engine
 		Input::EnoInputManager& getInputManager() { return inputMng_; }
 
 		/*============================================================================================
-		* \brief		Gets the Scene manager for save load handling
+		* \brief		Gets the Eno Editor for scene load saving
 		* \return		Reference to the EnoEditor instance
 		*//*========================================================================================*/
 		Editor::EnoEditor& getEnoEditor() { return editor_; }
