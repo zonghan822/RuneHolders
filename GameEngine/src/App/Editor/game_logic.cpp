@@ -279,6 +279,48 @@ void GameApplication::updateGameLogic() {
 		playerAnimController_.update(static_cast<float>(deltaTime));
 	}
 
+	// Update all animated entities (spritesheet animation and rotation)
+	static float animationTimer = 0.0f;
+	static int currentFrame = 0;
+	const int totalFrames = 4;  // Protagonist-Walk-Sheet has 4 frames
+	const float frameDuration = 0.1f;  // 0.1 seconds per frame
+
+	animationTimer += static_cast<float>(deltaTime);
+	if (animationTimer >= frameDuration) {
+		animationTimer -= frameDuration;
+		currentFrame = (currentFrame + 1) % totalFrames;
+	}
+
+	// Update all animated entities with "AnimatedEntity" in their name
+	// Use cached entities for better performance
+	for (ECS::Entity& entity : cachedDrawableEntities_) {
+		try {
+			// Check if this is an animated entity
+			if (entity.has<ECSComponents::NameComponent>(entityManager)) {
+				auto& nameComp = entity.get<ECSComponents::NameComponent>(entityManager);
+				std::string name(nameComp.name);
+
+				if (name.find("AnimatedEntity") != std::string::npos) {
+					// Update animation frame
+					if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+						auto& renderComp = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
+						renderComp.texID = currentFrame;
+					}
+
+					// Update rotation (stored in TransformComponent.rot)
+					// rot.x = current angle, rot.y = rotation speed
+					if (entity.has<ECSComponents::TransformComponent>(entityManager)) {
+						auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+						transform.rot.x += transform.rot.y * static_cast<float>(deltaTime);
+					}
+				}
+			}
+		}
+		catch (...) {
+			continue;
+		}
+	}
+
 	// Load textures for entities (if needed)
 	loadEntityTextures();
 
@@ -976,8 +1018,49 @@ void GameApplication::drawShapes() {
 				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 				auto& renderInfo = entity.get<drawInfo>(entityManager);
 
+				// Check if entity has a texture (sprite)
+				if (renderInfo.texture && renderInfo.texture->isValid()) {
+					// Draw textured sprite with animation and rotation
+					float topLeftX = transform.pos.x - (renderInfo.width * 0.5f);
+					float topLeftY = transform.pos.y - (renderInfo.height * 0.5f);
+
+					// Calculate UV coordinates for spritesheet animation
+					// Protagonist-Walk-Sheet is 384x96 with 4 frames (96x96 each)
+					int frameWidth = 96;
+					int frameHeight = 96;
+					int sheetWidth = renderInfo.texture->getWidth();
+					int framesPerRow = sheetWidth / frameWidth;
+
+					int frameIndex = renderInfo.texID;
+					int frameX = (frameIndex % framesPerRow) * frameWidth;
+					int frameY = (frameIndex / framesPerRow) * frameHeight;
+
+					// Convert to UV coordinates (0.0 to 1.0)
+					Math::eVec2<float> uvStart{
+						static_cast<float>(frameX) / static_cast<float>(sheetWidth),
+						static_cast<float>(frameY) / static_cast<float>(renderInfo.texture->getHeight())
+					};
+					Math::eVec2<float> uvEnd{
+						static_cast<float>(frameX + frameWidth) / static_cast<float>(sheetWidth),
+						static_cast<float>(frameY + frameHeight) / static_cast<float>(renderInfo.texture->getHeight())
+					};
+
+					// Get rotation from transform component (stored in rot.x)
+					float rotation = transform.rot.x;
+
+					// Draw textured quad with UV coordinates and rotation
+					graphics.drawTexturedQuadUV(
+						Math::eVec2<float>{topLeftX, topLeftY},
+						Math::eVec2<float>{renderInfo.width, renderInfo.height},
+						renderInfo.texture,
+						uvStart,
+						uvEnd,
+						renderInfo.color,
+						rotation
+					);
+				}
 				// Check shape type and draw accordingly
-				if (strcmp(renderInfo.shape, "Circle") == 0) {
+				else if (strcmp(renderInfo.shape, "Circle") == 0) {
 					// Draw circle at center position
 					graphics.drawCircle(
 						transform.pos,  // Center position
