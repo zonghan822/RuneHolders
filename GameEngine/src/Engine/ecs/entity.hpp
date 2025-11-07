@@ -52,6 +52,7 @@ namespace ECS
 		
 		// Non-primitive Math types
 		Math::eVec2<float>,
+		Graphics::Color,
 
 		// Enums
 		Color,

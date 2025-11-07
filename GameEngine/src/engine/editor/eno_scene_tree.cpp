@@ -267,7 +267,7 @@ namespace Editor
 		script.release();
 	}
 
-	void EnoSceneTree::save(const std::string& name)
+	void EnoSceneTree::save(const std::string& name, const std::string& sceneName)
 	{
 		std::string filename{ name };
 		// Append preferred extension for save file format
@@ -391,10 +391,20 @@ namespace Editor
 
 		// Closing brace (for a node)
 		save << "}\n";
+
+		// Now, I want to export another file which gives me the name of the saved scene
+		std::cout << currentScene << " << Current scene" << std::endl;
+		std::ofstream currentSceneSave{ (ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt") };
+		if (!currentSceneSave)
+		{
+			throw std::runtime_error("Failed to create a save file for the current active scene!");
+		}
+		currentSceneSave << sceneName;
+		currentSceneSave.close();
 	}
 
 	// Deserialize data
-	void EnoSceneTree::load(const std::string& name)
+	void EnoSceneTree::load(const std::string& name, const std::string& sceneName)
 	{
 		std::string filename{ name };
 		// Append preferred extension for save file format
@@ -525,8 +535,151 @@ namespace Editor
 
 		setParent(parents);
 		setChildren(children);
+
+		// Set data member current scene
+		currentScene = sceneName;
+		std::cout << "What im throwing into currentscene: " << currentScene << std::endl;
+
+
 	}
 	
+	// Create empty scene
+	void EnoSceneTree::createEmptyScene(const std::string& filePath)
+	{
+		// Default name
+		std::string defaultSceneName = "New Scene";
+		// To count for duplicates
+		int index = 0;
+		// Track which indices already exist
+		std::set<int> existingIndices;
+		bool baseNameExists = false;
+
+		// Iterate through the folder, see how many new scenes duplicate there are
+		try
+		{
+			for (const auto& fileName : std::filesystem::directory_iterator(filePath))
+			{
+				std::string name = fileName.path().filename().string();
+
+				if (name.find("New Scene") != std::string::npos)
+				{
+					// Check if it's exactly "New Scene.txt"
+					if (name == "New Scene.txt")
+					{
+						baseNameExists = true;
+					}
+					else
+					{
+						// Find all other existing duplicates and their indexes
+						size_t openParen = name.find('(');
+						size_t closeParen = name.find(')');
+
+						if (openParen != std::string::npos && closeParen != std::string::npos)
+						{
+							std::string numberStr = name.substr(openParen + 1, closeParen - openParen - 1);
+							try
+							{
+								// Convert to int and add to set
+								int num = std::stoi(numberStr);
+								existingIndices.insert(num);
+							}
+							catch (...) {} // Not a valid int, ignore
+						}
+					}
+				}
+			}
+		}
+		catch (const std::filesystem::filesystem_error& e)
+		{
+			std::cerr << "[EnoSceneTree] Error reading directory: " << e.what() << std::endl;
+		}
+
+		// Find the next available index
+		if (baseNameExists)
+		{
+			// Start from 1 and find the first gap
+			index = 1;
+			while (existingIndices.find(index) != existingIndices.end())
+			{
+				++index;
+			}
+			// Add suffix
+			defaultSceneName += " (" + std::to_string(index) + ')';
+		}
+
+		// Else just use base and add .txt extension
+		defaultSceneName += ".txt";
+
+		// Create full file path
+		std::string fullPath = filePath + defaultSceneName;
+
+		// Create file
+		std::ofstream newFile{ fullPath };
+		if (!newFile)
+		{
+			throw std::runtime_error("Failed to create a new scene: " + fullPath);
+		}
+		newFile << "{\n\n}";
+		newFile.close();
+
+		// Load file first (this sets currentScene)
+		load(fullPath, defaultSceneName);
+
+		// Save the current scene name to CurrentSavedScene.txt
+		std::ofstream currentSceneSave{ ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt" };
+		if (!currentSceneSave)
+		{
+			throw std::runtime_error("Failed to save current active scene name!");
+		}
+		currentSceneSave << currentScene;
+		currentSceneSave.close();
+	
+	}
+
+	void EnoSceneTree::loadLastSavedScene()
+	{
+		// Get path to assets
+		std::string currentScenePath = ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt";
+		std::ifstream savedSceneFile{ currentScenePath };
+		if (!savedSceneFile.is_open())
+		{
+			// File doesn't exist, create a new scene
+			std::cout << "[EnoSceneTree] No saved scene found, creating new scene" << std::endl;
+			createEmptyScene(ASSETS_DIR_PATH "/saves/scenes/");
+		}
+		else
+		{
+			// Saved file name
+			std::string savefile;
+			std::getline(savedSceneFile, savefile);
+			// Close file
+			savedSceneFile.close();
+
+			std::cout << "Loading save file: " << savefile << std::endl;
+
+			// If save scene file is empty, create a new scene
+			if (savefile.empty())
+			{
+				std::cout << "[EnoSceneTree] CurrentSavedScene.txt is empty, creating new scene..." << std::endl;
+				createEmptyScene(ASSETS_DIR_PATH "/saves/scenes/");
+			}
+			else
+			{
+				// Check if the scene file actually exists before loading
+				std::string fullScenePath = ASSETS_DIR_PATH "/saves/scenes/" + savefile;
+				if (std::filesystem::exists(fullScenePath))
+				{
+					load(fullScenePath, savefile);
+				}
+				else
+				{
+					std::cerr << "[EnoSceneTree] Scene file not found: " << fullScenePath << ", creating new scene..." << std::endl;
+					createEmptyScene(ASSETS_DIR_PATH "/saves/scenes/");
+				}
+			}
+		}
+	}
+
 	// Helper for assigning parents when deserializing save file
 	void EnoSceneTree::setParent(const std::vector<std::pair<uint32_t, uint32_t>>& parents)
 	{
@@ -707,4 +860,16 @@ namespace Editor
 				cids.push_back(child->sceneObjectID_);
 			});
 	}
+
+	// Get scene name
+	std::string& EnoSceneTree::getSceneName()
+	{
+		return currentScene;
+	}
+
+	std::string EnoSceneTree::getSceneName() const
+	{
+		return currentScene;
+	}
+
 }

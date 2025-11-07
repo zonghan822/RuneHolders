@@ -1,3 +1,14 @@
+/*============================================================================================
+* All content ? 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         game_logic.cpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author		Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @date         05-11-2025
+* @brief        Game application layer that handles game-specific logic, entity management,
+*               rendering, and ImGui integration. Systems are now managed by EnoEngine.
+*//*========================================================================================*/
+
 #include "game_logic.hpp"
 #include <GLFW/glfw3.h>
 #include "imGui.hpp"
@@ -11,8 +22,8 @@ float rotationRadians = 0.f;
 
 
 void GameApplication::initialize() {
-	// Setup engine systems first
-	engine_.setup();
+	// Setup engine systems first (this now includes game systems)
+	engine_.setup(); 
 
 	// Initialize scene tree (must be after engine setup)
 	sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
@@ -32,15 +43,12 @@ void GameApplication::initialize() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
-	// Load entities from save file - CURRENTLY NOT IN USE TO INIT KIM'S TEST OBJECTS
-	//engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
-
-	// Create pushable box entities for testing and add them to scene tree
-	createTestObjectsAndAddToSceneTree();
+	// ============= LOAD LAST ACTIVE SAVED SCENE ========================= //
+	engine_.getEnoEditor().getSceneTree().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
-
+		
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
 
@@ -155,15 +163,8 @@ void GameApplication::setupGameMath() {
 
 	Collision::RunBasicCollisionTest();
 
-	// Initialize collision system
-	collisionSystem_ = std::make_unique<Collision::CollisionSystem>(engine_.getEventBus());
-
-	// Initialize physics system (for pushable boxes and physics-based movement)
-	physicsSystem_ = std::make_unique<Physics::PhysicsSystem>();
-	std::cout << "[GameLogic] Physics system initialized" << std::endl;
-
-	// Initialize player system
-	playerSystem_ = std::make_unique<Player::PlayerSystem>();
+	// NOTE: Systems are now initialized in eno_engine.cpp::setupGameSystems()
+	// No need to initialize them here anymore
 
 	// Load player config
 	playerConfig_.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
@@ -251,8 +252,10 @@ void GameApplication::setupImGui() {
 void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& graphics_ = engine_.getGraphicsManager();
+	// auto& graphics = engine_.getGraphicsManager();
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
+
 
 	// Use FIXED virtual resolution for consistent rendering
 	Math::eVec2<float> renderSize{
@@ -313,22 +316,42 @@ void GameApplication::updateGameLogic() {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Draw background - crop to visible camera area using UV coordinates
-		// Calculate what portion of the background texture is visible
-		float uvStartX = editorCameraX_ / static_cast<float>(VIRTUAL_WIDTH);
-		float uvStartY = editorCameraY_ / static_cast<float>(VIRTUAL_HEIGHT);
-		float uvEndX = (editorCameraX_ + EDITOR_WIDTH) / static_cast<float>(VIRTUAL_WIDTH);
-		float uvEndY = (editorCameraY_ + EDITOR_HEIGHT) / static_cast<float>(VIRTUAL_HEIGHT);
+		// Draw background texture with camera offset
+		// The background should be positioned in world space, then camera offset is applied
+		if (backgroundTexture_ && backgroundTexture_->isValid()) {
+			// Get background texture dimensions
+			int bgWidth = backgroundTexture_->getWidth();
+			int bgHeight = backgroundTexture_->getHeight();
 
-		// Draw only the visible portion of the background at origin
-		engine_.getGraphicsManager().drawTexturedQuadUV(
-			Math::eVec2<float>{0.0f, 0.0f},  // Draw at origin (camera offset handled by UV)
-			Math::eVec2<float>{static_cast<float>(EDITOR_WIDTH), static_cast<float>(EDITOR_HEIGHT)},
-			backgroundTexture_,
-			Math::eVec2<float>{uvStartX, uvStartY},  // Crop texture start
-			Math::eVec2<float>{uvEndX, uvEndY},      // Crop texture end
-			Graphics::Color::White
-		);
+			// Calculate how many times to tile the background to cover the virtual world
+			int tilesX = (VIRTUAL_WIDTH + bgWidth - 1) / bgWidth;  // Ceiling division
+			int tilesY = (VIRTUAL_HEIGHT + bgHeight - 1) / bgHeight;
+
+			// Draw tiled background
+			for (int ty = 0; ty < tilesY; ++ty) {
+				for (int tx = 0; tx < tilesX; ++tx) {
+					// World position of this tile
+					float worldX = tx * bgWidth;
+					float worldY = ty * bgHeight;
+
+					// Convert to screen space (apply camera offset)
+					float screenX = worldX - editorCameraX_;
+					float screenY = worldY - editorCameraY_;
+
+					// Only draw if tile is visible in editor view
+					if (screenX + bgWidth >= 0 && screenX < EDITOR_WIDTH &&
+						screenY + bgHeight >= 0 && screenY < EDITOR_HEIGHT) {
+
+						engine_.getGraphicsManager().drawTexturedQuad(
+							Math::eVec2<float>{screenX, screenY},
+							Math::eVec2<float>{static_cast<float>(bgWidth), static_cast<float>(bgHeight)},
+							backgroundTexture_,
+							Graphics::Color::White
+						);
+					}
+				}
+			}
+		}
 
 		// Draw all entities (with camera offset - convert world space to screen space)
 		for (ECS::Entity& entity : cachedDrawableEntities_) {
@@ -374,6 +397,12 @@ void GameApplication::updateGameLogic() {
 								true
 							);
 						}
+						// Draw text for button component
+						//if (entity.has<ECSComponents::ButtonComponent>(entityManager))
+						//{
+						//	auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
+						//	graphics_.drawText(timesFont_, b.getName(), transform.pos, 0.5f, Color::Red);
+						//}
 					}
 				}
 			}
@@ -389,46 +418,49 @@ void GameApplication::updateGameLogic() {
 				auto& entityMap = engine_.getEntityManager().getMap();
 				auto it = entityMap.find(playerEntityID_);
 				if (it != entityMap.end()) {
-					auto& transform = playerSystem_->GetTransform(it->second);
-					auto& frame = playerAnimController_.getCurrentFrame();
+					// Get player system from engine (no longer a global)
+					auto* playerSystem = engine_.getPlayerSystem();
+					if (playerSystem) {
+						auto& transform = playerSystem->GetTransform(it->second);
+						auto& frame = playerAnimController_.getCurrentFrame();
 
-					std::shared_ptr<Graphics::EnoTexture> currentTexture;
-					if (playerAnimController_.getCurrentAnimationName() == "walk") {
-						currentTexture = playerWalkTexture_;
-					}
-					else {
-						currentTexture = playerTexture_;
-					}
+						std::shared_ptr<Graphics::EnoTexture> currentTexture;
+						if (playerAnimController_.getCurrentAnimationName() == "walk") {
+							currentTexture = playerWalkTexture_;
+						}
+						else {
+							currentTexture = playerTexture_;
+						}
 
-					Math::eVec2<float> uvStart = frame.uvStart;
-					Math::eVec2<float> uvEnd = frame.uvEnd;
+						Math::eVec2<float> uvStart = frame.uvStart;
+						Math::eVec2<float> uvEnd = frame.uvEnd;
 
-					if (playerFacingDirection_ == -1) {
-						std::swap(uvStart.x, uvEnd.x);
-					}
+						if (playerFacingDirection_ == -1) {
+							std::swap(uvStart.x, uvEnd.x);
+						}
 
-					if (currentTexture && currentTexture->isValid()) {
-						float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
-						float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
+						if (currentTexture && currentTexture->isValid()) {
+							float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
+							float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
 
-						// Convert world position to screen position (relative to camera)
-						float screenX = transform.pos.x - editorCameraX_;
-						float screenY = transform.pos.y - editorCameraY_;
+							// Apply camera offset to player position
+							float screenX = transform.pos.x - editorCameraX_;
+							float screenY = transform.pos.y - editorCameraY_;
+							Math::eVec2<float> topLeft = {
+								screenX - (scaledWidth * 0.5f),
+								screenY - (scaledHeight * 0.5f)
+							};
 
-						Math::eVec2<float> topLeft = {
-							screenX - (scaledWidth * 0.5f),
-							screenY - (scaledHeight * 0.5f)
-						};
-
-						engine_.getGraphicsManager().drawTexturedQuadUV(
-							topLeft,
-							Math::eVec2<float>{scaledWidth, scaledHeight},
-							currentTexture,
-							uvStart,
-							uvEnd,
-							Graphics::Color::White,
-							rotationRadians
-						);
+							graphics_.drawTexturedQuadUV(
+								topLeft,
+								Math::eVec2<float>{scaledWidth, scaledHeight},
+								currentTexture,
+								uvStart,
+								uvEnd,
+								Graphics::Color::White,
+								rotationRadians
+							);
+						}
 					}
 				}
 			}
@@ -436,8 +468,14 @@ void GameApplication::updateGameLogic() {
 		}
 
 		// Draw colliders in editor view (with camera offset)
-		if (showColliders_ && collisionSystem_) {
-			collisionSystem_->VisualizeColliders(graphics_, entityManager, Math::eVec2<float>{editorCameraX_, editorCameraY_});
+		if (showColliders_) {
+			// Get collision system from engine (no longer a global)
+			auto* collisionSystem = engine_.getCollisionSystem();
+			if (collisionSystem) {
+				// Visualize colliders with camera offset applied
+				Math::eVec2<float> cameraOffset = {editorCameraX_, editorCameraY_};
+				collisionSystem->VisualizeColliders(graphics_, engine_.getEntityManager(), cameraOffset);
+			}
 		}
 
 		engine_.getGraphicsManager().flush();
@@ -453,6 +491,17 @@ void GameApplication::updateGameLogic() {
 
 	// Now render ImGui (which will display the framebuffer textures)
 	updateImGui();
+
+	// Update engine playing state for NEXT frame based on current editor state
+	// This must happen BEFORE we transition NextKeyFrame->Paused
+	bool shouldPlayNextFrame = (getEditorState() == Playing || getEditorState() == NextKeyFrame);
+	engine_.setIsPlaying(shouldPlayNextFrame);
+
+	// Handle NextKeyFrame state transition at the END of the frame
+	// This ensures physics/collision will have already updated with isPlaying=true in the next frame
+	if (getEditorState() == NextKeyFrame) {
+		setEditorState(Paused);
+	}
 }
 
 void GameApplication::updateEntities() {
@@ -488,8 +537,13 @@ void GameApplication::updateEntities() {
 		entitiesDirty_ = false;
 	}
 
+	// Check if player is moving and switch animation accordingly
+
+	// Get player system from engine (no longer a global)
+	auto* playerSystem = engine_.getPlayerSystem();
+	
 	// Check if editor state is in play and player is moving and switch animation accordingly
-	if (playerSystem_ && playerSpawned_ && getEditorState() == Playing) {
+	if (playerSystem && playerSpawned_ && getEditorState() == Playing) {
 		// Check for WASD input
 		bool isMoving =
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
@@ -516,19 +570,15 @@ void GameApplication::updateEntities() {
 				playerAnimController_.setAnimation("idle");
 			}
 		}
-		// Update player movement
-		playerSystem_->Update(engine_.getEntityManager(), inputManager, deltaTime);
-	}
+		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
+		// No need to call playerSystem->Update() here anymore
+		}
 
-	// Update physics system (handles box pushing and physics-based movement)
-	if (physicsSystem_) {
-		physicsSystem_->Update(engine_.getEntityManager(), deltaTime);
-	}
-
-	// Update collision system
-	if (collisionSystem_) {
-		collisionSystem_->Update(engine_.getEntityManager());
-	}
+	// NOTE: Collision system update is now done in eno_engine.cpp::updateGameSystems()
+	// No need to call collisionSystem->Update() here anymore
+	
+	// NOTE: Physics system update is now done in eno_engine.cpp::updateGameSystems()
+	// No need to call physicsSystem.Update() here anymore	
 
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
@@ -539,8 +589,17 @@ void GameApplication::updateEntities() {
 	switch (getEditorState()) 
 	{
 	case Playing:
-	{
-		//std::cout << "Editor state: " << getEditorState() << std::endl;
+		{
+			// Check that the last frame editor state was 'Stopped'
+			if (playAfterStop)
+			{
+				// Save the current scene tree state before playing
+				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
+				sceneTree_->save(ASSETS_DIR_PATH "saves/scenes/" + sceneTree_->getSceneName(), sceneTree_->getSceneName());
+				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
+				// Toggle flag to make it a one time event
+				playAfterStop = false;
+			}
 
 
 		if (!hasBegun)
@@ -600,8 +659,11 @@ void GameApplication::updateEntities() {
 			// Update one time
 			updateTestObject(engine_.getEntityManager(), engine_);
 
-			// Reset variables
-			setEditorState(Paused);
+				// Reset variables - transition back to Paused for next frame
+				// NOTE: Don't set state back to Paused here! It happens too early in the frame.
+				// The state will be reset to Paused at the end of this function after rendering.
+			}
+			break;
 		}
 		break;
 	}
@@ -610,10 +672,22 @@ void GameApplication::updateEntities() {
 		// This condition ensures resetting of pos comes after play
 		if (!playAfterStop)
 		{
-			// Load the saved scene tree state to restore positions
-			std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
-			sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
-			std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
+			// This condition ensures resetting of pos comes after play
+			if (!playAfterStop)
+			{
+				// Load the saved scene tree state to restore positions
+				std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
+				std::string sceneName = sceneTree_->getSceneName();
+				if (!sceneName.empty())
+				{
+					std::string scenePath = ASSETS_DIR_PATH "saves/scenes/" + sceneName;
+					sceneTree_->load(scenePath, sceneName);
+					std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
+				}
+				else
+				{
+					std::cerr << "[GameLogic] Warning: Scene name is empty, cannot load scene!" << std::endl;
+				}
 
 			// Mark entities as dirty to refresh the rendering cache
 			entitiesDirty_ = true;
@@ -686,111 +760,101 @@ void GameApplication::drawPlayerAndIndicator() {
 		try {
 			auto& entityMap = engine_.getEntityManager().getMap();
 			auto it = entityMap.find(playerEntityID_);
-			if (it != entityMap.end()) {
-				auto& transform = playerSystem_->GetTransform(it->second);
+			if (it != entityMap.end())
+			{
+				// Get player system from engine (no longer a global)
+				auto* playerSystem = engine_.getPlayerSystem();
+				if (playerSystem) {
+					auto& transform = playerSystem->GetTransform(it->second);
+					auto& frame = playerAnimController_.getCurrentFrame();
 
-				// Get the current animation frame
-				auto& frame = playerAnimController_.getCurrentFrame();
+					std::shared_ptr<Graphics::EnoTexture> currentTexture;
+					if (playerAnimController_.getCurrentAnimationName() == "walk") {
+						currentTexture = playerWalkTexture_;
+					}
+					else {
+						currentTexture = playerTexture_;
+					}
 
-				// Select the correct texture based on current animation
-				std::shared_ptr<Graphics::EnoTexture> currentTexture;
-				if (playerAnimController_.getCurrentAnimationName() == "walk") {
-					currentTexture = playerWalkTexture_;
+					// Calculate UV coordinates for current frame
+					Math::eVec2<float> uvStart = frame.uvStart;
+					Math::eVec2<float> uvEnd = frame.uvEnd;
+
+					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
+						// I am placing it here first as a 4.0 scale speed * DT
+						scaleSize += static_cast<float>(3.0 * 0.01667);
+						scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
+						transform.scale.x = scaleSize;
+						transform.scale.y = scaleSize;
+						std::cout << "Scaling by: " << scaleSize << '\n';
+					}
+
+					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
+						scaleSize -= static_cast <float>(3.0 * 0.01667);
+						scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
+						transform.scale.x = scaleSize;
+						transform.scale.y = scaleSize;
+						std::cout << "Scaling by: " << scaleSize << '\n';
+					}
+
+					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
+						rotationRadians += static_cast <float>(3.0f * 0.0174533 * 0.01667);
+
+						auto& playerCollider = playerSystem->GetCollision(it->second);
+						playerCollider.rotation = rotationRadians;
+						std::cout << "rotation in Radians:" << rotationRadians << '\n';
+					}
+
+					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
+						rotationRadians -= static_cast <float>(3.0f * 0.0174533 * 0.01667);
+						auto& playerCollider = playerSystem->GetCollision(it->second);
+						playerCollider.rotation = rotationRadians;
+						std::cout << "rotation in Radians:" << rotationRadians << '\n';
+					}
+
+					if (playerFacingDirection_ == -1) {
+						// Swap horizontal UV coordinates to flip the sprite
+						std::swap(uvStart.x, uvEnd.x);
+					}
+					// Draw with the correct texture
+					if (currentTexture && currentTexture->isValid()) {
+
+						// calculate scaled dimensions (match the collider size)
+						float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
+						float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
+
+						// convert center position to top-left for drawing
+						Math::eVec2<float> topLeft = {
+							transform.pos.x - (scaledWidth * 0.5f),
+							transform.pos.y - (scaledHeight * 0.5f)
+						};
+
+						graphics.drawTexturedQuadUV(
+							topLeft,
+							Math::eVec2<float>{scaledWidth, scaledHeight},
+							currentTexture,
+							uvStart,  // Use potentially flipped UV coords
+							uvEnd,    // Use potentially flipped UV coords
+							Graphics::Color::White,
+							rotationRadians
+						);
+					}
+					else {
+						// Fallback to colored rect if texture invalid
+						graphics.drawRect(
+							Math::eVec2<float>{transform.pos.x, transform.pos.y},
+							Math::eVec2<float>{10 + scaleSize, 10 + scaleSize},
+							Graphics::Color::Blue,
+							true,
+							rotationRadians
+						);
+					}
 				}
-				else {
-					currentTexture = playerTexture_;
-				}
-
-				// Flip UV coordinates based on facing direction
-				Math::eVec2<float> uvStart = frame.uvStart;
-				Math::eVec2<float> uvEnd = frame.uvEnd;
-
-				// Get player transform
-				auto& playerTransform = playerSystem_->GetTransform(it->second);
-
-				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
-					// I am placing it here first as a 4.0 scale speed * DT
-					scaleSize += static_cast<float>(3.0 * 0.01667);
-					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
-					playerTransform.scale.x = scaleSize;
-					playerTransform.scale.y = scaleSize;
-					std::cout << "Scaling by: " << scaleSize << '\n';
-				}
-
-				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
-					scaleSize -= static_cast <float>(3.0 * 0.01667);
-					scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
-					playerTransform.scale.x = scaleSize;
-					playerTransform.scale.y = scaleSize;
-					std::cout << "Scaling by: " << scaleSize << '\n';
-				}
-
-				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
-					rotationRadians += static_cast <float>(8.0f * 0.0174533 * 0.01667);
-
-					auto& playerCollider = playerSystem_->GetCollision(it->second);
-					playerCollider.rotation = rotationRadians;
-				}
-
-				if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
-					rotationRadians -= static_cast <float>(8.0f * 0.0174533 * 0.01667);
-
-					auto& playerCollider = playerSystem_->GetCollision(it->second);
-					playerCollider.rotation = rotationRadians;
-					std::cout << "rotation in Radians:" << rotationRadians << '\n';
-				}
-
-
-				if (playerFacingDirection_ == -1) {
-					// Swap horizontal UV coordinates to flip the sprite
-					std::swap(uvStart.x, uvEnd.x);
-				}
-
-				// Draw with the correct texture
-				if (currentTexture && currentTexture->isValid()) {
-
-					// calculate scaled dimensions (match the collider size)
-					float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
-					float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
-
-					// convert center position to top-left for drawing
-					Math::eVec2<float> topLeft = {
-						transform.pos.x - (scaledWidth * 0.5f),
-						transform.pos.y - (scaledHeight * 0.5f)
-					};
-
-					graphics.drawTexturedQuadUV(
-						topLeft,
-						Math::eVec2<float>{scaledWidth, scaledHeight},
-						currentTexture,
-						uvStart,  // Use potentially flipped UV coords
-						uvEnd,    // Use potentially flipped UV coords
-						Graphics::Color::White,
-						rotationRadians
-					);
-				}
-				else {
-					// Fallback to colored rect if texture invalid
-					graphics.drawRect(
-						Math::eVec2<float>{transform.pos.x, transform.pos.y},
-						Math::eVec2<float>{10 + scaleSize, 10 + scaleSize},
-						Graphics::Color::Blue,
-						true,
-						rotationRadians
-					);
-				}
+			
 			}
 		}
 		catch (...) {}
 	}
-
-	// Draw red indicator
-	graphics.drawRect(
-		Math::eVec2<float>{indicatorX_, indicatorY_},
-		Math::eVec2<float>{10, 10},
-		Graphics::Color::Red,
-		true
-	);
 }
 
 void GameApplication::updateImGui() {
@@ -845,6 +909,13 @@ void GameApplication::drawShapes() {
 						true
 					);
 				}
+				//// Draw text for button component
+				//if (entity.has<ECSComponents::ButtonComponent>(entityManager))
+				//{
+				//	auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
+				//	graphics.drawText(timesFont_, b.getName(), transform.pos, 0.5f, Color::Red);
+				//}
+
 			}
 		}
 		catch (...) {
