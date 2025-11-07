@@ -137,7 +137,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_);
  * \param[in]   ECS::Entity&
  * \return      void
 *//*========================================================================================*/
-void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity);
+void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity);
 
 /*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab

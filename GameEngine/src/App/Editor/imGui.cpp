@@ -675,7 +675,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_)
 			if (e.id() == selectedEntityID)
 			{
 				// Display inspector for all entities (including root nodes)
-				displayEntityInspector(entityManager, e);
+				displayEntityInspector(engine_, e);
 				entityFound = true;
 				break;
 			}
@@ -1176,8 +1176,10 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 }
 
 
-void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
+void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity)
 {
+	auto& entMng = engine_.getEntityManager();
+
 	// Note: Entity ID 0 is valid, so don't early return based on ID
 	ImGui::Begin("Entity Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -1328,6 +1330,44 @@ void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 			// Add a default circle collider
 			entity.add<ECSComponents::CollisionComponent>(entMng, ECSComponents::CollisionComponent(10.0f));
 			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+
+	// --- AIComponent ---
+	if (entity.has<ECSComponents::AIComponent>(entMng)) {
+		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
+		ImGui::SeparatorText("AI");
+
+		// State selector
+		const char* states[] = { "Idle", "Chasing" };
+
+		// Map the current state to the combo index (0 = Idle, 1 = Chasing)
+		int stateIndex = (strcmp(ai.currentState, "Idle") == 0) ? 0 : 1;
+
+		if (ImGui::Combo("State", &stateIndex, states, IM_ARRAYSIZE(states))) {
+			std::strncpy(ai.nextState, states[stateIndex], sizeof(ai.nextState));
+		}
+
+		ImGui::DragFloat("Radar radius", &ai.awarenessRadius, 0.1f, 0.1f, 100.0f);
+		ImGui::DragFloat("Speed", &ai.speed, 1.f, 10.f, 300.0f);
+	}
+	else {
+		// Allow adding AI component if the entity doesn't have one
+		ImGui::SeparatorText("AI");
+		ImGui::TextDisabled("No AI attached");
+
+		if (ImGui::Button("Add AI")) {
+			// Add a default AI component
+			auto& aiMng = engine_.getAIManager();
+			auto& pathfinder = g_game->getPathfinder();
+			entity.add<ECSComponents::AIComponent>(entMng);
+			aiMng.registerEntity(entity, entMng);
+
+			// Setup FSM
+			AI::StateMachine& sm = aiMng.getStateMachine(entity);
+			sm.addState("Idle", std::make_unique<AI::IdleState>(aiMng, pathfinder));
+			sm.addState("Chase", std::make_unique<AI::ChaseState>(pathfinder, aiMng));
+			sm.changeState("Idle", entity, entMng);
 		}
 	}
 

@@ -262,6 +262,27 @@ namespace Math
 		return os << "x : " << vec1.x << " | y : " << vec1.y;
 	}
 
+	template <Arithmetic Type>
+    bool operator==(const eVec2<Type>& lhs, const eVec2<Type>& rhs)
+    {
+        if constexpr (std::is_floating_point_v<Type>)
+        {
+            constexpr Type EPSILON = static_cast<Type>(1e-6);
+            return std::fabs(lhs.x - rhs.x) < EPSILON &&
+                   std::fabs(lhs.y - rhs.y) < EPSILON;
+        }
+        else
+        {
+            return lhs.x == rhs.x && lhs.y == rhs.y;
+        }
+    }
+
+    template <Arithmetic Type>
+    bool operator!=(const eVec2<Type>& lhs, const eVec2<Type>& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
 	// -------------------------------- 3x3 MATRICES ------------------------------
 
 	// ------------------------------- Addition -------------------------------

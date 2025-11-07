@@ -80,7 +80,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 357.219 | y : 366 }
+				"Position": <eVec2(float)> { x : 401.042 | y : 366 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -281,7 +281,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 640 | y : 294.674 }
+				"Position": <eVec2(float)> { x : 602.568 | y : 323.889 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }

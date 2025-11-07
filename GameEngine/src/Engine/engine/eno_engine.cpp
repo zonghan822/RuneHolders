@@ -43,8 +43,7 @@ namespace Engine
 			// Handle window resize for graphics system
 			auto fbSize = window_.getFramebufferSize();
 			int width = fbSize.first, height = fbSize.second;
-			if (width > 0 && height > 0)
-			{
+			if (width > 0 && height > 0) {
 				graphicsMng_.setProjectionMatrix(width, height);
 			}
 
@@ -58,6 +57,8 @@ namespace Engine
 			if (gameUpdateCallback) {
 				gameUpdateCallback();
 			}
+			// Update AI State
+			aiMng_.update(entityMng_, dt_);
 
 			audioMng_.process();
 
