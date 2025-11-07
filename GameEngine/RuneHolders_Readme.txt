@@ -3,7 +3,6 @@ RuneHolders README
 ==========================================================
 
 Runeweaver is a top-down dungeon crawler action combat game set in a fantasy world. 
-Fighting various monsters in an action-packed dungeon crawler setting.
 Connect runes together to cast spells and defeat monsters in the Witch’s mansion.
 
 
@@ -17,7 +16,7 @@ Chain spells together to create new effects.
 
 Experiment with different combinations to find devastating synergies.
 
-Fight bosses that challenge your creativity and reflexes.
+Fighting various monsters in an action-packed dungeon crawler setting
 
 The goal is to empower the player with freedom of expression in combat, blending artful gesture 
 input with tactical spellcasting.
