@@ -965,6 +965,7 @@ void displaySceneTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree
 			// Load scene
 			std::cout << "Loading file: " << filename << std::endl;
 			sceneTree.load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
+			g_game->markEntitiesDirty();
 		}
 		
 		// Right click opens a panel to allow you to change and delete scene name
