@@ -18,7 +18,6 @@ namespace Eno
 
         private static CustomInput? customAct;
 
-        [UnmanagedCallersOnly]
         public static void Begin()
         {
             // Creating a custom input
@@ -29,26 +28,19 @@ namespace Eno
 
             customAct.Enable();
 
-            Console.WriteLine("Hello from Player controller");
+            Console.WriteLine("Hello from Begin!");
         }
-        
-       [UnmanagedCallersOnly]
+
         public static void Update()
         {
-            Console.WriteLine("Update Player Controller Script");
+            //SayBonk();
+            Console.WriteLine("Bonk head start");
+
+            if (customAct != null && customAct.Released())
+            {
+                Console.WriteLine("Triggered custom!");
+            }
         }
-
-
-        // [UnmanagedCallersOnly]
-        // public static void Update()
-        // {
-        //     SayBonk();
-
-        //     if (customAct != null && customAct.pressed())
-        //     {
-        //         Console.WriteLine("Triggered custom!");
-        //     }
-        // }
 
         // Only bonk if b is held down
         public static void SayBonk()
@@ -71,18 +63,5 @@ namespace Eno
     {
         [Reveal(90, 210)]
         public double velocity = 100.5;
-
-        [UnmanagedCallersOnly]
-        public static void Begin()
-        {
-            Console.WriteLine("Hello from ArmController!");
-        }
-
-               [UnmanagedCallersOnly]
-        public static void Update()
-        {
-            Console.WriteLine("Update Arm Controller");
-        }
-
     }
 }

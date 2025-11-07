@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.CSharp;
 // https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/get-started/syntax-analysis
 // https://learn.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.csharp.csharpcompilation.create?view=roslyn-dotnet-4.14.0
 
-public static class LiveCompiler
+public static class HotReloadCompiler
 {
 
     // TO create a new compilation (using CSharpCompilation.Create) we need
@@ -21,9 +21,6 @@ public static class LiveCompiler
     //      - options (compiler options)
     public static bool Compile(string userScriptsFolder, string dllPath)
     {
-        string absDllPath = Path.Combine(dllPath, "GameScripts.dll");
-        Console.WriteLine($"Path: { absDllPath }");
-
         // Retrieve names/paths of .cs files from the specified folder
         var scripts = Directory.GetFiles(userScriptsFolder, "*.cs", SearchOption.AllDirectories);
 
@@ -53,7 +50,7 @@ public static class LiveCompiler
         // We want a new DLL to load during runtime
         // so options will utilize OutputKind.DynamicallyLinkedLibrary
         var compilation = CSharpCompilation.Create(
-            assemblyName: "GameScripts",
+            assemblyName: "GameScripts_temp.dll",
             syntaxTrees: newST,
             references: newRef,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
@@ -61,8 +58,8 @@ public static class LiveCompiler
 
         // Emit the new compilation
         // or to generate the new DLL with the predefined information!
-        // Subsequently, indicate success or failure
-        var result = compilation.Emit(absDllPath);
+        // Subsequently, indicate success with green or failure with red
+        var result = compilation.Emit(dllPath);
         if (!result.Success)
         {
             Console.ForegroundColor = ConsoleColor.Red;

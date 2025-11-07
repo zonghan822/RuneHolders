@@ -35,7 +35,8 @@ namespace Engine
 		{
 			updateTime(1.0);
 			window_.pollEvents();
-			
+			coreHost_.areScriptsModified();
+
 			// Handle window resize for graphics system
 			auto fbSize= window_.getFramebufferSize();
 			int width = fbSize.first, height = fbSize.second;

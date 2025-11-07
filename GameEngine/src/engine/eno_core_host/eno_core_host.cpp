@@ -12,8 +12,10 @@ namespace Core
 
 		setDelegate(&stateDelegate);
 		setDelegate(&inputDelegate_);
+		setDelegate(&proxyDelegate_);
 		setDelegate(&scriptDelegate_);
 		setDelegate(&cnameDelegate_);
+		setDelegate(&reloadDelegate_);
 
 		// Test Player Controller script
 		// Namespace.Type(Type => Function to be called), Assembly(.dll)
@@ -281,6 +283,42 @@ namespace Core
 		}
 	}
 
+	void EnoCoreHost::HRSetup()
+	{
+		// Load and start watching for changes made
+
+		// Detect if changes have been made to the assembly
+		// e.g modifying a .cs script
+
+	// Build the correct absolute or relative paths
+
+
+
+
+		// Use the std::wstring variables here, NOT the macros directly
+		callScript<ScriptingDelegateInfo>(
+			L"Eno.Initiator, GameScripts",
+			L"InitSequence",
+			reloadDelegate_, 
+			WSCRIPT_SRC_PATH,
+			WSCRIPT_BIN_PATH);
+	}
+
+	// Hot reload
+	void EnoCoreHost::hotReload()
+	{
+
+
+
+		callScript<ScriptingDelegateInfo>(
+			L"Eno.Initiator, GameScripts",
+			L"ReloadSequence", 
+			reloadDelegate_,
+			WSCRIPT_SRC_PATH,
+			WSCRIPT_BIN_PATH);
+	}		
+
+
 	// Retrieve script vars
 	template <typename T>
 	std::optional<T> EnoCoreHost::retrieveDelegate(DelegateInfo& params)
@@ -304,28 +342,7 @@ namespace Core
 		return call;
 	}
 
-	void EnoCoreHost::scriptingSetup()
-	{
-		// Load and start watching for changes made
-
-		// Detect if changes have been made to the assembly
-		// e.g modifying a .cs script
-		callScript<ScriptingDelegateInfo>(
-			L"Eno.Initiator, GameScripts", L"InitSequence", reloadDelegate_,
-			userScriptPath, asmDllAbsPath);
-	}
-
-	// Hot reload
-	void EnoCoreHost::hotReload()
-	{
-		std::cout << "Hot reloading is occurring!" << std::endl;
-		callScript<ScriptingDelegateInfo>(
-			L"Eno.Initiator, GameScripts", L"ReloadSequence", reloadDelegate_,
-			userScriptPath, asmDllAbsPath);
-	}
-
 	// Can change this later but its 4.50 am method can be either begin or update
-
 	void EnoCoreHost::runScriptMethod(const std::wstring& className, const wchar_t* method)
 	{
 		std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
@@ -344,7 +361,82 @@ namespace Core
 		}
 	}
 
+	void EnoCoreHost::defineBegin() {
 
+
+		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
+				continue;
+
+			// stores number of class names were returned.
+			int count{};
+			void* names = (cname())(entry.path().wstring().c_str(), &count);
+
+			//continue if there is no class names available
+			if (!names || count == 0)
+				continue;
+
+			// Cast and loop over each class name using double ptr 
+			wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
+
+
+			for (size_t i = 0; i < count; ++i) {
+
+				std::wstring fullName{ classNames[i] };
+				size_t dpos = fullName.find('.');
+
+				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
+				std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
+
+
+				begin_.push_back(std::make_pair(proxyCall(fullTypeWithAsm.c_str(), L"Update"), std::make_pair(fullTypeWithAsm, L"Update")));
+
+
+				CoTaskMemFree(classNames[i]);
+			}
+			CoTaskMemFree(classNames);
+		}
+
+	}
+
+
+	void EnoCoreHost::defineUpdate() {
+
+		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
+				continue;
+
+			// stores number of class names were returned.
+			int count{};
+			void* names = (cname())(entry.path().wstring().c_str(), &count);
+
+			//continue if there is no class names available
+			if (!names || count == 0)
+				continue;
+
+			// Cast and loop over each class name using double ptr 
+			wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
+
+
+			for (size_t i = 0; i < count; ++i) {
+
+				std::wstring fullName{ classNames[i] };
+				size_t dpos = fullName.find('.');
+
+				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
+				std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
+
+				//std::vector<std::pair<ProxyMethod, std::pair<const wchar_t*, const wchar_t*>>> begin_;
+
+
+				update_.push_back(std::make_pair(proxyCall(fullTypeWithAsm.c_str(), L"Update"), std::make_pair(fullTypeWithAsm, L"Update")));
+
+
+				CoTaskMemFree(classNames[i]);
+			}
+			CoTaskMemFree(classNames);
+		}
+	}
 
 
 	void EnoCoreHost::begin()
@@ -394,12 +486,11 @@ namespace Core
 			CoTaskMemFree(classNames);
 		}
 #else
-		if (hasBegun_) return;
-		hasBegun_ = true;
-
-		// Potentially load any delegates necessary for Begin
-		std::wcout << L"[CoreHost] Begin scripts" << std::endl;
-		// Example: call global Init delegate if needed
+		for (const auto& Pairs : begin_) {
+			if (Pairs.first) {
+				Pairs.first(Pairs.second.first.c_str(), Pairs.second.second.c_str());
+			}
+		}
 
 #endif
 	}
@@ -449,9 +540,11 @@ namespace Core
 			CoTaskMemFree(classNames);
 		}
 #else
-		if (!hasBegun_) return;
-		// Run per-frame update delegates if applicable 
-		// Example: could be called by ScriptManager
+		for (const auto& Pairs : update_) {
+			if (Pairs.first) {
+				Pairs.first(Pairs.second.first.c_str(), Pairs.second.second.c_str());
+			}
+		}
 #endif
 	}
 	//All within cs
@@ -512,6 +605,64 @@ namespace Core
 	{
 		std::optional<ScriptingDelegateInfo> dele = loadDelegate(type, method, deletype, usPath, dllPath);
 		callDelegate(dele.value());
+	}
+
+	// Helper for using the proxy call
+	EnoCoreHost::ProxyMethod EnoCoreHost::proxyCall(const wchar_t* className, const wchar_t* methodName)
+	{
+		return defineProxyDelegate(
+			L"Eno.ProxyEntry, GameScripts",
+			L"CallProxyMethod",
+			proxyDelegate_,
+			className,
+			methodName);
+	}
+
+	// Creates a special proxy delegate used to call other methods in C#
+	// Combines both the load and get delegate operations
+	EnoCoreHost::ProxyMethod EnoCoreHost::defineProxyDelegate(
+		const char_t* typeName, const char_t* methodName, void* d,
+		const wchar_t* className, const wchar_t* callMethodName)
+	{
+		auto load = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(d);
+
+		// Get path to managed assembly
+		std::filesystem::path asmPath = std::filesystem::absolute(asmDllPath);
+		if (!std::filesystem::exists(asmPath))
+		{
+			throw std::runtime_error("Managed assembly could not be found!");
+		}
+
+		// Set assembly path, 
+		//		type (namespace.class, assemblyName),
+		//		method to call
+		std::wstring assemblyPath = asmPath.wstring();
+
+		// Create Delegate Info
+		ProxyDelegateInfo params{
+			load,
+			std::wstring(assemblyPath),
+			std::wstring(typeName),
+			std::wstring(methodName),
+			className, callMethodName };
+
+		// Create the actual method delegate
+		ScriptingMethod call{ nullptr };
+		int returnCode = params.fn_(
+			params.assemblyPath_.c_str(),
+			params.type_.c_str(),
+			params.method_.c_str(),
+			UNMANAGEDCALLERSONLY_METHOD,
+			nullptr,
+			reinterpret_cast<void**>(&call)
+		);
+
+		if (returnCode || !call)
+		{
+			throw std::runtime_error("Could not define the proxy method to be used!");
+		}
+
+		return call;
 	}
 
 	// ----------------------- Events -----------------------

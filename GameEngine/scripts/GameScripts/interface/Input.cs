@@ -149,12 +149,12 @@ namespace Eno
 
         // Action performed check
         // Press check
-        public bool pressed() => state && Input.GetKeyPressed(key);
+        public bool Pressed() => state && Input.GetKeyPressed(key);
 
         // Release check
-        public bool released() => state && Input.GetKeyReleased(key);
+        public bool Released() => state && Input.GetKeyReleased(key);
 
         // Hold check
-        public bool held() => state && Input.GetKeyHeld(key);
+        public bool Held() => state && Input.GetKeyHeld(key);
     }
 }

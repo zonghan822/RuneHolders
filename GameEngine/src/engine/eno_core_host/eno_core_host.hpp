@@ -33,8 +33,8 @@ namespace Core
 		const std::string asmDllPath = SCRIPT_BIN_PATH "/GameScripts.dll";
 		const wchar_t* runtConfigJson = SCRIPT_BIN_PATH L"/GameScripts.runtimeconfig.json";
 
-		const wchar_t* userScriptPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/user_scripts" };
-		const wchar_t* asmDllAbsPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/Publish/GameScripts.dll" };
+		//const wchar_t* userScriptPath{ SCRIPT_SRC_PATH };
+		//const wchar_t* asmDllAbsPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/Publish/GameScripts.dll" };
 
 		bool hasBegun_ = false;
 	public:
@@ -70,6 +70,18 @@ namespace Core
 			const wchar_t* asmDLLPath_;
 		};
 
+		// For proxy calling (calling from the proxy class)
+		struct ProxyDelegateInfo
+		{
+			load_assembly_and_get_function_pointer_fn fn_;
+			std::wstring assemblyPath_;
+			std::wstring type_;
+			std::wstring method_;
+
+			const wchar_t* className_;
+			const wchar_t* methodName_;
+		};
+
 		// For the InputBoarding method (streaming in input from engine end)
 		struct KeyDelegateInfo
 		{
@@ -96,6 +108,7 @@ namespace Core
 		using Method = void(*)();
 		using InputMethod = void(*)(int, int, int, int);
 		using ScriptingMethod = void(*)(const wchar_t* scriptPath, const wchar_t* dllPath);
+		using ProxyMethod = void(*)(const wchar_t* className_, const wchar_t* methodName_);
 		using GetScriptFieldsMethod = Script::PortedField* (__stdcall*)(const wchar_t* scriptName, int* count);
 		using GetFileClassNamesMethod = void* (*)(const wchar_t* pAssemblyPath, int* count);
 
@@ -133,16 +146,31 @@ namespace Core
 		template <typename DelegateInfoType>
 		void callScript(const wchar_t*, const wchar_t*, void*, const wchar_t*, const wchar_t*);
 
+		// Helper for using the proxy call
+		ProxyMethod proxyCall(const wchar_t*, const wchar_t*);
+
+		// Define and call any method within the assembly via proxy (a method in C#)
+		ProxyMethod defineProxyDelegate(
+			const char_t*, const char_t*, void*,
+			const wchar_t*, const wchar_t*);
+
+
+
 		// ---------  Handling script state based on engine state ---------
+		void HRSetup();
+		void hotReload();
 
 		// Script backend (compilation and reloading)
-		void scriptingSetup();
-		void hotReload();
 
 		// Scripts frontend (user scripts)
 		void begin();
 		void update();
 		void frameEnd();
+
+		//need to call this before getting into the gameplay loop
+		void defineBegin();
+		void defineUpdate();
+
 
 		void areScriptsModified();
 
@@ -167,11 +195,12 @@ namespace Core
 		hostfxr_close_fn closefp_;							// Handle for closing an initialized host context
 
 		hostfxr_handle hfHandle_;							// For interfacing CoreCLR through hostfxr
-		void* stateDelegate;								// Delegate for calling methods responsible for different game/engine states (e.g begin, update)
-		void* scriptDelegate_;								// Delegate for retrieving script fields
-		void* inputDelegate_;								// Delegate for communnicating input to C# end
-		void* cnameDelegate_;								// Delegate for getting class names
-		void* reloadDelegate_;								// Delegate for handling backend affairs such as script recompilation and reloading
+		void* stateDelegate;                                // Delegate for calling methods responsible for different game/engine states (e.g begin, update)
+		void* scriptDelegate_;                               // Delegate for retrieving script fields
+		void* proxyDelegate_;                                // Delegate for retrieving script fields
+		void* inputDelegate_;                                // Delegate for communnicating input to C# end
+		void* cnameDelegate_;                                // Delegate for getting class names
+		void* reloadDelegate_;                               // Delegate for handling backend affairs such as script recompilation and reloading							// Delegate for handling backend affairs such as script recompilation and reloading
 
 
 		GetScriptFieldsMethod fieldsHandle_;
@@ -197,5 +226,8 @@ namespace Core
 
 		// Calling a delegate with input parameters
 		void callDelegate(KeyDelegateInfo&);
+
+		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> begin_;
+		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> update_;
 	};
 }

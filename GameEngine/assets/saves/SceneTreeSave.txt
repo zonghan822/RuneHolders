@@ -292,7 +292,7 @@
 				"TexID": <int> { 0 }
 			}
 		}
-		"Script": { ../../../scripts/GameScripts/user_scripts/PlayerController.cs }
+		"Script": { }
 		"Parent": { }
 		"Children": { }
 		"Enabled": { true }
@@ -326,7 +326,41 @@
 				"TexID": <int> { 0 }
 			}
 		}
-		"Script": { ../../../scripts/GameScripts/user_scripts/ArmController.cs }
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Enabled": { true }
+	}
+
+	[Node6]
+	{
+		"ID": { 6 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Entity 3 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 600 | y : 450 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 50 }
+				"Height": <float> { 50 }
+				"Shape": <char32> { Rectangle }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+		}
+		"Script": { ../../../scripts/GameScripts/user_scripts/PlayerController.cs }
 		"Parent": { }
 		"Children": { }
 		"Enabled": { true }

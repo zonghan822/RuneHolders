@@ -28,6 +28,7 @@ void GameApplication::initialize() {
 	setupGameMath();
 	setupImGui();
 	setupAnimations();
+	setupScripting();
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
@@ -65,6 +66,21 @@ void GameApplication::run() {
 void GameApplication::setupGameEntities() {
 	// To setup the entities in our game
 }
+
+void GameApplication::setupScripting() {
+	
+	std::cout << "hr setup now \n";
+	engine_.getCoreHost().HRSetup();
+
+	std::cout << "defineBegin now \n";
+	engine_.getCoreHost().defineBegin();
+	
+	std::cout << "defineUpdate now \n";
+	engine_.getCoreHost().defineUpdate();
+
+	std::cout << "Setup Scripting done \n";
+}
+
 
 void GameApplication::setupGameAudio() {
 	// setup audio
@@ -517,27 +533,32 @@ void GameApplication::updateEntities() {
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
 	static bool hasBegun = false;
+	auto& coreHost = engine_.getCoreHost();
 
 	// Editor state = play game
-	switch (getEditorState())
+	switch (getEditorState()) 
 	{
 	case Playing:
 	{
 		//std::cout << "Editor state: " << getEditorState() << std::endl;
-		auto& coreHost = engine_.getCoreHost();
 
 
 		if (!hasBegun)
 		{
-			for (auto* node : sceneTree_->getAllNodes())
-			{
-				if (!node->script_)continue;
-				std::wstring className = node->script_->extrClassName(node->script_->name_.data());
-				std::wcout << L"[DEBUG] Entity ID " << node->entity_.id()
-					<< L" running Begin for class: " << node->script_->extrClassName(node->script_->name_.data())
-					<< std::endl;
-				coreHost.runScriptMethod(className, L"Begin");
-			}
+			coreHost.begin();
+
+			//for (auto* node : sceneTree_->getAllNodes())
+			//{
+			//	if (!node->script_)continue;
+			//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
+			//	std::wcout << L"[DEBUG] Entity ID " << node->entity_.id()
+			//		<< L" running Begin for class: " << node->script_->extrClassName(node->script_->name_.data())
+			//		<< std::endl;
+			//	coreHost.runScriptMethod(className, L"Begin");
+
+
+
+			//}
 			hasBegun = true;
 		}
 
@@ -553,13 +574,14 @@ void GameApplication::updateEntities() {
 			playAfterStop = false;
 		}
 
-		for (auto* node : sceneTree_->getAllNodes())
-		{
-			if (!node->script_) continue;
+		//for (auto* node : sceneTree_->getAllNodes())
+		//{
+		//	if (!node->script_) continue;
 
-			std::wstring className = node->script_->extrClassName(node->script_->name_.data());
-			coreHost.runScriptMethod(className, L"Update");
-		}
+		//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
+		//	coreHost.runScriptMethod(className, L"Update");
+		//}
+		coreHost.update();
 		updateTestObject(engine_.getEntityManager(), engine_);
 
 		break;
