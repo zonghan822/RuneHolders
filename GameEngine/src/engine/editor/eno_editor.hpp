@@ -76,9 +76,9 @@ namespace Editor
 			//auto script = scriptMng_.selectScript();
 			//tree_.attachScript(node5, std::move(script));
 
-			Node* node1 = tree_.create();
-			Node* node2 = tree_.create();
-			tree_.save(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+			//Node* node1 = tree_.create();
+			//Node* node2 = tree_.create();
+			//tree_.save(ASSETS_DIR_PATH "/saves/SceneTreeSave", tree_.getSceneName());
 			
 			//tree_.load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
 
