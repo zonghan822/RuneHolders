@@ -25,7 +25,6 @@ namespace ECS
 		file << "{\n";
 
 		bool firstIter{ true };
-		void* p{ nullptr };
 		for (size_t i = 0; i < types.size(); i++)
 		{
 			if (i < types.size() && !firstIter)
@@ -151,7 +150,6 @@ namespace ECS
 			}
 
 			// Deduce component found
-			void* p{ nullptr };
 			ECSComponents::EnoComponentRegistry::DeduceCompType(compName, [&]<typename T>()
 				{
 					entity.add<T>(entMng);
@@ -170,7 +168,7 @@ namespace ECS
 						component.reflect([&](const std::string& name, auto& value, auto type)
 							{
 								if (name != fname) return;
-
+								(void)type;	//intentional to silence warning
 								using ValueType = std::remove_reference_t<decltype(value)>;
 
 								// Char types are true pain, must make exception...
