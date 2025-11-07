@@ -607,8 +607,17 @@ void GameApplication::updateEntities() {
 			{
 				// Load the saved scene tree state to restore positions
 				std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
-				sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave", sceneTree_->getSceneName());
-				std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
+				std::string sceneName = sceneTree_->getSceneName();
+				if (!sceneName.empty())
+				{
+					std::string scenePath = ASSETS_DIR_PATH "saves/scenes/" + sceneName;
+					sceneTree_->load(scenePath, sceneName);
+					std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
+				}
+				else
+				{
+					std::cerr << "[GameLogic] Warning: Scene name is empty, cannot load scene!" << std::endl;
+				}
 
 				// Mark entities as dirty to refresh the rendering cache
 				entitiesDirty_ = true;
