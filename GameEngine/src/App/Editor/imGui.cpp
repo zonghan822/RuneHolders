@@ -167,6 +167,11 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	displayHierarchyTab(engine_, sceneTree);
 	ImGui::End();
 
+	// Scene select
+	ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoCollapse);
+	displaySceneTab(engine_, sceneTree);
+	ImGui::End();
+
 	// Edit tab 
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_, sceneTree);
@@ -890,6 +895,215 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	}
 }
 
+void displaySceneTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
+{
+	// Heading
+	ImGui::Text("=== Scene Select===");
+	ImGui::Text("Current Scene:");
+
+	// Get current scene
+	std::string currScene = sceneTree.getSceneName();
+
+	ImGui::Text(currScene.c_str());
+	ImGui::Separator();
+
+	// Create a container for all scene names inside my scene folder
+	static std::vector<std::filesystem::path> sceneNames;
+	// A toggle flag to refresh the scene list
+	static bool refreshSceneName = true;
+	// Buffer to change scene name
+	static char scene_name[64] = "";
+
+	ImGui::Separator();
+
+	if (refreshSceneName)
+	{
+		// Clear the current container
+		sceneNames.clear();
+		// A string path to the assets folder
+		std::string sceneSavePath = (ASSETS_DIR_PATH"saves/scenes/");
+
+		// Check that the file is a .txt file
+		try {
+			for (const auto& fileEntry : std::filesystem::directory_iterator(sceneSavePath))
+			{
+				if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (sceneSavePath + "CurrentSavedScene.txt"))
+				{
+					// Add file to container
+					sceneNames.push_back(fileEntry.path());
+					//std::cout << "Filename: " << fileEntry.path() << std::endl;
+				}
+			}
+			// Set refresh to false to prevent reopening
+			refreshSceneName = false;
+		}
+		// In case of invalid file
+		catch (const std::filesystem::filesystem_error& e)
+		{
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
+			return;
+		}
+	}
+
+	// Display scene names
+	for (const auto& filePath : sceneNames)
+	{
+		std::string filename = filePath.filename().string();
+
+		// Give it an id
+		ImGui::PushID(filename.c_str());
+
+		// Create an invisible button over the text
+		// Size of invisible button
+		ImVec2 textSize = ImGui::CalcTextSize(filename.c_str());
+		ImGui::InvisibleButton("##scene", textSize);
+
+		// Left click loads scene
+		// IsItemClicked checks the click on the most recent pushed imgui item aka invisible button
+		if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
+		{
+			// Load scene
+			std::cout << "Loading file: " << filename << std::endl;
+			sceneTree.load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
+		}
+		
+		// Right click opens a panel to allow you to change and delete scene name
+		if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+		{
+			// Open popup
+			ImGui::OpenPopup("scene_menu");
+		}
+		
+		// Create menu popup
+		if (ImGui::BeginPopup("scene_menu"))
+		{
+			ImGui::Text("%s", filename.c_str());
+			ImGui::Separator();
+
+			// Input box to change name
+			ImGui::Text("Change scene name");
+			ImGui::InputText("##Change_scene_name", scene_name, sizeof(scene_name));
+
+			if (ImGui::Button("Change new name"))
+			{
+				if (scene_name == "\0")
+				{
+					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: no input detected!");
+				}
+				else
+				{
+					// Rename scene file
+					try
+					{
+						// Get current filepath
+						std::filesystem::path currentPath = filePath;
+
+						// Check for .txt extension in new file
+						std::string newSceneName = scene_name;
+						if (newSceneName.find(".txt") == std::string::npos) newSceneName += ".txt";
+
+						std::filesystem::path newPath = ASSETS_DIR_PATH"saves/scenes/" + newSceneName;
+						std::filesystem::rename(currentPath, newPath);
+
+						// Check if we're renaming the currently active scene
+						bool isCurrentScene = (filename == sceneTree.getSceneName());
+
+						// If we renamed the active scene, update the current scene name
+						if (isCurrentScene)
+						{
+							sceneTree.getSceneName() = newSceneName;
+
+							// Update CurrentSavedScene.txt
+							std::ofstream currentSceneSave{ ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt" };
+							if (currentSceneSave.is_open())
+							{
+								currentSceneSave << newSceneName;
+								currentSceneSave.close();
+							}
+						}
+
+						// Close popup after renaming
+						ImGui::CloseCurrentPopup();
+						// Clear buffer
+						memset(scene_name, 0, sizeof(scene_name));
+
+						// If file rename is successful
+						refreshSceneName = true;
+					}
+					catch(const std::filesystem::filesystem_error& e)
+					{
+						ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
+						return;
+					}
+				}
+				
+			}
+			// Cancel edits
+			if (ImGui::Button("Cancel"))
+			{
+				// Close popup
+				ImGui::CloseCurrentPopup();
+				// In case theres some random stuff inside the input box, clear the buffer
+				memset(scene_name, 0, sizeof(scene_name));
+			}
+
+			// Save scene
+			if (ImGui::Button("Save scene"))
+			{
+				// Save scene
+				sceneTree.save(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
+			}
+
+			// Delete scene
+			if (ImGui::Button("Delete scene"))
+			{
+				try
+				{
+					// Remove file
+					std::filesystem::remove(filePath);
+					// Close current popup
+					ImGui::CloseCurrentPopup();
+					// Refresh list
+					refreshSceneName = true;
+				}
+				catch (const std::filesystem::filesystem_error& e)
+				{
+					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
+				}
+			}
+
+			ImGui::EndPopup();
+
+		}
+
+		// Aligning text to invisible button
+		ImGui::SameLine(0, 0);
+		// Minus button size offset
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() - textSize.x);
+		// Display file name as text
+		ImGui::Text("%s", filename.c_str());
+
+		if (ImGui::IsItemHovered())
+		{
+			// Hover feedback
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+		}
+
+		// Prevents any duplicate of ID
+		ImGui::PopID();
+
+	}
+
+	if (ImGui::Button("Create new scene"))
+	{
+		sceneTree.createEmptyScene(ASSETS_DIR_PATH"saves/scenes/");
+		refreshSceneName = true;
+	}
+
+
+}
+
+
 void displayEntityInspector(ECS::EntityManager& entMng, ECS::Entity& entity)
 {
 	// Note: Entity ID 0 is valid, so don't early return based on ID
@@ -1528,6 +1742,7 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	ImGui::DockBuilderDockWindow("Heirarchy", dock_id_left);
 	ImGui::DockBuilderDockWindow("Prefabs", dock_id_left);
 	ImGui::DockBuilderDockWindow("Edit", dock_id_left);
+	ImGui::DockBuilderDockWindow("Scene", dock_id_left);
 
 	// Center - Editor View (zoomed in, WASD camera control)
 	ImGui::DockBuilderDockWindow("Editor View", dock_main_id);

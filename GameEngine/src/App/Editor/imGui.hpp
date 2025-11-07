@@ -168,6 +168,13 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_);
 *//*========================================================================================*/
 void displayFPSTab(Engine::EnoEngine& engine_);
 
+/*============================================================================================
+ * \brief       Displays Scene Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displaySceneTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
+
 
 // docking shi
 void displayGameView(Engine::EnoEngine& engine_);

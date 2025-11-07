@@ -42,8 +42,9 @@ void GameApplication::initialize() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
-	// Load entities from save file - CURRENTLY NOT IN USE TO INIT KIM'S TEST OBJECTS
-	//engine_.getEnoEditor().getSceneTree().load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+	// ============= LOAD LAST ACTIVE SAVED SCENE ========================= //
+	engine_.getEnoEditor().getSceneTree().loadLastSavedScene();
+	
 
     // Create pushable box entities for testing and add them to scene tree
     createTestObjectsAndAddToSceneTree();
@@ -570,7 +571,7 @@ void GameApplication::updateEntities() {
 			{
 				// Save the current scene tree state before playing
 				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
-				sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
+				//sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
 				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
@@ -606,7 +607,7 @@ void GameApplication::updateEntities() {
 			{
 				// Load the saved scene tree state to restore positions
 				std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
-				sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+				sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave", sceneTree_->getSceneName());
 				std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
 
 				// Mark entities as dirty to refresh the rendering cache

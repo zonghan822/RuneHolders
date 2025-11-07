@@ -29,3 +29,9 @@
 [2025-11-06 21:22:04] Unknown type { uint32 } has been set in the save file!
 [2025-11-06 21:22:37] Unknown type { uint32 } has been set in the save file!
 [2025-11-06 21:23:12] Unknown type { uint32 } has been set in the save file!
+[2025-11-07 06:32:37] Failed to create a save file for the current active scene!
+[2025-11-07 06:40:08] Failed to create a save file for the current active scene!
+[2025-11-07 06:41:30] Failed to create a save file for the current active scene!
+[2025-11-07 06:42:24] Failed to create a save file for the current active scene!
+[2025-11-07 07:48:19] Failed to create a save file for the current active scene!
+[2025-11-07 07:51:56] Failed to create a save file for the current active scene!
