@@ -262,6 +262,9 @@ void GameApplication::updateGameLogic() {
 		playerAnimController_.update(static_cast<float>(deltaTime));
 	}
 
+	// Load textures for entities (if needed)
+	loadEntityTextures();
+
 	updateEntities();
 	drawShapes();
 	drawPlayerAndIndicator();
@@ -273,20 +276,55 @@ void GameApplication::updateGameLogic() {
 		gameFramebuffer_->unbind();
 	}
 
+	// ==== CAMERA PANNING INPUT (ONLY IN PLAY MODE) ====
+	if (getEditorState() == Playing) {
+		auto& inputManager = engine_.getInputManager();
+		// Trigger camera pan upward when UP arrow is pressed
+		if (inputManager.isKeyDown(GLFW_KEY_UP) && !isPanning_) {
+			// Pan up by one screen height (360 pixels = EDITOR_HEIGHT)
+			float targetY = editorCameraY_ - static_cast<float>(EDITOR_HEIGHT);
+			startCameraPan(targetY, 1.0f); // 1 second duration
+		}
+		// Optional: Add other directions
+		if (inputManager.isKeyDown(GLFW_KEY_DOWN) && !isPanning_) {
+			float targetY = editorCameraY_ + static_cast<float>(EDITOR_HEIGHT);
+			startCameraPan(targetY, 1.0f);
+		}
+	}
+
 	// ==== RENDER EDITOR VIEW (ZOOMED IN WITH CAMERA) ====
 	if (editorFramebuffer_) {
-		// NOTE: WASD controls BOTH player movement AND editor camera
-		// To move ONLY the camera, set the editor state to stopped (edit) mode
-		auto& inputManager = engine_.getInputManager();
-		if (getEditorState() == Stopped)
-		{
+		// Update camera panning for room transitions
+		if (isPanning_) {
+			panTimer_ += static_cast<float>(deltaTime);
+			float progress = Math::min(panTimer_ / panDuration_, 1.0f);
+
+			// Smooth easing function (ease-in-out)
+			float easedProgress = progress < 0.5f
+				? 2.0f * progress * progress
+				: 1.0f - Math::pow(-2.0f * progress + 2.0f, 2.0f) / 2.0f;
+
+			// Interpolate camera position
+			editorCameraY_ = panStartY_ + (panTargetY_ - panStartY_) * easedProgress;
+
+			// End panning when complete
+			if (progress >= 1.0f) {
+				isPanning_ = false;
+				editorCameraY_ = panTargetY_;
+			}
+		}
+		// Manual camera control (only when not panning and in edit mode)
+		else if (getEditorState() == Stopped) {
+			// NOTE: WASD controls BOTH player movement AND editor camera
+			// To move ONLY the camera, set the editor state to stopped (edit) mode
+			auto& inputManager = engine_.getInputManager();
 			float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
 			if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
 		}
-		
+
 		// Clamp camera to world bounds
 		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, static_cast<float>(VIRTUAL_WIDTH - EDITOR_WIDTH));
 		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, static_cast<float>(VIRTUAL_HEIGHT - EDITOR_HEIGHT));
@@ -357,8 +395,21 @@ void GameApplication::updateGameLogic() {
 					if (screenX + halfW >= 0 && screenX - halfW < EDITOR_WIDTH &&
 						screenY + halfH >= 0 && screenY - halfH < EDITOR_HEIGHT) {
 
+						// Check if entity has a texture
+						if (renderInfo.texture && renderInfo.texture->isValid()) {
+							// Draw textured quad (top-left position)
+							float topLeftX = screenX - halfW;
+							float topLeftY = screenY - halfH;
+
+							engine_.getGraphicsManager().drawTexturedQuad(
+								Math::eVec2<float>{topLeftX, topLeftY},
+								Math::eVec2<float>{renderInfo.width, renderInfo.height},
+								renderInfo.texture,
+								renderInfo.color
+							);
+						}
 						// Check shape type and draw accordingly
-						if (strcmp(renderInfo.shape, "Circle") == 0) {
+						else if (strcmp(renderInfo.shape, "Circle") == 0) {
 							// Draw circle at screen position (center)
 							engine_.getGraphicsManager().drawCircle(
 								Math::eVec2<float>{screenX, screenY},
@@ -484,6 +535,49 @@ void GameApplication::updateGameLogic() {
 	// This ensures physics/collision will have already updated with isPlaying=true in the next frame
 	if (getEditorState() == NextKeyFrame) {
 		setEditorState(Paused);
+	}
+}
+
+void GameApplication::loadEntityTextures() {
+	// Load textures for all entities that have a texture path but no texture loaded
+	auto& entityManager = engine_.getEntityManager();
+	auto& loader = engine_.getResourceLoader();
+
+	for (auto& [entityID, entityLoc] : entityManager.getMap()) {
+		// Check if entity has RenderComponent
+		bool hasRender = false;
+		for (const auto& type : entityLoc.archetype->types_) {
+			if (type == std::type_index(typeid(ECSComponents::RenderComponent))) {
+				hasRender = true;
+				break;
+			}
+		}
+
+		if (!hasRender) continue;
+
+		// Get RenderComponent
+		size_t renderIndex = entityLoc.archetype->findComponentIndex<ECSComponents::RenderComponent>();
+		auto& renderComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::RenderComponent>(
+			renderIndex, entityLoc.entityIndexInChunk);
+
+		// If texture path is set but texture is not loaded, load it
+		if (strlen(renderComp.texturePath) > 0 && (!renderComp.texture || !renderComp.texture->isValid())) {
+			// Extract filename from path (e.g., "assets/art/mainmenu.png" -> "mainmenu")
+			std::string path(renderComp.texturePath);
+			size_t lastSlash = path.find_last_of("/\\");
+			std::string filename = (lastSlash != std::string::npos) ? path.substr(lastSlash + 1) : path;
+			size_t lastDot = filename.find_last_of('.');
+			std::string textureName = (lastDot != std::string::npos) ? filename.substr(0, lastDot) : filename;
+
+			// Get texture from resource loader
+			renderComp.texture = loader.getTexture(textureName);
+
+			if (renderComp.texture && renderComp.texture->isValid()) {
+				std::cout << "[GameLogic] Loaded texture '" << textureName << "' for entity " << entityID << std::endl;
+			} else {
+				std::cerr << "[GameLogic] Failed to load texture '" << textureName << "' from path: " << renderComp.texturePath << std::endl;
+			}
+		}
 	}
 }
 
@@ -915,4 +1009,14 @@ EditorState GameApplication::getEditorState()
 void GameApplication::setEditorState(EditorState state)
 {
 	g_editorState = state;
+}
+
+// Camera panning for room transitions
+void GameApplication::startCameraPan(float targetY, float duration)
+{
+	isPanning_ = true;
+	panStartY_ = editorCameraY_;
+	panTargetY_ = targetY;
+	panDuration_ = duration;
+	panTimer_ = 0.0f;
 }
