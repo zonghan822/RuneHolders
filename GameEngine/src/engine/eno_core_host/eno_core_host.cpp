@@ -367,7 +367,7 @@ namespace Core
 	void EnoCoreHost::runScriptMethod(const std::wstring& className, const wchar_t* method)
 	{
 		std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
-		std::optional<DelegateInfo> del = loadDelegate(fullTypeWithAsm.c_str(), method, stateDelegate);
+		std::optional<DelegateInfo> del = loadDelegate(fullTypeWithAsm.c_str(), method, stateDelegate_);
 
 
 
@@ -464,11 +464,11 @@ namespace Core
 	{
 		// Calls Begin method on scripts
 #if 0
-        std::optional<DelegateInfo> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate);
+        std::optional<DelegateInfo> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Begin", stateDelegate_);
 		callDelegate(dele.value());
-        std::optional<DelegateInfo> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Begin", stateDelegate);
+        std::optional<DelegateInfo> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Begin", stateDelegate_);
 		callDelegate(dele1.value());
-		//std::optional<Del> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Begin", stateDelegate);
+		//std::optional<Del> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Begin", stateDelegate_);
 		//callDelegate(dele1.value());
 
 		// seperator
@@ -498,7 +498,7 @@ namespace Core
 				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
 				std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
 
-				std::optional<DelegateInfo> beginDel = loadDelegate(fullTypeWithAsm.c_str(), L"Begin", stateDelegate);
+				std::optional<DelegateInfo> beginDel = loadDelegate(fullTypeWithAsm.c_str(), L"Begin", stateDelegate_);
 				if (beginDel) callDelegate(beginDel.value());
 
 
@@ -522,10 +522,10 @@ namespace Core
 	{
 #if 0
 		// Calls Update method on scripts
-		std::optional<DelegateInfo> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate);
+		std::optional<DelegateInfo> dele = loadDelegate(L"Eno.PlayerController, GameScripts", L"Update", stateDelegate_);
 		callDelegate(dele.value());
 
-		std::optional<DelegateInfo> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Update", stateDelegate);
+		std::optional<DelegateInfo> dele1 = loadDelegate(L"Eno.EnemyController, GameScripts", L"Update", stateDelegate_);
 		callDelegate(dele1.value());
 
 		//seperator
@@ -553,7 +553,7 @@ namespace Core
 				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
 				std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
 
-				std::optional<DelegateInfo> beginDel = loadDelegate(fullTypeWithAsm.c_str(), L"Update", stateDelegate);
+				std::optional<DelegateInfo> beginDel = loadDelegate(fullTypeWithAsm.c_str(), L"Update", stateDelegate_);
 				if (beginDel) callDelegate(beginDel.value());
 
 
@@ -574,7 +574,7 @@ namespace Core
 // PlayerController -> Class
 // GameScripts -> dll
 // L widestring"Begin" -> Begin is the function to call
-// stateDelegate is a void pointer (Delegate is a function to call from cs) // see as if its (*)(void)
+// stateDelegate_ is a void pointer (Delegate is a function to call from cs) // see as if its (*)(void)
 
 // todo 1: 
 // Looping through filesystem to look for scripts.cs and run all begin^ and updatev functions
@@ -591,7 +591,7 @@ namespace Core
 	{
 		// Resets input when no input is received
 		//std::optional<Del> dele = loadDelegate(L"Eno.Input, GameScripts", L"noInputReceived", stateDelegate_);
-		callScript<DelegateInfo>(L"Eno.Input, GameScripts", L"noInputReceived", stateDelegate);
+		callScript<DelegateInfo>(L"Eno.Input, GameScripts", L"noInputReceived", stateDelegate_);
 	}
 
 	// Detect change in script

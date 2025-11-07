@@ -194,8 +194,8 @@ namespace Core
 		hostfxr_get_runtime_delegate_fn delegatefp_ = nullptr;		// Handle for retrieving a runtime delegate
 		hostfxr_close_fn closefp_ = nullptr;							// Handle for closing an initialized host context
 
-		hostfxr_handle hfHandle_;							// For interfacing CoreCLR through hostfxr
-		void* stateDelegate;                                // Delegate for calling methods responsible for different game/engine states (e.g begin, update)
+		hostfxr_handle hfHandle_;							 // For interfacing CoreCLR through hostfxr
+		void* stateDelegate_;                                // Delegate for calling methods responsible for different game/engine states (e.g begin, update)
 		void* scriptDelegate_;                               // Delegate for retrieving script fields
 		void* proxyDelegate_;                                // Delegate for retrieving script fields
 		void* inputDelegate_;                                // Delegate for communnicating input to C# end
