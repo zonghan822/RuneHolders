@@ -386,10 +386,10 @@ namespace Core
 				size_t dpos = fullName.find('.');
 
 				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
-				std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
+				std::wstring fullTypeWithAsm = L"Eno." + className;
 
 
-				begin_.push_back(std::make_pair(proxyCall(fullTypeWithAsm.c_str(), L"Update"), std::make_pair(fullTypeWithAsm, L"Update")));
+				begin_.push_back(std::make_pair(proxyCall(fullTypeWithAsm.c_str(), L"Begin"), std::make_pair(fullTypeWithAsm, L"Begin")));
 
 
 				CoTaskMemFree(classNames[i]);
@@ -424,7 +424,7 @@ namespace Core
 				size_t dpos = fullName.find('.');
 
 				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
-				std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts";
+				std::wstring fullTypeWithAsm = L"Eno." + className;
 
 				//std::vector<std::pair<ProxyMethod, std::pair<const wchar_t*, const wchar_t*>>> begin_;
 
@@ -486,6 +486,7 @@ namespace Core
 			CoTaskMemFree(classNames);
 		}
 #else
+		std::cout << "corehost begin run now\n" << "begin size: " << begin_.size();
 		for (const auto& Pairs : begin_) {
 			if (Pairs.first) {
 				Pairs.first(Pairs.second.first.c_str(), Pairs.second.second.c_str());

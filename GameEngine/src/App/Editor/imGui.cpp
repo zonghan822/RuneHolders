@@ -877,6 +877,13 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 						sceneTree.attachScript(childNode, std::move(script));
 					}
 				}
+				//if (attachScript && selectedScriptIndex >= 0) {
+				//	std::wstring selectedScript = availableScripts[selectedScriptIndex];
+				//	std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
+				//	auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+				//	if (script)
+				//		sceneTree.attachScript(createdNode, std::move(script));
+				//}
 
 				if (g_game) g_game->markEntitiesDirty();
 

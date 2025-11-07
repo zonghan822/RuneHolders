@@ -34,7 +34,7 @@ namespace Eno
         public static void Update()
         {
             //SayBonk();
-            Console.WriteLine("Bonk head start");
+            Console.WriteLine("Bonk on head");
 
             if (customAct != null && customAct.Released())
             {

@@ -22,32 +22,44 @@ namespace Eno
             currentAssembly = assembly;
             typeCache.Clear();
 
+            Console.WriteLine($"[ScriptProxy] Loading assembly: {assembly.FullName}");
             foreach (var t in assembly.GetTypes())
             {
+                Console.WriteLine($"[ScriptProxy] Found type: {t.FullName}");
                 typeCache[t.FullName!] = t;
             }
+
+            Console.WriteLine($"[ScriptProxy] Type cache contains {typeCache.Count} entries.");
         }
 
         public void Call(string className, string methodName)
         {
-            // Ensure that an assembly is present
-            if (currentAssembly == null) return;
-
-            // Get the value of the class name, where the call/method resides
-            if (!typeCache.TryGetValue(className, out var type))
+            if (currentAssembly == null)
             {
-                Console.WriteLine($"[ScriptProxy] Class '{className}' not found in assembly.");
+                Console.WriteLine("[ScriptProxy] No assembly loaded.");
                 return;
             }
 
-            // Specify method to be called
+            if (!typeCache.TryGetValue(className, out var type))
+            {
+                Console.WriteLine($"[ScriptProxy] Class '{className}' not found in assembly.");
+                Console.WriteLine("Available types:");
+                foreach (var t in typeCache.Keys)
+                    Console.WriteLine($"  {t}");
+                return;
+            }
+
             var method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
             if (method == null)
             {
                 Console.WriteLine($"[ScriptProxy] Method '{methodName}' not found in class '{className}'.");
+                Console.WriteLine("Available methods in this class:");
+                foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                    Console.WriteLine($"  {m.Name}");
                 return;
             }
 
+            Console.WriteLine($"[ScriptProxy] Invoking {className}.{methodName}...");
             method.Invoke(null, null);
         }
     }
