@@ -7,8 +7,7 @@ namespace AI{
 
     struct Path {
         std::vector<Math::eVec2<int>> nodes;
-        bool empty() const { return nodes.empty(); }
-        void clear() { nodes.clear(); }
+        bool completed = false;
     };
 
 }

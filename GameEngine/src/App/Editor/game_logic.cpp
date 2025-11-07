@@ -56,8 +56,8 @@ void GameApplication::initialize() {
 	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
 
 	pathfinder_ = std::make_unique<AI::PathfindingSystem>(
-		gameFramebuffer_->getWidth()/5,
-		gameFramebuffer_->getHeight()/5,
+		gameFramebuffer_->getWidth(),
+		gameFramebuffer_->getHeight(),
 		true
 	);
 
@@ -252,7 +252,7 @@ void GameApplication::updateGameLogic() {
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
 
-	pathfinder_->update(entityManager, 5.f);
+	pathfinder_->update(entityManager, 1.f);
 
 	// Update engine playing state based on editor state
 	engine_.setIsPlaying(getEditorState() == Playing || getEditorState() == NextKeyFrame);

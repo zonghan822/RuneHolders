@@ -15,16 +15,16 @@ namespace AI {
         // Find all entities that have AIComponent
         std::vector<ECS::Entity> aiEntities = entMng.findEntity<ECSComponents::AIComponent>();
 
-        //for (ECS::Entity& entity : aiEntities) {
-        //    auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
-        //    AI::StateMachine& sm = getStateMachine(entity);
-        //    sm.update(entity, entMng, dt);
+        for (ECS::Entity& entity : aiEntities) {
+            auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
+            AI::StateMachine& sm = getStateMachine(entity);
+            sm.update(entity, entMng, dt);
 
-        //    // Handle transition requests
-        //    if (std::strcmp(ai.nextState, ai.currentState) != 0){
-        //        sm.changeState(ai.nextState, entity, entMng);
-        //    }
-        //}
+            // Handle transition requests
+            if (std::strcmp(ai.nextState, ai.currentState) != 0){
+                sm.changeState(ai.nextState, entity, entMng);
+            }
+        }
     }
 
     // ----------------------------------------
@@ -61,5 +61,9 @@ namespace AI {
         if (it == stateMachines_.end())
             throw std::runtime_error("Entity has no registered AI::StateMachine");
         return *it->second;
+    }
+
+    AI::Path& AIManager::getPath(ECS::Entity& entity) {
+        return paths_[entity.id()];
     }
 }

@@ -28,9 +28,15 @@ namespace AI {
         AI::StateMachine& getStateMachine(ECS::Entity& entity);
         const AI::StateMachine& getStateMachine(ECS::Entity& entity) const;
 
+        Path& getPath(ECS::Entity& entity);
+
+        void removePath(ECS::Entity& entity) { paths_.erase(entity.id()); }
+
+
     private:
         Event::EnoEventBus& bus_;
         std::unordered_map<uint32_t, std::unique_ptr<AI::StateMachine>> stateMachines_;
+        std::unordered_map<uint32_t, Path> paths_;
     };
 
 }

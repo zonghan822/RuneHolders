@@ -10,7 +10,6 @@ namespace ECSComponents
         char nextState[32] = "Idle";
 
         Math::eVec2<float> goal{};
-        std::vector<Math::eVec2<int>> path;
 
         bool hasPath = false;
         float awarenessRadius = 200.f;

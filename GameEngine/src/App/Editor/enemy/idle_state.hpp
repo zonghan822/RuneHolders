@@ -4,29 +4,49 @@
 
 namespace AI {
 
-    class IdleState : public AIState {
+    class IdleState : public AIState
+    {
     public:
-        void onEnter(ECS::Entity& entity, ECS::EntityManager& entMng) override {
-            auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
-            std::strncpy(ai.currentState, "Idle", sizeof(ai.currentState));
+        IdleState(AIManager& aiMng, PathfindingSystem& nav)
+            : aiManager(aiMng), navSystem(nav) {
         }
 
-        void onUpdate(ECS::Entity& entity, ECS::EntityManager& entMng, float dt) override {
+        void onEnter(ECS::Entity& entity, ECS::EntityManager& entMng) override
+        {
+            auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
+            std::strncpy(ai.currentState, "Idle", sizeof(ai.currentState));
+
+            // Clear any leftover path
+            aiManager.removePath(entity);
+        }
+
+        void onUpdate(ECS::Entity& entity, ECS::EntityManager& entMng, float dt) override
+        {
             auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
             auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
 
-            // Placeholder: if we detect a target nearby, request transition
-            if (detectPlayerNearby(transform, entMng)) {
+            // Detect player proximity (replace with your real detection logic)
+            if (detectPlayerNearby(entity, entMng, ai.awarenessRadius))
+            {
+                ECS::Entity player = entMng.findEntity<ECSComponents::PlayerComponent>()[0];
+                ai.goal = player.get<ECSComponents::TransformComponent>(entMng).pos;
                 std::strncpy(ai.nextState, "Chase", sizeof(ai.nextState));
             }
         }
 
     private:
-        bool detectPlayerNearby(const ECSComponents::TransformComponent& transform, ECS::EntityManager& entMng) {
-            ECS::Entity player = entMng.findEntity<ECSComponents::PlayerComponent>()[0];
-            Math::eVec2<float> playerPos = player.get<ECSComponents::TransformComponent>(entMng).pos;
+        AIManager& aiManager;
+        PathfindingSystem& navSystem;
 
-            return true; // placeholder
+        bool detectPlayerNearby(ECS::Entity& entity, ECS::EntityManager& entMng, float radius)
+        {
+            auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
+            auto players = entMng.findEntity<ECSComponents::PlayerComponent>();
+            if (players.empty()) return false;
+
+            auto& playerTr = players[0].get<ECSComponents::TransformComponent>(entMng);
+            Math::eVec2<float> diff = playerTr.pos - transform.pos;
+            return eVec2Length(diff) <= radius;
         }
     };
 
