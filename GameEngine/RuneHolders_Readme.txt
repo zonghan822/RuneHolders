@@ -3,7 +3,9 @@ RuneHolders README
 ==========================================================
 
 Runeweaver is a top-down dungeon crawler action combat game set in a fantasy world. 
+Fighting various monsters in an action-packed dungeon crawler setting.
 Connect runes together to cast spells and defeat monsters in the Witch’s mansion.
+
 
 ----------------------------------------------------------
 1. Game Concept
@@ -222,7 +224,7 @@ All changes → Apply immediately to scene
 RuneHolders
 
 Qi Ming Jeremy CHIA - Project Manager ( Design Lead )
-Sabrina Jing Jie LOH ( Audio Lead )
+Sabrina Jing Jie LOH ( Art Lead )
 Muhammad Raziq BIN MOHD RAFIG - Technical Lead ( Rendering Champion )
 Zong Han LAW ( Graphics Champion, Input Champion )
 Caven KOH ( Physics Champion )
