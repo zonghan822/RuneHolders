@@ -43,7 +43,7 @@ void GameApplication::initialize() {
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
 	// ============= LOAD LAST ACTIVE SAVED SCENE ========================= //
-	engine_.getEnoEditor().getSceneTree().loadLastSavedScene();
+	engine_.getEnoEditor().getSceneTree().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
@@ -239,8 +239,6 @@ void GameApplication::updateGameLogic() {
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
 
-	// Update engine playing state based on editor state
-	engine_.setIsPlaying(getEditorState() == Playing || getEditorState() == NextKeyFrame);
 
 	// Use FIXED virtual resolution for consistent rendering
 	Math::eVec2<float> renderSize{
@@ -476,6 +474,17 @@ void GameApplication::updateGameLogic() {
 
 	// Now render ImGui (which will display the framebuffer textures)
 	updateImGui();
+
+	// Update engine playing state for NEXT frame based on current editor state
+	// This must happen BEFORE we transition NextKeyFrame->Paused
+	bool shouldPlayNextFrame = (getEditorState() == Playing || getEditorState() == NextKeyFrame);
+	engine_.setIsPlaying(shouldPlayNextFrame);
+
+	// Handle NextKeyFrame state transition at the END of the frame
+	// This ensures physics/collision will have already updated with isPlaying=true in the next frame
+	if (getEditorState() == NextKeyFrame) {
+		setEditorState(Paused);
+	}
 }
 
 void GameApplication::updateEntities() {
@@ -591,8 +600,9 @@ void GameApplication::updateEntities() {
 				// Update one time
 				updateTestObject(engine_.getEntityManager(), engine_);
 
-				// Reset variables
-				setEditorState(Paused);
+				// Reset variables - transition back to Paused for next frame
+				// NOTE: Don't set state back to Paused here! It happens too early in the frame.
+				// The state will be reset to Paused at the end of this function after rendering.
 			}
 			break;
 		}

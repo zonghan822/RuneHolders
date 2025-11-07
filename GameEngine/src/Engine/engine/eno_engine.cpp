@@ -38,7 +38,7 @@ namespace Engine
 		{
 			updateTime(1.0);
 			window_.pollEvents();
-			
+
 			// Handle window resize for graphics system
 			auto fbSize = window_.getFramebufferSize();
 			int width = fbSize.first, height = fbSize.second;
@@ -124,12 +124,14 @@ namespace Engine
 		}
 
 		// Update physics system (gravity, forces, velocity integration)
-		if (physicsSys_) {
+		// Only update physics when the game is playing (not paused/stopped)
+		if (physicsSys_ && isPlaying) {
 			physicsSys_->Update(entityMng_, deltaTime);
 		}
 
 		// Update collision system (collision detection and response)
-		if (collisionSys_) {
+		// Only update collision when the game is playing (not paused/stopped)
+		if (collisionSys_ && isPlaying) {
 			collisionSys_->Update(entityMng_);
 		}
 	}
