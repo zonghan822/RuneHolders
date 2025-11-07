@@ -223,7 +223,7 @@ All changes → Apply immediately to scene
 RuneHolders
 
 Qi Ming Jeremy CHIA - Project Manager ( Design Lead )
-Sabrina Jing Jie LOH ( Art Lead )
+Sabrina Jing Jie LOH - Art Lead ( Audio Champion )
 Muhammad Raziq BIN MOHD RAFIG - Technical Lead ( Rendering Champion )
 Zong Han LAW ( Graphics Champion, Input Champion )
 Caven KOH ( Physics Champion )
