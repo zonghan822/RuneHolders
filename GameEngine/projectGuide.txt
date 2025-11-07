@@ -23,9 +23,32 @@ Before running any scripts, make sure the following are installed:
   Use this tool to verify your system supports OpenGL 4.5+.
   https://download.cnet.com/opengl-extensions-viewer/3000-18487_4-34442.html?ex=WLS-2202.0
 
+- (Optional) .NET SDK (v8.0.0 or above):
+  The build system will automatically detect or download a local copy
+  of the .NET SDK if it is not found globally.
 
 ----------------------------------------------------------
-2. Regenerating Visual Studio 2022 Solution
+2. .NET SDK Setup (Automatic)
+----------------------------------------------------------
+The engine uses .NET for C# scripting (GameScripts project).
+
+When running CMake configuration, it will:
+
+1. Check if .NET SDK is installed globally (using `dotnet --info`).
+2. If found, use it directly for building C# scripts.
+3. If not found, automatically download a portable SDK into:
+   build/lib/dotnet/
+
+CMake defines the variable:
+  DOTNET_CMD → path to dotnet executable
+
+At runtime, the engine automatically sets:
+  DOTNET_ROOT = "<project>/build/lib/dotnet"
+before loading managed assemblies, allowing .NET to locate its runtime
+even when distributed without a global installation.
+
+----------------------------------------------------------
+3. Regenerating Visual Studio 2022 Solution
 ----------------------------------------------------------
 Two scripts are provided to simplify project management:
 
@@ -44,25 +67,23 @@ Usage:
 - To clean the project:  
   > clean.bat
 
-
 ----------------------------------------------------------
-3. Regenerating Visual Studio 2022 Solution without Scripts
+4. Regenerating Visual Studio 2022 Solution without Scripts
 ----------------------------------------------------------
-If you want to regenerate the solution by typing commands in terminal:
+If you want to regenerate the solution manually:
 
 1. Open a command prompt (cmd) in the project’s root directory.
-2. Create a build folder (if it does not exist yet):
+2. Create a build folder:
    > mkdir build
    > cd build
 3. Run CMake to generate Visual Studio 2022 solution:
-   > cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 
+   > cmake .. -G "Visual Studio 17 2022" -A x64
 4. Once finished, open the generated `.sln` file in the `build` folder.
-5. Run CMake to build the solution:
+5. Build from Visual Studio or run:
    > cmake --build . --config Debug
 
-
 ----------------------------------------------------------
-4. Solution Structure
+5. Solution Structure
 ----------------------------------------------------------
 The solution is named **RuneHolders**. It contains two main projects:
 
@@ -71,8 +92,9 @@ The solution is named **RuneHolders**. It contains two main projects:
    - Type: Static Library (`Engine.lib`)
    - Purpose: Core game engine functionality.
    - Contains: window manager, graphics manager, event bus, physics system, 
-     audio integration (FMOD), FreeType font handling, ImGui backends, etc.
-   - Dependencies (via CMake `ImportDependencies.cmake`):
+     AI manager with A* pathfinding, audio integration (FMOD),
+     FreeType font handling, .NET runtime hosting, ImGui backends, etc.
+   - Dependencies (via `ImportDependencies.cmake`):
      * **GLFW** – window and input
      * **GLM** – math library
      * **GLEW** – OpenGL extension wrangler
@@ -80,73 +102,77 @@ The solution is named **RuneHolders**. It contains two main projects:
      * **FMOD** – audio
      * **FreeType** – font loading
      * **stb_image** – texture/image loading
+     * **.NET SDK** – for managed script integration (via `nethost` and `hostfxr`)
    - Output: `Engine.lib` in `build/projects/Engine/`
 
 2. **Editor**
    - Location: `src/App/Editor/`
    - Type: Executable (`Editor.exe`)
-   - Purpose: Application layer that links against `Engine.lib`.
-   - Each subfolder inside `src/App/` can be built as its own executable 
-     by the `SETUP_APP` macro (defined in `BuildTests.cmake`).
-   - Includes game logic and demos using the engine and ImGui.
-   - Output: Executable in `build/projects/App/<AppName>/`
+   - Purpose: Application layer linking against `Engine.lib`.
+   - Includes game logic and ImGui integration.
+   - Output: Executable in `build/projects/App/Editor/`
+
+3. **GameScripts (C#)**
+   - Location: `scripts/GameScripts/`
+   - Type: C# project compiled by .NET SDK into `GameScripts.dll`
+   - Output: `build/scripts/GameScripts/`
+   - Generated files:
+       - GameScripts.dll
+       - GameScripts.deps.json
+       - GameScripts.runtimeconfig.json
+   - Built automatically by CMake using `${DOTNET_CMD} build`.
 
 ⚠ IMPORTANT:  
 After opening the solution in Visual Studio,  
 **right-click on the `Editor` project and select “Set as Startup Project”**  
-before pressing **F5** (Run).  
-Otherwise Visual Studio will attempt to start the `Engine` library project, 
-which has no executable.
-
+before pressing **F5 (Run)**.  
+Otherwise Visual Studio will attempt to start the `Engine` project, which 
+is a static library and has no executable.
 
 ----------------------------------------------------------
-5. Project Settings & Configurations
+6. Project Settings & Configurations
 ----------------------------------------------------------
-Both projects support the standard Visual Studio configurations:
+Both projects support standard Visual Studio configurations:
 
 - **Debug**
-  - Debug symbols enabled.
-  - No optimization (`/Od`).
+  - Debug symbols enabled (`/Od`).
   - Defines: `_DEBUG`, `DEBUG`.
 
 - **Release**
-  - Full optimizations (`/O2`).
+  - Optimizations enabled (`/O2`).
   - Defines: `NDEBUG`.
 
 - **RelWithDebInfo**
-  - Optimizations with debug symbols.
-  - Useful for profiling.
+  - Optimized with debug info (good for profiling).
 
 - **MinSizeRel**
-  - Optimizations targeting minimal binary size.
+  - Optimized for smallest binary size.
 
-FMOD DLLs are copied automatically per configuration 
-(Debug uses `fmodL.dll`, Release uses `fmod.dll`).
-
-
-----------------------------------------------------------
-6. Assets
-----------------------------------------------------------
-- Assets (textures, shaders, sounds, fonts) are stored in the top-level `assets/` folder.
-- During build, assets are copied into the build output directory 
-  (see `Utilities.cmake` → `COPY_FOLDER_IF_DIFFERENT`).
-- At runtime, both Engine and ImGui_App access assets relative to `ASSETS_DIR_PATH`, 
-  which CMake defines as:
-  ${CMAKE_SOURCE_DIR}/assets/
-
+FMOD DLLs and .NET runtime dependencies are copied automatically
+based on the configuration.
 
 ----------------------------------------------------------
-7. Notes
+7. Assets
 ----------------------------------------------------------
-- Ensure all prerequisites are installed and on your system PATH.
-- Always regenerate your solution with CMake after pulling changes to 
-`CMakeLists.txt`.
-- The first build may take longer due to dependency fetching (via 
-`FetchContent`).
-- Editor **cannot build/run without Engine**; always build Engine first.
-- Engine can build independently as a static library if you need to link it 
-into other applications.
+- Assets (textures, shaders, sounds, fonts, scripts) are stored under:
+  `assets/`
+- During build, assets are copied into:
+  `build/assets/`
+- Engine defines a constant path `ASSETS_DIR_PATH` via CMake to locate assets
+  relative to source.
+- C# scripts are built into `build/scripts/` and loaded at runtime
+  through the .NET runtime host.
 
+----------------------------------------------------------
+8. Additional Notes
+----------------------------------------------------------
+- Ensure `DOTNET_ROOT` is properly set by the engine before running.
+  The path is automatically defined as:
+    X:/RuneHolders/GameEngine/build/lib/dotnet
+- The engine embeds .NET via `nethost.h` and `hostfxr.h`, loaded dynamically.
+- For local SDK builds, no global .NET installation is required.
+- If you wish to rebuild scripts manually:
+  > dotnet build scripts/GameScripts/GameScripts.csproj -c Release
 
 ==========================================================
 End of Project Guide
