@@ -22,14 +22,11 @@ namespace Eno
             currentAssembly = assembly;
             typeCache.Clear();
 
-            Console.WriteLine($"[ScriptProxy] Loading assembly: {assembly.FullName}");
             foreach (var t in assembly.GetTypes())
             {
-                Console.WriteLine($"[ScriptProxy] Found type: {t.FullName}");
                 typeCache[t.FullName!] = t;
             }
 
-            Console.WriteLine($"[ScriptProxy] Type cache contains {typeCache.Count} entries.");
         }
 
         public void Call(string className, string methodName)
@@ -43,7 +40,6 @@ namespace Eno
             if (!typeCache.TryGetValue(className, out var type))
             {
                 Console.WriteLine($"[ScriptProxy] Class '{className}' not found in assembly.");
-                Console.WriteLine("Available types:");
                 foreach (var t in typeCache.Keys)
                     Console.WriteLine($"  {t}");
                 return;
@@ -53,7 +49,6 @@ namespace Eno
             if (method == null)
             {
                 Console.WriteLine($"[ScriptProxy] Method '{methodName}' not found in class '{className}'.");
-                Console.WriteLine("Available methods in this class:");
                 foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
                     Console.WriteLine($"  {m.Name}");
                 return;

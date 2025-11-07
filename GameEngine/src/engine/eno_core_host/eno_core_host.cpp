@@ -364,7 +364,7 @@ namespace Core
 	void EnoCoreHost::defineBegin() {
 
 
-		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+		for (auto& entry : std::filesystem::directory_iterator(SCRIPT_SRC_PATH)) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
 
@@ -402,7 +402,7 @@ namespace Core
 
 	void EnoCoreHost::defineUpdate() {
 
-		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+		for (auto& entry : std::filesystem::directory_iterator(SCRIPT_SRC_PATH)) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
 
