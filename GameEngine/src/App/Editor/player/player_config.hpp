@@ -48,6 +48,8 @@ namespace Player
          *===========================================================================================*/
         PlayerConfig()
             : movementForce(800.0f)         // Force applied when moving
+            , friction(0.0f)
+            , acceleration(0.0f)
             , frictionCoefficient(0.8f)    // Friction for smooth deceleration
             , maxSpeed(200.0f)              // Max speed clamp
             , mass(1.0f)                    // Standard mass

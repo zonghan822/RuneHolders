@@ -115,7 +115,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	ImGui::NewFrame();
 
 	// get engine systems
-	auto& inputManager = engine_.getInputManager();
 	auto& entityManager = engine_.getEntityManager();
 
 	// BEGIN DOCKSPACE
@@ -169,13 +168,13 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 
 	// Scene select
 	ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoCollapse);
-	displaySceneTab(engine_, sceneTree);
+	displaySceneTab(sceneTree);
 	ImGui::End();
 
 	// Edit tab 
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_, sceneTree);
-	displayAllEntitiesTab(engine_, sceneTree);
+	displayAllEntitiesTab(engine_);
 	ImGui::End();
 
 	// Prefabs
@@ -185,7 +184,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 
 	// Game View (full scene, bottom-right)
 	ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-	displayGameView(engine_);
+	displayGameView();
 	ImGui::End();
 
 	// Editor View (zoomed in, center - replaces old Game View behavior)
@@ -641,7 +640,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	//}
 }
 
-void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
+void displayAllEntitiesTab(Engine::EnoEngine& engine_)
 {
 	auto& entityManager = engine_.getEntityManager();
 
@@ -957,7 +956,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	}
 }
 
-void displaySceneTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
+void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 {
 	// Heading
 	ImGui::Text("=== Scene Select===");
@@ -1059,7 +1058,7 @@ void displaySceneTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree
 
 			if (ImGui::Button("Change new name"))
 			{
-				if (scene_name == "\0")
+				if (!scene_name || scene_name[0] == '\0')
 				{
 					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: no input detected!");
 				}
@@ -1525,7 +1524,7 @@ void imGuiBeginDockspace() {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
 
-void displayGameView(Engine::EnoEngine& engine_) {
+void displayGameView() {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
 	// Display info text - this is now a read-only overview window
@@ -1600,7 +1599,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 		g_game->setEditorState(isPlaying ? Playing : Stopped);
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("()Pause")) {
+	if (ImGui::Button("Pause")) {
 		if (g_game->getEditorState() != Stopped) {
 			g_game->setEditorState(g_game->getEditorState() == Playing ? Paused : Playing);
 		}

@@ -92,6 +92,7 @@ void GameApplication::setupScripting() {
 
 void GameApplication::setupGameAudio() {
 	// setup audio
+	SystemTimer totalTimePerFrame("Audio", systemTimes_);
 	auto& audioMng = engine_.getAudioManager();
 	audioMng.setChannelGroup("BGM");
 	audioMng.setChannelGroup("SFX");
@@ -369,8 +370,8 @@ void GameApplication::updateGameLogic() {
 			for (int ty = 0; ty < tilesY; ++ty) {
 				for (int tx = 0; tx < tilesX; ++tx) {
 					// World position of this tile
-					float worldX = tx * bgWidth;
-					float worldY = ty * bgHeight;
+					float worldX = static_cast<float>(tx * bgWidth);
+					float worldY = static_cast<float>(ty * bgHeight);
 
 					// Convert to screen space (apply camera offset)
 					float screenX = worldX - editorCameraX_;
@@ -601,8 +602,8 @@ void GameApplication::loadEntityTextures() {
 void GameApplication::updateEntities() {
 	SystemTimer EntityTimer("Entities", systemTimes_);
 
-	ImGuiIO& io = ImGui::GetIO();
-	float deltaTime = io.DeltaTime;
+	//ImGuiIO& io = ImGui::GetIO();
+	//float deltaTime = io.DeltaTime;
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
 
