@@ -2,9 +2,8 @@
 RuneHolders README
 ==========================================================
 
-RuneWeaver is an experimental spellcasting boss-fighting game where players weave runes
-directly on the screen to unleash powerful magic. Spells can be chained together for unique 
-and unexpected effects, allowing players to creatively strategize in battles against formidable bosses.
+Runeweaver is a top-down dungeon crawler action combat game set in a fantasy world. 
+Connect runes together to cast spells and defeat monsters in the Witch’s mansion.
 
 ----------------------------------------------------------
 1. Game Concept
