@@ -963,9 +963,19 @@ void displaySceneTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree
 		if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
 		{
 			// Load scene
-			std::cout << "Loading file: " << filename << std::endl;
-			sceneTree.load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
-			g_game->markEntitiesDirty();
+			std::cout << "sceneName: " << sceneTree.getSceneName() << ", filename: " << filename << std::endl;
+			// Check that scene is not currently loaded
+			if (sceneTree.getSceneName() != filename)
+			{
+				std::cout << "Loading file: " << filename << std::endl;
+				sceneTree.load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
+				g_game->markEntitiesDirty();
+			}
+			else
+			{
+				std::cout << "Scene is already loaded!";
+			}
+			
 		}
 		
 		// Right click opens a panel to allow you to change and delete scene name

@@ -620,7 +620,10 @@ namespace Editor
 		newFile << "{\n\n}";
 		newFile.close();
 
-		// Save the current scene name
+		// Load file first (this sets currentScene)
+		load(fullPath, defaultSceneName);
+
+		// Save the current scene name to CurrentSavedScene.txt
 		std::ofstream currentSceneSave{ ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt" };
 		if (!currentSceneSave)
 		{
@@ -628,9 +631,6 @@ namespace Editor
 		}
 		currentSceneSave << currentScene;
 		currentSceneSave.close();
-
-		// Load file
-		load(fullPath, defaultSceneName);
 	
 	}
 

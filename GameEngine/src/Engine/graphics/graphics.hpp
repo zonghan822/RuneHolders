@@ -54,6 +54,13 @@ namespace Graphics
         static const Color Blue;
     };
 
+    // Output stream operator for Color serialization
+    inline std::ostream& operator<<(std::ostream& os, const Color& c)
+    {
+        os << "r : " << c.r << " | g : " << c.g << " | b : " << c.b << " | a : " << c.a;
+        return os;
+    }
+
     // Vertex struct for rendering with texture support
     struct Vertex
     {

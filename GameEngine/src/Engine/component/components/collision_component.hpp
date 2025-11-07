@@ -204,7 +204,7 @@ namespace ECSComponents
 
             l("Offset",             offset,                 "eVec2(float)");
             l("Is Trigger",         isTrigger,              "bool");
-            l("Is Trigger",         isActive,               "bool");
+            l("Is Active",          isActive,               "bool");
             l("Rotation",           rotation,               "float");
 
             switch (type)
