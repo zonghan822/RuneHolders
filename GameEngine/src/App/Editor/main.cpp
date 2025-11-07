@@ -24,6 +24,9 @@ int main() {
         // Run the game
         game.run();
 
+        // Terminate game
+        game.shutdown();
+
     }
     catch (const std::exception& e) {
         std::cerr << "Game error: " << e.what() << std::endl;

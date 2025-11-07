@@ -7,21 +7,20 @@ namespace AI {
     }
 
     void StateMachine::changeState(const char* name, ECS::Entity& entity, ECS::EntityManager& entMng) {
-        if (current_)
-            current_->onExit(entity, entMng);
+        if (strcmp(current_, "None") != 0)
+            states_[current_]->onExit(entity, entMng);
 
         auto it = states_.find(name);
         if (it != states_.end())
         {
-            current_ = it->second.get();
-            current_->onEnter(entity, entMng);
-            std::strncpy(currentName_, name, sizeof(currentName_));
+            std::strncpy(current_, name, sizeof(current_));
+            states_[current_]->onEnter(entity, entMng);
         }
     }
 
     void StateMachine::update(ECS::Entity& entity, ECS::EntityManager& entMng, float dt) {
-        if (current_)
-            current_->onUpdate(entity, entMng, dt);
+        if (strcmp(current_, "None") != 0)
+            states_[current_]->onUpdate(entity, entMng, dt);
     }
 
 }

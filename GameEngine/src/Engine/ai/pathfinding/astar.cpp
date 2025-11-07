@@ -20,6 +20,99 @@ namespace AI {
         }
     }
 
+    void PathfindingSystem::update(ECS::EntityManager& entMng, float cellSize) {
+        // Reset grid to walkable
+        for (int y = 0; y < h_; ++y)
+            for (int x = 0; x < w_; ++x)
+                walkable_[y][x] = 1;
+
+        // Find all entities with collision + transform
+        std::vector<ECS::Entity> entities = entMng.findEntity<ECSComponents::CollisionComponent,
+            ECSComponents::TransformComponent>();
+
+        for (ECS::Entity& entity : entities)
+        {
+            auto& col = entity.get<ECSComponents::CollisionComponent>(entMng);
+            auto& tr = entity.get<ECSComponents::TransformComponent>(entMng);
+
+            // Skip triggers or inactive colliders
+            if (!col.isActive || col.isTrigger)
+                continue;
+
+            // Convert world coordinates to grid indices
+            auto markBlocked = [&](int gx, int gy)
+                {
+                    if (gx >= 0 && gy >= 0 && gx < w_ && gy < h_)
+                        walkable_[gy][gx] = 0;
+                };
+
+            switch (col.type) {
+            case ECSComponents::ColliderType::RECTANGLE:
+            {
+                float halfW = col.data.rectangle.width * 0.5f * tr.scale.x;
+                float halfH = col.data.rectangle.height * 0.5f * tr.scale.y;
+                float left = tr.pos.x - halfW + col.offset.x;
+                float right = tr.pos.x + halfW + col.offset.x;
+                float top = tr.pos.y - halfH + col.offset.y;
+                float bottom = tr.pos.y + halfH + col.offset.y;
+
+                int gx0 = static_cast<int>(left / cellSize);
+                int gx1 = static_cast<int>(right / cellSize);
+                int gy0 = static_cast<int>(top / cellSize);
+                int gy1 = static_cast<int>(bottom / cellSize);
+
+                for (int y = gy0; y <= gy1; ++y)
+                    for (int x = gx0; x <= gx1; ++x)
+                        markBlocked(x, y);
+                break;
+            }
+
+            case ECSComponents::ColliderType::CIRCLE:
+            {
+                float r = col.data.circle.radius * tr.scale.x;
+                Math::eVec2<float> center = tr.pos + col.offset;
+                int gx0 = static_cast<int>((center.x - r) / cellSize);
+                int gx1 = static_cast<int>((center.x + r) / cellSize);
+                int gy0 = static_cast<int>((center.y - r) / cellSize);
+                int gy1 = static_cast<int>((center.y + r) / cellSize);
+
+                for (int y = gy0; y <= gy1; ++y)
+                {
+                    for (int x = gx0; x <= gx1; ++x)
+                    {
+                        float cx = (x + 0.5f) * cellSize;
+                        float cy = (y + 0.5f) * cellSize;
+                        float dx = cx - center.x;
+                        float dy = cy - center.y;
+                        if (dx * dx + dy * dy <= r * r)
+                            markBlocked(x, y);
+                    }
+                }
+                break;
+            }
+
+            case ECSComponents::ColliderType::LINE:
+            {
+                // Approximate: mark cells along the line segment as blocked
+                Math::eVec2<float> p1 = col.data.line.p1;
+                Math::eVec2<float> p2 = col.data.line.p2;
+                int steps = static_cast<int>(std::ceil(Math::eVec2Length(p2 - p1) / cellSize));
+                for (int i = 0; i <= steps; ++i)
+                {
+                    float t = i / static_cast<float>(steps);
+                    Math::eVec2<float> p = p1 + (p2 - p1) * t;
+                    markBlocked(static_cast<int>(p.x / cellSize),
+                        static_cast<int>(p.y / cellSize));
+                }
+                break;
+            }
+
+            default:
+                break;
+            }
+        }
+    }
+
     Path PathfindingSystem::findPath(const Math::eVec2<int>& start, const Math::eVec2<int>& goal) {
         Path empty;
         if (!inBounds(start.x, start.y) || !inBounds(goal.x, goal.y)) return empty;

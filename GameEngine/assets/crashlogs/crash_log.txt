@@ -35,3 +35,4 @@
 [2025-11-07 06:42:24] Failed to create a save file for the current active scene!
 [2025-11-07 07:48:19] Failed to create a save file for the current active scene!
 [2025-11-07 07:51:56] Failed to create a save file for the current active scene!
+[2025-11-07 15:58:03] Entity has no registered AI::StateMachine

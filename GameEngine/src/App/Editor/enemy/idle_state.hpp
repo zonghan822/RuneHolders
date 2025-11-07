@@ -16,13 +16,16 @@ namespace AI {
             auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
 
             // Placeholder: if we detect a target nearby, request transition
-            if (detectPlayerNearby(transform)) {
+            if (detectPlayerNearby(transform, entMng)) {
                 std::strncpy(ai.nextState, "Chase", sizeof(ai.nextState));
             }
         }
 
     private:
-        bool detectPlayerNearby(const ECSComponents::TransformComponent&) {
+        bool detectPlayerNearby(const ECSComponents::TransformComponent& transform, ECS::EntityManager& entMng) {
+            ECS::Entity player = entMng.findEntity<ECSComponents::PlayerComponent>()[0];
+            Math::eVec2<float> playerPos = player.get<ECSComponents::TransformComponent>(entMng).pos;
+
             return true; // placeholder
         }
     };

@@ -55,6 +55,12 @@ void GameApplication::initialize() {
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
 
+	pathfinder_ = std::make_unique<AI::PathfindingSystem>(
+		gameFramebuffer_->getWidth()/5,
+		gameFramebuffer_->getHeight()/5,
+		true
+	);
+
 	// Center editor camera on the middle of the game world initially
 	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
 	editorCameraY_ = (VIRTUAL_HEIGHT - EDITOR_HEIGHT) / 2.0f;
@@ -70,8 +76,12 @@ void GameApplication::run() {
 		updateGameLogic();  // This gets called every frame
 		});
 
-	imGuiTerminate();
+}
 
+void GameApplication::shutdown() {
+	std::cout << "Terminating game..." << std::endl;
+	engine_.shutDown();
+	imGuiTerminate();
 }
 
 void GameApplication::setupGameEntities() {
@@ -239,9 +249,10 @@ void GameApplication::setupImGui() {
 void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& graphics_ = engine_.getGraphicsManager();
-	// auto& graphics = engine_.getGraphicsManager();
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
+
+	pathfinder_->update(entityManager, 5.f);
 
 	// Update engine playing state based on editor state
 	engine_.setIsPlaying(getEditorState() == Playing || getEditorState() == NextKeyFrame);
@@ -507,7 +518,6 @@ void GameApplication::updateEntities() {
 	);
 
 	
-
 	// REBUILD CACHE ONLY WHEN DIRTY (optimization)
 	if (entitiesDirty_) {
 		cachedDrawableEntities_ = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();

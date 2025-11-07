@@ -8,6 +8,9 @@
 
 #include "path.hpp"
 #include "../../math/math.hpp"
+#include "../../component/components/transform.hpp"
+#include "../../component/components/collision_component.hpp"
+#include "../../ecs/entity.hpp"
 
 #undef min
 #undef max
@@ -31,6 +34,8 @@ namespace AI {
         bool isWalkable(int x, int y) const {
             return inBounds(x, y) && walkable_[y][x] != 0;
         }
+
+        void update(ECS::EntityManager& entMng, float cellSize);
 
         // Finds path from start to goal. Returns empty Path if none.
         Path findPath(const Math::eVec2<int>& start, const Math::eVec2<int>& goal);

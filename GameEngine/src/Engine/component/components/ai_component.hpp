@@ -13,10 +13,9 @@ namespace ECSComponents
         std::vector<Math::eVec2<int>> path;
 
         bool hasPath = false;
-        float awarenessRadius = 6.0f;
+        float awarenessRadius = 200.f;
         bool chasingPlayer = false;
-
-        void* stateMachinePtr = nullptr;
+        float speed = 100.f;
 
         template <typename Visitor>
         void reflect(Visitor&& l)
@@ -27,6 +26,7 @@ namespace ECSComponents
             l("hasPath", hasPath, "bool");
             l("awarenessRadius", awarenessRadius, "float");
             l("chasingPlayer", chasingPlayer, "bool");
+            l("speed", speed, "float");
         }
 
         template <typename Visitor>
@@ -38,6 +38,7 @@ namespace ECSComponents
             l("hasPath", hasPath, "bool");
             l("awarenessRadius", awarenessRadius, "float");
             l("chasingPlayer", chasingPlayer, "bool");
+            l("speed", speed, "float");
         }
     };;
 }

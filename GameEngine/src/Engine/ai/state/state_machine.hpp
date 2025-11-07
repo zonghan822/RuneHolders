@@ -15,8 +15,7 @@ namespace AI {
 
     private:
         std::unordered_map<std::string, std::unique_ptr<AIState>> states_;
-        AIState* current_ = nullptr;
-        char currentName_[32] = "None";
+        char current_[32] = "None";
     };
 
 }

@@ -1,5 +1,4 @@
 #pragma once
-#include <cmath>
 #include <cstring>
 #include "engine/eno_engine.hpp"
 
@@ -15,6 +14,9 @@ namespace AI {
             auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
             std::strncpy(ai.currentState, "Chase", sizeof(ai.currentState));
             ai.hasPath = false;
+            ECS::Entity player = entMng.findEntity<ECSComponents::PlayerComponent>()[0];
+            Math::eVec2<float> playerPos = player.get<ECSComponents::TransformComponent>(entMng).pos;
+            ai.goal = playerPos;
         }
 
         void onUpdate(ECS::Entity& entity, ECS::EntityManager& entMng, float dt) override
@@ -55,14 +57,13 @@ namespace AI {
             Math::eVec2<int> next = ai.path.front();
             Math::eVec2<float> target{ (float)next.x, (float)next.y };
 
-            Math::eVec2<float> dir{ target.x - transform.pos.x, target.y - transform.pos.y };
-            float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+            float len = eVec2Length(target - transform.pos);
             if (len < 0.001f) return;
 
-            dir.x /= len; dir.y /= len;
+            Math::eVec2<float> dir;
+            eVec2Normalize(dir, target - transform.pos);
 
-            physics.velocity.x = dir.x * 100.0f;
-            physics.velocity.y = dir.y * 100.0f;
+            physics.velocity = dir * ai.speed;
             physics.ClampVelocity();
 
             if (len < 0.2f)

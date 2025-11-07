@@ -17,6 +17,8 @@
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
+#include "enemy/chasing_state.hpp"
+#include "enemy/idle_state.hpp"
 
 // Enum for different editor states
 enum EditorState {
@@ -80,6 +82,9 @@ private:
     // Scene Tree (note: must be initialized after engine_ is initialized)
     std::unique_ptr<Editor::EnoSceneTree> sceneTree_;
 
+    // Pathfinding system
+    std::unique_ptr<AI::PathfindingSystem> pathfinder_;
+
 public:
     // Constructors
     GameApplication() = default;
@@ -91,6 +96,8 @@ public:
     // Main game methods
     void initialize();  // Called once at start
     void run();         // Starts the game loop
+    void shutdown();    // Called when application closed
+
     void markEntitiesDirty() { entitiesDirty_ = true; }
 
     // Yun Qi's IMGUI sandbox
@@ -115,6 +122,8 @@ public:
     float getEditorCameraX() const { return editorCameraX_; }
     float getEditorCameraY() const { return editorCameraY_; }
 
+    // Get pathfinding system
+    AI::PathfindingSystem& getPathfinder() { return *pathfinder_; }
 
 private:
     // Setup (called during initialize())

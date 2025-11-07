@@ -25,7 +25,8 @@ namespace AI {
 
         void unregisterEntity(ECS::Entity& entity, ECS::EntityManager& entMng);
 
-        AI::StateMachine* getStateMachine(ECS::Entity& entity);
+        AI::StateMachine& getStateMachine(ECS::Entity& entity);
+        const AI::StateMachine& getStateMachine(ECS::Entity& entity) const;
 
     private:
         Event::EnoEventBus& bus_;
