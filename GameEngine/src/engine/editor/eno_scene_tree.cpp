@@ -249,8 +249,6 @@ namespace Editor
 	void EnoSceneTree::attachScript(Node* node, std::unique_ptr<Script::EnoScript>&& script)
 	{
 		if (node)
-			std::wcout << L"[DEBUG] attachScript(): Script attached to node with entity ID "
-			<< node->sceneObjectID_ << L" ( some script i guess )" << std::endl;
 			node->script_ = std::move(script);
 	}
 
