@@ -867,19 +867,19 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				Editor::Node* parentNode = sceneTree.getNodeByEntityID(selectedEntityID);
 				Editor::Node* childNode = sceneTree.createFromEntity(childEntity, parentNode);
 
-				if (attachScript) {
-					auto script = scriptMng.selectScript(); // file picker
-					if (script) {
-						sceneTree.attachScript(childNode, std::move(script));
-					}
-				}
-				//if (attachScript && selectedScriptIndex >= 0) {
-				//	std::wstring selectedScript = availableScripts[selectedScriptIndex];
-				//	std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-				//	auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
-				//	if (script)
-				//		sceneTree.attachScript(createdNode, std::move(script));
+				//if (attachScript) {
+				//	auto script = scriptMng.selectScript(); // file picker
+				//	if (script) {
+				//		sceneTree.attachScript(childNode, std::move(script));
+				//	}
 				//}
+				if (attachScript && selectedScriptIndex >= 0) {
+					std::wstring selectedScript = availableScripts[selectedScriptIndex];
+					std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
+					auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+					if (script)
+						sceneTree.attachScript(childNode, std::move(script));
+				}
 
 				if (g_game) g_game->markEntitiesDirty();
 

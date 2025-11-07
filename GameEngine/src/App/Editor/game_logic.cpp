@@ -23,7 +23,7 @@ float rotationRadians = 0.f;
 
 void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
-	engine_.setup(); 
+	engine_.setup();
 
 	// Initialize scene tree (must be after engine setup)
 	sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
@@ -48,7 +48,7 @@ void GameApplication::initialize() {
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
-		
+
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
 
@@ -76,13 +76,13 @@ void GameApplication::setupGameEntities() {
 }
 
 void GameApplication::setupScripting() {
-	
+
 	std::cout << "hr setup now \n";
 	engine_.getCoreHost().HRSetup();
 
 	std::cout << "defineBegin now \n";
 	engine_.getCoreHost().defineBegin();
-	
+
 	std::cout << "defineUpdate now \n";
 	engine_.getCoreHost().defineUpdate();
 
@@ -473,7 +473,7 @@ void GameApplication::updateGameLogic() {
 			auto* collisionSystem = engine_.getCollisionSystem();
 			if (collisionSystem) {
 				// Visualize colliders with camera offset applied
-				Math::eVec2<float> cameraOffset = {editorCameraX_, editorCameraY_};
+				Math::eVec2<float> cameraOffset = { editorCameraX_, editorCameraY_ };
 				collisionSystem->VisualizeColliders(graphics_, engine_.getEntityManager(), cameraOffset);
 			}
 		}
@@ -541,7 +541,7 @@ void GameApplication::updateEntities() {
 
 	// Get player system from engine (no longer a global)
 	auto* playerSystem = engine_.getPlayerSystem();
-	
+
 	// Check if editor state is in play and player is moving and switch animation accordingly
 	if (playerSystem && playerSpawned_ && getEditorState() == Playing) {
 		// Check for WASD input
@@ -572,11 +572,11 @@ void GameApplication::updateEntities() {
 		}
 		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
 		// No need to call playerSystem->Update() here anymore
-		}
+	}
 
 	// NOTE: Collision system update is now done in eno_engine.cpp::updateGameSystems()
 	// No need to call collisionSystem->Update() here anymore
-	
+
 	// NOTE: Physics system update is now done in eno_engine.cpp::updateGameSystems()
 	// No need to call physicsSystem.Update() here anymore	
 
@@ -586,9 +586,9 @@ void GameApplication::updateEntities() {
 	auto& coreHost = engine_.getCoreHost();
 
 	// Editor state = play game
-	switch (getEditorState()) 
+	switch (getEditorState())
 	{
-	case Playing:
+		case Playing:
 		{
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
@@ -602,62 +602,63 @@ void GameApplication::updateEntities() {
 			}
 
 
-		if (!hasBegun)
-		{
-			coreHost.begin();
+			if (!hasBegun)
+			{
+				coreHost.begin();
+
+				//for (auto* node : sceneTree_->getAllNodes())
+				//{
+				//	if (!node->script_)continue;
+				//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
+				//	std::wcout << L"[DEBUG] Entity ID " << node->entity_.id()
+				//		<< L" running Begin for class: " << node->script_->extrClassName(node->script_->name_.data())
+				//		<< std::endl;
+				//	coreHost.runScriptMethod(className, L"Begin");
+
+
+
+				//}
+				hasBegun = true;
+			}
+
+			// Get list of entities to store current pos to reset later
+			// Check that the last frame editor state was 'Stopped'
+			if (playAfterStop)
+			{
+				// Save the current scene tree state before playing
+				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
+				sceneTree_->save(ASSETS_DIR_PATH"/saves/scenes/" + sceneTree_->getSceneName(), sceneTree_->getSceneName());
+				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
+				// Toggle flag to make it a one time event
+				playAfterStop = false;
+			}
 
 			//for (auto* node : sceneTree_->getAllNodes())
 			//{
-			//	if (!node->script_)continue;
+			//	if (!node->script_) continue;
+
 			//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
-			//	std::wcout << L"[DEBUG] Entity ID " << node->entity_.id()
-			//		<< L" running Begin for class: " << node->script_->extrClassName(node->script_->name_.data())
-			//		<< std::endl;
-			//	coreHost.runScriptMethod(className, L"Begin");
-
-
-
+			//	coreHost.runScriptMethod(className, L"Update");
 			//}
-			hasBegun = true;
-		}
-
-		// Get list of entities to store current pos to reset later
-		// Check that the last frame editor state was 'Stopped'
-		if (playAfterStop)
-		{
-			// Save the current scene tree state before playing
-			std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
-			sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
-			std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
-			// Toggle flag to make it a one time event
-			playAfterStop = false;
-		}
-
-		//for (auto* node : sceneTree_->getAllNodes())
-		//{
-		//	if (!node->script_) continue;
-
-		//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
-		//	coreHost.runScriptMethod(className, L"Update");
-		//}
-		coreHost.update();
-		updateTestObject(engine_.getEntityManager(), engine_);
-
-		break;
-	}
-	case Paused:
-	{
-		// This toggles keyframe mode
-		keyFrameMode = true;
-		break;
-	}
-	case NextKeyFrame:
-	{
-		// Check if key frame mode is true
-		if (keyFrameMode)
-		{
-			// Update one time
+			coreHost.update();
 			updateTestObject(engine_.getEntityManager(), engine_);
+
+			break;
+
+		}
+		case Paused:
+		{
+			// This toggles keyframe mode
+			keyFrameMode = true;
+			break;
+		}
+		case NextKeyFrame:
+		{
+			// Check if key frame mode is true
+			if (keyFrameMode)
+			{
+				// Update one time
+				updateTestObject(engine_.getEntityManager(), engine_);
 
 				// Reset variables - transition back to Paused for next frame
 				// NOTE: Don't set state back to Paused here! It happens too early in the frame.
@@ -665,12 +666,7 @@ void GameApplication::updateEntities() {
 			}
 			break;
 		}
-		break;
-	}
-	case Stopped:
-	{
-		// This condition ensures resetting of pos comes after play
-		if (!playAfterStop)
+		case Stopped:
 		{
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
@@ -689,15 +685,16 @@ void GameApplication::updateEntities() {
 					std::cerr << "[GameLogic] Warning: Scene name is empty, cannot load scene!" << std::endl;
 				}
 
-			// Mark entities as dirty to refresh the rendering cache
-			entitiesDirty_ = true;
-			// Toggle flag
-			playAfterStop = true;
+				// Mark entities as dirty to refresh the rendering cache
+				entitiesDirty_ = true;
+				// Toggle flag
+				playAfterStop = true;
+				hasBegun = false;
+			}
+			break;
 		}
-		hasBegun = false;
-		break;
 	}
-	}
+
 
 	// loop to check for UI button entities 
 	std::vector<ECS::Entity> entityList = engine_.getEntityManager().findEntity<ECSComponents::ButtonComponent>();
@@ -850,7 +847,7 @@ void GameApplication::drawPlayerAndIndicator() {
 						);
 					}
 				}
-			
+
 			}
 		}
 		catch (...) {}
