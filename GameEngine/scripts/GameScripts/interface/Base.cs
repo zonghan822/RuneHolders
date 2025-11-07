@@ -22,7 +22,7 @@ namespace Eno
         [UnmanagedCallersOnly(EntryPoint = "GetFileClassNames")]
         public static unsafe IntPtr GetFileClassNames(IntPtr pFilePath, int* count)
         {
-            string filePath = Marshal.PtrToStringUni(pFilePath);
+            string? filePath = Marshal.PtrToStringUni(pFilePath);
             if (!File.Exists(filePath))
             {
                 *count = 0;
@@ -72,7 +72,7 @@ namespace Eno
             {
                 if (type.IsClass)
                 {
-                    classNames.Add(type.FullName);
+                    classNames.Add(type.FullName!);
                 }
             }
 
@@ -141,7 +141,7 @@ namespace Eno
                     Name = Marshal.StringToCoTaskMemUni(field.Name),
                     Type = Marshal.StringToCoTaskMemUni(field.FieldType.Name),
                     Value = Marshal.StringToCoTaskMemUni(field.GetValue(instance)?.ToString() ?? "null"),
-                    NamspClass = Marshal.StringToCoTaskMemUni(field.DeclaringType.FullName ?? "Unknown"),
+                    Origin = Marshal.StringToCoTaskMemUni(field.DeclaringType?.FullName ?? "Unknown"),
                     Min = reveal.Min,
                     Max = reveal.Max,
                     HasRange = reveal.HasRange

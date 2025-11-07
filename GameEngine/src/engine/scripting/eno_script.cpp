@@ -3,6 +3,7 @@
 
 namespace Script
 {
+#if 1
 	EnoScript::EnoScript(Core::EnoCoreHost& core, const std::wstring& name, const std::wstring& path) :
 		coreHost_{ core },
 		name_{ name },
@@ -17,6 +18,7 @@ namespace Script
 		// MUST use CoTaskMemFree! wchar_t* is memory allocated by the COM task memory allocator
 		// NOT the CRT heap!!! Likely implicitly with CoTaskMemAlloc. Hence, use the COM heap to deallocate!
 		// Source: https://stackoverflow.com/questions/10055607/when-using-cotaskmemalloc-should-i-always-call-cotaskmemfree
+		
 
 		// Get all script variables
 		int count{};
@@ -33,6 +35,88 @@ namespace Script
 			CoTaskMemFree(classNames[i]);
 		}
 	}
+#else
+	EnoScript::EnoScript(Core::EnoCoreHost& core, const std::wstring& name, const std::wstring& path)
+		: coreHost_{ core }, name_{ name }, path_{ path }
+	{
+		std::wcout << L"\n[DEBUG] ===== EnoScript Constructor =====" << std::endl;
+		std::wcout << L"[DEBUG] Name: " << name_ << std::endl;
+		std::wcout << L"[DEBUG] Path: " << path_ << std::endl;
+
+		if (!std::filesystem::exists(path_))
+		{
+			std::wcerr << L"[ERROR] File does not exist at path: " << path_ << std::endl;
+			return;
+		}
+
+		if (!coreHost_.cname())
+		{
+			std::wcerr << L"[ERROR] coreHost_.cname() delegate is null! Did you initialize CoreCLR and set delegates?" << std::endl;
+			return;
+		}
+
+		int count{};
+		std::wcout << L"[DEBUG] Calling cname()..." << std::endl;
+		void* names = nullptr;
+
+		try
+		{
+			names = (coreHost_.cname())(path_.c_str(), &count);
+			std::wcout << L"[DEBUG] cname() call succeeded. Count = " << count << std::endl;
+		}
+		catch (...)
+		{
+			std::wcerr << L"[EXCEPTION] cname() threw an exception. Possibly invalid delegate or path encoding." << std::endl;
+			return;
+		}
+
+		if (!names)
+		{
+			std::wcerr << L"[WARN] cname() returned null pointer (no classes found or C# side failed)." << std::endl;
+			return;
+		}
+
+		if (count <= 0)
+		{
+			std::wcerr << L"[WARN] cname() returned count = " << count << L". Nothing to map." << std::endl;
+			CoTaskMemFree(names);
+			return;
+		}
+
+		wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
+		std::wcout << L"[DEBUG] Mapping class names..." << std::endl;
+
+		for (size_t i = 0; i < static_cast<size_t>(count); ++i)
+		{
+			if (!classNames[i])
+			{
+				std::wcerr << L"[WARN] classNames[" << i << L"] is null. Skipping." << std::endl;
+				continue;
+			}
+
+			std::wstring cname = extrClassName(classNames[i]);
+			std::wcout << L"[DEBUG]   [" << i << L"] Extracted class: " << cname << std::endl;
+
+			try
+			{
+				map(cname);
+			}
+			catch (const std::exception& e)
+			{
+				std::wcerr << L"[EXCEPTION] During map(): " << e.what() << std::endl;
+			}
+
+			CoTaskMemFree(classNames[i]);
+		}
+
+		std::wcout << L"[DEBUG] Freeing names array..." << std::endl;
+		CoTaskMemFree(classNames);
+
+		std::wcout << L"[DEBUG] ===== EnoScript Constructor End =====\n" << std::endl;
+	}
+#endif
+
+
 
 	// Extract the class name
 	std::wstring EnoScript::extrClassName(wchar_t* name)

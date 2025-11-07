@@ -131,8 +131,8 @@ namespace ECSComponents
 			l("Width",			width,				"float");
 			l("Height",			height,				"float");
 			l("Shape",			shape,				"char32");
-			//l("Color",		color,		"Color");
-			
+			l("Color",			color,				"Color(RGBA)");
+
 			l("Texture Path",	texturePath,		"texchar240");
 			l("TexID",			texID,				"int");
 		}
@@ -143,8 +143,8 @@ namespace ECSComponents
 			l("Width",			width,				"float");
 			l("height",			height,				"float");
 			l("Shape",			shape,				"char32");
-			//l("Color",		color,		"Color");
-			
+			l("Color",			color,				"Color(RGBA)");
+
 			l("Texture Path",	texturePath,		"texchar240");
 			l("TexID",			texID,				"int");
 		}

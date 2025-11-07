@@ -104,6 +104,49 @@ namespace Script
 		return script;
 	}
 
+	// Get available scripts for the user
+	std::vector<std::wstring> EnoScriptManager::getAvailableScripts()
+	{
+		std::vector<std::wstring> result;
+
+		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
+				continue;
+
+			int count{};
+			//cname for classname
+			void* names = (coreHost_.cname())(entry.path().wstring().c_str(), &count);
+			if (!names || count == 0)
+				continue;
+
+			wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
+			for (size_t i = 0; i < count; ++i) {
+				std::wstring fullName{ classNames[i] };
+				size_t dpos = fullName.find('.');
+				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
+				result.push_back(className);
+				CoTaskMemFree(classNames[i]);
+			}
+			CoTaskMemFree(classNames);
+		}
+
+		return result;
+	}
+
+	std::unique_ptr<EnoScript> EnoScriptManager::loadScript(const std::wstring& className)
+	{
+		std::wstring fullTypeWithAsm = L"Eno." + className + L", GameScripts"; 
+		//std::optional<Core::EnoCoreHost::DelegateInfo> del = coreHost_.loadGameStateDelegate(fullTypeWithAsm.c_str(), L"Begin");
+		//if (del) coreHost_.callScript<Core::EnoCoreHost::DelegateInfo>(fullTypeWithAsm.c_str(), method.c_str(), del);
+
+		std::wcout << L"[DEBUG] loadScript() called for: " << className << std::endl;
+		// Construct and return your script object as usual
+
+		std::filesystem::path scriptPath = L"../../../scripts/GameScripts/user_scripts/";
+		scriptPath /= className + L".cs";
+		return std::make_unique<EnoScript>(coreHost_, className, scriptPath.wstring());
+	}
+
 	// Create a CS script in the user_scripts folder
 	std::unique_ptr<EnoScript> EnoScriptManager::createScript(const std::string& name)
 	{
@@ -145,6 +188,10 @@ namespace Script
 
 		// Create and return the unique EnoScript
 		std::wstring wname{ name.begin(), name.end() };
+
+		std::wcout << "name: " << wname << std::endl <<
+			"path: " << absPath.wstring() << std::endl;
+
 		auto script = std::make_unique<EnoScript>(coreHost_, wname, absPath.wstring());
 		
 		openScript(absPath.string());

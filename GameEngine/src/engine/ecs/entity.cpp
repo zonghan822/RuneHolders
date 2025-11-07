@@ -526,6 +526,61 @@ namespace ECS
 			return Math::eVec2{ fv, sv };
 		}
 
+		// Graphics::Color (RGBA struct)
+		if (ttype == "color(rgba)")
+		{
+			float r{}, g{}, b{}, a{};
+			size_t vstart{}, vend{};
+
+			// Parse r value
+			vstart = tvalue.find_first_of(':');
+			if (vstart != std::string::npos)
+			{
+				++vstart;
+				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
+				vend = tvalue.find_first_of('|', vstart);
+				if (vend != std::string::npos)
+					r = std::stof(tvalue.substr(vstart, vend - vstart));
+			}
+
+			// Parse g value
+			vstart = tvalue.find(':', vend);
+			if (vstart != std::string::npos)
+			{
+				++vstart;
+				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
+				vend = tvalue.find_first_of('|', vstart);
+				if (vend != std::string::npos)
+					g = std::stof(tvalue.substr(vstart, vend - vstart));
+			}
+
+			// Parse b value
+			vstart = tvalue.find(':', vend);
+			if (vstart != std::string::npos)
+			{
+				++vstart;
+				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
+				vend = tvalue.find_first_of('|', vstart);
+				if (vend != std::string::npos)
+					b = std::stof(tvalue.substr(vstart, vend - vstart));
+			}
+
+			// Parse a value
+			vstart = tvalue.find(':', vend);
+			if (vstart != std::string::npos)
+			{
+				++vstart;
+				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
+				vend = tvalue.find_first_of('|', vstart);
+				if (vend != std::string::npos)
+					a = std::stof(tvalue.substr(vstart, vend - vstart));
+				else
+					a = std::stof(tvalue.substr(vstart));
+			}
+
+			return Graphics::Color{ r, g, b, a };
+		}
+
 		// File path types
 		if (ttype == "texchar240")
 		{

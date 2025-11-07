@@ -4,7 +4,7 @@
 * @date         15-09-2025
 * @brief        This file contains the definitions for the math library math.hpp
 *
-* * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* * All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 #pragma once
 
@@ -537,6 +537,37 @@ namespace Math
 	T min(const T& a, const T& b)
 	{
 		return a < b ? a : b;
+	}
+
+	template <typename T>
+	T pow(const T& base, const T& exponent)
+	{
+		// Manual implementation without std::pow
+		if (exponent == static_cast<T>(0)) return static_cast<T>(1);
+
+		// Handle integer exponents
+		if (exponent == static_cast<T>(static_cast<int>(exponent))) {
+			int exp = static_cast<int>(exponent);
+			T result = static_cast<T>(1);
+			T b = base;
+			bool negative = exp < 0;
+			if (negative) exp = -exp;
+
+			// Fast exponentiation by squaring
+			while (exp > 0) {
+				if (exp & 1) result *= b;
+				b *= b;
+				exp >>= 1;
+			}
+
+			return negative ? (static_cast<T>(1) / result) : result;
+		}
+
+		// For non-integer exponents, use exp and log approximation
+		// result = base^exponent = e^(exponent * ln(base))
+		// Simple Taylor series approximation would go here
+		// For now, just handle the common case of integer exponents
+		return base * base; // Fallback for float exponents
 	}
 
 

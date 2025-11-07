@@ -23,14 +23,20 @@
 #include <variant>
 #include <cstdlib>
 
+
 namespace Core
 {
 	// Source: https://learn.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting
 	class EnoCoreHost
 	{
 	private:
-		const std::string dllPath = SCRIPT_BIN_PATH "/GameScripts.dll";
-		const std::string runtConfigJson = SCRIPT_BIN_PATH "/GameScripts.runtimeconfig.json";
+		const std::string asmDllPath = SCRIPT_BIN_PATH "/GameScripts.dll";
+		const wchar_t* runtConfigJson = SCRIPT_BIN_PATH L"/GameScripts.runtimeconfig.json";
+
+		//const wchar_t* userScriptPath{ SCRIPT_SRC_PATH };
+		//const wchar_t* asmDllAbsPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/Publish/GameScripts.dll" };
+
+		bool hasBegun_ = false;
 	public:
 
 		// Define it as a pointer to a delegate type
@@ -43,7 +49,8 @@ namespace Core
 				void* reserved,
 				void** delegate);
 
-		struct Del
+		// To call methods with no params
+		struct DelegateInfo
 		{
 			load_assembly_and_get_function_pointer_fn fn_;
 			std::wstring assemblyPath_;
@@ -51,7 +58,32 @@ namespace Core
 			std::wstring method_;
 		};
 
-		struct KeyDel
+		// For backend methods (such as compiling or reloading)
+		struct ScriptingDelegateInfo
+		{
+			load_assembly_and_get_function_pointer_fn fn_;
+			std::wstring assemblyPath_;
+			std::wstring type_;
+			std::wstring method_;
+
+			const wchar_t* userScriptsPath_;
+			const wchar_t* asmDLLPath_;
+		};
+
+		// For proxy calling (calling from the proxy class)
+		struct ProxyDelegateInfo
+		{
+			load_assembly_and_get_function_pointer_fn fn_;
+			std::wstring assemblyPath_;
+			std::wstring type_;
+			std::wstring method_;
+
+			const wchar_t* className_;
+			const wchar_t* methodName_;
+		};
+
+		// For the InputBoarding method (streaming in input from engine end)
+		struct KeyDelegateInfo
 		{
 			load_assembly_and_get_function_pointer_fn fn_;
 			std::wstring assemblyPath_;
@@ -75,6 +107,8 @@ namespace Core
 		// so the VS compiler will not clean it
 		using Method = void(*)();
 		using InputMethod = void(*)(int, int, int, int);
+		using ScriptingMethod = void(*)(const wchar_t* scriptPath, const wchar_t* dllPath);
+		using ProxyMethod = void(*)(const wchar_t* className_, const wchar_t* methodName_);
 		using GetScriptFieldsMethod = Script::PortedField* (__stdcall*)(const wchar_t* scriptName, int* count);
 		using GetFileClassNamesMethod = void* (*)(const wchar_t* pAssemblyPath, int* count);
 
@@ -88,26 +122,61 @@ namespace Core
 		GetFileClassNamesMethod cname() const;
 
 		// Loading a delegate without parameters
-		std::optional<Del> loadDelegate(const char_t*, const char_t*, void*);
+		std::optional<DelegateInfo> loadDelegate(const char_t*, const char_t*, void*);
+
+		// Loading a delegate with two additional path param
+		std::optional<EnoCoreHost::ScriptingDelegateInfo> loadDelegate(
+			const char_t*, const char_t*, void*,
+			const wchar_t*, const wchar_t*);
 
 		// Loading an input delegate
-		std::optional<KeyDel> loadDelegate(
+		std::optional<KeyDelegateInfo> loadDelegate(
 			const char_t*, const char_t*, void*,
 			const Input::InputSent&);
 
-		// Calling a delegate without any parameters
-		void callDelegate(Del&);
 
-		// Calling a delegate with input parameters
-		void callDelegate(KeyDel&);
-
+		// Calling a delegate to retrieve script vars
 		template <typename T>
-		std::optional<T> retrieveDelegate(Del& params);
+		std::optional<T> retrieveDelegate(DelegateInfo& params);
 
-		// Handling engine state
+		// Calling a script
+		template <typename DelegateInfoType>
+		void callScript(const wchar_t*, const wchar_t*, void*);
+
+		template <typename DelegateInfoType>
+		void callScript(const wchar_t*, const wchar_t*, void*, const wchar_t*, const wchar_t*);
+
+		// Helper for using the proxy call
+		ProxyMethod proxyCall(const wchar_t*, const wchar_t*);
+
+		// Define and call any method within the assembly via proxy (a method in C#)
+		ProxyMethod defineProxyDelegate(
+			const char_t*, const char_t*, void*,
+			const wchar_t*, const wchar_t*);
+
+
+
+		// ---------  Handling script state based on engine state ---------
+		void HRSetup();
+		void hotReload();
+
+		// Script backend (compilation and reloading)
+
+		// Scripts frontend (user scripts)
 		void begin();
 		void update();
 		void frameEnd();
+
+		//need to call this before getting into the gameplay loop
+		void defineBegin();
+		void defineUpdate();
+
+
+		void areScriptsModified();
+
+		void runScriptMethod(const std::wstring& className, const wchar_t* method);
+
+
 
 		// ----------------------- Events -----------------------
 		void onInputReceived(const Input::InputSent&);
@@ -125,15 +194,17 @@ namespace Core
 		hostfxr_get_runtime_delegate_fn delegatefp_ = nullptr;		// Handle for retrieving a runtime delegate
 		hostfxr_close_fn closefp_ = nullptr;							// Handle for closing an initialized host context
 
-		hostfxr_handle hfHandle_ = nullptr;							// For interfacing CoreCLR through hostfxr
-		void* stateDelegate_ = nullptr;								// Delegate for calling methods responsible for different game/engine states (e.g begin, update)
-		void* scriptDelegate_ = nullptr;								// Delegate for retrieving script fields
-		void* inputDelegate_ = nullptr;								// Delegate for communnicating input to C# end
-		void* cnameDelegate_ = nullptr;								// Delegate for getting 
+		hostfxr_handle hfHandle_;							// For interfacing CoreCLR through hostfxr
+		void* stateDelegate;                                // Delegate for calling methods responsible for different game/engine states (e.g begin, update)
+		void* scriptDelegate_;                               // Delegate for retrieving script fields
+		void* proxyDelegate_;                                // Delegate for retrieving script fields
+		void* inputDelegate_;                                // Delegate for communnicating input to C# end
+		void* cnameDelegate_;                                // Delegate for getting class names
+		void* reloadDelegate_;                               // Delegate for handling backend affairs such as script recompilation and reloading							// Delegate for handling backend affairs such as script recompilation and reloading
+
 
 		GetScriptFieldsMethod fieldsHandle_ = nullptr;
 		GetFileClassNamesMethod cnameHandle_ = nullptr;
-
 
 		// Initialize hostfxr library
 		void init();
@@ -142,9 +213,21 @@ namespace Core
 		void getHFHandles();
 
 		// Initialize CoreCLR
-		void initCoreCLR();
+		void hostRTInit();
 
 		// Set CoreCLR delegate
 		void setDelegate(void**) const;
+
+		// Calling a delegate without any parameters
+		void callDelegate(DelegateInfo&);
+
+		// Calling a delegate with a script path parameter
+		void callDelegate(ScriptingDelegateInfo& params);
+
+		// Calling a delegate with input parameters
+		void callDelegate(KeyDelegateInfo&);
+
+		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> begin_;
+		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> update_;
 	};
 }

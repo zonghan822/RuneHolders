@@ -66,6 +66,13 @@ private:
     float editorCameraY_ = 0.0f;  // Camera offset Y
     float editorCameraSpeed_ = 300.0f;  // Camera movement speed
 
+    // Camera panning state
+    bool isPanning_ = false;
+    float panStartY_ = 0.0f;
+    float panTargetY_ = 0.0f;
+    float panDuration_ = 1.0f;
+    float panTimer_ = 0.0f;
+
     // Font
     std::shared_ptr<Font::EnoFont> pixelifyFont_;
     std::shared_ptr<Font::EnoFont> timesFont_;
@@ -124,6 +131,10 @@ public:
 
     // Get pathfinding system
     AI::PathfindingSystem& getPathfinder() { return *pathfinder_; }
+    // Camera panning for room transitions
+    void startCameraPan(float targetY, float duration = 1.0f);
+    bool isCameraPanning() const { return isPanning_; }
+
 
 private:
     // Setup (called during initialize())
@@ -134,12 +145,14 @@ private:
     void setupGameMath();       // math demonstration code
     void setupImGui();          // setup ImGui code
     void setupAnimations();
+    void setupScripting();
     void createTestObjectsAndAddToSceneTree();  // Create test objects and add them to scene tree
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
     void updateImGui();         // Update code for imGui
+    void loadEntityTextures();  // Load textures for entities with texture paths
 
     void drawPlayerAndIndicator();
 

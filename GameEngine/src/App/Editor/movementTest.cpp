@@ -266,6 +266,7 @@ void createTestObject(ECS::EntityManager& ent) {
 		{900.0f, 300.0f},  // Right side
 		{950.0f, 400.0f}   // Right side
 	};
+	
 	const char* objName = { "testcaven" };
 	const char* shapeName = { "Rectangle" };
 	float width = 64.0f;
@@ -450,7 +451,7 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 
 			auto& collision = entity.get<ECSComponents::CollisionComponent>(ent);
 			auto& transform = entity.get<ECSComponents::TransformComponent>(ent);
-			auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>(ent);
+			//auto& drawInfo = entity.get<ECSComponents::DrawInfoComponent>(ent);
 
 			// Skip entities without physics component
 			if (!entity.has<ECSComponents::PhysicsComponent>(ent)) continue;

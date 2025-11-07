@@ -23,7 +23,7 @@ float rotationRadians = 0.f;
 
 void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
-	engine_.setup(); 
+	engine_.setup();
 
 	// Initialize scene tree (must be after engine setup)
 	sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
@@ -38,16 +38,13 @@ void GameApplication::initialize() {
 	setupGameEvents();
 	setupGameMath();
 	setupImGui();
-    setupAnimations();
+	setupAnimations();
+	setupScripting();
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
 	// ============= LOAD LAST ACTIVE SAVED SCENE ========================= //
-	engine_.getEnoEditor().getSceneTree().loadLastSavedScene();
-	
-
-    // Create pushable box entities for testing and add them to scene tree
-    createTestObjectsAndAddToSceneTree();
+	engine_.getEnoEditor().getSceneTree().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
@@ -65,7 +62,7 @@ void GameApplication::initialize() {
 	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
 	editorCameraY_ = (VIRTUAL_HEIGHT - EDITOR_HEIGHT) / 2.0f;
 
-    std::cout << "Game initialized successfully!" << std::endl;
+	std::cout << "Game initialized successfully!" << std::endl;
 }
 
 void GameApplication::run() {
@@ -88,8 +85,24 @@ void GameApplication::setupGameEntities() {
 	// To setup the entities in our game
 }
 
+void GameApplication::setupScripting() {
+
+	std::cout << "hr setup now \n";
+	engine_.getCoreHost().HRSetup();
+
+	std::cout << "defineBegin now \n";
+	engine_.getCoreHost().defineBegin();
+
+	std::cout << "defineUpdate now \n";
+	engine_.getCoreHost().defineUpdate();
+
+	std::cout << "Setup Scripting done \n";
+}
+
+
 void GameApplication::setupGameAudio() {
 	// setup audio
+	SystemTimer totalTimePerFrame("Audio", systemTimes_);
 	auto& audioMng = engine_.getAudioManager();
 	audioMng.setChannelGroup("BGM");
 	audioMng.setChannelGroup("SFX");
@@ -122,7 +135,7 @@ void GameApplication::setupGameAudio() {
 	inputMng.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
 	inputMng.setupKey("Set New Music 1", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
 	inputMng.setupKey("Set New Music 2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
-	
+
 	inputMng.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
 	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 1", "Close_To_The_End");
 	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 2", "Across_The_Horizon");
@@ -132,7 +145,7 @@ void GameApplication::setupGameAudio() {
 	inputMng.setupKey("Play SFX1", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, 0);
 	inputMng.setupKey("Play SFX2", GLFW_KEY_X, glfwGetKeyScancode(GLFW_KEY_X), GLFW_RELEASE, 0);
 	inputMng.setupKey("Play SFX3", GLFW_KEY_C, glfwGetKeyScancode(GLFW_KEY_C), GLFW_RELEASE, 0);
-	
+
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX1", "SFX", "Flask");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX2", "SFX", "Stone_Impact");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX3", "SFX", "Water_Drip");
@@ -151,7 +164,7 @@ void GameApplication::setupGameEvents() {
 }
 
 void GameApplication::setupGameMath() {
-	
+
 	// Math lib and maybe collision
 	//std::cout << "Calling math function\n";
 	//Math::eVec2 vec{ 1.1f, 1.2f };
@@ -170,7 +183,7 @@ void GameApplication::setupGameMath() {
 }
 
 void GameApplication::setupAnimations() {
-    // Load the sprite sheet texture
+	// Load the sprite sheet texture
 	backgroundTexture_ = engine_.getResourceLoader().getTexture("Background");
 	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
 	playerWalkTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Walk-Sheet");
@@ -222,6 +235,7 @@ void GameApplication::createTestObjectsAndAddToSceneTree() {
 
 	// Create the test objects (boxes)
 	createTestObject(entityManager);
+
 
 	// Now add all entities with NameComponent "testcaven" to the scene tree
 	std::vector<ECS::Entity> testEntities = entityManager.findEntity<ECSComponents::NameComponent>(
@@ -279,6 +293,9 @@ void GameApplication::updateGameLogic() {
 		playerAnimController_.update(static_cast<float>(deltaTime));
 	}
 
+	// Load textures for entities (if needed)
+	loadEntityTextures();
+
 	updateEntities();
 	drawShapes();
 	drawPlayerAndIndicator();
@@ -290,20 +307,55 @@ void GameApplication::updateGameLogic() {
 		gameFramebuffer_->unbind();
 	}
 
+	// ==== CAMERA PANNING INPUT (ONLY IN PLAY MODE) ====
+	if (getEditorState() == Playing) {
+		auto& inputManager = engine_.getInputManager();
+		// Trigger camera pan upward when UP arrow is pressed
+		if (inputManager.isKeyDown(GLFW_KEY_UP) && !isPanning_) {
+			// Pan up by one screen height (360 pixels = EDITOR_HEIGHT)
+			float targetY = editorCameraY_ - static_cast<float>(EDITOR_HEIGHT);
+			startCameraPan(targetY, 1.0f); // 1 second duration
+		}
+		// Optional: Add other directions
+		if (inputManager.isKeyDown(GLFW_KEY_DOWN) && !isPanning_) {
+			float targetY = editorCameraY_ + static_cast<float>(EDITOR_HEIGHT);
+			startCameraPan(targetY, 1.0f);
+		}
+	}
+
 	// ==== RENDER EDITOR VIEW (ZOOMED IN WITH CAMERA) ====
 	if (editorFramebuffer_) {
-		// NOTE: WASD controls BOTH player movement AND editor camera
-		// To move ONLY the camera, set the editor state to stopped (edit) mode
-		auto& inputManager = engine_.getInputManager();
-		if (getEditorState() == Stopped)
-		{
+		// Update camera panning for room transitions
+		if (isPanning_) {
+			panTimer_ += static_cast<float>(deltaTime);
+			float progress = Math::min(panTimer_ / panDuration_, 1.0f);
+
+			// Smooth easing function (ease-in-out)
+			float easedProgress = progress < 0.5f
+				? 2.0f * progress * progress
+				: 1.0f - Math::pow(-2.0f * progress + 2.0f, 2.0f) / 2.0f;
+
+			// Interpolate camera position
+			editorCameraY_ = panStartY_ + (panTargetY_ - panStartY_) * easedProgress;
+
+			// End panning when complete
+			if (progress >= 1.0f) {
+				isPanning_ = false;
+				editorCameraY_ = panTargetY_;
+			}
+		}
+		// Manual camera control (only when not panning and in edit mode)
+		else if (getEditorState() == Stopped) {
+			// NOTE: WASD controls BOTH player movement AND editor camera
+			// To move ONLY the camera, set the editor state to stopped (edit) mode
+			auto& inputManager = engine_.getInputManager();
 			float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
 			if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
 		}
-		
+
 		// Clamp camera to world bounds
 		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, static_cast<float>(VIRTUAL_WIDTH - EDITOR_WIDTH));
 		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, static_cast<float>(VIRTUAL_HEIGHT - EDITOR_HEIGHT));
@@ -331,8 +383,8 @@ void GameApplication::updateGameLogic() {
 			for (int ty = 0; ty < tilesY; ++ty) {
 				for (int tx = 0; tx < tilesX; ++tx) {
 					// World position of this tile
-					float worldX = tx * bgWidth;
-					float worldY = ty * bgHeight;
+					float worldX = static_cast<float>(tx * bgWidth);
+					float worldY = static_cast<float>(ty * bgHeight);
 
 					// Convert to screen space (apply camera offset)
 					float screenX = worldX - editorCameraX_;
@@ -374,8 +426,21 @@ void GameApplication::updateGameLogic() {
 					if (screenX + halfW >= 0 && screenX - halfW < EDITOR_WIDTH &&
 						screenY + halfH >= 0 && screenY - halfH < EDITOR_HEIGHT) {
 
+						// Check if entity has a texture
+						if (renderInfo.texture && renderInfo.texture->isValid()) {
+							// Draw textured quad (top-left position)
+							float topLeftX = screenX - halfW;
+							float topLeftY = screenY - halfH;
+
+							engine_.getGraphicsManager().drawTexturedQuad(
+								Math::eVec2<float>{topLeftX, topLeftY},
+								Math::eVec2<float>{renderInfo.width, renderInfo.height},
+								renderInfo.texture,
+								renderInfo.color
+							);
+						}
 						// Check shape type and draw accordingly
-						if (strcmp(renderInfo.shape, "Circle") == 0) {
+						else if (strcmp(renderInfo.shape, "Circle") == 0) {
 							// Draw circle at screen position (center)
 							engine_.getGraphicsManager().drawCircle(
 								Math::eVec2<float>{screenX, screenY},
@@ -473,7 +538,7 @@ void GameApplication::updateGameLogic() {
 			auto* collisionSystem = engine_.getCollisionSystem();
 			if (collisionSystem) {
 				// Visualize colliders with camera offset applied
-				Math::eVec2<float> cameraOffset = {editorCameraX_, editorCameraY_};
+				Math::eVec2<float> cameraOffset = { editorCameraX_, editorCameraY_ };
 				collisionSystem->VisualizeColliders(graphics_, engine_.getEntityManager(), cameraOffset);
 			}
 		}
@@ -491,13 +556,67 @@ void GameApplication::updateGameLogic() {
 
 	// Now render ImGui (which will display the framebuffer textures)
 	updateImGui();
+
+	// Update engine playing state for NEXT frame based on current editor state
+	// This must happen BEFORE we transition NextKeyFrame->Paused
+	bool shouldPlayNextFrame = (getEditorState() == Playing || getEditorState() == NextKeyFrame);
+	engine_.setIsPlaying(shouldPlayNextFrame);
+
+	// Handle NextKeyFrame state transition at the END of the frame
+	// This ensures physics/collision will have already updated with isPlaying=true in the next frame
+	if (getEditorState() == NextKeyFrame) {
+		setEditorState(Paused);
+	}
+}
+
+void GameApplication::loadEntityTextures() {
+	// Load textures for all entities that have a texture path but no texture loaded
+	auto& entityManager = engine_.getEntityManager();
+	auto& loader = engine_.getResourceLoader();
+
+	for (auto& [entityID, entityLoc] : entityManager.getMap()) {
+		// Check if entity has RenderComponent
+		bool hasRender = false;
+		for (const auto& type : entityLoc.archetype->types_) {
+			if (type == std::type_index(typeid(ECSComponents::RenderComponent))) {
+				hasRender = true;
+				break;
+			}
+		}
+
+		if (!hasRender) continue;
+
+		// Get RenderComponent
+		size_t renderIndex = entityLoc.archetype->findComponentIndex<ECSComponents::RenderComponent>();
+		auto& renderComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::RenderComponent>(
+			renderIndex, entityLoc.entityIndexInChunk);
+
+		// If texture path is set but texture is not loaded, load it
+		if (strlen(renderComp.texturePath) > 0 && (!renderComp.texture || !renderComp.texture->isValid())) {
+			// Extract filename from path (e.g., "assets/art/mainmenu.png" -> "mainmenu")
+			std::string path(renderComp.texturePath);
+			size_t lastSlash = path.find_last_of("/\\");
+			std::string filename = (lastSlash != std::string::npos) ? path.substr(lastSlash + 1) : path;
+			size_t lastDot = filename.find_last_of('.');
+			std::string textureName = (lastDot != std::string::npos) ? filename.substr(0, lastDot) : filename;
+
+			// Get texture from resource loader
+			renderComp.texture = loader.getTexture(textureName);
+
+			if (renderComp.texture && renderComp.texture->isValid()) {
+				std::cout << "[GameLogic] Loaded texture '" << textureName << "' for entity " << entityID << std::endl;
+			} else {
+				std::cerr << "[GameLogic] Failed to load texture '" << textureName << "' from path: " << renderComp.texturePath << std::endl;
+			}
+		}
+	}
 }
 
 void GameApplication::updateEntities() {
-	SystemTimer EntityTimer("Entities" , systemTimes_);
+	SystemTimer EntityTimer("Entities", systemTimes_);
 
-	ImGuiIO& io = ImGui::GetIO();
-	float deltaTime = io.DeltaTime;
+	//ImGuiIO& io = ImGui::GetIO();
+	//float deltaTime = io.DeltaTime;
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
 
@@ -529,11 +648,11 @@ void GameApplication::updateEntities() {
 
 	// Get player system from engine (no longer a global)
 	auto* playerSystem = engine_.getPlayerSystem();
-	
+
 	// Check if editor state is in play and player is moving and switch animation accordingly
 	if (playerSystem && playerSpawned_ && getEditorState() == Playing) {
 		// Check for WASD input
-		bool isMoving = 
+		bool isMoving =
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
 			inputManager.isKeyPressed(GLFW_KEY_A) ||
 			inputManager.isKeyPressed(GLFW_KEY_S) ||
@@ -560,36 +679,79 @@ void GameApplication::updateEntities() {
 		}
 		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
 		// No need to call playerSystem->Update() here anymore
-		}
+	}
 
 	// NOTE: Collision system update is now done in eno_engine.cpp::updateGameSystems()
 	// No need to call collisionSystem->Update() here anymore
-	
+
 	// NOTE: Physics system update is now done in eno_engine.cpp::updateGameSystems()
 	// No need to call physicsSystem.Update() here anymore	
 
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
+	static bool hasBegun = false;
+	auto& coreHost = engine_.getCoreHost();
 
 	// Editor state = play game
 	switch (getEditorState())
 	{
-	case Playing:
+		case Playing:
 		{
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
 			{
 				// Save the current scene tree state before playing
 				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
-				//sceneTree_->save(ASSETS_DIR_PATH"/saves/SceneTreeSave");
+				sceneTree_->save(ASSETS_DIR_PATH "saves/scenes/" + sceneTree_->getSceneName(), sceneTree_->getSceneName());
 				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
 			}
 
-			// Update dynamic objects
+
+			if (!hasBegun)
+			{
+				coreHost.begin();
+
+				//for (auto* node : sceneTree_->getAllNodes())
+				//{
+				//	if (!node->script_)continue;
+				//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
+				//	std::wcout << L"[DEBUG] Entity ID " << node->entity_.id()
+				//		<< L" running Begin for class: " << node->script_->extrClassName(node->script_->name_.data())
+				//		<< std::endl;
+				//	coreHost.runScriptMethod(className, L"Begin");
+
+
+
+				//}
+				hasBegun = true;
+			}
+
+			// Get list of entities to store current pos to reset later
+			// Check that the last frame editor state was 'Stopped'
+			if (playAfterStop)
+			{
+				// Save the current scene tree state before playing
+				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
+				sceneTree_->save(ASSETS_DIR_PATH"/saves/scenes/" + sceneTree_->getSceneName(), sceneTree_->getSceneName());
+				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
+				// Toggle flag to make it a one time event
+				playAfterStop = false;
+			}
+
+			//for (auto* node : sceneTree_->getAllNodes())
+			//{
+			//	if (!node->script_) continue;
+
+			//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
+			//	coreHost.runScriptMethod(className, L"Update");
+			//}
+			coreHost.update();
 			updateTestObject(engine_.getEntityManager(), engine_);
+
 			break;
+
 		}
 		case Paused:
 		{
@@ -605,8 +767,9 @@ void GameApplication::updateEntities() {
 				// Update one time
 				updateTestObject(engine_.getEntityManager(), engine_);
 
-				// Reset variables
-				setEditorState(Paused);
+				// Reset variables - transition back to Paused for next frame
+				// NOTE: Don't set state back to Paused here! It happens too early in the frame.
+				// The state will be reset to Paused at the end of this function after rendering.
 			}
 			break;
 		}
@@ -617,17 +780,28 @@ void GameApplication::updateEntities() {
 			{
 				// Load the saved scene tree state to restore positions
 				std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
-				sceneTree_->load(ASSETS_DIR_PATH "/saves/SceneTreeSave", sceneTree_->getSceneName());
-				std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
+				std::string sceneName = sceneTree_->getSceneName();
+				if (!sceneName.empty())
+				{
+					std::string scenePath = ASSETS_DIR_PATH "saves/scenes/" + sceneName;
+					sceneTree_->load(scenePath, sceneName);
+					std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
+				}
+				else
+				{
+					std::cerr << "[GameLogic] Warning: Scene name is empty, cannot load scene!" << std::endl;
+				}
 
 				// Mark entities as dirty to refresh the rendering cache
 				entitiesDirty_ = true;
 				// Toggle flag
 				playAfterStop = true;
+				hasBegun = false;
 			}
 			break;
 		}
 	}
+
 
 	// loop to check for UI button entities 
 	std::vector<ECS::Entity> entityList = engine_.getEntityManager().findEntity<ECSComponents::ButtonComponent>();
@@ -678,7 +852,7 @@ void GameApplication::drawText(Math::eVec2<float> windowSize) {
 	fpsSs << std::fixed;     // fixed-point notation
 	fpsSs << "FPS: " << engine_.getFPS();
 	graphics.drawText(timesFont_, text, { 25.f , 50.f }, 1.f, Graphics::Color::Black);
-	graphics.drawText(timesFont_, fpsSs.str(), {windowSize.x - 125.f , 25.f}, 0.5f, Graphics::Color::Red);
+	graphics.drawText(timesFont_, fpsSs.str(), { windowSize.x - 125.f , 25.f }, 0.5f, Graphics::Color::Red);
 	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.x / 2.f, windowSize.y - 25.f }, 0.75f, Graphics::Color::Blue);
 }
 
@@ -780,7 +954,7 @@ void GameApplication::drawPlayerAndIndicator() {
 						);
 					}
 				}
-			
+
 			}
 		}
 		catch (...) {}
@@ -910,4 +1084,14 @@ EditorState GameApplication::getEditorState()
 void GameApplication::setEditorState(EditorState state)
 {
 	g_editorState = state;
+}
+
+// Camera panning for room transitions
+void GameApplication::startCameraPan(float targetY, float duration)
+{
+	isPanning_ = true;
+	panStartY_ = editorCameraY_;
+	panTargetY_ = targetY;
+	panDuration_ = duration;
+	panTimer_ = 0.0f;
 }

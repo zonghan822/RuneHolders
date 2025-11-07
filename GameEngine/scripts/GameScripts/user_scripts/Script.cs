@@ -16,29 +16,46 @@ namespace Eno
 
         public float speed = 5.10f;
 
+        private static CustomInput? customAct;
 
-        [UnmanagedCallersOnly]
         public static void Begin()
         {
-            Console.WriteLine("Hello from .NET!");
+            // Creating a custom input
+            customAct = new CustomInput(
+                key: InputKey.Keycode_K,
+                action: InputAction.Press,
+                mod: InputMod.None);
 
-            SayBonk();
+            customAct.Enable();
+
+            Console.WriteLine("Hello from Begin!");
         }
 
+        public static void Update()
+        {
+            //SayBonk();
+            Console.WriteLine("Bonk on head");
+
+            if (customAct != null && customAct.Released())
+            {
+                Console.WriteLine("Triggered custom!");
+            }
+        }
+
+        // Only bonk if b is held down
         public static void SayBonk()
         {
-            Console.WriteLine("bonk");
-
-            // if (Input.isReleased())
-            // {
-            //     Console.WriteLine("released up");
-            // }
-        }
-
-        [UnmanagedCallersOnly]
-        public static void _Input()
-        {
-           SayBonk();
+            // Testing releasing a button
+            if (Input.GetKeyReleased(InputKey.Keycode_B))
+                Console.WriteLine("bonk");
+            
+            // Testing holding down a button
+            if (Input.GetKeyHeld(InputKey.Keycode_S))
+                Console.WriteLine("splash");
+        
+            // Testing pressing a button
+            if (Input.GetKeyPressed(InputKey.Keycode_A))
+                Console.WriteLine("atsuuuuuuuuuu");
         }
     }
 

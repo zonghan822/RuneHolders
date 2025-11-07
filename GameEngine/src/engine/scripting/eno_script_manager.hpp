@@ -45,6 +45,17 @@ namespace Script
 		// Verify that a script exists
 		bool scriptExists(const std::string&, const std::string&);
 
+		// All available scripts for user to choose from in Imgui
+		std::vector<std::wstring> getAvailableScripts();
+
+		// Addition to selectScript so that it only loads
+		std::unique_ptr<EnoScript> loadScript(const std::wstring& className);
+
+		// YunQi's desperate attempt to make something work
+		//void beginAllScripts(Editor::EnoSceneTree& tree);
+		//void updateAllScripts(Editor::EnoSceneTree& tree);
+
+
 	private:
 		Core::EnoCoreHost& coreHost_;
 

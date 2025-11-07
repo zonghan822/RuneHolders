@@ -6,7 +6,7 @@
 *				as well as operator overloads and helper functions which assists in arithmetic
 *				calculations
 * 
-* * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* * All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 #pragma once
 
@@ -455,6 +455,15 @@ namespace Math
 	*//*========================================================================================*/
 	template <typename T>
 	T min(const T& a, const T& b);
+
+	/*============================================================================================
+	 * \brief       Raises a base value to a power (exponent)
+	 * \param[in]   base      The base value
+	 * \param[in]   exponent  The exponent value
+	 * \return      Returns base raised to the power of exponent
+	*//*========================================================================================*/
+	template <typename T>
+	T pow(const T& base, const T& exponent);
 
 } // End of namespace Math
 

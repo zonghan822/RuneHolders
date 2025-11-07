@@ -249,6 +249,8 @@ namespace Editor
 	void EnoSceneTree::attachScript(Node* node, std::unique_ptr<Script::EnoScript>&& script)
 	{
 		if (node)
+			std::wcout << L"[DEBUG] attachScript(): Script attached to node with entity ID "
+			<< node->sceneObjectID_ << L" ( some script i guess )" << std::endl;
 			node->script_ = std::move(script);
 	}
 
@@ -620,7 +622,10 @@ namespace Editor
 		newFile << "{\n\n}";
 		newFile.close();
 
-		// Save the current scene name
+		// Load file first (this sets currentScene)
+		load(fullPath, defaultSceneName);
+
+		// Save the current scene name to CurrentSavedScene.txt
 		std::ofstream currentSceneSave{ ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt" };
 		if (!currentSceneSave)
 		{
@@ -628,9 +633,6 @@ namespace Editor
 		}
 		currentSceneSave << currentScene;
 		currentSceneSave.close();
-
-		// Load file
-		load(fullPath, defaultSceneName);
 	
 	}
 

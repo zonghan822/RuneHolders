@@ -115,9 +115,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	ImGui::NewFrame();
 
 	// get engine systems
-	auto& inputManager = engine_.getInputManager();
 	auto& entityManager = engine_.getEntityManager();
-	
+
 	// BEGIN DOCKSPACE
 	imGuiBeginDockspace();
 
@@ -169,13 +168,13 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 
 	// Scene select
 	ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoCollapse);
-	displaySceneTab(engine_, sceneTree);
+	displaySceneTab(sceneTree);
 	ImGui::End();
 
 	// Edit tab 
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_, sceneTree);
-	displayAllEntitiesTab(engine_, sceneTree);
+	displayAllEntitiesTab(engine_);
 	ImGui::End();
 
 	// Prefabs
@@ -185,7 +184,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 
 	// Game View (full scene, bottom-right)
 	ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-	displayGameView(engine_);
+	displayGameView();
 	ImGui::End();
 
 	// Editor View (zoomed in, center - replaces old Game View behavior)
@@ -641,7 +640,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	//}
 }
 
-void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
+void displayAllEntitiesTab(Engine::EnoEngine& engine_)
 {
 	auto& entityManager = engine_.getEntityManager();
 
@@ -748,6 +747,43 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 	// ==================== HIERARCHY CONTROLS ====================
 	static int entityCounter = 1;  // Track entity numbering
+	static bool attachScript = false; // Checkbox state
+
+	static int selectedScriptIndex = -1;	// Script dropdown
+	static std::vector<std::wstring> availableScripts; // List of available scripts
+	static bool scriptsLoaded = false;
+
+	Script::EnoScriptManager& scriptMng = engine_.getEnoEditor().getScriptManager();
+
+	ImGui::Checkbox("Attach Script to New Entity", &attachScript);
+
+	// Here i prepare the list for showcase of the scripts
+	if (attachScript) {
+		// Load scripts only once or when needed
+		if (!scriptsLoaded) {
+			availableScripts = scriptMng.getAvailableScripts();
+			scriptsLoaded = true;
+		}
+
+		if (!availableScripts.empty()) {
+			std::vector<std::string> scriptNames;
+			for (const auto& ws : availableScripts)
+				scriptNames.push_back(std::string(ws.begin(), ws.end()));
+
+			// Convert vector to array for ImGui Combo
+			std::vector<const char*> scriptItems;
+			for (auto& name : scriptNames)
+				scriptItems.push_back(name.c_str());
+
+			ImGui::Text("Select Script:");
+			ImGui::Combo("##ScriptCombo", &selectedScriptIndex, scriptItems.data(), (int)scriptItems.size());
+		}
+		else {
+			ImGui::Text("No scripts found.");
+		}
+	}
+
+
 
 	if (ImGui::Button("Add Root Node")) {
 		auto& entityManager = engine_.getEntityManager();
@@ -777,7 +813,16 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
 		nameComp.name[sizeof(nameComp.name) - 1] = '\0';
 
-		sceneTree.createFromEntity(newEntity, nullptr);
+		Node* createdNode = sceneTree.createFromEntity(newEntity, nullptr);
+
+		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created\n";
+		if (attachScript && selectedScriptIndex >= 0) {
+			std::wstring selectedScript = availableScripts[selectedScriptIndex];
+			std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
+			auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+			if (script)
+				sceneTree.attachScript(createdNode, std::move(script));
+		}
 		if (g_game) g_game->markEntitiesDirty();
 	}
 
@@ -821,6 +866,20 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				Editor::Node* parentNode = sceneTree.getNodeByEntityID(selectedEntityID);
 				Editor::Node* childNode = sceneTree.createFromEntity(childEntity, parentNode);
 
+				//if (attachScript) {
+				//	auto script = scriptMng.selectScript(); // file picker
+				//	if (script) {
+				//		sceneTree.attachScript(childNode, std::move(script));
+				//	}
+				//}
+				if (attachScript && selectedScriptIndex >= 0) {
+					std::wstring selectedScript = availableScripts[selectedScriptIndex];
+					std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
+					auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+					if (script)
+						sceneTree.attachScript(childNode, std::move(script));
+				}
+
 				if (g_game) g_game->markEntitiesDirty();
 
 				std::cout << "Added child node " << childEntity.id() << " ('" << nameComp.name
@@ -838,31 +897,33 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	}
 
 
+
+
 	ImGui::Separator();
 
 	// --- Delete Node Button ---
 	if (ImGui::Button("Delete Selected Node")) {
-			auto& em = engine_.getEntityManager();
-			Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
-			if (node) {
-				std::cout << "[DEBUG] Deleting node " << selectedEntityID << " and all children from hierarchy\n";
+		auto& em = engine_.getEntityManager();
+		Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
+		if (node) {
+			std::cout << "[DEBUG] Deleting node " << selectedEntityID << " and all children from hierarchy\n";
 
-				// First, destroy all child entities recursively
-				destroyChildrenRecursive(node, em);
+			// First, destroy all child entities recursively
+			destroyChildrenRecursive(node, em);
 
-				// Then kill the scene tree nodes (removes from tree structure)
-				sceneTree.kill(node);
+			// Then kill the scene tree nodes (removes from tree structure)
+			sceneTree.kill(node);
 
-				// Finally, destroy the parent entity
-				em.destroyEntity(selectedEntityID);
-				selectedEntityID = UINT32_MAX;  // Reset to "no selection"
+			// Finally, destroy the parent entity
+			em.destroyEntity(selectedEntityID);
+			selectedEntityID = UINT32_MAX;  // Reset to "no selection"
 
-				if (g_game)
-					g_game->markEntitiesDirty();
-			}
-			else {
-				std::cout << "[WARN] Selected node " << selectedEntityID << " not found in scene tree\n";
-			}
+			if (g_game)
+				g_game->markEntitiesDirty();
+		}
+		else {
+			std::cout << "[WARN] Selected node " << selectedEntityID << " not found in scene tree\n";
+		}
 	}
 
 
@@ -895,7 +956,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	}
 }
 
-void displaySceneTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
+void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 {
 	// Heading
 	ImGui::Text("=== Scene Select===");
@@ -963,8 +1024,19 @@ void displaySceneTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree
 		if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
 		{
 			// Load scene
-			std::cout << "Loading file: " << filename << std::endl;
-			sceneTree.load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
+			std::cout << "sceneName: " << sceneTree.getSceneName() << ", filename: " << filename << std::endl;
+			// Check that scene is not currently loaded
+			if (sceneTree.getSceneName() != filename)
+			{
+				std::cout << "Loading file: " << filename << std::endl;
+				sceneTree.load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
+				g_game->markEntitiesDirty();
+			}
+			else
+			{
+				std::cout << "Scene is already loaded!";
+			}
+			
 		}
 		
 		// Right click opens a panel to allow you to change and delete scene name
@@ -986,7 +1058,7 @@ void displaySceneTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree
 
 			if (ImGui::Button("Change new name"))
 			{
-				if (scene_name == "\0")
+				if (!scene_name || scene_name[0] == '\0')
 				{
 					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: no input detected!");
 				}
@@ -1174,14 +1246,16 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity)
 		int currentColorIndex = 0;
 		if (draw.color.r == 1.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
 			currentColorIndex = 1; // Red
-		} else if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
+		}
+		else if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
 			currentColorIndex = 0; // Green
 		}
 
 		if (ImGui::Combo("Color", &currentColorIndex, colorTypes, IM_ARRAYSIZE(colorTypes))) {
 			if (currentColorIndex == 0) {
 				draw.color = Graphics::Color::Green;
-			} else {
+			}
+			else {
 				draw.color = Graphics::Color::Red;
 			}
 			if (g_game) g_game->markEntitiesDirty();
@@ -1195,7 +1269,8 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity)
 		if (draw.texture != nullptr && draw.texture->isValid()) {
 			ImGui::Text("Texture ID: %d", draw.texID);
 			ImGui::Image((void*)(intptr_t)draw.texture->getID(), ImVec2(64, 64));
-		} else {
+		}
+		else {
 			ImGui::TextDisabled("No texture assigned");
 		}
 	}
@@ -1307,7 +1382,7 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 
 	// Get entity name from NameComponent if it exists
 	std::string label = "Entity " + std::to_string(node->entity_.id());
-
+#if 1
 	// Try to get the actual name from the entity
 	try {
 		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
@@ -1317,10 +1392,23 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 				break;
 			}
 		}
-	} catch (...) {
+	}
+	catch (...) {
+		// If we can't get the name, use the default
+	}
+#else
+	try {
+		for (Node* node : sceneTree.getAllNodes()) {
+			label = node->name_;
+			break;
+		}
+	}
+	catch (...) {
 		// If we can't get the name, use the default
 	}
 
+
+#endif
 	// If node has children -> use TreeNodeEx
 	if (node->children_.empty()) {
 		bool selected = (selectedEntityID == node->entity_.id());
@@ -1476,7 +1564,7 @@ void imGuiBeginDockspace() {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
 
-void displayGameView(Engine::EnoEngine& engine_) {
+void displayGameView() {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
 	// Display info text - this is now a read-only overview window
@@ -1551,7 +1639,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 		g_game->setEditorState(isPlaying ? Playing : Stopped);
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("()Pause")) {
+	if (ImGui::Button("Pause")) {
 		if (g_game->getEditorState() != Stopped) {
 			g_game->setEditorState(g_game->getEditorState() == Playing ? Paused : Playing);
 		}
@@ -1586,7 +1674,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				displaySize.y = contentSize.y;
 				displaySize.x = contentSize.y * editorAspect;
 				offset.x = (contentSize.x - displaySize.x) * 0.5f;
-			} else {
+			}
+			else {
 				displaySize.x = contentSize.x;
 				displaySize.y = contentSize.x / editorAspect;
 				offset.y = (contentSize.y - displaySize.y) * 0.5f;
@@ -1636,7 +1725,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				float worldY = screenY + g_game->getEditorCameraY();
 
 				return ImVec2(worldX, worldY);
-			};
+				};
 
 			// --- Handle entity deletion by click ---
 			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
@@ -1658,7 +1747,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					sceneTree.kill();
 
 					if (g_game) g_game->markEntitiesDirty();
-				} else {
+				}
+				else {
 					std::cout << "No entity found at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 				}
 

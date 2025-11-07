@@ -130,7 +130,7 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t nodeID, ECS::En
  * \param[in]   Editor::EnoSceneTree& sceneTree
  * \return      void
 *//*========================================================================================*/
-void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
+void displayAllEntitiesTab(Engine::EnoEngine& engine_);
 
 /*============================================================================================
  * \brief       Displays Entity Inspector
@@ -173,11 +173,11 @@ void displayFPSTab(Engine::EnoEngine& engine_);
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void displaySceneTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
+void displaySceneTab(Editor::EnoSceneTree& sceneTree);
 
 
 // docking shi
-void displayGameView(Engine::EnoEngine& engine_);
+void displayGameView();
 void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
 
 void imGuiSetupDefaultLayout();
