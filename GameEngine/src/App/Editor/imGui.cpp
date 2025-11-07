@@ -8,6 +8,7 @@
 *     			There are also functions for spawning and counting entities.
 *//*========================================================================================*/
 #include <filesystem>
+#include <random>
 #include "imGui.hpp"
 #include "game_logic.hpp"
 #include "player/player_config.hpp"
@@ -741,6 +742,67 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			playerSpawned_ = false;
 			if (g_game) g_game->markEntitiesDirty();
 			std::cout << "Player and all children destroyed\n";
+		}
+	}
+	ImGui::Separator();
+
+	// ==================== SPAWN ANIMATED ENTITIES ====================
+	ImGui::Text("=== ANIMATED SPAWNER ===");
+	if (ImGui::Button("Spawn 1000 Animated Entities")) {
+		auto& entityManager = engine_.getEntityManager();
+		auto& loader = engine_.getResourceLoader();
+
+		// Load the walking animation spritesheet
+		auto walkTexture = loader.getTexture("Protagonist-Walk-Sheet");
+		if (!walkTexture) {
+			std::cout << "[ERROR] Failed to load Protagonist-Walk-Sheet texture!\n";
+		}
+		else {
+			std::cout << "[INFO] Spawning 1000 animated rotating entities...\n";
+
+			// Random number generation setup
+			std::random_device rd;
+			std::mt19937 gen(rd());
+			std::uniform_real_distribution<float> posX(0.0f, 1280.0f);  // Screen width
+			std::uniform_real_distribution<float> posY(0.0f, 720.0f);   // Screen height
+			std::uniform_real_distribution<float> rotSpeed(-3.14f, 3.14f); // Rotation speed (radians/sec)
+
+			for (int i = 0; i < 1000; ++i) {
+				// Create transform with random position and rotation speed
+				// rot.x = current rotation angle, rot.y = rotation speed
+				ECSComponents::TransformComponent transform{
+					{posX(gen), posY(gen)},      // Random position
+					{0.0f, rotSpeed(gen)},       // rot.x = angle (0), rot.y = rotation speed
+					{1.0f, 1.0f}                 // Scale
+				};
+
+				// Create render component with walk animation texture
+				ECSComponents::RenderComponent renderComp;
+				renderComp.width = 96.0f;   // Frame size
+				renderComp.height = 96.0f;
+				strncpy_s(renderComp.shape, "Sprite", sizeof(renderComp.shape) - 1);
+				renderComp.texture = walkTexture;
+				strncpy_s(renderComp.texturePath, "Protagonist-Walk-Sheet", sizeof(renderComp.texturePath) - 1);
+				renderComp.color = Graphics::Color::White;
+				renderComp.texID = 0;  // Start at first frame, will animate
+
+				// Create name component
+				ECSComponents::NameComponent nameComp;
+				std::string entityName = "AnimatedEntity " + std::to_string(i + 1);
+				strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
+				nameComp.name[sizeof(nameComp.name) - 1] = '\0';
+
+				// Create entity with all components
+				ECS::Entity entity = entityManager.create<ECSComponents::TransformComponent>(transform);
+				entity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
+				entity.add<ECSComponents::NameComponent>(entityManager, nameComp);
+
+				// Add to scene tree as root node
+				sceneTree.createFromEntity(entity, nullptr);
+			}
+
+			if (g_game) g_game->markEntitiesDirty();
+			std::cout << "[SUCCESS] Spawned 1000 animated rotating entities!\n";
 		}
 	}
 	ImGui::Separator();
