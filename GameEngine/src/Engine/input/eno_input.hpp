@@ -23,6 +23,9 @@
 // Utility
 #include "../utility/eno_bimap.hpp"
 
+// Params
+#include "eno_input_params.hpp"
+
 // stds
 #include <iostream>
 #include <unordered_map>
@@ -213,6 +216,39 @@ namespace Input
 		* \return  Pair of (xOffset, yOffset).
 		*//*========================================================================================*/
 		std::pair<double, double> getScrollOffset() const;
+		
+		/*============================================================================================
+		* \brief   Getter for the mods applied on the frame
+		* \return  mod(s) applied
+		*//*========================================================================================*/
+		void resetInput();
+
+		// =================== Interface functions ===================
+
+		// Check if specified key is released
+		/*============================================================================================
+		* \brief   Check if specified key is released
+		* \return  true if key is released | false if not
+		*//*========================================================================================*/
+		bool isKeyReleased(KeyCode key);
+
+		/*============================================================================================
+		* \brief   Check if specified key is pressed
+		* \return  true if key is pressed | false if not
+		*//*========================================================================================*/
+		bool isKeyPressed(KeyCode key);
+
+		/*============================================================================================
+		* \brief   Check if specified key is held
+		* \return  true if key is held | false if not
+		*//*========================================================================================*/
+		bool isKeyHeld(KeyCode key);
+
+		/*============================================================================================
+		* \brief   Getter for the mods applied on the frame
+		* \return  mod(s) applied
+		*//*========================================================================================*/
+		int currentMods();
 
 	private:
 		Event::EnoEventBus& bus_;
@@ -238,6 +274,9 @@ namespace Input
 		double mouseX_ = 0.0, mouseY_ = 0.0;
 		double prevMouseX_ = 0.0, prevMouseY_ = 0.0;
 		double scrollX_ = 0.0, scrollY_ = 0.0;
+
+		// Current frame input
+		int key_{}, scancode_{}, action_{}, mods_{};
 
 		/*============================================================================================
 		* \brief   Handle keyboard events and update key state.
@@ -271,9 +310,12 @@ namespace Input
 		void handleMouseScroll(double xoffset, double yoffset);
 
 		/*============================================================================================
-		* \brief   Publishes an input event for subscribers to listen to
-		* \return  Pair of (xOffset, yOffset).
+		* \brief				Register input on the current frame
+		* \param[in] key		Key pressed
+		* \param[in] scancode	Scancode of key
+		* \param[in] action		Action applied
+		* \param[in] mods		Mods applied
 		*//*========================================================================================*/
-		void fireInput(const int&, const int&, const int&, const int&);
+		void setCurInput(int key, int scancode, int action, int mods);
 	};
 }

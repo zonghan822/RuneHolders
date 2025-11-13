@@ -143,7 +143,7 @@ namespace Input {
 			it->second();
 		}
 
-		fireInput(key, scancode, action, mods);
+		setCurInput(key, scancode, action, mods);
 	}
 
 	void EnoInputManager::handleMouseButton(int button, int action, int mods) {
@@ -169,8 +169,46 @@ namespace Input {
 		scrollY_ = yoffset;
 	}
 
-	void EnoInputManager::fireInput(const int& key, const int& scancode, const int& action, const int& mods)
+	// =================== Interface functions ===================
+
+// Check if specified key is released
+	bool EnoInputManager::isKeyReleased(KeyCode key)
 	{
-		bus_.publish<InputSent>(InputSent{key, scancode, action, mods});
+		return (key_ == key && action_ == 0) ? true : false;
+	}
+
+	// Check if specified key is released
+	bool EnoInputManager::isKeyPressed(KeyCode key)
+	{
+		return (key_ == key && action_ == 1) ? true : false;
+	}
+
+	// Check if specified key is released
+	bool EnoInputManager::isKeyHeld(KeyCode key)
+	{
+		return (key_ == key && action_ == 2) ? true : false;
+	}
+
+	int EnoInputManager::currentMods()
+	{
+		return mods_;
+	}
+
+	// Reset input stored
+	void EnoInputManager::resetInput()
+	{
+		key_ = -1;
+		scancode_ = -1;
+		action_ = -1;
+		mods_ = -1;
+	}
+
+	// Register input
+	void EnoInputManager::setCurInput(int key, int scancode, int action, int mods)
+	{
+		key_ = key;
+		scancode_ = scancode;
+		action_ = action;
+		mods_ = mods;
 	}
 }

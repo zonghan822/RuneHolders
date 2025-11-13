@@ -96,6 +96,10 @@ void GameApplication::setupScripting() {
 	std::cout << "defineUpdate now \n";
 	engine_.getCoreHost().defineUpdate();
 
+	std::cout << "defineSync now \n";
+	engine_.getCoreHost().defineSync();
+
+
 	std::cout << "Setup Scripting done \n";
 }
 
@@ -265,6 +269,8 @@ void GameApplication::updateGameLogic() {
 	auto& graphics_ = engine_.getGraphicsManager();
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
+
+
 
 	pathfinder_->update(entityManager, 1.f);
 

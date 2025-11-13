@@ -7,12 +7,12 @@ namespace Eno
     {
         public static void Begin()
         {
-            Console.WriteLine("Enemy Begin");
+
 		}
 
         public static void Update()
         {
-            Console.WriteLine("Enemy Update");
+
 		}
 	}
 }

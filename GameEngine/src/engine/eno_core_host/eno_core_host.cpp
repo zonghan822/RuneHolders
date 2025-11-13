@@ -584,14 +584,10 @@ namespace Core
 // To have a queue system for the begin
 //
 
-
-
-// Handling state when frame has ended on the engine side
-	void EnoCoreHost::frameEnd()
+	void EnoCoreHost::synchronize()
 	{
-		// Resets input when no input is received
-		//std::optional<Del> dele = loadDelegate(L"Eno.Input, GameScripts", L"noInputReceived", stateDelegate_);
-		callScript<DelegateInfo>(L"Eno.Input, GameScripts", L"noInputReceived", stateDelegate_);
+		// Calls Synchronize method on scripts
+		callScript<DelegateInfo>(L"Eno.ScriptRuntime, GameScripts", L"Synchronize", stateDelegate_);
 	}
 
 	// Detect change in script

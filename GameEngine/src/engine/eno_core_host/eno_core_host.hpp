@@ -9,7 +9,7 @@
 // Events
 #include "../input/eno_input_events.hpp"
 
-// Windows | CoreClr
+// Windows | CoreCLR
 #include <Windows.h>
 #include <coreclr_delegates.h>
 #include <nethost.h>
@@ -165,18 +165,19 @@ namespace Core
 		// Scripts frontend (user scripts)
 		void begin();
 		void update();
+
+		// Scripts backend
+		void synchronize();
 		void frameEnd();
 
 		//need to call this before getting into the gameplay loop
 		void defineBegin();
 		void defineUpdate();
-
+		void defineSync();
 
 		void areScriptsModified();
 
 		void runScriptMethod(const std::wstring& className, const wchar_t* method);
-
-
 
 		// ----------------------- Events -----------------------
 		void onInputReceived(const Input::InputSent&);
@@ -229,5 +230,7 @@ namespace Core
 
 		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> begin_;
 		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> update_;
+
+		ProxyMethod synchronize_;
 	};
 }

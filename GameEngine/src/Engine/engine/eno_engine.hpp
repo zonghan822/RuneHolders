@@ -31,6 +31,7 @@
 #include "../ai/ai_manager.hpp"
 #include "../physics/physics_system.hpp"
 #include "../../src/App/Editor/player/player.hpp"
+#include "../bridge/eno_bridge.hpp
 
 namespace Player {
 	class PlayerSystem;
@@ -224,6 +225,9 @@ namespace Engine
 		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };
 		Audio::EnoAudioManager audioMng_{ bus_ };
 		AI::AIManager aiMng_{ bus_ };
+
+		// Bridge
+		Bridge::EnoBridge bridgeInst_{ input_ };
 
 		// Game Systems (managed with unique_ptr for optional initialization)
 		std::unique_ptr<Physics::PhysicsSystem> physicsSys_;
