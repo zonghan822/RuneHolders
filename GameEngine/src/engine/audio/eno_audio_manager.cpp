@@ -116,6 +116,46 @@ namespace Audio
 	}
 
 	/*============================================================================================
+	 * \brief				Sets up and plays sound based on params provided by an audio component
+	 * \param[in]			Audio component
+	*//*========================================================================================*/
+	void EnoAudioManager::play(ECSComponents::AudioComponent& audioComp)
+	{
+		audioComp.isPlaying_ = true;
+		
+		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
+		std::string group{ audioComp.audioMod_.chGroup_ };
+		FMOD::ChannelGroup* chGroup{ nullptr };
+
+		auto it = channelGroups_.find(group);
+		if (it == channelGroups_.end())
+		{
+			// Create and store a new channel group for the audio component
+			system->createChannelGroup(audioComp.audioMod_.chGroup_, &chGroup);
+			channelGroups_[group] = chGroup;
+		}
+		else
+		{
+			// Channel group exists and will be used
+			chGroup = it->second;
+		}
+
+		// Prime channel
+		FMOD::Channel* channel{ nullptr };
+		channels_.push_back(channel);
+
+		// Set audio params
+		modifyBasic(channel, createSP(audioComp));
+
+		// Play
+		system->playSound(
+			audioComp.audioMod_.sound_, 
+			chGroup, 
+			!audioComp.isAutoplay_, 
+			&channel);
+	}
+
+	/*============================================================================================
 	 * \brief				Play all loaded sounds
 	 * \param[in]			Set pause state for sounds
 	*//*========================================================================================*/
@@ -266,6 +306,21 @@ namespace Audio
 		// Schedule fade out
 		group->second->addFadePoint(dspClock + totalSamples - fadeOutSamples, 1.0f);
 		group->second->addFadePoint(dspClock + totalSamples, 0.0f);
+	}
+
+	/*============================================================================================
+	 * \brief				Based on the audio component passed, create and return an
+	 *						appropriate SoundParameters struct
+	 * \param[in]			Audio Component
+	*//*========================================================================================*/
+	SoundParameters EnoAudioManager::createSP(ECSComponents::AudioComponent& ac)
+	{
+		SoundParameters sp;
+		sp.volume = ac.volume_;
+		sp.pitch = ac.pitchScale_;
+		sp.pan = ac.panScale_;
+
+		return sp;
 	}
 
 	/*============================================================================================

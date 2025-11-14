@@ -1527,7 +1527,6 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 				}
 			}
 		}
-		g_droppedFiles.clear();
 	}
 
 	// Texture list
@@ -1592,6 +1591,51 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 				textureData.rows, textureData.cols);
 		}
 	}
+
+
+	// Loading audio
+	const auto& sounds = loader.getSounds();
+	if (!g_droppedFiles.empty()) 
+	{
+		for (auto& path : g_droppedFiles)
+		{
+			std::filesystem::path filePath(path);
+			auto name = filePath.stem().string();
+			auto ext = filePath.extension().string();
+			
+			std::cout << "path: " << path << std::endl;
+
+			if (ext == ".wav" || ext == ".mp3") 
+			{
+				auto it = sounds.find(filePath.stem().string());
+				if (it == sounds.end())
+				{
+					throw std::runtime_error("Failed to find dropped in sound!");
+				}
+				
+				std::cout << "Sound obtained: " << name << std::endl;
+
+				// Construct Audio module
+				auto audioMod = std::make_unique<Audio::EnoAudioModule>(name, ext, it->second);
+				loader.storeAudioMod(std::move(audioMod));
+				std::cout << "Construction done" << std::endl;
+			}
+		}
+	}
+
+	// Display audio on asset list
+
+
+
+	static std::string selectedAudio;
+
+	// Selected audio
+	if (!selectedAudio.empty())
+	{
+		ImGui::Text("Selected: %s", selectedAudio.c_str());
+	}
+
+	g_droppedFiles.clear();
 }
 
 // Docking shi

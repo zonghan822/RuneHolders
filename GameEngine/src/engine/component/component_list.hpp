@@ -22,3 +22,4 @@
 	X(BoxComponent) \
 	X(AIComponent) \
 	X(ButtonComponent) \
+	X(AudioComponent) \

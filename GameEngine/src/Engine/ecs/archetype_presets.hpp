@@ -21,6 +21,7 @@
 #include "../component/components/box_component.hpp"
 #include "../component/components/ai_component.hpp"
 #include "../component/components/buttons.hpp"
+#include "../component/components/audio.hpp"
 
 //stds
 #include <tuple>

@@ -58,7 +58,7 @@ namespace Engine
 				gameUpdateCallback();
 			}
 			// Update AI State
-			aiMng_.update(entityMng_, dt_);
+			aiMng_.update(entityMng_, static_cast<float>(dt_));
 
 			audioMng_.process();
 

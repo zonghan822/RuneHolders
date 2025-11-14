@@ -266,6 +266,12 @@ void GameApplication::updateGameLogic() {
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	double deltaTime = engine_.getDeltaTime();
 
+	// ========= Audio =========
+	
+	engine_.getAudioManager().process();
+
+	// =========================
+	
 	pathfinder_->update(entityManager, 1.f);
 
 	// Update engine playing state based on editor state
@@ -304,6 +310,28 @@ void GameApplication::updateGameLogic() {
 		animationTimer -= frameDuration;
 		currentFrame = (currentFrame + 1) % totalFrames;
 	}
+	
+	// ========= Audio =========
+
+	// Get entities with the audio component
+	auto sceneTreeNodes = engine_.getEnoEditor().getSceneTree().getAllNodes();
+	for (const auto& node : sceneTreeNodes)
+	{
+		bool in = node->entity_.has<ECSComponents::AudioComponent>(entityManager);
+
+		// Ensure that node has audio component and is enabled
+		if (in && node->enabled_)
+		{
+			std::cout << "Enabled node " << node->name_ << "has the Audio Component!" << std::endl;
+
+			auto mod = node->entity_.get<ECSComponents::AudioComponent>(entityManager);
+
+			// Play audio based on audio mod stored
+			engine_.getAudioManager().play(mod);
+		}
+	}
+
+	// =========================
 
 	// Update all animated entities with "AnimatedEntity" in their name
 	// Use cached entities for better performance

@@ -17,6 +17,8 @@
 // FMOD
 #include "fmod.hpp"
 
+#include "../audio/eno_audio_module.hpp"
+
 // Events
 #include "../audio/audio_events.hpp"
 #include "../event/event_bus.hpp"
@@ -51,7 +53,8 @@ namespace Resources
 		static constexpr std::string_view musicPath_ = ASSETS_DIR_PATH "/sound/music/";
 		static constexpr std::string_view sfxPath_ = ASSETS_DIR_PATH "/sound/sfx/";
 		static constexpr std::array<std::string_view, 2> soundExtensions_ = { ".wav", ".mp3" };
-		std::map<std::string, FMOD::Sound*> sounds_;
+		std::unordered_map<std::string, FMOD::Sound*> sounds_;
+		std::vector<std::unique_ptr<Audio::EnoAudioModule>> audioMods_;
 
 		// Images
 		static constexpr std::string_view imagePath_ = ASSETS_DIR_PATH "/art/";
@@ -117,6 +120,12 @@ namespace Resources
 		* \return	Map of all textures.
 		*//*========================================================================================*/
 		const std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>& getAllTextures() const;
+
+		/*============================================================================================
+		* \brief	Retrieve all sounds/audio in read only format
+		* \return	Map of all audio.
+		*//*========================================================================================*/
+		const std::unordered_map<std::string, FMOD::Sound*>& getSounds() const;
 
 		/*============================================================================================
 		* \brief	Get the shader directory path.
@@ -217,6 +226,15 @@ namespace Resources
 		*//*========================================================================================*/
 		void addTexture(const std::string& name, std::shared_ptr<Graphics::EnoTexture> tex) {
 			textures_[name] = tex;
+		}
+
+		/*============================================================================================
+		* \brief			Store Audio modules
+		* \param[in] path	Directory path for textures.
+		*//*========================================================================================*/
+		void storeAudioMod(std::unique_ptr<Audio::EnoAudioModule> mod) 
+		{
+			audioMods_.push_back(std::move(mod));
 		}
 
 		/*============================================================================================

@@ -58,6 +58,11 @@ namespace Resources {
 		return textures_;
 	}
 
+	const std::unordered_map<std::string, FMOD::Sound*>& EnoLoader::getSounds() const 
+	{
+		return sounds_;
+	}
+
 	// Shader getters
 	const std::string& EnoLoader::getShaderPath() const {
 		static const std::string path{ shaderPath_.data(), shaderPath_.size() };
@@ -87,7 +92,6 @@ namespace Resources {
 		static const std::string path{ entityPath_.data(), entityPath_.size() };
 		return path;
 	}
-
 
 	// Load Images (png | jpg)
 	void EnoLoader::loadImages(const std::string& path) {

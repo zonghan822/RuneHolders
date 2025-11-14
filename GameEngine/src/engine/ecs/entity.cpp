@@ -442,6 +442,11 @@ namespace ECS
 			return tvalue;
 		}
 
+		// char[256]
+		if (ttype == "char256")
+		{
+			return tvalue;
+		}
 
 		// ---------------- Enums ----------------
 		
