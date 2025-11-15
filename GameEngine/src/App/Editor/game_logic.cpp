@@ -62,6 +62,13 @@ void GameApplication::initialize() {
 	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
 	editorCameraY_ = (VIRTUAL_HEIGHT - EDITOR_HEIGHT) / 2.0f;
 
+	// Subscribe to delete selected entity event (using GameApplication's scene tree)
+	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
+		{
+			extern void deleteSelectedEntity(Editor::EnoSceneTree&, ECS::EntityManager&);
+			deleteSelectedEntity(*sceneTree_, engine_.getEntityManager());
+		});
+
 	std::cout << "Game initialized successfully!" << std::endl;
 }
 
@@ -157,6 +164,10 @@ void GameApplication::setupTreeTesting()
 
 	inputMng.setupKey("Test Editor Tree", GLFW_KEY_Q, glfwGetKeyScancode(GLFW_KEY_Q), GLFW_RELEASE, 0);
 	inputMng.setupEvent<Editor::TestTree>("Test Editor Tree");
+
+	// Setup Delete key for entity deletion
+	inputMng.setupKey("Delete Selected Entity", GLFW_KEY_DELETE, glfwGetKeyScancode(GLFW_KEY_DELETE), GLFW_RELEASE, 0);
+	inputMng.setupEvent<Editor::DeleteSelectedEntity>("Delete Selected Entity");
 }
 
 void GameApplication::setupGameEvents() {

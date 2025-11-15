@@ -88,6 +88,7 @@ static int activeTransformAxis = 0; // 0=none, 1=X-axis, 2=Y-axis, 3=uniform sca
 static float initialAngle = 0.0f;
 static float initialRotation = 0.0f;
 static ImVec2 initialScale = ImVec2(1.0f, 1.0f);
+static ImVec2 lastScale = ImVec2(1.0f, 1.0f);  // Track last frame scale for delta calculation
 static ImVec2 scaleStartPos = ImVec2(0.0f, 0.0f);
 static ImVec2 dragStartWorldPos = ImVec2(0.0f, 0.0f);
 
@@ -454,6 +455,75 @@ void moveChildrenRecursive(Editor::Node* node, float deltaX, float deltaY, ECS::
 	}
 }
 
+void rotateChildrenRecursive(Editor::Node* node, float deltaRotation, Math::eVec2<float> parentPos, ECS::EntityManager& entityManager)
+{
+	if (!node) return;
+
+	// Rotate all children of this node around the parent's position
+	for (Editor::Node* child : node->children_)
+	{
+		if (child->entity_.has<ECSComponents::TransformComponent>(entityManager))
+		{
+			auto& tc = child->entity_.get<ECSComponents::TransformComponent>(entityManager);
+
+			// 1. Rotate the child's own rotation
+			tc.rot.x += deltaRotation;
+
+			// 2. Rotate the child's position around the parent position
+			// Get relative position from parent
+			float relX = tc.pos.x - parentPos.x;
+			float relY = tc.pos.y - parentPos.y;
+
+			// Rotate the relative position
+			float cosRot = cosf(deltaRotation);
+			float sinRot = sinf(deltaRotation);
+			float newRelX = relX * cosRot - relY * sinRot;
+			float newRelY = relX * sinRot + relY * cosRot;
+
+			// Update child position
+			tc.pos.x = parentPos.x + newRelX;
+			tc.pos.y = parentPos.y + newRelY;
+		}
+
+		// Recursively rotate this child's children
+		rotateChildrenRecursive(child, deltaRotation, parentPos, entityManager);
+	}
+}
+
+void scaleChildrenRecursive(Editor::Node* node, float scaleFactorX, float scaleFactorY, Math::eVec2<float> parentPos, ECS::EntityManager& entityManager)
+{
+	if (!node) return;
+
+	// Scale all children of this node from the parent's position
+	for (Editor::Node* child : node->children_)
+	{
+		if (child->entity_.has<ECSComponents::TransformComponent>(entityManager))
+		{
+			auto& tc = child->entity_.get<ECSComponents::TransformComponent>(entityManager);
+
+			// 1. Scale the child's own scale
+			tc.scale.x *= scaleFactorX;
+			tc.scale.y *= scaleFactorY;
+
+			// 2. Scale the child's position relative to parent
+			// Get relative position from parent
+			float relX = tc.pos.x - parentPos.x;
+			float relY = tc.pos.y - parentPos.y;
+
+			// Scale the relative position
+			relX *= scaleFactorX;
+			relY *= scaleFactorY;
+
+			// Update child position
+			tc.pos.x = parentPos.x + relX;
+			tc.pos.y = parentPos.y + relY;
+		}
+
+		// Recursively scale this child's children
+		scaleChildrenRecursive(child, scaleFactorX, scaleFactorY, parentPos, entityManager);
+	}
+}
+
 void destroyChildrenRecursive(Editor::Node* node, ECS::EntityManager& entityManager)
 {
 	if (!node) return;
@@ -466,6 +536,78 @@ void destroyChildrenRecursive(Editor::Node* node, ECS::EntityManager& entityMana
 		// Destroy the child entity
 		entityManager.destroyEntity(child->entity_.id());
 		std::cout << "[DEBUG] Destroyed child entity " << child->entity_.id() << "\n";
+	}
+}
+
+uint32_t getSelectedEntityID()
+{
+	return selectedEntityID;
+}
+
+void clearSelectedEntity()
+{
+	selectedEntityID = UINT32_MAX;
+}
+
+// Helper to collect all entity IDs in a node hierarchy
+void collectEntityIDs(Editor::Node* node, std::vector<uint32_t>& entityIDs)
+{
+	if (!node) return;
+
+	// Add this node's entity ID
+	entityIDs.push_back(node->entity_.id());
+
+	// Recursively collect children's entity IDs
+	for (Editor::Node* child : node->children_)
+	{
+		collectEntityIDs(child, entityIDs);
+	}
+}
+
+void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager)
+{
+	if (selectedEntityID == UINT32_MAX) {
+		std::cout << "[DEBUG] No entity selected for deletion\n";
+		return;
+	}
+
+	std::cout << "[DEBUG] Attempting to delete entity with ID: " << selectedEntityID << "\n";
+
+	// Debug: List all nodes in scene tree
+	auto allNodes = sceneTree.getAllNodes();
+	std::cout << "[DEBUG] Scene tree contains " << allNodes.size() << " nodes:\n";
+	for (auto* n : allNodes) {
+		std::cout << "  - Node ID: " << n->sceneObjectID_ << ", Entity ID: " << n->entity_.id() << ", Name: " << n->name_ << "\n";
+	}
+
+	// Get the node for the selected entity
+	Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
+
+	if (node) {
+		std::cout << "[DEBUG] Found node! Deleting node " << selectedEntityID << " (\"" << node->name_ << "\") and all children from hierarchy\n";
+
+		// Collect all entity IDs (parent + all children) before destroying anything
+		std::vector<uint32_t> entitiesToDestroy;
+		collectEntityIDs(node, entitiesToDestroy);
+
+		// Kill the node structure
+		sceneTree.kill(node);
+
+		// Destroy all the entities we collected
+		for (uint32_t entityID : entitiesToDestroy)
+		{
+			entityManager.destroyEntity(entityID);
+			std::cout << "[DEBUG] Destroyed entity " << entityID << "\n";
+		}
+
+		// Clear selection
+		selectedEntityID = UINT32_MAX;
+
+		std::cout << "[DEBUG] Entity deletion completed (destroyed " << entitiesToDestroy.size() << " entities)\n";
+	}
+	else {
+		std::cout << "[ERROR] Selected entity " << selectedEntityID << " not found in scene tree!\n";
+		std::cout << "[ERROR] This entity exists in ECS but has no corresponding node in the scene tree.\n";
 	}
 }
 
@@ -2104,6 +2246,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									scaleStartPos = mouseScreenPos;
 									dragStartWorldPos = worldPos;
 									initialScale = ImVec2(tc.scale.x, tc.scale.y);
+									lastScale = ImVec2(tc.scale.x, tc.scale.y);  // Initialize last scale
 									if (handleType == 3) {
 										std::cout << "Started uniform scaling entity " << selectedEntityID << "\n";
 									} else if (handleType == 4) {
@@ -2188,11 +2331,21 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							// Calculate rotation based on mouse angle
 							ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
 							float currentAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
-							float deltaAngle = currentAngle - initialAngle;
-							tc.rot.x = initialRotation + deltaAngle;
+							float newRotation = initialRotation + (currentAngle - initialAngle);
+							float deltaAngle = newRotation - tc.rot.x;
+							tc.rot.x = newRotation;
+
+							// Rotate all children recursively around parent position
+							Editor::Node* rotatedNode = sceneTree.getNodeByEntityID(draggedEntityID);
+							if (rotatedNode) {
+								rotateChildrenRecursive(rotatedNode, deltaAngle, {tc.pos.x, tc.pos.y}, entityManager);
+							}
 						}
 						else if (isScaling) {
 							// Calculate scale based on which handle was grabbed
+							float newScaleX = tc.scale.x;
+							float newScaleY = tc.scale.y;
+
 							if (activeTransformAxis == 3) {
 								// Uniform scaling using diagonal handle
 								ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
@@ -2202,22 +2355,39 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									(mouseScreenPos.y - entityScreenPos.y) * (mouseScreenPos.y - entityScreenPos.y));
 
 								float scaleFactor = currentDist / std::max(initialDist, 1.0f);
-								tc.scale.x = initialScale.x * scaleFactor;
-								tc.scale.y = initialScale.y * scaleFactor;
+								newScaleX = initialScale.x * scaleFactor;
+								newScaleY = initialScale.y * scaleFactor;
 							}
 							else if (activeTransformAxis == 4) {
 								// Horizontal scaling only (X-axis)
 								float deltaX = worldPos.x - dragStartWorldPos.x;
 								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 								float scaleChange = deltaX / std::max(dc.width, 1.0f);
-								tc.scale.x = std::max(0.1f, initialScale.x + scaleChange);
+								newScaleX = std::max(0.1f, initialScale.x + scaleChange);
+								newScaleY = tc.scale.y;  // Keep Y unchanged
 							}
 							else if (activeTransformAxis == 5) {
 								// Vertical scaling only (Y-axis)
 								float deltaY = worldPos.y - dragStartWorldPos.y;
 								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 								float scaleChange = -deltaY / std::max(dc.height, 1.0f);
-								tc.scale.y = std::max(0.1f, initialScale.y + scaleChange);
+								newScaleX = tc.scale.x;  // Keep X unchanged
+								newScaleY = std::max(0.1f, initialScale.y + scaleChange);
+							}
+
+							// Calculate scale factors (delta)
+							float scaleFactorX = newScaleX / std::max(lastScale.x, 0.01f);
+							float scaleFactorY = newScaleY / std::max(lastScale.y, 0.01f);
+
+							// Update parent scale
+							tc.scale.x = newScaleX;
+							tc.scale.y = newScaleY;
+							lastScale = ImVec2(newScaleX, newScaleY);
+
+							// Scale all children recursively from parent position
+							Editor::Node* scaledNode = sceneTree.getNodeByEntityID(draggedEntityID);
+							if (scaledNode) {
+								scaleChildrenRecursive(scaledNode, scaleFactorX, scaleFactorY, {tc.pos.x, tc.pos.y}, entityManager);
 							}
 						}
 
