@@ -486,13 +486,20 @@ void GameApplication::updateGameLogic() {
 					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
 
+					// Apply scale to width and height
+					float scaledWidth = renderInfo.width * transform.scale.x;
+					float scaledHeight = renderInfo.height * transform.scale.y;
+
+					// Get rotation from transform component
+					float rotation = transform.rot.x;
+
 					// Convert world position to screen position (relative to camera)
 					float screenX = transform.pos.x - editorCameraX_;
 					float screenY = transform.pos.y - editorCameraY_;
 
 					// Only draw if entity is within visible camera bounds
-					float halfW = renderInfo.width * 0.5f;
-					float halfH = renderInfo.height * 0.5f;
+					float halfW = scaledWidth * 0.5f;
+					float halfH = scaledHeight * 0.5f;
 					if (screenX + halfW >= 0 && screenX - halfW < EDITOR_WIDTH &&
 						screenY + halfH >= 0 && screenY - halfH < EDITOR_HEIGHT) {
 
@@ -504,7 +511,7 @@ void GameApplication::updateGameLogic() {
 
 							engine_.getGraphicsManager().drawTexturedQuad(
 								Math::eVec2<float>{topLeftX, topLeftY},
-								Math::eVec2<float>{renderInfo.width, renderInfo.height},
+								Math::eVec2<float>{scaledWidth, scaledHeight},
 								renderInfo.texture,
 								renderInfo.color
 							);
@@ -514,7 +521,7 @@ void GameApplication::updateGameLogic() {
 							// Draw circle at screen position (center)
 							engine_.getGraphicsManager().drawCircle(
 								Math::eVec2<float>{screenX, screenY},
-								renderInfo.width * 0.5f,  // Use width/2 as radius
+								scaledWidth * 0.5f,  // Use scaled width/2 as radius
 								renderInfo.color,
 								true,  // Filled
 								32     // Segments
@@ -527,9 +534,10 @@ void GameApplication::updateGameLogic() {
 
 							engine_.getGraphicsManager().drawRect(
 								Math::eVec2<float>{topLeftX, topLeftY},
-								Math::eVec2<float>{renderInfo.width, renderInfo.height},
+								Math::eVec2<float>{scaledWidth, scaledHeight},
 								renderInfo.color,
-								true
+								true,
+								rotation
 							);
 						}
 						// Draw text for button component
@@ -1059,11 +1067,18 @@ void GameApplication::drawShapes() {
 				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 				auto& renderInfo = entity.get<drawInfo>(entityManager);
 
+				// Apply scale to width and height
+				float scaledWidth = renderInfo.width * transform.scale.x;
+				float scaledHeight = renderInfo.height * transform.scale.y;
+
+				// Get rotation from transform component
+				float rotation = transform.rot.x;
+
 				// Check if entity has a texture (sprite)
 				if (renderInfo.texture && renderInfo.texture->isValid()) {
 					// Draw textured sprite with animation and rotation
-					float topLeftX = transform.pos.x - (renderInfo.width * 0.5f);
-					float topLeftY = transform.pos.y - (renderInfo.height * 0.5f);
+					float topLeftX = transform.pos.x - (scaledWidth * 0.5f);
+					float topLeftY = transform.pos.y - (scaledHeight * 0.5f);
 
 					// Calculate UV coordinates for spritesheet animation
 					// Protagonist-Walk-Sheet is 384x96 with 4 frames (96x96 each)
@@ -1086,13 +1101,10 @@ void GameApplication::drawShapes() {
 						static_cast<float>(frameY + frameHeight) / static_cast<float>(renderInfo.texture->getHeight())
 					};
 
-					// Get rotation from transform component (stored in rot.x)
-					float rotation = transform.rot.x;
-
-					// Draw textured quad with UV coordinates and rotation
+					// Draw textured quad with UV coordinates, rotation and scale
 					graphics.drawTexturedQuadUV(
 						Math::eVec2<float>{topLeftX, topLeftY},
-						Math::eVec2<float>{renderInfo.width, renderInfo.height},
+						Math::eVec2<float>{scaledWidth, scaledHeight},
 						renderInfo.texture,
 						uvStart,
 						uvEnd,
@@ -1102,26 +1114,27 @@ void GameApplication::drawShapes() {
 				}
 				// Check shape type and draw accordingly
 				else if (strcmp(renderInfo.shape, "Circle") == 0) {
-					// Draw circle at center position
+					// Draw circle at center position with scale applied to radius
+					float scaledRadius = (scaledWidth * 0.5f);
 					graphics.drawCircle(
-						transform.pos,  // Center position
-						renderInfo.width * 0.5f,  // Use width/2 as radius
+						transform.pos,
+						scaledRadius,
 						renderInfo.color,
-						true,  // Filled
-						32     // Segments
+						true,
+						32
 					);
 				}
 				else {
-					// TransformComponent.pos is the CENTER, but drawRect expects TOP-LEFT
-					// Convert from center to top-left
-					float topLeftX = transform.pos.x - (renderInfo.width * 0.5f);
-					float topLeftY = transform.pos.y - (renderInfo.height * 0.5f);
+					// Draw rectangle with rotation and scale applied
+					float topLeftX = transform.pos.x - (scaledWidth * 0.5f);
+					float topLeftY = transform.pos.y - (scaledHeight * 0.5f);
 
 					graphics.drawRect(
-						Math::eVec2<float>{topLeftX, topLeftY},  // Top-left position for drawRect
-						Math::eVec2<float>{renderInfo.width, renderInfo.height},
+						Math::eVec2<float>{topLeftX, topLeftY},
+						Math::eVec2<float>{scaledWidth, scaledHeight},
 						renderInfo.color,
-						true
+						true,
+						rotation
 					);
 				}
 				//// Draw text for button component

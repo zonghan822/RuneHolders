@@ -79,6 +79,16 @@ static uint32_t draggedEntityID = 0;
 static ImVec2 dragOffset;
 static ImVec2 lastDragPos;
 
+// Transform Gizmos
+enum GizmoMode { GIZMO_TRANSLATE, GIZMO_ROTATE, GIZMO_SCALE };
+static GizmoMode currentGizmoMode = GIZMO_TRANSLATE;
+static bool isRotating = false;
+static bool isScaling = false;
+static float initialAngle = 0.0f;
+static float initialRotation = 0.0f;
+static ImVec2 initialScale = ImVec2(1.0f, 1.0f);
+static ImVec2 scaleStartPos = ImVec2(0.0f, 0.0f);
+
 // Prefab placement
 static std::string g_selectedPrefabForPlacement = "";
 
@@ -1732,6 +1742,95 @@ void displayGameView() {
 	}
 }
 
+// Draw gizmos for selected entity
+void drawGizmos(ImDrawList* drawList, ImVec2 screenPos, ImVec2 entityCenter, float gizmoSize, GizmoMode mode) {
+	const float handleSize = 8.0f;
+	const float rotateRadius = gizmoSize * 0.6f;
+
+	// Translate gizmo handles
+	if (mode == GIZMO_TRANSLATE) {
+		// Draw X axis handle (red square to the right)
+		ImVec2 xHandle = ImVec2(entityCenter.x + gizmoSize, entityCenter.y);
+		drawList->AddRectFilled(
+			ImVec2(xHandle.x - handleSize / 2, xHandle.y - handleSize / 2),
+			ImVec2(xHandle.x + handleSize / 2, xHandle.y + handleSize / 2),
+			IM_COL32(255, 0, 0, 255)
+		);
+		drawList->AddLine(entityCenter, xHandle, IM_COL32(255, 0, 0, 255), 2.0f);
+
+		// Draw Y axis handle (green square above)
+		ImVec2 yHandle = ImVec2(entityCenter.x, entityCenter.y - gizmoSize);
+		drawList->AddRectFilled(
+			ImVec2(yHandle.x - handleSize / 2, yHandle.y - handleSize / 2),
+			ImVec2(yHandle.x + handleSize / 2, yHandle.y + handleSize / 2),
+			IM_COL32(0, 255, 0, 255)
+		);
+		drawList->AddLine(entityCenter, yHandle, IM_COL32(0, 255, 0, 255), 2.0f);
+	}
+	// Rotate gizmo
+	else if (mode == GIZMO_ROTATE) {
+		// Draw rotation circle
+		drawList->AddCircle(entityCenter, rotateRadius, IM_COL32(0, 150, 255, 255), 32, 2.0f);
+
+		// Draw rotation handle at top of circle
+		ImVec2 rotHandle = ImVec2(entityCenter.x, entityCenter.y - rotateRadius);
+		drawList->AddCircleFilled(rotHandle, handleSize / 2, IM_COL32(0, 150, 255, 255));
+	}
+	// Scale gizmo
+	else if (mode == GIZMO_SCALE) {
+		// Draw diagonal scale handle (bottom-right corner)
+		ImVec2 scaleHandle = ImVec2(entityCenter.x + gizmoSize * 0.7f, entityCenter.y + gizmoSize * 0.7f);
+		drawList->AddRectFilled(
+			ImVec2(scaleHandle.x - handleSize / 2, scaleHandle.y - handleSize / 2),
+			ImVec2(scaleHandle.x + handleSize / 2, scaleHandle.y + handleSize / 2),
+			IM_COL32(255, 255, 0, 255)
+		);
+		drawList->AddLine(entityCenter, scaleHandle, IM_COL32(255, 255, 0, 255), 2.0f);
+	}
+}
+
+// Check if mouse is over a gizmo handle
+bool isMouseOverGizmoHandle(ImVec2 mousePos, ImVec2 entityCenter, float gizmoSize, GizmoMode mode, int& handleType) {
+	const float handleSize = 12.0f;
+	const float rotateRadius = gizmoSize * 0.6f;
+
+	if (mode == GIZMO_TRANSLATE) {
+		// Check X handle (right)
+		ImVec2 xHandle = ImVec2(entityCenter.x + gizmoSize, entityCenter.y);
+		if (fabs(mousePos.x - xHandle.x) < handleSize && fabs(mousePos.y - xHandle.y) < handleSize) {
+			handleType = 1;
+			return true;
+		}
+		// Check Y handle (up)
+		ImVec2 yHandle = ImVec2(entityCenter.x, entityCenter.y - gizmoSize);
+		if (fabs(mousePos.x - yHandle.x) < handleSize && fabs(mousePos.y - yHandle.y) < handleSize) {
+			handleType = 2;
+			return true;
+		}
+	}
+	else if (mode == GIZMO_ROTATE) {
+		// Check rotation handle
+		ImVec2 rotHandle = ImVec2(entityCenter.x, entityCenter.y - rotateRadius);
+		float dist = sqrtf((mousePos.x - rotHandle.x) * (mousePos.x - rotHandle.x) +
+			(mousePos.y - rotHandle.y) * (mousePos.y - rotHandle.y));
+		if (dist < handleSize) {
+			handleType = 3;
+			return true;
+		}
+	}
+	else if (mode == GIZMO_SCALE) {
+		// Check scale handle
+		ImVec2 scaleHandle = ImVec2(entityCenter.x + gizmoSize * 0.7f, entityCenter.y + gizmoSize * 0.7f);
+		if (fabs(mousePos.x - scaleHandle.x) < handleSize && fabs(mousePos.y - scaleHandle.y) < handleSize) {
+			handleType = 4;
+			return true;
+		}
+	}
+
+	handleType = 0;
+	return false;
+}
+
 void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	auto& entityManager = engine_.getEntityManager();
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
@@ -1756,6 +1855,29 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			g_game->setEditorState(NextKeyFrame);
 		}
 	}
+
+	ImGui::SameLine();
+	ImGui::Text("|");
+	ImGui::SameLine();
+
+	// Gizmo mode selector buttons
+	if (ImGui::Button("Move (Q)")) {
+		currentGizmoMode = GIZMO_TRANSLATE;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Rotate (E)")) {
+		currentGizmoMode = GIZMO_ROTATE;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Scale (R)")) {
+		currentGizmoMode = GIZMO_SCALE;
+	}
+
+	// Keyboard shortcuts for gizmo modes
+	if (ImGui::IsKeyPressed(ImGuiKey_Q)) currentGizmoMode = GIZMO_TRANSLATE;
+	if (ImGui::IsKeyPressed(ImGuiKey_E)) currentGizmoMode = GIZMO_ROTATE;
+	if (ImGui::IsKeyPressed(ImGuiKey_R)) currentGizmoMode = GIZMO_SCALE;
+
 	ImGui::Separator();
 
 	// Informational text
@@ -1833,6 +1955,26 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				return ImVec2(worldX, worldY);
 				};
 
+			// Helper function to convert world coordinates to screen coordinates (for drawing gizmos)
+			auto worldToScreenCoords = [&](ImVec2 worldPos) -> ImVec2 {
+				ImVec2 imageMin = ImGui::GetItemRectMin();
+				ImVec2 imageMax = ImGui::GetItemRectMax();
+
+				// Subtract camera offset to convert world space to screen space
+				float screenX = worldPos.x - g_game->getEditorCameraX();
+				float screenY = worldPos.y - g_game->getEditorCameraY();
+
+				// Convert to normalized coordinates (0.0 to 1.0)
+				float relX = screenX / editorWidth;
+				float relY = screenY / editorHeight;
+
+				// Convert to actual screen position
+				float finalX = imageMin.x + relX * (imageMax.x - imageMin.x);
+				float finalY = imageMin.y + relY * (imageMax.y - imageMin.y);
+
+				return ImVec2(finalX, finalY);
+				};
+
 			// --- Handle entity deletion by click ---
 			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
 				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
@@ -1872,52 +2014,138 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				std::cout << "Placed prefab at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 			}
 
-			// --- Entity drag-drop logic ---
-			// Begin drag
-			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
-				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && g_game->getEditorState() == Stopped) {
-				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
-				auto clicked = getEntityUnderMouse(engine_, worldPos);
-				if (clicked) {
-					draggedEntityID = clicked->id();
-					isDragging = true;
+			// --- Gizmo-based entity transformation logic ---
+			// Draw gizmos for selected entity
+			if (selectedEntityID != UINT32_MAX && g_game->getEditorState() == Stopped) {
+				auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+				for (auto& e : allEntities) {
+					if (e.id() == selectedEntityID) {
+						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+						auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 
-					auto& tc = clicked->get<ECSComponents::TransformComponent>(entityManager);
-					dragOffset.x = worldPos.x - tc.pos.x;
-					dragOffset.y = worldPos.y - tc.pos.y;
-					lastDragPos = ImVec2(tc.pos.x, tc.pos.y);
+						// Convert entity position to screen coordinates
+						ImVec2 entityWorldPos = ImVec2(tc.pos.x, tc.pos.y);
+						ImVec2 entityScreenPos = worldToScreenCoords(entityWorldPos);
 
-					std::cout << "Started dragging entity " << draggedEntityID << "\n";
+						// Draw gizmo based on current mode
+						float gizmoSize = 50.0f;
+						drawGizmos(drawList, windowPos, entityScreenPos, gizmoSize, currentGizmoMode);
+						break;
+					}
 				}
 			}
 
-			// While dragging
-			if (isDragging && ImGui::IsMouseDown(0)) {
-				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
+			// Begin gizmo interaction
+			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
+				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && !isRotating && !isScaling && g_game->getEditorState() == Stopped) {
+
+				ImVec2 mouseScreenPos = ImGui::GetMousePos();
+				ImVec2 worldPos = screenToWorldCoords(mouseScreenPos);
+
+				// Check if we have a selected entity
+				if (selectedEntityID != UINT32_MAX) {
+					auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+					for (auto& e : allEntities) {
+						if (e.id() == selectedEntityID) {
+							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+							ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
+
+							int handleType = 0;
+							float gizmoSize = 50.0f;
+
+							// Check if clicking on gizmo handle
+							if (isMouseOverGizmoHandle(mouseScreenPos, entityScreenPos, gizmoSize, currentGizmoMode, handleType)) {
+								if (currentGizmoMode == GIZMO_ROTATE) {
+									// Start rotation
+									isRotating = true;
+									draggedEntityID = selectedEntityID;
+									initialAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
+									initialRotation = tc.rot.x;
+									std::cout << "Started rotating entity " << selectedEntityID << "\n";
+								}
+								else if (currentGizmoMode == GIZMO_SCALE) {
+									// Start scaling
+									isScaling = true;
+									draggedEntityID = selectedEntityID;
+									scaleStartPos = mouseScreenPos;
+									initialScale = ImVec2(tc.scale.x, tc.scale.y);
+									std::cout << "Started scaling entity " << selectedEntityID << "\n";
+								}
+								else if (currentGizmoMode == GIZMO_TRANSLATE) {
+									// Start dragging
+									draggedEntityID = selectedEntityID;
+									isDragging = true;
+									dragOffset.x = worldPos.x - tc.pos.x;
+									dragOffset.y = worldPos.y - tc.pos.y;
+									lastDragPos = ImVec2(tc.pos.x, tc.pos.y);
+									std::cout << "Started dragging entity " << selectedEntityID << "\n";
+								}
+								break;
+							}
+						}
+					}
+				}
+
+				// If not clicking gizmo, check if clicking on entity
+				if (!isDragging && !isRotating && !isScaling) {
+					auto clicked = getEntityUnderMouse(engine_, worldPos);
+					if (clicked) {
+						// Select entity in hierarchy when clicked in editor window
+						selectedEntityID = clicked->id();
+						std::cout << "Selected entity " << selectedEntityID << "\n";
+					}
+				}
+			}
+
+			// While transforming (drag, rotate, or scale)
+			if ((isDragging || isRotating || isScaling) && ImGui::IsMouseDown(0)) {
+				ImVec2 mouseScreenPos = ImGui::GetMousePos();
+				ImVec2 worldPos = screenToWorldCoords(mouseScreenPos);
 
 				auto all = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 				for (auto& e : all) {
 					if (e.id() == draggedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
 
-						// Calculate delta movement
-						float newX = worldPos.x - dragOffset.x;
-						float newY = worldPos.y - dragOffset.y;
-						float deltaX = newX - lastDragPos.x;
-						float deltaY = newY - lastDragPos.y;
+						if (isDragging) {
+							// Calculate delta movement
+							float newX = worldPos.x - dragOffset.x;
+							float newY = worldPos.y - dragOffset.y;
+							float deltaX = newX - lastDragPos.x;
+							float deltaY = newY - lastDragPos.y;
 
-						// Move parent entity
-						tc.pos.x = newX;
-						tc.pos.y = newY;
+							// Move parent entity
+							tc.pos.x = newX;
+							tc.pos.y = newY;
 
-						// Move all children recursively
-						Editor::Node* draggedNode = sceneTree.getNodeByEntityID(draggedEntityID);
-						if (draggedNode) {
-							moveChildrenRecursive(draggedNode, deltaX, deltaY, entityManager);
+							// Move all children recursively
+							Editor::Node* draggedNode = sceneTree.getNodeByEntityID(draggedEntityID);
+							if (draggedNode) {
+								moveChildrenRecursive(draggedNode, deltaX, deltaY, entityManager);
+							}
+
+							// Update last position
+							lastDragPos = ImVec2(newX, newY);
 						}
+						else if (isRotating) {
+							// Calculate rotation based on mouse angle
+							ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
+							float currentAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
+							float deltaAngle = currentAngle - initialAngle;
+							tc.rot.x = initialRotation + deltaAngle;
+						}
+						else if (isScaling) {
+							// Calculate scale based on mouse distance from entity
+							ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
+							float initialDist = sqrtf((scaleStartPos.x - entityScreenPos.x) * (scaleStartPos.x - entityScreenPos.x) +
+								(scaleStartPos.y - entityScreenPos.y) * (scaleStartPos.y - entityScreenPos.y));
+							float currentDist = sqrtf((mouseScreenPos.x - entityScreenPos.x) * (mouseScreenPos.x - entityScreenPos.x) +
+								(mouseScreenPos.y - entityScreenPos.y) * (mouseScreenPos.y - entityScreenPos.y));
 
-						// Update last position
-						lastDragPos = ImVec2(newX, newY);
+							float scaleFactor = currentDist / std::max(initialDist, 1.0f);
+							tc.scale.x = initialScale.x * scaleFactor;
+							tc.scale.y = initialScale.y * scaleFactor;
+						}
 
 						if (g_game)
 							g_game->markEntitiesDirty();
@@ -1926,12 +2154,20 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				}
 			}
 
-			// Drop
-			if (isDragging && ImGui::IsMouseReleased(0)) {
-				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
-				std::cout << "Entity " << draggedEntityID
-					<< " dropped at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
-				isDragging = false;
+			// End transformation
+			if ((isDragging || isRotating || isScaling) && ImGui::IsMouseReleased(0)) {
+				if (isDragging) {
+					std::cout << "Finished dragging entity " << draggedEntityID << "\n";
+					isDragging = false;
+				}
+				else if (isRotating) {
+					std::cout << "Finished rotating entity " << draggedEntityID << "\n";
+					isRotating = false;
+				}
+				else if (isScaling) {
+					std::cout << "Finished scaling entity " << draggedEntityID << "\n";
+					isScaling = false;
+				}
 				draggedEntityID = 0;
 			}
 
