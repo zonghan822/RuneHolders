@@ -84,10 +84,12 @@ enum GizmoMode { GIZMO_TRANSLATE, GIZMO_ROTATE, GIZMO_SCALE };
 static GizmoMode currentGizmoMode = GIZMO_TRANSLATE;
 static bool isRotating = false;
 static bool isScaling = false;
+static int activeTransformAxis = 0; // 0=none, 1=X-axis, 2=Y-axis, 3=uniform scale, 4=X-scale, 5=Y-scale
 static float initialAngle = 0.0f;
 static float initialRotation = 0.0f;
 static ImVec2 initialScale = ImVec2(1.0f, 1.0f);
 static ImVec2 scaleStartPos = ImVec2(0.0f, 0.0f);
+static ImVec2 dragStartWorldPos = ImVec2(0.0f, 0.0f);
 
 // Prefab placement
 static std::string g_selectedPrefabForPlacement = "";
@@ -1749,23 +1751,23 @@ void drawGizmos(ImDrawList* drawList, ImVec2 screenPos, ImVec2 entityCenter, flo
 
 	// Translate gizmo handles
 	if (mode == GIZMO_TRANSLATE) {
-		// Draw X axis handle (red square to the right)
+		// Draw X axis handle (blue square to the right)
 		ImVec2 xHandle = ImVec2(entityCenter.x + gizmoSize, entityCenter.y);
 		drawList->AddRectFilled(
 			ImVec2(xHandle.x - handleSize / 2, xHandle.y - handleSize / 2),
 			ImVec2(xHandle.x + handleSize / 2, xHandle.y + handleSize / 2),
-			IM_COL32(255, 0, 0, 255)
+			IM_COL32(0, 150, 255, 255)
 		);
-		drawList->AddLine(entityCenter, xHandle, IM_COL32(255, 0, 0, 255), 2.0f);
+		drawList->AddLine(entityCenter, xHandle, IM_COL32(0, 150, 255, 255), 2.0f);
 
-		// Draw Y axis handle (green square above)
+		// Draw Y axis handle (blue square above)
 		ImVec2 yHandle = ImVec2(entityCenter.x, entityCenter.y - gizmoSize);
 		drawList->AddRectFilled(
 			ImVec2(yHandle.x - handleSize / 2, yHandle.y - handleSize / 2),
 			ImVec2(yHandle.x + handleSize / 2, yHandle.y + handleSize / 2),
-			IM_COL32(0, 255, 0, 255)
+			IM_COL32(0, 150, 255, 255)
 		);
-		drawList->AddLine(entityCenter, yHandle, IM_COL32(0, 255, 0, 255), 2.0f);
+		drawList->AddLine(entityCenter, yHandle, IM_COL32(0, 150, 255, 255), 2.0f);
 	}
 	// Rotate gizmo
 	else if (mode == GIZMO_ROTATE) {
@@ -1778,14 +1780,32 @@ void drawGizmos(ImDrawList* drawList, ImVec2 screenPos, ImVec2 entityCenter, flo
 	}
 	// Scale gizmo
 	else if (mode == GIZMO_SCALE) {
-		// Draw diagonal scale handle (bottom-right corner)
-		ImVec2 scaleHandle = ImVec2(entityCenter.x + gizmoSize * 0.7f, entityCenter.y + gizmoSize * 0.7f);
+		// Draw uniform scale handle (diagonal bottom-right corner - blue)
+		ImVec2 uniformScaleHandle = ImVec2(entityCenter.x + gizmoSize * 0.7f, entityCenter.y + gizmoSize * 0.7f);
 		drawList->AddRectFilled(
-			ImVec2(scaleHandle.x - handleSize / 2, scaleHandle.y - handleSize / 2),
-			ImVec2(scaleHandle.x + handleSize / 2, scaleHandle.y + handleSize / 2),
-			IM_COL32(255, 255, 0, 255)
+			ImVec2(uniformScaleHandle.x - handleSize / 2, uniformScaleHandle.y - handleSize / 2),
+			ImVec2(uniformScaleHandle.x + handleSize / 2, uniformScaleHandle.y + handleSize / 2),
+			IM_COL32(0, 150, 255, 255)
 		);
-		drawList->AddLine(entityCenter, scaleHandle, IM_COL32(255, 255, 0, 255), 2.0f);
+		drawList->AddLine(entityCenter, uniformScaleHandle, IM_COL32(0, 150, 255, 255), 2.0f);
+
+		// Draw horizontal scale handle (right side - blue)
+		ImVec2 xScaleHandle = ImVec2(entityCenter.x + gizmoSize, entityCenter.y);
+		drawList->AddRectFilled(
+			ImVec2(xScaleHandle.x - handleSize / 2, xScaleHandle.y - handleSize / 2),
+			ImVec2(xScaleHandle.x + handleSize / 2, xScaleHandle.y + handleSize / 2),
+			IM_COL32(0, 150, 255, 255)
+		);
+		drawList->AddLine(entityCenter, xScaleHandle, IM_COL32(0, 150, 255, 255), 2.0f);
+
+		// Draw vertical scale handle (top - blue)
+		ImVec2 yScaleHandle = ImVec2(entityCenter.x, entityCenter.y - gizmoSize);
+		drawList->AddRectFilled(
+			ImVec2(yScaleHandle.x - handleSize / 2, yScaleHandle.y - handleSize / 2),
+			ImVec2(yScaleHandle.x + handleSize / 2, yScaleHandle.y + handleSize / 2),
+			IM_COL32(0, 150, 255, 255)
+		);
+		drawList->AddLine(entityCenter, yScaleHandle, IM_COL32(0, 150, 255, 255), 2.0f);
 	}
 }
 
@@ -1819,10 +1839,22 @@ bool isMouseOverGizmoHandle(ImVec2 mousePos, ImVec2 entityCenter, float gizmoSiz
 		}
 	}
 	else if (mode == GIZMO_SCALE) {
-		// Check scale handle
-		ImVec2 scaleHandle = ImVec2(entityCenter.x + gizmoSize * 0.7f, entityCenter.y + gizmoSize * 0.7f);
-		if (fabs(mousePos.x - scaleHandle.x) < handleSize && fabs(mousePos.y - scaleHandle.y) < handleSize) {
+		// Check horizontal scale handle (right side - handleType 4)
+		ImVec2 xScaleHandle = ImVec2(entityCenter.x + gizmoSize, entityCenter.y);
+		if (fabs(mousePos.x - xScaleHandle.x) < handleSize && fabs(mousePos.y - xScaleHandle.y) < handleSize) {
 			handleType = 4;
+			return true;
+		}
+		// Check vertical scale handle (top - handleType 5)
+		ImVec2 yScaleHandle = ImVec2(entityCenter.x, entityCenter.y - gizmoSize);
+		if (fabs(mousePos.x - yScaleHandle.x) < handleSize && fabs(mousePos.y - yScaleHandle.y) < handleSize) {
+			handleType = 5;
+			return true;
+		}
+		// Check uniform scale handle (diagonal - handleType 3)
+		ImVec2 uniformScaleHandle = ImVec2(entityCenter.x + gizmoSize * 0.7f, entityCenter.y + gizmoSize * 0.7f);
+		if (fabs(mousePos.x - uniformScaleHandle.x) < handleSize && fabs(mousePos.y - uniformScaleHandle.y) < handleSize) {
+			handleType = 3;
 			return true;
 		}
 	}
@@ -2056,9 +2088,10 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							// Check if clicking on gizmo handle
 							if (isMouseOverGizmoHandle(mouseScreenPos, entityScreenPos, gizmoSize, currentGizmoMode, handleType)) {
 								if (currentGizmoMode == GIZMO_ROTATE) {
-									// Start rotation
+									// Start rotation (handleType 3 for rotation)
 									isRotating = true;
 									draggedEntityID = selectedEntityID;
+									activeTransformAxis = 3;
 									initialAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
 									initialRotation = tc.rot.x;
 									std::cout << "Started rotating entity " << selectedEntityID << "\n";
@@ -2067,18 +2100,32 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									// Start scaling
 									isScaling = true;
 									draggedEntityID = selectedEntityID;
+									activeTransformAxis = handleType; // 3=uniform, 4=X-scale, 5=Y-scale
 									scaleStartPos = mouseScreenPos;
+									dragStartWorldPos = worldPos;
 									initialScale = ImVec2(tc.scale.x, tc.scale.y);
-									std::cout << "Started scaling entity " << selectedEntityID << "\n";
+									if (handleType == 3) {
+										std::cout << "Started uniform scaling entity " << selectedEntityID << "\n";
+									} else if (handleType == 4) {
+										std::cout << "Started horizontal scaling entity " << selectedEntityID << "\n";
+									} else if (handleType == 5) {
+										std::cout << "Started vertical scaling entity " << selectedEntityID << "\n";
+									}
 								}
 								else if (currentGizmoMode == GIZMO_TRANSLATE) {
-									// Start dragging
+									// Start dragging with axis constraint
 									draggedEntityID = selectedEntityID;
 									isDragging = true;
+									activeTransformAxis = handleType; // 1=X-axis, 2=Y-axis
 									dragOffset.x = worldPos.x - tc.pos.x;
 									dragOffset.y = worldPos.y - tc.pos.y;
+									dragStartWorldPos = worldPos;
 									lastDragPos = ImVec2(tc.pos.x, tc.pos.y);
-									std::cout << "Started dragging entity " << selectedEntityID << "\n";
+									if (handleType == 1) {
+										std::cout << "Started dragging entity " << selectedEntityID << " on X-axis\n";
+									} else if (handleType == 2) {
+										std::cout << "Started dragging entity " << selectedEntityID << " on Y-axis\n";
+									}
 								}
 								break;
 							}
@@ -2108,9 +2155,19 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
 
 						if (isDragging) {
-							// Calculate delta movement
+							// Calculate delta movement with axis constraints
 							float newX = worldPos.x - dragOffset.x;
 							float newY = worldPos.y - dragOffset.y;
+
+							// Apply axis constraint based on which handle was grabbed
+							if (activeTransformAxis == 1) {
+								// X-axis only movement
+								newY = lastDragPos.y;
+							} else if (activeTransformAxis == 2) {
+								// Y-axis only movement
+								newX = lastDragPos.x;
+							}
+
 							float deltaX = newX - lastDragPos.x;
 							float deltaY = newY - lastDragPos.y;
 
@@ -2135,16 +2192,33 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							tc.rot.x = initialRotation + deltaAngle;
 						}
 						else if (isScaling) {
-							// Calculate scale based on mouse distance from entity
-							ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
-							float initialDist = sqrtf((scaleStartPos.x - entityScreenPos.x) * (scaleStartPos.x - entityScreenPos.x) +
-								(scaleStartPos.y - entityScreenPos.y) * (scaleStartPos.y - entityScreenPos.y));
-							float currentDist = sqrtf((mouseScreenPos.x - entityScreenPos.x) * (mouseScreenPos.x - entityScreenPos.x) +
-								(mouseScreenPos.y - entityScreenPos.y) * (mouseScreenPos.y - entityScreenPos.y));
+							// Calculate scale based on which handle was grabbed
+							if (activeTransformAxis == 3) {
+								// Uniform scaling using diagonal handle
+								ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
+								float initialDist = sqrtf((scaleStartPos.x - entityScreenPos.x) * (scaleStartPos.x - entityScreenPos.x) +
+									(scaleStartPos.y - entityScreenPos.y) * (scaleStartPos.y - entityScreenPos.y));
+								float currentDist = sqrtf((mouseScreenPos.x - entityScreenPos.x) * (mouseScreenPos.x - entityScreenPos.x) +
+									(mouseScreenPos.y - entityScreenPos.y) * (mouseScreenPos.y - entityScreenPos.y));
 
-							float scaleFactor = currentDist / std::max(initialDist, 1.0f);
-							tc.scale.x = initialScale.x * scaleFactor;
-							tc.scale.y = initialScale.y * scaleFactor;
+								float scaleFactor = currentDist / std::max(initialDist, 1.0f);
+								tc.scale.x = initialScale.x * scaleFactor;
+								tc.scale.y = initialScale.y * scaleFactor;
+							}
+							else if (activeTransformAxis == 4) {
+								// Horizontal scaling only (X-axis)
+								float deltaX = worldPos.x - dragStartWorldPos.x;
+								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
+								float scaleChange = deltaX / std::max(dc.width, 1.0f);
+								tc.scale.x = std::max(0.1f, initialScale.x + scaleChange);
+							}
+							else if (activeTransformAxis == 5) {
+								// Vertical scaling only (Y-axis)
+								float deltaY = worldPos.y - dragStartWorldPos.y;
+								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
+								float scaleChange = -deltaY / std::max(dc.height, 1.0f);
+								tc.scale.y = std::max(0.1f, initialScale.y + scaleChange);
+							}
 						}
 
 						if (g_game)
@@ -2168,6 +2242,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					std::cout << "Finished scaling entity " << draggedEntityID << "\n";
 					isScaling = false;
 				}
+				activeTransformAxis = 0;
 				draggedEntityID = 0;
 			}
 
