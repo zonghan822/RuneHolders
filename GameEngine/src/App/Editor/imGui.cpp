@@ -84,6 +84,10 @@ static std::string g_selectedPrefabForPlacement = "";
 
 // Entity deletion by click
 static bool g_waitingForEntityDeletion = false;
+
+// Audio filesystems
+static std::vector<std::string> audioAssets;
+
 #pragma endregion
 
 float randomFloat(float min, float max) {
@@ -107,7 +111,6 @@ void imGuiInit(GLFWwindow* window) {
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 }
-
 
 void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	// Start ImGui frame
@@ -171,6 +174,11 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoCollapse);
 	displaySceneTab(sceneTree);
 	ImGui::End();
+
+	// Scene select
+	//ImGui::Begin("Audio", nullptr, ImGuiWindowFlags_NoCollapse);
+	//displayAudioTab(sceneTree);
+	//ImGui::End();
 
 	// Edit tab 
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
@@ -677,6 +685,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_)
 			{
 				// Display inspector for all entities (including root nodes)
 				displayEntityInspector(engine_, e);
+				
 				entityFound = true;
 				break;
 			}
@@ -1238,6 +1247,210 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 }
 
 
+static void LoadAudioAssets(Engine::EnoEngine& engine_)
+{
+	audioAssets.clear();
+
+	std::vector<std::string> folders = {
+		engine_.getResourceLoader().getMusicPath().c_str(),
+		engine_.getResourceLoader().getSFXPath().c_str(),
+	};
+
+	for (const auto& folder : folders)
+	{
+		if (!std::filesystem::exists(folder))
+			continue;
+
+		for (const auto& entry : std::filesystem::directory_iterator(folder))
+		{
+			if (!entry.is_regular_file()) continue;
+
+			std::string ext = entry.path().extension().string();
+			if (ext == ".wav" || ext == ".ogg" || ext == ".mp3")
+			{
+				audioAssets.push_back(entry.path().filename().string());
+			}
+		}
+	}
+}
+
+void displayAudioTab(Engine::EnoEngine& engine_)
+{
+	Resources::EnoLoader& loader = engine_.getResourceLoader();
+	Event::EnoEventBus& bus = engine_.getEventBus();
+
+
+	ImGui::Text("=== AUDIO ASSETS ===");
+
+	// Button to load audio assets exactly once
+	if (ImGui::Button("Load Audio Files"))
+	{
+		LoadAudioAssets(engine_);
+	}
+
+	ImGui::Separator();
+
+
+	static int selectedAsset = -1;
+	static std::string selectedName{};
+	static FMOD::Sound* selectedSound = nullptr;
+
+	//// --- Audio File List ---
+	//ImGui::BeginChild("AudioAssetList", ImVec2(0, 150), true);
+
+	//if (audioAssets.empty())
+	//{
+	//	ImGui::TextDisabled("(No audio loaded. Press 'Load Audio Files')");
+	//}
+	//else
+	//{
+	//	for (int i = 0; i < audioAssets.size(); ++i)
+	//	{
+	//		if (ImGui::Selectable(audioAssets[i].c_str(), selectedAsset == i))
+	//		{
+	//			selectedAsset = i;
+	//			std::cout << "[Audio] Selected: " << audioAssets[i] << "\n";
+	//		}
+	//	}
+	//}
+
+	//ImGui::EndChild();
+
+	//ImGui::Spacing();
+	//ImGui::Separator();
+	//ImGui::Spacing();
+	 // ============== FILE LIST ==============
+	ImGui::BeginChild("AudioAssetList", ImVec2(0, 150), true);
+
+	if (audioAssets.empty())
+	{
+		ImGui::TextDisabled("(No audio loaded. Press button above)");
+	}
+	else
+	{
+		for (int i = 0; i < audioAssets.size(); ++i)
+		{
+			if (ImGui::Selectable(audioAssets[i].c_str(), selectedAsset == i))
+			{
+				selectedAsset = i;
+
+				selectedName = audioAssets[i];
+				// ---- FIX: STRIP EXTENSION ----
+				selectedName = selectedName.substr(0, selectedName.find_last_of('.'));
+
+				std::cout << "[Audio] User selected: " << selectedName << "\n";
+
+				// Request engine to load this sound
+				bus.publish(Audio::RequestSound{ selectedName });
+
+				auto& sounds = loader.getSounds();
+				auto it = sounds.find(selectedName);
+
+				if (it != sounds.end())
+				{
+					selectedSound = it->second;
+					std::cout << "[Audio] Loaded Sound: " << selectedName << "\n";
+				}
+				else
+				{
+					selectedSound = nullptr;
+					std::cout << "[Audio] ERROR: Sound not found after request.\n";
+				}
+			}
+		}
+	}
+
+	ImGui::EndChild();
+	ImGui::Separator();
+
+	// ====== Waveform Viewer (Mock) ======
+	ImGui::Text("Waveform Preview");
+	ImGui::BeginChild("WaveformViewer", ImVec2(0, 200), true);
+
+	ImDrawList* draw = ImGui::GetWindowDrawList();
+	ImVec2 pos = ImGui::GetCursorScreenPos();
+	ImVec2 size = ImGui::GetContentRegionAvail();
+
+	float midY = pos.y + size.y * 0.5f;
+	float step = size.x / 60.0f;
+
+	// mock waveform
+	for (int i = 0; i < 60; i++)
+	{
+		float h = (sinf(i * 0.3f) * 0.5f + 0.5f) * (size.y * 0.9f);
+		draw->AddLine(
+			ImVec2(pos.x + i * step, midY - h * 0.5f),
+			ImVec2(pos.x + i * step, midY + h * 0.5f),
+			IM_COL32(100, 200, 255, 255), 2.0f
+		);
+	}
+
+	ImGui::EndChild();
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	//// ====== Playback Controls ======
+	//ImGui::Text("Playback");
+	//if (ImGui::Button("Play")) {}
+	//if (ImGui::Button("Pause")) {}
+	//if (ImGui::Button("Stop")) {}
+
+	//ImGui::Spacing();
+	//ImGui::Separator();
+	//ImGui::Spacing();
+
+	//// ====== Inspector ======
+	//ImGui::Text("Audio Inspector");
+	//static float volume = 1.0f;
+	//static float pitch = 1.0f;
+	//static float pan = 0.0f;
+	//static bool  loop = false;
+
+	//ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f);
+	//ImGui::SliderFloat("Pitch", &pitch, 0.5f, 2.0f);
+	//ImGui::SliderFloat("Pan", &pan, -1.0f, 1.0f);
+	//ImGui::Checkbox("Loop", &loop);
+
+	//ImGui::Spacing();
+	//ImGui::Separator();
+	ImGui::Text("=== Test Playback ===");
+
+	if (selectedName.empty())
+	{
+		ImGui::TextDisabled("Select an audio file to test.");
+	}
+	else
+	{
+		ImGui::Text("Selected: %s", selectedName.c_str());
+
+		if (ImGui::Button("Play as SFX"))
+		{
+			bus.publish(Audio::PlayInstant{ "SFX", selectedName });
+			std::cout << "[ImGui] PlayInstant SFX: " << selectedName << "\n";
+		}
+
+		if (ImGui::Button("Set as BGM"))
+		{
+			bus.publish(Audio::SetNewAudio{ selectedName });
+			std::cout << "[ImGui] SetNewAudio (BGM): " << selectedName << "\n";
+		}
+
+		if (ImGui::Button("Play BGM"))
+		{
+			bus.publish(Audio::SetAudioState{ "BGM" });
+			std::cout << "[ImGui] Play BGM\n";
+		}
+
+		if (ImGui::Button("Stop BGM"))
+		{
+			bus.publish(Audio::SetAudioState{ "" }); // empty = stop
+			std::cout << "[ImGui] Stop BGM\n";
+		}
+	}
+}
+
 void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity)
 {
 	auto& entMng = engine_.getEntityManager();
@@ -1432,7 +1645,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity)
 			sm.changeState("Idle", entity, entMng);
 		}
 	}
-
+	displayAudioTab(engine_);
 	ImGui::End();
 }
 
@@ -1985,6 +2198,7 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 	// Right side top - Assets Browser
 	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_right_top);
+	ImGui::DockBuilderDockWindow("Entity Inspector", dock_id_right_top);
 
 	// Right side bottom - Game View (full scene)
 	ImGui::DockBuilderDockWindow("Game View", dock_id_right);
