@@ -99,6 +99,11 @@ namespace Audio
 			{
 				onAudioInstantPlay(event);
 			});
+
+		bus_.subscribe<StopBGM>([&](const StopBGM&) {
+			stopChannelGroup("BGM");
+			soundPlaying_ = false; // reset toggle state
+			});
 	}
 
 	FMOD::System* EnoAudioManager::getSystem() const 
