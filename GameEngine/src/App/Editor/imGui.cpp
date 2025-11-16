@@ -1399,12 +1399,7 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			bus.publish(Audio::StopBGM{});
 		}
 
-
-
-
-		auto& entMng = engine_.getEntityManager();
-		auto& map = entMng.getMap();
-
+		auto& map = engine_.getEntityManager().getMap();
 		auto it = map.find(selectedEntityID);
 
 		if (it == map.end())
@@ -1416,13 +1411,13 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			ECS::Entity selectedEntity{ selectedEntityID }; 
 
 			// Add component if missing
-			if (!selectedEntity.has<ECSComponents::AudioComponent>(entMng)) {
-				selectedEntity.add<ECSComponents::AudioComponent>(entMng);
+			if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
+				selectedEntity.add<ECSComponents::AudioComponent>(engine_.getEntityManager());
 				std::cout << "[Audio] Added AudioComponent.\n";
 			}
 
 			// Fill it
-			auto& ac = selectedEntity.get<ECSComponents::AudioComponent>(entMng);
+			ECSComponents::AudioComponent& ac = selectedEntity.get<ECSComponents::AudioComponent>(engine_.getEntityManager());
 
 			strncpy(ac.audioMod_.name_, selectedName.c_str(), sizeof(ac.audioMod_.name_) - 1);
 			strncpy(ac.audioMod_.chGroup_, "SFX", sizeof(ac.audioMod_.chGroup_) - 1);
@@ -1432,7 +1427,7 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			std::cout << "[Audio] Attached SFX '" << selectedName
 				<< "' to entity " << selectedEntityID << "\n";
 		}
-
+		
 
 	}
 
@@ -1631,6 +1626,43 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity)
 			sm.addState("Chase", std::make_unique<AI::ChaseState>(pathfinder, aiMng));
 			sm.changeState("Idle", entity, entMng);
 		}
+	}
+
+	if (entity.has<ECSComponents::AudioComponent>(entMng))
+	{
+		auto& ac = entity.get<ECSComponents::AudioComponent>(entMng);
+
+		ImGui::SeparatorText("Audio");
+
+		ImGui::Text("Attached SFX: %s", ac.audioMod_.name_);
+
+		if (ImGui::Button("Play entity SFX now"))
+		{
+			std::cout << "[Inspector] Checking entity " << entity.id()
+				<< " has AudioComponent = "
+				<< entity.has<ECSComponents::AudioComponent>(entMng)
+				<< "\n";
+
+			engine_.getEventBus().publish(Audio::PlayInstant{
+				"SFX",
+				ac.audioMod_.name_
+				});
+
+			std::cout << "[Audio] PLAY from entity "
+				<< entity.id() << ": " << ac.audioMod_.name_ << "\n";
+		}
+	}
+	else
+	{
+		ImGui::SeparatorText("Audio");
+		ImGui::TextDisabled("No AudioComponent attached.");
+
+		//if (ImGui::Button("Add Audio Component"))
+		//{
+		//	entity.add<ECSComponents::AudioComponent>(entMng);
+		//	std::cout << "[Audio] Added AudioComponent to entity "
+		//		<< entity.id() << "\n";
+		//}
 	}
 	ImGui::End();
 }
