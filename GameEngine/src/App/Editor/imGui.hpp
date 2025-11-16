@@ -212,7 +212,7 @@ void imGuiEndDockspace();
 std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse);
 
 /*============================================================================================
- * \brief       Moves child entities relative to parent movement
+ * \brief       Moves child entities relative to parent movement (deprecated - use applyParentTransformToChildren)
  * \param[in]   Editor::Node* node
  * \param[in]   float deltaX
  * \param[in]   float deltaY
@@ -222,9 +222,50 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec
 void moveChildrenRecursive(Editor::Node* node, float deltaX, float deltaY, ECS::EntityManager& entityManager);
 
 /*============================================================================================
+ * \brief       Applies rotation delta to all children recursively around parent position
+ * \param[in]   Editor::Node* node
+ * \param[in]   float deltaRotation - Rotation change in radians
+ * \param[in]   Math::eVec2<float> parentPos - Parent's position (rotation pivot)
+ * \param[in]   ECS::EntityManager& entityManager
+ * \return      void
+*//*========================================================================================*/
+void rotateChildrenRecursive(Editor::Node* node, float deltaRotation, Math::eVec2<float> parentPos, ECS::EntityManager& entityManager);
+
+/*============================================================================================
+ * \brief       Applies scale delta to all children recursively from parent position
+ * \param[in]   Editor::Node* node
+ * \param[in]   float scaleFactorX - Scale multiplier for X axis
+ * \param[in]   float scaleFactorY - Scale multiplier for Y axis
+ * \param[in]   Math::eVec2<float> parentPos - Parent's position (scale origin)
+ * \param[in]   ECS::EntityManager& entityManager
+ * \return      void
+*//*========================================================================================*/
+void scaleChildrenRecursive(Editor::Node* node, float scaleFactorX, float scaleFactorY, Math::eVec2<float> parentPos, ECS::EntityManager& entityManager);
+
+/*============================================================================================
  * \brief       Destroys all child entities recursively
  * \param[in]   Editor::Node* node
  * \param[in]   ECS::EntityManager& entityManager
  * \return      void
 *//*========================================================================================*/
 void destroyChildrenRecursive(Editor::Node* node, ECS::EntityManager& entityManager);
+
+/*============================================================================================
+ * \brief       Gets the currently selected entity ID
+ * \return      uint32_t
+*//*========================================================================================*/
+uint32_t getSelectedEntityID();
+
+/*============================================================================================
+ * \brief       Clears the currently selected entity
+ * \return      void
+*//*========================================================================================*/
+void clearSelectedEntity();
+
+/*============================================================================================
+ * \brief       Deletes the currently selected entity and its children
+ * \param[in]   Editor::EnoSceneTree& sceneTree
+ * \param[in]   ECS::EntityManager& entityManager
+ * \return      void
+*//*========================================================================================*/
+void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager);

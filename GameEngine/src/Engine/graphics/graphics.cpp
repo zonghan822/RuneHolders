@@ -80,7 +80,7 @@ namespace Graphics
 
         glBindTexture(GL_TEXTURE_2D, textureID_);
 
-        // CRITICAL: Set texture parameters for sprite sheets
+        // Set texture parameters for sprite sheets
         std::cout << "Setting texture parameters..." << std::endl;
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // Prevent wrapping
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);  // Prevent wrapping
@@ -101,9 +101,6 @@ namespace Graphics
 
         // Upload texture data
         glTexImage2D(GL_TEXTURE_2D, 0, format, width_, height_, 0, format, GL_UNSIGNED_BYTE, data);
-
-        // DO NOT generate mipmaps for sprite sheets - this causes bleeding!
-        // glGenerateMipmap(GL_TEXTURE_2D);  // KEEP THIS COMMENTED OUT
 
         std::cout << "Freeing image data..." << std::endl;
 
