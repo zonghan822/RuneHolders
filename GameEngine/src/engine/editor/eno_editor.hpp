@@ -11,6 +11,9 @@
 // Events
 #include "../editor/editor_events.hpp"
 
+// Undo System
+#include "undo/undo_manager.hpp"
+
 
 namespace Editor
 {
@@ -27,7 +30,8 @@ namespace Editor
 			bus_ { bus },
 			entMng_{ entMng },
 			coreHost_{ coreHost },
-			playingScene_{ false }
+			playingScene_{ false },
+			undoManager_{ bus, entMng, 20 }
 		{
 			// Creates 1 scene by default if it is not loaded save data
 			createScene();
@@ -206,6 +210,10 @@ namespace Editor
 			return scriptMng_;
 		}
 
+		UndoManager& getUndoManager() {
+			return undoManager_;
+		}
+
 	private:
 		// Scenes
 		std::vector<std::unique_ptr<EnoScene>> scenes_;
@@ -226,5 +234,8 @@ namespace Editor
 		// Scene tree
 		EnoSceneTree tree_{ entMng_, coreHost_ };
 		bool playingScene_;
+
+		// Undo system
+		UndoManager undoManager_;
 	};
 }

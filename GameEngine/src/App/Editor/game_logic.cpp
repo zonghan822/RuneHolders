@@ -65,8 +65,8 @@ void GameApplication::initialize() {
 	// Subscribe to delete selected entity event (using GameApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
 		{
-			extern void deleteSelectedEntity(Editor::EnoSceneTree&, ECS::EntityManager&);
-			deleteSelectedEntity(*sceneTree_, engine_.getEntityManager());
+			extern void deleteSelectedEntity(Editor::EnoSceneTree&, ECS::EntityManager&, Editor::UndoManager&);
+			deleteSelectedEntity(*sceneTree_, engine_.getEntityManager(), engine_.getEnoEditor().getUndoManager());
 		});
 
 	std::cout << "Game initialized successfully!" << std::endl;
@@ -156,6 +156,15 @@ void GameApplication::setupGameAudio() {
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX1", "SFX", "Flask");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX2", "SFX", "Stone_Impact");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX3", "SFX", "Water_Drip");
+
+	// Undo/Redo System
+	// Ctrl+Z for undo
+	inputMng.setupKey("Undo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL);
+	inputMng.setupEvent<Editor::UndoAction>("Undo");
+
+	// Ctrl+Shift+Z for redo
+	inputMng.setupKey("Redo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT);
+	inputMng.setupEvent<Editor::RedoAction>("Redo");
 }
 
 void GameApplication::setupTreeTesting()
@@ -1052,7 +1061,7 @@ void GameApplication::drawPlayerAndIndicator() {
 
 void GameApplication::updateImGui() {
 	SystemTimer ImGuiTimer("ImGui", systemTimes_);
-	imGuiDisplay(engine_, *sceneTree_);
+	imGuiDisplay(engine_, *sceneTree_, engine_.getEnoEditor().getUndoManager());
 }
 
 void GameApplication::drawShapes() {
