@@ -74,9 +74,10 @@ void imGuiInit(GLFWwindow* window);
  * \brief       Updates and renders the ImGui control panel
  * \param[in]   Engine::EnoEngine& engine_
  * \param[in]   Editor::EnoSceneTree& sceneTree
+ * \param[in]   Editor::UndoManager& undoManager
  * \return      void
 *//*========================================================================================*/
-void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
+void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager);
 
 /*============================================================================================
  * \brief       Terminates Dear ImGui
@@ -111,9 +112,11 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 /*============================================================================================
  * \brief       Displays Hierachy Tab
  * \param[in]   Engine::EnoEngine& engine_
+ * \param[in]   Editor::EnoSceneTree& sceneTree
+ * \param[in]   Editor::UndoManager& undoManager
  * \return      void
 *//*========================================================================================*/
-void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
+void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager);
 
 /*============================================================================================
  * \brief       Displays all Nodes in a recursive order
@@ -127,25 +130,27 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t nodeID, ECS::En
 /*============================================================================================
  * \brief       Displays All Entities View Tab
  * \param[in]   Engine::EnoEngine& engine_
- * \param[in]   Editor::EnoSceneTree& sceneTree
+ * \param[in]   Editor::UndoManager& undoManager
  * \return      void
 *//*========================================================================================*/
-void displayAllEntitiesTab(Engine::EnoEngine& engine_);
+void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::UndoManager& undoManager);
 
 /*============================================================================================
  * \brief       Displays Entity Inspector
  * \param[in]   ECS::Entity&
+ * \param[in]   Editor::UndoManager& undoManager
  * \return      void
 *//*========================================================================================*/
-void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity);
+void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager);
 
 /*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab
  * \param[in]   Engine::EnoEngine& engine_
  * \param[in]   Editor::EnoSceneTree& sceneTree
+ * \param[in]   Editor::UndoManager& undoManager
  * \return      void
 *//*========================================================================================*/
-void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
+void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager);
 
 /*============================================================================================
  * \brief       Displays Assets in the Assets menu
@@ -194,7 +199,7 @@ void displayAudioTab(Engine::EnoEngine& engine_);
 
 // docking shi
 void displayGameView();
-void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
+void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager);
 
 void imGuiSetupDefaultLayout();
 
