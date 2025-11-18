@@ -26,10 +26,11 @@ void GameApplication::initialize() {
 	engine_.setup();
 
 	// Initialize scene tree (must be after engine setup)
-	sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
+	/*sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
 		engine_.getEntityManager(),
 		engine_.getCoreHost()
-	);
+	);*/
+
 
 	// Setup all game content
 	setupGameEntities();
@@ -44,7 +45,7 @@ void GameApplication::initialize() {
 	timesFont_ = engine_.getResourceLoader().getFont("times");
 
 	// ============= LOAD LAST ACTIVE SAVED SCENE ========================= //
-	engine_.getEnoEditor().getSceneTree().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
+	//engine_.getEnoEditor().getSceneTree().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
@@ -61,6 +62,7 @@ void GameApplication::initialize() {
 	// Center editor camera on the middle of the game world initially
 	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
 	editorCameraY_ = (VIRTUAL_HEIGHT - EDITOR_HEIGHT) / 2.0f;
+
 
 	std::cout << "Game initialized successfully!" << std::endl;
 }
@@ -275,7 +277,7 @@ void GameApplication::updateGameLogic() {
 	pathfinder_->update(entityManager, 1.f);
 
 	// Update engine playing state based on editor state
-	engine_.setIsPlaying(getEditorState() == Playing || getEditorState() == NextKeyFrame);
+	engine_.setIsPlaying(engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
 
 	// Use FIXED virtual resolution for consistent rendering
 	Math::eVec2<float> renderSize{
@@ -378,7 +380,7 @@ void GameApplication::updateGameLogic() {
 	}
 
 	// ==== CAMERA PANNING INPUT (ONLY IN PLAY MODE) ====
-	if (getEditorState() == Playing) {
+	if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing) {
 		auto& inputManager = engine_.getInputManager();
 		// Trigger camera pan upward when UP arrow is pressed
 		if (inputManager.isKeyDown(GLFW_KEY_UP) && !isPanning_) {
@@ -415,7 +417,7 @@ void GameApplication::updateGameLogic() {
 			}
 		}
 		// Manual camera control (only when not panning and in edit mode)
-		else if (getEditorState() == Stopped) {
+		else if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Stopped) {
 			// NOTE: WASD controls BOTH player movement AND editor camera
 			// To move ONLY the camera, set the editor state to stopped (edit) mode
 			auto& inputManager = engine_.getInputManager();
@@ -629,13 +631,13 @@ void GameApplication::updateGameLogic() {
 
 	// Update engine playing state for NEXT frame based on current editor state
 	// This must happen BEFORE we transition NextKeyFrame->Paused
-	bool shouldPlayNextFrame = (getEditorState() == Playing || getEditorState() == NextKeyFrame);
+	bool shouldPlayNextFrame = (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
 	engine_.setIsPlaying(shouldPlayNextFrame);
 
 	// Handle NextKeyFrame state transition at the END of the frame
 	// This ensures physics/collision will have already updated with isPlaying=true in the next frame
-	if (getEditorState() == NextKeyFrame) {
-		setEditorState(Paused);
+	if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame) {
+		engine_.getEnoEditor().getCurrentScene().pause();
 	}
 }
 
@@ -720,7 +722,7 @@ void GameApplication::updateEntities() {
 	auto* playerSystem = engine_.getPlayerSystem();
 
 	// Check if editor state is in play and player is moving and switch animation accordingly
-	if (playerSystem && playerSpawned_ && getEditorState() == Playing) {
+	if (playerSystem && playerSpawned_ && engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing) {
 		// Check for WASD input
 		bool isMoving =
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
@@ -763,17 +765,17 @@ void GameApplication::updateEntities() {
 	auto& coreHost = engine_.getCoreHost();
 
 	// Editor state = play game
-	switch (getEditorState())
+	switch (engine_.getEnoEditor().getCurrentScene().getState())
 	{
-		case Playing:
+	case Editor::State::Playing:
 		{
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
 			{
 				// Save the current scene tree state before playing
-				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
-				sceneTree_->save(ASSETS_DIR_PATH "saves/scenes/" + sceneTree_->getSceneName(), sceneTree_->getSceneName());
-				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
+				//std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
+				//sceneTree_->save(ASSETS_DIR_PATH "saves/scenes/" + sceneTree_->getSceneName(), sceneTree_->getSceneName());
+				//std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
 			}
@@ -798,18 +800,6 @@ void GameApplication::updateEntities() {
 				hasBegun = true;
 			}
 
-			// Get list of entities to store current pos to reset later
-			// Check that the last frame editor state was 'Stopped'
-			if (playAfterStop)
-			{
-				// Save the current scene tree state before playing
-				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
-				sceneTree_->save(ASSETS_DIR_PATH"/saves/scenes/" + sceneTree_->getSceneName(), sceneTree_->getSceneName());
-				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
-				// Toggle flag to make it a one time event
-				playAfterStop = false;
-			}
-
 			//for (auto* node : sceneTree_->getAllNodes())
 			//{
 			//	if (!node->script_) continue;
@@ -823,13 +813,13 @@ void GameApplication::updateEntities() {
 			break;
 
 		}
-		case Paused:
+		case Editor::State::Paused:
 		{
 			// This toggles keyframe mode
 			keyFrameMode = true;
 			break;
 		}
-		case NextKeyFrame:
+		case Editor::State::NextFrame:
 		{
 			// Check if key frame mode is true
 			if (keyFrameMode)
@@ -843,13 +833,13 @@ void GameApplication::updateEntities() {
 			}
 			break;
 		}
-		case Stopped:
+		case Editor::State::Stopped:
 		{
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
 				// Load the saved scene tree state to restore positions
-				std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
+				/*std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
 				std::string sceneName = sceneTree_->getSceneName();
 				if (!sceneName.empty())
 				{
@@ -860,7 +850,7 @@ void GameApplication::updateEntities() {
 				else
 				{
 					std::cerr << "[GameLogic] Warning: Scene name is empty, cannot load scene!" << std::endl;
-				}
+				}*/
 
 				// Mark entities as dirty to refresh the rendering cache
 				entitiesDirty_ = true;
@@ -883,7 +873,7 @@ void GameApplication::updateEntities() {
 		auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
 		auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
 
-		if (getEditorState() == Playing)
+		if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing)
 		{
 			if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
 			{
@@ -891,7 +881,7 @@ void GameApplication::updateEntities() {
 				{
 
 					std::cout << "CLICK!" << std::endl;
-					setEditorState(Stopped);
+					engine_.getEnoEditor().getCurrentScene().stop();
 				}
 			}
 		}
@@ -1033,7 +1023,7 @@ void GameApplication::drawPlayerAndIndicator() {
 
 void GameApplication::updateImGui() {
 	SystemTimer ImGuiTimer("ImGui", systemTimes_);
-	imGuiDisplay(engine_, *sceneTree_);
+	imGuiDisplay(engine_, engine_.getEnoEditor().getSceneTree());
 }
 
 void GameApplication::drawShapes() {
@@ -1180,21 +1170,6 @@ void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData)
 	// Keep the same current state
 	if (playerAnimController_.getCurrentAnimationName().empty())
 		playerAnimController_.setAnimation("idle");
-}
-
-// Accessor and mutators to access editor state
-EditorState GameApplication::getEditorState() const
-{
-	return g_editorState;
-}
-EditorState GameApplication::getEditorState()
-{
-	return g_editorState;
-}
-
-void GameApplication::setEditorState(EditorState state)
-{
-	g_editorState = state;
 }
 
 // Camera panning for room transitions
