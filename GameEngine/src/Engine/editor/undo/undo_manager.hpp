@@ -212,6 +212,14 @@ namespace Editor
 			return history_;
 		}
 
+		/*============================================================================================
+		* \brief   Get a reference to the entity manager
+		*//*========================================================================================*/
+		ECS::EntityManager& getEntityManager()
+		{
+			return entityManager_;
+		}
+
 	private:
 		Event::EnoEventBus& bus_;
 		ECS::EntityManager& entityManager_;
