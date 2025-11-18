@@ -1560,7 +1560,8 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 	ImGui::EndChild();
 
-	ImGui::Spacing();
+
+
 	ImGui::Separator();
 	ImGui::Spacing();
 
@@ -1848,10 +1849,61 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	{
 		auto& ac = entity.get<ECSComponents::AudioComponent>(entMng);
 
+		// Godot Phony Sliders start
+		ImGui::SeparatorText("AudioStreamPlayer2D");
+		ImGui::Text("=== AudioStreamPlayer2D ===");
+
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+		if (ImGui::TreeNodeEx("Stream", flags))
+		{
+			ImGui::Separator();
+			ImGui::Text("Format:");
+			ImGui::SameLine(140);
+			ImGui::TextDisabled("16-Bit");
+
+			ImGui::Text("Loop Mode:");
+			ImGui::SameLine(140);
+			ImGui::TextDisabled("Disabled");
+
+			static int dummyLoopBegin = 0;
+			ImGui::Text("Loop Begin:");
+			ImGui::SameLine(140);
+			ImGui::InputInt("##LoopBegin", &dummyLoopBegin);
+
+			static int dummyLoopEnd = 0;
+			ImGui::Text("Loop End:");
+			ImGui::SameLine(140);
+			ImGui::InputInt("##LoopEnd", &dummyLoopEnd);
+
+			ImGui::Text("Mix Rate:");
+			ImGui::SameLine(140);
+			ImGui::TextDisabled("44100");
+
+			ImGui::Text("Stereo:");
+			ImGui::SameLine(140);
+			bool stereoToggle = true;
+			ImGui::Checkbox("##StereoChk", &stereoToggle);
+
+			ImGui::Separator();
+
+			ImGui::Text("Volume dB:");
+			ImGui::SameLine(140);
+			float volumeDb = 1.015f;
+			ImGui::SliderFloat("##VolDb", &volumeDb, -40.f, 6.f);
+
+			ImGui::Text("Pitch Scale:");
+			ImGui::SameLine(140);
+			float pitch = 1.0f;
+			ImGui::SliderFloat("##PitchScale", &pitch, 0.1f, 3.f);
+
+			ImGui::TreePop();
+		}
+		ImGui::Separator();
+
+		// Godot Phony Sliders end
+
 		ImGui::SeparatorText("Audio");
-
 		ImGui::Text("Attached SFX: %s", ac.audioMod_.name_);
-
 		if (ImGui::Button("Play entity SFX now"))
 		{
 			std::cout << "[Inspector] Checking entity " << entity.id()
