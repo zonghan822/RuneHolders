@@ -280,4 +280,133 @@ namespace Editor
 		Math::eVec2<float> oldScale_;
 		Math::eVec2<float> newScale_;
 	};
+
+	/*============================================================================================
+	* \struct	EntityTransformSnapshot
+	* \brief	Stores transform state for a single entity
+	*//*========================================================================================*/
+	struct EntityTransformSnapshot
+	{
+		uint32_t entityID;
+		ECSComponents::TransformComponent transform;
+
+		EntityTransformSnapshot() : entityID(UINT32_MAX) {}
+		EntityTransformSnapshot(uint32_t id, const ECSComponents::TransformComponent& t)
+			: entityID(id), transform(t) {}
+	};
+
+	/*============================================================================================
+	* \class	MultiTransformCommand
+	* \brief	Command for transforming a parent and all its children
+	*
+	*			Captures the transform state of a parent entity and all its children before
+	*			and after a transformation, allowing proper undo/redo of hierarchical transforms
+	*//*========================================================================================*/
+	class MultiTransformCommand : public ICommand
+	{
+	public:
+		MultiTransformCommand(
+			ECS::EntityManager& entityManager,
+			const std::string& description = "Transform Hierarchy"
+		)
+			: entityManager_(entityManager)
+			, description_(description)
+		{}
+
+		// Capture transform state before modification
+		void captureOldState(const std::vector<uint32_t>& entityIDs)
+		{
+			oldTransforms_.clear();
+			for (uint32_t id : entityIDs)
+			{
+				auto& entityMap = entityManager_.getMap();
+				if (entityMap.find(id) != entityMap.end())
+				{
+					ECS::Entity entity(id);
+					if (entity.has<ECSComponents::TransformComponent>(entityManager_))
+					{
+						auto& tc = entity.get<ECSComponents::TransformComponent>(entityManager_);
+						oldTransforms_.emplace_back(id, tc);
+					}
+				}
+			}
+		}
+
+		// Capture transform state after modification
+		void captureNewState(const std::vector<uint32_t>& entityIDs)
+		{
+			newTransforms_.clear();
+			for (uint32_t id : entityIDs)
+			{
+				auto& entityMap = entityManager_.getMap();
+				if (entityMap.find(id) != entityMap.end())
+				{
+					ECS::Entity entity(id);
+					if (entity.has<ECSComponents::TransformComponent>(entityManager_))
+					{
+						auto& tc = entity.get<ECSComponents::TransformComponent>(entityManager_);
+						newTransforms_.emplace_back(id, tc);
+					}
+				}
+			}
+		}
+
+		void execute() override
+		{
+			// Apply new transforms
+			for (const auto& snapshot : newTransforms_)
+			{
+				auto& entityMap = entityManager_.getMap();
+				if (entityMap.find(snapshot.entityID) != entityMap.end())
+				{
+					ECS::Entity entity(snapshot.entityID);
+					if (entity.has<ECSComponents::TransformComponent>(entityManager_))
+					{
+						auto& tc = entity.get<ECSComponents::TransformComponent>(entityManager_);
+						tc = snapshot.transform;
+					}
+				}
+			}
+		}
+
+		void undo() override
+		{
+			// Restore old transforms
+			for (const auto& snapshot : oldTransforms_)
+			{
+				auto& entityMap = entityManager_.getMap();
+				if (entityMap.find(snapshot.entityID) != entityMap.end())
+				{
+					ECS::Entity entity(snapshot.entityID);
+					if (entity.has<ECSComponents::TransformComponent>(entityManager_))
+					{
+						auto& tc = entity.get<ECSComponents::TransformComponent>(entityManager_);
+						tc = snapshot.transform;
+					}
+				}
+			}
+		}
+
+		std::string getDescription() const override
+		{
+			std::ostringstream oss;
+			oss << description_;
+			if (oldTransforms_.size() > 1)
+			{
+				oss << " (" << oldTransforms_.size() << " entities)";
+			}
+			return oss.str();
+		}
+
+		bool isEmpty() const
+		{
+			return oldTransforms_.empty() && newTransforms_.empty();
+		}
+
+	private:
+		ECS::EntityManager& entityManager_;
+		std::string description_;
+		std::vector<EntityTransformSnapshot> oldTransforms_;
+		std::vector<EntityTransformSnapshot> newTransforms_;
+	};
 }

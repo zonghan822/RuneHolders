@@ -97,6 +97,8 @@ static ImVec2 dragStartWorldPos = ImVec2(0.0f, 0.0f);
 static Math::eVec2<float> transformBeforeDrag;
 static Math::eVec2<float> rotationBeforeDrag;
 static Math::eVec2<float> scaleBeforeDrag;
+static std::vector<uint32_t> affectedEntityIDs;  // Track all entities affected by transformation (parent + children)
+static std::unique_ptr<Editor::MultiTransformCommand> pendingTransformCommand;  // Command being built during transformation
 
 // Prefab placement
 static std::string g_selectedPrefabForPlacement = "";
@@ -565,6 +567,21 @@ void destroyChildrenRecursive(Editor::Node* node, ECS::EntityManager& entityMana
 		// Destroy the child entity
 		entityManager.destroyEntity(child->entity_.id());
 		std::cout << "[DEBUG] Destroyed child entity " << child->entity_.id() << "\n";
+	}
+}
+
+// Helper function to collect entity IDs for a node and all its children
+void collectEntityIDsRecursive(Editor::Node* node, std::vector<uint32_t>& entityIDs)
+{
+	if (!node) return;
+
+	// Add this entity's ID
+	entityIDs.push_back(node->entity_.id());
+
+	// Recursively add all children
+	for (Editor::Node* child : node->children_)
+	{
+		collectEntityIDsRecursive(child, entityIDs);
 	}
 }
 
@@ -1134,6 +1151,14 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				Editor::Node* parentNode = sceneTree.getNodeByEntityID(selectedEntityID);
 				Editor::Node* childNode = sceneTree.createFromEntity(childEntity, parentNode);
 
+				// Record creation for undo/redo
+				auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
+					sceneTree,
+					entityManager,
+					childEntity
+				);
+				undoManager.executeCommand(std::move(createCmd));
+
 				//if (attachScript) {
 				//	auto script = scriptMng.selectScript(); // file picker
 				//	if (script) {
@@ -1151,7 +1176,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				if (g_game) g_game->markEntitiesDirty();
 
 				std::cout << "Added child node " << childEntity.id() << " ('" << nameComp.name
-					<< "') to parent " << selectedEntityID << "\n";
+					<< "') to parent " << selectedEntityID << " with undo support\n";
 
 				// Debug: verify the relationship was set
 				if (childNode) {
@@ -2500,18 +2525,24 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 				auto clicked = getEntityUnderMouse(engine_, worldPos);
 				if (clicked.has_value()) {
-					std::cout << "Deleted entity: " << clicked->id()
+					std::cout << "Deleting entity: " << clicked->id()
 						<< " and all children at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 
-					// Get the node and destroy all child entities
+					// Get the node first before destroying
 					Editor::Node* node = sceneTree.getNodeByEntityID(clicked->id());
 					if (node) {
-						destroyChildrenRecursive(node, entityManager);
-					}
+						// Create delete command (captures snapshot before deletion)
+						auto deleteCmd = std::make_unique<Editor::DeleteEntityCommand>(
+							sceneTree,
+							entityManager,
+							clicked.value()
+						);
 
-					// Remove from scene hierarchy and destroy parent entity
-					sceneTree.select(clicked->id());
-					sceneTree.kill();
+						// Execute the deletion (also adds to undo history)
+						undoManager.executeCommand(std::move(deleteCmd));
+
+						std::cout << "[DEBUG] Entity deletion completed with undo support\n";
+					}
 
 					if (g_game) g_game->markEntitiesDirty();
 				}
@@ -2574,6 +2605,23 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 							// Check if clicking on gizmo handle
 							if (isMouseOverGizmoHandle(mouseScreenPos, entityScreenPos, gizmoSize, currentGizmoMode, handleType)) {
+								// Collect all affected entity IDs (parent + children) for undo
+								affectedEntityIDs.clear();
+								Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
+								if (node) {
+									collectEntityIDsRecursive(node, affectedEntityIDs);
+								}
+
+								// Create command and capture old state before transformation
+								if (!affectedEntityIDs.empty()) {
+									pendingTransformCommand = std::make_unique<Editor::MultiTransformCommand>(
+										undoManager.getEntityManager(),
+										currentGizmoMode == GIZMO_TRANSLATE ? "Move" :
+										(currentGizmoMode == GIZMO_ROTATE ? "Rotate" : "Scale")
+									);
+									pendingTransformCommand->captureOldState(affectedEntityIDs);
+								}
+
 								if (currentGizmoMode == GIZMO_ROTATE) {
 									// Start rotation (handleType 3 for rotation)
 									isRotating = true;
@@ -2582,7 +2630,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									initialAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
 									initialRotation = tc.rot.x;
 									rotationBeforeDrag = tc.rot;  // Store for undo
-									std::cout << "Started rotating entity " << selectedEntityID << "\n";
+									std::cout << "Started rotating entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
 								}
 								else if (currentGizmoMode == GIZMO_SCALE) {
 									// Start scaling
@@ -2595,11 +2643,11 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									lastScale = ImVec2(tc.scale.x, tc.scale.y);  // Initialize last scale
 									scaleBeforeDrag = tc.scale;  // Store for undo
 									if (handleType == 3) {
-										std::cout << "Started uniform scaling entity " << selectedEntityID << "\n";
+										std::cout << "Started uniform scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
 									} else if (handleType == 4) {
-										std::cout << "Started horizontal scaling entity " << selectedEntityID << "\n";
+										std::cout << "Started horizontal scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
 									} else if (handleType == 5) {
-										std::cout << "Started vertical scaling entity " << selectedEntityID << "\n";
+										std::cout << "Started vertical scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
 									}
 								}
 								else if (currentGizmoMode == GIZMO_TRANSLATE) {
@@ -2613,9 +2661,9 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									lastDragPos = ImVec2(tc.pos.x, tc.pos.y);
 									transformBeforeDrag = tc.pos;  // Store for undo
 									if (handleType == 1) {
-										std::cout << "Started dragging entity " << selectedEntityID << " on X-axis\n";
+										std::cout << "Started dragging entity " << selectedEntityID << " on X-axis (affecting " << affectedEntityIDs.size() << " entities)\n";
 									} else if (handleType == 2) {
-										std::cout << "Started dragging entity " << selectedEntityID << " on Y-axis\n";
+										std::cout << "Started dragging entity " << selectedEntityID << " on Y-axis (affecting " << affectedEntityIDs.size() << " entities)\n";
 									}
 								}
 								break;
@@ -2748,31 +2796,44 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 			// End transformation
 			if ((isDragging || isRotating || isScaling) && ImGui::IsMouseReleased(0)) {
-				// Get the entity that was transformed and record undo
-				auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent>();
-				for (auto& e : allEntities) {
-					if (e.id() == draggedEntityID) {
-						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+				std::cout << "Finished transformation on entity " << draggedEntityID << "\n";
 
-						if (isDragging) {
-							std::cout << "Finished dragging entity " << draggedEntityID << "\n";
-							undoManager.recordMove(e, transformBeforeDrag, tc.pos);
-							isDragging = false;
+				// Use MultiTransformCommand if we have multiple entities affected
+				if (pendingTransformCommand && !affectedEntityIDs.empty()) {
+					// Capture the new state after transformation
+					pendingTransformCommand->captureNewState(affectedEntityIDs);
+
+					// Execute the command through undo manager
+					undoManager.executeCommand(std::move(pendingTransformCommand));
+					std::cout << "Recorded multi-entity transform for " << affectedEntityIDs.size() << " entities\n";
+
+					affectedEntityIDs.clear();
+				}
+				else {
+					// Fallback to single entity undo (shouldn't normally happen)
+					auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent>();
+					for (auto& e : allEntities) {
+						if (e.id() == draggedEntityID) {
+							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+
+							if (isDragging) {
+								undoManager.recordMove(e, transformBeforeDrag, tc.pos);
+							}
+							else if (isRotating) {
+								undoManager.recordRotation(e, rotationBeforeDrag, tc.rot);
+							}
+							else if (isScaling) {
+								undoManager.recordScale(e, scaleBeforeDrag, tc.scale);
+							}
+							break;
 						}
-						else if (isRotating) {
-							std::cout << "Finished rotating entity " << draggedEntityID << "\n";
-							undoManager.recordRotation(e, rotationBeforeDrag, tc.rot);
-							isRotating = false;
-						}
-						else if (isScaling) {
-							std::cout << "Finished scaling entity " << draggedEntityID << "\n";
-							undoManager.recordScale(e, scaleBeforeDrag, tc.scale);
-							isScaling = false;
-						}
-						break;
 					}
 				}
 
+				// Clear transformation state
+				isDragging = false;
+				isRotating = false;
+				isScaling = false;
 				activeTransformAxis = 0;
 				draggedEntityID = 0;
 			}

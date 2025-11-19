@@ -51,8 +51,32 @@ namespace Editor
 		{
 			// Capture the entity and all its children
 			snapshots_ = EntitySerializer::captureEntityTree(entity, entityManager, sceneTree);
+
+			// Store the current entity IDs for deletion during undo
+			currentEntityIDs_.clear();
+			collectEntityIDsFromTree(entity, entityManager, sceneTree);
+
 			std::cout << "[CreateEntityCommand] Captured " << snapshots_.size() << " entities (including children)\n";
 		}
+
+	private:
+		// Helper to collect current entity IDs
+		void collectEntityIDsFromTree(ECS::Entity entity, ECS::EntityManager& entityManager, EnoSceneTree& sceneTree)
+		{
+			currentEntityIDs_.push_back(entity.id());
+
+			// Collect children
+			Node* node = sceneTree.getNodeByEntityID(entity.id());
+			if (node)
+			{
+				for (Node* child : node->children_)
+				{
+					collectEntityIDsFromTree(child->entity_, entityManager, sceneTree);
+				}
+			}
+		}
+
+	public:
 
 		void execute() override
 		{
@@ -69,10 +93,16 @@ namespace Editor
 			std::unordered_map<uint32_t, ECS::Entity> idMapping;
 			std::unordered_map<uint32_t, Node*> nodeMapping;
 
+			// Clear previous entity IDs
+			currentEntityIDs_.clear();
+
 			// First pass: create all entities
 			for (const auto& snapshot : snapshots_)
 			{
 				ECS::Entity newEntity = EntitySerializer::restoreEntity(snapshot, entityManager_, sceneTree_, idMapping);
+
+				// Store the new entity ID
+				currentEntityIDs_.push_back(newEntity.id());
 
 				// Add to scene tree (temporarily as root, we'll fix hierarchy next)
 				Node* node = sceneTree_.createFromEntity(newEntity, nullptr);
@@ -93,10 +123,34 @@ namespace Editor
 				if (!node) continue;
 
 				// Set parent if exists
-				if (snapshot.parentID != UINT32_MAX && nodeMapping.count(snapshot.parentID))
+				if (snapshot.parentID != UINT32_MAX)
 				{
-					Node* parent = nodeMapping[snapshot.parentID];
-					sceneTree_.nest(node, parent);
+					Node* parent = nullptr;
+
+					// First try to find parent in this command's nodeMapping
+					if (nodeMapping.count(snapshot.parentID))
+					{
+						parent = nodeMapping[snapshot.parentID];
+					}
+					else
+					{
+						// Parent not in this command - search existing scene tree by entity ID
+						parent = sceneTree_.getNodeByEntityID(snapshot.parentID);
+
+						if (parent)
+						{
+							std::cout << "[CreateEntityCommand] Found parent entity " << snapshot.parentID << " in existing scene tree\n";
+						}
+					}
+
+					if (parent)
+					{
+						sceneTree_.nest(node, parent);
+					}
+					else
+					{
+						std::cout << "[CreateEntityCommand] Warning: Parent (entity ID " << snapshot.parentID << ") not found for child '" << snapshot.name << "'\n";
+					}
 				}
 
 				// TODO: Restore script if needed
@@ -117,34 +171,27 @@ namespace Editor
 				return;
 			}
 
-			std::cout << "[CreateEntityCommand] Undo - deleting " << snapshots_.size() << " entities\n";
+			std::cout << "[CreateEntityCommand] Undo - deleting " << currentEntityIDs_.size() << " entities\n";
 
-			// Delete all entities (children first, then parents)
-			for (auto it = snapshots_.rbegin(); it != snapshots_.rend(); ++it)
+			// Delete all entities using stored IDs (reverse order - children first)
+			for (auto it = currentEntityIDs_.rbegin(); it != currentEntityIDs_.rend(); ++it)
 			{
-				const auto& snapshot = *it;
+				uint32_t entityID = *it;
 
-				// Find the current entity with this data
-				// Since IDs might have changed, we need to find by matching data
-				// For simplicity, we'll use the first entity with matching name
-				auto entities = entityManager_.findEntity<ECSComponents::NameComponent>();
-				for (auto& entity : entities)
+				// Check if entity still exists
+				auto& entityMap = entityManager_.getMap();
+				if (entityMap.find(entityID) != entityMap.end())
 				{
-					if (entity.has<ECSComponents::NameComponent>(entityManager_))
+					// Remove from scene tree first
+					Node* node = sceneTree_.getNodeByEntityID(entityID);
+					if (node)
 					{
-						auto& nameComp = entity.get<ECSComponents::NameComponent>(entityManager_);
-						if (std::string(nameComp.name) == snapshot.name)
-						{
-							Node* node = sceneTree_.getNodeByEntityID(entity.id());
-							if (node)
-							{
-								sceneTree_.kill(node);
-								entityManager_.destroyEntity(entity.id());
-								std::cout << "[CreateEntityCommand] Deleted entity: " << snapshot.name << "\n";
-								break;
-							}
-						}
+						sceneTree_.kill(node);
 					}
+
+					// Then destroy the entity
+					entityManager_.destroyEntity(entityID);
+					std::cout << "[CreateEntityCommand] Deleted entity: " << entityID << "\n";
 				}
 			}
 
@@ -173,6 +220,7 @@ namespace Editor
 		EnoSceneTree& sceneTree_;
 		ECS::EntityManager& entityManager_;
 		std::vector<EntitySnapshot> snapshots_;  // Snapshots of entity and all children
+		std::vector<uint32_t> currentEntityIDs_;  // Current entity IDs (for deletion during undo)
 		bool entityExists_;
 	};
 
@@ -196,8 +244,32 @@ namespace Editor
 		{
 			// Capture the entity and all its children BEFORE deletion
 			snapshots_ = EntitySerializer::captureEntityTree(entity, entityManager, sceneTree);
+
+			// Store the entity IDs that will be deleted
+			entitiesToDelete_.clear();
+			collectEntityIDsFromTree(entity, entityManager, sceneTree);
+
 			std::cout << "[DeleteEntityCommand] Captured " << snapshots_.size() << " entities for deletion\n";
 		}
+
+	private:
+		// Helper to collect entity IDs before deletion
+		void collectEntityIDsFromTree(ECS::Entity entity, ECS::EntityManager& entityManager, EnoSceneTree& sceneTree)
+		{
+			entitiesToDelete_.push_back(entity.id());
+
+			// Collect children
+			Node* node = sceneTree.getNodeByEntityID(entity.id());
+			if (node)
+			{
+				for (Node* child : node->children_)
+				{
+					collectEntityIDsFromTree(child->entity_, entityManager, sceneTree);
+				}
+			}
+		}
+
+	public:
 
 		void execute() override
 		{
@@ -207,32 +279,27 @@ namespace Editor
 				return;
 			}
 
-			std::cout << "[DeleteEntityCommand] Deleting " << snapshots_.size() << " entities\n";
+			std::cout << "[DeleteEntityCommand] Deleting " << entitiesToDelete_.size() << " entities\n";
 
-			// Delete all entities (children first, then parents)
-			for (auto it = snapshots_.rbegin(); it != snapshots_.rend(); ++it)
+			// Delete all entities using stored IDs (reverse order - children first)
+			for (auto it = entitiesToDelete_.rbegin(); it != entitiesToDelete_.rend(); ++it)
 			{
-				const auto& snapshot = *it;
+				uint32_t entityID = *it;
 
-				// Find entity by matching name
-				auto entities = entityManager_.findEntity<ECSComponents::NameComponent>();
-				for (auto& entity : entities)
+				// Check if entity still exists
+				auto& entityMap = entityManager_.getMap();
+				if (entityMap.find(entityID) != entityMap.end())
 				{
-					if (entity.has<ECSComponents::NameComponent>(entityManager_))
+					// Remove from scene tree first
+					Node* node = sceneTree_.getNodeByEntityID(entityID);
+					if (node)
 					{
-						auto& nameComp = entity.get<ECSComponents::NameComponent>(entityManager_);
-						if (std::string(nameComp.name) == snapshot.name)
-						{
-							Node* node = sceneTree_.getNodeByEntityID(entity.id());
-							if (node)
-							{
-								sceneTree_.kill(node);
-								entityManager_.destroyEntity(entity.id());
-								std::cout << "[DeleteEntityCommand] Deleted entity: " << snapshot.name << "\n";
-								break;
-							}
-						}
+						sceneTree_.kill(node);
 					}
+
+					// Then destroy the entity
+					entityManager_.destroyEntity(entityID);
+					std::cout << "[DeleteEntityCommand] Deleted entity: " << entityID << "\n";
 				}
 			}
 
@@ -256,10 +323,16 @@ namespace Editor
 			std::unordered_map<uint32_t, ECS::Entity> idMapping;
 			std::unordered_map<uint32_t, Node*> nodeMapping;
 
+			// Clear and rebuild entity IDs list with new IDs
+			entitiesToDelete_.clear();
+
 			// First pass: create all entities
 			for (const auto& snapshot : snapshots_)
 			{
 				ECS::Entity newEntity = EntitySerializer::restoreEntity(snapshot, entityManager_, sceneTree_, idMapping);
+
+				// Store the new entity ID
+				entitiesToDelete_.push_back(newEntity.id());
 
 				// Add to scene tree (temporarily as root)
 				Node* node = sceneTree_.createFromEntity(newEntity, nullptr);
@@ -280,10 +353,34 @@ namespace Editor
 				if (!node) continue;
 
 				// Set parent if exists
-				if (snapshot.parentID != UINT32_MAX && nodeMapping.count(snapshot.parentID))
+				if (snapshot.parentID != UINT32_MAX)
 				{
-					Node* parent = nodeMapping[snapshot.parentID];
-					sceneTree_.nest(node, parent);
+					Node* parent = nullptr;
+
+					// First try to find parent in this command's nodeMapping
+					if (nodeMapping.count(snapshot.parentID))
+					{
+						parent = nodeMapping[snapshot.parentID];
+					}
+					else
+					{
+						// Parent not in this command - search existing scene tree by entity ID
+						parent = sceneTree_.getNodeByEntityID(snapshot.parentID);
+
+						if (parent)
+						{
+							std::cout << "[DeleteEntityCommand] Found parent entity " << snapshot.parentID << " in existing scene tree\n";
+						}
+					}
+
+					if (parent)
+					{
+						sceneTree_.nest(node, parent);
+					}
+					else
+					{
+						std::cout << "[DeleteEntityCommand] Warning: Parent (entity ID " << snapshot.parentID << ") not found for child '" << snapshot.name << "'\n";
+					}
 				}
 
 				// TODO: Restore script if needed
@@ -315,6 +412,7 @@ namespace Editor
 		EnoSceneTree& sceneTree_;
 		ECS::EntityManager& entityManager_;
 		std::vector<EntitySnapshot> snapshots_;  // Snapshots of entity and all children
+		std::vector<uint32_t> entitiesToDelete_;  // Entity IDs to delete (updated after undo recreates them)
 		bool deleted_;
 	};
 
