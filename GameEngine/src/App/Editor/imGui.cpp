@@ -139,6 +139,8 @@ void imGuiInit(GLFWwindow* window) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.FontGlobalScale = 1.5f;
+	ImGui::GetStyle().ScaleAllSizes(1.5f);
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigDockingNoSplit = false;
@@ -1869,6 +1871,9 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			sm.changeState("Idle", entity, entMng);
 		}
 	}
+	
+	//for dropdown selection of Looping menu.
+	const char* loopOptions[] = {"Disabled","Forward","PingPong"};
 
 	if (entity.has<ECSComponents::AudioComponent>(entMng))
 	{
@@ -1883,43 +1888,65 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		{
 			ImGui::Separator();
 			ImGui::Text("Format:");
-			ImGui::SameLine(140);
-			ImGui::TextDisabled("16-Bit");
+			ImGui::SameLine(160);
+			ImGui::TextDisabled("16-Bit");								//dummy value
 
+
+			int loopMode = static_cast<int>(ac.audioMod_.loop_);
 			ImGui::Text("Loop Mode:");
-			ImGui::SameLine(140);
-			ImGui::TextDisabled("Disabled");
+			ImGui::SameLine(160);
+			if (ImGui::Combo("##LoopMode", &loopMode, loopOptions, IM_ARRAYSIZE(loopOptions)))
+			{
+				ac.audioMod_.loop_ = static_cast<Audio::EnoAudioModule::LoopMode>(loopMode);
+			}							
 
-			static int dummyLoopBegin = 0;
+			int loopBegin = static_cast<int>(ac.audioMod_.loopStart_);
 			ImGui::Text("Loop Begin:");
-			ImGui::SameLine(140);
-			ImGui::InputInt("##LoopBegin", &dummyLoopBegin);
+			ImGui::SameLine(160);
+			if (ImGui::InputInt("##LoopBegin", &loopBegin))
+			{
+				ac.audioMod_.loopStart_ = static_cast<float>(loopBegin);
+			}
 
-			static int dummyLoopEnd = 0;
+
+			int loopEnd = static_cast<int>(ac.audioMod_.loopEnd_);
 			ImGui::Text("Loop End:");
-			ImGui::SameLine(140);
-			ImGui::InputInt("##LoopEnd", &dummyLoopEnd);
+			ImGui::SameLine(160);
+			if (ImGui::InputInt("##LoopEnd", &loopEnd))
+			{
+				ac.audioMod_.loopEnd_ = static_cast<float>(loopEnd);
+			}
 
 			ImGui::Text("Mix Rate:");
-			ImGui::SameLine(140);
-			ImGui::TextDisabled("44100");
+			ImGui::SameLine(160);
+			ImGui::TextDisabled("44100");								//dummy value
 
 			ImGui::Text("Stereo:");
-			ImGui::SameLine(140);
+			ImGui::SameLine(160);
 			bool stereoToggle = true;
-			ImGui::Checkbox("##StereoChk", &stereoToggle);
+			ImGui::Checkbox("##StereoChk", &stereoToggle);			    //dummy value
 
 			ImGui::Separator();
 
 			ImGui::Text("Volume dB:");
-			ImGui::SameLine(140);
-			float volumeDb = 1.015f;
-			ImGui::SliderFloat("##VolDb", &volumeDb, -40.f, 6.f);
+			ImGui::SameLine(160); 
+			float tmpVol = static_cast<float>(ac.volume_);
+			ImGui::SliderFloat("##VolDb", &tmpVol, 0.f, 100.f);
+			ac.volume_ = static_cast<double>(tmpVol);					
 
 			ImGui::Text("Pitch Scale:");
-			ImGui::SameLine(140);
-			float pitch = 1.0f;
-			ImGui::SliderFloat("##PitchScale", &pitch, 0.1f, 3.f);
+			ImGui::SameLine(160);
+			float tmppitch = static_cast<float>(ac.pitchScale_);
+			ImGui::SliderFloat("##PitchScale", &tmppitch, 0.1f, 5.f);		
+			ac.pitchScale_ = static_cast<double>(tmppitch);
+
+			ImGui::Text("Pan Scale:");
+			ImGui::SameLine(160);
+			float pan = static_cast<float>(ac.panScale_);
+			if (ImGui::SliderFloat("Pan", &pan, -1.f, 1.f))
+			{
+				ac.panScale_ = static_cast<double>(pan);
+			}
 
 			ImGui::TreePop();
 		}
@@ -1944,6 +1971,31 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			std::cout << "[Audio] PLAY from entity "
 				<< entity.id() << ": " << ac.audioMod_.name_ << "\n";
 		}
+
+		if (ImGui::Button("Print Audio Component"))
+		{
+			std::cout << "===== AUDIO COMPONENT DEBUG =====\n";
+			std::cout << "Entity:		" << entity.id() << "\n";
+			std::cout << "Volume:       " << ac.volume_ << "\n";
+			std::cout << "Pitch Scale:  " << ac.pitchScale_ << "\n";
+			std::cout << "Pan Scale:    " << ac.panScale_ << "\n";
+			std::cout << "Autoplay:     " << (ac.isAutoplay_ ? "true" : "false") << "\n";
+			std::cout << "Is Playing:   " << (ac.isPlaying_ ? "true" : "false") << "\n";
+
+			std::cout << "-- MODULE --\n";
+			std::cout << "Name:         " << ac.audioMod_.name_ << "\n";
+			std::cout << "Path:         " << ac.audioMod_.path_ << "\n";
+			std::cout << "ChannelGroup: " << ac.audioMod_.chGroup_ << "\n";
+
+			std::cout << "Loop Mode:    " << static_cast<int>(ac.audioMod_.loop_) << "\n";
+			std::cout << "Loop Start:   " << ac.audioMod_.loopStart_ << "\n";
+			std::cout << "Loop End:     " << ac.audioMod_.loopEnd_ << "\n";
+
+			std::cout << "Sound Ptr:    " << ac.audioMod_.sound_ << "\n";
+
+			std::cout << "=================================\n";
+		}
+
 	}
 	else
 	{
