@@ -32,6 +32,7 @@ void GameApplication::initialize() {
 	);
 
 	// Setup all game content
+	setupPrefabs();
 	setupGameEntities();
 	setupGameAudio();
 	setupTreeTesting();
@@ -86,6 +87,23 @@ void GameApplication::shutdown() {
 	std::cout << "Terminating game..." << std::endl;
 	engine_.shutDown();
 	imGuiTerminate();
+}
+
+void GameApplication::setupPrefabs() {
+	auto prefabManager = engine_.getPrefabManager();
+	prefabManager.registerPresets();
+	ECSComponents::Preset::saveAll(prefabManager);
+	ECSComponents::Preset::loadAll(prefabManager);
+
+	// Example code
+	// Get a prefab from the prefab manager
+	auto pushboxPrefab = prefabManager.retrieve<ECSComponents::Preset::PUSHABLE_BOX>();
+
+	// Ensure that presetCreate is used instead of create!
+	ECS::Entity entity1 = engine_.getEntityManager().presetCreate(pushboxPrefab);
+
+	auto resti = entity1.get<ECSComponents::PhysicsComponent>(engine_.getEntityManager()).restitution;
+	std::cout << "Resitution: " << resti << std::endl;
 }
 
 void GameApplication::setupGameEntities() {

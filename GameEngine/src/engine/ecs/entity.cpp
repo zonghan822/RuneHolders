@@ -129,7 +129,7 @@ namespace ECS
 				};
 
 			// Parse and map fields of a component
-			std::unordered_map<std::string, DataField> dataMap;
+			std::unordered_map<std::string, ECSComponents::DataField> dataMap;
 			size_t fieldPos{};
 			while (fieldPos < compData.size())
 			{
@@ -392,9 +392,8 @@ namespace ECS
 		}
 	}
 
-
 	// Helper for creating a DataField that was specified in the save file
-	DataField EntityManager::deduceValue(const std::string& value, const std::string& type)
+	ECSComponents::DataField EntityManager::deduceValue(const std::string& value, const std::string& type)
 	{
 		auto trim = [](const std::string& str) -> std::string
 			{

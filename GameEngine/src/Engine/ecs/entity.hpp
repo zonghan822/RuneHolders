@@ -19,6 +19,9 @@
 // Math
 #include "../math/math.hpp"
 
+// Utility
+#include "eno_data_types.hpp"
+
 // stds
 #include <iostream>
 #include <algorithm>
@@ -35,32 +38,6 @@ namespace ECS
 	//(YunQi)
 	static std::vector<uint32_t> spawnHistory;
 	static uint32_t lastSpawnedID = 0;
-
-	// Not for storage, used for
-	// text-based save file deserialization
-	//
-	// Refer to loadJson()
-	using DataField = std::variant<
-		
-		// Primitive types
-		int,
-		float,
-		double,
-		bool,
-		uint32_t,
-		std::string,		// Not actually to store a string, but to store a fixed char array!!!
-		
-		// Non-primitive Math types
-		Math::eVec2<float>,
-		Graphics::Color,
-
-		// Enums
-		Color,
-		ECSComponents::ColliderType,
-
-		// File imported types
-		std::shared_ptr<Graphics::EnoTexture>
-	>;
 
 	// Entity forward declaration
 	class Entity;
@@ -187,38 +164,21 @@ namespace ECS
 		}
 
 		/*============================================================================================
-		* \brief				Specialization for presets
-		* \tparam[in]			Preset
-		* \tparam[in]			Values to intialize the components in the tuple
-		* \return				Newly created Entity
-		*//*========================================================================================*/
-		template <typename Tuple, typename... Values>
-		Entity presetCreate(Values&&... val)
-		{
-			// Use create to instantiate this entity
-			return std::apply(
-				// Capture all the types from the tuple
-				[&](auto... types) {
-					// Using decltype to expand the types stored in the tuple
-					// as arguments for create()
-					return create<decltype(types)...>(std::forward<Values>(val)...);
-				},
-				Tuple{});
-		}
-
-		/*============================================================================================
-		* \brief				Specialization overload for presets where there are no values
-		* \tparam[in]			Preset
+		* \brief				Takes in a tuple, constructed with a preset of components instances
+		*						and constructs an entity out of the values which make up each component
+		*						within the tuple
+		* \tparam[in]			A tuple, constructed with a preset of components instances
 		* \return				Newly created Entity
 		*//*========================================================================================*/
 		template <typename Tuple>
-		Entity presetCreate()
+		Entity presetCreate(Tuple& componentsTuple)
 		{
-			return std::apply(
-				[&](auto... types) {
-					return create<decltype(types)...>();
-				},
-				Tuple{});
+			// decltype(comps) will indicate each component type passed
+			// but it will be a reference type (e.g AudioComponent&), 
+			// so remove_reference_t is used to decay it to the actual type
+			return std::apply([&](auto&... comps) {
+				return create<std::remove_reference_t<decltype(comps)>...>(comps...);
+				}, componentsTuple);
 		}
 
 		/*============================================================================================
@@ -367,7 +327,7 @@ namespace ECS
 			const size_t&,
 			std::function<size_t(const std::string& data, const size_t& openBrace)>);
 
-		DataField deduceValue(const std::string& value, const std::string& type);
+		ECSComponents::DataField deduceValue(const std::string & value, const std::string & type);
 
 		/*============================================================================================
 		* \brief			Find and return entities based on their components or optionally,

@@ -81,6 +81,12 @@ namespace Engine
 		ECS::EntityManager& getEntityManager() { return entityMng_; }
 
 		/*============================================================================================
+		* \brief		Gets the Prefab Manager for preset prefabs
+		* \return		Reference to the PrefabManager instance
+		*//*========================================================================================*/
+		ECSComponents::EnoPrefabManager& getPrefabManager() { return prefabMng_; }
+
+		/*============================================================================================
 		* \brief		Gets the Audio Manager for sound operations
 		* \return		Reference to the EnoAudioManager instance
 		*//*========================================================================================*/
@@ -216,6 +222,7 @@ namespace Engine
 		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
 		ECS::EntityManager entityMng_{ bus_ };
+		ECSComponents::EnoPrefabManager prefabMng_{ bus_ };
 		Core::EnoCoreHost coreHost_{ bus_ };
 		Editor::EnoEditor editor_{ bus_, entityMng_, coreHost_ };
 		

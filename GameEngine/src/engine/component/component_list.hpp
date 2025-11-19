@@ -23,3 +23,16 @@
 	X(AIComponent) \
 	X(ButtonComponent) \
 	X(AudioComponent) \
+
+#define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
+
+#define PRESET_LIST \
+	PRESET(DEFAULT, NameComponent, VisibilityComponent, LayerComponent) \
+	PRESET(AUDIO, AudioComponent, LayerComponent) \
+	PRESET(PUSHABLE_BOX, TransformComponent, PhysicsComponent, CollisionComponent, BoxComponent, DrawInfoComponent, NameComponent)
+
+// Expanding PRESET_LIST within the component namespace
+// to make use of hte PRESET using macro
+//
+// This will allow the components to be visible to the list expansion
+namespace ECSComponents { PRESET_LIST }
