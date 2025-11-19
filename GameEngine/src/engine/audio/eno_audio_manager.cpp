@@ -145,6 +145,25 @@ namespace Audio
 			chGroup = it->second;
 		}
 
+		//Yun Qi's naive fix to changing the Mode for Audio Components
+		switch (audioComp.audioMod_.loop_)
+		{
+		case EnoAudioModule::LoopMode::Disabled:
+			sound->setMode(FMOD_LOOP_OFF);
+			sound->setLoopCount(0);
+			break;
+
+		case EnoAudioModule::LoopMode::Forward:
+			sound->setMode(FMOD_LOOP_NORMAL);
+			sound->setLoopCount(-1);
+			break;
+
+		case Audio::EnoAudioModule::LoopMode::PingPong:
+			sound->setMode(FMOD_LOOP_BIDI); 
+			sound->setLoopCount(-1);
+			break;
+		}
+
 		// Prime channel
 		FMOD::Channel* channel{ nullptr };
 		channels_.push_back(channel);
