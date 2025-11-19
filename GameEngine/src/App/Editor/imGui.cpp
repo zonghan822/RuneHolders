@@ -139,8 +139,8 @@ void imGuiInit(GLFWwindow* window) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.FontGlobalScale = 1.5f;
-	ImGui::GetStyle().ScaleAllSizes(1.5f);
+	//io.FontGlobalScale = 1.5f;
+	//ImGui::GetStyle().ScaleAllSizes(1.5f);
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigDockingNoSplit = false;
@@ -148,7 +148,6 @@ void imGuiInit(GLFWwindow* window) {
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 }
-
 
 void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
 	// Start ImGui frame
@@ -1469,7 +1468,6 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 
 
 }
-
 
 static void LoadAudioAssets(Engine::EnoEngine& engine_)
 {
