@@ -138,6 +138,7 @@ public:
 
 private:
     // Setup (called during initialize())
+    void setupPrefabs();        // Prefab instantiation
     void setupGameEntities();   // ECS code
     void setupTreeTesting();    // Editor tree testing code
     void setupGameAudio();      // audio setup code
