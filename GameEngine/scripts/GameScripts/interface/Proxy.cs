@@ -26,35 +26,28 @@ namespace Eno
             {
                 typeCache[t.FullName!] = t;
             }
-
         }
 
         public void Call(string className, string methodName)
         {
-            if (currentAssembly == null)
-            {
-                Console.WriteLine("[ScriptProxy] No assembly loaded.");
-                return;
-            }
+            // Ensure that an assembly is present
+            if (currentAssembly == null) return;
 
+            // Get the value of the class name, where the call/method resides
             if (!typeCache.TryGetValue(className, out var type))
             {
                 Console.WriteLine($"[ScriptProxy] Class '{className}' not found in assembly.");
-                foreach (var t in typeCache.Keys)
-                    Console.WriteLine($"  {t}");
                 return;
             }
 
+            // Specify method to be called
             var method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
             if (method == null)
             {
                 Console.WriteLine($"[ScriptProxy] Method '{methodName}' not found in class '{className}'.");
-                foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
-                    Console.WriteLine($"  {m.Name}");
                 return;
             }
 
-            Console.WriteLine($"[ScriptProxy] Invoking {className}.{methodName}...");
             method.Invoke(null, null);
         }
     }

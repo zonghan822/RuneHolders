@@ -7,12 +7,21 @@ namespace Eno
     {
         public static void Begin()
         {
-            Console.WriteLine("Enemy Begin");
+
 		}
 
         public static void Update()
         {
-            Console.WriteLine("Enemy Update");
+
 		}
+	
+		public static void _when_node1_started()
+        {
+
+        }
 	}
+
+    public class EnemyArm : ScriptBase
+    {
+    }
 }

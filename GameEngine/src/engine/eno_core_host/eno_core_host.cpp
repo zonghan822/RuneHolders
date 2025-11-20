@@ -16,12 +16,13 @@ namespace Core
 		setDelegate(&scriptDelegate_);
 		setDelegate(&cnameDelegate_);
 		setDelegate(&reloadDelegate_);
+		setDelegate(&writeDelegate_);
 
 		// Test Player Controller script
 		// Namespace.Type(Type => Function to be called), Assembly(.dll)
 
 		// Test getting the variables from the Player Controller script
-		std::optional<DelegateInfo> dele2 = loadDelegate(L"Eno.ScriptBase, GameScripts", L"GetScriptFields", scriptDelegate_);
+		std::optional<DelegateInfo> dele2 = loadDelegate(L"Eno.ScriptSetup, GameScripts", L"GetScriptFields", scriptDelegate_);
 
 		// Setting up handle for retrieving fields
 		std::optional<GetScriptFieldsMethod> result;
@@ -32,7 +33,7 @@ namespace Core
 				fieldsHandle_ = result.value();
 		}
 
-		std::optional<DelegateInfo> dele3 = loadDelegate(L"Eno.ScriptBase, GameScripts", L"GetFileClassNames", cnameDelegate_);
+		std::optional<DelegateInfo> dele3 = loadDelegate(L"Eno.ScriptSetup, GameScripts", L"GetFileClassNames", cnameDelegate_);
 		std::optional<GetFileClassNamesMethod> result2;
 		if (dele3)
 		{
@@ -65,6 +66,11 @@ namespace Core
 		scriptDelegate_ = nullptr;
 		inputDelegate_ = nullptr;
 		cnameDelegate_ = nullptr;
+	}
+
+	std::unordered_map<std::string, Events::EnoSignal>& EnoCoreHost::signalMethods()
+	{
+		return signalMethods_;
 	}
 
 	EnoCoreHost::GetScriptFieldsMethod EnoCoreHost::fields() const
@@ -123,9 +129,6 @@ namespace Core
 		// 
 		// Prepares runtime environment for hostfxr to interface
 		// and load the .NET runtime (CoreCLR)
-		
-		
-
 		int returnCode = initfp_(runtConfigJson, nullptr, &hfHandle_);
 
 		// If returnCode != 0,
@@ -690,10 +693,27 @@ namespace Core
 
 	// ----------------------- Events -----------------------
 
-	void EnoCoreHost::onInputReceived(const Input::InputSent& event)
-	{
-		KeyDelegateInfo kd = loadDelegate(L"Eno.Input, GameScripts", L"InputBoarding", inputDelegate_, event).value();
+	//void EnoCoreHost::onInputReceived(const Input::InputSent& event)
+	//{
+	//	KeyDelegateInfo kd = loadDelegate(L"Eno.Input, GameScripts", L"InputBoarding", inputDelegate_, event).value();
 
-		callDelegate(kd);
+	//	callDelegate(kd);
+	//}
+
+	// =================== Signals ===================
+	void EnoCoreHost::signalEmitted(const std::string& signalName, const std::string& signalFuncName)
+	{
+		// Construct the signal's function signature to call
+		std::wstring nmsp{ L"Eno" };
+		std::wstring cls{ L"EnemyController" };
+		std::wstring wideSFN{ signalFuncName.begin(), signalFuncName.end() };
+		std::wstring signature = nmsp + L"." + cls;
+
+		// L"Eno.EnemyController"
+		// Invoke the relevant function
+		signal_ = proxyCall(signature.c_str(), wideSFN.c_str());
+
+		if (signal_)
+			signal_(signature.c_str(), wideSFN.c_str());
 	}
 }

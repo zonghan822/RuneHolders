@@ -121,13 +121,29 @@ namespace Audio
 	}
 
 	/*============================================================================================
+				 * \brief					Setup an audio component and its internal audio module
+				 * \param					A reference to the audio component to set up
+	*//*========================================================================================*/
+	void EnoAudioManager::prepareMod(ECSComponents::AudioComponent& audioComp)
+	{
+		// Retrieve and store the sound in the audio module
+		auto it = sounds_.find(audioComp.audioMod_.name_);
+		if (it == sounds_.end())
+		{
+			throw std::runtime_error("Unknown sound requested");
+		}
+
+		audioComp.audioMod_.sound_ = it->second;
+	}
+
+	/*============================================================================================
 	 * \brief				Sets up and plays sound based on params provided by an audio component
 	 * \param[in]			Audio component
 	*//*========================================================================================*/
 	void EnoAudioManager::play(ECSComponents::AudioComponent& audioComp)
 	{
 		audioComp.isPlaying_ = true;
-		
+
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
 		FMOD::ChannelGroup* chGroup{ nullptr };
@@ -145,25 +161,6 @@ namespace Audio
 			chGroup = it->second;
 		}
 
-		//Yun Qi's naive fix to changing the Mode for Audio Components
-		switch (audioComp.audioMod_.loop_)
-		{
-		case EnoAudioModule::LoopMode::Disabled:
-			sound->setMode(FMOD_LOOP_OFF);
-			sound->setLoopCount(0);
-			break;
-
-		case EnoAudioModule::LoopMode::Forward:
-			sound->setMode(FMOD_LOOP_NORMAL);
-			sound->setLoopCount(-1);
-			break;
-
-		case Audio::EnoAudioModule::LoopMode::PingPong:
-			sound->setMode(FMOD_LOOP_BIDI); 
-			sound->setLoopCount(-1);
-			break;
-		}
-
 		// Prime channel
 		FMOD::Channel* channel{ nullptr };
 		channels_.push_back(channel);
@@ -173,10 +170,17 @@ namespace Audio
 
 		// Play
 		system->playSound(
-			audioComp.audioMod_.sound_, 
-			chGroup, 
-			!audioComp.isAutoplay_, 
+			audioComp.audioMod_.sound_,
+			chGroup,
+			audioComp.isAutoplay_,
 			&channel);
+
+		// Emit signals
+		auto signalIt = audioComp.signals.find("started");
+		if (signalIt != audioComp.signals.end())
+		{
+			signalIt->second.emit({ audioComp.volume_ });
+		}
 	}
 
 	/*============================================================================================

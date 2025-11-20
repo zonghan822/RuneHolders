@@ -10,9 +10,9 @@ namespace Eno
         private static string? sp;
         private static string? dp;
 
-        private static HotReloadManager? HRManager;
+        private static IHotReloadManager? HRManager;
 
-        public static void SetHRManager(HotReloadManager manager)
+        public static void SetHRManager(IHotReloadManager manager)
         {
             HRManager = manager;
         }
@@ -61,11 +61,11 @@ namespace Eno
             if (string.IsNullOrEmpty(sp) || string.IsNullOrEmpty(dp))
                 throw new InvalidOperationException("Script or DLL path is null.");
                 
-            HRManager.CompileToTemp(sp, dp);
+            HRManager!.CompileToTemp(sp, dp);
 
             // Load temp Dll
-            HRManager.Init(dp!);
-            HRManager.LoadTemp();
+            HRManager!.Init(dp!);
+            HRManager!.LoadTemp();
 
             // Watcher resumes watching
             watcher.EnableRaisingEvents = true;

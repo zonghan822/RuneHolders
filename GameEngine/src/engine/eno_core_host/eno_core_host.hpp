@@ -8,6 +8,7 @@
 
 // Events
 #include "../input/eno_input_events.hpp"
+#include "../event/signals.hpp"
 
 // Windows | CoreClr
 #include <Windows.h>
@@ -107,8 +108,9 @@ namespace Core
 		// so the VS compiler will not clean it
 		using Method = void(*)();
 		using InputMethod = void(*)(int, int, int, int);
-		using ScriptingMethod = void(*)(const wchar_t* scriptPath, const wchar_t* dllPath);
+		using AddSignalMethod = void(*)(const wchar_t*, const wchar_t*, const wchar_t*, const wchar_t*);
 		using ProxyMethod = void(*)(const wchar_t* className_, const wchar_t* methodName_);
+		using ScriptingMethod = void(*)(const wchar_t* scriptPath, const wchar_t* dllPath);
 		using GetScriptFieldsMethod = Script::PortedField* (__stdcall*)(const wchar_t* scriptName, int* count);
 		using GetFileClassNamesMethod = void* (*)(const wchar_t* pAssemblyPath, int* count);
 
@@ -117,6 +119,8 @@ namespace Core
 
 		EnoCoreHost(const EnoCoreHost&) = delete;
 		EnoCoreHost(EnoCoreHost&&) = delete;
+
+		std::unordered_map<std::string, Events::EnoSignal>& signalMethods();
 
 		GetScriptFieldsMethod fields() const;
 		GetFileClassNamesMethod cname() const;
@@ -179,7 +183,12 @@ namespace Core
 
 
 		// ----------------------- Events -----------------------
-		void onInputReceived(const Input::InputSent&);
+		//void onInputReceived(const Input::InputSent&);
+
+		// =================== Signals ===================
+
+		// Receive a signal emit
+		void signalEmitted(const std::string&, const std::string&);
 
 	private:
 
@@ -201,10 +210,15 @@ namespace Core
 		void* inputDelegate_;                                // Delegate for communnicating input to C# end
 		void* cnameDelegate_;                                // Delegate for getting class names
 		void* reloadDelegate_;                               // Delegate for handling backend affairs such as script recompilation and reloading							// Delegate for handling backend affairs such as script recompilation and reloading
-
+		void* writeDelegate_;								// Delegate for writing signal methods using roslyn
 
 		GetScriptFieldsMethod fieldsHandle_ = nullptr;
 		GetFileClassNamesMethod cnameHandle_ = nullptr;
+
+		// =================== Signals ===================
+
+		// Signal methods
+		std::unordered_map<std::string, Events::EnoSignal> signalMethods_;
 
 		// Initialize hostfxr library
 		void init();
@@ -229,5 +243,6 @@ namespace Core
 
 		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> begin_;
 		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> update_;
+		ProxyMethod signal_;
 	};
 }
