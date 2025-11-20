@@ -11,7 +11,7 @@ namespace Eno
 {
     public static class ScriptSetup
     {
-        [UnmanagedCallersOnly(EntryPoint = "Init")]
+        [UnmanagedCallersOnly(EntryPoint = "Initialize")]
         public static void Initialize(IntPtr pUSPath, IntPtr pDLLPath)
         {
             // Conversion to managed string

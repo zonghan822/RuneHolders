@@ -44,7 +44,9 @@ public static class HotReloadCompiler
         var mainDllPath = Path.Combine(Path.GetDirectoryName(dllPath)!, "GameScripts.dll");
         if (!File.Exists(mainDllPath))
             throw new FileNotFoundException("Main DLL not found", mainDllPath);
-        var coreDllPath = @"C:\Users\Lee Zhe An\source\repos\EnoEngine\scripting\Core\bin\Debug\net9.0\Core.dll";
+        var coreDllPath = Path.Combine(Path.GetDirectoryName(dllPath)!, "Core.dll");
+        if (!File.Exists(coreDllPath))
+            throw new FileNotFoundException("Core DLL not found", coreDllPath);
 
         assemblies.Add(MetadataReference.CreateFromFile(mainDllPath));
         assemblies.Add(MetadataReference.CreateFromFile(coreDllPath));
