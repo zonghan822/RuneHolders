@@ -31,8 +31,8 @@ namespace Core
 	class EnoCoreHost
 	{
 	private:
-		const std::string asmDllPath = SCRIPT_BIN_PATH "/GameScripts.dll";
-		const wchar_t* runtConfigJson = SCRIPT_BIN_PATH L"/GameScripts.runtimeconfig.json";
+		const std::string asmDllPath = SCRIPT_BIN_PATH "GameScripts.dll";
+		const wchar_t* runtConfigJson = SCRIPT_BIN_PATH L"GameScripts.runtimeconfig.json";
 
 		//const wchar_t* userScriptPath{ SCRIPT_SRC_PATH };
 		//const wchar_t* asmDllAbsPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/Publish/GameScripts.dll" };

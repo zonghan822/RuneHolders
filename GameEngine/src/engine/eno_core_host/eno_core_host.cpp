@@ -321,8 +321,8 @@ namespace Core
 
 		// Use the std::wstring variables here, NOT the macros directly
 		callScript<ScriptingDelegateInfo>(
-			L"Eno.Initiator, GameScripts",
-			L"InitSequence",
+			L"Eno.ScriptSetup, GameScripts",
+			L"Init",
 			reloadDelegate_, 
 			WSCRIPT_SRC_PATH,
 			WSCRIPT_BIN_PATH);
@@ -335,8 +335,8 @@ namespace Core
 
 
 		callScript<ScriptingDelegateInfo>(
-			L"Eno.Initiator, GameScripts",
-			L"ReloadSequence", 
+			L"Eno.ScriptSetup, GameScripts",
+			L"Reload", 
 			reloadDelegate_,
 			WSCRIPT_SRC_PATH,
 			WSCRIPT_BIN_PATH);
