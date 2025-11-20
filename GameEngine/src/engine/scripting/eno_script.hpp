@@ -45,7 +45,7 @@ namespace Script
 
 		// ================== Signal ==================
 
-		std::string signalWrite(std::string, std::string);
+		std::pair<std::string, std::string> signalWrite(std::string, std::string);
 		void writeMethod(std::string&, const std::string&);
 		std::string classToNest(const std::string&);
 
