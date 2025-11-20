@@ -120,16 +120,13 @@ void GameApplication::setupFont() {
 
 void GameApplication::setupScripting() {
 
-	std::cout << "hr setup now \n";
+	// Bridging
+	Bridge::bridge_ = &engine_.getBridge();
+
+	// Scripting premade calls
 	engine_.getCoreHost().HRSetup();
-
-	std::cout << "defineBegin now \n";
 	engine_.getCoreHost().defineBegin();
-
-	std::cout << "defineUpdate now \n";
 	engine_.getCoreHost().defineUpdate();
-
-	std::cout << "Setup Scripting done \n";
 }
 
 

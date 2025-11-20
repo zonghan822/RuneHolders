@@ -102,6 +102,10 @@ static std::string g_selectedPrefabForPlacement = "";
 
 // Entity deletion by click
 static bool g_waitingForEntityDeletion = false;
+
+// Audio filesystems
+static std::vector<std::string> audioAssets;
+
 #pragma endregion
 
 /*============================================================================================
@@ -132,6 +136,8 @@ void imGuiInit(GLFWwindow* window) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.FontGlobalScale = 1.5f;
+	//ImGui::GetStyle().ScaleAllSizes(1.5f);
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigDockingNoSplit = false;
@@ -139,7 +145,6 @@ void imGuiInit(GLFWwindow* window) {
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 }
-
 
 void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
 	// Start ImGui frame
@@ -202,6 +207,11 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	// Scene select
 	ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoCollapse);
 	displaySceneTab(sceneTree);
+	ImGui::End();
+
+	// Audio select
+	ImGui::Begin("Audio Browser", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayAudioTab(engine_);
 	ImGui::End();
 
 	// Edit tab 
@@ -1456,6 +1466,192 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 
 }
 
+static void LoadAudioAssets(Engine::EnoEngine& engine_)
+{
+	audioAssets.clear();
+
+	std::vector<std::string> folders = {
+		engine_.getResourceLoader().getMusicPath().c_str(),
+		engine_.getResourceLoader().getSFXPath().c_str(),
+	};
+
+	for (const auto& folder : folders)
+	{
+		if (!std::filesystem::exists(folder))
+			continue;
+
+		for (const auto& entry : std::filesystem::directory_iterator(folder))
+		{
+			if (!entry.is_regular_file()) continue;
+
+			std::string ext = entry.path().extension().string();
+			if (ext == ".wav" || ext == ".ogg" || ext == ".mp3")
+			{
+				audioAssets.push_back(entry.path().filename().string());
+			}
+		}
+	}
+}
+
+void displayAudioTab(Engine::EnoEngine& engine_)
+{
+	Resources::EnoLoader& loader = engine_.getResourceLoader();
+	Event::EnoEventBus& bus = engine_.getEventBus();
+
+
+	ImGui::Text("=== AUDIO ASSETS ===");
+
+	// Button to load audio assets exactly once
+	if (ImGui::Button("Load Audio Files"))
+	{
+		LoadAudioAssets(engine_);
+	}
+
+	ImGui::Separator();
+
+
+	static int selectedAsset = -1;
+	static std::string selectedName{};
+	static FMOD::Sound* selectedSound = nullptr;
+ 
+	 // ============== FILE LIST ==============
+	ImGui::BeginChild("AudioAssetList", ImVec2(0, 150), true);
+
+	if (audioAssets.empty())
+	{
+		ImGui::TextDisabled("(No audio loaded. Press button above)");
+	}
+	else
+	{
+		for (int i = 0; i < audioAssets.size(); ++i)
+		{
+			if (ImGui::Selectable(audioAssets[i].c_str(), selectedAsset == i))
+			{
+				selectedAsset = i;
+
+				selectedName = audioAssets[i];
+
+				selectedName = selectedName.substr(0, selectedName.find_last_of('.'));
+
+				std::cout << "[Audio] User selected: " << selectedName << "\n";
+
+				// Request engine to load this sound
+				bus.publish(Audio::RequestSound{ selectedName });
+
+				auto& sounds = loader.getSounds();
+				auto it = sounds.find(selectedName);
+
+				if (it != sounds.end())
+				{
+					selectedSound = it->second;
+					std::cout << "[Audio] Loaded Sound: " << selectedName << "\n";
+				}
+				else
+				{
+					selectedSound = nullptr;
+					std::cout << "[Audio] ERROR: Sound not found after request.\n";
+				}
+			}
+		}
+	}
+
+	ImGui::EndChild();
+	ImGui::Separator();
+
+	// ====== Waveform Viewer (Mock) ======
+	ImGui::Text("Waveform Preview");
+	ImGui::BeginChild("WaveformViewer", ImVec2(0, 200), true);
+
+	ImDrawList* draw = ImGui::GetWindowDrawList();
+	ImVec2 pos = ImGui::GetCursorScreenPos();
+	ImVec2 size = ImGui::GetContentRegionAvail();
+
+	float midY = pos.y + size.y * 0.5f;
+	float step = size.x / 60.0f;
+
+	// mock waveform
+	for (int i = 0; i < 60; i++)
+	{
+		float h = (sinf(i * 0.3f) * 0.5f + 0.5f) * (size.y * 0.9f);
+		draw->AddLine(
+			ImVec2(pos.x + i * step, midY - h * 0.5f),
+			ImVec2(pos.x + i * step, midY + h * 0.5f),
+			IM_COL32(100, 200, 255, 255), 2.0f
+		);
+	}
+
+	ImGui::EndChild();
+
+
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	ImGui::Text("=== Test Playback ===");
+
+	if (selectedName.empty())
+	{
+		ImGui::TextDisabled("Select an audio file to test.");
+	}
+	else
+	{
+		ImGui::Text("Selected: %s", selectedName.c_str());
+
+		if (ImGui::Button("Play as SFX"))
+		{
+			bus.publish(Audio::PlayInstant{ "SFX", selectedName });
+			std::cout << "PlayInstant SFX: " << selectedName << "\n";
+		}
+
+		if (ImGui::Button("Set as BGM"))
+		{
+			bus.publish(Audio::SetNewAudio{ selectedName });
+			std::cout << "SetNewAudio (BGM): " << selectedName << "\n";
+		}
+
+		if (ImGui::Button("Play BGM preview"))
+		{
+			bus.publish(Audio::SetAudioState{ "BGM" });
+		}
+
+		if (ImGui::Button("Stop BGM preview"))
+		{
+			bus.publish(Audio::StopBGM{});
+		}
+
+		auto& map = engine_.getEntityManager().getMap();
+		auto it = map.find(selectedEntityID);
+
+		if (it == map.end())
+		{
+			ImGui::TextDisabled("Invalid entity selected");
+		}
+		else if (ImGui::Button("Attach SFX to Selected Entity"))
+		{
+			ECS::Entity selectedEntity{ selectedEntityID }; 
+
+			// Add component if missing
+			if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
+				selectedEntity.add<ECSComponents::AudioComponent>(engine_.getEntityManager());
+				std::cout << "[Audio] Added AudioComponent.\n";
+			}
+
+			// Fill it
+			ECSComponents::AudioComponent& ac = selectedEntity.get<ECSComponents::AudioComponent>(engine_.getEntityManager());
+
+			strncpy(ac.audioMod_.name_, selectedName.c_str(), sizeof(ac.audioMod_.name_) - 1);
+			strncpy(ac.audioMod_.chGroup_, "SFX", sizeof(ac.audioMod_.chGroup_) - 1);
+
+			ac.audioMod_.sound_ = selectedSound;
+
+			std::cout << "[Audio] Attached SFX '" << selectedName
+				<< "' to entity " << selectedEntityID << "\n";
+		}
+		
+
+	}
+
+}
 
 void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager)
 {
@@ -1670,7 +1866,144 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			sm.changeState("Idle", entity, entMng);
 		}
 	}
+	
+	//for dropdown selection of Looping menu.
+	const char* loopOptions[] = {"Disabled","Forward","PingPong"};
 
+	if (entity.has<ECSComponents::AudioComponent>(entMng))
+	{
+		auto& ac = entity.get<ECSComponents::AudioComponent>(entMng);
+
+		// Godot Phony Sliders start
+		ImGui::SeparatorText("AudioStreamPlayer2D");
+		ImGui::Text("=== AudioStreamPlayer2D ===");
+
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+		if (ImGui::TreeNodeEx("Stream", flags))
+		{
+			ImGui::Separator();
+			ImGui::Text("Format:");
+			ImGui::SameLine(160);
+			ImGui::TextDisabled("16-Bit");								//dummy value
+
+
+			int loopMode = static_cast<int>(ac.audioMod_.loop_);
+			ImGui::Text("Loop Mode:");
+			ImGui::SameLine(160);
+			if (ImGui::Combo("##LoopMode", &loopMode, loopOptions, IM_ARRAYSIZE(loopOptions)))
+			{
+				ac.audioMod_.loop_ = static_cast<Audio::EnoAudioModule::LoopMode>(loopMode);
+			}							
+
+			int loopBegin = static_cast<int>(ac.audioMod_.loopStart_);
+			ImGui::Text("Loop Begin:");
+			ImGui::SameLine(160);
+			if (ImGui::InputInt("##LoopBegin", &loopBegin))
+			{
+				ac.audioMod_.loopStart_ = static_cast<float>(loopBegin);
+			}
+
+
+			int loopEnd = static_cast<int>(ac.audioMod_.loopEnd_);
+			ImGui::Text("Loop End:");
+			ImGui::SameLine(160);
+			if (ImGui::InputInt("##LoopEnd", &loopEnd))
+			{
+				ac.audioMod_.loopEnd_ = static_cast<float>(loopEnd);
+			}
+
+			ImGui::Text("Mix Rate:");
+			ImGui::SameLine(160);
+			ImGui::TextDisabled("44100");								//dummy value
+
+			ImGui::Text("Stereo:");
+			ImGui::SameLine(160);
+			bool stereoToggle = true;
+			ImGui::Checkbox("##StereoChk", &stereoToggle);			    //dummy value
+
+			ImGui::Separator();
+
+			ImGui::Text("Volume dB:");
+			ImGui::SameLine(160); 
+			float tmpVol = static_cast<float>(ac.volume_);
+			ImGui::SliderFloat("##VolDb", &tmpVol, 0.f, 100.f);
+			ac.volume_ = static_cast<double>(tmpVol);					
+
+			ImGui::Text("Pitch Scale:");
+			ImGui::SameLine(160);
+			float tmppitch = static_cast<float>(ac.pitchScale_);
+			ImGui::SliderFloat("##PitchScale", &tmppitch, 0.1f, 5.f);		
+			ac.pitchScale_ = static_cast<double>(tmppitch);
+
+			ImGui::Text("Pan Scale:");
+			ImGui::SameLine(160);
+			float pan = static_cast<float>(ac.panScale_);
+			if (ImGui::SliderFloat("Pan", &pan, -1.f, 1.f))
+			{
+				ac.panScale_ = static_cast<double>(pan);
+			}
+
+			ImGui::TreePop();
+		}
+		ImGui::Separator();
+
+		// Godot Phony Sliders end
+
+		ImGui::SeparatorText("Audio");
+		ImGui::Text("Attached SFX: %s", ac.audioMod_.name_);
+		if (ImGui::Button("Play entity SFX now"))
+		{
+			std::cout << "[Inspector] Checking entity " << entity.id()
+				<< " has AudioComponent = "
+				<< entity.has<ECSComponents::AudioComponent>(entMng)
+				<< "\n";
+
+			engine_.getEventBus().publish(Audio::PlayInstant{
+				"SFX",
+				ac.audioMod_.name_
+				});
+
+			std::cout << "[Audio] PLAY from entity "
+				<< entity.id() << ": " << ac.audioMod_.name_ << "\n";
+		}
+
+		if (ImGui::Button("Print Audio Component"))
+		{
+			std::cout << "===== AUDIO COMPONENT DEBUG =====\n";
+			std::cout << "Entity:		" << entity.id() << "\n";
+			std::cout << "Volume:       " << ac.volume_ << "\n";
+			std::cout << "Pitch Scale:  " << ac.pitchScale_ << "\n";
+			std::cout << "Pan Scale:    " << ac.panScale_ << "\n";
+			std::cout << "Autoplay:     " << (ac.isAutoplay_ ? "true" : "false") << "\n";
+			std::cout << "Is Playing:   " << (ac.isPlaying_ ? "true" : "false") << "\n";
+
+			std::cout << "-- MODULE --\n";
+			std::cout << "Name:         " << ac.audioMod_.name_ << "\n";
+			std::cout << "Path:         " << ac.audioMod_.path_ << "\n";
+			std::cout << "ChannelGroup: " << ac.audioMod_.chGroup_ << "\n";
+
+			std::cout << "Loop Mode:    " << static_cast<int>(ac.audioMod_.loop_) << "\n";
+			std::cout << "Loop Start:   " << ac.audioMod_.loopStart_ << "\n";
+			std::cout << "Loop End:     " << ac.audioMod_.loopEnd_ << "\n";
+
+			std::cout << "Sound Ptr:    " << ac.audioMod_.sound_ << "\n";
+
+			std::cout << "=================================\n";
+		}
+
+	}
+	else
+	{
+		ImGui::SeparatorText("Audio");
+		ImGui::TextDisabled("No AudioComponent attached.");
+
+		//if (ImGui::Button("Add Audio Component"))
+		//{
+		//	entity.add<ECSComponents::AudioComponent>(entMng);
+		//	std::cout << "[Audio] Added AudioComponent to entity "
+		//		<< entity.id() << "\n";
+		//}
+	}
 	ImGui::End();
 }
 
@@ -2602,6 +2935,8 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 	// Right side top - Assets Browser
 	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_right_top);
+	ImGui::DockBuilderDockWindow("Entity Inspector", dock_id_right_top);
+	ImGui::DockBuilderDockWindow("Audio Browser", dock_id_right_top);
 
 	// Right side bottom - Game View (full scene)
 	ImGui::DockBuilderDockWindow("Game View", dock_id_right);

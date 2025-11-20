@@ -180,6 +180,22 @@ void displayFPSTab(Engine::EnoEngine& engine_);
 *//*========================================================================================*/
 void displaySceneTab(Editor::EnoSceneTree& sceneTree);
 
+/*============================================================================================
+ * \brief       Helper function to load music and sounds for Audio Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void LoadAudioAssets(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays Audio Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayAudioTab(Engine::EnoEngine& engine_);
+
+
+
 
 // docking shi
 void displayGameView();
