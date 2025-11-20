@@ -109,7 +109,7 @@ namespace Script
 	{
 		std::vector<std::wstring> result;
 
-		for (auto& entry : std::filesystem::directory_iterator("../../../scripts/GameScripts/user_scripts/")) {
+		for (auto& entry : std::filesystem::directory_iterator(SCRIPT_SRC_PATH)) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
 
@@ -142,7 +142,7 @@ namespace Script
 		std::wcout << L"[DEBUG] loadScript() called for: " << className << std::endl;
 		// Construct and return your script object as usual
 
-		std::filesystem::path scriptPath = L"../../../scripts/GameScripts/user_scripts/";
+		std::filesystem::path scriptPath = WSCRIPT_SRC_PATH;
 		scriptPath /= className + L".cs";
 		return std::make_unique<EnoScript>(coreHost_, className, scriptPath.wstring());
 	}
