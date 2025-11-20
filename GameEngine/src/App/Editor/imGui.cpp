@@ -1027,9 +1027,6 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	// Get current scene
 	std::string currScene = editor_.getCurrentScene().getSceneName();
 
-	ImGui::Text(currScene.c_str());
-	ImGui::Separator();
-
 	// Create a container for all scene names inside my scene folder
 	static std::vector<std::filesystem::path> sceneNames;
 	// A toggle flag to refresh the scene list
@@ -1037,26 +1034,44 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	// Buffer to change scene name
 	static char scene_name[64] = "";
 
-	ImGui::Separator();
-
 	if (refreshSceneName)
 	{
 		// Clear the current container
 		sceneNames.clear();
 		// A string path to the assets folder
-		std::string sceneSavePath = (ASSETS_DIR_PATH"saves/scenes/");
-
+		std::string sceneSavePath = (ASSET_SCENE_PATH);
 		// Check that the file is a .txt file
 		try {
 			for (const auto& fileEntry : std::filesystem::directory_iterator(sceneSavePath))
 			{
-				if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (sceneSavePath + "CurrentSavedScene.txt"))
+				if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (sceneSavePath + "LastSavedScene.txt"))
 				{
 					// Add file to container
 					sceneNames.push_back(fileEntry.path());
 					//std::cout << "Filename: " << fileEntry.path() << std::endl;
 				}
 			}
+
+			// Check that scene list contains at least one scene
+			if (!sceneNames.empty())
+			{
+				// Check that no scene was recently deleted
+				auto it = std::find_if(sceneNames.begin(), sceneNames.end(),
+					[&](const std::filesystem::path& fileName)
+					{
+						return fileName.filename() == currScene;
+					});
+
+				if (it == sceneNames.end())
+				{
+					std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
+					// Scene deleted, load the first available scene instead
+					editor_.selectScene(sceneNames.front().filename().string());
+					// Update last saved scene file
+					editor_.updateLastSavedScene();
+					g_game->markEntitiesDirty();
+				}
+			} 
 			// Set refresh to false to prevent reopening
 			refreshSceneName = false;
 		}
@@ -1067,6 +1082,14 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 			return;
 		}
 	}
+
+	// No scenes created
+	if (sceneNames.empty()) currScene = "No scenes available.";
+
+	// Display active scene name
+	ImGui::Text(currScene.c_str());
+	
+	ImGui::Separator();
 
 	// Display scene names
 	for (const auto& filePath : sceneNames)
@@ -1137,7 +1160,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 						std::string newSceneName = scene_name;
 						if (newSceneName.find(".txt") == std::string::npos) newSceneName += ".txt";
 
-						std::filesystem::path newPath = ASSETS_DIR_PATH"saves/scenes/" + newSceneName;
+						std::filesystem::path newPath = ASSET_SCENE_PATH + newSceneName;
 						std::filesystem::rename(currentPath, newPath);
 
 						// Check if we're renaming the currently active scene
@@ -1148,13 +1171,8 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 						{
 							editor_.getCurrentScene().setSceneName(newSceneName);
 
-							// Update CurrentSavedScene.txt
-							std::ofstream currentSceneSave{ ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt" };
-							if (currentSceneSave.is_open())
-							{
-								currentSceneSave << newSceneName;
-								currentSceneSave.close();
-							}
+							// Update LastSavedScene.txt
+							editor_.updateLastSavedScene();
 						}
 
 						// Close popup after renaming
@@ -1173,22 +1191,6 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 				}
 				
 			}
-			// Cancel edits
-			if (ImGui::Button("Cancel"))
-			{
-				// Close popup
-				ImGui::CloseCurrentPopup();
-				// In case theres some random stuff inside the input box, clear the buffer
-				memset(scene_name, 0, sizeof(scene_name));
-			}
-
-			// Save scene
-			if (ImGui::Button("Save scene"))
-			{
-				// Save scene
-				editor_.getSceneTree().save(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
-			}
-
 			// Delete scene
 			if (ImGui::Button("Delete scene"))
 			{
@@ -1196,6 +1198,8 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 				{
 					// Remove file
 					std::filesystem::remove(filePath);
+					// Remove active scene name
+					//editor_.getCurrentScene().setSceneName("");
 					// Close current popup
 					ImGui::CloseCurrentPopup();
 					// Refresh list
@@ -1205,6 +1209,15 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 				{
 					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
 				}
+			}
+
+			// Cancel edits
+			if (ImGui::Button("Close menu"))
+			{
+				// Close popup
+				ImGui::CloseCurrentPopup();
+				// In case theres some random stuff inside the input box, clear the buffer
+				memset(scene_name, 0, sizeof(scene_name));
 			}
 
 			ImGui::EndPopup();
@@ -1229,9 +1242,19 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 	}
 
+	// Save scene
+	if (ImGui::Button("Save scene"))
+	{
+		std::string sceneName = editor_.getCurrentScene().getSceneName();
+		// Save scene
+		editor_.getSceneTree().save(ASSET_SCENE_PATH + sceneName, sceneName);
+		// Update last saved scene
+		editor_.updateLastSavedScene();
+	}
+
 	if (ImGui::Button("Create new scene"))
 	{
-		editor_.createEmptyScene(ASSETS_DIR_PATH"saves/scenes/");
+		editor_.createEmptyScene(ASSET_SCENE_PATH);
 		refreshSceneName = true;
 	}
 

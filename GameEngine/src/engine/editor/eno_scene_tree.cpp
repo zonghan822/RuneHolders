@@ -392,7 +392,7 @@ namespace Editor
 	}
 
 	// Deserialize data
-	void EnoSceneTree::load(const std::string& name, const std::string& sceneName)
+	void EnoSceneTree::load(const std::string& name)
 	{
 		std::string filename{ name };
 		// Append preferred extension for save file format

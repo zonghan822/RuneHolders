@@ -84,7 +84,7 @@ namespace Editor
 
 		// Serialize/Deserialize scene tree data
 		void save(const std::string&, const std::string& sceneName);
-		void load(const std::string&, const std::string& sceneName);
+		void load(const std::string&);
 
 		template<typename T>
 		std::optional<T> extract(

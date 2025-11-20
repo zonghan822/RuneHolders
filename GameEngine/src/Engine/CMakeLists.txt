@@ -36,12 +36,13 @@ target_include_directories(${ENGINE_NAME} PUBLIC
     ${rapidjson_INCLUDE_DIRS}
 )
 target_compile_definitions(${ENGINE_NAME} PRIVATE 
-    ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets"
+    ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
     SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}/user_scripts/"
     SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}"
     WSCRIPT_SRC_PATH=L"${SCRIPT_SOURCE_DIR}/user_scripts/"
     WSCRIPT_BIN_PATH=L"${SCRIPT_BINARY_DIR}/"
     DOTNET_ROOT="${DOTNET_RUNTIME_PATH}"
+    ASSET_SCENE_PATH="${CMAKE_SOURCE_DIR}/assets/saves/scenes/"
     -DGLEW_STATIC
     -D_CRT_NONSTDC_NO_DEPRECATE
 )
