@@ -17,6 +17,7 @@
 #include "../input/eno_input.hpp"
 #include "../editor/eno_editor.hpp"
 #include "../editor/eno_scene_tree.hpp"
+#include "../bridge/eno_bridge.hpp"
 #include "../ecs/entity.hpp"
 #include "../component/component_registry.hpp"
 #include "../event/signals.hpp"
@@ -147,6 +148,12 @@ namespace Engine
 		AI::AIManager& getAIManager() { return aiMng_; }
 
 		/*============================================================================================
+		* \brief		Gets the AI Manager for AI operations (State Manager)
+		* \return		Reference to the AIManager instance
+		*//*========================================================================================*/
+		Bridge::EnoBridge& getBridge() { return bridgeInst_; }
+
+		/*============================================================================================
 		* \brief		Gets the time elapsed since the last frame
 		* \return		Delta time in seconds
 		*//*========================================================================================*/
@@ -225,12 +232,15 @@ namespace Engine
 		ECSComponents::EnoPrefabManager prefabMng_{ bus_ };
 		Core::EnoCoreHost coreHost_{ bus_ };
 		Editor::EnoEditor editor_{ bus_, entityMng_, coreHost_ };
-		
+
 		// Systems
 		Input::EnoInputManager inputMng_{ bus_ };
 		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };
 		Audio::EnoAudioManager audioMng_{ bus_ };
 		AI::AIManager aiMng_{ bus_ };
+
+		// Scripting bridge
+		Bridge::EnoBridge bridgeInst_{ inputMng_ };
 
 		// Game Systems (managed with unique_ptr for optional initialization)
 		std::unique_ptr<Physics::PhysicsSystem> physicsSys_;
