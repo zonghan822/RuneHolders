@@ -895,4 +895,11 @@ namespace Editor
 		return currentScene;
 	}
 
+
+	// ====================== Signals ======================
+
+	void EnoSceneTree::signalComponents(Node* node)
+	{
+
+	}
 }

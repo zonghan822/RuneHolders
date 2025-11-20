@@ -13,7 +13,6 @@ using Microsoft.CodeAnalysis.CSharp;
 
 public static class HotReloadCompiler
 {
-
     // TO create a new compilation (using CSharpCompilation.Create) we need
     //      - assembly name
     //      - syntax trees (trees with the source code for the new compilation)
@@ -21,8 +20,9 @@ public static class HotReloadCompiler
     //      - options (compiler options)
     public static bool Compile(string userScriptsFolder, string dllPath)
     {
+        Console.WriteLine($"DLLPATH: {dllPath}");
         // Retrieve names/paths of .cs files from the specified folder
-        var scripts = Directory.GetFiles(userScriptsFolder, "*.cs", SearchOption.AllDirectories);
+        var scripts = Directory.GetFiles(userScriptsFolder, "*.cs", SearchOption.AllDirectories).ToArray();
 
         // Retrieve parsed representation of a .cs file, 
         // in the form of a Roslyn syntax tree
@@ -38,11 +38,16 @@ public static class HotReloadCompiler
         var assemblies = AppDomain.CurrentDomain
             .GetAssemblies()
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-            .ToList();
-        
-        var newRef = assemblies
             .Select(a => MetadataReference.CreateFromFile(a.Location))
             .ToList();
+        
+        var mainDllPath = Path.Combine(Path.GetDirectoryName(dllPath)!, "GameScripts.dll");
+        if (!File.Exists(mainDllPath))
+            throw new FileNotFoundException("Main DLL not found", mainDllPath);
+        var coreDllPath = @"C:\Users\Lee Zhe An\source\repos\EnoEngine\scripting\Core\bin\Debug\net9.0\Core.dll";
+
+        assemblies.Add(MetadataReference.CreateFromFile(mainDllPath));
+        assemblies.Add(MetadataReference.CreateFromFile(coreDllPath));
 
         // Creating the new Roslyn compilation with all of our
         // previously created components!
@@ -50,9 +55,9 @@ public static class HotReloadCompiler
         // We want a new DLL to load during runtime
         // so options will utilize OutputKind.DynamicallyLinkedLibrary
         var compilation = CSharpCompilation.Create(
-            assemblyName: "GameScripts_temp.dll",
+            assemblyName: "GameScripts_temp",
             syntaxTrees: newST,
-            references: newRef,
+            references: assemblies,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
         );
 

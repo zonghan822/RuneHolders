@@ -110,6 +110,32 @@ namespace Editor
 		std::string& getSceneName();
 		std::string getSceneName() const;
 
+		// ====================== Signals ======================
+
+		// Expose components and their respective signals
+		void signalComponents(Node*);
+
+		// Conect a signal from a node to another
+		template <typename Component>
+		void connect(Node* emitter, Node* listener, std::string signalName)
+		{
+			// Verify that the emitter has the specified component && a script attached
+			if (emitter->entity_.has<Component>(entMng_) && listener->script_)
+			{
+				auto& component = emitter->entity_.get<Component>(entMng_);
+				std::string emitName = emitter->name_;
+
+				// Write the signal (receiving) function into the listener's script
+				std::string signalFuncName = listener->script_->signalWrite(emitName, signalName);
+
+				// Connect the listener to the emitter
+				component.signals[signalName].connect([this, signalName, signalFuncName](const std::vector<std::any>& params)
+					{
+						coreHost_.signalEmitted(signalName, signalFuncName);
+					});
+			}
+		}
+
 	private:
 		inline static uint32_t id_ = 0;
 

@@ -221,6 +221,111 @@ namespace Script
 
 		return str;
 	}
+	// ================== Signal ==================
+	std::string EnoScript::signalWrite(std::string nodeName, std::string signalName)
+	{
+		std::ofstream file{ path_, std::ios::in | std::ios::out };
+		if (!file)
+			throw std::runtime_error("Failed to find the file to write to!");
+
+		// Lowercase all
+		Conversion::strToLower(nodeName);
+		Conversion::strToLower(signalName);
+
+		// Form the signal function signature
+		std::string funcName =
+			std::string{ signalSuffix } +
+			nodeName +
+			'_' +
+			signalName;
+
+		std::string funcSignature =
+			std::string{ signalKeyWords } +
+			std::string{ signalSuffix } +
+			nodeName + '_' +
+			signalName + "()\n"
+			"        {\n\n"
+
+			"        }\n";
+
+		// Write the signal func on the bottom of the script
+		std::stringstream stream{};
+		stream << file.rdbuf();
+		std::string data = stream.str();
+
+		// Verify that this signal func has not already been written
+		size_t fs = data.find(funcName);
+		if (fs != std::string::npos)
+		{
+			std::cerr << funcName << " has already been defined in the script!" << std::endl;
+			return funcName;
+		}
+
+		// Write and close file
+		writeMethod(data, funcSignature);
+
+		file.close();
+		std::ofstream out{ path_, std::ios::trunc };
+		out << data;
+
+		return funcName;
+	}
+
+	void EnoScript::writeMethod(std::string& data, const std::string& method)
+	{
+		// Find top level class
+		size_t cpos = data.find("class ");
+		if (cpos == std::string::npos)
+		{
+			std::cerr << "No class found! Will not continue writing the signal method!" << std::endl;
+			return;
+		}
+
+		// Find start of the line containing "class "
+		size_t lineStart = data.rfind('\n', cpos);
+		if (lineStart == std::string::npos)
+			lineStart = 0;
+		else
+			++lineStart;
+
+		// Get indentation before "class"
+		size_t indentEnd = lineStart;
+		while (indentEnd < data.size() && (data[indentEnd] == ' ' || data[indentEnd] == '\t'))
+			++indentEnd;
+
+		std::string classIndent = data.substr(lineStart, indentEnd - lineStart);
+
+		// Find the opening brace
+		size_t openBrace = data.find("{", cpos);
+		if (openBrace == std::string::npos)
+		{
+			std::cerr << "Class has no opening brace!" << std::endl;
+			return;
+		}
+
+		// Find closing brace
+		int depth{ 1 };
+		size_t pos{ openBrace + 1 };
+
+		while (pos < data.size() && depth > 0)
+		{
+			if (data[pos] == '{') ++depth;
+			else if (data[pos] == '}') --depth;
+
+			++pos;
+		}
+
+		if (depth != 0)
+		{
+			std::cerr << "Braces not indented properly!" << std::endl;
+			return;
+		}
+
+		// Write
+		size_t writePos = pos - 1;
+		data.insert(writePos, method + classIndent);
+	}
+
 
 	std::wostream& operator<<(std::wostream& os, const Value& value)
 	{
