@@ -126,12 +126,12 @@ namespace Editor
 				std::string emitName = emitter->name_;
 
 				// Write the signal (receiving) function into the listener's script
-				std::string signalFuncName = listener->script_->signalWrite(emitName, signalName);
+				std::pair<std::string, std::string> funcClassPair = listener->script_->signalWrite(emitName, signalName);
 
 				// Connect the listener to the emitter
-				component.signals[signalName].connect([this, signalName, signalFuncName](const std::vector<std::any>& params)
+				component.signals[signalName].connect([this, signalName, funcClassPair](const std::vector<std::any>& params)
 					{
-						coreHost_.signalEmitted(signalName, signalFuncName);
+						coreHost_.signalEmitted(signalName, funcClassPair.first, funcClassPair.second);
 					});
 			}
 		}
