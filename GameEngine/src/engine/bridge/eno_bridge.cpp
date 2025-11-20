@@ -15,13 +15,13 @@ namespace Bridge
 	extern "C" __declspec(dllexport)
 		bool __stdcall IsKeyPressed(int key)
 	{
-		return bridge_->input().isKeyPressed(key);
+		return bridge_->input().isKeyDown(key);
 	}
 
 	extern "C" __declspec(dllexport)
 		bool __stdcall IsKeyHeld(int key)
 	{
-		return bridge_->input().isKeyDown(key);
+		return bridge_->input().isKeyPressed(key);
 	}
 
 	extern "C" __declspec(dllexport)

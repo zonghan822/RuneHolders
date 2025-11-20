@@ -78,7 +78,6 @@ namespace ECS
 		{
 			// Cast back to a pointer and look for component
 			char* p = search(componentIndex, entityIndex);
-
 			return *reinterpret_cast<T*>(p);
 		}
 
