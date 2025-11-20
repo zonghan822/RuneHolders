@@ -8,17 +8,16 @@
 *//*========================================================================================*/
 #pragma once
 
-#include "../../src/Engine/math/math.hpp"
-#include "../../src/Engine/component/components/transform.hpp"
-#include "../../src/Engine/collision/collision.hpp"
-#include "../../src/Engine/ecs/entity.hpp"
-#include "../../src/Engine/input/eno_input.hpp"
-#include "../../src/Engine/engine/eno_engine.hpp"
+#include "math/math.hpp"
+#include "component/components/transform.hpp"
+#include "collision/collision.hpp"
+#include "ecs/entity.hpp"
+#include "input/eno_input.hpp"
+#include "engine/eno_engine.hpp"
 #include "player_config.hpp"
-#include "../../src/Engine/component/components/player_component.hpp"
+#include "component/components/player_component.hpp"
 
 
-#include <GLFW/glfw3.h>
 // Use the PlayerComponent from ECSComponents namespace
 using PlayerComponent = ECSComponents::PlayerComponent;
 
@@ -51,10 +50,9 @@ namespace Player
         * \param[in]   ECS::EntityManager& entityManager - Reference to entity manager
         * \param[in]   Input::EnoInputManager& inputManager - Reference to input manager for reading controls
         * \param[in]   float deltaTime - Time since last frame in seconds
-        * \param[in]   bool isPlaying - Whether the game is in playing mode (not editor mode)
         * \return      void
         *//*========================================================================================*/
-        void Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime, bool isPlaying = true);
+        void Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime);
 
         /*============================================================================================
         * \brief       Helper to get transform component from entity (made public for game_logic access)
@@ -97,5 +95,3 @@ namespace Player
     };
 
 } // namespace Player
-    // Use the PlayerComponent from ECSComponents namespace
-using PlayerComponent = ECSComponents::PlayerComponent;

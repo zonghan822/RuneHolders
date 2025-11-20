@@ -22,13 +22,12 @@ namespace Engine
 
 		// Systems init
 		inputMng_.initialize();
+		physicsSys_ = std::make_unique<Physics::PhysicsSystem>();
+		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
 		graphicsMng_.initialize(window_);
 		audioMng_.init();
 
 		setupResourceLoading();
-
-		// Initialize game systems
-		setupGameSystems();
 	}
 
 	// Thats why i added a callback version
@@ -40,27 +39,33 @@ namespace Engine
 			window_.pollEvents();
 			coreHost_.areScriptsModified();
 
-			// Handle window resize for graphics system
-			auto fbSize = window_.getFramebufferSize();
-			int width = fbSize.first, height = fbSize.second;
-			if (width > 0 && height > 0) {
-				graphicsMng_.setProjectionMatrix(width, height);
+			float deltaTime = static_cast<float>(dt_);
+
+			// Update physics system (gravity, forces, velocity integration)
+			// Only update physics when the game is playing (not paused/stopped)
+			if (physicsSys_ && isPlaying_) {
+				physicsSys_->Update(entityMng_, deltaTime);
+			}
+
+			// Update AI State
+			if (isPlaying_) aiMng_.update(entityMng_, deltaTime);
+
+			// Update collision system (collision detection and response)
+			// Only update collision when the game is playing (not paused/stopped)
+			if (collisionSys_ && isPlaying_) {
+				collisionSys_->Update(entityMng_);
 			}
 
 			// Begin graphics frame
 			graphicsMng_.beginFrame(Graphics::Color::Black);  // Clear to black
 
-			// Update game systems first (physics, collision, player)
-			updateGameSystems(static_cast<float>(dt_), isPlaying_);
+			// Update audio system
+			if (isPlaying_) audioMng_.process();
 
 			// Call game logic if provided
 			if (gameUpdateCallback) {
 				gameUpdateCallback();
 			}
-			// Update AI State
-			aiMng_.update(entityMng_, static_cast<float>(dt_));
-
-			audioMng_.process();
 
 			// End graphics frame and present
 			graphicsMng_.endFrame(window_);
@@ -91,52 +96,6 @@ namespace Engine
 		loader_.loadFonts(loader_.getFontPath(), 48);
 	}
 
-	/*============================================================================================
-	* \brief		Initializes game systems (physics, collision, player)
-	*//*========================================================================================*/
-	void EnoEngine::setupGameSystems()
-	{
-		// Initialize physics system
-		physicsSys_ = std::make_unique<Physics::PhysicsSystem>();
-
-		// Initialize collision system (needs event bus reference)
-		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
-
-		// Initialize player system
-		playerSys_ = std::make_unique<Player::PlayerSystem>();
-
-		std::cout << "[EnoEngine] Game systems initialized successfully" << std::endl;
-	}
-
-	/*============================================================================================
-	* \brief		Updates all game systems in proper order
-	* \param[in]	deltaTime - Time elapsed since last frame
-	* \param[in]	isPlaying - Whether the game is in playing mode (not editor mode)
-	*//*========================================================================================*/
-	void EnoEngine::updateGameSystems(float deltaTime, bool isPlaying)
-	{
-		// Update systems in correct order:
-		// 1. Player input/movement
-		// 2. Physics simulation
-		// 3. Collision detection
-
-		// Update player system (handles input and player movement)
-		if (playerSys_) {
-			playerSys_->Update(entityMng_, inputMng_, deltaTime, isPlaying);
-		}
-
-		// Update physics system (gravity, forces, velocity integration)
-		// Only update physics when the game is playing (not paused/stopped)
-		if (physicsSys_ && isPlaying) {
-			physicsSys_->Update(entityMng_, deltaTime);
-		}
-
-		// Update collision system (collision detection and response)
-		// Only update collision when the game is playing (not paused/stopped)
-		if (collisionSys_ && isPlaying) {
-			collisionSys_->Update(entityMng_);
-		}
-	}
 
 	void EnoEngine::updateTime(double fps_calc_interval) {
 		// get elapsed time (in seconds) between previous and current frames

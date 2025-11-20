@@ -13,7 +13,7 @@
 #include "game_logic.hpp"
 #include "player/player_config.hpp"
 #include "player/player_archetype_config.hpp"
-#include "../../engine/editor/undo/undo_manager.hpp"
+#include "editor/undo/undo_manager.hpp"
 
 #undef min
 #undef max
@@ -29,9 +29,6 @@ using Editor::Node;
 
 extern GameApplication game;
 
-// Collision system
-std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
-std::unique_ptr<Player::PlayerSystem> playerSystem_;
 bool showColliders_ = true;
 
 GameApplication* g_game = nullptr;

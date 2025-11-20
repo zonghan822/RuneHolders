@@ -8,6 +8,6 @@ foreach(dir ${directories})
         # Get the directory name from the full path
         get_filename_component(dir_name ${dir} NAME)
         # Call the macro with the directory name
-        SETUP_APP(${dir_name} Engine)
+        SETUP_APP(${dir_name} Engine_static)
     endif()
 endforeach()

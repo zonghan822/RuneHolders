@@ -417,7 +417,7 @@ namespace Editor
 
 		// Now, I want to export another file which gives me the name of the saved scene
 		std::cout << currentScene << " << Current scene" << std::endl;
-		std::ofstream currentSceneSave{ (ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt") };
+		std::ofstream currentSceneSave{ (ASSETS_DIR_PATH "saves/scenes/CurrentSavedScene.txt") };
 		if (!currentSceneSave)
 		{
 			throw std::runtime_error("Failed to create a save file for the current active scene!");
@@ -649,7 +649,7 @@ namespace Editor
 		load(fullPath, defaultSceneName);
 
 		// Save the current scene name to CurrentSavedScene.txt
-		std::ofstream currentSceneSave{ ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt" };
+		std::ofstream currentSceneSave{ ASSETS_DIR_PATH "saves/scenes/CurrentSavedScene.txt" };
 		if (!currentSceneSave)
 		{
 			throw std::runtime_error("Failed to save current active scene name!");
@@ -662,13 +662,13 @@ namespace Editor
 	void EnoSceneTree::loadLastSavedScene()
 	{
 		// Get path to assets
-		std::string currentScenePath = ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt";
+		std::string currentScenePath = ASSETS_DIR_PATH "saves/scenes/CurrentSavedScene.txt";
 		std::ifstream savedSceneFile{ currentScenePath };
 		if (!savedSceneFile.is_open())
 		{
 			// File doesn't exist, create a new scene
 			std::cout << "[EnoSceneTree] No saved scene found, creating new scene" << std::endl;
-			createEmptyScene(ASSETS_DIR_PATH "/saves/scenes/");
+			createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 		}
 		else
 		{
@@ -684,12 +684,12 @@ namespace Editor
 			if (savefile.empty())
 			{
 				std::cout << "[EnoSceneTree] CurrentSavedScene.txt is empty, creating new scene..." << std::endl;
-				createEmptyScene(ASSETS_DIR_PATH "/saves/scenes/");
+				createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 			}
 			else
 			{
 				// Check if the scene file actually exists before loading
-				std::string fullScenePath = ASSETS_DIR_PATH "/saves/scenes/" + savefile;
+				std::string fullScenePath = ASSETS_DIR_PATH "saves/scenes/" + savefile;
 				if (std::filesystem::exists(fullScenePath))
 				{
 					load(fullScenePath, savefile);
@@ -697,7 +697,7 @@ namespace Editor
 				else
 				{
 					std::cerr << "[EnoSceneTree] Scene file not found: " << fullScenePath << ", creating new scene..." << std::endl;
-					createEmptyScene(ASSETS_DIR_PATH "/saves/scenes/");
+					createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 				}
 			}
 		}

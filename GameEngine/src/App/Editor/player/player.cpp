@@ -63,13 +63,8 @@ namespace Player
      * 6. Integrate: position += velocity * dt (with collision)
      * 7. Clear forces for next frame
      *===========================================================================================*/
-    void PlayerSystem::Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime, bool isPlaying)
+    void PlayerSystem::Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime)
     {
-        // Skip player input processing if not in playing mode (editor mode)
-        if (!isPlaying) {
-            return;
-        }
-
         // Get the entity map which contains all entities with their locations
         auto& entityMap = entityManager.getMap();
 
