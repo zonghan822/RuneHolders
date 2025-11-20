@@ -221,10 +221,11 @@ namespace Script
 
 		return str;
 	}
+
 	// ================== Signal ==================
-	std::string EnoScript::signalWrite(std::string nodeName, std::string signalName)
+	std::pair<std::string, std::string> EnoScript::signalWrite(std::string nodeName, std::string signalName)
 	{
-		std::ofstream file{ path_, std::ios::in | std::ios::out };
+		std::fstream file{ path_, std::ios::in | std::ios::out };
 		if (!file)
 			throw std::runtime_error("Failed to find the file to write to!");
 
@@ -254,11 +255,13 @@ namespace Script
 		std::string data = stream.str();
 
 		// Verify that this signal func has not already been written
+		std::string className = classToNest(data);
+
 		size_t fs = data.find(funcName);
 		if (fs != std::string::npos)
 		{
-			std::cerr << funcName << " has already been defined in the script!" << std::endl;
-			return funcName;
+			std::cout << funcName << " has already been defined in the script!" << std::endl;
+			return { funcName, className };
 		}
 
 		// Write and close file
@@ -268,7 +271,7 @@ namespace Script
 		std::ofstream out{ path_, std::ios::trunc };
 		out << data;
 
-		return funcName;
+		return { funcName, className };
 	}
 
 	void EnoScript::writeMethod(std::string& data, const std::string& method)
@@ -326,6 +329,34 @@ namespace Script
 		data.insert(writePos, method + classIndent);
 	}
 
+	std::string EnoScript::classToNest(const std::string& data)
+	{
+		// Find top level class
+		size_t cpos = data.find("class ");
+		if (cpos == std::string::npos)
+		{
+			std::cerr << "No class found!" << std::endl;
+			return "";
+		}
+
+		// Start position of class name (right after "class ")
+		size_t nameStart = cpos + 6;
+
+		// Skip whitespace
+		while (nameStart < data.size() && (data[nameStart] == ' ' || data[nameStart] == '\t'))
+			++nameStart;
+
+		// End of class name: either whitespace, {, or :
+		size_t nameEnd = nameStart;
+		while (nameEnd < data.size() &&
+			!(data[nameEnd] == ' ' || data[nameEnd] == '\t' ||
+				data[nameEnd] == '{' || data[nameEnd] == ':'))
+		{
+			++nameEnd;
+		}
+
+		return data.substr(nameStart, nameEnd - nameStart);
+	}
 
 	std::wostream& operator<<(std::wostream& os, const Value& value)
 	{

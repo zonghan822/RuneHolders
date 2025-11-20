@@ -47,6 +47,7 @@ namespace Script
 
 		std::string signalWrite(std::string, std::string);
 		void writeMethod(std::string&, const std::string&);
+		std::string classToNest(const std::string&);
 
 	private:
 		Core::EnoCoreHost& coreHost_;

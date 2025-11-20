@@ -188,7 +188,7 @@ namespace Core
 		// =================== Signals ===================
 
 		// Receive a signal emit
-		void signalEmitted(const std::string&, const std::string&);
+		void signalEmitted(const std::string&, const std::string&, const std::string&);
 
 	private:
 
