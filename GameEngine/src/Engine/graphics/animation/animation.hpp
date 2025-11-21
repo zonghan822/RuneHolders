@@ -158,6 +158,32 @@ namespace Animation
         std::string currentAnimationName_;
     };
 
+    //Yun Qi's implementation
+    class AnimationControllerRegistry {
+    public:
+        // controllerID -> actual controller
+        std::unordered_map<uint32_t, Animation::AnimationController> controllers;
+
+        uint32_t createController() {
+            uint32_t id = nextID++;
+            controllers[id] = Animation::AnimationController();
+            return id;
+        }
+
+        Animation::AnimationController* get(uint32_t id) {
+            auto it = controllers.find(id);
+            if (it != controllers.end()) return &it->second;
+            return nullptr;
+        }
+
+        void remove(uint32_t id) {
+            controllers.erase(id);
+        }
+
+    private:
+        uint32_t nextID = 1;
+    };
+
     // Helper function to create animations from sprite sheets
     inline EnoAnimation createSpriteSheetAnimation(
         int frameWidth, int frameHeight,

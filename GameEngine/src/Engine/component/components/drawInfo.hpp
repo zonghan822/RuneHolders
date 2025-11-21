@@ -5,7 +5,7 @@
 * @date         01-10-2025
 * @brief        This file contains the component constructor for Drawing Information
 *				This Component allows the drawing system to act directly upon it so long as it
-*				exists. 
+*				exists.
 *//*========================================================================================*/
 
 #pragma once
@@ -15,6 +15,7 @@
 
 //i would want to add the math and graphics library here
 #include "../../graphics/graphics.hpp"
+#include "../../graphics/animation/animation.hpp"
 
 #define FILE_PATH_LEN 240
 
@@ -91,7 +92,7 @@ namespace ECSComponents
 		// Explicit copy constructor
 		RenderComponent(const RenderComponent& other)
 			: width(other.width), height(other.height), color(other.color),
-			  texture(other.texture), texID(other.texID)
+			texture(other.texture), texID(other.texID)
 		{
 			strncpy_s(shape, other.shape, sizeof(shape) - 1);
 			shape[sizeof(shape) - 1] = '\0';
@@ -128,25 +129,25 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
-			l("Width",			width,				"float");
-			l("Height",			height,				"float");
-			l("Shape",			shape,				"char32");
-			l("Color",			color,				"Color(RGBA)");
+			l("Width", width, "float");
+			l("Height", height, "float");
+			l("Shape", shape, "char32");
+			l("Color", color, "Color(RGBA)");
 
-			l("Texture Path",	texturePath,		"texchar240");
-			l("TexID",			texID,				"int");
+			l("Texture Path", texturePath, "texchar240");
+			l("TexID", texID, "int");
 		}
 
 		template <typename Visitor>
 		void reflect(Visitor&& l) const
 		{
-			l("Width",			width,				"float");
-			l("height",			height,				"float");
-			l("Shape",			shape,				"char32");
-			l("Color",			color,				"Color(RGBA)");
+			l("Width", width, "float");
+			l("height", height, "float");
+			l("Shape", shape, "char32");
+			l("Color", color, "Color(RGBA)");
 
-			l("Texture Path",	texturePath,		"texchar240");
-			l("TexID",			texID,				"int");
+			l("Texture Path", texturePath, "texchar240");
+			l("TexID", texID, "int");
 		}
 	};
 
@@ -155,15 +156,21 @@ namespace ECSComponents
 
 	inline std::ostream& operator<<(std::ostream& os, const RenderComponent& render)
 	{
-		auto& shape   = render.shape;
-		auto& width   = render.width;
-		auto& height  = render.height;
+		auto& shape = render.shape;
+		auto& width = render.width;
+		auto& height = render.height;
 
 		std::cout
-		<< "SHAPE: "	<< shape  << '\n'
-		<< "width: "	<< width  << '\n'
-		<< "height: "	<< height << '\n';
+			<< "SHAPE: " << shape << '\n'
+			<< "width: " << width << '\n'
+			<< "height: " << height << '\n';
 
 		return os;
 	}
+
+	//(Yun Qi) Animation Controller so that any entity that wants to have an animation has their own controller.
+	//struct AnimControllerComponent {
+	//	Animation::AnimationController controller;
+	//};
+
 }

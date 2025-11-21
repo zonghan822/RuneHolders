@@ -66,6 +66,10 @@ static float           colliderRadius = 5.0f;
 float pScaleX = 1.0f;
 float pScaleY = 1.0f;
 
+// Keeping track of animations
+static std::vector<AnimationPreset> presets;
+static int selectedPresetIndex = 0; // for ImGui dropdown
+
 // Time
 static float shown_fps = 0.0f;
 static double next_update = 0.0;         // next time we refresh the text
@@ -229,9 +233,9 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	ImGui::End();
 
 	// Game View (full scene, bottom-right)
-	ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-	displayGameView();
-	ImGui::End();
+	//ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
+	//displayGameView();
+	//ImGui::End();
 
 	// Editor View (zoomed in, center - replaces old Game View behavior)
 	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
@@ -242,6 +246,13 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	ImGui::Begin("Assets Browser", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayAssetTab(engine_);
 	ImGui::End();
+
+	// Asset Presets
+	//ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_NoCollapse);
+	//assetPresetsTab(engine_);
+	//ImGui::End();
+
+
 
 	// FPS
 	ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoCollapse);
@@ -893,6 +904,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::UndoManager& undo
 			{
 				// Display inspector for all entities (including root nodes)
 				displayEntityInspector(engine_, e, undoManager);
+				assetPresetsTab(engine_, e);
 				entityFound = true;
 				break;
 			}
@@ -1315,7 +1327,7 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 
 		// Left click loads scene
 		// IsItemClicked checks the click on the most recent pushed imgui item aka invisible button
-		if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
+		if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
 		{
 			// Load scene
 			std::cout << "sceneName: " << sceneTree.getSceneName() << ", filename: " << filename << std::endl;
@@ -1330,16 +1342,16 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 			{
 				std::cout << "Scene is already loaded!";
 			}
-			
+
 		}
-		
+
 		// Right click opens a panel to allow you to change and delete scene name
 		if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
 		{
 			// Open popup
 			ImGui::OpenPopup("scene_menu");
 		}
-		
+
 		// Create menu popup
 		if (ImGui::BeginPopup("scene_menu"))
 		{
@@ -1396,13 +1408,13 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 						// If file rename is successful
 						refreshSceneName = true;
 					}
-					catch(const std::filesystem::filesystem_error& e)
+					catch (const std::filesystem::filesystem_error& e)
 					{
 						ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
 						return;
 					}
 				}
-				
+
 			}
 			// Cancel edits
 			if (ImGui::Button("Cancel"))
@@ -1516,8 +1528,8 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	static int selectedAsset = -1;
 	static std::string selectedName{};
 	static FMOD::Sound* selectedSound = nullptr;
- 
-	 // ============== FILE LIST ==============
+
+	// ============== FILE LIST ==============
 	ImGui::BeginChild("AudioAssetList", ImVec2(0, 150), true);
 
 	if (audioAssets.empty())
@@ -1631,7 +1643,7 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 		}
 		else if (ImGui::Button("Attach SFX to Selected Entity"))
 		{
-			ECS::Entity selectedEntity{ selectedEntityID }; 
+			ECS::Entity selectedEntity{ selectedEntityID };
 
 			// Add component if missing
 			if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
@@ -1650,10 +1662,73 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			std::cout << "[Audio] Attached SFX '" << selectedName
 				<< "' to entity " << selectedEntityID << "\n";
 		}
-		
+
 
 	}
 
+}
+
+
+void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
+{
+	using namespace Editor;
+	Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
+	if (!node) return;
+
+	// Get entity name from NameComponent if it exists
+	std::string label = "Entity " + std::to_string(node->entity_.id());
+#if 1
+	// Try to get the actual name from the entity
+	try {
+		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
+			if (e.id() == node->entity_.id()) {
+				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
+				label = nameComp.name;
+				break;
+			}
+		}
+	}
+	catch (...) {
+		// If we can't get the name, use the default
+	}
+#else
+	try {
+		for (Node* node : sceneTree.getAllNodes()) {
+			label = node->name_;
+			break;
+		}
+	}
+	catch (...) {
+		// If we can't get the name, use the default
+	}
+
+
+#endif
+	// If node has children -> use TreeNodeEx
+	if (node->children_.empty()) {
+		bool selected = (selectedEntityID == node->entity_.id());
+		// Use ## to separate visible label from unique ID
+		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
+		if (ImGui::Selectable(uniqueLabel.c_str(), selected))
+			selectedEntityID = node->entity_.id();
+	}
+	else {
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
+		if (selectedEntityID == node->entity_.id())
+			flags |= ImGuiTreeNodeFlags_Selected;
+
+		// Use ## to separate visible label from unique ID
+		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
+		bool open = ImGui::TreeNodeEx(uniqueLabel.c_str(), flags);
+		if (ImGui::IsItemClicked())
+			selectedEntityID = node->entity_.id();
+
+		if (open) {
+			for (Editor::Node* child : node->children_)
+				drawNodeRecursive(sceneTree, child->entity_.id(), entityManager);
+			ImGui::TreePop();
+		}
+	}
 }
 
 void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager)
@@ -1803,7 +1878,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 					collider.data.circle.radius = 10.0f;
 				}
 				else if (newType == ECSComponents::ColliderType::RECTANGLE) {
-					collider.data.rectangle.width = 20.0f; 
+					collider.data.rectangle.width = 20.0f;
 					collider.data.rectangle.height = 20.0f;
 				}
 
@@ -1869,9 +1944,9 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			sm.changeState("Idle", entity, entMng);
 		}
 	}
-	
+
 	//for dropdown selection of Looping menu.
-	const char* loopOptions[] = {"Disabled","Forward","PingPong"};
+	const char* loopOptions[] = { "Disabled","Forward","PingPong" };
 
 	if (entity.has<ECSComponents::AudioComponent>(entMng))
 	{
@@ -1896,7 +1971,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (ImGui::Combo("##LoopMode", &loopMode, loopOptions, IM_ARRAYSIZE(loopOptions)))
 			{
 				ac.audioMod_.loop_ = static_cast<Audio::EnoAudioModule::LoopMode>(loopMode);
-			}							
+			}
 
 			int loopBegin = static_cast<int>(ac.audioMod_.loopStart_);
 			ImGui::Text("Loop Begin:");
@@ -1927,15 +2002,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			ImGui::Separator();
 
 			ImGui::Text("Volume dB:");
-			ImGui::SameLine(160); 
+			ImGui::SameLine(160);
 			float tmpVol = static_cast<float>(ac.volume_);
 			ImGui::SliderFloat("##VolDb", &tmpVol, 0.f, 100.f);
-			ac.volume_ = static_cast<double>(tmpVol);					
+			ac.volume_ = static_cast<double>(tmpVol);
 
 			ImGui::Text("Pitch Scale:");
 			ImGui::SameLine(160);
 			float tmppitch = static_cast<float>(ac.pitchScale_);
-			ImGui::SliderFloat("##PitchScale", &tmppitch, 0.1f, 5.f);		
+			ImGui::SliderFloat("##PitchScale", &tmppitch, 0.1f, 5.f);
 			ac.pitchScale_ = static_cast<double>(tmppitch);
 
 			ImGui::Text("Pan Scale:");
@@ -2010,66 +2085,129 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	ImGui::End();
 }
 
-void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
-{
-	using namespace Editor;
-	Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
-	if (!node) return;
+void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
-	// Get entity name from NameComponent if it exists
-	std::string label = "Entity " + std::to_string(node->entity_.id());
-#if 1
-	// Try to get the actual name from the entity
-	try {
-		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
-			if (e.id() == node->entity_.id()) {
-				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-				label = nameComp.name;
-				break;
-			}
+	Resources::EnoLoader& loader = engine_.getResourceLoader();
+	const auto& textures = loader.getAllTextures();
+	static std::string idleSelected = "";
+	static std::string walkSelected = "";
+	static std::string attackSelected = "";
+	static std::string activeSlot = ""; // identifies which box you're assigning assets to
+	auto& entMng = engine_.getEntityManager();
+
+	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+	//================================= IDLE DRAG AND DROP ===================================
+	ImGui::Text("IDLE");
+	ImGui::BeginChild("IdleSlot", ImVec2(200, 200), true);
+
+	if (!idleSelected.empty())
+	{
+		auto it = textures.find(idleSelected);
+		if (it != textures.end())
+		{
+			auto tex = it->second;   // shared_ptr<EnoTexture>
+			ImTextureID texID = (ImTextureID)(intptr_t)tex->getID();
+
+			ImGui::Image(texID, ImVec2(180, 150));
+		}
+		else
+		{
+			ImGui::Button("Missing Texture", ImVec2(180, 150));
 		}
 	}
-	catch (...) {
-		// If we can't get the name, use the default
+	else
+	{
+		ImGui::Button("##IdlePreview", ImVec2(180, 150));
 	}
-#else
-	try {
-		for (Node* node : sceneTree.getAllNodes()) {
-			label = node->name_;
-			break;
+
+	//Drag and Drop target
+	if (ImGui::BeginDragDropTarget())
+	{
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
+		{
+			idleSelected = (const char*)payload->Data;
+		}
+		ImGui::EndDragDropTarget();
+	}
+
+	ImGui::Text("Assigned: %s", idleSelected.empty() ? "(none)" : idleSelected.c_str());
+	ImGui::EndChild();
+
+
+	//================================= WALK DRAG AND DROP ===================================
+	ImGui::Text("WALKING");
+	ImGui::BeginChild("WalkSlot", ImVec2(200, 200), true);
+
+	if (!walkSelected.empty())
+	{
+		auto it = textures.find(walkSelected);
+		if (it != textures.end())
+		{
+			auto tex = it->second;
+			ImTextureID texID = (ImTextureID)(intptr_t)tex->getID();
+			ImGui::Image(texID, ImVec2(180, 150));
+		}
+		else {
+			ImGui::Button("Missing Texture", ImVec2(180, 150));
 		}
 	}
-	catch (...) {
-		// If we can't get the name, use the default
+	else
+	{
+		ImGui::Button("##WalkPreview", ImVec2(180, 150));
 	}
 
-
-#endif
-	// If node has children -> use TreeNodeEx
-	if (node->children_.empty()) {
-		bool selected = (selectedEntityID == node->entity_.id());
-		// Use ## to separate visible label from unique ID
-		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
-		if (ImGui::Selectable(uniqueLabel.c_str(), selected))
-			selectedEntityID = node->entity_.id();
+	if (ImGui::BeginDragDropTarget())
+	{
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
+		{
+			walkSelected = (const char*)payload->Data;
+		}
+		ImGui::EndDragDropTarget();
 	}
-	else {
-		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
-		if (selectedEntityID == node->entity_.id())
-			flags |= ImGuiTreeNodeFlags_Selected;
 
-		// Use ## to separate visible label from unique ID
-		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
-		bool open = ImGui::TreeNodeEx(uniqueLabel.c_str(), flags);
-		if (ImGui::IsItemClicked())
-			selectedEntityID = node->entity_.id();
+	ImGui::Text("Assigned: %s", walkSelected.empty() ? "(none)" : walkSelected.c_str());
+	ImGui::EndChild();
 
-		if (open) {
-			for (Editor::Node* child : node->children_)
-				drawNodeRecursive(sceneTree, child->entity_.id(), entityManager);
-			ImGui::TreePop();
+
+	//================================= IDLE DRAG AND DROP ===================================
+	ImGui::Text("ATTACK");
+	ImGui::BeginChild("AttackSlot", ImVec2(200, 200), true);
+
+	if (!attackSelected.empty())
+	{
+		auto it = textures.find(attackSelected);
+		if (it != textures.end())
+		{
+			auto tex = it->second;
+			ImTextureID texID = (ImTextureID)(intptr_t)tex->getID();
+			ImGui::Image(texID, ImVec2(180, 150));
+		}
+		else {
+			ImGui::Button("Missing Texture", ImVec2(180, 150));
 		}
 	}
+	else
+	{
+		ImGui::Button("##AttackPreview", ImVec2(180, 150));
+	}
+
+	if (ImGui::BeginDragDropTarget())
+	{
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
+		{
+			attackSelected = (const char*)payload->Data;
+		}
+		ImGui::EndDragDropTarget();
+	}
+
+	ImGui::Text("Assigned: %s", attackSelected.empty() ? "(none)" : attackSelected.c_str());
+	ImGui::EndChild();
+
+
+	ImGui::Separator();
+	ImGui::Button("APPLY"); // does nothing yet
+	ImGui::End();
 }
 
 void displayAssetTab(Engine::EnoEngine& engine_) {
@@ -2115,12 +2253,23 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 			selectedTexture = name;
 			textureData.texture = texture;
 		}
+		if (ImGui::BeginDragDropSource())
+		{
+			// Store C-string name inside drag payload
+			ImGui::SetDragDropPayload("TEXTURE_NAME", name.c_str(), name.size() + 1);
+
+			ImGui::Text("%s", name.c_str());
+
+			ImGui::EndDragDropSource();
+		}
+
 		ImGui::Spacing();
 		ImGui::Separator();
 	}
 
 	ImGui::Separator();
 
+	//YunQi Bookmark  (i believe this below section will have to be moved to Asset Prefabs)
 	// If texture selected
 	if (!selectedTexture.empty()) {
 		ImGui::Text("Selected: %s", selectedTexture.c_str());
@@ -2169,24 +2318,24 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 
 	// Loading audio
 	const auto& sounds = loader.getSounds();
-	if (!g_droppedFiles.empty()) 
+	if (!g_droppedFiles.empty())
 	{
 		for (auto& path : g_droppedFiles)
 		{
 			std::filesystem::path filePath(path);
 			auto name = filePath.stem().string();
 			auto ext = filePath.extension().string();
-			
+
 			std::cout << "path: " << path << std::endl;
 
-			if (ext == ".wav" || ext == ".mp3") 
+			if (ext == ".wav" || ext == ".mp3")
 			{
 				auto it = sounds.find(filePath.stem().string());
 				if (it == sounds.end())
 				{
 					throw std::runtime_error("Failed to find dropped in sound!");
 				}
-				
+
 				std::cout << "Sound obtained: " << name << std::endl;
 
 				// Construct Audio module
@@ -2694,9 +2843,11 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									scaleBeforeDrag = tc.scale;  // Store for undo
 									if (handleType == 3) {
 										std::cout << "Started uniform scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
-									} else if (handleType == 4) {
+									}
+									else if (handleType == 4) {
 										std::cout << "Started horizontal scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
-									} else if (handleType == 5) {
+									}
+									else if (handleType == 5) {
 										std::cout << "Started vertical scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
 									}
 								}
@@ -2712,7 +2863,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									transformBeforeDrag = tc.pos;  // Store for undo
 									if (handleType == 1) {
 										std::cout << "Started dragging entity " << selectedEntityID << " on X-axis (affecting " << affectedEntityIDs.size() << " entities)\n";
-									} else if (handleType == 2) {
+									}
+									else if (handleType == 2) {
 										std::cout << "Started dragging entity " << selectedEntityID << " on Y-axis (affecting " << affectedEntityIDs.size() << " entities)\n";
 									}
 								}
@@ -2752,7 +2904,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							if (activeTransformAxis == 1) {
 								// X-axis only movement
 								newY = lastDragPos.y;
-							} else if (activeTransformAxis == 2) {
+							}
+							else if (activeTransformAxis == 2) {
 								// Y-axis only movement
 								newX = lastDragPos.x;
 							}
@@ -2784,7 +2937,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							// Rotate all children recursively around parent position
 							Editor::Node* rotatedNode = sceneTree.getNodeByEntityID(draggedEntityID);
 							if (rotatedNode) {
-								rotateChildrenRecursive(rotatedNode, deltaAngle, {tc.pos.x, tc.pos.y}, entityManager);
+								rotateChildrenRecursive(rotatedNode, deltaAngle, { tc.pos.x, tc.pos.y }, entityManager);
 							}
 						}
 						else if (isScaling) {
@@ -2833,7 +2986,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							// Scale all children recursively from parent position
 							Editor::Node* scaledNode = sceneTree.getNodeByEntityID(draggedEntityID);
 							if (scaledNode) {
-								scaleChildrenRecursive(scaledNode, scaleFactorX, scaleFactorY, {tc.pos.x, tc.pos.y}, entityManager);
+								scaleChildrenRecursive(scaledNode, scaleFactorX, scaleFactorY, { tc.pos.x, tc.pos.y }, entityManager);
 							}
 						}
 
@@ -2937,15 +3090,16 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	ImGui::DockBuilderDockWindow("Editor View", dock_main_id);
 
 	// Right side top - Assets Browser
-	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_right_top);
 	ImGui::DockBuilderDockWindow("Entity Inspector", dock_id_right_top);
-	ImGui::DockBuilderDockWindow("Audio Browser", dock_id_right_top);
+	ImGui::DockBuilderDockWindow("Assets Presets", dock_id_right_top);
 
 	// Right side bottom - Game View (full scene)
 	ImGui::DockBuilderDockWindow("Game View", dock_id_right);
 
 	// Bottom - FPS
 	ImGui::DockBuilderDockWindow("FPS", dock_id_bottom);
+	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_bottom);
+	ImGui::DockBuilderDockWindow("Audio Browser", dock_id_bottom);
 
 	ImGui::DockBuilderFinish(dockspace_id);
 
