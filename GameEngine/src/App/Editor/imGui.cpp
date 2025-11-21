@@ -1024,6 +1024,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				ECS::Entity entity = entityManager.create<ECSComponents::TransformComponent>(transform);
 				entity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 				entity.add<ECSComponents::NameComponent>(entityManager, nameComp);
+				
+
 
 				// Add to scene tree as root node
 				sceneTree.createFromEntity(entity, nullptr);
@@ -1096,6 +1098,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
 		newEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 		newEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
+		newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
+
 
 		// Name root nodes as "Entity 1", "Entity 2", etc.
 		auto& nameComp = newEntity.get<ECSComponents::NameComponent>(entityManager);
@@ -1153,6 +1157,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				ECS::Entity childEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
 				childEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 				childEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
+				childEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
 
 				// Name child nodes as "Entity #" using the same counter
 				auto& nameComp = childEntity.get<ECSComponents::NameComponent>(entityManager);

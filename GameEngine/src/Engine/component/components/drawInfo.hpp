@@ -169,8 +169,25 @@ namespace ECSComponents
 	}
 
 	//(Yun Qi) Animation Controller so that any entity that wants to have an animation has their own controller.
-	//struct AnimControllerComponent {
-	//	Animation::AnimationController controller;
-	//};
+	struct AnimationControllerComponent {
+		uint32_t controllerID;
+
+		AnimationControllerComponent(): controllerID(0) {}
+
+		AnimationControllerComponent(uint32_t id): controllerID(id) {}
+
+		template <typename Visitor>
+		void reflect(Visitor&& l)
+		{
+			l("ControllerID", controllerID, "uint32_t");
+		}
+
+		template <typename Visitor>
+		void reflect(Visitor&& l) const
+		{
+			l("ControllerID", controllerID, "uint32_t");
+		}
+
+	};
 
 }

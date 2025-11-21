@@ -111,6 +111,12 @@ namespace Engine
 		Resources::EnoLoader& getResourceLoader() { return loader_; }
 
 		/*============================================================================================
+		* \brief		Gets the Resource Loader for asset management
+		* \return		Reference to the EnoLoader instance
+		*//*========================================================================================*/
+		Animation::AnimationControllerRegistry& getAnimationRegistry() { return animRegistry; }
+
+		/*============================================================================================
 		* \brief		Gets the Config Manager for settings management
 		* \return		Reference to the EnoConfigManager instance
 		*//*========================================================================================*/
@@ -225,7 +231,8 @@ namespace Engine
 		ECSComponents::EnoPrefabManager prefabMng_{ bus_ };
 		Core::EnoCoreHost coreHost_{ bus_ };
 		Editor::EnoEditor editor_{ bus_, entityMng_, coreHost_ };
-		
+		Animation::AnimationControllerRegistry animRegistry;
+
 		// Systems
 		Input::EnoInputManager inputMng_{ bus_ };
 		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };

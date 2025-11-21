@@ -283,4 +283,4 @@ void clearSelectedEntity();
  * \param[in]   ECS::EntityManager& entityManager
  * \return      void
 *//*========================================================================================*/
-void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager);
+void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager);
