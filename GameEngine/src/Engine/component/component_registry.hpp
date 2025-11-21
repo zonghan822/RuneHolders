@@ -23,6 +23,7 @@
 #include "../component/components/ai_component.hpp"
 #include "../component/components/buttons.hpp"
 #include "../component/components/audio.hpp"
+#include "../component/components/prefab_instance.hpp"
 
 #include "../component/component_list.hpp"
 

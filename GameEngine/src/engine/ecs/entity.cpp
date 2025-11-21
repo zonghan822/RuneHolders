@@ -1,4 +1,5 @@
 #include "entity.hpp"
+#include "../prefab/prefab.hpp"
 
 
 namespace ECS
@@ -228,6 +229,14 @@ namespace ECS
 			if (pos == std::string::npos)
 				break;
 		}
+
+		// After loading all components, check if this entity is a prefab instance
+		// If so, register it in the prefab tracking system
+		if (entity.has<ECSComponents::PrefabInstanceComponent>(entMng))
+		{
+			auto& prefabInstance = entity.get<ECSComponents::PrefabInstanceComponent>(entMng);
+			registerPrefabInstance(entity.id(), prefabInstance.prefabName);
+		}
 	}
 
 	// Saving entity data in binary
@@ -443,6 +452,12 @@ namespace ECS
 
 		// char[256]
 		if (ttype == "char256")
+		{
+			return tvalue;
+		}
+
+		// char[64]
+		if (ttype == "char64")
 		{
 			return tvalue;
 		}
