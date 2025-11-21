@@ -6,23 +6,23 @@
 
 namespace Bridge
 {
-	// Bridges functions between Engine end and the Scripting end
-	class EnoBridge
-	{
-	public:
+    // Instead of a raw pointer, expose a setter/getter
+    void setBridge(class EnoBridge* bridge);
+    class EnoBridge* getBridge();
 
-		EnoBridge(Input::EnoInputManager& input)
-			:
-			input_{ input }
-		{}
+    class EnoBridge
+    {
+    public:
+        EnoBridge(Input::EnoInputManager& input)
+            : input_{ input }
+        {
+            setBridge(this);
+        }
 
-		// Accessors
-		Input::EnoInputManager& input() const { return input_; }
+        Input::EnoInputManager& input() const { return input_; }
 
-	private:
-		Input::EnoInputManager& input_;
-	};
-
-	extern EnoBridge* bridge_;
+    private:
+        Input::EnoInputManager& input_;
+    };
 }
 

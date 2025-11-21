@@ -110,10 +110,6 @@ void GameApplication::setupFont() {
 }
 
 void GameApplication::setupScripting() {
-
-	// Bridging
-	Bridge::bridge_ = &engine_.getBridge();
-
 	// Scripting premade calls
 	engine_.getCoreHost().HRSetup();
 	engine_.getCoreHost().defineBegin();

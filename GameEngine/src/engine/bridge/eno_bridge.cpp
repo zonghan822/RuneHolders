@@ -3,30 +3,57 @@
 
 namespace Bridge
 {
-	EnoBridge* bridge_ = nullptr;
+    static EnoBridge* gBridge = nullptr;
 
-	// ================= Input =================
-	extern "C" __declspec(dllexport)
-		bool __stdcall IsKeyReleased(int key)
-	{
-		return bridge_->input().isKeyUp(key);
-	}
+    void setBridge(EnoBridge* bridge)
+    {
+        gBridge = bridge;
+    }
 
-	extern "C" __declspec(dllexport)
-		bool __stdcall IsKeyPressed(int key)
-	{
-		return bridge_->input().isKeyDown(key);
-	}
+    EnoBridge* getBridge()
+    {
+        return gBridge;
+    }
 
-	extern "C" __declspec(dllexport)
-		bool __stdcall IsKeyHeld(int key)
-	{
-		return bridge_->input().isKeyPressed(key);
-	}
+    // ================= Input =================
 
-	extern "C" __declspec(dllexport)
-		int __stdcall ModsApplied()
-	{
-		return bridge_->input().currentMods();
-	}
+    extern "C" __declspec(dllexport)
+        bool __stdcall IsKeyReleased(int key)
+    {
+        if (!gBridge) {
+            std::cerr << "Input called too early!" << std::endl;
+            return false;
+        }
+        return gBridge->input().isKeyUp(key);
+    }
+
+    extern "C" __declspec(dllexport)
+        bool __stdcall IsKeyPressed(int key)
+    {
+        if (!gBridge) {
+            std::cerr << "Input called too early!" << std::endl;
+            return false;
+        }
+        return gBridge->input().isKeyDown(key);
+    }
+
+    extern "C" __declspec(dllexport)
+        bool __stdcall IsKeyHeld(int key)
+    {
+        if (!gBridge) {
+            std::cerr << "Input called too early!" << std::endl;
+            return false;
+        }
+        return gBridge->input().isKeyPressed(key);
+    }
+
+    extern "C" __declspec(dllexport)
+        int __stdcall ModsApplied()
+    {
+        if (!gBridge) {
+            std::cerr << "Input called too early!" << std::endl;
+            return false;
+        }
+        return gBridge->input().currentMods();
+    }
 }

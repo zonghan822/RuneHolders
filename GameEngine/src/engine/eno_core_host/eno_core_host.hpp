@@ -210,7 +210,7 @@ namespace Core
 		void* inputDelegate_;                                // Delegate for communnicating input to C# end
 		void* cnameDelegate_;                                // Delegate for getting class names
 		void* reloadDelegate_;                               // Delegate for handling backend affairs such as script recompilation and reloading							// Delegate for handling backend affairs such as script recompilation and reloading
-		void* writeDelegate_;								// Delegate for writing signal methods using roslyn
+		void* writeDelegate_;								 // Delegate for writing signal methods using roslyn
 
 		GetScriptFieldsMethod fieldsHandle_ = nullptr;
 		GetFileClassNamesMethod cnameHandle_ = nullptr;
