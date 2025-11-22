@@ -69,6 +69,10 @@ float pScaleY = 1.0f;
 // Keeping track of animations
 static std::vector<AnimationPreset> presets;
 static int selectedPresetIndex = 0; // for ImGui dropdown
+static Graphics::TextureData idleTexData;
+static Graphics::TextureData walkTexData;
+static Graphics::TextureData attackTexData;
+
 
 // Time
 static float shown_fps = 0.0f;
@@ -2132,11 +2136,33 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
 		{
 			idleSelected = (const char*)payload->Data;
+
+			auto it = textures.find(idleSelected);
+			if (it != textures.end())
+			{
+				idleTexData.texture = it->second; // shared_ptr<EnoTexture>
+			}
 		}
 		ImGui::EndDragDropTarget();
 	}
 
 	ImGui::Text("Assigned: %s", idleSelected.empty() ? "(none)" : idleSelected.c_str());
+
+	if (ImGui::Button("APPLY IDLE"))
+	{
+		ECS::Entity e{ selectedEntityID };
+		if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) return;
+		std::cout << "Entity apply idle: " << e.id() << "\n";
+		//auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
+
+		//Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+		//if (!ctrl) return;
+
+		//Animation::EnoAnimation idleAnim = Animation::createAnimationFromTexture(idleTexData);
+		//ctrl->addAnimation("idle", idleAnim);
+		//ctrl->setAnimation("idle");
+	}
+
 	ImGui::EndChild();
 
 
@@ -2167,15 +2193,36 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
 		{
 			walkSelected = (const char*)payload->Data;
+
+			auto it = textures.find(walkSelected);
+			if (it != textures.end())
+			{
+				walkTexData.texture = it->second; // shared_ptr<EnoTexture>
+			}
 		}
 		ImGui::EndDragDropTarget();
 	}
 
 	ImGui::Text("Assigned: %s", walkSelected.empty() ? "(none)" : walkSelected.c_str());
+	if (ImGui::Button("APPLY WALK"))
+	{
+		ECS::Entity e{ selectedEntityID };
+		std::cout << "Entity apply walk: " << e.id() << "\n";
+		//if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) return;
+		//auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
+
+		//Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+		//if (!ctrl) return;
+
+		//Animation::EnoAnimation walkAnim = Animation::createAnimationFromTexture(walkTexData);
+		//ctrl->addAnimation("walk", walkAnim);
+		//ctrl->setAnimation("walk");
+	}
+
 	ImGui::EndChild();
 
 
-	//================================= IDLE DRAG AND DROP ===================================
+	//================================= ATTACK DRAG AND DROP ===================================
 	ImGui::Text("ATTACK");
 	ImGui::BeginChild("AttackSlot", ImVec2(200, 200), true);
 
@@ -2201,12 +2248,36 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	{
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
 		{
+			
 			attackSelected = (const char*)payload->Data;
+
+			auto it = textures.find(attackSelected);
+			if (it != textures.end())
+			{
+				attackTexData.texture = it->second; // shared_ptr<EnoTexture>
+			}
+			
 		}
 		ImGui::EndDragDropTarget();
 	}
 
 	ImGui::Text("Assigned: %s", attackSelected.empty() ? "(none)" : attackSelected.c_str());
+	if (ImGui::Button("APPLY ATTACK"))
+	{
+		ECS::Entity e{ selectedEntityID };
+		std::cout << "Entity apply attack: " << e.id() << "\n";
+		
+		//if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) return;
+		//auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
+
+		//Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+		//if (!ctrl) return;
+
+		//Animation::EnoAnimation attackAnim = Animation::createAnimationFromTexture(attackTexData);
+		//ctrl->addAnimation("attack", attackAnim);
+		//ctrl->setAnimation("attack");
+	}
+
 	ImGui::EndChild();
 
 

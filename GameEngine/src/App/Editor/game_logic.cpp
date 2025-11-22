@@ -760,6 +760,40 @@ void GameApplication::updateEntities() {
 		entitiesDirty_ = false;
 	}
 
+	//
+	//auto& entMng = engine_.getEntityManager();
+	//auto& animRegistry = engine_.getAnimationRegistry();
+	//float dt = static_cast<float>(engine_.getDeltaTime());
+	//bool playing = (getEditorState() == Playing);
+
+	//// Iterate all entities that have animation
+	//for (auto entity : entMng.findEntity<ECSComponents::AnimationControllerComponent>()) {
+
+	//	if (!entity.has<ECSComponents::DrawInfoComponent>(entMng))
+	//		continue;
+
+	//	auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entMng);
+	//	auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entMng);
+
+	//	Animation::AnimationController* ctrl = animRegistry.get(animComp.controllerID);
+	//	if (!ctrl) continue;
+
+	//	// Update animation only when game is running
+	//	if (playing)
+	//		ctrl->update(dt);
+
+	//	// Fetch current frame
+	//	const Animation::AnimationFrame& f = ctrl->getCurrentFrame();
+
+	//	renderInfo.texID = ctrl->getCurrentAnimation()->getCurrentFrameIndex();
+
+	//	if (!renderInfo.texture)
+	//		//renderInfo.texture = ctrl->getCurrentAnimation()->texture;
+	//		renderInfo.texture = ctrl->getCurrentAnimation();
+	//}
+
+
+
 	// Check if player is moving and switch animation accordingly
 
 	// Get player system from engine (no longer a global)
