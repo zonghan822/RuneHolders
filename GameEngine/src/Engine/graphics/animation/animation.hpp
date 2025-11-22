@@ -152,10 +152,11 @@ namespace Animation
         EnoAnimation* getCurrentAnimation() { return currentAnimation_; }
         const std::string& getCurrentAnimationName() const { return currentAnimationName_; }
 
-    private:
+        //yunqi moved private data members out for debug
         std::unordered_map<std::string, EnoAnimation> animations_;
         EnoAnimation* currentAnimation_;
         std::string currentAnimationName_;
+    private:
     };
 
 

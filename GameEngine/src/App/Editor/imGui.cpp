@@ -2152,15 +2152,45 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	{
 		ECS::Entity e{ selectedEntityID };
 		if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) return;
-		std::cout << "Entity apply idle: " << e.id() << "\n";
-		//auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
+		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
+		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
+		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 
-		//Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-		//if (!ctrl) return;
+		drawComp.texture = idleTexData.texture;		
+		drawComp.color = Graphics::Color::White;
+		idleTexData.frameWidth = 96;
+		idleTexData.frameHeight = 96;
+		drawComp.width = idleTexData.frameWidth;
+		drawComp.height = idleTexData.frameHeight;
+		drawComp.texID = 0;
 
-		//Animation::EnoAnimation idleAnim = Animation::createAnimationFromTexture(idleTexData);
-		//ctrl->addAnimation("idle", idleAnim);
-		//ctrl->setAnimation("idle");
+		if (!ctrl) return;
+#if 0
+		std::cout << "=======================ANIMATION DEBUG [BEFORE APPLYING]=================================\n";
+		std::cout << "Entity ID: "								<< e.id()							<< "\n";
+		std::cout << "Entity Current Animation Name: "			<< ctrl->currentAnimationName_		<< "\n";
+		std::cout << "idleTex ID: "								<< idleTexData.texture->getID()		<< "\n";
+		std::cout << "idleTexSheet Width: "						<< idleTexData.texture->getWidth()  << "\n";
+		std::cout << "idleTexSheet Height: "					<< idleTexData.texture->getHeight() << "\n";
+
+		// HERE I NEED TO SET THE THING TO DRAW PROPERLY.
+		idleTexData.frameWidth	= 96;
+		idleTexData.frameHeight = 96;
+
+		std::cout << "idleTexData Frame Width: "				<< idleTexData.frameWidth			<< "\n";
+		std::cout << "idleTexData Frame Height: "				<< idleTexData.frameHeight			<< "\n";
+
+		std::cout << "=======================ANIMATION DEBUG [DURING APPLY]=================================\n";
+#endif
+
+		Animation::EnoAnimation idleAnim = Animation::createAnimationFromTexture(idleTexData);
+
+		std::cout << "Entity Current Animation State: "          << ctrl->currentAnimationName_		<< "\n";
+		std::cout << "idleAnimation current frame: "			<<  idleAnim.getCurrentFrameIndex()  << "\n";
+
+		idleAnim.setLooping(true);
+		ctrl->addAnimation("idle", idleAnim);
+		ctrl->setAnimation("idle");
 	}
 
 	ImGui::EndChild();
