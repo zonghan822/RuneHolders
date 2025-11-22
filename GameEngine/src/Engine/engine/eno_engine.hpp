@@ -39,6 +39,14 @@
 #include <algorithm>
 #include <memory>
 
+#if defined(ENGINE_BUILD_DLL)
+	#define ENGINE_API __declspec(dllexport)
+# elif defined(ENGINE_USE_DLL)
+	#define ENGINE_API __declspec(dllimport)
+#else
+	#define ENGINE_API
+#endif
+
 namespace Engine
 {
 	/*============================================================================================
@@ -49,7 +57,7 @@ namespace Engine
 	*			graphics, audio, input, ECS, and resource management. It provides the main game loop
 	*			and exposes interfaces for game code to interact with engine subsystems.
 	*//*========================================================================================*/
-	class EnoEngine
+	class ENGINE_API EnoEngine
 	{
 	public:
 		/*============================================================================================
@@ -144,12 +152,6 @@ namespace Engine
 		AI::AIManager& getAIManager() { return aiMng_; }
 
 		/*============================================================================================
-		* \brief		Gets the AI Manager for AI operations (State Manager)
-		* \return		Reference to the AIManager instance
-		*//*========================================================================================*/
-		Bridge::EnoBridge& getBridge() { return bridgeInst_; }
-
-		/*============================================================================================
 		* \brief		Gets the time elapsed since the last frame
 		* \return		Delta time in seconds
 		*//*========================================================================================*/
@@ -217,9 +219,6 @@ namespace Engine
 		AI::AIManager aiMng_{ bus_ };
 		std::unique_ptr<Physics::PhysicsSystem> physicsSys_;
 		std::unique_ptr<Collision::CollisionSystem> collisionSys_;
-
-		// Scripting bridge
-		Bridge::EnoBridge bridgeInst_{ inputMng_ };
 
 		// Game state
 		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)

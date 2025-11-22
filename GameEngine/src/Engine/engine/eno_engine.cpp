@@ -27,6 +27,7 @@ namespace Engine
 		graphicsMng_.initialize(window_);
 		audioMng_.init();
 
+		Bridge::Bridge_Init(this);
 		setupResourceLoading();
 	}
 

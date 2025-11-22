@@ -208,7 +208,7 @@ void GameApplication::setupGameMath() {
 	// No need to initialize them here anymore
 
 	// Load player config
-	playerConfig_.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
+	playerConfig_.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
 	std::cout << "[GameLogic] Player configg loaded" << std::endl;
 }
 

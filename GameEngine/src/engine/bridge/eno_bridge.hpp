@@ -1,28 +1,26 @@
 #pragma once
 
 // Input
-#include "../input/eno_input.hpp"
+#include "../engine/eno_engine.hpp"
 
+#if defined(ENGINE_BUILD_DLL)
+    #define ENGINE_API __declspec(dllexport)
+# elif defined(ENGINE_USE_DLL)
+    #define ENGINE_API __declspec(dllimport)
+#else
+    #define ENGINE_API
+#endif
 
-namespace Bridge
-{
-    // Instead of a raw pointer, expose a setter/getter
-    void setBridge(class EnoBridge* bridge);
-    class EnoBridge* getBridge();
+namespace Bridge {
 
-    class EnoBridge
-    {
-    public:
-        EnoBridge(Input::EnoInputManager& input)
-            : input_{ input }
-        {
-            setBridge(this);
-        }
+    extern "C" {
+        ENGINE_API void __stdcall Bridge_Init(void* enginePtr);
 
-        Input::EnoInputManager& input() const { return input_; }
-
-    private:
-        Input::EnoInputManager& input_;
-    };
+        // ================= Input =================
+        ENGINE_API bool __stdcall IsKeyPressed(int key);
+        ENGINE_API bool __stdcall IsKeyHeld(int key);
+        ENGINE_API bool __stdcall IsKeyReleased(int key);
+        ENGINE_API int  __stdcall ModsApplied();
+    }
 }
 

@@ -287,12 +287,10 @@ macro(set_dotnet)
 endmacro()
 
 function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
-    file(MAKE_DIRECTORY ${OUTPUT_DIR})
+    set(CONFIG_OUTPUT_DIR "${OUTPUT_DIR}/$<CONFIG>")
 
     # Gather all C# source files in the project directory
-    file(GLOB_RECURSE CS_FILES
-        "${CS_PROJECT_PATH}/*.cs"
-    )
+    file(GLOB_RECURSE CS_FILES "${CS_PROJECT_PATH}/*.cs")
 
     # Group files in IDE (so they appear in Visual Studio)
     source_group(TREE ${CS_PROJECT_PATH} FILES ${CS_FILES})
@@ -301,20 +299,24 @@ function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
     # Publish the C# project
     # =========================================================
     add_custom_command(
-        OUTPUT ${OUTPUT_DIR}/${TARGET_NAME}.dll
+        OUTPUT ${CONFIG_OUTPUT_DIR}/${TARGET_NAME}.dll
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CONFIG_OUTPUT_DIR}
         COMMAND ${DOTNET_CMD} publish ${CS_PROJECT_PATH}
             -f net8.0
-            -c Release
+            -c $<CONFIG>
             --self-contained false
-            --output ${OUTPUT_DIR}
+            --output ${CONFIG_OUTPUT_DIR}
         DEPENDS
             ${CS_FILES}
             ${CS_PROJECT_PATH}/GameScripts.csproj
             ${CS_PROJECT_PATH}/obj/project.assets.json
-        COMMENT "Publishing ${TARGET_NAME} C# project with dependencies..."
+        COMMENT "Publishing ${TARGET_NAME} for $<CONFIG>..."
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
-    add_custom_target(${TARGET_NAME}_cs ALL DEPENDS ${OUTPUT_DIR}/${TARGET_NAME}.dll)
+    # Target depends on correct CONFIG output
+    add_custom_target(${TARGET_NAME}_cs
+        DEPENDS ${CONFIG_OUTPUT_DIR}/${TARGET_NAME}.dll
+    )
 endfunction()
 
 
@@ -331,4 +333,12 @@ function(prioritize_includes target_name)
     if(_incs)
         target_include_directories(${target_name} BEFORE INTERFACE ${_incs})
     endif()
+endfunction()
+
+function(_engine_copy_dll TARGET)
+    add_custom_command(TARGET ${TARGET} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:Engine_shared>"
+            "$<TARGET_FILE_DIR:${TARGET}>"
+    )
 endfunction()

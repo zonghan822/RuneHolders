@@ -121,16 +121,16 @@ namespace Eno
         // }
 
         // ============= Imported functions =============
-        [DllImport("Engine.dll")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool IsKeyReleased(KeyCode key);
 
-        [DllImport("Engine.dll")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool IsKeyPressed(KeyCode key);
 
-        [DllImport("Engine.dll")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool IsKeyHeld(KeyCode key);
 
-        [DllImport("Engine.dll")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern int ModsApplied();
     }
 

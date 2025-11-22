@@ -316,9 +316,6 @@ namespace Core
 
 	// Build the correct absolute or relative paths
 
-
-
-
 		// Use the std::wstring variables here, NOT the macros directly
 		callScript<ScriptingDelegateInfo>(
 			L"Eno.ScriptSetup, GameScripts",
@@ -331,9 +328,6 @@ namespace Core
 	// Hot reload
 	void EnoCoreHost::hotReload()
 	{
-
-
-
 		callScript<ScriptingDelegateInfo>(
 			L"Eno.ScriptSetup, GameScripts",
 			L"Reload", 

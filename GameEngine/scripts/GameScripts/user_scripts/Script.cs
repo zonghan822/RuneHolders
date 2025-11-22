@@ -16,7 +16,8 @@ namespace Eno
 
         public float speed = 5.10f;
 
-        private static InputAction? ia1;
+        //private static InputAction? ia1;
+        private static InputAction ia1 = null;
         private static InputAction? ia2;
 
         public static void Begin()
@@ -40,6 +41,7 @@ namespace Eno
 
         public static void Update()
         {
+            Console.WriteLine("Player Controller Update...");
             // Triggers when releasing A
             if (Input.IsKeyReleased(KeyCode.A))
             {
@@ -47,9 +49,9 @@ namespace Eno
             }
 
             // Triggers when pressing B
-            if (Input.IsKeyPressed(KeyCode.Num1))
+            if (Input.IsKeyPressed(KeyCode.A))
             {
-                Console.WriteLine("Pressed 1!");
+                Console.WriteLine("Pressed A!");
             }
 
             // Triggers when holding C

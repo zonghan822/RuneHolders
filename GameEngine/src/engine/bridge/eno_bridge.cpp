@@ -1,59 +1,57 @@
 #include "eno_bridge.hpp"
 
+static Engine::EnoEngine* gEngine = nullptr;
 
 namespace Bridge
 {
-    static EnoBridge* gBridge = nullptr;
-
-    void setBridge(EnoBridge* bridge)
-    {
-        gBridge = bridge;
-    }
-
-    EnoBridge* getBridge()
-    {
-        return gBridge;
-    }
-
-    // ================= Input =================
-
-    extern "C" __declspec(dllexport)
-        bool __stdcall IsKeyReleased(int key)
-    {
-        if (!gBridge) {
-            std::cerr << "Input called too early!" << std::endl;
-            return false;
+    extern "C" {
+        ENGINE_API void __stdcall Bridge_Init(void* enginePtr)
+        {
+            gEngine = reinterpret_cast<Engine::EnoEngine*>(enginePtr);
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return;
+            }
         }
-        return gBridge->input().isKeyUp(key);
-    }
 
-    extern "C" __declspec(dllexport)
-        bool __stdcall IsKeyPressed(int key)
-    {
-        if (!gBridge) {
-            std::cerr << "Input called too early!" << std::endl;
-            return false;
+        ENGINE_API bool __stdcall IsKeyPressed(int key)
+        {
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return false;
+            }
+            auto input = gEngine->getInputManager();
+            return input.isKeyDown(key);
         }
-        return gBridge->input().isKeyDown(key);
-    }
 
-    extern "C" __declspec(dllexport)
-        bool __stdcall IsKeyHeld(int key)
-    {
-        if (!gBridge) {
-            std::cerr << "Input called too early!" << std::endl;
-            return false;
+        ENGINE_API bool __stdcall IsKeyHeld(int key)
+        {
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return false;
+            }
+            auto input = gEngine->getInputManager();
+            return input.isKeyPressed(key);
         }
-        return gBridge->input().isKeyPressed(key);
-    }
 
-    extern "C" __declspec(dllexport)
-        int __stdcall ModsApplied()
-    {
-        if (!gBridge) {
-            std::cerr << "Input called too early!" << std::endl;
-            return false;
+        ENGINE_API bool __stdcall IsKeyReleased(int key)
+        {
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return false;
+            }
+            auto input = gEngine->getInputManager();
+            return input.isKeyUp(key);
         }
-        return gBridge->input().currentMods();
+
+        ENGINE_API int __stdcall ModsApplied()
+        {
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return 0;
+            }
+            auto input = gEngine->getInputManager();
+            return input.currentMods();
+        }
     }
 }
