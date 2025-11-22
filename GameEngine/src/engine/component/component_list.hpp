@@ -23,6 +23,7 @@
 	X(AIComponent) \
 	X(ButtonComponent) \
 	X(AudioComponent) \
+	X(PrefabInstanceComponent) \
 
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
