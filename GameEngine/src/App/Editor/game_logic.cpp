@@ -405,7 +405,8 @@ void GameApplication::updateGameLogic() {
 	loadEntityTextures();
 
 	updateEntities();
-	drawShapes();
+	// THERE ARE 2 DRAWCALLS. if want to use drawshapes pls remove bottom part of drawcalls. Regards, YunQi
+	//drawShapes();
 	drawPlayerAndIndicator();
 	graphics_.flush();
 	drawText(renderSize);
@@ -1207,8 +1208,8 @@ void GameApplication::drawShapes() {
 					//	renderInfo.color,
 					//	rotation
 					//);
-					std::cout << "Entity being drawn: " << entity.get<ECSComponents::NameComponent>(entityManager).name << "\n";
-					std::cout << "Entities UV start X and Y: " << uvStart.x << " " << uvStart.y << "|| UV end X and Y: " << uvEnd.x << " " << uvEnd.y << "\n";
+					//std::cout << "Entity being drawn: " << entity.get<ECSComponents::NameComponent>(entityManager).name << "\n";
+					//std::cout << "Entities UV start X and Y: " << uvStart.x << " " << uvStart.y << "|| UV end X and Y: " << uvEnd.x << " " << uvEnd.y << "\n";
 
 					//std::cout << "Texture Dimensions: "
 					//	<< renderInfo.texture->getWidth() << " x "
