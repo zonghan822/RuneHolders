@@ -15,6 +15,7 @@
 #include "archetype_presets.hpp"
 
 #include "../event/event_bus.hpp"
+#include "component_events.hpp"
 
 // Math
 #include "../math/math.hpp"
@@ -116,6 +117,10 @@ namespace ECS
 				values,
 				std::index_sequence_for<Components...>{});
 
+			(bus_.publish(ComponentAdded{
+				Entity{curID},
+				std::type_index(typeid(Components))
+			}), ...);
 
 			spawnHistory.push_back(curID);
 			lastSpawnedID = curID;
@@ -157,6 +162,11 @@ namespace ECS
 				openChunkIndex,
 				entIndex,
 				std::index_sequence_for<Components...>{});
+
+			(bus_.publish(ComponentAdded{
+				Entity{curID},
+				std::type_index(typeid(Components))
+			}), ...);
 
 			spawnHistory.push_back(curID);
 			lastSpawnedID = curID;
@@ -303,6 +313,10 @@ namespace ECS
 
 			// Acquire destroyed entity id
 			destroyedEntityIDs_.push_back(entityID);
+
+			bus_.publish(EntityDestroyed{
+				ECS::Entity{entityID}
+			});
 		}
 
 		// Saving entity data in binary
@@ -765,6 +779,10 @@ namespace ECS
 					auto values = std::forward_as_tuple(val...);
 					addImpl<Components...>(entMng, values, std::index_sequence_for<Components...>{});
 				}
+				(entMng.bus_.publish(ComponentAdded{
+					*this,
+					std::type_index(typeid(Components))
+				}), ...);
 			}
 		}
 
@@ -815,6 +833,11 @@ namespace ECS
 
 				// Change entity archetype
 				entMng.shift(id_, remainingTypes, remainingSizes);
+
+				(entMng.bus_.publish(ComponentRemoved{
+					*this,
+					std::type_index(typeid(Components))
+				}), ...);
 			}
 			else
 			{

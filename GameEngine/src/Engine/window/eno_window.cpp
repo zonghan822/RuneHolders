@@ -18,7 +18,6 @@ namespace Window
 {
 	static std::vector<std::string> g_droppedFiles;
 
-
 	EnoWindow::EnoWindow(Event::EnoEventBus& bus) : bus_{ bus } { /*empty by design*/ }
 
 	EnoWindow::~EnoWindow() { shutdown(); }
@@ -105,7 +104,6 @@ namespace Window
 		// Default swap interval 1 (vsync on)
 		glfwSwapInterval(1);
 	}
-
 
 	std::vector<std::string>& EnoWindow::GetDroppedFiles() { return g_droppedFiles; }
 

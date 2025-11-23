@@ -14,9 +14,6 @@
 #include "imGui.hpp"
 #include "math/math.hpp"
 
-using Clock = std::chrono::high_resolution_clock;
-//throw std::runtime_error("error logging");
-
 float scaleSize = 1.0f;
 float rotationRadians = 0.f;
 
@@ -54,12 +51,6 @@ void GameApplication::initialize() {
 
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
-
-	pathfinder_ = std::make_unique<AI::PathfindingSystem>(
-		gameFramebuffer_->getWidth(),
-		gameFramebuffer_->getHeight(),
-		true
-	);
 
 	// Center editor camera on the middle of the game world initially
 	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
@@ -299,8 +290,6 @@ void GameApplication::updateGameLogic() {
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 
 	// =========================
-	
-	pathfinder_->update(entityManager, 1.f);
 	playerSystem_->Update(entityManager, inputMng, deltaTime);
 
 	// Update engine playing state based on editor state

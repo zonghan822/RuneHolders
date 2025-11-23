@@ -1838,16 +1838,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		if (ImGui::Button("Add AI")) {
 			// Add a default AI component
-			auto& aiMng = engine_.getAIManager();
-			auto& pathfinder = g_game->getPathfinder();
 			entity.add<ECSComponents::AIComponent>(entMng);
-			aiMng.registerEntity(entity, entMng);
-
-			// Setup FSM
-			AI::StateMachine& sm = aiMng.getStateMachine(entity);
-			sm.addState("Idle", std::make_unique<AI::IdleState>(aiMng, pathfinder));
-			sm.addState("Chase", std::make_unique<AI::ChaseState>(pathfinder, aiMng));
-			sm.changeState("Idle", entity, entMng);
 		}
 	}
 	

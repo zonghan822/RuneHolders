@@ -87,9 +87,6 @@ private:
     // Scene Tree (note: must be initialized after engine_ is initialized)
     std::unique_ptr<Editor::EnoSceneTree> sceneTree_;
 
-    // Pathfinding system
-    std::unique_ptr<AI::PathfindingSystem> pathfinder_;
-
 public:
     // Constructors
     GameApplication() = default;
@@ -127,8 +124,6 @@ public:
     float getEditorCameraX() const { return editorCameraX_; }
     float getEditorCameraY() const { return editorCameraY_; }
 
-    // Get pathfinding system
-    AI::PathfindingSystem& getPathfinder() { return *pathfinder_; }
     // Camera panning for room transitions
     void startCameraPan(float targetY, float duration = 1.0f);
     bool isCameraPanning() const { return isPanning_; }

@@ -26,6 +26,9 @@
 // Graphics
 #include "../graphics/graphics.hpp"
 
+// Tile Map
+#include "../tilemap/tilemap.hpp"
+
 // stds
 #include <iostream>
 #include <filesystem>
@@ -68,9 +71,6 @@ namespace Resources
 		// Fonts
 		static constexpr std::string_view fontPath_ = ASSETS_DIR_PATH "fonts/";
 		Font::FontManager fontManager_;
-
-		// ECS Entities
-		static constexpr std::string_view entityPath_ = ASSETS_DIR_PATH "saves/ecs_save_data.txt";
 
 		// Event Bus
 		Event::EnoEventBus& bus_;
@@ -159,12 +159,6 @@ namespace Resources
 		* \return	String reference to the font path.
 		*//*========================================================================================*/
 		const std::string& getFontPath() const;
-
-		/*============================================================================================
-		* \brief	Get the ECS save data file path.
-		* \return	String reference to the ECS save path.
-		*//*========================================================================================*/
-		const std::string& getECSSavePath() const;
 
 		/*============================================================================================
 		* \brief	Load sound files (WAV/MP3) into FMOD.

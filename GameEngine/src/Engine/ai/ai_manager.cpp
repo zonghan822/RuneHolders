@@ -2,68 +2,77 @@
 
 namespace AI {
 
-    // -----------------------------
-    // Constructor
-    // -----------------------------
-    AIManager::AIManager(Event::EnoEventBus& bus) : bus_{ bus } { /*empty by design*/ }
+    AIManager::AIManager(Event::EnoEventBus& bus, PathfindingSystem& pathfinder)
+        : bus_(bus), pathfinder_(pathfinder)
+    { 
+        // Auto-register when AIComponent added
+        bus_.subscribe<ECS::ComponentAdded>(
+            [this](const ECS::ComponentAdded& ev) {
+                if (ev.type == std::type_index(typeid(ECSComponents::AIComponent)))
+                    this->registerEntity(ev.entity);
+            }
+        );
 
+        // Auto-unregister when AIComponent removed
+        bus_.subscribe<ECS::ComponentRemoved>(
+            [this](const ECS::ComponentRemoved& ev) {
+                if (ev.type == std::type_index(typeid(ECSComponents::AIComponent)))
+                    this->unregisterEntity(ev.entity);
+            }
+        );
 
-    // -----------------------------
-    // Main Update Loop
-    // -----------------------------
+        // Auto-clean when entity destroyed
+        bus_.subscribe<ECS::EntityDestroyed>(
+            [this](const ECS::EntityDestroyed& ev) {
+                this->unregisterEntity(ev.entity);
+            }
+        );
+    }
+
     void AIManager::update(ECS::EntityManager& entMng, float dt) {
-        // Find all entities that have AIComponent
-        std::vector<ECS::Entity> aiEntities = entMng.findEntity<ECSComponents::AIComponent>();
+        // Iterate every entity with AIComponent
+        auto entities = entMng.findEntity<ECSComponents::AIComponent>();
 
-        for (ECS::Entity& entity : aiEntities) {
+        for (auto& entity : entities) {
             auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
-            AI::StateMachine& sm = getStateMachine(entity);
-            sm.update(entity, entMng, dt);
+            auto& machine = getStateMachine(entity);
 
-            // Handle transition requests
-            if (std::strcmp(ai.nextState, ai.currentState) != 0){
-                sm.changeState(ai.nextState, entity, entMng);
+            machine.update(entity, entMng, dt);
+
+            if (std::strcmp(ai.nextState, ai.currentState) != 0) {
+                machine.changeState(ai.nextState, entity, entMng);
             }
         }
     }
 
-    // ----------------------------------------
-    // Register a new entity with AIComponent
-    // ----------------------------------------
-    void AIManager::registerEntity(ECS::Entity& entity, ECS::EntityManager& entMng) {
+    void AIManager::registerEntity(const ECS::Entity& entity) {
         uint32_t id = entity.id();
-        if (stateMachines_.contains(id))
-            return; // already registered
 
-        auto sm = std::make_unique<StateMachine>();
-        stateMachines_[id] = std::move(sm);
+        // Create StateMachine if not exists
+        if (!stateMachines_.contains(id))
+            stateMachines_[id] = std::make_unique<StateMachine>();
+
+        // Create PathAgent if not exists
+        if (!pathAgents_.contains(id))
+            pathAgents_[id] = std::make_unique<AIPathAgent>(pathfinder_);
     }
 
-    // -----------------------------
-    // Unregister entity (cleanup)
-    // -----------------------------
-    void AIManager::unregisterEntity(ECS::Entity& entity, ECS::EntityManager& entMng) {
-        stateMachines_.erase(entity.id());
+    void AIManager::unregisterEntity(const ECS::Entity& entity) {
+        uint32_t id = entity.id();
+        stateMachines_.erase(id);
+        pathAgents_.erase(id);
     }
 
-    // ------------------------------------------
-    // Get StateMachine for a specific entity
-    // ------------------------------------------
-    AI::StateMachine& AIManager::getStateMachine(ECS::Entity& entity) {
-        auto it = stateMachines_.find(entity.id());
-        if (it == stateMachines_.end())
-            throw std::runtime_error("Entity has no registered AI::StateMachine");
-        return *it->second;
+    StateMachine& AIManager::getStateMachine(ECS::Entity& entity) {
+        return *stateMachines_.at(entity.id());
     }
 
-    const AI::StateMachine& AIManager::getStateMachine(ECS::Entity& entity) const {
-        auto it = stateMachines_.find(entity.id());
-        if (it == stateMachines_.end())
-            throw std::runtime_error("Entity has no registered AI::StateMachine");
-        return *it->second;
+    AIPathAgent& AIManager::getPathAgent(ECS::Entity& entity) {
+        return *pathAgents_.at(entity.id());
     }
 
-    AI::Path& AIManager::getPath(ECS::Entity& entity) {
-        return paths_[entity.id()];
+    void AIManager::clearAll() {
+        stateMachines_.clear();
+        pathAgents_.clear();
     }
 }
