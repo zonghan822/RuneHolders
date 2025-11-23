@@ -1,21 +1,20 @@
 #pragma once
+#include <typeindex>
  
 namespace ECS {
 
-	class Entity;
-
 	struct ComponentAdded {
-		Entity entity;
+		uint32_t entityID;
 		std::type_index type;
 	};
 
 	struct ComponentRemoved {
-		Entity entity;
+		uint32_t entityID;
 		std::type_index type;
 	};
 
 	struct EntityDestroyed {
-		Entity entity;
+		uint32_t entityID;
 	};
 
 }

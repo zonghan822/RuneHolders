@@ -26,7 +26,7 @@ namespace Map {
     }
 
     uint32_t TileLayer::getTexture(int x, int y) const {
-        if (x < 0 || y < 0 || x >= width_ || y >= height_) return;
+        if (x < 0 || y < 0 || x >= width_ || y >= height_) return 0;
         return tiles_[y][x].tileID;
     }
 

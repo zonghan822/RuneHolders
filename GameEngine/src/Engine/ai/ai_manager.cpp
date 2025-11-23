@@ -9,7 +9,7 @@ namespace AI {
         bus_.subscribe<ECS::ComponentAdded>(
             [this](const ECS::ComponentAdded& ev) {
                 if (ev.type == std::type_index(typeid(ECSComponents::AIComponent)))
-                    this->registerEntity(ev.entity);
+                    this->registerEntity(ev.entityID);
             }
         );
 
@@ -17,14 +17,14 @@ namespace AI {
         bus_.subscribe<ECS::ComponentRemoved>(
             [this](const ECS::ComponentRemoved& ev) {
                 if (ev.type == std::type_index(typeid(ECSComponents::AIComponent)))
-                    this->unregisterEntity(ev.entity);
+                    this->unregisterEntity(ev.entityID);
             }
         );
 
         // Auto-clean when entity destroyed
         bus_.subscribe<ECS::EntityDestroyed>(
             [this](const ECS::EntityDestroyed& ev) {
-                this->unregisterEntity(ev.entity);
+                this->unregisterEntity(ev.entityID);
             }
         );
     }
@@ -45,8 +45,7 @@ namespace AI {
         }
     }
 
-    void AIManager::registerEntity(const ECS::Entity& entity) {
-        uint32_t id = entity.id();
+    void AIManager::registerEntity(uint32_t id) {
 
         // Create StateMachine if not exists
         if (!stateMachines_.contains(id))
@@ -57,8 +56,7 @@ namespace AI {
             pathAgents_[id] = std::make_unique<AIPathAgent>(pathfinder_);
     }
 
-    void AIManager::unregisterEntity(const ECS::Entity& entity) {
-        uint32_t id = entity.id();
+    void AIManager::unregisterEntity(uint32_t id) {
         stateMachines_.erase(id);
         pathAgents_.erase(id);
     }

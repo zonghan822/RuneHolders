@@ -26,8 +26,8 @@ namespace AI {
         void advance();
 
         // Full path access
-        std::vector<Math::eVec2<int>>& nodes() { return path_.nodes; }
-        const std::vector<Math::eVec2<int>>& nodes() const { return path_.nodes; }
+        std::vector<Math::eVec2<int>>& nodes();
+        const std::vector<Math::eVec2<int>>& nodes() const;
 
     private:
         PathfindingSystem& pf_;

@@ -73,6 +73,11 @@ namespace ECS
 		std::unordered_map<uint32_t, EntityLoc>& getMap() { return entityMap_; }
 
 		/*============================================================================================
+		* \brief			Event bus getter
+		*//*========================================================================================*/
+		Event::EnoEventBus& getEventBus() { return bus_; }
+
+		/*============================================================================================
 		* \brief			Create and return a new entity based on components passed in
 		* \param[in]		Values to initialize the components with
 		* \tparam[in]		Components to construct
@@ -118,7 +123,7 @@ namespace ECS
 				std::index_sequence_for<Components...>{});
 
 			(bus_.publish(ComponentAdded{
-				Entity{curID},
+				curID,
 				std::type_index(typeid(Components))
 			}), ...);
 
@@ -164,7 +169,7 @@ namespace ECS
 				std::index_sequence_for<Components...>{});
 
 			(bus_.publish(ComponentAdded{
-				Entity{curID},
+				curID,
 				std::type_index(typeid(Components))
 			}), ...);
 
@@ -315,7 +320,7 @@ namespace ECS
 			destroyedEntityIDs_.push_back(entityID);
 
 			bus_.publish(EntityDestroyed{
-				ECS::Entity{entityID}
+				entityID
 			});
 		}
 
@@ -779,8 +784,10 @@ namespace ECS
 					auto values = std::forward_as_tuple(val...);
 					addImpl<Components...>(entMng, values, std::index_sequence_for<Components...>{});
 				}
-				(entMng.bus_.publish(ComponentAdded{
-					*this,
+
+				auto& bus = entMng.getEventBus();
+				(bus.publish(ComponentAdded{
+					id_,
 					std::type_index(typeid(Components))
 				}), ...);
 			}
@@ -834,8 +841,9 @@ namespace ECS
 				// Change entity archetype
 				entMng.shift(id_, remainingTypes, remainingSizes);
 
-				(entMng.bus_.publish(ComponentRemoved{
-					*this,
+				auto& bus = entMng.getEventBus();
+				(bus.publish(ComponentRemoved{
+					id_,
 					std::type_index(typeid(Components))
 				}), ...);
 			}
