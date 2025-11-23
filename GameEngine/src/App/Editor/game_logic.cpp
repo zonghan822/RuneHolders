@@ -547,12 +547,44 @@ void GameApplication::updateGameLogic() {
 							float topLeftX = screenX - halfW;
 							float topLeftY = screenY - halfH;
 
-							engine_.getGraphicsManager().drawTexturedQuad(
-								Math::eVec2<float>{topLeftX, topLeftY},
-								Math::eVec2<float>{scaledWidth, scaledHeight},
-								renderInfo.texture,
-								renderInfo.color
-							);
+							// Check if entity has animation controller
+							if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager)) {
+								auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+								Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+
+								if (ctrl && ctrl->getCurrentAnimation()) {
+									// Update animation and get current frame
+									const Animation::AnimationFrame& frame = ctrl->update(static_cast<float>(deltaTime));
+
+									// Draw with animation UV coordinates
+									engine_.getGraphicsManager().drawTexturedQuadUV(
+										Math::eVec2<float>{topLeftX, topLeftY},
+										Math::eVec2<float>{scaledWidth, scaledHeight},
+										renderInfo.texture,
+										frame.uvStart,
+										frame.uvEnd,
+										renderInfo.color
+									);
+								}
+								else {
+									// No active animation, draw full texture
+									engine_.getGraphicsManager().drawTexturedQuad(
+										Math::eVec2<float>{topLeftX, topLeftY},
+										Math::eVec2<float>{scaledWidth, scaledHeight},
+										renderInfo.texture,
+										renderInfo.color
+									);
+								}
+							}
+							else {
+								// No animation controller, draw full texture
+								engine_.getGraphicsManager().drawTexturedQuad(
+									Math::eVec2<float>{topLeftX, topLeftY},
+									Math::eVec2<float>{scaledWidth, scaledHeight},
+									renderInfo.texture,
+									renderInfo.color
+								);
+							}
 						}
 						// Check shape type and draw accordingly
 						else if (strcmp(renderInfo.shape, "Circle") == 0) {
