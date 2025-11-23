@@ -1089,6 +1089,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
 			if (script)
 				sceneTree.attachScript(createdNode, std::move(script));
+			else
+				std::cerr << "No script is attached!" << std::endl;
 		}
 		if (g_game) g_game->markEntitiesDirty();
 	}

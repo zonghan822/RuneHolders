@@ -5,23 +5,23 @@ namespace Eno
 {
 	public class EnemyController : ScriptBase
     {
-        public static void Begin()
+        public void Begin()
         {
-
+            Console.WriteLine("Enemy controller Begin invoked!");
 		}
 
-        public static void Update()
+        public void Update()
         {
-
+            Console.WriteLine("Enemy controller Update invoked!");
 		}
 	
-		public static void _when_node1_started()
+		public void _when_node1_started()
         {
-
+            Console.WriteLine("Node1 has started with audio playing!");
         }
 	}
 
-    public class EnemyArm : ScriptBase
-    {
-    }
+    // public class EnemyArm : ScriptBase
+    // {
+    // }
 }

@@ -262,7 +262,7 @@ namespace Core
 	// Calling a delegate with input parameters
 	void EnoCoreHost::callDelegate(ScriptingDelegateInfo& params)
 	{
-		ScriptingMethod call{ nullptr };
+		ProxyMethod call{ nullptr };
 		int returnCode = params.fn_(
 			params.assemblyPath_.c_str(),
 			params.type_.c_str(),
@@ -381,83 +381,90 @@ namespace Core
 
 	void EnoCoreHost::defineBegin() {
 
+		begin_ = proxyCall(nullptr, L"Begin", nullptr);
 
-		for (auto& entry : std::filesystem::directory_iterator(SCRIPT_SRC_PATH)) {
-			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
-				continue;
+		//for (auto& entry : std::filesystem::directory_iterator(SCRIPT_SRC_PATH)) {
+		//	if (!entry.is_regular_file() || entry.path().extension() != ".cs")
+		//		continue;
 
-			// stores number of class names were returned.
-			int count{};
-			void* names = (cname())(entry.path().wstring().c_str(), &count);
+		//	// stores number of class names were returned.
+		//	int count{};
+		//	void* names = (cname())(entry.path().wstring().c_str(), &count);
 
-			//continue if there is no class names available
-			if (!names || count == 0)
-				continue;
+		//	//continue if there is no class names available
+		//	if (!names || count == 0)
+		//		continue;
 
-			// Cast and loop over each class name using double ptr 
-			wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
-
-
-			for (size_t i = 0; i < count; ++i) {
-
-				std::wstring fullName{ classNames[i] };
-				size_t dpos = fullName.find('.');
-
-				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
-				std::wstring fullTypeWithAsm = L"Eno." + className;
+		//	// Cast and loop over each class name using double ptr 
+		//	wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
 
 
-				begin_.push_back(std::make_pair(proxyCall(fullTypeWithAsm.c_str(), L"Begin"), std::make_pair(fullTypeWithAsm, L"Begin")));
+		//	for (size_t i = 0; i < count; ++i) {
+
+		//		std::wstring fullName{ classNames[i] };
+		//		size_t dpos = fullName.find('.');
+
+		//		std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
+		//		std::wstring fullTypeWithAsm = L"Eno." + className;
 
 
-				CoTaskMemFree(classNames[i]);
-			}
-			CoTaskMemFree(classNames);
-		}
+		//		begin_.push_back(std::make_pair(proxyCall(fullTypeWithAsm.c_str(), L"Begin"), std::make_pair(fullTypeWithAsm, L"Begin")));
 
+
+		//		CoTaskMemFree(classNames[i]);
+		//	}
+		//	CoTaskMemFree(classNames);
+		//}
 	}
 
+	// Handling script metadata uploading to the scripting end
+	void EnoCoreHost::defineSMD()
+	{
+		rpm_ = proxyCall(nullptr, lastID);
+	}
 
 	void EnoCoreHost::defineUpdate() {
 
-		for (auto& entry : std::filesystem::directory_iterator(SCRIPT_SRC_PATH)) {
-			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
-				continue;
+		update_ = proxyCall(nullptr, L"Update", nullptr);
 
-			// stores number of class names were returned.
-			int count{};
-			void* names = (cname())(entry.path().wstring().c_str(), &count);
+		//for (auto& entry : std::filesystem::directory_iterator(SCRIPT_SRC_PATH)) {
+		//	if (!entry.is_regular_file() || entry.path().extension() != ".cs")
+		//		continue;
 
-			//continue if there is no class names available
-			if (!names || count == 0)
-				continue;
+		//	// stores number of class names were returned.
+		//	int count{};
+		//	void* names = (cname())(entry.path().wstring().c_str(), &count);
 
-			// Cast and loop over each class name using double ptr 
-			wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
+		//	//continue if there is no class names available
+		//	if (!names || count == 0)
+		//		continue;
 
-
-			for (size_t i = 0; i < count; ++i) {
-
-				std::wstring fullName{ classNames[i] };
-				size_t dpos = fullName.find('.');
-
-				std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
-				std::wstring fullTypeWithAsm = L"Eno." + className;
-
-				//std::vector<std::pair<ProxyMethod, std::pair<const wchar_t*, const wchar_t*>>> begin_;
+		//	// Cast and loop over each class name using double ptr 
+		//	wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
 
 
-				update_.push_back(std::make_pair(proxyCall(fullTypeWithAsm.c_str(), L"Update"), std::make_pair(fullTypeWithAsm, L"Update")));
+		//	for (size_t i = 0; i < count; ++i) {
+
+		//		std::wstring fullName{ classNames[i] };
+		//		size_t dpos = fullName.find('.');
+
+		//		std::wstring className = (dpos != std::wstring::npos) ? fullName.substr(dpos + 1) : fullName;
+		//		std::wstring fullTypeWithAsm = L"Eno." + className;
+
+		//		//std::vector<std::pair<ProxyMethod, std::pair<const wchar_t*, const wchar_t*>>> begin_;
 
 
-				CoTaskMemFree(classNames[i]);
-			}
-			CoTaskMemFree(classNames);
-		}
+		//		update_.push_back(std::make_pair(proxyCall(fullTypeWithAsm.c_str(), L"Update"), std::make_pair(fullTypeWithAsm, L"Update")));
+
+
+		//		CoTaskMemFree(classNames[i]);
+		//	}
+		//	CoTaskMemFree(classNames);
+		//}
 	}
 
 
-	void EnoCoreHost::begin()
+	void EnoCoreHost::begin(const std::wstring& org, uint32_t id)
 	{
 		// Calls Begin method on scripts
 #if 0
@@ -504,18 +511,21 @@ namespace Core
 			CoTaskMemFree(classNames);
 		}
 #else
-		std::cout << "corehost begin run now\n" << "begin size: " << begin_.size();
-		for (const auto& Pairs : begin_) {
-			if (Pairs.first) {
-				Pairs.first(Pairs.second.first.c_str(), Pairs.second.second.c_str());
-			}
-		}
+		//std::cout << "corehost begin run now\n" << "begin size: " << begin_.size();
+		//for (const auto& Pairs : begin_) {
+		//	if (Pairs.first) {
+		//		Pairs.first(Pairs.second.first.c_str(), Pairs.second.second.c_str());
+		//	}
+		//}
+		std::cout << "calling begin" << std::endl;
+		if (begin_)
+			begin_(org.c_str(), L"Begin", id);
 
 #endif
 	}
 
 	// Handling Update on scripts
-	void EnoCoreHost::update()
+	void EnoCoreHost::update(const std::wstring& org, uint32_t id)
 	{
 #if 0
 		// Calls Update method on scripts
@@ -559,11 +569,13 @@ namespace Core
 			CoTaskMemFree(classNames);
 		}
 #else
-		for (const auto& Pairs : update_) {
-			if (Pairs.first) {
-				Pairs.first(Pairs.second.first.c_str(), Pairs.second.second.c_str());
-			}
-		}
+		//for (const auto& Pairs : update_) {
+		//	if (Pairs.first) {
+		//		Pairs.first(Pairs.second.first.c_str(), Pairs.second.second.c_str());
+		//	}
+		//}
+		if (update_)
+			update_(org.c_str(), L"Update", id);
 #endif
 	}
 	//All within cs
@@ -581,7 +593,12 @@ namespace Core
 // To have a queue system for the begin
 //
 
-
+	// Calling a delegate with input parameters
+	void EnoCoreHost::setMetaData(const std::wstring& org, uint32_t entityID)
+	{
+		if (rpm_)
+			rpm_(org.c_str(), entityID);
+	}
 
 // Handling state when frame has ended on the engine side
 	void EnoCoreHost::frameEnd()
@@ -638,6 +655,34 @@ namespace Core
 			methodName);
 	}
 
+	// Helper for registering each class instance
+	EnoCoreHost::RegisterInstanceProxyMethod EnoCoreHost::proxyCall(
+		const wchar_t* className,
+		uint32_t* id)
+	{
+		return defineProxyDelegate(
+			L"Eno.ProxyEntry, GameScripts",
+			L"RegisterInstance",
+			proxyDelegate_,
+			className,
+			id);
+	}
+
+	// Helper for using the instanced proxy call
+	EnoCoreHost::InstancedProxyMethod EnoCoreHost::proxyCall(
+		const wchar_t* className,
+		const wchar_t* methodName,
+		uint32_t* id)
+	{
+		return defineProxyDelegate(
+			L"Eno.ProxyEntry, GameScripts",
+			L"CallInstancedMethod",
+			proxyDelegate_,
+			className,
+			methodName,
+			id);
+	}
+
 	// Creates a special proxy delegate used to call other methods in C#
 	// Combines both the load and get delegate operations
 	EnoCoreHost::ProxyMethod EnoCoreHost::defineProxyDelegate(
@@ -667,7 +712,99 @@ namespace Core
 			className, callMethodName };
 
 		// Create the actual method delegate
-		ScriptingMethod call{ nullptr };
+		ProxyMethod call{ nullptr };
+		int returnCode = params.fn_(
+			params.assemblyPath_.c_str(),
+			params.type_.c_str(),
+			params.method_.c_str(),
+			UNMANAGEDCALLERSONLY_METHOD,
+			nullptr,
+			reinterpret_cast<void**>(&call)
+		);
+
+		if (returnCode || !call)
+		{
+			throw std::runtime_error("Could not define the proxy method to be used!");
+		}
+
+		return call;
+	}
+
+	// Creates a special proxy delegate used to call other methods in C#
+	// Combines both the load and get delegate operations
+	EnoCoreHost::InstancedProxyMethod EnoCoreHost::defineProxyDelegate(
+		const char_t* typeName, const char_t* methodName, void* d,
+		const wchar_t* className, const wchar_t* callMethodName, uint32_t* id)
+	{
+		auto load = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(d);
+
+		// Get path to managed assembly
+		std::filesystem::path asmPath = std::filesystem::absolute(asmDllPath);
+		if (!std::filesystem::exists(asmPath))
+		{
+			throw std::runtime_error("Managed assembly could not be found!");
+		}
+
+		// Set assembly path, 
+		//		type (namespace.class, assemblyName),
+		//		method to call
+		std::wstring assemblyPath = asmPath.wstring();
+
+		// Create Delegate Info
+		InstancedProxyDLGInfo params{
+			load,
+			std::wstring(assemblyPath),
+			std::wstring(typeName),
+			std::wstring(methodName),
+			className, callMethodName, id };
+
+		// Create the actual method delegate
+		InstancedProxyMethod call{ nullptr };
+		int returnCode = params.fn_(
+			params.assemblyPath_.c_str(),
+			params.type_.c_str(),
+			params.method_.c_str(),
+			UNMANAGEDCALLERSONLY_METHOD,
+			nullptr,
+			reinterpret_cast<void**>(&call)
+		);
+
+		if (returnCode || !call)
+		{
+			throw std::runtime_error("Could not define the proxy method to be used!");
+		}
+
+		return call;
+	}
+
+	EnoCoreHost::RegisterInstanceProxyMethod EnoCoreHost::defineProxyDelegate(
+		const char_t* typeName, const char_t* methodName, void* d,
+		const wchar_t* className, uint32_t* id)
+	{
+		auto load = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(d);
+
+		// Get path to managed assembly
+		std::filesystem::path asmPath = std::filesystem::absolute(asmDllPath);
+		if (!std::filesystem::exists(asmPath))
+		{
+			throw std::runtime_error("Managed assembly could not be found!");
+		}
+
+		// Set assembly path, 
+		//		type (namespace.class, assemblyName),
+		//		method to call
+		std::wstring assemblyPath = asmPath.wstring();
+
+		// Create Delegate Info
+		RegisterInstProxyDLGInfo params{
+			load,
+			std::wstring(assemblyPath),
+			std::wstring(typeName),
+			std::wstring(methodName),
+			className, id };
+
+		// Create the actual method delegate
+		RegisterInstanceProxyMethod call{ nullptr };
 		int returnCode = params.fn_(
 			params.assemblyPath_.c_str(),
 			params.type_.c_str(),

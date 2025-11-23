@@ -114,6 +114,7 @@ void GameApplication::setupScripting() {
 	engine_.getCoreHost().HRSetup();
 	engine_.getCoreHost().defineBegin();
 	engine_.getCoreHost().defineUpdate();
+	engine_.getCoreHost().defineSMD();
 }
 
 
@@ -811,10 +812,19 @@ void GameApplication::updateEntities() {
 				playAfterStop = false;
 			}
 
-
 			if (!hasBegun)
 			{
-				coreHost.begin();
+				for (const auto& node : sceneTree_->getAllNodes())
+				{
+					if (node->script_)
+					{
+						for (const auto& org : node->script_->origin())
+						{
+							std::wcout << "origin of call: " << org << std::endl;
+							coreHost.begin(org, node->sceneObjectID_);
+						}
+					}
+				}
 
 				//for (auto* node : sceneTree_->getAllNodes())
 				//{
@@ -850,7 +860,16 @@ void GameApplication::updateEntities() {
 			//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
 			//	coreHost.runScriptMethod(className, L"Update");
 			//}
-			coreHost.update();
+			for (const auto& node : sceneTree_->getAllNodes())
+			{
+				if (node->script_)
+				{
+					for (const auto& org : node->script_->origin())
+					{
+						coreHost.update(org, node->sceneObjectID_);
+					}
+				}
+			}
 			updateTestObject(engine_.getEntityManager(), engine_);
 
 			break;

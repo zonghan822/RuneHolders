@@ -28,8 +28,11 @@ namespace Script
 		wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
 		for (size_t i = 0; i < count; i++)
 		{
+			std::wstring org = classNames[i];
 			std::wstring cname = extrClassName(classNames[i]);
+
 			map(cname);
+			origin_.insert(org);
 
 			// Cleanup names after use
 			CoTaskMemFree(classNames[i]);
@@ -207,6 +210,8 @@ namespace Script
 	}
 
 	std::string EnoScript::path() { return wideToUtf8(path_); }
+	std::unordered_multimap<std::wstring, Field>& EnoScript::vars() { return vars_; }
+	std::unordered_set<std::wstring>& EnoScript::origin() { return origin_; }
 
 	// Helper for converting wide strings to standard utf-8
 	std::string EnoScript::wideToUtf8(const std::wstring& wstr)

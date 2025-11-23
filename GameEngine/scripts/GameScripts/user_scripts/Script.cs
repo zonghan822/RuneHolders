@@ -16,12 +16,13 @@ namespace Eno
 
         public float speed = 5.10f;
 
-        //private static InputAction? ia1;
-        private static InputAction ia1 = null;
+        private static InputAction? ia1;
         private static InputAction? ia2;
 
-        public static void Begin()
+        public void Begin()
         {
+            Console.WriteLine($"ID on script.cs: {this.ID}");
+
             // Creating a custom input
             ia1 = new InputAction("Jump")
                 .AddBinding(KeyCode.Space)                  // Jumps when Space is triggered
@@ -37,11 +38,14 @@ namespace Eno
 
             ia1.Enable();
             ia2.Enable();
+
+            Console.WriteLine($"End of begin method for entity: {this.ID}");
         }
 
-        public static void Update()
+        public void Update()
         {
-            Console.WriteLine("Player Controller Update...");
+            Console.WriteLine("Calling update!");
+
             // Triggers when releasing A
             if (Input.IsKeyReleased(KeyCode.A))
             {
@@ -49,15 +53,22 @@ namespace Eno
             }
 
             // Triggers when pressing B
-            if (Input.IsKeyPressed(KeyCode.A))
+            if (Input.IsKeyPressed(KeyCode.Num1))
             {
-                Console.WriteLine("Pressed A!");
+                Console.WriteLine("Pressed 1!");
             }
 
             // Triggers when holding C
             if (Input.IsKeyHeld(KeyCode.C))
             {
                 Console.WriteLine("Held C!");
+            }
+
+            // Testing if the right entity is affected
+            // by changing the audio volume the entity is on
+            if (Input.IsKeyPressed(KeyCode.V))
+            {
+                Console.WriteLine("Pressed V, volume should be modified on entity 1 now!");
             }
         }
 
@@ -75,9 +86,14 @@ namespace Eno
         {
             Console.WriteLine("Jump 2 right now!");
         }
+    
+		public void _when_node1_started()
+        {
+
+        }
     }
 
-    public class ArmController
+    public class ArmController : ScriptBase
     {
         [Reveal(90, 210)]
         public double velocity = 100.5;

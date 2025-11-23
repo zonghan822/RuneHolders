@@ -274,16 +274,33 @@ namespace Editor
 	void EnoSceneTree::attachScript(Node* node, std::unique_ptr<Script::EnoScript>&& script)
 	{
 		if (node)
+		{
 			node->script_ = std::move(script);
+
+			// Script attached will receive node metadata
+			// Retrieve each unique class stored for the script
+			for (const auto& org : node->script_->origin())
+			{
+				coreHost_.setMetaData(org, node->sceneObjectID_);
+			}
+		}
 	}
 
 	// Attach a script to the selected Node
 	void EnoSceneTree::attachScript(std::unique_ptr<Script::EnoScript>&& script)
 	{
 		if (selectedNode_)
+		{
 			selectedNode_->script_ = std::move(script);
-	}
 
+			// Script attached will receive node metadata
+			// Retrieve each unique class stored for the script
+			for (const auto& org : selectedNode_->script_->origin())
+			{
+				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_);
+			}
+		}
+	}
 	// Detach a script and release it
 	void EnoSceneTree::detachScript(std::unique_ptr<Script::EnoScript>&& script)
 	{
