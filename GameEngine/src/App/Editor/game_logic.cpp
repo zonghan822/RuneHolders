@@ -760,41 +760,19 @@ void GameApplication::updateEntities() {
 		entitiesDirty_ = false;
 	}
 
-	//
-	//auto& entMng = engine_.getEntityManager();
-	//auto& animRegistry = engine_.getAnimationRegistry();
-	//float dt = static_cast<float>(engine_.getDeltaTime());
-	//bool playing = (getEditorState() == Playing);
 
-	//// Iterate all entities that have animation
-	//for (auto entity : entMng.findEntity<ECSComponents::AnimationControllerComponent>()) {
+	// Update all entities with AnimationControllerComponent. Can use this to debug later to see if updating or not. 
+	for (auto& entity : cachedDrawableEntities_) {
+		if (entity.has<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager())) {
+			auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager());
+			Animation::AnimationController* ctrl =	engine_.getAnimationRegistry().get(animComp.controllerID);
 
-	//	if (!entity.has<ECSComponents::DrawInfoComponent>(entMng))
-	//		continue;
+			if (ctrl)
+				ctrl->update(engine_.getDeltaTime());
+		}
+		
 
-	//	auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entMng);
-	//	auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entMng);
-
-	//	Animation::AnimationController* ctrl = animRegistry.get(animComp.controllerID);
-	//	if (!ctrl) continue;
-
-	//	// Update animation only when game is running
-	//	if (playing)
-	//		ctrl->update(dt);
-
-	//	// Fetch current frame
-	//	const Animation::AnimationFrame& f = ctrl->getCurrentFrame();
-
-	//	renderInfo.texID = ctrl->getCurrentAnimation()->getCurrentFrameIndex();
-
-	//	if (!renderInfo.texture)
-	//		//renderInfo.texture = ctrl->getCurrentAnimation()->texture;
-	//		renderInfo.texture = ctrl->getCurrentAnimation();
-	//}
-
-
-
-	// Check if player is moving and switch animation accordingly
+	}
 
 	// Get player system from engine (no longer a global)
 	auto* playerSystem = engine_.getPlayerSystem();
@@ -1074,8 +1052,8 @@ void GameApplication::drawPlayerAndIndicator() {
 					if (currentTexture && currentTexture->isValid()) {
 
 						// calculate scaled dimensions (match the collider size)
-						float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
-						float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
+						float scaledWidth = (playerConfig_.spriteWidth * scaleSize); //48.0 for playerSpriteW
+						float scaledHeight = (playerConfig_.spriteHeight * scaleSize); //48.0 for playerspriteH
 
 						// convert center position to top-left for drawing
 						Math::eVec2<float> topLeft = {
@@ -1092,6 +1070,7 @@ void GameApplication::drawPlayerAndIndicator() {
 							Graphics::Color::White,
 							rotationRadians
 						);
+						std::cout << "Player   UV start X and Y: " << uvStart.x << " " << uvStart.y << "|| UV end X and Y: " << uvEnd.x << " " << uvEnd.y << "\n";
 					}
 					else {
 						// Fallback to colored rect if texture invalid
@@ -1138,6 +1117,7 @@ void GameApplication::drawShapes() {
 				// Get rendering info from DrawInfoComponent (size, color, etc.)
 				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 				auto& renderInfo = entity.get<drawInfo>(entityManager);
+				
 
 				// Apply scale to width and height
 				float scaledWidth = renderInfo.width * transform.scale.x;
@@ -1147,35 +1127,37 @@ void GameApplication::drawShapes() {
 				float rotation = transform.rot.x;
 
 				// Check if entity has a texture (sprite)
-				if (renderInfo.texture && renderInfo.texture->isValid()) {
-					// Draw textured sprite with animation and rotation
-					float topLeftX = transform.pos.x - (scaledWidth * 0.5f);
-					float topLeftY = transform.pos.y - (scaledHeight * 0.5f);
+				if (renderInfo.texture && renderInfo.texture->isValid())
+				{
 
-					// Calculate UV coordinates for spritesheet animation
-					// Protagonist-Walk-Sheet is 384x96 with 4 frames (96x96 each)
-					int frameWidth = 96;
-					int frameHeight = 96;
-					int sheetWidth = renderInfo.texture->getWidth();
-					int framesPerRow = sheetWidth / frameWidth;
-
-					int frameIndex = renderInfo.texID;
-					int frameX = (frameIndex % framesPerRow) * frameWidth;
-					int frameY = (frameIndex / framesPerRow) * frameHeight;
-
-					// Convert to UV coordinates (0.0 to 1.0)
-					Math::eVec2<float> uvStart{
-						static_cast<float>(frameX) / static_cast<float>(sheetWidth),
-						static_cast<float>(frameY) / static_cast<float>(renderInfo.texture->getHeight())
+					Math::eVec2<float> topLeft = {
+						transform.pos.x - (scaledWidth * 0.5f),
+						transform.pos.y - (scaledHeight * 0.5f)
 					};
-					Math::eVec2<float> uvEnd{
-						static_cast<float>(frameX + frameWidth) / static_cast<float>(sheetWidth),
-						static_cast<float>(frameY + frameHeight) / static_cast<float>(renderInfo.texture->getHeight())
-					};
+
+					// Default UVs (full texture)
+					Math::eVec2<float> uvStart{ 0.0f, 0.0f };
+					Math::eVec2<float> uvEnd{ 1.0f, 1.0f };
+
+
+					if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+					{
+						auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+						Animation::AnimationController* ctrl =
+							engine_.getAnimationRegistry().get(animComp.controllerID);
+
+						if (ctrl)
+						{
+							const auto& frame = ctrl->getCurrentFrame();
+							uvStart = frame.uvStart;
+							uvEnd   = frame.uvEnd;
+						}
+					}
+					//std::cout << "Middle Values: "    << topLeft.x << " || " << topLeft.y << "\n";
 
 					// Draw textured quad with UV coordinates, rotation and scale
 					graphics.drawTexturedQuadUV(
-						Math::eVec2<float>{topLeftX, topLeftY},
+						topLeft,
 						Math::eVec2<float>{scaledWidth, scaledHeight},
 						renderInfo.texture,
 						uvStart,
@@ -1183,6 +1165,26 @@ void GameApplication::drawShapes() {
 						renderInfo.color,
 						rotation
 					);
+					//IT IS SOMEHOW IGNORING THE FACT THAT I HAVE A DRAW UV OF 0.25??
+					//graphics.drawTexturedQuadUV(
+					//	topLeft,
+					//	Math::eVec2<float>{scaledWidth, scaledHeight},
+					//	renderInfo.texture,
+					//	{ 0,0 },
+					//	{ 0, 0.25 },
+					//	renderInfo.color,
+					//	rotation
+					//);
+					std::cout << "Entity being drawn: " << entity.get<ECSComponents::NameComponent>(entityManager).name << "\n";
+					std::cout << "Entities UV start X and Y: " << uvStart.x << " " << uvStart.y << "|| UV end X and Y: " << uvEnd.x << " " << uvEnd.y << "\n";
+
+					//std::cout << "Texture Dimensions: "
+					//	<< renderInfo.texture->getWidth() << " x "
+					//	<< renderInfo.texture->getHeight() << std::endl;
+					//std::cout << "Frame Dimensions: "
+					//	<< renderInfo.width << " x "
+					//	<< renderInfo.height << std::endl;
+
 				}
 				// Check shape type and draw accordingly
 				else if (strcmp(renderInfo.shape, "Circle") == 0) {
@@ -1230,9 +1232,9 @@ void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData)
 	if (!texData.texture) return;
 
 	playerTexture_ = texData.texture;
-	std::cout << "Applied texture: " << texData.texture->getWidth()
-		<< "x" << texData.texture->getHeight()
-		<< " | Frame: " << texData.frameWidth << "x" << texData.frameHeight << '\n';
+	//std::cout << "Applied texture: " << texData.texture->getWidth()
+	//	<< "x" << texData.texture->getHeight()
+	//	<< " | Frame: " << texData.frameWidth << "x" << texData.frameHeight << '\n';
 
 	// You could use texData.frameWidth/Height to rebuild the animation
 	auto playerIdleAnim = Animation::createSpriteSheetAnimation(

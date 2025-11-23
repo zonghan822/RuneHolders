@@ -93,6 +93,8 @@ namespace Animation
         size_t getFrameCount() const { return frames_.size(); }
         size_t getCurrentFrameIndex() const { return currentFrameIndex_; }
 
+        //yunqi
+        std::vector<AnimationFrame>& getFrames() { return frames_; };
     private:
         std::vector<AnimationFrame> frames_;
         size_t currentFrameIndex_;

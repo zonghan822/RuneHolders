@@ -2109,7 +2109,17 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	//================================= IDLE DRAG AND DROP ===================================
 	ImGui::Text("IDLE");
 	ImGui::BeginChild("IdleSlot", ImVec2(200, 200), true);
+	//CHECKPOINT
+	static Graphics::TextureData idleTextureData;
+	static int idleMode = 1;              // 0 = rows/cols, 1 = pixel size
+	static int idleRows = 1;
+	static int idleCols = 1;
+	static int idleFrameW = 96;
+	static int idleFrameH = 96;
 
+	ImGui::Columns(2, nullptr, false);
+
+	// ================== LEFT SIDE — PREVIEW ==================
 	if (!idleSelected.empty())
 	{
 		auto it = textures.find(idleSelected);
@@ -2145,48 +2155,120 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		}
 		ImGui::EndDragDropTarget();
 	}
+	ImGui::NextColumn();   // ---------------- MOVE TO RIGHT SIDE ----------------
 
 	ImGui::Text("Assigned: %s", idleSelected.empty() ? "(none)" : idleSelected.c_str());
 
+
+	// ================== RIGHT SIDE — ANIMATION SETTINGS ==================
+	if (!idleSelected.empty())
+	{
+		ImGui::Separator();
+		ImGui::Text("Animation Settings");
+
+		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
+		ImGui::Combo("Input Mode##Idle", &idleMode, modes, IM_ARRAYSIZE(modes));
+
+		auto it = textures.find(idleSelected);
+		if (it != textures.end())
+		{
+			auto tex = it->second;
+			int texW = tex->getWidth();
+			int texH = tex->getHeight();
+
+			if (idleMode == 0)
+			{
+				// ROWS / COLUMNS MODE
+				ImGui::InputInt("Rows", &idleRows);
+				ImGui::InputInt("Columns", &idleCols);
+
+				idleRows = std::max(1, idleRows);
+				idleCols = std::max(1, idleCols);
+
+				//idleFrameW = texW / idleCols;
+				//idleFrameH = texH / idleRows;
+
+				ImGui::Text("Frame Size: %d × %d", idleFrameW, idleFrameH);
+			}
+			else if (idleMode == 1)
+			{
+				// PIXEL MODE
+				ImGui::InputInt("Frame Width", &idleFrameW);
+				ImGui::InputInt("Frame Height", &idleFrameH);
+
+				idleFrameW = std::max(1, idleFrameW);
+				idleFrameH = std::max(1, idleFrameH);
+
+				//idleCols = texW / idleFrameW;
+				//idleRows = texH / idleFrameH;
+
+				ImGui::Text("Grid: %d rows × %d cols", idleRows, idleCols);
+			}
+
+			// WRITE VALUES INTO idleTexData NOW (safe for APPLY later)
+			idleTexData.frameWidth = idleFrameW;
+			idleTexData.frameHeight = idleFrameH;
+			idleTexData.rows = idleRows;
+			idleTexData.cols = idleCols;
+		}
+	}
+
+	ImGui::Columns(1);
+	ImGui::Spacing();
+
+	// ================== APPLY BUTTON ==================
+#if 1
 	if (ImGui::Button("APPLY IDLE"))
 	{
 		ECS::Entity e{ selectedEntityID };
 		if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) return;
+
 		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
 		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+		if (!ctrl) return;
 
-		drawComp.texture = idleTexData.texture;		
-		drawComp.color = Graphics::Color::White;
-		idleTexData.frameWidth = 96;
-		idleTexData.frameHeight = 96;
-		drawComp.width = idleTexData.frameWidth;
-		drawComp.height = idleTexData.frameHeight;
+		drawComp.texture = idleTexData.texture;
+		drawComp.color = Graphics::Color::White;   
+
+
 		drawComp.texID = 0;
 
-		if (!ctrl) return;
-#if 0
-		std::cout << "=======================ANIMATION DEBUG [BEFORE APPLYING]=================================\n";
-		std::cout << "Entity ID: "								<< e.id()							<< "\n";
-		std::cout << "Entity Current Animation Name: "			<< ctrl->currentAnimationName_		<< "\n";
-		std::cout << "idleTex ID: "								<< idleTexData.texture->getID()		<< "\n";
-		std::cout << "idleTexSheet Width: "						<< idleTexData.texture->getWidth()  << "\n";
-		std::cout << "idleTexSheet Height: "					<< idleTexData.texture->getHeight() << "\n";
+		//checkpoint
+		if (idleMode == 0)   // rows/cols mode
+		{
+			idleTexData.rows = std::max(1, idleRows);
+			idleTexData.cols = std::max(1, idleCols);
+			idleTexData.computeFrameSize();
+			//idleTexData.frameWidth = idleTexData.texture->getWidth() / idleCols;
+			//idleTexData.frameHeight = idleTexData.texture->getHeight() / idleRows;
+		}
+		else                 // pixel mode
+		{
+			idleTexData.rows = idleTexData.texture->getHeight() / std::max(1, idleFrameH);
+			idleTexData.cols = idleTexData.texture->getWidth()  / std::max(1, idleFrameW);
+			idleTexData.frameWidth = idleFrameW;
+			idleTexData.frameHeight = idleFrameH;
+		}
 
-		// HERE I NEED TO SET THE THING TO DRAW PROPERLY.
-		idleTexData.frameWidth	= 96;
-		idleTexData.frameHeight = 96;
 
-		std::cout << "idleTexData Frame Width: "				<< idleTexData.frameWidth			<< "\n";
-		std::cout << "idleTexData Frame Height: "				<< idleTexData.frameHeight			<< "\n";
+		// Create animation with explicit frame calculation
+		Animation::EnoAnimation idleAnim = Animation::createSpriteSheetAnimation(
+			idleTexData.frameWidth,
+			idleTexData.frameHeight,
+			idleTexData.texture->getWidth(),
+			idleTexData.texture->getHeight(),
+			0,                                  // start frame
+			idleTexData.rows * idleTexData.cols,// total frames
+			0.1f                                // duration per frame
+		);
 
-		std::cout << "=======================ANIMATION DEBUG [DURING APPLY]=================================\n";
-#endif
+		// Optional: Print out frame UV coordinates for debugging
+			const auto& frame = idleAnim.getCurrentFrame();
+			std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
+				<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
+		
 
-		Animation::EnoAnimation idleAnim = Animation::createAnimationFromTexture(idleTexData);
-
-		std::cout << "Entity Current Animation State: "          << ctrl->currentAnimationName_		<< "\n";
-		std::cout << "idleAnimation current frame: "			<<  idleAnim.getCurrentFrameIndex()  << "\n";
 
 		idleAnim.setLooping(true);
 		ctrl->addAnimation("idle", idleAnim);
@@ -2194,7 +2276,91 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	ImGui::EndChild();
+#else
+	if (ImGui::Button("APPLY IDLE"))
+	{
+		// Extensive debug checks
+		if (!idleTexData.texture) {
+			std::cout << "ERROR: Texture is null" << std::endl;
+			return;
+		}
 
+		auto& entMng = engine_.getEntityManager();
+
+
+		if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng)) {
+			std::cout << "ERROR: Missing AnimationControllerComponent" << std::endl;
+			return;
+		}
+
+		if (!entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
+			std::cout << "ERROR: Missing DrawInfoComponent" << std::endl;
+			return;
+		}
+
+		auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entMng);
+		auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entMng);
+
+
+		// Explicitly set cols and rows based on texture size
+		idleTexData.cols = idleTexData.texture->getWidth() / 96;  // Assuming 96px wide frames
+		idleTexData.rows = 1;  // Assuming single row
+
+		// Recalculate frame dimensions
+		idleTexData.frameWidth = 96;  // Hardcode or calculate precisely
+		idleTexData.frameHeight = idleTexData.texture->getHeight();
+
+		// Get the animation controller
+		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+		if (!ctrl) {
+			std::cout << "ERROR: Could not retrieve animation controller" << std::endl;
+			return;
+		}
+
+		// Update DrawInfoComponent with texture information
+		drawComp.texture = idleTexData.texture;
+		drawComp.width = idleTexData.frameWidth;   // Set frame width
+		drawComp.height = idleTexData.frameHeight; // Set frame height
+		drawComp.texID = 0;  // Explicitly set first frame
+
+		std::cout << "DrawInfo Texture: " << (drawComp.texture ? "Valid" : "Null") << std::endl;
+		std::cout << "DrawInfo Width: " << drawComp.width << std::endl;
+		std::cout << "DrawInfo Height: " << drawComp.height << std::endl;
+
+		// Create sprite sheet animation
+		Animation::EnoAnimation idleAnim = Animation::createSpriteSheetAnimation(
+			idleTexData.frameWidth,
+			idleTexData.frameHeight,
+			idleTexData.texture->getWidth(),
+			idleTexData.texture->getHeight(),
+			0,
+			idleTexData.cols,
+			0.1f
+		);
+
+		// Manually adjust UV coordinates 
+		for (size_t i = 0; i < idleAnim.getFrameCount(); ++i) {
+			float uvStartX = static_cast<float>(i * idleTexData.frameWidth) / idleTexData.texture->getWidth();
+			float uvEndX = static_cast<float>((i + 1) * idleTexData.frameWidth) / idleTexData.texture->getWidth();
+
+			idleAnim.getFrames()[i].uvStart = { uvStartX, 0.0f };
+			idleAnim.getFrames()[i].uvEnd = { uvEndX, 1.0f };
+
+			std::cout << "Frame " << i
+				<< " UV Start: (" << uvStartX << ", 0.0)"
+				<< " UV End: (" << uvEndX << ", 1.0)" << std::endl;
+		}
+
+		idleAnim.setLooping(true);
+
+		// Add and set the animation
+		ctrl->addAnimation("idle", idleAnim);
+		ctrl->setAnimation("idle");
+
+		std::cout << "Animation applied successfully" << std::endl;
+	}
+	ImGui::EndChild();
+#endif
 
 	//================================= WALK DRAG AND DROP ===================================
 	ImGui::Text("WALKING");
