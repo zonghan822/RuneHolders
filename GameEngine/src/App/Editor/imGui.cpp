@@ -2104,14 +2104,10 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-
-
-
-
 	//================================= IDLE ANIMATION ===================================
 	ImGui::Text("IDLE");
-	ImGui::BeginChild("IdleSlot", ImVec2(200, 200), true);
-	//CHECKPOINT
+
+
 	static Graphics::TextureData idleTextureData;
 	static int idleMode = 1;              // 0 = rows/cols, 1 = pixel size
 	static int idleRows = 1;
@@ -2119,7 +2115,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	static int idleFrameW = 96;
 	static int idleFrameH = 96;
 
-	ImGui::Columns(2, nullptr, false);
 
 	// LEFT SIDE PREVIEW
 	if (!idleSelected.empty())
@@ -2157,7 +2152,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		}
 		ImGui::EndDragDropTarget();
 	}
-	ImGui::NextColumn();   
 
 	ImGui::Text("Assigned: %s", idleSelected.empty() ? "(none)" : idleSelected.c_str());
 
@@ -2181,28 +2175,22 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			if (idleMode == 0)
 			{
 				// ROWS / COLUMNS MODE
-				ImGui::InputInt("Rows", &idleRows);
-				ImGui::InputInt("Columns", &idleCols);
+				ImGui::InputInt("Rows##Idle", &idleRows);
+				ImGui::InputInt("Columns##Idle", &idleCols);
 
 				idleRows = std::max(1, idleRows);
 				idleCols = std::max(1, idleCols);
-
-				//idleFrameW = texW / idleCols;
-				//idleFrameH = texH / idleRows;
 
 				ImGui::Text("Frame Size: %d × %d", idleFrameW, idleFrameH);
 			}
 			else if (idleMode == 1)
 			{
 				// PIXEL MODE
-				ImGui::InputInt("Frame Width", &idleFrameW);
-				ImGui::InputInt("Frame Height", &idleFrameH);
+				ImGui::InputInt("Frame Width##Idle", &idleFrameW);
+				ImGui::InputInt("Frame Height##Idle", &idleFrameH);
 
 				idleFrameW = std::max(1, idleFrameW);
 				idleFrameH = std::max(1, idleFrameH);
-
-				//idleCols = texW / idleFrameW;
-				//idleRows = texH / idleFrameH;
 
 				ImGui::Text("Grid: %d rows × %d cols", idleRows, idleCols);
 			}
@@ -2214,7 +2202,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		}
 	}
 
-	ImGui::Columns(1);
 	ImGui::Spacing();
 
 	// ================== APPLY BUTTON FOR IDLE ANIMATION ==================
@@ -2240,8 +2227,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			idleTexData.rows = std::max(1, idleRows);
 			idleTexData.cols = std::max(1, idleCols);
 			idleTexData.computeFrameSize();
-			//idleTexData.frameWidth = idleTexData.texture->getWidth() / idleCols;
-			//idleTexData.frameHeight = idleTexData.texture->getHeight() / idleRows;
 		}
 		else                 // pixel mode
 		{
@@ -2264,9 +2249,9 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		);
 
 		// Optional: Print out frame UV coordinates for debugging
-			const auto& frame = idleAnim.getCurrentFrame();
-			std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
-				<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
+			//const auto& frame = idleAnim.getCurrentFrame();
+			//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
+			//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
 		
 
 
@@ -2275,20 +2260,9 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ctrl->setAnimation("idle");
 	}
 
-	ImGui::EndChild();
-
-
-
-
-
-
-
-
-
 
 	//================================= WALKING ANIMATION ===================================
 	ImGui::Text("WALKING");
-	ImGui::BeginChild("WalkSlot", ImVec2(200, 200), true);
 
 	static Graphics::TextureData walkTextureData;
 	static int walkMode = 1;              // 0 = rows/cols, 1 = pixel size
@@ -2332,6 +2306,52 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	ImGui::Text("Assigned: %s", walkSelected.empty() ? "(none)" : walkSelected.c_str());
+
+	// RIGHT SIDE SETTINGS
+	if (!walkSelected.empty())
+	{
+		ImGui::Separator();
+		ImGui::Text("Animation Settings");
+
+		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
+		ImGui::Combo("Input Mode##walk", &walkMode, modes, IM_ARRAYSIZE(modes));
+
+		auto it = textures.find(walkSelected);
+		if (it != textures.end())
+		{
+			auto tex = it->second;
+			int texW = tex->getWidth();
+			int texH = tex->getHeight();
+
+			if (walkMode == 0)
+			{
+				// ROWS / COLUMNS MODE
+				ImGui::InputInt("Rows##Walk", &walkRows);
+				ImGui::InputInt("Columns##Walk", &walkCols);
+
+				walkRows = std::max(1, walkRows);
+				walkCols = std::max(1, walkCols);
+
+				ImGui::Text("Frame Size: %d × %d", walkFrameW, walkFrameH);
+			}
+			else if (walkMode == 1)
+			{
+				// PIXEL MODE
+				ImGui::InputInt("Frame Width##Walk", &walkFrameW);
+				ImGui::InputInt("Frame Height##Walk", &walkFrameH);
+
+				walkFrameW = std::max(1, walkFrameW);
+				walkFrameH = std::max(1, walkFrameH);
+
+				ImGui::Text("Grid: %d rows × %d cols", walkRows, walkCols);
+			}
+
+			walkTexData.frameWidth = walkFrameW;
+			walkTexData.frameHeight = walkFrameH;
+			walkTexData.rows = walkRows;
+			walkTexData.cols = walkCols;
+		}
+	}
 
 	//  ================== APPLY BUTTON FOR WALK ANIMATION ==================
 	if (ImGui::Button("APPLY WALK"))
@@ -2378,28 +2398,18 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		);
 
 		// Optional: Print out frame UV coordinates for debugging
-		const auto& frame = walkAnim.getCurrentFrame();
-		std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
-			<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
-
-
+		//const auto& frame = walkAnim.getCurrentFrame();
+		//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
+		//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
 
 		walkAnim.setLooping(true);
 		ctrl->addAnimation("walk", walkAnim);
 		ctrl->setAnimation("walk");
 	}
 
-	ImGui::EndChild();
-
-
-
-
-
-
 
 	//================================= ATTACK ANIMATION ===================================
 	ImGui::Text("ATTACK");
-	ImGui::BeginChild("AttackSlot", ImVec2(200, 200), true);
 
 	static Graphics::TextureData attackTextureData;
 	static int attackMode = 1;              // 0 = rows/cols, 1 = pixel size
@@ -2445,6 +2455,54 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	ImGui::Text("Assigned: %s", attackSelected.empty() ? "(none)" : attackSelected.c_str());
+
+	// RIGHT SIDE SETTINGS
+	if (!attackSelected.empty())
+	{
+		ImGui::Separator();
+		ImGui::Text("Animation Settings");
+
+		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
+		ImGui::Combo("Input Mode##attack", &attackMode, modes, IM_ARRAYSIZE(modes));
+
+		auto it = textures.find(attackSelected);
+		if (it != textures.end())
+		{
+			auto tex = it->second;
+			int texW = tex->getWidth();
+			int texH = tex->getHeight();
+
+			if (attackMode == 0)
+			{
+				// ROWS / COLUMNS MODE
+				ImGui::InputInt("Rows##Attack", &attackRows);
+				ImGui::InputInt("Columns##Attack", &attackCols);
+
+				attackRows = std::max(1, attackRows);
+				attackCols = std::max(1, attackCols);
+
+				ImGui::Text("Frame Size: %d × %d", attackFrameW, attackFrameH);
+			}
+			else if (attackMode == 1)
+			{
+				// PIXEL MODE
+				ImGui::InputInt("Frame Width##Attack", &attackFrameW);
+				ImGui::InputInt("Frame Height##Attack", &attackFrameH);
+
+				attackFrameW = std::max(1, attackFrameW);
+				attackFrameH = std::max(1, attackFrameH);
+
+				ImGui::Text("Grid: %d rows × %d cols", attackRows, attackCols);
+			}
+
+			attackTexData.frameWidth = attackFrameW;
+			attackTexData.frameHeight = attackFrameH;
+			attackTexData.rows = attackRows;
+			attackTexData.cols = attackCols;
+		}
+	}
+
+
 	if (ImGui::Button("APPLY ATTACK"))
 	{
 		ECS::Entity e{ selectedEntityID };
@@ -2489,22 +2547,14 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		);
 
 		// Optional: Print out frame UV coordinates for debugging
-		const auto& frame = attackAnim.getCurrentFrame();
-		std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
-			<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
-
-
-
+		//const auto& frame = attackAnim.getCurrentFrame();
+		//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
+		//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
 		attackAnim.setLooping(true);
 		ctrl->addAnimation("attack", attackAnim);
 		ctrl->setAnimation("attack");
 	}
-
-	ImGui::EndChild();
-
-
 	ImGui::Separator();
-	ImGui::Button("APPLY"); // does nothing yet
 	ImGui::End();
 }
 
