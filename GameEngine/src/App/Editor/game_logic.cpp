@@ -847,7 +847,10 @@ void GameApplication::updateEntities() {
 			//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
 			//	coreHost.runScriptMethod(className, L"Update");
 			//}
-			for (const auto& node : sceneTree_->getAllNodes())
+			
+			
+			//for (const auto& node : sceneTree_->getAllNodes())
+			for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
 			{
 				if (node->script_)
 				{
