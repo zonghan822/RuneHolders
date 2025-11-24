@@ -1796,11 +1796,48 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		// Display and edit collider dimensions based on type
 		if (collider.type == ECSComponents::ColliderType::CIRCLE) {
-			ImGui::DragFloat("Collider Radius", &collider.data.circle.radius, 0.5f, 1.0f, 200.0f);
+			if (ImGui::DragFloat("Radius", &collider.data.circle.radius, 0.5f, 1.0f, 200.0f)) {
+				if (g_game) g_game->markEntitiesDirty();
+			}
 		}
 		else if (collider.type == ECSComponents::ColliderType::RECTANGLE) {
-			ImGui::DragFloat("Collider Width", &collider.data.rectangle.width, 0.5f, 1.0f, 200.0f);
-			ImGui::DragFloat("Collider Height", &collider.data.rectangle.height, 0.5f, 1.0f, 200.0f);
+			if (ImGui::DragFloat("Width", &collider.data.rectangle.width, 0.5f, 1.0f, 500.0f)) {
+				if (g_game) g_game->markEntitiesDirty();
+			}
+			if (ImGui::DragFloat("Height", &collider.data.rectangle.height, 0.5f, 1.0f, 500.0f)) {
+				if (g_game) g_game->markEntitiesDirty();
+			}
+
+			// Show auto-calculated dimensions if entity has RenderComponent
+			if (entity.has<ECSComponents::RenderComponent>(entMng)) {
+				auto& render = entity.get<ECSComponents::RenderComponent>(entMng);
+				ImGui::TextDisabled("Auto : %.1f x %.1f", render.width, render.height);
+
+				if (ImGui::Button("Reset to Render Size")) {
+					collider.data.rectangle.width = render.width;
+					collider.data.rectangle.height = render.height;
+					if (g_game) g_game->markEntitiesDirty();
+				}
+			}
+		}
+
+		// Offset controls
+		ImGui::Spacing();
+		ImGui::Text("Offset:");
+		if (ImGui::DragFloat("X##offset", &collider.offset.x, 0.5f, -200.0f, 200.0f)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+		if (ImGui::DragFloat("Y##offset", &collider.offset.y, 0.5f, -200.0f, 200.0f)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		// Trigger and Active flags
+		ImGui::Spacing();
+		if (ImGui::Checkbox("Is Trigger", &collider.isTrigger)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+		if (ImGui::Checkbox("Is Active", &collider.isActive)) {
+			if (g_game) g_game->markEntitiesDirty();
 		}
 	}
 	else {
@@ -1809,9 +1846,20 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::TextDisabled("No collider attached");
 
 		if (ImGui::Button("Add Collider")) {
-			// Add a default circle collider
-			entity.add<ECSComponents::CollisionComponent>(entMng, ECSComponents::CollisionComponent(10.0f));
+			if (entity.has<ECSComponents::RenderComponent>(entMng)) {
+				auto& render = entity.get<ECSComponents::RenderComponent>(entMng);
+				auto collision = ECSComponents::CreateAABBFromRender(render);
+				entity.add<ECSComponents::CollisionComponent>(entMng, collision);
+			}
+			else {
+				entity.add<ECSComponents::CollisionComponent>(entMng, ECSComponents::CollisionComponent(10.0f));
+			}
 			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		if (entity.has<ECSComponents::RenderComponent>(entMng)) {
+			auto& render = entity.get<ECSComponents::RenderComponent>(entMng);
+			ImGui::TextDisabled("Will auto-size: %.1f x %.1f", render.width, render.height);
 		}
 	}
 

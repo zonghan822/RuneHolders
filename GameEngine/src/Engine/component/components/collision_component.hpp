@@ -279,4 +279,74 @@ namespace ECSComponents
         default:    return os << "Invalid collider type passed";
         }
     }
+    
+    /*============================================================================================
+    * \brief       Auto-calculate AABB collision bounds from RenderComponent dimensions
+    * \param[in]   RenderComponent const& render - Rendering component with width/height
+    * \param[in]   Math::eVec2<float> const& offset - Optional offset from entity center
+    * \param[in]   bool isTrigger - Whether this should be a trigger collider
+    * \return      CollisionComponent - Rectangle collider matching render dimensions
+    *===========================================================================================*/
+    inline CollisionComponent CreateAABBFromRender(
+        const struct RenderComponent& render,
+        const Math::eVec2<float>& offset = { 0.0f, 0.0f },
+        bool isTrigger = false
+    );
+
+    /*============================================================================================
+    * \brief       Auto-calculate scaled AABB collision bounds from RenderComponent + Transform
+    * \param[in]   RenderComponent const& render - Rendering component with width/height
+    * \param[in]   TransformComponent const& transform - Transform with scale values
+    * \param[in]   Math::eVec2<float> const& offset - Optional offset from entity center
+    * \param[in]   bool isTrigger - Whether this should be a trigger collider
+    * \return      CollisionComponent - Rectangle collider matching scaled render dimensions
+    *===========================================================================================*/
+    inline CollisionComponent CreateScaledAABBFromRender(
+        const struct RenderComponent& render,
+        const struct TransformComponent& transform,
+        const Math::eVec2<float>& offset = { 0.0f, 0.0f},
+        bool isTrigger = false
+    );
+
+} // namespace ECSComponents (close namespace temporarily)
+
+#include "drawInfo.hpp"
+#include "transform.hpp"
+
+namespace ECSComponents
+{
+    // Implementations
+
+    inline CollisionComponent CreateAABBFromRender(
+        const RenderComponent& render,
+        const Math::eVec2<float>& offset,
+        bool isTrigger
+    )
+    {
+        return CollisionComponent(
+            render.width,
+            render.height,
+            offset,
+            isTrigger
+        );
+    }
+
+    inline CollisionComponent CreateScaledAABBFromRender(
+        const RenderComponent& render,
+        const TransformComponent& transform,
+        const Math::eVec2<float>& offset,
+        bool isTrigger
+    )
+    {
+        float scaledWidth = render.width * transform.scale.x;
+        float scaledHeight = render.height * transform.scale.y;
+
+        return CollisionComponent(
+            scaledWidth,
+            scaledHeight,
+            offset,
+            isTrigger
+        );
+    }
+
 } // namespace ECSComponents
