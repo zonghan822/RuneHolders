@@ -38,13 +38,18 @@ namespace Eno
         }
 
         // Native-callable entry point for registering script instances
-        [UnmanagedCallersOnly(EntryPoint = "RegisterMethod")]
-        public static void RegisterInstance(IntPtr classNamePtr, uint entityID)
+        [UnmanagedCallersOnly(EntryPoint = "RegisterInstances")]
+        public static void InstanceRegistration(IntPtr classNamePtr, uint entityID, byte operation)
         {
             if (proxy == null) return;
 
+            bool op = operation != 0;
             string className = Marshal.PtrToStringUni(classNamePtr)!;
-            proxy.RegisterScriptInstance(className, entityID);
+            
+            if (op)
+                proxy.RegisterScriptInstance(className, entityID);
+            else
+                proxy.DeregisterScriptInstance(className, entityID);
         }
     }
 }

@@ -53,6 +53,19 @@ namespace Eno
             innerDict[className] = instance;
         }
 
+        // Removing script instance
+        public void DeregisterScriptInstance(string className, uint entityID)
+        {
+            if (scriptInstances.TryGetValue(entityID, out var innerDict))
+            {
+                innerDict.Remove(className);
+
+                // Remove the entity entry if it has no more scripts
+                if (innerDict.Count == 0)
+                    scriptInstances.Remove(entityID);
+            }
+        }
+
         // For static calling
         public void Call(string className, string methodName)
         {
