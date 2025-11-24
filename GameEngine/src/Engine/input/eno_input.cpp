@@ -81,6 +81,10 @@ namespace Input {
 		return (modsState_ & mod) != 0;
 	}
 
+	int EnoInputManager::currentMods() const {
+		return modsState_;
+	}
+
 	bool EnoInputManager::isKeyComboPressed(int key, int requiredMods) const {
 		return isKeyPressed(key) && (modsState_ & requiredMods) == requiredMods;
 	}

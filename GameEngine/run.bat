@@ -1,56 +1,67 @@
 @echo off
+SETLOCAL ENABLEDELAYEDEXPANSION
+
 REM ===============================================
-REM          Windows Build and Run Script
+REM        Windows Build and Run Script
 REM ===============================================
 
-if exist build\projects\App\Release\Editor.exe (
-    echo Application found...
+:CHOOSE_CONFIG
+echo ===============================================
+echo       Choose build configuration:
+echo ===============================================
+echo   1. Debug
+echo   2. Release
+echo ===============================================
+set /p userChoice="Enter choice (1 or 2): "
+
+if "%userChoice%"=="1" (
+    set CONFIG=Debug
+) else if "%userChoice%"=="2" (
+    set CONFIG=Release
+) else (
+    echo Invalid choice. Try again.
+    echo.
+    goto CHOOSE_CONFIG
+)
+
+echo.
+echo Selected configuration: %CONFIG%
+echo.
+
+REM Detect existing executable
+if exist build\projects\App\%CONFIG%\Editor.exe (
+    echo Application found for %CONFIG%
     cd build
 
 ) else (
-    echo No previous build found....
-    echo Proceed to build project...
-    echo.
-    echo ===============================================
-    echo           Build and Run RuneHolders
-    echo ===============================================
+    echo No existing %CONFIG% build found...
+    echo Proceeding to configure and build project...
     echo.
 
-    REM Check if CMake is available
+    REM ---------- CHECK CMAKE ----------
     cmake --version >nul 2>&1
     if %errorlevel% neq 0 (
         echo ERROR: CMake is not installed or not in PATH
-        echo Please install CMake from https://cmake.org/download/
         pause
         exit /b 1
     )
 
-    REM Check if Visual Studio Build Tools are available
+    REM ---------- CHECK MSVC ----------
     where cl >nul 2>&1
     if %errorlevel% neq 0 (
-        echo ERROR: Visual Studio Build Tools not found in PATH
-        echo Make sure you have Visual Studio or Build Tools installed
+        echo ERROR: Visual Studio Build Tools not found
         pause
         exit /b 1
     )
 
-    REM Clean previous build
-    echo [1/4] Cleaning previous build...
-    if exist build (
-        rmdir /s /q build
-        echo    Previous build directory removed
-    ) else (
-        echo    No previous build found
-    )
-
-    REM Create build directory
-    echo [2/4] Creating build directory...
-    mkdir build
+    REM ---------- CREATE BUILD DIRECTORY ----------
+    if not exist build (mkdir build)
     cd build
 
-    REM Importing Dependencies
-    cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 
-    echo [3/4] Configuring Visual Studio with CMake...
+    REM ---------- CMAKE CONFIGURE ----------
+    echo Configuring project using CMake...
+    cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
     if %errorlevel% neq 0 (
         echo ERROR: CMake configuration failed!
         cd ..
@@ -58,39 +69,29 @@ if exist build\projects\App\Release\Editor.exe (
         exit /b 1
     )
 
-    echo.
-    echo ===============================================
-    echo   CMake configuration completed successfully!
-    echo ===============================================
-    echo.
+    REM ---------- BUILD ----------
+    echo Building project %CONFIG%
+    cmake --build . --config %CONFIG%
 
-    REM Build the project
-    echo [4/4] Building project...
-    cmake --build . --config Release
     if %errorlevel% neq 0 (
-        echo ERROR: Build failed
+        echo ERROR: Build failed!
         cd ..
         pause
         exit /b 1
     )
 
-    echo.
-    echo ===============================================
-    echo   Build completed successfully!
-    echo ===============================================
-    echo.
+    echo Build completed successfully!
 )
 
-REM Run the Imgui editor
-echo Running Imgui Editor...
+REM ---------- RUN EDITOR ----------
 echo.
-cd projects\App\Release
+echo Running ImGui Editor in %CONFIG% mode...
+cd projects\App\%CONFIG%
 Editor.exe
+
 if %errorlevel% neq 0 (
-    echo.
     echo Application exited with error code: %errorlevel%
 ) else (
-    echo.
     echo Application completed successfully!
 )
 

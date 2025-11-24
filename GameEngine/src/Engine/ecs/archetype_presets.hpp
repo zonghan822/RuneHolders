@@ -462,6 +462,12 @@ namespace ECSComponents
 				return tvalue;
 			}
 
+			// char[64]
+			if (ttype == "char64")
+			{
+				return tvalue;
+			}
+
 			// ---------------- Enums ----------------
 
 			// Color

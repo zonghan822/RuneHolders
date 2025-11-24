@@ -447,6 +447,13 @@ namespace Graphics
             }
         );
 
+        bus_.subscribe<Window::FramebufferResizeEvent>(
+            [this](const Window::FramebufferResizeEvent& e)
+            {
+                this->setProjectionMatrix(e.width, e.height);
+            }
+        );
+
         // Create vertex buffer for batch rendering
         vertexBuffer_ = std::make_unique<EnoVertexBuffer>();
 

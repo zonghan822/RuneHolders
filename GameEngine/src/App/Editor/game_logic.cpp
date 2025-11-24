@@ -31,9 +31,12 @@ void GameApplication::initialize() {
 		engine_.getCoreHost()
 	);
 
+	// Initialize player system
+	playerSystem_ = std::make_unique<Player::PlayerSystem>();
+
 	// Setup all game content
 	setupPrefabs();
-	setupGameEntities();
+	setupGameSystems();
 	setupGameAudio();
 	setupTreeTesting();
 	setupGameEvents();
@@ -41,8 +44,7 @@ void GameApplication::initialize() {
 	setupImGui();
 	setupAnimations();
 	setupScripting();
-	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
-	timesFont_ = engine_.getResourceLoader().getFont("times");
+	setupFont();
 
 	// ============= LOAD LAST ACTIVE SAVED SCENE ========================= //
 	engine_.getEnoEditor().getSceneTree().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
@@ -92,36 +94,27 @@ void GameApplication::shutdown() {
 void GameApplication::setupPrefabs() {
 	auto prefabManager = engine_.getPrefabManager();
 	prefabManager.registerPresets();
+
 	ECSComponents::Preset::saveAll(prefabManager);
 	ECSComponents::Preset::loadAll(prefabManager);
-
-	// Example code
-	// Get a prefab from the prefab manager
-	auto pushboxPrefab = prefabManager.retrieve<ECSComponents::Preset::PUSHABLE_BOX>();
-
-	// Ensure that presetCreate is used instead of create!
-	ECS::Entity entity1 = engine_.getEntityManager().presetCreate(pushboxPrefab);
-
-	auto resti = entity1.get<ECSComponents::PhysicsComponent>(engine_.getEntityManager()).restitution;
-	std::cout << "Resitution: " << resti << std::endl;
 }
 
-void GameApplication::setupGameEntities() {
-	// To setup the entities in our game
+void GameApplication::setupGameSystems() {
+	
+
+}
+
+void GameApplication::setupFont() {
+	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
+	timesFont_ = engine_.getResourceLoader().getFont("times");
 }
 
 void GameApplication::setupScripting() {
-
-	std::cout << "hr setup now \n";
+	// Scripting premade calls
 	engine_.getCoreHost().HRSetup();
-
-	std::cout << "defineBegin now \n";
 	engine_.getCoreHost().defineBegin();
-
-	std::cout << "defineUpdate now \n";
 	engine_.getCoreHost().defineUpdate();
-
-	std::cout << "Setup Scripting done \n";
+	engine_.getCoreHost().defineSMD();
 }
 
 
@@ -216,7 +209,7 @@ void GameApplication::setupGameMath() {
 	// No need to initialize them here anymore
 
 	// Load player config
-	playerConfig_.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
+	playerConfig_.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
 	std::cout << "[GameLogic] Player configg loaded" << std::endl;
 }
 
@@ -301,16 +294,15 @@ void GameApplication::setupImGui() {
 void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& graphics_ = engine_.getGraphicsManager();
-	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
-	double deltaTime = engine_.getDeltaTime();
+	auto& inputMng = engine_.getInputManager();
 
-	// ========= Audio =========
-	
-	engine_.getAudioManager().process();
+	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
+	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 
 	// =========================
 	
 	pathfinder_->update(entityManager, 1.f);
+	playerSystem_->Update(entityManager, inputMng, deltaTime);
 
 	// Update engine playing state based on editor state
 	engine_.setIsPlaying(getEditorState() == Playing || getEditorState() == NextKeyFrame);
@@ -334,7 +326,7 @@ void GameApplication::updateGameLogic() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (playerTexture_ && playerSpawned_) {
-		playerAnimController_.update(static_cast<float>(deltaTime));
+		playerAnimController_.update(deltaTime);
 	}
 
 	// Update all animated entities (spritesheet animation and rotation)
@@ -343,7 +335,7 @@ void GameApplication::updateGameLogic() {
 	const int totalFrames = 4;  // Protagonist-Walk-Sheet has 4 frames
 	const float frameDuration = 0.1f;  // 0.1 seconds per frame
 
-	animationTimer += static_cast<float>(deltaTime);
+	animationTimer += deltaTime;
 	if (animationTimer >= frameDuration) {
 		animationTimer -= frameDuration;
 		currentFrame = (currentFrame + 1) % totalFrames;
@@ -391,7 +383,7 @@ void GameApplication::updateGameLogic() {
 					// rot.x = current angle, rot.y = rotation speed
 					if (entity.has<ECSComponents::TransformComponent>(entityManager)) {
 						auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
-						transform.rot.x += transform.rot.y * static_cast<float>(deltaTime);
+						transform.rot.x += transform.rot.y * deltaTime;
 					}
 				}
 			}
@@ -436,7 +428,7 @@ void GameApplication::updateGameLogic() {
 	if (editorFramebuffer_) {
 		// Update camera panning for room transitions
 		if (isPanning_) {
-			panTimer_ += static_cast<float>(deltaTime);
+			panTimer_ += deltaTime;
 			float progress = Math::min(panTimer_ / panDuration_, 1.0f);
 
 			// Smooth easing function (ease-in-out)
@@ -458,7 +450,7 @@ void GameApplication::updateGameLogic() {
 			// NOTE: WASD controls BOTH player movement AND editor camera
 			// To move ONLY the camera, set the editor state to stopped (edit) mode
 			auto& inputManager = engine_.getInputManager();
-			float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
+			float cameraDelta = editorCameraSpeed_ * deltaTime;
 			if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
@@ -633,9 +625,8 @@ void GameApplication::updateGameLogic() {
 				auto it = entityMap.find(playerEntityID_);
 				if (it != entityMap.end()) {
 					// Get player system from engine (no longer a global)
-					auto* playerSystem = engine_.getPlayerSystem();
-					if (playerSystem) {
-						auto& transform = playerSystem->GetTransform(it->second);
+					if (playerSystem_) {
+						auto& transform = playerSystem_->GetTransform(it->second);
 						auto& frame = playerAnimController_.getCurrentFrame();
 
 						std::shared_ptr<Graphics::EnoTexture> currentTexture;
@@ -807,11 +798,8 @@ void GameApplication::updateEntities() {
 
 	}
 
-	// Get player system from engine (no longer a global)
-	auto* playerSystem = engine_.getPlayerSystem();
-
 	// Check if editor state is in play and player is moving and switch animation accordingly
-	if (playerSystem && playerSpawned_ && getEditorState() == Playing) {
+	if (playerSystem_ && playerSpawned_ && getEditorState() == Playing) {
 		// Check for WASD input
 		bool isMoving =
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
@@ -839,7 +827,7 @@ void GameApplication::updateEntities() {
 			}
 		}
 		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
-		// No need to call playerSystem->Update() here anymore
+		// No need to call playerSystem_->Update() here anymore
 	}
 
 	// NOTE: Collision system update is now done in eno_engine.cpp::updateGameSystems()
@@ -869,10 +857,19 @@ void GameApplication::updateEntities() {
 				playAfterStop = false;
 			}
 
-
 			if (!hasBegun)
 			{
-				coreHost.begin();
+				for (const auto& node : sceneTree_->getAllNodes())
+				{
+					if (node->script_)
+					{
+						for (const auto& org : node->script_->origin())
+						{
+							std::wcout << "origin of call: " << org << std::endl;
+							coreHost.begin(org, node->sceneObjectID_);
+						}
+					}
+				}
 
 				//for (auto* node : sceneTree_->getAllNodes())
 				//{
@@ -908,7 +905,16 @@ void GameApplication::updateEntities() {
 			//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
 			//	coreHost.runScriptMethod(className, L"Update");
 			//}
-			coreHost.update();
+			for (const auto& node : sceneTree_->getAllNodes())
+			{
+				if (node->script_)
+				{
+					for (const auto& org : node->script_->origin())
+					{
+						coreHost.update(org, node->sceneObjectID_);
+					}
+				}
+			}
 			updateTestObject(engine_.getEntityManager(), engine_);
 
 			break;
@@ -1028,9 +1034,8 @@ void GameApplication::drawPlayerAndIndicator() {
 			if (it != entityMap.end())
 			{
 				// Get player system from engine (no longer a global)
-				auto* playerSystem = engine_.getPlayerSystem();
-				if (playerSystem) {
-					auto& transform = playerSystem->GetTransform(it->second);
+				if (playerSystem_) {
+					auto& transform = playerSystem_->GetTransform(it->second);
 					auto& frame = playerAnimController_.getCurrentFrame();
 
 					std::shared_ptr<Graphics::EnoTexture> currentTexture;
@@ -1065,14 +1070,14 @@ void GameApplication::drawPlayerAndIndicator() {
 					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
 						rotationRadians += static_cast <float>(3.0f * 0.0174533 * 0.01667);
 
-						auto& playerCollider = playerSystem->GetCollision(it->second);
+						auto& playerCollider = playerSystem_->GetCollision(it->second);
 						playerCollider.rotation = rotationRadians;
 						std::cout << "rotation in Radians:" << rotationRadians << '\n';
 					}
 
 					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
 						rotationRadians -= static_cast <float>(3.0f * 0.0174533 * 0.01667);
-						auto& playerCollider = playerSystem->GetCollision(it->second);
+						auto& playerCollider = playerSystem_->GetCollision(it->second);
 						playerCollider.rotation = rotationRadians;
 						std::cout << "rotation in Radians:" << rotationRadians << '\n';
 					}

@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -10,13 +9,34 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Eno
 {
-    public class ScriptBase
+    public static class ScriptSetup
     {
-        private readonly string name;
-
-        protected ScriptBase([CallerFilePath] string filePath = "")
+        [UnmanagedCallersOnly(EntryPoint = "Initialize")]
+        public static void Initialize(IntPtr pUSPath, IntPtr pDLLPath)
         {
-            name = Path.GetFileNameWithoutExtension(filePath);
+            // Conversion to managed string
+            string? usPath = Marshal.PtrToStringUni(pUSPath);
+            string? dllPath = Marshal.PtrToStringUni(pDLLPath);
+
+            if (string.IsNullOrEmpty(usPath) || string.IsNullOrEmpty(dllPath))
+                throw new InvalidOperationException("User scripts or Assembly DLL cannot be found in Initiator Sequence!");
+
+            var hrManager = new HotReloadManager();
+            Initiator.SetHRManager(hrManager);
+            Initiator.InitSequence(usPath, dllPath);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "Reload")]
+        public static void Reload(IntPtr pUSPath, IntPtr pDLLPath)
+        {
+            // Conversion to managed string
+            string? usPath = Marshal.PtrToStringUni(pUSPath);
+            string? dllPath = Marshal.PtrToStringUni(pDLLPath);
+
+            if (string.IsNullOrEmpty(usPath) || string.IsNullOrEmpty(dllPath))
+                throw new InvalidOperationException("User scripts or Assembly DLL cannot be found in Initiator Sequence!");
+
+            Initiator.ReloadSequence(usPath, dllPath);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "GetFileClassNames")]

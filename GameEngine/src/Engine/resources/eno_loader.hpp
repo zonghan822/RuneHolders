@@ -50,27 +50,27 @@ namespace Resources
 	{
 	private:
 		// Sounds
-		static constexpr std::string_view musicPath_ = ASSETS_DIR_PATH "/sound/music/";
-		static constexpr std::string_view sfxPath_ = ASSETS_DIR_PATH "/sound/sfx/";
+		static constexpr std::string_view musicPath_ = ASSETS_DIR_PATH "sound/music/";
+		static constexpr std::string_view sfxPath_ = ASSETS_DIR_PATH "sound/sfx/";
 		static constexpr std::array<std::string_view, 2> soundExtensions_ = { ".wav", ".mp3" };
 		std::unordered_map<std::string, FMOD::Sound*> sounds_;
 		std::vector<std::unique_ptr<Audio::EnoAudioModule>> audioMods_;
 
 		// Images
-		static constexpr std::string_view imagePath_ = ASSETS_DIR_PATH "/art/";
+		static constexpr std::string_view imagePath_ = ASSETS_DIR_PATH "art/";
 		std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>> textures_;
 
 		// Shaders
-		static constexpr std::string_view shaderPath_ = ASSETS_DIR_PATH "/shaders/";
+		static constexpr std::string_view shaderPath_ = ASSETS_DIR_PATH "shaders/";
 		std::unordered_map<std::string, std::string> vertShaders_;
 		std::unordered_map<std::string, std::string> fragShaders_;
 
 		// Fonts
-		static constexpr std::string_view fontPath_ = ASSETS_DIR_PATH "/fonts/";
+		static constexpr std::string_view fontPath_ = ASSETS_DIR_PATH "fonts/";
 		Font::FontManager fontManager_;
 
 		// ECS Entities
-		static constexpr std::string_view entityPath_ = ASSETS_DIR_PATH "/saves/ecs_save_data.txt";
+		static constexpr std::string_view entityPath_ = ASSETS_DIR_PATH "saves/ecs_save_data.txt";
 
 		// Event Bus
 		Event::EnoEventBus& bus_;

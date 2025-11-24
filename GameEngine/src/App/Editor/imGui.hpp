@@ -24,6 +24,7 @@
 
 #include "player/player.hpp"
 #include "game_logic.hpp"
+#include "../../Engine/prefab/prefab.hpp"
 
 // Variables
 static std::mt19937 rng(std::random_device{}());
@@ -140,7 +141,7 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t nodeID, ECS::En
  * \param[in]   Editor::UndoManager& undoManager
  * \return      void
 *//*========================================================================================*/
-void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::UndoManager& undoManager);
+void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager);
 
 /*============================================================================================
  * \brief       Displays Entity Inspector
@@ -148,7 +149,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::UndoManager& undo
  * \param[in]   Editor::UndoManager& undoManager
  * \return      void
 *//*========================================================================================*/
-void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager);
+void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager, Editor::EnoSceneTree& sceneTree);
 
 /*============================================================================================
  * \brief       Displays Prefabs in Prefabs Tab

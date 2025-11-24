@@ -91,9 +91,9 @@ namespace Editor
 
 			//Node* node1 = tree_.create();
 			//Node* node2 = tree_.create();
-			//tree_.save(ASSETS_DIR_PATH "/saves/SceneTreeSave", tree_.getSceneName());
+			//tree_.save(ASSETS_DIR_PATH "saves/SceneTreeSave", tree_.getSceneName());
 			
-			//tree_.load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+			//tree_.load(ASSETS_DIR_PATH "saves/SceneTreeSave");
 
 			//auto nodes = tree_.getAllNodes();
 			////auto collioffset = nodes[0]->entity_.get<ECSComponents::CollisionComponent>(entMng_).offset.x; // should give me 5

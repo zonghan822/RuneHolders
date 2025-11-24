@@ -38,22 +38,26 @@ elseif (MSVC)
     target_compile_options(${APP_NAME} PRIVATE /W4 /WX-)
 endif()
 
+add_dependencies(${APP_NAME} ${SCRIPT_NAME}_cs)
+
 # Set common include directories
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
-target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/${ENGINE_NAME})
+target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/Engine)
 target_compile_definitions(${APP_NAME} PRIVATE
-    ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
-    CONFIG_DIR_PATH="${CMAKE_SOURCE_DIR}/src/App/${APP_NAME}/"
+    ASSETS_DIR_PATH="${CMAKE_BINARY_DIR}/assets/"
     SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}/user_scripts/"
-    SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}"
-    DOTNET_ROOT="${DOTNET_RUNTIME_PATH}"
+    SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}/$<CONFIG>/"
+    APP_SRC_PATH="${PROJECT_SOURCE_DIR}/${APP_NAME}/"
+    APP_BIN_PATH="${PROJECT_BINARY_DIR}/"
 )
 
 # Link the library to the executable using the CMake target
 target_link_libraries(${APP_NAME} PUBLIC
-    ${ENGINE_NAME}
+    ${ENGINE_NAME}_static
+    ${ENGINE_NAME}_shared
 )
 _fmod_copy_dll(${APP_NAME})
 _dotnet_copy_dll(${APP_NAME})
+_engine_copy_dll(${APP_NAME})
 
 ENDMACRO(SETUP_APP)

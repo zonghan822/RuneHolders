@@ -7,3 +7,36 @@
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
+#pragma once
+
+// stds
+#include <vector>
+#include <functional>
+#include <any>
+
+namespace Events
+{
+	// A signal is essentially a container of observers, with each callback stored within the signal
+	// allowed to contain a list of params of any type. 
+	// Inspired by: https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/c_sharp_signals.html
+	class EnoSignal
+	{
+	public:
+		using Callback = std::function<void(const std::vector<std::any>&)>;
+
+		// Subcribe
+		void connect(Callback cb)
+		{
+			callbacks.push_back(cb);
+		}
+
+		// Ping
+		void emit(const std::vector<std::any>& p = {})
+		{
+			for (auto& callb : callbacks) { callb(p); }
+		}
+
+	private:
+		std::vector<Callback> callbacks;
+	};
+}

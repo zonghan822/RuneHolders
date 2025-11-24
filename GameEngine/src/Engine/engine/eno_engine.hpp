@@ -17,6 +17,7 @@
 #include "../input/eno_input.hpp"
 #include "../editor/eno_editor.hpp"
 #include "../editor/eno_scene_tree.hpp"
+#include "../bridge/eno_bridge.hpp"
 #include "../ecs/entity.hpp"
 #include "../component/component_registry.hpp"
 #include "../event/signals.hpp"
@@ -30,17 +31,21 @@
 #include "../game_instance/eno_scene_tree.hpp"
 #include "../ai/ai_manager.hpp"
 #include "../physics/physics_system.hpp"
-#include "../../src/App/Editor/player/player.hpp"
 
-namespace Player {
-	class PlayerSystem;
-}
 
 // stds
 #include <functional>
 #include <chrono>
 #include <algorithm>
 #include <memory>
+
+#if defined(ENGINE_BUILD_DLL)
+	#define ENGINE_API __declspec(dllexport)
+# elif defined(ENGINE_USE_DLL)
+	#define ENGINE_API __declspec(dllimport)
+#else
+	#define ENGINE_API
+#endif
 
 namespace Engine
 {
@@ -52,7 +57,7 @@ namespace Engine
 	*			graphics, audio, input, ECS, and resource management. It provides the main game loop
 	*			and exposes interfaces for game code to interact with engine subsystems.
 	*//*========================================================================================*/
-	class EnoEngine
+	class ENGINE_API EnoEngine
 	{
 	public:
 		/*============================================================================================
@@ -177,12 +182,6 @@ namespace Engine
 		Collision::CollisionSystem* getCollisionSystem() { return collisionSys_.get(); }
 
 		/*============================================================================================
-		* \brief		Gets the Player System for player movement
-		* \return		Pointer to PlayerSystem instance (may be null if not initialized)
-		*//*========================================================================================*/
-		Player::PlayerSystem* getPlayerSystem() { return playerSys_.get(); }
-
-		/*============================================================================================
 		* \brief		Sets whether the game is in playing mode (affects player input processing)
 		* \param[in]	isPlaying - True if game is playing, false if in editor mode
 		*//*========================================================================================*/
@@ -201,19 +200,6 @@ namespace Engine
 		* \brief		Sets up resource loading for all asset types
 		*//*========================================================================================*/
 		void setupResourceLoading();
-
-		/*============================================================================================
-		* \brief		Initializes game systems (physics, collision, player)
-		*//*========================================================================================*/
-		void setupGameSystems();
-
-		/*============================================================================================
-		* \brief		Updates all game systems in proper order
-		* \param[in]	deltaTime - Time elapsed since last frame
-		* \param[in]	isPlaying - Whether the game is in playing mode (not editor mode)
-		*//*========================================================================================*/
-		void updateGameSystems(float deltaTime, bool isPlaying = true);
-
 
 		/*============================================================================================
 		* \brief		Updates time calculations including delta time and FPS
@@ -238,11 +224,8 @@ namespace Engine
 		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };
 		Audio::EnoAudioManager audioMng_{ bus_ };
 		AI::AIManager aiMng_{ bus_ };
-
-		// Game Systems (managed with unique_ptr for optional initialization)
 		std::unique_ptr<Physics::PhysicsSystem> physicsSys_;
 		std::unique_ptr<Collision::CollisionSystem> collisionSys_;
-		std::unique_ptr<Player::PlayerSystem> playerSys_;
 
 		// Game state
 		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)

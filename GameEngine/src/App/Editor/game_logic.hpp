@@ -80,9 +80,7 @@ private:
 
     // Player
     Player::PlayerConfig playerConfig_;
-
-    // NOTE: Systems (Physics, Collision, Player) are now managed by EnoEngine
-    // Access them via engine_.getPhysicsSystem(), engine_.getCollisionSystem(), engine_.getPlayerSystem()
+    std::unique_ptr<Player::PlayerSystem> playerSystem_;
 
     // Editor State
     EditorState g_editorState = Stopped;
@@ -140,7 +138,7 @@ public:
 private:
     // Setup (called during initialize())
     void setupPrefabs();        // Prefab instantiation
-    void setupGameEntities();   // ECS code
+    void setupGameSystems();    // Register user systems (player, enemy, etc...)
     void setupTreeTesting();    // Editor tree testing code
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
@@ -148,6 +146,7 @@ private:
     void setupImGui();          // setup ImGui code
     void setupAnimations();
     void setupScripting();
+    void setupFont();           // setup font
     void createTestObjectsAndAddToSceneTree();  // Create test objects and add them to scene tree
 
     // Update methods (called every frame)

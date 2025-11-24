@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 
 namespace Eno
@@ -16,50 +16,84 @@ namespace Eno
 
         public float speed = 5.10f;
 
-        private static CustomInput? customAct;
+        private static InputAction? ia1;
+        private static InputAction? ia2;
 
-        public static void Begin()
+        public void Begin()
         {
+            Console.WriteLine($"ID on script.cs: {this.ID}");
+
             // Creating a custom input
-            customAct = new CustomInput(
-                key: InputKey.Keycode_K,
-                action: InputAction.Press,
-                mod: InputMod.None);
+            ia1 = new InputAction("Jump")
+                .AddBinding(KeyCode.Space)                  // Jumps when Space is triggered
+                .AddBinding(KeyCode.L, Mod.Control);        // Jumps when L + Shift is triggered
 
-            customAct.Enable();
+            ia1.when += Jump;
+            ia1.when += Jump2;
 
-            Console.WriteLine("Hello from Begin!");
+            ia2 = new InputAction("Sprint")
+                .AddBinding(KeyCode.W, Mod.Shift);         // Sprints when W and left shift are pressed
+
+            ia2.when += Sprint;
+
+            ia1.Enable();
+            ia2.Enable();
+
+            Console.WriteLine($"End of begin method for entity: {this.ID}");
         }
 
-        public static void Update()
+        public void Update()
         {
-            //SayBonk();
-            Console.WriteLine("Bonk on head");
+            Console.WriteLine("Calling update!");
 
-            if (customAct != null && customAct.Released())
+            // Triggers when releasing A
+            if (Input.IsKeyReleased(KeyCode.A))
             {
-                Console.WriteLine("Triggered custom!");
+                Console.WriteLine("Released A!");
+            }
+
+            // Triggers when pressing B
+            if (Input.IsKeyPressed(KeyCode.Num1))
+            {
+                Console.WriteLine("Pressed 1!");
+            }
+
+            // Triggers when holding C
+            if (Input.IsKeyHeld(KeyCode.C))
+            {
+                Console.WriteLine("Held C!");
+            }
+
+            // Testing if the right entity is affected
+            // by changing the audio volume the entity is on
+            if (Input.IsKeyPressed(KeyCode.V))
+            {
+                Console.WriteLine("Pressed V, volume should be modified on entity 1 now!");
             }
         }
 
-        // Only bonk if b is held down
-        public static void SayBonk()
+        private static void Jump()
         {
-            // Testing releasing a button
-            if (Input.GetKeyReleased(InputKey.Keycode_B))
-                Console.WriteLine("bonk");
-            
-            // Testing holding down a button
-            if (Input.GetKeyHeld(InputKey.Keycode_S))
-                Console.WriteLine("splash");
-        
-            // Testing pressing a button
-            if (Input.GetKeyPressed(InputKey.Keycode_A))
-                Console.WriteLine("atsuuuuuuuuuu");
+            Console.WriteLine("Jumping right now!");
+        }
+
+        private static void Sprint()
+        {
+            Console.WriteLine("Sprinting right now!");
+        }
+
+        private static void Jump2()
+        {
+            Console.WriteLine("Jump 2 right now!");
+        }
+    
+		public void _when_node1_started()
+        {
+
         }
     }
 
-    public class ArmController
+    public class ArmController : ScriptBase
     {
         [Reveal(90, 210)]
         public double velocity = 100.5;

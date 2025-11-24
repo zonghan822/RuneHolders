@@ -156,6 +156,13 @@ namespace Input
 		bool isModifierActive(int mod) const;
 
 		/*============================================================================================
+		* \brief   Get modifiers currently appplied
+		* \param[in] GLFW mod
+		* \return  current GLFW mod applied
+		*//*========================================================================================*/
+		int currentMods() const;
+
+		/*============================================================================================
 		* \brief   Check if a key combo (key + modifiers) is pressed.
 		* \param[in] key GLFW key code.
 		* \param[in] requiredMods Required modifier mask.

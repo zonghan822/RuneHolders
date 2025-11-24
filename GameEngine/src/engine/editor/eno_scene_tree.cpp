@@ -208,6 +208,8 @@ namespace Editor
 				siblings.end());
 		}
 
+		// Save the ID for reuse before erasing
+		salvagedID_.push_back(selectedNode_->sceneObjectID_);
 		tree_.erase(selectedNode_->sceneObjectID_);
 		selectedNode_ = nullptr;
 	}
@@ -240,6 +242,8 @@ namespace Editor
 				siblings.end());
 		}
 
+		// Save the ID for reuse before erasing
+		salvagedID_.push_back(node->sceneObjectID_);
 		tree_.erase(node->sceneObjectID_);
 	}
 
@@ -274,16 +278,33 @@ namespace Editor
 	void EnoSceneTree::attachScript(Node* node, std::unique_ptr<Script::EnoScript>&& script)
 	{
 		if (node)
+		{
 			node->script_ = std::move(script);
+
+			// Script attached will receive node metadata
+			// Retrieve each unique class stored for the script
+			for (const auto& org : node->script_->origin())
+			{
+				coreHost_.setMetaData(org, node->sceneObjectID_);
+			}
+		}
 	}
 
 	// Attach a script to the selected Node
 	void EnoSceneTree::attachScript(std::unique_ptr<Script::EnoScript>&& script)
 	{
 		if (selectedNode_)
+		{
 			selectedNode_->script_ = std::move(script);
-	}
 
+			// Script attached will receive node metadata
+			// Retrieve each unique class stored for the script
+			for (const auto& org : selectedNode_->script_->origin())
+			{
+				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_);
+			}
+		}
+	}
 	// Detach a script and release it
 	void EnoSceneTree::detachScript(std::unique_ptr<Script::EnoScript>&& script)
 	{
@@ -417,7 +438,7 @@ namespace Editor
 
 		// Now, I want to export another file which gives me the name of the saved scene
 		std::cout << currentScene << " << Current scene" << std::endl;
-		std::ofstream currentSceneSave{ (ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt") };
+		std::ofstream currentSceneSave{ (ASSETS_DIR_PATH "saves/scenes/CurrentSavedScene.txt") };
 		if (!currentSceneSave)
 		{
 			throw std::runtime_error("Failed to create a save file for the current active scene!");
@@ -649,7 +670,7 @@ namespace Editor
 		load(fullPath, defaultSceneName);
 
 		// Save the current scene name to CurrentSavedScene.txt
-		std::ofstream currentSceneSave{ ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt" };
+		std::ofstream currentSceneSave{ ASSETS_DIR_PATH "saves/scenes/CurrentSavedScene.txt" };
 		if (!currentSceneSave)
 		{
 			throw std::runtime_error("Failed to save current active scene name!");
@@ -662,13 +683,13 @@ namespace Editor
 	void EnoSceneTree::loadLastSavedScene()
 	{
 		// Get path to assets
-		std::string currentScenePath = ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt";
+		std::string currentScenePath = ASSETS_DIR_PATH "saves/scenes/CurrentSavedScene.txt";
 		std::ifstream savedSceneFile{ currentScenePath };
 		if (!savedSceneFile.is_open())
 		{
 			// File doesn't exist, create a new scene
 			std::cout << "[EnoSceneTree] No saved scene found, creating new scene" << std::endl;
-			createEmptyScene(ASSETS_DIR_PATH "/saves/scenes/");
+			createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 		}
 		else
 		{
@@ -684,12 +705,12 @@ namespace Editor
 			if (savefile.empty())
 			{
 				std::cout << "[EnoSceneTree] CurrentSavedScene.txt is empty, creating new scene..." << std::endl;
-				createEmptyScene(ASSETS_DIR_PATH "/saves/scenes/");
+				createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 			}
 			else
 			{
 				// Check if the scene file actually exists before loading
-				std::string fullScenePath = ASSETS_DIR_PATH "/saves/scenes/" + savefile;
+				std::string fullScenePath = ASSETS_DIR_PATH "saves/scenes/" + savefile;
 				if (std::filesystem::exists(fullScenePath))
 				{
 					load(fullScenePath, savefile);
@@ -697,7 +718,7 @@ namespace Editor
 				else
 				{
 					std::cerr << "[EnoSceneTree] Scene file not found: " << fullScenePath << ", creating new scene..." << std::endl;
-					createEmptyScene(ASSETS_DIR_PATH "/saves/scenes/");
+					createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 				}
 			}
 		}
@@ -895,4 +916,11 @@ namespace Editor
 		return currentScene;
 	}
 
+
+	// ====================== Signals ======================
+
+	void EnoSceneTree::signalComponents(Node* node)
+	{
+
+	}
 }

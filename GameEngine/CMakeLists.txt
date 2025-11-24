@@ -24,9 +24,10 @@ set_dotnet()
 
 # Build c# project
 set(SCRIPT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/scripts/GameScripts)
-set(SCRIPT_BINARY_DIR ${CMAKE_BINARY_DIR}/scripts/GameScripts)
+set(SCRIPT_BINARY_DIR ${CMAKE_BINARY_DIR}/projects/App)
+set(SCRIPT_NAME GameScripts)
 build_csharp_scripts(
-    GameScripts
+    ${SCRIPT_NAME}
     ${SCRIPT_SOURCE_DIR}
     ${SCRIPT_BINARY_DIR}
 )

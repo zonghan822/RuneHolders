@@ -13,7 +13,7 @@
 #include "game_logic.hpp"
 #include "player/player_config.hpp"
 #include "player/player_archetype_config.hpp"
-#include "../../engine/editor/undo/undo_manager.hpp"
+#include "editor/undo/undo_manager.hpp"
 
 #undef min
 #undef max
@@ -29,9 +29,6 @@ using Editor::Node;
 
 extern GameApplication game;
 
-// Collision system
-std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
-std::unique_ptr<Player::PlayerSystem> playerSystem_;
 bool showColliders_ = true;
 
 GameApplication* g_game = nullptr;
@@ -180,7 +177,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	static Player::PlayerConfig playerConfig;
 	static bool configLoaded = false;
 	if (!configLoaded) {
-		configLoaded = playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
+		configLoaded = playerConfig.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
 		if (configLoaded) {
 			std::cout << "[ImGui] Player config loaded successfully" << std::endl;
 		}
@@ -228,7 +225,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	// Edit tab 
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_, sceneTree);
-	displayAllEntitiesTab(engine_, undoManager);
+	displayAllEntitiesTab(engine_, sceneTree, undoManager);
 	ImGui::End();
 
 	// Prefabs
@@ -676,56 +673,26 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 {
 	auto& entityManager = engine.getEntityManager();
 
-	const PrefabData& prefab = prefabRegistry[name];
+	// Use the new snapshot-based prefab system
+	ECS::Entity e = instantiatePrefabFromSnapshot(name, entityManager, sceneTree);
 
-	// Treat x,y as the CENTER of where the user clicked
-	float centerX = x;
-	float centerY = y;
-
-	// create the entity
-	ECS::Entity e = entityManager.create<>();
-
-	// Create unique name by appending entity ID
-	std::string uniqueName = prefab.name + " #" + std::to_string(e.id());
-
-	// attach components
-	e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(uniqueName.c_str()));
-
-	// transform uses center position
-	ECSComponents::TransformComponent transform{
-		{centerX, centerY},
-		{0.0f, 0.0f},
-		{1.0f, 1.0f}
-	};
-	e.add<ECSComponents::TransformComponent>(entityManager, transform);
-
-	// draw info uses top-left position
-	ECSComponents::RenderComponent draw{
-		prefab.width, prefab.height,
-		prefab.shape == 0 ? "Circle" : "Rectangle",  // 0=Circle, 1=Rectangle (matches dropdown order)
-		prefab.color
-	};
-	e.add<ECSComponents::DrawInfoComponent>(entityManager, draw);
-
-	// collider (optional)
-	if (prefab.hasCollider) {
-		e.add<ECSComponents::CollisionComponent>(
-			entityManager,
-			ECSComponents::CollisionComponent(prefab.width, prefab.height));
-	}
-
-	// Button component
-	if (prefab.name == "ExitButton")
+	// Override the position to where the user clicked (treat x,y as CENTER)
+	if (e.has<ECSComponents::TransformComponent>(entityManager))
 	{
-		ECSComponents::VisibilityComponent visibility;
-		visibility.visible = true;
-		e.add<ECSComponents::VisibilityComponent>(entityManager, visibility);
-
-		e.add<ECSComponents::ButtonComponent>(entityManager);
+		auto& transform = e.get<ECSComponents::TransformComponent>(entityManager);
+		transform.pos.x = x;
+		transform.pos.y = y;
 	}
 
-	// Add entity to scene hierarchy as root node
-	sceneTree.createFromEntity(e, nullptr);
+	// Add entity to scene hierarchy as root node (must be done before CreateEntityCommand)
+	Node* node = sceneTree.createFromEntity(e, nullptr);
+
+	// Update node name from entity's NameComponent if it exists
+	if (e.has<ECSComponents::NameComponent>(entityManager))
+	{
+		auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
+		node->name_ = nameComp.name;
+	}
 
 	// Record creation for undo/redo with full snapshot
 	auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
@@ -738,7 +705,7 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	// update render cache
 	if (g_game) g_game->markEntitiesDirty();
 
-	std::cout << "Spawned prefab '" << prefab.name
+	std::cout << "Spawned prefab '" << name
 		<< "' at (" << x << ", " << y << ")\n";
 
 	return e;
@@ -788,17 +755,31 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	if (ImGui::Button("Save New or Existing Prefabs:")) {
 		savePrefab(currentPrefab);
 		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
+		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
 	}
 
 	//ImGui::Separator();
 
 	// Load performs a "read all file in directory" now
 	if (ImGui::Button("Load Existing Prefab")) {
-		for (auto& entry : std::filesystem::directory_iterator("../../../assets/saves/")) {
-			if (entry.path().extension() == ".txt") {
-				PrefabData loaded = loadPrefab(entry.path().string());
-				prefabRegistry[loaded.name] = loaded;
+		try {
+			for (auto& entry : std::filesystem::directory_iterator(ASSETS_DIR_PATH"saves/prefabs/")) {
+				if (entry.path().extension() == ".txt") {
+					try {
+						PrefabData loaded = loadPrefab(entry.path().string());
+						if (!loaded.name.empty()) {
+							prefabRegistry[loaded.name] = loaded;
+							std::cout << "[UI] Loaded prefab: " << loaded.name << "\n";
+						}
+					}
+					catch (const std::exception& e) {
+						std::cerr << "[UI] Failed to load prefab from " << entry.path() << ": " << e.what() << "\n";
+					}
+				}
 			}
+		}
+		catch (const std::exception& e) {
+			std::cerr << "[UI] Failed to read prefab directory: " << e.what() << "\n";
 		}
 	}
 
@@ -834,7 +815,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	ImGui::Separator();
 	if (ImGui::Button("Spawn Prefab")) {
 		if (prefabRegistry.count(selectedPrefabName)) {
-			ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], entityManager);
+			ECS::Entity e = instantiatePrefabFromSnapshot(selectedPrefabName, entityManager, sceneTree);
 
 			// Add entity to scene hierarchy as root node
 			sceneTree.createFromEntity(e, nullptr);
@@ -872,7 +853,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	//}
 }
 
-void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::UndoManager& undoManager)
+void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager)
 {
 	auto& entityManager = engine_.getEntityManager();
 
@@ -907,7 +888,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::UndoManager& undo
 			if (e.id() == selectedEntityID)
 			{
 				// Display inspector for all entities (including root nodes)
-				displayEntityInspector(engine_, e, undoManager);
+				displayEntityInspector(engine_, e, undoManager, sceneTree);
 				assetPresetsTab(engine_, e);
 				entityFound = true;
 				break;
@@ -936,7 +917,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 			// Load player configuration from file
 			Player::PlayerConfig playerConfig;
-			playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
+			playerConfig.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
 
 			// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
 			constexpr float centerX = 640.0f;
@@ -1128,6 +1109,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
 			if (script)
 				sceneTree.attachScript(createdNode, std::move(script));
+			else
+				std::cerr << "No script is attached!" << std::endl;
 		}
 		if (g_game) g_game->markEntitiesDirty();
 	}
@@ -1677,70 +1660,7 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 }
 
-
-void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
-{
-	using namespace Editor;
-	Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
-	if (!node) return;
-
-	// Get entity name from NameComponent if it exists
-	std::string label = "Entity " + std::to_string(node->entity_.id());
-#if 1
-	// Try to get the actual name from the entity
-	try {
-		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
-			if (e.id() == node->entity_.id()) {
-				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-				label = nameComp.name;
-				break;
-			}
-		}
-	}
-	catch (...) {
-		// If we can't get the name, use the default
-	}
-#else
-	try {
-		for (Node* node : sceneTree.getAllNodes()) {
-			label = node->name_;
-			break;
-		}
-	}
-	catch (...) {
-		// If we can't get the name, use the default
-	}
-
-
-#endif
-	// If node has children -> use TreeNodeEx
-	if (node->children_.empty()) {
-		bool selected = (selectedEntityID == node->entity_.id());
-		// Use ## to separate visible label from unique ID
-		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
-		if (ImGui::Selectable(uniqueLabel.c_str(), selected))
-			selectedEntityID = node->entity_.id();
-	}
-	else {
-		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
-		if (selectedEntityID == node->entity_.id())
-			flags |= ImGuiTreeNodeFlags_Selected;
-
-		// Use ## to separate visible label from unique ID
-		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
-		bool open = ImGui::TreeNodeEx(uniqueLabel.c_str(), flags);
-		if (ImGui::IsItemClicked())
-			selectedEntityID = node->entity_.id();
-
-		if (open) {
-			for (Editor::Node* child : node->children_)
-				drawNodeRecursive(sceneTree, child->entity_.id(), entityManager);
-			ImGui::TreePop();
-		}
-	}
-}
-
-void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager)
+void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager, Editor::EnoSceneTree& sceneTree)
 {
 	auto& entMng = engine_.getEntityManager();
 
@@ -2091,6 +2011,84 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		//		<< entity.id() << "\n";
 		//}
 	}
+	// --- Prefab Section ---
+	ImGui::SeparatorText("Prefab");
+
+	// Check if this entity is a prefab instance
+	bool isPrefabInstance = entity.has<ECSComponents::PrefabInstanceComponent>(entMng);
+	std::string currentPrefabName;
+
+	if (isPrefabInstance) {
+		auto& prefabInstance = entity.get<ECSComponents::PrefabInstanceComponent>(entMng);
+		currentPrefabName = prefabInstance.prefabName;
+		ImGui::Text("Instance of: %s", currentPrefabName.c_str());
+	}
+	else {
+		ImGui::TextDisabled("Not a prefab instance");
+	}
+
+	// Input field for prefab name
+	static char prefabNameBuffer[64] = "";
+
+	// If this is a prefab instance, pre-fill with current prefab name
+	if (isPrefabInstance && prefabNameBuffer[0] == '\0') {
+		strncpy_s(prefabNameBuffer, currentPrefabName.c_str(), sizeof(prefabNameBuffer) - 1);
+	}
+
+	ImGui::InputText("Prefab Name", prefabNameBuffer, sizeof(prefabNameBuffer));
+
+	// Save as Prefab button
+	if (ImGui::Button("Save as Prefab")) {
+		if (strlen(prefabNameBuffer) > 0) {
+			try {
+				createPrefabFromEntity(entity, prefabNameBuffer, entMng, sceneTree);
+
+				// Add or update PrefabInstanceComponent
+				if (!isPrefabInstance) {
+					entity.add<ECSComponents::PrefabInstanceComponent>(entMng, prefabNameBuffer);
+				}
+				else {
+					auto& prefabInstance = entity.get<ECSComponents::PrefabInstanceComponent>(entMng);
+					strncpy_s(prefabInstance.prefabName, prefabNameBuffer, sizeof(prefabInstance.prefabName) - 1);
+					prefabInstance.prefabName[sizeof(prefabInstance.prefabName) - 1] = '\0';
+				}
+
+				// Register this entity as an instance
+				registerPrefabInstance(entity.id(), prefabNameBuffer);
+
+				std::cout << "[UI] Saved prefab: " << prefabNameBuffer << "\n";
+			}
+			catch (const std::exception& e) {
+				std::cerr << "[UI] Failed to save prefab: " << e.what() << "\n";
+			}
+		}
+		else {
+			std::cerr << "[UI] Please enter a prefab name\n";
+		}
+	}
+
+	ImGui::SameLine();
+
+	// Update All Instances button (only show if this is a prefab instance)
+	if (isPrefabInstance) {
+		if (ImGui::Button("Update All Instances")) {
+			try {
+				int count = updateAllPrefabInstances(currentPrefabName, entity, entMng, sceneTree);
+				std::cout << "[UI] Updated " << count << " instances of " << currentPrefabName << "\n";
+
+				// Mark entities as dirty to refresh visuals
+				if (g_game) g_game->markEntitiesDirty();
+			}
+			catch (const std::exception& e) {
+				std::cerr << "[UI] Failed to update instances: " << e.what() << "\n";
+			}
+		}
+
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Updates all instances of '%s' with this entity's components", currentPrefabName.c_str());
+		}
+	}
+
 	ImGui::End();
 }
 
