@@ -1108,7 +1108,6 @@ void GameApplication::drawPlayerAndIndicator() {
 							Graphics::Color::White,
 							rotationRadians
 						);
-						std::cout << "Player   UV start X and Y: " << uvStart.x << " " << uvStart.y << "|| UV end X and Y: " << uvEnd.x << " " << uvEnd.y << "\n";
 					}
 					else {
 						// Fallback to colored rect if texture invalid

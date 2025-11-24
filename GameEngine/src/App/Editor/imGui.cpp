@@ -2508,6 +2508,69 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	ImGui::End();
 }
 
+
+void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
+{
+	using namespace Editor;
+	Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
+	if (!node) return;
+
+	// Get entity name from NameComponent if it exists
+	std::string label = "Entity " + std::to_string(node->entity_.id());
+#if 1
+	// Try to get the actual name from the entity
+	try {
+		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
+			if (e.id() == node->entity_.id()) {
+				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
+				label = nameComp.name;
+				break;
+			}
+		}
+	}
+	catch (...) {
+		// If we can't get the name, use the default
+	}
+#else
+	try {
+		for (Node* node : sceneTree.getAllNodes()) {
+			label = node->name_;
+			break;
+		}
+	}
+	catch (...) {
+		// If we can't get the name, use the default
+	}
+
+
+#endif
+	// If node has children -> use TreeNodeEx
+	if (node->children_.empty()) {
+		bool selected = (selectedEntityID == node->entity_.id());
+		// Use ## to separate visible label from unique ID
+		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
+		if (ImGui::Selectable(uniqueLabel.c_str(), selected))
+			selectedEntityID = node->entity_.id();
+	}
+	else {
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
+		if (selectedEntityID == node->entity_.id())
+			flags |= ImGuiTreeNodeFlags_Selected;
+
+		// Use ## to separate visible label from unique ID
+		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
+		bool open = ImGui::TreeNodeEx(uniqueLabel.c_str(), flags);
+		if (ImGui::IsItemClicked())
+			selectedEntityID = node->entity_.id();
+
+		if (open) {
+			for (Editor::Node* child : node->children_)
+				drawNodeRecursive(sceneTree, child->entity_.id(), entityManager);
+			ImGui::TreePop();
+		}
+	}
+}
+
 void displayAssetTab(Engine::EnoEngine& engine_) {
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	const auto& textures = loader.getAllTextures();
