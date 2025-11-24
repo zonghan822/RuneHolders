@@ -47,9 +47,6 @@ void GameApplication::initialize() {
 	setupScripting();
 	setupFont();
 
-	// ============= LOAD LAST ACTIVE SAVED SCENE ========================= //
-	//engine_.getEnoEditor().getSceneTree().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
-
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
 
@@ -70,7 +67,8 @@ void GameApplication::initialize() {
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
 		{
 			extern void deleteSelectedEntity(Editor::EnoSceneTree&, ECS::EntityManager&, Editor::UndoManager&);
-			deleteSelectedEntity(*sceneTree_, engine_.getEntityManager(), engine_.getEnoEditor().getUndoManager());
+			//deleteSelectedEntity(*sceneTree_, engine_.getEntityManager(), engine_.getEnoEditor().getUndoManager());
+			deleteSelectedEntity(engine_.getEnoEditor().getSceneTree(), engine_.getEntityManager(), engine_.getEnoEditor().getUndoManager());
 		});
 
 	std::cout << "Game initialized successfully!" << std::endl;
@@ -278,7 +276,7 @@ void GameApplication::createTestObjectsAndAddToSceneTree() {
 
 	for (auto& entity : testEntities) {
 		// Add each entity to the scene tree as a root node
-		sceneTree_->createFromEntity(entity, nullptr);
+		engine_.getEnoEditor().getSceneTree().createFromEntity(entity, nullptr);
 		std::cout << "[GameLogic] Added entity " << entity.id() << " to scene tree" << std::endl;
 	}
 
@@ -815,7 +813,7 @@ void GameApplication::updateEntities() {
 
 			if (!hasBegun)
 			{
-				for (const auto& node : sceneTree_->getAllNodes())
+				for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
 				{
 					if (node->script_)
 					{

@@ -2702,7 +2702,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 			// --- Gizmo-based entity transformation logic ---
 			// Draw gizmos for selected entity
-			if (selectedEntityID != UINT32_MAX && g_game->getEditorState() == Stopped) {
+			if (selectedEntityID != UINT32_MAX && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) {
 				auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 				for (auto& e : allEntities) {
 					if (e.id() == selectedEntityID) {
@@ -2723,7 +2723,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 			// Begin gizmo interaction
 			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
-				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && !isRotating && !isScaling && g_game->getEditorState() == Stopped) {
+				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && !isRotating && !isScaling && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) {
 
 				ImVec2 mouseScreenPos = ImGui::GetMousePos();
 				ImVec2 worldPos = screenToWorldCoords(mouseScreenPos);
