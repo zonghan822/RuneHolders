@@ -208,6 +208,8 @@ namespace Editor
 				siblings.end());
 		}
 
+		// Save the ID for reuse before erasing
+		salvagedID_.push_back(selectedNode_->sceneObjectID_);
 		tree_.erase(selectedNode_->sceneObjectID_);
 		selectedNode_ = nullptr;
 	}
@@ -240,6 +242,8 @@ namespace Editor
 				siblings.end());
 		}
 
+		// Save the ID for reuse before erasing
+		salvagedID_.push_back(node->sceneObjectID_);
 		tree_.erase(node->sceneObjectID_);
 	}
 
@@ -274,20 +278,56 @@ namespace Editor
 	void EnoSceneTree::attachScript(Node* node, std::unique_ptr<Script::EnoScript>&& script)
 	{
 		if (node)
+		{
 			node->script_ = std::move(script);
+
+			// Script attached will receive node metadata
+			// Retrieve each unique class stored for the script
+			for (const auto& org : node->script_->origin())
+			{
+				coreHost_.setMetaData(org, node->sceneObjectID_, true);
+			}
+		}
 	}
 
 	// Attach a script to the selected Node
 	void EnoSceneTree::attachScript(std::unique_ptr<Script::EnoScript>&& script)
 	{
 		if (selectedNode_)
+		{
 			selectedNode_->script_ = std::move(script);
+
+			// Script attached will receive node metadata
+			// Retrieve each unique class stored for the script
+			for (const auto& org : selectedNode_->script_->origin())
+			{
+				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_, true);
+			}
+		}
 	}
 
-	// Detach a script and release it
-	void EnoSceneTree::detachScript(std::unique_ptr<Script::EnoScript>&& script)
+	// Detach a script from a node
+	void EnoSceneTree::detachScript(Node* node)
 	{
-		script.release();
+		if (node && node->script_)
+		{
+			for (const auto& org : node->script_->origin())
+			{
+				coreHost_.setMetaData(org, node->sceneObjectID_, false);
+			}
+		}
+	}
+
+	// Detach a script from the selected node
+	void EnoSceneTree::detachScript()
+	{
+		if (selectedNode_ && selectedNode_->script_)
+		{
+			for (const auto& org : selectedNode_->script_->origin())
+			{
+				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_, false);
+			}
+		}
 	}
 
 	void EnoSceneTree::save(const std::string& name, const std::string& sceneName)
@@ -562,8 +602,6 @@ namespace Editor
 		// Set data member current scene
 		currentScene = sceneName;
 		std::cout << "What im throwing into currentscene: " << currentScene << std::endl;
-
-
 	}
 	
 	// Create empty scene
@@ -656,7 +694,6 @@ namespace Editor
 		}
 		currentSceneSave << currentScene;
 		currentSceneSave.close();
-	
 	}
 
 	void EnoSceneTree::loadLastSavedScene()

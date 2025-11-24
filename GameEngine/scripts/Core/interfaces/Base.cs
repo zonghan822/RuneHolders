@@ -12,14 +12,8 @@ namespace Eno
         public static void Synchronize()
         {
             InputMng.Update();
-            //Console.WriteLine($"[Update] InputMng hash: {ScriptBase.InputMng.GetHashCode()}");
         }
 
-        private readonly string name;
-
-        protected ScriptBase([CallerFilePath] string filePath = "")
-        {
-            name = Path.GetFileNameWithoutExtension(filePath);
-        }
+        public uint ID { get; set; }
     }
 }

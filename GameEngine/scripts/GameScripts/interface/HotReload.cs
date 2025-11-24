@@ -83,8 +83,12 @@ namespace Eno
                 ? loadContext.LoadFromStream(stream, pdbStream)
                 : loadContext.LoadFromStream(stream);
             
+            // Make a proxy if a proxy does not currently exist
             // Assign proxy to new loaded assembly
-            Proxy = new ScriptProxy(loadedAssembly);
+            if (Proxy == null)
+                Proxy = new ScriptProxy(loadedAssembly);
+            else
+                Proxy.SetAssembly(loadedAssembly);
 
             Console.WriteLine("Loaded assembly via memory stream (file unlocked)!");
         }

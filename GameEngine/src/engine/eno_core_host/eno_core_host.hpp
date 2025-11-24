@@ -97,6 +97,45 @@ namespace Core
 			int mods_;
 		};
 
+		struct SigDelegateInfo
+		{
+			load_assembly_and_get_function_pointer_fn fn_;
+			std::wstring assemblyPath_;
+			std::wstring type_;
+			std::wstring method_;
+
+			const wchar_t* key_;
+			const wchar_t* scancode_;
+			const wchar_t* action_;
+			const wchar_t* mods_;
+		};
+
+		// For registering instances
+		struct RegisterInstProxyDLGInfo
+		{
+			load_assembly_and_get_function_pointer_fn fn_;
+			std::wstring assemblyPath_;
+			std::wstring type_;
+			std::wstring method_;
+
+			const wchar_t* className_;
+			uint32_t entityID_;
+		};
+
+		// For instanced calling
+		struct InstancedProxyDLGInfo
+		{
+			load_assembly_and_get_function_pointer_fn fn_;
+			std::wstring assemblyPath_;
+			std::wstring type_;
+			std::wstring method_;
+
+			const wchar_t* className_;
+			const wchar_t* methodName_;
+			uint32_t entityID_;
+		};
+
+
 		// Types of methods to retrieve from C#
 		// ------------------------------------
 		// Method with no params to pass in and out
@@ -110,7 +149,8 @@ namespace Core
 		using InputMethod = void(*)(int, int, int, int);
 		using AddSignalMethod = void(*)(const wchar_t*, const wchar_t*, const wchar_t*, const wchar_t*);
 		using ProxyMethod = void(*)(const wchar_t* className_, const wchar_t* methodName_);
-		using ScriptingMethod = void(*)(const wchar_t* scriptPath, const wchar_t* dllPath);
+		using InstancedProxyMethod = void(*)(const wchar_t* className_, const wchar_t* methodName_, uint32_t entityID);
+		using RegisterInstanceProxyMethod = void(*)(const wchar_t* className_, uint32_t entityID, uint8_t operation);
 		using GetScriptFieldsMethod = Script::PortedField* (__stdcall*)(const wchar_t* scriptName, int* count);
 		using GetFileClassNamesMethod = void* (*)(const wchar_t* pAssemblyPath, int* count);
 
@@ -138,7 +178,6 @@ namespace Core
 			const char_t*, const char_t*, void*,
 			const Input::InputSent&);
 
-
 		// Calling a delegate to retrieve script vars
 		template <typename T>
 		std::optional<T> retrieveDelegate(DelegateInfo& params);
@@ -152,13 +191,21 @@ namespace Core
 
 		// Helper for using the proxy call
 		ProxyMethod proxyCall(const wchar_t*, const wchar_t*);
+		RegisterInstanceProxyMethod proxyCall(const wchar_t*, uint32_t, uint8_t);
+		InstancedProxyMethod proxyCall(const wchar_t*, const wchar_t*, uint32_t);
 
 		// Define and call any method within the assembly via proxy (a method in C#)
 		ProxyMethod defineProxyDelegate(
 			const char_t*, const char_t*, void*,
 			const wchar_t*, const wchar_t*);
 
+		RegisterInstanceProxyMethod defineProxyDelegate(
+			const char_t*, const char_t*, void*,
+			const wchar_t*, uint32_t, uint8_t);
 
+		InstancedProxyMethod defineProxyDelegate(
+			const char_t*, const char_t*, void*,
+			const wchar_t*, const wchar_t*, uint32_t);
 
 		// ---------  Handling script state based on engine state ---------
 		void HRSetup();
@@ -167,13 +214,16 @@ namespace Core
 		// Script backend (compilation and reloading)
 
 		// Scripts frontend (user scripts)
-		void begin();
-		void update();
+		void begin(const std::wstring&, uint32_t);
+		void update(const std::wstring&, uint32_t);
 		void frameEnd();
+
+		void setMetaData(const std::wstring&, uint32_t, uint8_t);
 
 		//need to call this before getting into the gameplay loop
 		void defineBegin();
 		void defineUpdate();
+		void defineSMD();
 
 
 		void areScriptsModified();
@@ -241,8 +291,16 @@ namespace Core
 		// Calling a delegate with input parameters
 		void callDelegate(KeyDelegateInfo&);
 
-		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> begin_;
-		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> update_;
+		InstancedProxyMethod begin_;
+		InstancedProxyMethod update_;
+		ProxyMethod synchronize_;
 		ProxyMethod signal_;
+
+		RegisterInstanceProxyMethod rpm_;
+		uint32_t* lastID{ nullptr };
+
+		//std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> begin_;
+		//std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> update_;
+		//ProxyMethod signal_;
 	};
 }

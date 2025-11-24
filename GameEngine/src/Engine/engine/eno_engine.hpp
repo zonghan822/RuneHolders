@@ -117,6 +117,12 @@ namespace Engine
 		Resources::EnoLoader& getResourceLoader() { return loader_; }
 
 		/*============================================================================================
+		* \brief		Gets the Resource Loader for asset management
+		* \return		Reference to the EnoLoader instance
+		*//*========================================================================================*/
+		Animation::AnimationControllerRegistry& getAnimationRegistry() { return animRegistry; }
+
+		/*============================================================================================
 		* \brief		Gets the Config Manager for settings management
 		* \return		Reference to the EnoConfigManager instance
 		*//*========================================================================================*/
@@ -218,6 +224,7 @@ namespace Engine
 		Editor::EnoEditor editor_{ bus_, entityMng_, coreHost_ };
 		std::unique_ptr<Map::TileMapSystem> tilemapSystem_;
 		std::unique_ptr<AI::PathfindingSystem> pathfinder_;
+		Animation::AnimationControllerRegistry animRegistry;
 
 		// Systems
 		Input::EnoInputManager inputMng_{ bus_ };
