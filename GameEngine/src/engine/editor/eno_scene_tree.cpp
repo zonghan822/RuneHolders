@@ -208,6 +208,8 @@ namespace Editor
 				siblings.end());
 		}
 
+		// Save the ID for reuse before erasing
+		salvagedID_.push_back(selectedNode_->sceneObjectID_);
 		tree_.erase(selectedNode_->sceneObjectID_);
 		selectedNode_ = nullptr;
 	}
@@ -240,6 +242,8 @@ namespace Editor
 				siblings.end());
 		}
 
+		// Save the ID for reuse before erasing
+		salvagedID_.push_back(node->sceneObjectID_);
 		tree_.erase(node->sceneObjectID_);
 	}
 
