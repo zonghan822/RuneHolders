@@ -80,7 +80,8 @@ namespace Editor
 		void attachScript(std::unique_ptr<Script::EnoScript>&&);
 
 		// Detach script
-		void detachScript(std::unique_ptr<Script::EnoScript>&&);
+		void detachScript(Node* node);
+		void detachScript();
 
 		// Serialize/Deserialize scene tree data
 		void save(const std::string&, const std::string& sceneName);
