@@ -1,0 +1,30 @@
+{
+	"struct ECSComponents::AudioComponent": {
+		"Volume": {
+			"value": "50",
+			"type": "double"
+		},
+		"Pitch Scale": {
+			"value": "0",
+			"type": "double"
+		},
+		"Pan Scale": {
+			"value": "0",
+			"type": "double"
+		},
+		"Is Playing": {
+			"value": "0",
+			"type": "bool"
+		},
+		"Is Autoplay": {
+			"value": "0",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::LayerComponent": {
+		"Layer": {
+			"value": "NULL",
+			"type": "char32"
+		}
+	},
+}

@@ -41,3 +41,13 @@
 [2025-11-07 16:54:07] Entity has no registered AI::StateMachine
 [2025-11-07 16:54:39] Entity has no registered AI::StateMachine
 [2025-11-07 16:55:18] Entity has no registered AI::StateMachine
+[2025-11-16 02:51:57] Failed to find the requested sound!
+[2025-11-16 03:26:18] Failed to find the requested sound!
+[2025-11-16 03:56:38] Failed to find the group 
+[2025-11-16 12:38:35] Failed to find the group 
+[2025-11-16 12:38:59] Failed to find the group 
+[2025-11-16 14:32:42] Failed to find the group 
+[2025-11-16 14:34:11] Failed to find the group 
+[2025-11-16 23:42:53] Failed to find the sound 
+[2025-11-17 00:01:31] Failed to find the sound 
+[2025-11-17 00:07:49] Failed to find the sound 

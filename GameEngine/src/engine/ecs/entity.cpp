@@ -1,4 +1,5 @@
 #include "entity.hpp"
+#include "../prefab/prefab.hpp"
 
 
 namespace ECS
@@ -129,7 +130,7 @@ namespace ECS
 				};
 
 			// Parse and map fields of a component
-			std::unordered_map<std::string, DataField> dataMap;
+			std::unordered_map<std::string, ECSComponents::DataField> dataMap;
 			size_t fieldPos{};
 			while (fieldPos < compData.size())
 			{
@@ -227,6 +228,14 @@ namespace ECS
 			pos = data.find('[', compEnd + 1);
 			if (pos == std::string::npos)
 				break;
+		}
+
+		// After loading all components, check if this entity is a prefab instance
+		// If so, register it in the prefab tracking system
+		if (entity.has<ECSComponents::PrefabInstanceComponent>(entMng))
+		{
+			auto& prefabInstance = entity.get<ECSComponents::PrefabInstanceComponent>(entMng);
+			registerPrefabInstance(entity.id(), prefabInstance.prefabName);
 		}
 	}
 
@@ -392,9 +401,8 @@ namespace ECS
 		}
 	}
 
-
 	// Helper for creating a DataField that was specified in the save file
-	DataField EntityManager::deduceValue(const std::string& value, const std::string& type)
+	ECSComponents::DataField EntityManager::deduceValue(const std::string& value, const std::string& type)
 	{
 		auto trim = [](const std::string& str) -> std::string
 			{
@@ -444,6 +452,12 @@ namespace ECS
 
 		// char[256]
 		if (ttype == "char256")
+		{
+			return tvalue;
+		}
+
+		// char[64]
+		if (ttype == "char64")
 		{
 			return tvalue;
 		}

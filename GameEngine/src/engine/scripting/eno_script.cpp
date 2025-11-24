@@ -28,8 +28,11 @@ namespace Script
 		wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
 		for (size_t i = 0; i < count; i++)
 		{
+			std::wstring org = classNames[i];
 			std::wstring cname = extrClassName(classNames[i]);
+
 			map(cname);
+			origin_.insert(org);
 
 			// Cleanup names after use
 			CoTaskMemFree(classNames[i]);
@@ -207,6 +210,8 @@ namespace Script
 	}
 
 	std::string EnoScript::path() { return wideToUtf8(path_); }
+	std::unordered_multimap<std::wstring, Field>& EnoScript::vars() { return vars_; }
+	std::unordered_set<std::wstring>& EnoScript::origin() { return origin_; }
 
 	// Helper for converting wide strings to standard utf-8
 	std::string EnoScript::wideToUtf8(const std::wstring& wstr)
@@ -220,6 +225,142 @@ namespace Script
 		WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(), str.data(), size, NULL, NULL);
 
 		return str;
+	}
+
+	// ================== Signal ==================
+	std::pair<std::string, std::string> EnoScript::signalWrite(std::string nodeName, std::string signalName)
+	{
+		std::fstream file{ path_, std::ios::in | std::ios::out };
+		if (!file)
+			throw std::runtime_error("Failed to find the file to write to!");
+
+		// Lowercase all
+		Conversion::strToLower(nodeName);
+		Conversion::strToLower(signalName);
+
+		// Form the signal function signature
+		std::string funcName =
+			std::string{ signalSuffix } +
+			nodeName +
+			'_' +
+			signalName;
+
+		std::string funcSignature =
+			std::string{ signalKeyWords } +
+			std::string{ signalSuffix } +
+			nodeName + '_' +
+			signalName + "()\n"
+			"        {\n\n"
+
+			"        }\n";
+
+		// Write the signal func on the bottom of the script
+		std::stringstream stream{};
+		stream << file.rdbuf();
+		std::string data = stream.str();
+
+		// Verify that this signal func has not already been written
+		std::string className = classToNest(data);
+
+		size_t fs = data.find(funcName);
+		if (fs != std::string::npos)
+		{
+			std::cout << funcName << " has already been defined in the script!" << std::endl;
+			return { funcName, className };
+		}
+
+		// Write and close file
+		writeMethod(data, funcSignature);
+
+		file.close();
+		std::ofstream out{ path_, std::ios::trunc };
+		out << data;
+
+		return { funcName, className };
+	}
+
+	void EnoScript::writeMethod(std::string& data, const std::string& method)
+	{
+		// Find top level class
+		size_t cpos = data.find("class ");
+		if (cpos == std::string::npos)
+		{
+			std::cerr << "No class found! Will not continue writing the signal method!" << std::endl;
+			return;
+		}
+
+		// Find start of the line containing "class "
+		size_t lineStart = data.rfind('\n', cpos);
+		if (lineStart == std::string::npos)
+			lineStart = 0;
+		else
+			++lineStart;
+
+		// Get indentation before "class"
+		size_t indentEnd = lineStart;
+		while (indentEnd < data.size() && (data[indentEnd] == ' ' || data[indentEnd] == '\t'))
+			++indentEnd;
+
+		std::string classIndent = data.substr(lineStart, indentEnd - lineStart);
+
+		// Find the opening brace
+		size_t openBrace = data.find("{", cpos);
+		if (openBrace == std::string::npos)
+		{
+			std::cerr << "Class has no opening brace!" << std::endl;
+			return;
+		}
+
+		// Find closing brace
+		int depth{ 1 };
+		size_t pos{ openBrace + 1 };
+
+		while (pos < data.size() && depth > 0)
+		{
+			if (data[pos] == '{') ++depth;
+			else if (data[pos] == '}') --depth;
+
+			++pos;
+		}
+
+		if (depth != 0)
+		{
+			std::cerr << "Braces not indented properly!" << std::endl;
+			return;
+		}
+
+		// Write
+		size_t writePos = pos - 1;
+		data.insert(writePos, method + classIndent);
+	}
+
+	std::string EnoScript::classToNest(const std::string& data)
+	{
+		// Find top level class
+		size_t cpos = data.find("class ");
+		if (cpos == std::string::npos)
+		{
+			std::cerr << "No class found!" << std::endl;
+			return "";
+		}
+
+		// Start position of class name (right after "class ")
+		size_t nameStart = cpos + 6;
+
+		// Skip whitespace
+		while (nameStart < data.size() && (data[nameStart] == ' ' || data[nameStart] == '\t'))
+			++nameStart;
+
+		// End of class name: either whitespace, {, or :
+		size_t nameEnd = nameStart;
+		while (nameEnd < data.size() &&
+			!(data[nameEnd] == ' ' || data[nameEnd] == '\t' ||
+				data[nameEnd] == '{' || data[nameEnd] == ':'))
+		{
+			++nameEnd;
+		}
+
+		return data.substr(nameStart, nameEnd - nameStart);
 	}
 
 	std::wostream& operator<<(std::wostream& os, const Value& value)

@@ -11,6 +11,9 @@
 // Events
 #include "../editor/editor_events.hpp"
 
+// Undo System
+#include "undo/undo_manager.hpp"
+
 
 namespace Editor
 {
@@ -26,7 +29,8 @@ namespace Editor
 			:
 			bus_ { bus },
 			entMng_{ entMng },
-			coreHost_{ coreHost }
+			coreHost_{ coreHost },
+			undoManager_{ bus, entMng, 20 }
 		{
 			// Find the last loaded scene if possible
 			loadLastSavedScene();
@@ -41,6 +45,14 @@ namespace Editor
 			bus_.subscribe<Editor::TestTree>([&](const Editor::TestTree)
 				{
 					operation();
+				});
+
+			// Subscribe to delete selected entity event
+			// NOTE: This is just a placeholder - actual deletion happens in GameApplication
+			// because entities are stored in GameApplication's sceneTree_
+			bus_.subscribe<Editor::DeleteSelectedEntity>([&](const Editor::DeleteSelectedEntity)
+				{
+					// Event will be handled by GameApplication's subscriber
 				});
 		}
 
@@ -81,9 +93,9 @@ namespace Editor
 
 			//Node* node1 = tree_.create();
 			//Node* node2 = tree_.create();
-			//tree_.save(ASSETS_DIR_PATH "/saves/SceneTreeSave", tree_.getSceneName());
+			//tree_.save(ASSETS_DIR_PATH "saves/SceneTreeSave", tree_.getSceneName());
 			
-			//tree_.load(ASSETS_DIR_PATH "/saves/SceneTreeSave");
+			//tree_.load(ASSETS_DIR_PATH "saves/SceneTreeSave");
 
 			//auto nodes = tree_.getAllNodes();
 			////auto collioffset = nodes[0]->entity_.get<ECSComponents::CollisionComponent>(entMng_).offset.x; // should give me 5
@@ -400,7 +412,9 @@ namespace Editor
 			return scriptMng_;
 		}
 
-
+		UndoManager& getUndoManager() {
+			return undoManager_;
+		}
 
 	private:
 		// Scenes
@@ -421,5 +435,8 @@ namespace Editor
 
 		// Scene tree
 		EnoSceneTree tree_{ entMng_, coreHost_ };
+
+		// Undo system
+		UndoManager undoManager_;
 	};
 }

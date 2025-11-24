@@ -7,44 +7,36 @@
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
-
 #pragma once
 
 // stds
 #include <vector>
 #include <functional>
-
+#include <any>
 
 namespace Events
 {
-	template <typename... Type>
-	class Signal
+	// A signal is essentially a container of observers, with each callback stored within the signal
+	// allowed to contain a list of params of any type. 
+	// Inspired by: https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/c_sharp_signals.html
+	class EnoSignal
 	{
 	public:
-		using Slot = std::function<void(Type...)>;
+		using Callback = std::function<void(const std::vector<std::any>&)>;
 
-		/*============================================================================================
-			* \brief			Connects a listener to a signal
-			* \param[in]		A callable to invoke when signal is emitted
-		*//*========================================================================================*/
-		void connect(Slot slot)
+		// Subcribe
+		void connect(Callback cb)
 		{
-			slots_.push_back(std::move(slot));
+			callbacks.push_back(cb);
 		}
 
-		/*============================================================================================
-			* \brief			Emit signal and invoke listeners
-			* \param[in]		Arguments to forward to each slot
-		*//*========================================================================================*/
-		void emit(Type... values)
+		// Ping
+		void emit(const std::vector<std::any>& p = {})
 		{
-			for (auto& slot : slots_)
-			{
-				slot(values...);
-			}
+			for (auto& callb : callbacks) { callb(p); }
 		}
 
 	private:
-		std::vector <Slot> slots_;
+		std::vector<Callback> callbacks;
 	};
 }

@@ -11,7 +11,20 @@
 #pragma once
 
 // Engine Component(s)
-#include "../ecs/archetype_presets.hpp"
+#include "../component/components/name.hpp"
+#include "../component/components/layer.hpp"
+#include "../component/components/transform.hpp"
+#include "../component/components/visibility.hpp"
+#include "../component/components/drawInfo.hpp"
+#include "../component/components/player_component.hpp"
+#include "../component/components/collision_component.hpp"
+#include "../component/components/physics_component.hpp"
+#include "../component/components/box_component.hpp"
+#include "../component/components/ai_component.hpp"
+#include "../component/components/buttons.hpp"
+#include "../component/components/audio.hpp"
+#include "../component/components/prefab_instance.hpp"
+
 #include "../component/component_list.hpp"
 
 // stds

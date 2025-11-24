@@ -4,6 +4,9 @@
 // Engine Component(s)
 #include "../../audio/eno_audio_module.hpp"
 
+// Event
+#include "../../event/signals.hpp"
+
 // stds
 #include <string>
 #include <iostream>
@@ -13,6 +16,17 @@ namespace ECSComponents
 {
 	struct AudioComponent
 	{
+		// Predefine signal(s) for the user to utilize
+		AudioComponent()
+		{
+			signals["started"] = Events::EnoSignal();
+			signals["finished"] = Events::EnoSignal();
+		}
+
+		// Signals
+		std::unordered_map<std::string, Events::EnoSignal> signals;
+		Events::EnoSignal& signal(const std::string& name) { return signals.at(name); }
+
 		Audio::EnoAudioModule audioMod_;
 
 		double volume_{ 50.0 };

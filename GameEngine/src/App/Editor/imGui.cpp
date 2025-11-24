@@ -13,6 +13,7 @@
 #include "game_logic.hpp"
 #include "player/player_config.hpp"
 #include "player/player_archetype_config.hpp"
+#include "editor/undo/undo_manager.hpp"
 
 #undef min
 #undef max
@@ -28,9 +29,6 @@ using Editor::Node;
 
 extern GameApplication game;
 
-// Collision system
-std::unique_ptr<Collision::CollisionSystem> collisionSystem_;
-std::unique_ptr<Player::PlayerSystem> playerSystem_;
 bool showColliders_ = true;
 
 GameApplication* g_game = nullptr;
@@ -79,12 +77,50 @@ static uint32_t draggedEntityID = 0;
 static ImVec2 dragOffset;
 static ImVec2 lastDragPos;
 
+// Transform Gizmos
+enum GizmoMode { GIZMO_TRANSLATE, GIZMO_ROTATE, GIZMO_SCALE };
+static GizmoMode currentGizmoMode = GIZMO_TRANSLATE;
+static bool isRotating = false;
+static bool isScaling = false;
+static int activeTransformAxis = 0; // 0=none, 1=X-axis, 2=Y-axis, 3=uniform scale, 4=X-scale, 5=Y-scale
+static float initialAngle = 0.0f;
+static float initialRotation = 0.0f;
+static ImVec2 initialScale = ImVec2(1.0f, 1.0f);
+static ImVec2 lastScale = ImVec2(1.0f, 1.0f);  // Track last frame scale for delta calculation
+static ImVec2 scaleStartPos = ImVec2(0.0f, 0.0f);
+static ImVec2 dragStartWorldPos = ImVec2(0.0f, 0.0f);
+
+// Undo system - store transform state before gizmo operations
+static Math::eVec2<float> transformBeforeDrag;
+static Math::eVec2<float> rotationBeforeDrag;
+static Math::eVec2<float> scaleBeforeDrag;
+static std::vector<uint32_t> affectedEntityIDs;  // Track all entities affected by transformation (parent + children)
+static std::unique_ptr<Editor::MultiTransformCommand> pendingTransformCommand;  // Command being built during transformation
+
 // Prefab placement
 static std::string g_selectedPrefabForPlacement = "";
 
 // Entity deletion by click
 static bool g_waitingForEntityDeletion = false;
+
+// Audio filesystems
+static std::vector<std::string> audioAssets;
+
 #pragma endregion
+
+/*============================================================================================
+* \\brief   Helper function for undo/redo system to mark entities dirty
+*
+*           This function is called from entity_commands.hpp to update the render cache
+*           after entity creation, deletion, or restoration operations.
+*//*========================================================================================*/
+void markGameEntitiesDirty()
+{
+	if (g_game)
+	{
+		g_game->markEntitiesDirty();
+	}
+}
 
 float randomFloat(float min, float max) {
 	std::uniform_real_distribution<float> dist(min, max);
@@ -100,6 +136,8 @@ void imGuiInit(GLFWwindow* window) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.FontGlobalScale = 1.5f;
+	//ImGui::GetStyle().ScaleAllSizes(1.5f);
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigDockingNoSplit = false;
@@ -108,8 +146,7 @@ void imGuiInit(GLFWwindow* window) {
 	ImGui_ImplOpenGL3_Init("#version 330");
 }
 
-
-void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
+void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -132,7 +169,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	static Player::PlayerConfig playerConfig;
 	static bool configLoaded = false;
 	if (!configLoaded) {
-		configLoaded = playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
+		configLoaded = playerConfig.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
 		if (configLoaded) {
 			std::cout << "[ImGui] Player config loaded successfully" << std::endl;
 		}
@@ -164,7 +201,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 
 	// Hierarchy
 	ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayHierarchyTab(engine_, sceneTree);
+	displayHierarchyTab(engine_, sceneTree, undoManager);
 	ImGui::End();
 
 	// Scene select
@@ -172,15 +209,20 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 	displaySceneTab(engine_.getEnoEditor());
 	ImGui::End();
 
+	// Audio select
+	ImGui::Begin("Audio Browser", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayAudioTab(engine_);
+	ImGui::End();
+
 	// Edit tab 
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_, sceneTree);
-	displayAllEntitiesTab(engine_);
+	displayAllEntitiesTab(engine_, sceneTree, undoManager);
 	ImGui::End();
 
 	// Prefabs
 	ImGui::Begin("Prefabs", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayPrefabsTab(engine_, sceneTree);
+	displayPrefabsTab(engine_, sceneTree, undoManager);
 	ImGui::End();
 
 	// Game View (full scene, bottom-right)
@@ -190,7 +232,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 
 	// Editor View (zoomed in, center - replaces old Game View behavior)
 	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-	displayEditorView(engine_, sceneTree);
+	displayEditorView(engine_, sceneTree, undoManager);
 	ImGui::End();
 
 	// Assets Browser
@@ -442,6 +484,75 @@ void moveChildrenRecursive(Editor::Node* node, float deltaX, float deltaY, ECS::
 	}
 }
 
+void rotateChildrenRecursive(Editor::Node* node, float deltaRotation, Math::eVec2<float> parentPos, ECS::EntityManager& entityManager)
+{
+	if (!node) return;
+
+	// Rotate all children of this node around the parent's position
+	for (Editor::Node* child : node->children_)
+	{
+		if (child->entity_.has<ECSComponents::TransformComponent>(entityManager))
+		{
+			auto& tc = child->entity_.get<ECSComponents::TransformComponent>(entityManager);
+
+			// 1. Rotate the child's own rotation
+			tc.rot.x += deltaRotation;
+
+			// 2. Rotate the child's position around the parent position
+			// Get relative position from parent
+			float relX = tc.pos.x - parentPos.x;
+			float relY = tc.pos.y - parentPos.y;
+
+			// Rotate the relative position
+			float cosRot = cosf(deltaRotation);
+			float sinRot = sinf(deltaRotation);
+			float newRelX = relX * cosRot - relY * sinRot;
+			float newRelY = relX * sinRot + relY * cosRot;
+
+			// Update child position
+			tc.pos.x = parentPos.x + newRelX;
+			tc.pos.y = parentPos.y + newRelY;
+		}
+
+		// Recursively rotate this child's children
+		rotateChildrenRecursive(child, deltaRotation, parentPos, entityManager);
+	}
+}
+
+void scaleChildrenRecursive(Editor::Node* node, float scaleFactorX, float scaleFactorY, Math::eVec2<float> parentPos, ECS::EntityManager& entityManager)
+{
+	if (!node) return;
+
+	// Scale all children of this node from the parent's position
+	for (Editor::Node* child : node->children_)
+	{
+		if (child->entity_.has<ECSComponents::TransformComponent>(entityManager))
+		{
+			auto& tc = child->entity_.get<ECSComponents::TransformComponent>(entityManager);
+
+			// 1. Scale the child's own scale
+			tc.scale.x *= scaleFactorX;
+			tc.scale.y *= scaleFactorY;
+
+			// 2. Scale the child's position relative to parent
+			// Get relative position from parent
+			float relX = tc.pos.x - parentPos.x;
+			float relY = tc.pos.y - parentPos.y;
+
+			// Scale the relative position
+			relX *= scaleFactorX;
+			relY *= scaleFactorY;
+
+			// Update child position
+			tc.pos.x = parentPos.x + relX;
+			tc.pos.y = parentPos.y + relY;
+		}
+
+		// Recursively scale this child's children
+		scaleChildrenRecursive(child, scaleFactorX, scaleFactorY, parentPos, entityManager);
+	}
+}
+
 void destroyChildrenRecursive(Editor::Node* node, ECS::EntityManager& entityManager)
 {
 	if (!node) return;
@@ -457,71 +568,135 @@ void destroyChildrenRecursive(Editor::Node* node, ECS::EntityManager& entityMana
 	}
 }
 
-ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine, Editor::EnoSceneTree& sceneTree)
+// Helper function to collect entity IDs for a node and all its children
+void collectEntityIDsRecursive(Editor::Node* node, std::vector<uint32_t>& entityIDs)
+{
+	if (!node) return;
+
+	// Add this entity's ID
+	entityIDs.push_back(node->entity_.id());
+
+	// Recursively add all children
+	for (Editor::Node* child : node->children_)
+	{
+		collectEntityIDsRecursive(child, entityIDs);
+	}
+}
+
+uint32_t getSelectedEntityID()
+{
+	return selectedEntityID;
+}
+
+void clearSelectedEntity()
+{
+	selectedEntityID = UINT32_MAX;
+}
+
+// Helper to collect all entity IDs in a node hierarchy
+void collectEntityIDs(Editor::Node* node, std::vector<uint32_t>& entityIDs)
+{
+	if (!node) return;
+
+	// Add this node's entity ID
+	entityIDs.push_back(node->entity_.id());
+
+	// Recursively collect children's entity IDs
+	for (Editor::Node* child : node->children_)
+	{
+		collectEntityIDs(child, entityIDs);
+	}
+}
+
+void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager)
+{
+	if (selectedEntityID == UINT32_MAX) {
+		std::cout << "[DEBUG] No entity selected for deletion\n";
+		return;
+	}
+
+	std::cout << "[DEBUG] Attempting to delete entity with ID: " << selectedEntityID << "\n";
+
+	// Debug: List all nodes in scene tree
+	auto allNodes = sceneTree.getAllNodes();
+	std::cout << "[DEBUG] Scene tree contains " << allNodes.size() << " nodes:\n";
+	for (auto* n : allNodes) {
+		std::cout << "  - Node ID: " << n->sceneObjectID_ << ", Entity ID: " << n->entity_.id() << ", Name: " << n->name_ << "\n";
+	}
+
+	// Get the node for the selected entity
+	Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
+
+	if (node) {
+		std::cout << "[DEBUG] Found node! Deleting node " << selectedEntityID << " (\"" << node->name_ << "\") and all children from hierarchy\n";
+
+		// Get entity to capture snapshot
+		ECS::Entity entity = node->entity_;
+
+		// Create delete command (captures snapshot before deletion)
+		auto deleteCmd = std::make_unique<Editor::DeleteEntityCommand>(
+			sceneTree,
+			entityManager,
+			entity
+		);
+
+		// Execute the deletion (also adds to undo history)
+		undoManager.executeCommand(std::move(deleteCmd));
+
+		// Clear selection
+		selectedEntityID = UINT32_MAX;
+
+		std::cout << "[DEBUG] Entity deletion completed with undo support\n";
+	}
+	else {
+		std::cout << "[ERROR] Selected entity " << selectedEntityID << " not found in scene tree!\n";
+		std::cout << "[ERROR] This entity exists in ECS but has no corresponding node in the scene tree.\n";
+	}
+}
+
+ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager)
 {
 	auto& entityManager = engine.getEntityManager();
 
-	const PrefabData& prefab = prefabRegistry[name];
+	// Use the new snapshot-based prefab system
+	ECS::Entity e = instantiatePrefabFromSnapshot(name, entityManager, sceneTree);
 
-	// Treat x,y as the CENTER of where the user clicked
-	float centerX = x;
-	float centerY = y;
-
-	// create the entity
-	ECS::Entity e = entityManager.create<>();
-
-	// Create unique name by appending entity ID
-	std::string uniqueName = prefab.name + " #" + std::to_string(e.id());
-
-	// attach components
-	e.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(uniqueName.c_str()));
-
-	// transform uses center position
-	ECSComponents::TransformComponent transform{
-		{centerX, centerY},
-		{0.0f, 0.0f},
-		{1.0f, 1.0f}
-	};
-	e.add<ECSComponents::TransformComponent>(entityManager, transform);
-
-	// draw info uses top-left position
-	ECSComponents::RenderComponent draw{
-		prefab.width, prefab.height,
-		prefab.shape == 0 ? "Circle" : "Rectangle",  // 0=Circle, 1=Rectangle (matches dropdown order)
-		prefab.color
-	};
-	e.add<ECSComponents::DrawInfoComponent>(entityManager, draw);
-
-	// collider (optional)
-	if (prefab.hasCollider) {
-		e.add<ECSComponents::CollisionComponent>(
-			entityManager,
-			ECSComponents::CollisionComponent(prefab.width, prefab.height));
-	}
-
-	// Button component
-	if (prefab.name == "ExitButton")
+	// Override the position to where the user clicked (treat x,y as CENTER)
+	if (e.has<ECSComponents::TransformComponent>(entityManager))
 	{
-		ECSComponents::VisibilityComponent visibility;
-		visibility.visible = true;
-		e.add<ECSComponents::VisibilityComponent>(entityManager, visibility);
-
-		e.add<ECSComponents::ButtonComponent>(entityManager);
+		auto& transform = e.get<ECSComponents::TransformComponent>(entityManager);
+		transform.pos.x = x;
+		transform.pos.y = y;
 	}
 
-	// Add entity to scene hierarchy as root node
-	sceneTree.createFromEntity(e, nullptr);
+	// Add entity to scene hierarchy as root node (must be done before CreateEntityCommand)
+	Node* node = sceneTree.createFromEntity(e, nullptr);
+
+	// Update node name from entity's NameComponent if it exists
+	if (e.has<ECSComponents::NameComponent>(entityManager))
+	{
+		auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
+		node->name_ = nameComp.name;
+	}
+
+	// Record creation for undo/redo with full snapshot
+	auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
+		sceneTree,
+		entityManager,
+		e
+	);
+	undoManager.executeCommand(std::move(createCmd));
 
 	// update render cache
 	if (g_game) g_game->markEntitiesDirty();
 
-	std::cout << "Spawned prefab '" << prefab.name
+	std::cout << "Spawned prefab '" << name
 		<< "' at (" << x << ", " << y << ")\n";
 
 	return e;
 }
 
-void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
+void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
 
 	auto& entityManager = engine_.getEntityManager();
 
@@ -565,17 +740,31 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	if (ImGui::Button("Save New or Existing Prefabs:")) {
 		savePrefab(currentPrefab);
 		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
+		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
 	}
 
 	//ImGui::Separator();
 
 	// Load performs a "read all file in directory" now
 	if (ImGui::Button("Load Existing Prefab")) {
-		for (auto& entry : std::filesystem::directory_iterator("../../../assets/saves/")) {
-			if (entry.path().extension() == ".txt") {
-				PrefabData loaded = loadPrefab(entry.path().string());
-				prefabRegistry[loaded.name] = loaded;
+		try {
+			for (auto& entry : std::filesystem::directory_iterator(ASSETS_DIR_PATH"saves/prefabs/")) {
+				if (entry.path().extension() == ".txt") {
+					try {
+						PrefabData loaded = loadPrefab(entry.path().string());
+						if (!loaded.name.empty()) {
+							prefabRegistry[loaded.name] = loaded;
+							std::cout << "[UI] Loaded prefab: " << loaded.name << "\n";
+						}
+					}
+					catch (const std::exception& e) {
+						std::cerr << "[UI] Failed to load prefab from " << entry.path() << ": " << e.what() << "\n";
+					}
+				}
 			}
+		}
+		catch (const std::exception& e) {
+			std::cerr << "[UI] Failed to read prefab directory: " << e.what() << "\n";
 		}
 	}
 
@@ -611,10 +800,18 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	ImGui::Separator();
 	if (ImGui::Button("Spawn Prefab")) {
 		if (prefabRegistry.count(selectedPrefabName)) {
-			ECS::Entity e = instantiatePrefab(prefabRegistry[selectedPrefabName], entityManager);
+			ECS::Entity e = instantiatePrefabFromSnapshot(selectedPrefabName, entityManager, sceneTree);
 
 			// Add entity to scene hierarchy as root node
 			sceneTree.createFromEntity(e, nullptr);
+
+			// Record creation for undo/redo with full snapshot
+			auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
+				sceneTree,
+				entityManager,
+				e
+			);
+			undoManager.executeCommand(std::move(createCmd));
 
 			if (g_game) g_game->markEntitiesDirty();
 			std::cout << "Spawned prefab: " << selectedPrefabName << "\n";
@@ -641,7 +838,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	//}
 }
 
-void displayAllEntitiesTab(Engine::EnoEngine& engine_)
+void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager)
 {
 	auto& entityManager = engine_.getEntityManager();
 
@@ -676,7 +873,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_)
 			if (e.id() == selectedEntityID)
 			{
 				// Display inspector for all entities (including root nodes)
-				displayEntityInspector(engine_, e);
+				displayEntityInspector(engine_, e, undoManager, sceneTree);
 				entityFound = true;
 				break;
 			}
@@ -690,7 +887,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_)
 	}
 }
 
-void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
+void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager)
 {
 	ImGui::Text("=== Scene Hierarchy ===");
 	ImGui::Separator();
@@ -704,7 +901,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 			// Load player configuration from file
 			Player::PlayerConfig playerConfig;
-			playerConfig.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
+			playerConfig.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
 
 			// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
 			constexpr float centerX = 640.0f;
@@ -877,6 +1074,14 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 		Node* createdNode = sceneTree.createFromEntity(newEntity, nullptr);
 
+		// Record creation for undo/redo with full snapshot
+		auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
+			sceneTree,
+			entityManager,
+			newEntity
+		);
+		undoManager.executeCommand(std::move(createCmd));
+
 		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created\n";
 		if (attachScript && selectedScriptIndex >= 0) {
 			std::wstring selectedScript = availableScripts[selectedScriptIndex];
@@ -884,6 +1089,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
 			if (script)
 				sceneTree.attachScript(createdNode, std::move(script));
+			else
+				std::cerr << "No script is attached!" << std::endl;
 		}
 		if (g_game) g_game->markEntitiesDirty();
 	}
@@ -928,6 +1135,14 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				Editor::Node* parentNode = sceneTree.getNodeByEntityID(selectedEntityID);
 				Editor::Node* childNode = sceneTree.createFromEntity(childEntity, parentNode);
 
+				// Record creation for undo/redo
+				auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
+					sceneTree,
+					entityManager,
+					childEntity
+				);
+				undoManager.executeCommand(std::move(createCmd));
+
 				//if (attachScript) {
 				//	auto script = scriptMng.selectScript(); // file picker
 				//	if (script) {
@@ -945,7 +1160,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				if (g_game) g_game->markEntitiesDirty();
 
 				std::cout << "Added child node " << childEntity.id() << " ('" << nameComp.name
-					<< "') to parent " << selectedEntityID << "\n";
+					<< "') to parent " << selectedEntityID << " with undo support\n";
 
 				// Debug: verify the relationship was set
 				if (childNode) {
@@ -1261,8 +1476,194 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 }
 
+static void LoadAudioAssets(Engine::EnoEngine& engine_)
+{
+	audioAssets.clear();
 
-void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity)
+	std::vector<std::string> folders = {
+		engine_.getResourceLoader().getMusicPath().c_str(),
+		engine_.getResourceLoader().getSFXPath().c_str(),
+	};
+
+	for (const auto& folder : folders)
+	{
+		if (!std::filesystem::exists(folder))
+			continue;
+
+		for (const auto& entry : std::filesystem::directory_iterator(folder))
+		{
+			if (!entry.is_regular_file()) continue;
+
+			std::string ext = entry.path().extension().string();
+			if (ext == ".wav" || ext == ".ogg" || ext == ".mp3")
+			{
+				audioAssets.push_back(entry.path().filename().string());
+			}
+		}
+	}
+}
+
+void displayAudioTab(Engine::EnoEngine& engine_)
+{
+	Resources::EnoLoader& loader = engine_.getResourceLoader();
+	Event::EnoEventBus& bus = engine_.getEventBus();
+
+
+	ImGui::Text("=== AUDIO ASSETS ===");
+
+	// Button to load audio assets exactly once
+	if (ImGui::Button("Load Audio Files"))
+	{
+		LoadAudioAssets(engine_);
+	}
+
+	ImGui::Separator();
+
+
+	static int selectedAsset = -1;
+	static std::string selectedName{};
+	static FMOD::Sound* selectedSound = nullptr;
+ 
+	 // ============== FILE LIST ==============
+	ImGui::BeginChild("AudioAssetList", ImVec2(0, 150), true);
+
+	if (audioAssets.empty())
+	{
+		ImGui::TextDisabled("(No audio loaded. Press button above)");
+	}
+	else
+	{
+		for (int i = 0; i < audioAssets.size(); ++i)
+		{
+			if (ImGui::Selectable(audioAssets[i].c_str(), selectedAsset == i))
+			{
+				selectedAsset = i;
+
+				selectedName = audioAssets[i];
+
+				selectedName = selectedName.substr(0, selectedName.find_last_of('.'));
+
+				std::cout << "[Audio] User selected: " << selectedName << "\n";
+
+				// Request engine to load this sound
+				bus.publish(Audio::RequestSound{ selectedName });
+
+				auto& sounds = loader.getSounds();
+				auto it = sounds.find(selectedName);
+
+				if (it != sounds.end())
+				{
+					selectedSound = it->second;
+					std::cout << "[Audio] Loaded Sound: " << selectedName << "\n";
+				}
+				else
+				{
+					selectedSound = nullptr;
+					std::cout << "[Audio] ERROR: Sound not found after request.\n";
+				}
+			}
+		}
+	}
+
+	ImGui::EndChild();
+	ImGui::Separator();
+
+	// ====== Waveform Viewer (Mock) ======
+	ImGui::Text("Waveform Preview");
+	ImGui::BeginChild("WaveformViewer", ImVec2(0, 200), true);
+
+	ImDrawList* draw = ImGui::GetWindowDrawList();
+	ImVec2 pos = ImGui::GetCursorScreenPos();
+	ImVec2 size = ImGui::GetContentRegionAvail();
+
+	float midY = pos.y + size.y * 0.5f;
+	float step = size.x / 60.0f;
+
+	// mock waveform
+	for (int i = 0; i < 60; i++)
+	{
+		float h = (sinf(i * 0.3f) * 0.5f + 0.5f) * (size.y * 0.9f);
+		draw->AddLine(
+			ImVec2(pos.x + i * step, midY - h * 0.5f),
+			ImVec2(pos.x + i * step, midY + h * 0.5f),
+			IM_COL32(100, 200, 255, 255), 2.0f
+		);
+	}
+
+	ImGui::EndChild();
+
+
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	ImGui::Text("=== Test Playback ===");
+
+	if (selectedName.empty())
+	{
+		ImGui::TextDisabled("Select an audio file to test.");
+	}
+	else
+	{
+		ImGui::Text("Selected: %s", selectedName.c_str());
+
+		if (ImGui::Button("Play as SFX"))
+		{
+			bus.publish(Audio::PlayInstant{ "SFX", selectedName });
+			std::cout << "PlayInstant SFX: " << selectedName << "\n";
+		}
+
+		if (ImGui::Button("Set as BGM"))
+		{
+			bus.publish(Audio::SetNewAudio{ selectedName });
+			std::cout << "SetNewAudio (BGM): " << selectedName << "\n";
+		}
+
+		if (ImGui::Button("Play BGM preview"))
+		{
+			bus.publish(Audio::SetAudioState{ "BGM" });
+		}
+
+		if (ImGui::Button("Stop BGM preview"))
+		{
+			bus.publish(Audio::StopBGM{});
+		}
+
+		auto& map = engine_.getEntityManager().getMap();
+		auto it = map.find(selectedEntityID);
+
+		if (it == map.end())
+		{
+			ImGui::TextDisabled("Invalid entity selected");
+		}
+		else if (ImGui::Button("Attach SFX to Selected Entity"))
+		{
+			ECS::Entity selectedEntity{ selectedEntityID }; 
+
+			// Add component if missing
+			if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
+				selectedEntity.add<ECSComponents::AudioComponent>(engine_.getEntityManager());
+				std::cout << "[Audio] Added AudioComponent.\n";
+			}
+
+			// Fill it
+			ECSComponents::AudioComponent& ac = selectedEntity.get<ECSComponents::AudioComponent>(engine_.getEntityManager());
+
+			strncpy(ac.audioMod_.name_, selectedName.c_str(), sizeof(ac.audioMod_.name_) - 1);
+			strncpy(ac.audioMod_.chGroup_, "SFX", sizeof(ac.audioMod_.chGroup_) - 1);
+
+			ac.audioMod_.sound_ = selectedSound;
+
+			std::cout << "[Audio] Attached SFX '" << selectedName
+				<< "' to entity " << selectedEntityID << "\n";
+		}
+		
+
+	}
+
+}
+
+void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager, Editor::EnoSceneTree& sceneTree)
 {
 	auto& entMng = engine_.getEntityManager();
 
@@ -1296,7 +1697,26 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity)
 	if (entity.has<ECSComponents::TransformComponent>(entMng)) {
 		auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
 		ImGui::SeparatorText("Transform");
+
+		// Track position editing for undo
+		static Math::eVec2<float> oldPosInspector;
+		static bool editingPosInspector = false;
+
+		if (ImGui::IsItemActive() && !editingPosInspector) {
+			oldPosInspector = transform.pos;
+			editingPosInspector = true;
+		}
+
 		ImGui::DragFloat2("Position", (float*)&transform.pos, 0.5f);
+
+		if (editingPosInspector && !ImGui::IsItemActive()) {
+			// Record undo when user finishes editing
+			if (oldPosInspector.x != transform.pos.x || oldPosInspector.y != transform.pos.y) {
+				undoManager.recordMove(entity, oldPosInspector, transform.pos);
+			}
+			editingPosInspector = false;
+		}
+
 		// Scale removed - doesn't do anything currently
 	}
 
@@ -1390,7 +1810,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity)
 					collider.data.circle.radius = 10.0f;
 				}
 				else if (newType == ECSComponents::ColliderType::RECTANGLE) {
-					collider.data.rectangle.width = 20.0f;
+					collider.data.rectangle.width = 20.0f; 
 					collider.data.rectangle.height = 20.0f;
 				}
 
@@ -1454,6 +1874,221 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity)
 			sm.addState("Idle", std::make_unique<AI::IdleState>(aiMng, pathfinder));
 			sm.addState("Chase", std::make_unique<AI::ChaseState>(pathfinder, aiMng));
 			sm.changeState("Idle", entity, entMng);
+		}
+	}
+	
+	//for dropdown selection of Looping menu.
+	const char* loopOptions[] = {"Disabled","Forward","PingPong"};
+
+	if (entity.has<ECSComponents::AudioComponent>(entMng))
+	{
+		auto& ac = entity.get<ECSComponents::AudioComponent>(entMng);
+
+		// Godot Phony Sliders start
+		ImGui::SeparatorText("AudioStreamPlayer2D");
+		ImGui::Text("=== AudioStreamPlayer2D ===");
+
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+		if (ImGui::TreeNodeEx("Stream", flags))
+		{
+			ImGui::Separator();
+			ImGui::Text("Format:");
+			ImGui::SameLine(160);
+			ImGui::TextDisabled("16-Bit");								//dummy value
+
+
+			int loopMode = static_cast<int>(ac.audioMod_.loop_);
+			ImGui::Text("Loop Mode:");
+			ImGui::SameLine(160);
+			if (ImGui::Combo("##LoopMode", &loopMode, loopOptions, IM_ARRAYSIZE(loopOptions)))
+			{
+				ac.audioMod_.loop_ = static_cast<Audio::EnoAudioModule::LoopMode>(loopMode);
+			}							
+
+			int loopBegin = static_cast<int>(ac.audioMod_.loopStart_);
+			ImGui::Text("Loop Begin:");
+			ImGui::SameLine(160);
+			if (ImGui::InputInt("##LoopBegin", &loopBegin))
+			{
+				ac.audioMod_.loopStart_ = static_cast<float>(loopBegin);
+			}
+
+
+			int loopEnd = static_cast<int>(ac.audioMod_.loopEnd_);
+			ImGui::Text("Loop End:");
+			ImGui::SameLine(160);
+			if (ImGui::InputInt("##LoopEnd", &loopEnd))
+			{
+				ac.audioMod_.loopEnd_ = static_cast<float>(loopEnd);
+			}
+
+			ImGui::Text("Mix Rate:");
+			ImGui::SameLine(160);
+			ImGui::TextDisabled("44100");								//dummy value
+
+			ImGui::Text("Stereo:");
+			ImGui::SameLine(160);
+			bool stereoToggle = true;
+			ImGui::Checkbox("##StereoChk", &stereoToggle);			    //dummy value
+
+			ImGui::Separator();
+
+			ImGui::Text("Volume dB:");
+			ImGui::SameLine(160); 
+			float tmpVol = static_cast<float>(ac.volume_);
+			ImGui::SliderFloat("##VolDb", &tmpVol, 0.f, 100.f);
+			ac.volume_ = static_cast<double>(tmpVol);					
+
+			ImGui::Text("Pitch Scale:");
+			ImGui::SameLine(160);
+			float tmppitch = static_cast<float>(ac.pitchScale_);
+			ImGui::SliderFloat("##PitchScale", &tmppitch, 0.1f, 5.f);		
+			ac.pitchScale_ = static_cast<double>(tmppitch);
+
+			ImGui::Text("Pan Scale:");
+			ImGui::SameLine(160);
+			float pan = static_cast<float>(ac.panScale_);
+			if (ImGui::SliderFloat("Pan", &pan, -1.f, 1.f))
+			{
+				ac.panScale_ = static_cast<double>(pan);
+			}
+
+			ImGui::TreePop();
+		}
+		ImGui::Separator();
+
+		// Godot Phony Sliders end
+
+		ImGui::SeparatorText("Audio");
+		ImGui::Text("Attached SFX: %s", ac.audioMod_.name_);
+		if (ImGui::Button("Play entity SFX now"))
+		{
+			std::cout << "[Inspector] Checking entity " << entity.id()
+				<< " has AudioComponent = "
+				<< entity.has<ECSComponents::AudioComponent>(entMng)
+				<< "\n";
+
+			engine_.getEventBus().publish(Audio::PlayInstant{
+				"SFX",
+				ac.audioMod_.name_
+				});
+
+			std::cout << "[Audio] PLAY from entity "
+				<< entity.id() << ": " << ac.audioMod_.name_ << "\n";
+		}
+
+		if (ImGui::Button("Print Audio Component"))
+		{
+			std::cout << "===== AUDIO COMPONENT DEBUG =====\n";
+			std::cout << "Entity:		" << entity.id() << "\n";
+			std::cout << "Volume:       " << ac.volume_ << "\n";
+			std::cout << "Pitch Scale:  " << ac.pitchScale_ << "\n";
+			std::cout << "Pan Scale:    " << ac.panScale_ << "\n";
+			std::cout << "Autoplay:     " << (ac.isAutoplay_ ? "true" : "false") << "\n";
+			std::cout << "Is Playing:   " << (ac.isPlaying_ ? "true" : "false") << "\n";
+
+			std::cout << "-- MODULE --\n";
+			std::cout << "Name:         " << ac.audioMod_.name_ << "\n";
+			std::cout << "Path:         " << ac.audioMod_.path_ << "\n";
+			std::cout << "ChannelGroup: " << ac.audioMod_.chGroup_ << "\n";
+
+			std::cout << "Loop Mode:    " << static_cast<int>(ac.audioMod_.loop_) << "\n";
+			std::cout << "Loop Start:   " << ac.audioMod_.loopStart_ << "\n";
+			std::cout << "Loop End:     " << ac.audioMod_.loopEnd_ << "\n";
+
+			std::cout << "Sound Ptr:    " << ac.audioMod_.sound_ << "\n";
+
+			std::cout << "=================================\n";
+		}
+
+	}
+	else
+	{
+		ImGui::SeparatorText("Audio");
+		ImGui::TextDisabled("No AudioComponent attached.");
+
+		//if (ImGui::Button("Add Audio Component"))
+		//{
+		//	entity.add<ECSComponents::AudioComponent>(entMng);
+		//	std::cout << "[Audio] Added AudioComponent to entity "
+		//		<< entity.id() << "\n";
+		//}
+	}
+	// --- Prefab Section ---
+	ImGui::SeparatorText("Prefab");
+
+	// Check if this entity is a prefab instance
+	bool isPrefabInstance = entity.has<ECSComponents::PrefabInstanceComponent>(entMng);
+	std::string currentPrefabName;
+
+	if (isPrefabInstance) {
+		auto& prefabInstance = entity.get<ECSComponents::PrefabInstanceComponent>(entMng);
+		currentPrefabName = prefabInstance.prefabName;
+		ImGui::Text("Instance of: %s", currentPrefabName.c_str());
+	}
+	else {
+		ImGui::TextDisabled("Not a prefab instance");
+	}
+
+	// Input field for prefab name
+	static char prefabNameBuffer[64] = "";
+
+	// If this is a prefab instance, pre-fill with current prefab name
+	if (isPrefabInstance && prefabNameBuffer[0] == '\0') {
+		strncpy_s(prefabNameBuffer, currentPrefabName.c_str(), sizeof(prefabNameBuffer) - 1);
+	}
+
+	ImGui::InputText("Prefab Name", prefabNameBuffer, sizeof(prefabNameBuffer));
+
+	// Save as Prefab button
+	if (ImGui::Button("Save as Prefab")) {
+		if (strlen(prefabNameBuffer) > 0) {
+			try {
+				createPrefabFromEntity(entity, prefabNameBuffer, entMng, sceneTree);
+
+				// Add or update PrefabInstanceComponent
+				if (!isPrefabInstance) {
+					entity.add<ECSComponents::PrefabInstanceComponent>(entMng, prefabNameBuffer);
+				}
+				else {
+					auto& prefabInstance = entity.get<ECSComponents::PrefabInstanceComponent>(entMng);
+					strncpy_s(prefabInstance.prefabName, prefabNameBuffer, sizeof(prefabInstance.prefabName) - 1);
+					prefabInstance.prefabName[sizeof(prefabInstance.prefabName) - 1] = '\0';
+				}
+
+				// Register this entity as an instance
+				registerPrefabInstance(entity.id(), prefabNameBuffer);
+
+				std::cout << "[UI] Saved prefab: " << prefabNameBuffer << "\n";
+			}
+			catch (const std::exception& e) {
+				std::cerr << "[UI] Failed to save prefab: " << e.what() << "\n";
+			}
+		}
+		else {
+			std::cerr << "[UI] Please enter a prefab name\n";
+		}
+	}
+
+	ImGui::SameLine();
+
+	// Update All Instances button (only show if this is a prefab instance)
+	if (isPrefabInstance) {
+		if (ImGui::Button("Update All Instances")) {
+			try {
+				int count = updateAllPrefabInstances(currentPrefabName, entity, entMng, sceneTree);
+				std::cout << "[UI] Updated " << count << " instances of " << currentPrefabName << "\n";
+
+				// Mark entities as dirty to refresh visuals
+				if (g_game) g_game->markEntitiesDirty();
+			}
+			catch (const std::exception& e) {
+				std::cerr << "[UI] Failed to update instances: " << e.what() << "\n";
+			}
+		}
+
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Updates all instances of '%s' with this entity's components", currentPrefabName.c_str());
 		}
 	}
 
@@ -1756,7 +2391,126 @@ void displayGameView() {
 	}
 }
 
-void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
+// Draw gizmos for selected entity
+void drawGizmos(ImDrawList* drawList, ImVec2 screenPos, ImVec2 entityCenter, float gizmoSize, GizmoMode mode) {
+	const float handleSize = 8.0f;
+	const float rotateRadius = gizmoSize * 0.6f;
+
+	// Translate gizmo handles
+	if (mode == GIZMO_TRANSLATE) {
+		// Draw X axis handle (blue square to the right)
+		ImVec2 xHandle = ImVec2(entityCenter.x + gizmoSize, entityCenter.y);
+		drawList->AddRectFilled(
+			ImVec2(xHandle.x - handleSize / 2, xHandle.y - handleSize / 2),
+			ImVec2(xHandle.x + handleSize / 2, xHandle.y + handleSize / 2),
+			IM_COL32(0, 150, 255, 255)
+		);
+		drawList->AddLine(entityCenter, xHandle, IM_COL32(0, 150, 255, 255), 2.0f);
+
+		// Draw Y axis handle (blue square above)
+		ImVec2 yHandle = ImVec2(entityCenter.x, entityCenter.y - gizmoSize);
+		drawList->AddRectFilled(
+			ImVec2(yHandle.x - handleSize / 2, yHandle.y - handleSize / 2),
+			ImVec2(yHandle.x + handleSize / 2, yHandle.y + handleSize / 2),
+			IM_COL32(0, 150, 255, 255)
+		);
+		drawList->AddLine(entityCenter, yHandle, IM_COL32(0, 150, 255, 255), 2.0f);
+	}
+	// Rotate gizmo
+	else if (mode == GIZMO_ROTATE) {
+		// Draw rotation circle
+		drawList->AddCircle(entityCenter, rotateRadius, IM_COL32(0, 150, 255, 255), 32, 2.0f);
+
+		// Draw rotation handle at top of circle
+		ImVec2 rotHandle = ImVec2(entityCenter.x, entityCenter.y - rotateRadius);
+		drawList->AddCircleFilled(rotHandle, handleSize / 2, IM_COL32(0, 150, 255, 255));
+	}
+	// Scale gizmo
+	else if (mode == GIZMO_SCALE) {
+		// Draw uniform scale handle (diagonal bottom-right corner - blue)
+		ImVec2 uniformScaleHandle = ImVec2(entityCenter.x + gizmoSize * 0.7f, entityCenter.y + gizmoSize * 0.7f);
+		drawList->AddRectFilled(
+			ImVec2(uniformScaleHandle.x - handleSize / 2, uniformScaleHandle.y - handleSize / 2),
+			ImVec2(uniformScaleHandle.x + handleSize / 2, uniformScaleHandle.y + handleSize / 2),
+			IM_COL32(0, 150, 255, 255)
+		);
+		drawList->AddLine(entityCenter, uniformScaleHandle, IM_COL32(0, 150, 255, 255), 2.0f);
+
+		// Draw horizontal scale handle (right side - blue)
+		ImVec2 xScaleHandle = ImVec2(entityCenter.x + gizmoSize, entityCenter.y);
+		drawList->AddRectFilled(
+			ImVec2(xScaleHandle.x - handleSize / 2, xScaleHandle.y - handleSize / 2),
+			ImVec2(xScaleHandle.x + handleSize / 2, xScaleHandle.y + handleSize / 2),
+			IM_COL32(0, 150, 255, 255)
+		);
+		drawList->AddLine(entityCenter, xScaleHandle, IM_COL32(0, 150, 255, 255), 2.0f);
+
+		// Draw vertical scale handle (top - blue)
+		ImVec2 yScaleHandle = ImVec2(entityCenter.x, entityCenter.y - gizmoSize);
+		drawList->AddRectFilled(
+			ImVec2(yScaleHandle.x - handleSize / 2, yScaleHandle.y - handleSize / 2),
+			ImVec2(yScaleHandle.x + handleSize / 2, yScaleHandle.y + handleSize / 2),
+			IM_COL32(0, 150, 255, 255)
+		);
+		drawList->AddLine(entityCenter, yScaleHandle, IM_COL32(0, 150, 255, 255), 2.0f);
+	}
+}
+
+// Check if mouse is over a gizmo handle
+bool isMouseOverGizmoHandle(ImVec2 mousePos, ImVec2 entityCenter, float gizmoSize, GizmoMode mode, int& handleType) {
+	const float handleSize = 12.0f;
+	const float rotateRadius = gizmoSize * 0.6f;
+
+	if (mode == GIZMO_TRANSLATE) {
+		// Check X handle (right)
+		ImVec2 xHandle = ImVec2(entityCenter.x + gizmoSize, entityCenter.y);
+		if (fabs(mousePos.x - xHandle.x) < handleSize && fabs(mousePos.y - xHandle.y) < handleSize) {
+			handleType = 1;
+			return true;
+		}
+		// Check Y handle (up)
+		ImVec2 yHandle = ImVec2(entityCenter.x, entityCenter.y - gizmoSize);
+		if (fabs(mousePos.x - yHandle.x) < handleSize && fabs(mousePos.y - yHandle.y) < handleSize) {
+			handleType = 2;
+			return true;
+		}
+	}
+	else if (mode == GIZMO_ROTATE) {
+		// Check rotation handle
+		ImVec2 rotHandle = ImVec2(entityCenter.x, entityCenter.y - rotateRadius);
+		float dist = sqrtf((mousePos.x - rotHandle.x) * (mousePos.x - rotHandle.x) +
+			(mousePos.y - rotHandle.y) * (mousePos.y - rotHandle.y));
+		if (dist < handleSize) {
+			handleType = 3;
+			return true;
+		}
+	}
+	else if (mode == GIZMO_SCALE) {
+		// Check horizontal scale handle (right side - handleType 4)
+		ImVec2 xScaleHandle = ImVec2(entityCenter.x + gizmoSize, entityCenter.y);
+		if (fabs(mousePos.x - xScaleHandle.x) < handleSize && fabs(mousePos.y - xScaleHandle.y) < handleSize) {
+			handleType = 4;
+			return true;
+		}
+		// Check vertical scale handle (top - handleType 5)
+		ImVec2 yScaleHandle = ImVec2(entityCenter.x, entityCenter.y - gizmoSize);
+		if (fabs(mousePos.x - yScaleHandle.x) < handleSize && fabs(mousePos.y - yScaleHandle.y) < handleSize) {
+			handleType = 5;
+			return true;
+		}
+		// Check uniform scale handle (diagonal - handleType 3)
+		ImVec2 uniformScaleHandle = ImVec2(entityCenter.x + gizmoSize * 0.7f, entityCenter.y + gizmoSize * 0.7f);
+		if (fabs(mousePos.x - uniformScaleHandle.x) < handleSize && fabs(mousePos.y - uniformScaleHandle.y) < handleSize) {
+			handleType = 3;
+			return true;
+		}
+	}
+
+	handleType = 0;
+	return false;
+}
+
+void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
 	auto& entityManager = engine_.getEntityManager();
 	auto& sceneEditor = engine_.getEnoEditor();
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
@@ -1781,6 +2535,29 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			sceneEditor.getCurrentScene().next();
 		}
 	}
+
+	ImGui::SameLine();
+	ImGui::Text("|");
+	ImGui::SameLine();
+
+	// Gizmo mode selector buttons
+	if (ImGui::Button("Move (Q)")) {
+		currentGizmoMode = GIZMO_TRANSLATE;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Rotate (E)")) {
+		currentGizmoMode = GIZMO_ROTATE;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Scale (R)")) {
+		currentGizmoMode = GIZMO_SCALE;
+	}
+
+	// Keyboard shortcuts for gizmo modes
+	if (ImGui::IsKeyPressed(ImGuiKey_Q)) currentGizmoMode = GIZMO_TRANSLATE;
+	if (ImGui::IsKeyPressed(ImGuiKey_E)) currentGizmoMode = GIZMO_ROTATE;
+	if (ImGui::IsKeyPressed(ImGuiKey_R)) currentGizmoMode = GIZMO_SCALE;
+
 	ImGui::Separator();
 
 	// Informational text
@@ -1858,24 +2635,50 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				return ImVec2(worldX, worldY);
 				};
 
+			// Helper function to convert world coordinates to screen coordinates (for drawing gizmos)
+			auto worldToScreenCoords = [&](ImVec2 worldPos) -> ImVec2 {
+				ImVec2 imageMin = ImGui::GetItemRectMin();
+				ImVec2 imageMax = ImGui::GetItemRectMax();
+
+				// Subtract camera offset to convert world space to screen space
+				float screenX = worldPos.x - g_game->getEditorCameraX();
+				float screenY = worldPos.y - g_game->getEditorCameraY();
+
+				// Convert to normalized coordinates (0.0 to 1.0)
+				float relX = screenX / editorWidth;
+				float relY = screenY / editorHeight;
+
+				// Convert to actual screen position
+				float finalX = imageMin.x + relX * (imageMax.x - imageMin.x);
+				float finalY = imageMin.y + relY * (imageMax.y - imageMin.y);
+
+				return ImVec2(finalX, finalY);
+				};
+
 			// --- Handle entity deletion by click ---
 			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
 				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 
 				auto clicked = getEntityUnderMouse(engine_, worldPos);
 				if (clicked.has_value()) {
-					std::cout << "Deleted entity: " << clicked->id()
+					std::cout << "Deleting entity: " << clicked->id()
 						<< " and all children at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 
-					// Get the node and destroy all child entities
+					// Get the node first before destroying
 					Editor::Node* node = sceneTree.getNodeByEntityID(clicked->id());
 					if (node) {
-						destroyChildrenRecursive(node, entityManager);
-					}
+						// Create delete command (captures snapshot before deletion)
+						auto deleteCmd = std::make_unique<Editor::DeleteEntityCommand>(
+							sceneTree,
+							entityManager,
+							clicked.value()
+						);
 
-					// Remove from scene hierarchy and destroy parent entity
-					sceneTree.select(clicked->id());
-					sceneTree.kill();
+						// Execute the deletion (also adds to undo history)
+						undoManager.executeCommand(std::move(deleteCmd));
+
+						std::cout << "[DEBUG] Entity deletion completed with undo support\n";
+					}
 
 					if (g_game) g_game->markEntitiesDirty();
 				}
@@ -1891,58 +2694,234 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
 
 				// Spawn prefab at clicked position
-				spawnPrefabAt(worldPos.x, worldPos.y, g_selectedPrefabForPlacement, engine_, sceneTree);
+				spawnPrefabAt(worldPos.x, worldPos.y, g_selectedPrefabForPlacement, engine_, sceneTree, undoManager);
 				g_selectedPrefabForPlacement.clear();
 
 				std::cout << "Placed prefab at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 			}
 
-			// --- Entity drag-drop logic ---
-			// Begin drag
-			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
-				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) {
-				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
-				auto clicked = getEntityUnderMouse(engine_, worldPos);
-				if (clicked) {
-					draggedEntityID = clicked->id();
-					isDragging = true;
+			// --- Gizmo-based entity transformation logic ---
+			// Draw gizmos for selected entity
+			if (selectedEntityID != UINT32_MAX && g_game->getEditorState() == Stopped) {
+				auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+				for (auto& e : allEntities) {
+					if (e.id() == selectedEntityID) {
+						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+						auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 
-					auto& tc = clicked->get<ECSComponents::TransformComponent>(entityManager);
-					dragOffset.x = worldPos.x - tc.pos.x;
-					dragOffset.y = worldPos.y - tc.pos.y;
-					lastDragPos = ImVec2(tc.pos.x, tc.pos.y);
+						// Convert entity position to screen coordinates
+						ImVec2 entityWorldPos = ImVec2(tc.pos.x, tc.pos.y);
+						ImVec2 entityScreenPos = worldToScreenCoords(entityWorldPos);
 
-					std::cout << "Started dragging entity " << draggedEntityID << "\n";
+						// Draw gizmo based on current mode
+						float gizmoSize = 50.0f;
+						drawGizmos(drawList, windowPos, entityScreenPos, gizmoSize, currentGizmoMode);
+						break;
+					}
 				}
 			}
 
-			// While dragging
-			if (isDragging && ImGui::IsMouseDown(0)) {
-				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
+			// Begin gizmo interaction
+			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
+				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && !isRotating && !isScaling && g_game->getEditorState() == Stopped) {
+
+				ImVec2 mouseScreenPos = ImGui::GetMousePos();
+				ImVec2 worldPos = screenToWorldCoords(mouseScreenPos);
+
+				// Check if we have a selected entity
+				if (selectedEntityID != UINT32_MAX) {
+					auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+					for (auto& e : allEntities) {
+						if (e.id() == selectedEntityID) {
+							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+							ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
+
+							int handleType = 0;
+							float gizmoSize = 50.0f;
+
+							// Check if clicking on gizmo handle
+							if (isMouseOverGizmoHandle(mouseScreenPos, entityScreenPos, gizmoSize, currentGizmoMode, handleType)) {
+								// Collect all affected entity IDs (parent + children) for undo
+								affectedEntityIDs.clear();
+								Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
+								if (node) {
+									collectEntityIDsRecursive(node, affectedEntityIDs);
+								}
+
+								// Create command and capture old state before transformation
+								if (!affectedEntityIDs.empty()) {
+									pendingTransformCommand = std::make_unique<Editor::MultiTransformCommand>(
+										undoManager.getEntityManager(),
+										currentGizmoMode == GIZMO_TRANSLATE ? "Move" :
+										(currentGizmoMode == GIZMO_ROTATE ? "Rotate" : "Scale")
+									);
+									pendingTransformCommand->captureOldState(affectedEntityIDs);
+								}
+
+								if (currentGizmoMode == GIZMO_ROTATE) {
+									// Start rotation (handleType 3 for rotation)
+									isRotating = true;
+									draggedEntityID = selectedEntityID;
+									activeTransformAxis = 3;
+									initialAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
+									initialRotation = tc.rot.x;
+									rotationBeforeDrag = tc.rot;  // Store for undo
+									std::cout << "Started rotating entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
+								}
+								else if (currentGizmoMode == GIZMO_SCALE) {
+									// Start scaling
+									isScaling = true;
+									draggedEntityID = selectedEntityID;
+									activeTransformAxis = handleType; // 3=uniform, 4=X-scale, 5=Y-scale
+									scaleStartPos = mouseScreenPos;
+									dragStartWorldPos = worldPos;
+									initialScale = ImVec2(tc.scale.x, tc.scale.y);
+									lastScale = ImVec2(tc.scale.x, tc.scale.y);  // Initialize last scale
+									scaleBeforeDrag = tc.scale;  // Store for undo
+									if (handleType == 3) {
+										std::cout << "Started uniform scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
+									} else if (handleType == 4) {
+										std::cout << "Started horizontal scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
+									} else if (handleType == 5) {
+										std::cout << "Started vertical scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
+									}
+								}
+								else if (currentGizmoMode == GIZMO_TRANSLATE) {
+									// Start dragging with axis constraint
+									draggedEntityID = selectedEntityID;
+									isDragging = true;
+									activeTransformAxis = handleType; // 1=X-axis, 2=Y-axis
+									dragOffset.x = worldPos.x - tc.pos.x;
+									dragOffset.y = worldPos.y - tc.pos.y;
+									dragStartWorldPos = worldPos;
+									lastDragPos = ImVec2(tc.pos.x, tc.pos.y);
+									transformBeforeDrag = tc.pos;  // Store for undo
+									if (handleType == 1) {
+										std::cout << "Started dragging entity " << selectedEntityID << " on X-axis (affecting " << affectedEntityIDs.size() << " entities)\n";
+									} else if (handleType == 2) {
+										std::cout << "Started dragging entity " << selectedEntityID << " on Y-axis (affecting " << affectedEntityIDs.size() << " entities)\n";
+									}
+								}
+								break;
+							}
+						}
+					}
+				}
+
+				// If not clicking gizmo, check if clicking on entity
+				if (!isDragging && !isRotating && !isScaling) {
+					auto clicked = getEntityUnderMouse(engine_, worldPos);
+					if (clicked) {
+						// Select entity in hierarchy when clicked in editor window
+						selectedEntityID = clicked->id();
+						std::cout << "Selected entity " << selectedEntityID << "\n";
+					}
+				}
+			}
+
+			// While transforming (drag, rotate, or scale)
+			if ((isDragging || isRotating || isScaling) && ImGui::IsMouseDown(0)) {
+				ImVec2 mouseScreenPos = ImGui::GetMousePos();
+				ImVec2 worldPos = screenToWorldCoords(mouseScreenPos);
 
 				auto all = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 				for (auto& e : all) {
 					if (e.id() == draggedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
 
-						// Calculate delta movement
-						float newX = worldPos.x - dragOffset.x;
-						float newY = worldPos.y - dragOffset.y;
-						float deltaX = newX - lastDragPos.x;
-						float deltaY = newY - lastDragPos.y;
+						if (isDragging) {
+							// Calculate delta movement with axis constraints
+							float newX = worldPos.x - dragOffset.x;
+							float newY = worldPos.y - dragOffset.y;
 
-						// Move parent entity
-						tc.pos.x = newX;
-						tc.pos.y = newY;
+							// Apply axis constraint based on which handle was grabbed
+							if (activeTransformAxis == 1) {
+								// X-axis only movement
+								newY = lastDragPos.y;
+							} else if (activeTransformAxis == 2) {
+								// Y-axis only movement
+								newX = lastDragPos.x;
+							}
 
-						// Move all children recursively
-						Editor::Node* draggedNode = sceneTree.getNodeByEntityID(draggedEntityID);
-						if (draggedNode) {
-							moveChildrenRecursive(draggedNode, deltaX, deltaY, entityManager);
+							float deltaX = newX - lastDragPos.x;
+							float deltaY = newY - lastDragPos.y;
+
+							// Move parent entity
+							tc.pos.x = newX;
+							tc.pos.y = newY;
+
+							// Move all children recursively
+							Editor::Node* draggedNode = sceneTree.getNodeByEntityID(draggedEntityID);
+							if (draggedNode) {
+								moveChildrenRecursive(draggedNode, deltaX, deltaY, entityManager);
+							}
+
+							// Update last position
+							lastDragPos = ImVec2(newX, newY);
 						}
+						else if (isRotating) {
+							// Calculate rotation based on mouse angle
+							ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
+							float currentAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
+							float newRotation = initialRotation + (currentAngle - initialAngle);
+							float deltaAngle = newRotation - tc.rot.x;
+							tc.rot.x = newRotation;
 
-						// Update last position
-						lastDragPos = ImVec2(newX, newY);
+							// Rotate all children recursively around parent position
+							Editor::Node* rotatedNode = sceneTree.getNodeByEntityID(draggedEntityID);
+							if (rotatedNode) {
+								rotateChildrenRecursive(rotatedNode, deltaAngle, {tc.pos.x, tc.pos.y}, entityManager);
+							}
+						}
+						else if (isScaling) {
+							// Calculate scale based on which handle was grabbed
+							float newScaleX = tc.scale.x;
+							float newScaleY = tc.scale.y;
+
+							if (activeTransformAxis == 3) {
+								// Uniform scaling using diagonal handle
+								ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
+								float initialDist = sqrtf((scaleStartPos.x - entityScreenPos.x) * (scaleStartPos.x - entityScreenPos.x) +
+									(scaleStartPos.y - entityScreenPos.y) * (scaleStartPos.y - entityScreenPos.y));
+								float currentDist = sqrtf((mouseScreenPos.x - entityScreenPos.x) * (mouseScreenPos.x - entityScreenPos.x) +
+									(mouseScreenPos.y - entityScreenPos.y) * (mouseScreenPos.y - entityScreenPos.y));
+
+								float scaleFactor = currentDist / std::max(initialDist, 1.0f);
+								newScaleX = initialScale.x * scaleFactor;
+								newScaleY = initialScale.y * scaleFactor;
+							}
+							else if (activeTransformAxis == 4) {
+								// Horizontal scaling only (X-axis)
+								float deltaX = worldPos.x - dragStartWorldPos.x;
+								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
+								float scaleChange = deltaX / std::max(dc.width, 1.0f);
+								newScaleX = std::max(0.1f, initialScale.x + scaleChange);
+								newScaleY = tc.scale.y;  // Keep Y unchanged
+							}
+							else if (activeTransformAxis == 5) {
+								// Vertical scaling only (Y-axis)
+								float deltaY = worldPos.y - dragStartWorldPos.y;
+								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
+								float scaleChange = -deltaY / std::max(dc.height, 1.0f);
+								newScaleX = tc.scale.x;  // Keep X unchanged
+								newScaleY = std::max(0.1f, initialScale.y + scaleChange);
+							}
+
+							// Calculate scale factors (delta)
+							float scaleFactorX = newScaleX / std::max(lastScale.x, 0.01f);
+							float scaleFactorY = newScaleY / std::max(lastScale.y, 0.01f);
+
+							// Update parent scale
+							tc.scale.x = newScaleX;
+							tc.scale.y = newScaleY;
+							lastScale = ImVec2(newScaleX, newScaleY);
+
+							// Scale all children recursively from parent position
+							Editor::Node* scaledNode = sceneTree.getNodeByEntityID(draggedEntityID);
+							if (scaledNode) {
+								scaleChildrenRecursive(scaledNode, scaleFactorX, scaleFactorY, {tc.pos.x, tc.pos.y}, entityManager);
+							}
+						}
 
 						if (g_game)
 							g_game->markEntitiesDirty();
@@ -1951,12 +2930,47 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				}
 			}
 
-			// Drop
-			if (isDragging && ImGui::IsMouseReleased(0)) {
-				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
-				std::cout << "Entity " << draggedEntityID
-					<< " dropped at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
+			// End transformation
+			if ((isDragging || isRotating || isScaling) && ImGui::IsMouseReleased(0)) {
+				std::cout << "Finished transformation on entity " << draggedEntityID << "\n";
+
+				// Use MultiTransformCommand if we have multiple entities affected
+				if (pendingTransformCommand && !affectedEntityIDs.empty()) {
+					// Capture the new state after transformation
+					pendingTransformCommand->captureNewState(affectedEntityIDs);
+
+					// Execute the command through undo manager
+					undoManager.executeCommand(std::move(pendingTransformCommand));
+					std::cout << "Recorded multi-entity transform for " << affectedEntityIDs.size() << " entities\n";
+
+					affectedEntityIDs.clear();
+				}
+				else {
+					// Fallback to single entity undo (shouldn't normally happen)
+					auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent>();
+					for (auto& e : allEntities) {
+						if (e.id() == draggedEntityID) {
+							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+
+							if (isDragging) {
+								undoManager.recordMove(e, transformBeforeDrag, tc.pos);
+							}
+							else if (isRotating) {
+								undoManager.recordRotation(e, rotationBeforeDrag, tc.rot);
+							}
+							else if (isScaling) {
+								undoManager.recordScale(e, scaleBeforeDrag, tc.scale);
+							}
+							break;
+						}
+					}
+				}
+
+				// Clear transformation state
 				isDragging = false;
+				isRotating = false;
+				isScaling = false;
+				activeTransformAxis = 0;
 				draggedEntityID = 0;
 			}
 
@@ -2010,6 +3024,8 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 	// Right side top - Assets Browser
 	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_right_top);
+	ImGui::DockBuilderDockWindow("Entity Inspector", dock_id_right_top);
+	ImGui::DockBuilderDockWindow("Audio Browser", dock_id_right_top);
 
 	// Right side bottom - Game View (full scene)
 	ImGui::DockBuilderDockWindow("Game View", dock_id_right);

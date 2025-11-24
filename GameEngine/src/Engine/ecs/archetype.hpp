@@ -59,7 +59,13 @@ namespace ECS
 		size_t findComponentIndex()
 		{
 			auto it = std::find(types_.begin(), types_.end(), std::type_index(typeid(Type)));
-			assert(it != types_.end());
+			if (it == types_.end()) 
+			{
+				throw std::runtime_error(
+					std::string(typeid(Type).name()) + " component was not able to be found"
+				);
+			}
+
 			return std::distance(types_.begin(), it);
 		}
 

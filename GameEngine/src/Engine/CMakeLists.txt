@@ -5,49 +5,61 @@ file(GLOB_RECURSE ENGINE_SRC_FILES
     ${CMAKE_CURRENT_LIST_DIR}/*.[ch]
 )
 
-file(GLOB_RECURSE ENGINE_TEMP_FILES
-    ${CMAKE_CURRENT_LIST_DIR}/*.tpp
+# Identify the bridging files
+set(BRIDGE_FILES
+    ${CMAKE_CURRENT_LIST_DIR}/bridge/eno_bridge.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/bridge/eno_bridge.hpp
 )
 
-set(ALL_FILES
-    ${ENGINE_SRC_FILES} 
-    ${ENGINE_TEMP_FILES}
-)
+set(ENGINE_SRC_NO_BRIDGE ${ENGINE_SRC_FILES})
+list(REMOVE_ITEM ENGINE_SRC_NO_BRIDGE ${BRIDGE_FILES})
 
 # Call the macro to group files by folder
-GROUP_FILES_BY_FOLDER(${ALL_FILES})
+GROUP_FILES_BY_FOLDER(${ENGINE_SRC_FILES})
 
 # Call the macro to include directories by folder
 # INCLUDE_DIR_BY_FOLDER(${ALL_FILES} ${ENGINE_NAME})
 
-# Create the executable (or library)
-add_library(${ENGINE_NAME} ${ENGINE_SRC_FILES})
+# ----------------------------------------------------------
+# Build both STATIC and SHARED versions of the Engine
+# ----------------------------------------------------------
 
-set_property(TARGET ${ENGINE_NAME}  PROPERTY CXX_STANDARD 20) 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(${ENGINE_NAME} PRIVATE -Wall ${DisableWarnings})
-elseif (MSVC)
-    target_compile_options(${ENGINE_NAME} PRIVATE /W4 /WX-)
-endif()
+# --- Static Library (for Editor / C++ Apps) ---
+add_library(${ENGINE_NAME}_static STATIC ${ENGINE_SRC_NO_BRIDGE})
+set_target_properties(${ENGINE_NAME}_static PROPERTIES OUTPUT_NAME ${ENGINE_NAME}_static)
 
-target_include_directories(${ENGINE_NAME} SYSTEM PUBLIC ${PROJECT_SOURCE_DIR})
-target_include_directories(${ENGINE_NAME} PUBLIC
+# --- Shared Library (for .NET Interop / PInvoke) ---
+add_library(${ENGINE_NAME}_shared SHARED ${BRIDGE_FILES})
+set_target_properties(${ENGINE_NAME}_shared PROPERTIES OUTPUT_NAME ${ENGINE_NAME}_shared)
+
+
+# ----------------------------------------------------------
+# Compiler warning setup
+# ----------------------------------------------------------
+foreach(target ${ENGINE_NAME}_static ${ENGINE_NAME}_shared)
+    set_property(TARGET ${target} PROPERTY CXX_STANDARD 20)
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${target} PRIVATE -Wall ${DisableWarnings})
+    elseif (MSVC)
+        target_compile_options(${target} PRIVATE /W4 /WX-)
+    endif()
+endforeach()
+
+
+# ----------------------------------------------------------
+# Include directories
+# ----------------------------------------------------------
+target_include_directories(${ENGINE_NAME}_static SYSTEM PUBLIC ${PROJECT_SOURCE_DIR})
+target_include_directories(${ENGINE_NAME}_static PUBLIC
     ${FMOD_INCLUDE_DIRS}
     ${rapidjson_INCLUDE_DIRS}
 )
-target_compile_definitions(${ENGINE_NAME} PRIVATE 
-    ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
-    SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}/user_scripts/"
-    SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}"
-    WSCRIPT_SRC_PATH=L"${SCRIPT_SOURCE_DIR}/user_scripts/"
-    WSCRIPT_BIN_PATH=L"${SCRIPT_BINARY_DIR}/"
-    DOTNET_ROOT="${DOTNET_RUNTIME_PATH}"
-    ASSET_SCENE_PATH="${CMAKE_SOURCE_DIR}/assets/saves/scenes/"
-    -DGLEW_STATIC
-    -D_CRT_NONSTDC_NO_DEPRECATE
-)
 
-target_link_libraries(${ENGINE_NAME}
+# ----------------------------------------------------------
+# Link libraries
+# ----------------------------------------------------------
+target_link_libraries(${ENGINE_NAME}_static
     glm
     glfw
     libglew_static
@@ -58,11 +70,35 @@ target_link_libraries(${ENGINE_NAME}
     stb_image
     dotnet_host
 )
+_fmod_copy_dll(${ENGINE_NAME}_static)
+_dotnet_copy_dll(${ENGINE_NAME}_static)
 
-_fmod_copy_dll(${ENGINE_NAME})
-_dotnet_copy_dll(${ENGINE_NAME})
+target_link_libraries(${ENGINE_NAME}_shared PRIVATE 
+    ${ENGINE_NAME}_static
+)
+
+# ----------------------------------------------------------
+# Export definitions
+# ----------------------------------------------------------
+foreach(target ${ENGINE_NAME}_static ${ENGINE_NAME}_shared)
+    target_compile_definitions(${target} PRIVATE 
+        ASSETS_DIR_PATH="${CMAKE_BINARY_DIR}/assets/"
+        SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}/user_scripts/"
+        SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}/$<CONFIG>/"
+        WSCRIPT_SRC_PATH=L"${SCRIPT_SOURCE_DIR}/user_scripts/"
+        WSCRIPT_BIN_PATH=L"${SCRIPT_BINARY_DIR}/$<CONFIG>/"
+        DOTNET_ROOT="${DOTNET_RUNTIME_PATH}/"
+        -DGLEW_STATIC
+        -D_CRT_NONSTDC_NO_DEPRECATE
+    )
+endforeach()
+
+target_compile_definitions(${ENGINE_NAME}_shared PRIVATE 
+    ENGINE_BUILD_DLL
+    ENGINE_USE_DLL
+)
 
 # Call the function to copy assets
 set(ASSETS_SOURCE_DIR "${CMAKE_SOURCE_DIR}/assets")
 set(ASSETS_DEST_DIR "${CMAKE_BINARY_DIR}/assets")
-COPY_FOLDER_IF_DIFFERENT(${ENGINE_NAME} ${ASSETS_SOURCE_DIR} ${ASSETS_DEST_DIR})
+COPY_FOLDER_IF_DIFFERENT(${ENGINE_NAME}_shared ${ASSETS_SOURCE_DIR} ${ASSETS_DEST_DIR})

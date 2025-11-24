@@ -8,6 +8,7 @@
 
 // Events
 #include "../input/eno_input_events.hpp"
+#include "../event/signals.hpp"
 
 // Windows | CoreClr
 #include <Windows.h>
@@ -30,8 +31,8 @@ namespace Core
 	class EnoCoreHost
 	{
 	private:
-		const std::string asmDllPath = SCRIPT_BIN_PATH "/GameScripts.dll";
-		const wchar_t* runtConfigJson = SCRIPT_BIN_PATH L"/GameScripts.runtimeconfig.json";
+		const std::string asmDllPath = SCRIPT_BIN_PATH "GameScripts.dll";
+		const wchar_t* runtConfigJson = SCRIPT_BIN_PATH L"GameScripts.runtimeconfig.json";
 
 		//const wchar_t* userScriptPath{ SCRIPT_SRC_PATH };
 		//const wchar_t* asmDllAbsPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/Publish/GameScripts.dll" };
@@ -96,6 +97,45 @@ namespace Core
 			int mods_;
 		};
 
+		struct SigDelegateInfo
+		{
+			load_assembly_and_get_function_pointer_fn fn_;
+			std::wstring assemblyPath_;
+			std::wstring type_;
+			std::wstring method_;
+
+			const wchar_t* key_;
+			const wchar_t* scancode_;
+			const wchar_t* action_;
+			const wchar_t* mods_;
+		};
+
+		// For registering instances
+		struct RegisterInstProxyDLGInfo
+		{
+			load_assembly_and_get_function_pointer_fn fn_;
+			std::wstring assemblyPath_;
+			std::wstring type_;
+			std::wstring method_;
+
+			const wchar_t* className_;
+			uint32_t* entityID_;
+		};
+
+		// For instanced calling
+		struct InstancedProxyDLGInfo
+		{
+			load_assembly_and_get_function_pointer_fn fn_;
+			std::wstring assemblyPath_;
+			std::wstring type_;
+			std::wstring method_;
+
+			const wchar_t* className_;
+			const wchar_t* methodName_;
+			uint32_t* entityID_;
+		};
+
+
 		// Types of methods to retrieve from C#
 		// ------------------------------------
 		// Method with no params to pass in and out
@@ -107,8 +147,10 @@ namespace Core
 		// so the VS compiler will not clean it
 		using Method = void(*)();
 		using InputMethod = void(*)(int, int, int, int);
-		using ScriptingMethod = void(*)(const wchar_t* scriptPath, const wchar_t* dllPath);
+		using AddSignalMethod = void(*)(const wchar_t*, const wchar_t*, const wchar_t*, const wchar_t*);
 		using ProxyMethod = void(*)(const wchar_t* className_, const wchar_t* methodName_);
+		using InstancedProxyMethod = void(*)(const wchar_t* className_, const wchar_t* methodName_, uint32_t entityID);
+		using RegisterInstanceProxyMethod = void(*)(const wchar_t* className_, uint32_t entityID);
 		using GetScriptFieldsMethod = Script::PortedField* (__stdcall*)(const wchar_t* scriptName, int* count);
 		using GetFileClassNamesMethod = void* (*)(const wchar_t* pAssemblyPath, int* count);
 
@@ -117,6 +159,8 @@ namespace Core
 
 		EnoCoreHost(const EnoCoreHost&) = delete;
 		EnoCoreHost(EnoCoreHost&&) = delete;
+
+		std::unordered_map<std::string, Events::EnoSignal>& signalMethods();
 
 		GetScriptFieldsMethod fields() const;
 		GetFileClassNamesMethod cname() const;
@@ -134,7 +178,6 @@ namespace Core
 			const char_t*, const char_t*, void*,
 			const Input::InputSent&);
 
-
 		// Calling a delegate to retrieve script vars
 		template <typename T>
 		std::optional<T> retrieveDelegate(DelegateInfo& params);
@@ -148,13 +191,21 @@ namespace Core
 
 		// Helper for using the proxy call
 		ProxyMethod proxyCall(const wchar_t*, const wchar_t*);
+		RegisterInstanceProxyMethod proxyCall(const wchar_t*, uint32_t*);
+		InstancedProxyMethod proxyCall(const wchar_t*, const wchar_t*, uint32_t*);
 
 		// Define and call any method within the assembly via proxy (a method in C#)
 		ProxyMethod defineProxyDelegate(
 			const char_t*, const char_t*, void*,
 			const wchar_t*, const wchar_t*);
 
+		RegisterInstanceProxyMethod defineProxyDelegate(
+			const char_t*, const char_t*, void*,
+			const wchar_t*, uint32_t*);
 
+		InstancedProxyMethod defineProxyDelegate(
+			const char_t*, const char_t*, void*,
+			const wchar_t*, const wchar_t*, uint32_t*);
 
 		// ---------  Handling script state based on engine state ---------
 		void HRSetup();
@@ -163,13 +214,16 @@ namespace Core
 		// Script backend (compilation and reloading)
 
 		// Scripts frontend (user scripts)
-		void begin();
-		void update();
+		void begin(const std::wstring&, uint32_t);
+		void update(const std::wstring&, uint32_t);
 		void frameEnd();
+
+		void setMetaData(const std::wstring&, uint32_t);
 
 		//need to call this before getting into the gameplay loop
 		void defineBegin();
 		void defineUpdate();
+		void defineSMD();
 
 
 		void areScriptsModified();
@@ -179,7 +233,12 @@ namespace Core
 
 
 		// ----------------------- Events -----------------------
-		void onInputReceived(const Input::InputSent&);
+		//void onInputReceived(const Input::InputSent&);
+
+		// =================== Signals ===================
+
+		// Receive a signal emit
+		void signalEmitted(const std::string&, const std::string&, const std::string&);
 
 	private:
 
@@ -201,10 +260,15 @@ namespace Core
 		void* inputDelegate_;                                // Delegate for communnicating input to C# end
 		void* cnameDelegate_;                                // Delegate for getting class names
 		void* reloadDelegate_;                               // Delegate for handling backend affairs such as script recompilation and reloading							// Delegate for handling backend affairs such as script recompilation and reloading
-
+		void* writeDelegate_;								 // Delegate for writing signal methods using roslyn
 
 		GetScriptFieldsMethod fieldsHandle_ = nullptr;
 		GetFileClassNamesMethod cnameHandle_ = nullptr;
+
+		// =================== Signals ===================
+
+		// Signal methods
+		std::unordered_map<std::string, Events::EnoSignal> signalMethods_;
 
 		// Initialize hostfxr library
 		void init();
@@ -227,7 +291,16 @@ namespace Core
 		// Calling a delegate with input parameters
 		void callDelegate(KeyDelegateInfo&);
 
-		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> begin_;
-		std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> update_;
+		InstancedProxyMethod begin_;
+		InstancedProxyMethod update_;
+		ProxyMethod synchronize_;
+		ProxyMethod signal_;
+
+		RegisterInstanceProxyMethod rpm_;
+		uint32_t* lastID{ nullptr };
+
+		//std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> begin_;
+		//std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> update_;
+		//ProxyMethod signal_;
 	};
 }

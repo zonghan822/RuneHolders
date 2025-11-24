@@ -103,9 +103,34 @@ namespace Editor
 	{
 		if (!src || !dst) return;
 
+		// Detach from current parent first (if any)
+		if (src->parent_)
+		{
+			auto& siblings = src->parent_->children_;
+			siblings.erase(std::remove(siblings.begin(), siblings.end(), src), siblings.end());
+		}
+
+		// Establish new parent-child relationship
 		dst->children_.push_back(src);
 		src->parent_ = dst;
 		src->nestedLayer_ = dst->nestedLayer_ + 1;
+
+		// Recursively update all children's nested layers
+		std::function<void(Node*, uint32_t)> updateChildLayers = [&](Node* node, uint32_t parentLayer)
+		{
+			if (!node) return;
+			node->nestedLayer_ = parentLayer + 1;
+			for (Node* child : node->children_)
+			{
+				updateChildLayers(child, node->nestedLayer_);
+			}
+		};
+
+		// Update all children of src to have correct nested layers
+		for (Node* child : src->children_)
+		{
+			updateChildLayers(child, src->nestedLayer_);
+		}
 	}
 
 	// Select a node and display all information
@@ -249,16 +274,33 @@ namespace Editor
 	void EnoSceneTree::attachScript(Node* node, std::unique_ptr<Script::EnoScript>&& script)
 	{
 		if (node)
+		{
 			node->script_ = std::move(script);
+
+			// Script attached will receive node metadata
+			// Retrieve each unique class stored for the script
+			for (const auto& org : node->script_->origin())
+			{
+				coreHost_.setMetaData(org, node->sceneObjectID_);
+			}
+		}
 	}
 
 	// Attach a script to the selected Node
 	void EnoSceneTree::attachScript(std::unique_ptr<Script::EnoScript>&& script)
 	{
 		if (selectedNode_)
+		{
 			selectedNode_->script_ = std::move(script);
-	}
 
+			// Script attached will receive node metadata
+			// Retrieve each unique class stored for the script
+			for (const auto& org : selectedNode_->script_->origin())
+			{
+				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_);
+			}
+		}
+	}
 	// Detach a script and release it
 	void EnoSceneTree::detachScript(std::unique_ptr<Script::EnoScript>&& script)
 	{
@@ -708,4 +750,10 @@ namespace Editor
 			});
 	}
 
+	// ====================== Signals ======================
+
+	void EnoSceneTree::signalComponents(Node* node)
+	{
+
+	}
 }

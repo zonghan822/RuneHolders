@@ -32,8 +32,12 @@ void GameApplication::initialize() {
 	);*/
 
 
+	// Initialize player system
+	playerSystem_ = std::make_unique<Player::PlayerSystem>();
+
 	// Setup all game content
-	setupGameEntities();
+	setupPrefabs();
+	setupGameSystems();
 	setupGameAudio();
 	setupTreeTesting();
 	setupGameEvents();
@@ -41,8 +45,7 @@ void GameApplication::initialize() {
 	setupImGui();
 	setupAnimations();
 	setupScripting();
-	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
-	timesFont_ = engine_.getResourceLoader().getFont("times");
+	setupFont();
 
 	// ============= LOAD LAST ACTIVE SAVED SCENE ========================= //
 	//engine_.getEnoEditor().getSceneTree().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
@@ -63,6 +66,12 @@ void GameApplication::initialize() {
 	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
 	editorCameraY_ = (VIRTUAL_HEIGHT - EDITOR_HEIGHT) / 2.0f;
 
+	// Subscribe to delete selected entity event (using GameApplication's scene tree)
+	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
+		{
+			extern void deleteSelectedEntity(Editor::EnoSceneTree&, ECS::EntityManager&, Editor::UndoManager&);
+			deleteSelectedEntity(*sceneTree_, engine_.getEntityManager(), engine_.getEnoEditor().getUndoManager());
+		});
 
 	std::cout << "Game initialized successfully!" << std::endl;
 }
@@ -83,22 +92,30 @@ void GameApplication::shutdown() {
 	imGuiTerminate();
 }
 
-void GameApplication::setupGameEntities() {
-	// To setup the entities in our game
+void GameApplication::setupPrefabs() {
+	auto prefabManager = engine_.getPrefabManager();
+	prefabManager.registerPresets();
+
+	ECSComponents::Preset::saveAll(prefabManager);
+	ECSComponents::Preset::loadAll(prefabManager);
+}
+
+void GameApplication::setupGameSystems() {
+	
+
+}
+
+void GameApplication::setupFont() {
+	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
+	timesFont_ = engine_.getResourceLoader().getFont("times");
 }
 
 void GameApplication::setupScripting() {
-
-	std::cout << "hr setup now \n";
+	// Scripting premade calls
 	engine_.getCoreHost().HRSetup();
-
-	std::cout << "defineBegin now \n";
 	engine_.getCoreHost().defineBegin();
-
-	std::cout << "defineUpdate now \n";
 	engine_.getCoreHost().defineUpdate();
-
-	std::cout << "Setup Scripting done \n";
+	engine_.getCoreHost().defineSMD();
 }
 
 
@@ -151,6 +168,15 @@ void GameApplication::setupGameAudio() {
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX1", "SFX", "Flask");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX2", "SFX", "Stone_Impact");
 	inputMng.setupEvent<Audio::PlayInstant>("Play SFX3", "SFX", "Water_Drip");
+
+	// Undo/Redo System
+	// Ctrl+Z for undo
+	inputMng.setupKey("Undo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL);
+	inputMng.setupEvent<Editor::UndoAction>("Undo");
+
+	// Ctrl+Shift+Z for redo
+	inputMng.setupKey("Redo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT);
+	inputMng.setupEvent<Editor::RedoAction>("Redo");
 }
 
 void GameApplication::setupTreeTesting()
@@ -159,6 +185,10 @@ void GameApplication::setupTreeTesting()
 
 	inputMng.setupKey("Test Editor Tree", GLFW_KEY_Q, glfwGetKeyScancode(GLFW_KEY_Q), GLFW_RELEASE, 0);
 	inputMng.setupEvent<Editor::TestTree>("Test Editor Tree");
+
+	// Setup Delete key for entity deletion
+	inputMng.setupKey("Delete Selected Entity", GLFW_KEY_DELETE, glfwGetKeyScancode(GLFW_KEY_DELETE), GLFW_RELEASE, 0);
+	inputMng.setupEvent<Editor::DeleteSelectedEntity>("Delete Selected Entity");
 }
 
 void GameApplication::setupGameEvents() {
@@ -180,7 +210,7 @@ void GameApplication::setupGameMath() {
 	// No need to initialize them here anymore
 
 	// Load player config
-	playerConfig_.LoadFromFile(CONFIG_DIR_PATH "player/player_config.txt");
+	playerConfig_.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
 	std::cout << "[GameLogic] Player configg loaded" << std::endl;
 }
 
@@ -265,16 +295,15 @@ void GameApplication::setupImGui() {
 void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& graphics_ = engine_.getGraphicsManager();
-	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
-	double deltaTime = engine_.getDeltaTime();
+	auto& inputMng = engine_.getInputManager();
 
-	// ========= Audio =========
-	
-	engine_.getAudioManager().process();
+	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
+	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 
 	// =========================
 	
 	pathfinder_->update(entityManager, 1.f);
+	playerSystem_->Update(entityManager, inputMng, deltaTime);
 
 	// Update engine playing state based on editor state
 	engine_.setIsPlaying(engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
@@ -298,7 +327,7 @@ void GameApplication::updateGameLogic() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (playerTexture_ && playerSpawned_) {
-		playerAnimController_.update(static_cast<float>(deltaTime));
+		playerAnimController_.update(deltaTime);
 	}
 
 	// Update all animated entities (spritesheet animation and rotation)
@@ -307,7 +336,7 @@ void GameApplication::updateGameLogic() {
 	const int totalFrames = 4;  // Protagonist-Walk-Sheet has 4 frames
 	const float frameDuration = 0.1f;  // 0.1 seconds per frame
 
-	animationTimer += static_cast<float>(deltaTime);
+	animationTimer += deltaTime;
 	if (animationTimer >= frameDuration) {
 		animationTimer -= frameDuration;
 		currentFrame = (currentFrame + 1) % totalFrames;
@@ -355,7 +384,7 @@ void GameApplication::updateGameLogic() {
 					// rot.x = current angle, rot.y = rotation speed
 					if (entity.has<ECSComponents::TransformComponent>(entityManager)) {
 						auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
-						transform.rot.x += transform.rot.y * static_cast<float>(deltaTime);
+						transform.rot.x += transform.rot.y * deltaTime;
 					}
 				}
 			}
@@ -399,7 +428,7 @@ void GameApplication::updateGameLogic() {
 	if (editorFramebuffer_) {
 		// Update camera panning for room transitions
 		if (isPanning_) {
-			panTimer_ += static_cast<float>(deltaTime);
+			panTimer_ += deltaTime;
 			float progress = Math::min(panTimer_ / panDuration_, 1.0f);
 
 			// Smooth easing function (ease-in-out)
@@ -421,7 +450,7 @@ void GameApplication::updateGameLogic() {
 			// NOTE: WASD controls BOTH player movement AND editor camera
 			// To move ONLY the camera, set the editor state to stopped (edit) mode
 			auto& inputManager = engine_.getInputManager();
-			float cameraDelta = editorCameraSpeed_ * static_cast<float>(deltaTime);
+			float cameraDelta = editorCameraSpeed_ * deltaTime;
 			if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
@@ -488,13 +517,20 @@ void GameApplication::updateGameLogic() {
 					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
 
+					// Apply scale to width and height
+					float scaledWidth = renderInfo.width * transform.scale.x;
+					float scaledHeight = renderInfo.height * transform.scale.y;
+
+					// Get rotation from transform component
+					float rotation = transform.rot.x;
+
 					// Convert world position to screen position (relative to camera)
 					float screenX = transform.pos.x - editorCameraX_;
 					float screenY = transform.pos.y - editorCameraY_;
 
 					// Only draw if entity is within visible camera bounds
-					float halfW = renderInfo.width * 0.5f;
-					float halfH = renderInfo.height * 0.5f;
+					float halfW = scaledWidth * 0.5f;
+					float halfH = scaledHeight * 0.5f;
 					if (screenX + halfW >= 0 && screenX - halfW < EDITOR_WIDTH &&
 						screenY + halfH >= 0 && screenY - halfH < EDITOR_HEIGHT) {
 
@@ -506,7 +542,7 @@ void GameApplication::updateGameLogic() {
 
 							engine_.getGraphicsManager().drawTexturedQuad(
 								Math::eVec2<float>{topLeftX, topLeftY},
-								Math::eVec2<float>{renderInfo.width, renderInfo.height},
+								Math::eVec2<float>{scaledWidth, scaledHeight},
 								renderInfo.texture,
 								renderInfo.color
 							);
@@ -516,7 +552,7 @@ void GameApplication::updateGameLogic() {
 							// Draw circle at screen position (center)
 							engine_.getGraphicsManager().drawCircle(
 								Math::eVec2<float>{screenX, screenY},
-								renderInfo.width * 0.5f,  // Use width/2 as radius
+								scaledWidth * 0.5f,  // Use scaled width/2 as radius
 								renderInfo.color,
 								true,  // Filled
 								32     // Segments
@@ -529,9 +565,10 @@ void GameApplication::updateGameLogic() {
 
 							engine_.getGraphicsManager().drawRect(
 								Math::eVec2<float>{topLeftX, topLeftY},
-								Math::eVec2<float>{renderInfo.width, renderInfo.height},
+								Math::eVec2<float>{scaledWidth, scaledHeight},
 								renderInfo.color,
-								true
+								true,
+								rotation
 							);
 						}
 						// Draw text for button component
@@ -556,9 +593,8 @@ void GameApplication::updateGameLogic() {
 				auto it = entityMap.find(playerEntityID_);
 				if (it != entityMap.end()) {
 					// Get player system from engine (no longer a global)
-					auto* playerSystem = engine_.getPlayerSystem();
-					if (playerSystem) {
-						auto& transform = playerSystem->GetTransform(it->second);
+					if (playerSystem_) {
+						auto& transform = playerSystem_->GetTransform(it->second);
 						auto& frame = playerAnimController_.getCurrentFrame();
 
 						std::shared_ptr<Graphics::EnoTexture> currentTexture;
@@ -718,11 +754,8 @@ void GameApplication::updateEntities() {
 
 	// Check if player is moving and switch animation accordingly
 
-	// Get player system from engine (no longer a global)
-	auto* playerSystem = engine_.getPlayerSystem();
-
 	// Check if editor state is in play and player is moving and switch animation accordingly
-	if (playerSystem && playerSpawned_ && engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing) {
+	if (playerSystem_ && playerSpawned_ && engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing) {
 		// Check for WASD input
 		bool isMoving =
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
@@ -750,7 +783,7 @@ void GameApplication::updateEntities() {
 			}
 		}
 		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
-		// No need to call playerSystem->Update() here anymore
+		// No need to call playerSystem_->Update() here anymore
 	}
 
 	// NOTE: Collision system update is now done in eno_engine.cpp::updateGameSystems()
@@ -780,10 +813,19 @@ void GameApplication::updateEntities() {
 				playAfterStop = false;
 			}
 
-
 			if (!hasBegun)
 			{
-				coreHost.begin();
+				for (const auto& node : sceneTree_->getAllNodes())
+				{
+					if (node->script_)
+					{
+						for (const auto& org : node->script_->origin())
+						{
+							std::wcout << "origin of call: " << org << std::endl;
+							coreHost.begin(org, node->sceneObjectID_);
+						}
+					}
+				}
 
 				//for (auto* node : sceneTree_->getAllNodes())
 				//{
@@ -807,7 +849,16 @@ void GameApplication::updateEntities() {
 			//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
 			//	coreHost.runScriptMethod(className, L"Update");
 			//}
-			coreHost.update();
+			for (const auto& node : sceneTree_->getAllNodes())
+			{
+				if (node->script_)
+				{
+					for (const auto& org : node->script_->origin())
+					{
+						coreHost.update(org, node->sceneObjectID_);
+					}
+				}
+			}
 			updateTestObject(engine_.getEntityManager(), engine_);
 
 			break;
@@ -927,9 +978,8 @@ void GameApplication::drawPlayerAndIndicator() {
 			if (it != entityMap.end())
 			{
 				// Get player system from engine (no longer a global)
-				auto* playerSystem = engine_.getPlayerSystem();
-				if (playerSystem) {
-					auto& transform = playerSystem->GetTransform(it->second);
+				if (playerSystem_) {
+					auto& transform = playerSystem_->GetTransform(it->second);
 					auto& frame = playerAnimController_.getCurrentFrame();
 
 					std::shared_ptr<Graphics::EnoTexture> currentTexture;
@@ -964,14 +1014,14 @@ void GameApplication::drawPlayerAndIndicator() {
 					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
 						rotationRadians += static_cast <float>(3.0f * 0.0174533 * 0.01667);
 
-						auto& playerCollider = playerSystem->GetCollision(it->second);
+						auto& playerCollider = playerSystem_->GetCollision(it->second);
 						playerCollider.rotation = rotationRadians;
 						std::cout << "rotation in Radians:" << rotationRadians << '\n';
 					}
 
 					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
 						rotationRadians -= static_cast <float>(3.0f * 0.0174533 * 0.01667);
-						auto& playerCollider = playerSystem->GetCollision(it->second);
+						auto& playerCollider = playerSystem_->GetCollision(it->second);
 						playerCollider.rotation = rotationRadians;
 						std::cout << "rotation in Radians:" << rotationRadians << '\n';
 					}
@@ -1023,7 +1073,7 @@ void GameApplication::drawPlayerAndIndicator() {
 
 void GameApplication::updateImGui() {
 	SystemTimer ImGuiTimer("ImGui", systemTimes_);
-	imGuiDisplay(engine_, engine_.getEnoEditor().getSceneTree());
+	imGuiDisplay(engine_, engine_.getEnoEditor().getSceneTree(), engine_.getEnoEditor().getUndoManager());
 }
 
 void GameApplication::drawShapes() {
@@ -1049,11 +1099,18 @@ void GameApplication::drawShapes() {
 				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 				auto& renderInfo = entity.get<drawInfo>(entityManager);
 
+				// Apply scale to width and height
+				float scaledWidth = renderInfo.width * transform.scale.x;
+				float scaledHeight = renderInfo.height * transform.scale.y;
+
+				// Get rotation from transform component
+				float rotation = transform.rot.x;
+
 				// Check if entity has a texture (sprite)
 				if (renderInfo.texture && renderInfo.texture->isValid()) {
 					// Draw textured sprite with animation and rotation
-					float topLeftX = transform.pos.x - (renderInfo.width * 0.5f);
-					float topLeftY = transform.pos.y - (renderInfo.height * 0.5f);
+					float topLeftX = transform.pos.x - (scaledWidth * 0.5f);
+					float topLeftY = transform.pos.y - (scaledHeight * 0.5f);
 
 					// Calculate UV coordinates for spritesheet animation
 					// Protagonist-Walk-Sheet is 384x96 with 4 frames (96x96 each)
@@ -1076,13 +1133,10 @@ void GameApplication::drawShapes() {
 						static_cast<float>(frameY + frameHeight) / static_cast<float>(renderInfo.texture->getHeight())
 					};
 
-					// Get rotation from transform component (stored in rot.x)
-					float rotation = transform.rot.x;
-
-					// Draw textured quad with UV coordinates and rotation
+					// Draw textured quad with UV coordinates, rotation and scale
 					graphics.drawTexturedQuadUV(
 						Math::eVec2<float>{topLeftX, topLeftY},
-						Math::eVec2<float>{renderInfo.width, renderInfo.height},
+						Math::eVec2<float>{scaledWidth, scaledHeight},
 						renderInfo.texture,
 						uvStart,
 						uvEnd,
@@ -1092,26 +1146,27 @@ void GameApplication::drawShapes() {
 				}
 				// Check shape type and draw accordingly
 				else if (strcmp(renderInfo.shape, "Circle") == 0) {
-					// Draw circle at center position
+					// Draw circle at center position with scale applied to radius
+					float scaledRadius = (scaledWidth * 0.5f);
 					graphics.drawCircle(
-						transform.pos,  // Center position
-						renderInfo.width * 0.5f,  // Use width/2 as radius
+						transform.pos,
+						scaledRadius,
 						renderInfo.color,
-						true,  // Filled
-						32     // Segments
+						true,
+						32
 					);
 				}
 				else {
-					// TransformComponent.pos is the CENTER, but drawRect expects TOP-LEFT
-					// Convert from center to top-left
-					float topLeftX = transform.pos.x - (renderInfo.width * 0.5f);
-					float topLeftY = transform.pos.y - (renderInfo.height * 0.5f);
+					// Draw rectangle with rotation and scale applied
+					float topLeftX = transform.pos.x - (scaledWidth * 0.5f);
+					float topLeftY = transform.pos.y - (scaledHeight * 0.5f);
 
 					graphics.drawRect(
-						Math::eVec2<float>{topLeftX, topLeftY},  // Top-left position for drawRect
-						Math::eVec2<float>{renderInfo.width, renderInfo.height},
+						Math::eVec2<float>{topLeftX, topLeftY},
+						Math::eVec2<float>{scaledWidth, scaledHeight},
 						renderInfo.color,
-						true
+						true,
+						rotation
 					);
 				}
 				//// Draw text for button component

@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace Eno
 {
-    public class HotReloadManager
+    public class HotReloadManager : IHotReloadManager
     {
         private AssemblyLoadContext? loadContext;
         private Assembly? loadedAssembly;
@@ -34,10 +34,11 @@ namespace Eno
             Load(tempDllPath!);
 
             // Once that DLL has been loaded, assign assembly
-            if (loadedAssembly == null)
+            var asm = loadedAssembly;
+            if (asm == null)
                 throw new InvalidOperationException("Failed to load assembly!");
-            
-            Proxy.SetAssembly(loadedAssembly?? throw new InvalidOperationException("Failed to load assembly!"));
+
+            Proxy!.SetAssembly(asm);
             ProxyEntry.SetProxy(Proxy);
         }
 
@@ -56,23 +57,21 @@ namespace Eno
             // I want to potentially replace this new assembly at runtime so
             // I am setting isCollectible to true
             loadContext = new AssemblyLoadContext("HotReloadContext", isCollectible: true);
-            loadContextWeak = new WeakReference(loadContext);
 
             // Set up assembly resolution
             // If the temp DLL references the main DLL GameScripts,
             // the main DLL will be loaded from disk
             loadContext.Resolving += (ctx, name) =>
             {
-                // First, check temp DLL folder
-                string depPath = Path.Combine(Path.GetDirectoryName(path)!, name.Name + ".dll");
-                if (File.Exists(depPath))
-                    return ctx.LoadFromAssemblyPath(depPath);
-
-                // Then check main DLL path
-                if (name.Name == "GameScripts" && File.Exists(mainDll))
-                    return ctx.LoadFromAssemblyPath(mainDll);
-
-                return null;
+                // Find exact match first
+                var coreAsm = AppDomain.CurrentDomain.GetAssemblies()
+                                .FirstOrDefault(a => a.GetName().FullName == name.FullName
+                                                || a.GetName().Name == name.Name);
+                if (coreAsm == null)
+                    return null;
+                
+                Console.WriteLine($"[HotReloadManager] Returning already-loaded assembly: {coreAsm.GetName().FullName} (ALC: {AssemblyLoadContext.GetLoadContext(coreAsm)?.Name})");
+                return coreAsm;
             };
 
             // Wrap the bytes we got the DLL previously in a MemoryStream
@@ -84,8 +83,12 @@ namespace Eno
                 ? loadContext.LoadFromStream(stream, pdbStream)
                 : loadContext.LoadFromStream(stream);
             
+            // Make a proxy if a proxy does not currently exist
             // Assign proxy to new loaded assembly
-            Proxy = new ScriptProxy(loadedAssembly);
+            if (Proxy == null)
+                Proxy = new ScriptProxy(loadedAssembly);
+            else
+                Proxy.SetAssembly(loadedAssembly);
 
             Console.WriteLine("Loaded assembly via memory stream (file unlocked)!");
         }
@@ -109,7 +112,7 @@ namespace Eno
                 if (loadContextWeak?.IsAlive == false)
                     break;
                 
-                Thread.Sleep(50);
+                Thread.Sleep(100);
             }
 
             if (loadContextWeak?.IsAlive == true)
@@ -142,29 +145,6 @@ namespace Eno
 
             Console.WriteLine($"Compiled to temp: { tempDll }");
             return tempDll;
-        }
-
-        public void ReplaceDLL()
-        {
-            if (string.IsNullOrEmpty(tempDllPath) || string.IsNullOrEmpty(mainDll))
-                return;
-
-            try
-            {
-                if (File.Exists(mainDll))
-                    File.Delete(mainDll);
-
-                File.Move(tempDll!, mainDll!);
-
-                Console.WriteLine("Main DLL replaced successfully");
-                tempDllPath = null;
-            }
-            catch
-            {
-                // If delete fails because the file is locked, we still proceed:
-                Console.WriteLine("Could not remove old DLL — still locked. Loading new DLL directly from temp!");
-                return;
-            }
         }
     }
 }
