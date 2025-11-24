@@ -21,8 +21,8 @@ namespace Engine
 		window_.initialize("RuneHolders", configMng_.getWindowDim().first, configMng_.getWindowDim().second);
 
 		auto [tmW, tmH, tmCell] = configMng_.getTilemapConfig();
-		tilemapSystem_ = std::make_unique<Map::TileMapSystem>(tmW, tmH, tmCell);
-		pathfinder_ = std::make_unique<AI::PathfindingSystem>(*tilemapSystem_);
+		tilemapSystem_ = std::make_unique<Map::TileMapSystem>(bus_, tmW, tmH, tmCell);
+		pathfinder_ = std::make_unique<AI::PathfindingSystem>(bus_, *tilemapSystem_);
 
 		// Systems init
 		inputMng_.initialize();

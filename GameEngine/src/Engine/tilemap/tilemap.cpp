@@ -10,9 +10,11 @@
 
 namespace Map {
 
-    TileMapSystem::TileMapSystem(int width, int height, float cellSize)
-        : width_(width), height_(height), cellSize_(cellSize)
-    { /*empty by design*/ }
+    TileMapSystem::TileMapSystem(Event::EnoEventBus& bus, int width, int height, float cellSize)
+        : width_(width), height_(height), cellSize_(cellSize), bus_(bus)
+    { 
+        addLayer("Tile Layer 1", false);
+    }
 
     // Create new layer
     void TileMapSystem::addLayer(const std::string& name, bool isNavLayer) {
@@ -186,5 +188,13 @@ namespace Map {
 
         width_ = newWidth;
         height_ = newHeight;
+    }
+
+    void TileMapSystem::renameLayer(int id, std::string const& newName) {
+        layers_[id].rename(newName);
+    }
+
+    void TileMapSystem::setNavLayer(int id, bool isNav) {
+        layers_[id].setNav(isNav);
     }
 }

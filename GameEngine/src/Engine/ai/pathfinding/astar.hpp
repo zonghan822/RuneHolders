@@ -25,8 +25,8 @@ namespace AI {
     class PathfindingSystem {
     public:
 
-        PathfindingSystem(Map::TileMapSystem& tilemap)
-            : tilemap_(tilemap) {
+        PathfindingSystem(Event::EnoEventBus& bus, Map::TileMapSystem& tilemap)
+            : bus_(bus), tilemap_(tilemap) {
         }
 
         void setAllowDiagonal(bool allow) { allowDiagonal_ = allow; }
@@ -36,6 +36,8 @@ namespace AI {
             const Math::eVec2<int>& goal);
 
     private:
+        Event::EnoEventBus& bus_;
+
         Map::TileMapSystem& tilemap_;
         bool allowDiagonal_ = false;
 
@@ -43,7 +45,10 @@ namespace AI {
             Math::eVec2<int> pos;
             int g, h;
             int f() const { return g + h; }
-            bool operator>(const Node& rhs) const { return f() > rhs.f(); }
+            bool operator>(const Node& rhs) const {
+                if (f() == rhs.f()) return h < rhs.h;
+                return f() > rhs.f();
+            }
         };
 
         int heuristic(const Math::eVec2<int>& a, const Math::eVec2<int>& b) const;

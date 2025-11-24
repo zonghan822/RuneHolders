@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include "tile_layer.hpp"
+#include "../event/event_bus.hpp"
 #include "../math/math.hpp"
 
 namespace Map {
@@ -11,7 +12,7 @@ namespace Map {
 	class TileMapSystem {
 	public:
 
-        TileMapSystem(int width, int height, float cellSize);
+        TileMapSystem(Event::EnoEventBus& bus, int width, int height, float cellSize);
 
         // Create new layer
         void addLayer(const std::string& name, bool isNavLayer);
@@ -32,19 +33,24 @@ namespace Map {
         bool saveToFile(const std::string& filepath) const;
         bool loadFromFile(const std::string& filepath);
 
-        void resize(int newWidth, int newHeight, float newCellSize = -1.0f, bool preserveData = true);
-
         // Accessor
         int width() const;
         int height() const;
         float cellSize() const;
         const std::vector<TileLayer>& layers() const;
 
+        // Modifier
+        void resize(int newWidth, int newHeight, float newCellSize = -1.0f, bool preserveData = true);
+        void renameLayer(int id, std::string const& newName);
+        void setNavLayer(int id, bool);
+
     private:
         int width_;
         int height_;
         float cellSize_;
         std::vector<TileLayer> layers_;
+
+        Event::EnoEventBus& bus_;
 	};
 
 }

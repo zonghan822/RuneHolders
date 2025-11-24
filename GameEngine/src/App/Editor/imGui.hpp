@@ -206,6 +206,7 @@ void LoadAudioAssets(Engine::EnoEngine& engine_);
 void displayAudioTab(Engine::EnoEngine& engine_);
 
 
+void displayTilemapEditor(Engine::EnoEngine& engine);
 
 
 // docking shi

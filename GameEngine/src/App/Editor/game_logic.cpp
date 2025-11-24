@@ -290,10 +290,6 @@ void GameApplication::updateGameLogic() {
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 
-	// =========================
-
-	pathfinder_->update(entityManager, 1.f);
-
 	// Only update player movement when in play mode
 	if (getEditorState() == Playing || getEditorState() == NextKeyFrame) {
 		playerSystem_->Update(entityManager, inputMng, deltaTime);

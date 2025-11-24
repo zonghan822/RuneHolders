@@ -25,7 +25,8 @@ enum EditorState {
     Stopped = 1,
     Playing,
     Paused,
-    NextKeyFrame
+    NextKeyFrame,
+    TileMapEdit
 };
 
 class GameApplication {
