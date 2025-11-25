@@ -32,6 +32,7 @@
 	PRESET(DEFAULT, NameComponent, VisibilityComponent, LayerComponent) \
 	PRESET(AUDIO, AudioComponent, LayerComponent) \
 	PRESET(PUSHABLE_BOX, TransformComponent, PhysicsComponent, CollisionComponent, BoxComponent, DrawInfoComponent, NameComponent) \
+	PRESET(EXIT_BUTTON, TransformComponent, ButtonComponent, DrawInfoComponent, VisibilityComponent) \
 
 // Expanding PRESET_LIST within the component namespace
 // to make use of hte PRESET using macro

@@ -19,6 +19,7 @@
 #include "player/player.hpp"
 #include "enemy/chasing_state.hpp"
 #include "enemy/idle_state.hpp"
+#include "math/math.hpp" // Added for Math::eVec2<float>
 
 class GameApplication {
 private:
@@ -58,6 +59,10 @@ private:
     float editorCameraX_ = 0.0f;  // Camera offset X
     float editorCameraY_ = 0.0f;  // Camera offset Y
     float editorCameraSpeed_ = 300.0f;  // Camera movement speed
+
+    // Editor view min/max coordinates
+    Math::eVec2<float> editorViewMin_{ 0.f, 0.f };
+    Math::eVec2<float> editorViewMax_{ 0.f, 0.f };
 
     // Camera panning state
     bool isPanning_ = false;
@@ -112,6 +117,14 @@ public:
     // Get editor camera position
     float getEditorCameraX() const { return editorCameraX_; }
     float getEditorCameraY() const { return editorCameraY_; }
+
+    // Get/Set editor view min/max
+    void setEditorViewRect(const Math::eVec2<float>& min, const Math::eVec2<float>& max) {
+        editorViewMin_ = min;
+        editorViewMax_ = max;
+    }
+    Math::eVec2<float> getEditorViewMin() const { return editorViewMin_; }
+    Math::eVec2<float> getEditorViewMax() const { return editorViewMax_; }
 
     // Get pathfinding system
     AI::PathfindingSystem& getPathfinder() { return *pathfinder_; }

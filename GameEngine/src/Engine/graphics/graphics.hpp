@@ -1,4 +1,4 @@
-/*============================================================================================
+ /*============================================================================================
 * @file         graphics.hpp
 * @author       Law Zong Han (zonghan.law@digipen.edu),
 * @author       Muhammad Raziq Bin Mohd Rafig ()
@@ -23,6 +23,7 @@
 #include <string>
 #include <memory>
 #include <array>
+#include <algorithm>
 
 // Math constants
 #ifndef M_PI
@@ -288,7 +289,43 @@ namespace Graphics
         void bindTextures();
     };
 
+    // Conversion functions
+    inline Math::eVec2<float> screenToWorld(const Math::eVec2<float>& screenPos, const Math::eVec2<float>& imageMin, const Math::eVec2<float>& imageMax, float viewPortWidth, float viewPortHeight, float cameraX, float cameraY)
+    {
+        // Get mouse position relative to the image (0.0 to 1.0)
+        float relX = (screenPos.x - imageMin.x) / (imageMax.x - imageMin.x);
+        float relY = (screenPos.y - imageMin.y) / (imageMax.y - imageMin.y);
 
+        relX = std::clamp(relX, 0.0f, 1.0f);
+        relY = std::clamp(relY, 0.0f, 1.0f);
+
+        // Convert to screen space coordinates (within the editor viewport)
+        float screenX = relX * viewPortWidth;
+        float screenY = relY * viewPortHeight;
+
+        // Add camera offset to convert screen space to world space
+        float worldX = screenX + cameraX;
+        float worldY = screenY + cameraY;
+
+        return { worldX, worldY };
+    }
+
+    inline Math::eVec2<float> worldToScreen(const Math::eVec2<float>& worldPos, const Math::eVec2<float>& imageMin, const Math::eVec2<float>& imageMax, float editorWidth, float editorHeight, float cameraX, float cameraY)
+    {
+        // Subtract camera offset to convert world space to screen space
+        float screenX = worldPos.x - cameraX;
+        float screenY = worldPos.y - cameraY;
+
+        // Convert to normalized coordinates (0.0 to 1.0)
+        float relX = screenX / editorWidth;
+        float relY = screenY / editorHeight;
+
+        // Convert to actual screen position
+        float finalX = imageMin.x + relX * (imageMax.x - imageMin.x);
+        float finalY = imageMin.y + relY * (imageMax.y - imageMin.y);
+
+        return { finalX, finalY };
+    }
 
 
     // Graphics events
