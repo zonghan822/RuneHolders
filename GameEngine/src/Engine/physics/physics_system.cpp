@@ -646,8 +646,8 @@ namespace Physics
         } else {
             // Circle center is inside rectangle
             // Find the closest edge and push the circle out through that edge
-            float dx = circlePos.x - rectPos.x;
-            float dy = circlePos.y - rectPos.y;
+            //float dx = circlePos.x - rectPos.x;
+            //float dy = circlePos.y - rectPos.y;
 
             // Calculate distance to each edge
             float distToRight = (rectPos.x + halfWidth) - circlePos.x;
