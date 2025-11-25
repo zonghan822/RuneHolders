@@ -21,6 +21,11 @@ namespace Map {
         layers_.emplace_back(name, width_, height_, isNavLayer);
     }
 
+    void TileMapSystem::removeLayer(int id) {
+        if (id < layers_.size())
+            layers_.erase(layers_.begin() + id);
+    }
+
     // Painting
     void TileMapSystem::setWalkable(int layerIndex, int x, int y, bool value) {
         layers_[layerIndex].setWalkable(x, y, value);
@@ -47,6 +52,11 @@ namespace Map {
                 return false;  // Any blocking layer blocks
         }
         return true;
+    }
+
+    bool TileMapSystem::inBounds(int x, int y) const {
+        return x >= 0 && y >= 0 &&
+            x < width_ && y < height_;
     }
 
     Math::eVec2<int> TileMapSystem::worldToTile(const Math::eVec2<float>& pos) const {

@@ -206,9 +206,6 @@ void LoadAudioAssets(Engine::EnoEngine& engine_);
 void displayAudioTab(Engine::EnoEngine& engine_);
 
 
-void displayTilemapEditor(Engine::EnoEngine& engine);
-
-
 // docking shi
 void displayGameView();
 void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager);

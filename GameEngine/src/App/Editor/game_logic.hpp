@@ -17,16 +17,14 @@
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
-#include "enemy/chasing_state.hpp"
-#include "enemy/idle_state.hpp"
+#include "map_editor/map_editor.hpp"
 
 // Enum for different editor states
 enum EditorState {
     Stopped = 1,
     Playing,
     Paused,
-    NextKeyFrame,
-    TileMapEdit
+    NextKeyFrame
 };
 
 class GameApplication {
@@ -89,6 +87,9 @@ private:
     // Scene Tree (note: must be initialized after engine_ is initialized)
     std::unique_ptr<Editor::EnoSceneTree> sceneTree_;
 
+    // Map Editor (To be removed after set tilemap as node)
+    std::unique_ptr<MapEditor> mapEditor_;
+
 public:
     // Constructors
     GameApplication() = default;
@@ -129,6 +130,9 @@ public:
     // Camera panning for room transitions
     void startCameraPan(float targetY, float duration = 1.0f);
     bool isCameraPanning() const { return isPanning_; }
+
+    // Get map editor
+    MapEditor& getMapEditor() { return *mapEditor_; }
 
 
 private:

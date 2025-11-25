@@ -27,8 +27,6 @@ using Editor::Node;
 
 #pragma region Game Variables
 
-extern GameApplication game;
-
 bool showColliders_ = true;
 
 GameApplication* g_game = nullptr;
@@ -253,17 +251,13 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	//assetPresetsTab(engine_);
 	//ImGui::End();
 
-
-
 	// FPS
 	ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayFPSTab(engine_);
 	ImGui::End();
 
 	// Tilemap Editor
-	ImGui::Begin("Tilemap Editor", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayTilemapEditor(engine_);
-	ImGui::End();
+	g_game->getMapEditor().displayMenu();
 
 	// END DOCKSPACE
 	imGuiEndDockspace();
@@ -1351,6 +1345,7 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 		// Create menu popup
 		if (ImGui::BeginPopup("scene_menu"))
 		{
+			static std::string warningBuf;
 			ImGui::Text("%s", filename.c_str());
 			ImGui::Separator();
 
@@ -1362,7 +1357,7 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 			{
 				if (!scene_name || scene_name[0] == '\0')
 				{
-					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: no input detected!");
+					warningBuf = "Error[Name]: Empty name not allowed!";
 				}
 				else
 				{
@@ -1399,6 +1394,7 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 						// Close popup after renaming
 						ImGui::CloseCurrentPopup();
 						// Clear buffer
+						warningBuf.clear();
 						memset(scene_name, 0, sizeof(scene_name));
 
 						// If file rename is successful
@@ -1406,7 +1402,7 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 					}
 					catch (const std::filesystem::filesystem_error& e)
 					{
-						ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
+						warningBuf = "Error[Name]: " + std::string(e.what());
 						return;
 					}
 				}
@@ -1418,6 +1414,7 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 				// Close popup
 				ImGui::CloseCurrentPopup();
 				// In case theres some random stuff inside the input box, clear the buffer
+				warningBuf.clear();
 				memset(scene_name, 0, sizeof(scene_name));
 			}
 
@@ -1437,14 +1434,18 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 					std::filesystem::remove(filePath);
 					// Close current popup
 					ImGui::CloseCurrentPopup();
+					warningBuf.clear();
 					// Refresh list
 					refreshSceneName = true;
 				}
 				catch (const std::filesystem::filesystem_error& e)
 				{
-					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
+					warningBuf = "Error[Delete]: " + std::string(e.what());
 				}
 			}
+
+			if (!warningBuf.empty())
+				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf.c_str());
 
 			ImGui::EndPopup();
 
@@ -2553,98 +2554,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	ImGui::End();
 }
 
-
-void displayTilemapEditor(Engine::EnoEngine& engine)
-{
-	auto& tilemap = engine.getTileMap();
-
-	ImGui::Text("=== TILEMAP EDITOR ===");
-	ImGui::Separator();
-
-	// --- Layer selection ---
-	ImGui::Text("Active Layer:");
-	static int selectedLayer = 0;
-
-	auto& tilemapLayers = tilemap.layers();
-	int layerCount = static_cast<int>(tilemapLayers.size());
-	std::vector<std::string> layerNames;
-	for (auto const& layer : tilemapLayers)
-		layerNames.push_back(layer.name());
-
-	if (ImGui::BeginCombo("##TilemapLayerCombo", layerNames[selectedLayer].c_str())) {
-		for (int i = 0; i < layerCount; ++i) {
-			bool isSelected = (i == selectedLayer);
-			if (ImGui::Selectable(layerNames[i].c_str(), isSelected))
-				selectedLayer = i;
-		}
-		ImGui::EndCombo();
-	}
-
-	ImGui::Separator(); 
-
-	static char renameBuf[64];
-	strcpy(renameBuf, layerNames[selectedLayer].c_str());
-
-	ImGui::InputText("Rename Layer", renameBuf, 64);
-	if (ImGui::Button("Apply Rename")) {
-		tilemap.renameLayer(selectedLayer, std::string(renameBuf));
-	}
-
-	ImGui::Separator();
-
-	// --- Resize tilemap ---
-	static int newW = tilemap.width();
-	static int newH = tilemap.height();
-	static float newCellSize = tilemap.cellSize();
-
-	ImGui::InputInt("Width", &newW);
-	ImGui::InputInt("Height", &newH);
-	ImGui::InputFloat("Cell Size", &newCellSize);
-
-	if (ImGui::Button("Resize Tilemap")) {
-		tilemap.resize(newW, newH, newCellSize);
-	}
-
-	ImGui::Separator();
-
-	// --- Set Navigation Checkbox ---
-	bool isNav = tilemapLayers[selectedLayer].isNavLayer();
-	if (ImGui::Checkbox("Navigation Layer", &isNav)) {
-		tilemap.setNavLayer(selectedLayer, isNav);
-	}
-
-	ImGui::Separator();
-
-	// -- Add Layer --
-
-
-	ImGui::Separator();
-
-	// --- Save / Load ---
-	if (ImGui::Button("Save Tilemap")) {
-		std::cout << "Save Tilemap..." << std::endl;
-		// tilemap.saveToFile();
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Load Tilemap")) {
-		std::cout << "Load Tilemap..." << std::endl;
-		// tilemap.loadFromFile();
-	}
-
-	ImGui::Separator();
-
-	// --- Brush selector ---
-	static int brush = 1; // 1 = walkable, 0 = obstacle
-	ImGui::RadioButton("Walkable", &brush, 1); ImGui::SameLine();
-	ImGui::RadioButton("Obstacle", &brush, 0);
-
-	ImGui::Separator();
-
-	// Instructions
-	ImGui::Text("Left-click: Paint");
-	ImGui::Text("Right-click: Erase");
-}
-
 void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
 {
 	using namespace Editor;
@@ -3119,8 +3028,21 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	if (ImGui::IsKeyPressed(ImGuiKey_R)) currentGizmoMode = GIZMO_SCALE;
 
 	ImGui::SameLine();
+	ImGui::Text("|");
+	ImGui::SameLine();
+
+	auto& mapEditor = g_game->getMapEditor();
+	bool wasEdit = mapEditor.isEditMode();
+	if (wasEdit) {
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 1.0f, 0.0f, 1.0f)); // green
+	}
+
 	if (ImGui::Button("Map Editor")) {
-		
+		mapEditor.setEditMode(!wasEdit);
+	}
+
+	if (wasEdit) {
+		ImGui::PopStyleColor();
 	}
 
 	ImGui::Separator();
@@ -3375,65 +3297,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						}
 					}
 				}
-
-				//// ===================== TILEMAP PAINTING =====================
-				//if (ImGui::IsItemHovered() && ImGui::IsMouseDown(0) && g_game->getEditorState() == Stopped) {
-				//	ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
-				//	auto& tilemap = engine_.getTileMap();
-				//	auto& pathfinder = engine_.getPathfinder();
-
-				//	int tx = (int)(worldPos.x / tilemap.cellSize());
-				//	int ty = (int)(worldPos.y / tilemap.cellSize());
-
-				//	if (tilemap.inBounds(tx, ty))
-				//	{
-				//		// paint using brush
-				//		bool isWalkable = (brush == 1);
-				//		tilemap.setWalkable(tx, ty, selectedLayer, isWalkable);
-
-				//		// optional: update pathfinding grid on the fly
-				//		pathfinder.updateCell(tx, ty, isWalkable);
-
-				//		// mark render dirty
-				//		g_game->markEntitiesDirty();
-				//	}
-				//}
-
-				//if (ImGui::IsItemHovered() && ImGui::IsMouseDown(1))
-				//{
-				//	ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
-				//	auto& tilemap = engine_.getTileMap();
-				//	auto& pathfinder = engine_.getPathfinder();
-
-				//	int tx = (int)(worldPos.x / tilemap.cellSize());
-				//	int ty = (int)(worldPos.y / tilemap.cellSize());
-
-				//	if (tilemap.inBounds(tx, ty)) {
-				//		tilemap.setWalkable(tx, ty, selectedLayer, false);
-				//		pathfinder.updateCell(tx, ty, false);
-				//		g_game->markEntitiesDirty();
-				//	}
-				//}
-				//// ============================================================
-
-				//// --- Draw tilemap overlay ---
-				//auto& tilemap = engine_.getTileMap();
-				//for (int y = 0; y < tilemap.height(); ++y)
-				//{
-				//	for (int x = 0; x < tilemap.width(); ++x)
-				//	{
-				//		float cs = tilemap.cellSize();
-				//		ImVec2 p1 = worldToScreenCoords({ x * cs, y * cs });
-				//		ImVec2 p2 = worldToScreenCoords({ (x + 1) * cs, (y + 1) * cs });
-
-				//		bool walk = tilemap.isWalkable(x, y, selectedLayer);
-
-				//		ImU32 col = walk ? IM_COL32(0, 255, 0, 80) : IM_COL32(255, 0, 0, 80);
-				//		drawList->AddRectFilled(p1, p2, col);
-				//		drawList->AddRect(p1, p2, IM_COL32(255, 255, 255, 20));
-				//	}
-				//}
-
+				
 				// If not clicking gizmo, check if clicking on entity
 				if (!isDragging && !isRotating && !isScaling) {
 					auto clicked = getEntityUnderMouse(engine_, worldPos);
@@ -3444,6 +3308,12 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					}
 				}
 			}
+
+			// --- TILEMAP PAINTING ---
+			g_game->getMapEditor().paint(g_game);
+
+			// --- Draw tilemap overlay ---
+			g_game->getMapEditor().draw(g_game, drawList);
 
 			// While transforming (drag, rotate, or scale)
 			if ((isDragging || isRotating || isScaling) && ImGui::IsMouseDown(0)) {
@@ -3641,7 +3511,7 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 	// Dock windows to their respective nodes
 	// Left side - all three windows docked to same node will appear as tabs
-	ImGui::DockBuilderDockWindow("Heirarchy", dock_id_left);
+	ImGui::DockBuilderDockWindow("Hierarchy", dock_id_left);
 	ImGui::DockBuilderDockWindow("Prefabs", dock_id_left);
 	ImGui::DockBuilderDockWindow("Edit", dock_id_left);
 	ImGui::DockBuilderDockWindow("Scene", dock_id_left);
@@ -3675,5 +3545,3 @@ void imGuiTerminate() {
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 }
-
-

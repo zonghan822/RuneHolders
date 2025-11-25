@@ -56,6 +56,9 @@ void GameApplication::initialize() {
 	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
 	editorCameraY_ = (VIRTUAL_HEIGHT - EDITOR_HEIGHT) / 2.0f;
 
+	// Set up tile map editor (To be removed after tile map node is set up)
+	mapEditor_ = std::make_unique<MapEditor>(engine_.getTileMap());
+
 	// Subscribe to delete selected entity event (using GameApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
 		{

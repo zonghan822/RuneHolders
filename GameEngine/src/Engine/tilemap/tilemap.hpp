@@ -17,16 +17,20 @@ namespace Map {
         // Create new layer
         void addLayer(const std::string& name, bool isNavLayer);
 
+        // Remove layer
+        void removeLayer(int id);
+
         void setWalkable(int layerIndex, int x, int y, bool value);
 
         void paintRectangle(int layerIndex,
             int x0, int y0, int x1, int y1,
             bool walkable);
 
+        // Pathfinding
         bool isWalkable(int x, int y) const;
+        bool inBounds(int x, int y) const;
 
         Math::eVec2<int> worldToTile(const Math::eVec2<float>& pos) const;
-
         Math::eVec2<float> tileToWorld(int x, int y) const;
 
         // Serialize
