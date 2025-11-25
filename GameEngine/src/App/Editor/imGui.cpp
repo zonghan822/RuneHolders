@@ -3185,7 +3185,13 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
 		isPlaying = !isPlaying;
-		isPlaying ? sceneEditor.playScene() : sceneEditor.stopScene();
+		if (isPlaying) {
+			sceneEditor.playScene();
+		} else {
+			sceneEditor.stopScene();
+			// Immediately invalidate entity cache after stopping scene
+			if (g_game) g_game->markEntitiesDirty();
+		}
 	}
 	ImGui::SameLine();
 	if (ImGui::Button(sceneEditor.getCurrentScene().getState() != Editor::State::Paused ? "Pause" : "Unpause")) {

@@ -974,7 +974,7 @@ void GameApplication::updateEntities() {
 			{
 
 				// Mark entities as dirty to refresh the rendering cache
-				//entitiesDirty_ = true;
+				entitiesDirty_ = true;
 				// Toggle flag
 				playAfterStop = true;
 				hasBegun = false;
