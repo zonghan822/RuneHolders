@@ -19,13 +19,6 @@
 #include "player/player.hpp"
 #include "map_editor/map_editor.hpp"
 
-// Enum for different editor states
-enum EditorState {
-    Stopped = 1,
-    Playing,
-    Paused,
-    NextKeyFrame
-};
 
 class GameApplication {
 private:
@@ -66,6 +59,10 @@ private:
     float editorCameraY_ = 0.0f;  // Camera offset Y
     float editorCameraSpeed_ = 300.0f;  // Camera movement speed
 
+    // Editor view min/max coordinates
+    Math::eVec2<float> editorViewMin_{ 0.f, 0.f };
+    Math::eVec2<float> editorViewMax_{ 0.f, 0.f };
+
     // Camera panning state
     bool isPanning_ = false;
     float panStartY_ = 0.0f;
@@ -80,9 +77,6 @@ private:
     // Player
     Player::PlayerConfig playerConfig_;
     std::unique_ptr<Player::PlayerSystem> playerSystem_;
-
-    // Editor State
-    EditorState g_editorState = Stopped;
 
     // Scene Tree (note: must be initialized after engine_ is initialized)
     std::unique_ptr<Editor::EnoSceneTree> sceneTree_;
@@ -109,11 +103,7 @@ public:
     //void setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex);
     void applyTextureToPlayer(const Graphics::TextureData& texData);
 
-    // Accessor and mutators to access editor state
-    EditorState getEditorState() const;
-    EditorState getEditorState();
 
-    void setEditorState(EditorState state);
     Graphics::EnoFramebuffer* getGameFramebuffer() { return gameFramebuffer_.get(); }
     Graphics::EnoFramebuffer* getEditorFramebuffer() { return editorFramebuffer_.get(); }
 
@@ -126,6 +116,14 @@ public:
     // Get editor camera position
     float getEditorCameraX() const { return editorCameraX_; }
     float getEditorCameraY() const { return editorCameraY_; }
+
+    // Get/Set editor view min/max
+    void setEditorViewRect(const Math::eVec2<float>& min, const Math::eVec2<float>& max) {
+        editorViewMin_ = min;
+        editorViewMax_ = max;
+    }
+    Math::eVec2<float> getEditorViewMin() const { return editorViewMin_; }
+    Math::eVec2<float> getEditorViewMax() const { return editorViewMax_; }
 
     // Camera panning for room transitions
     void startCameraPan(float targetY, float duration = 1.0f);
