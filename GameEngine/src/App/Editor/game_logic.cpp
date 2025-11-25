@@ -301,9 +301,10 @@ void GameApplication::updateGameLogic() {
 	// =========================
 
 	pathfinder_->update(entityManager, 1.f);
+	//Editor::State editorState = engine_.getEnoEditor().getCurrentScene().getState();
 
 	// Only update player movement when in play mode
-	if (getEditorState() == Playing || getEditorState() == NextKeyFrame) {
+	if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame) {
 		playerSystem_->Update(entityManager, inputMng, deltaTime);
 	}
 
@@ -852,10 +853,6 @@ void GameApplication::updateEntities() {
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
 			{
-				// Save the current scene tree state before playing
-				//std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
-				//sceneTree_->save(ASSETS_DIR_PATH "saves/scenes/" + sceneTree_->getSceneName(), sceneTree_->getSceneName());
-				//std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
 			}
@@ -932,6 +929,7 @@ void GameApplication::updateEntities() {
 				// NOTE: Don't set state back to Paused here! It happens too early in the frame.
 				// The state will be reset to Paused at the end of this function after rendering.
 			}
+			engine_.getEnoEditor().getCurrentScene().pause();
 			break;
 		}
 		case Editor::State::Stopped:
@@ -939,22 +937,9 @@ void GameApplication::updateEntities() {
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
-				// Load the saved scene tree state to restore positions
-				/*std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
-				std::string sceneName = sceneTree_->getSceneName();
-				if (!sceneName.empty())
-				{
-					std::string scenePath = ASSETS_DIR_PATH "saves/scenes/" + sceneName;
-					sceneTree_->load(scenePath, sceneName);
-					std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
-				}
-				else
-				{
-					std::cerr << "[GameLogic] Warning: Scene name is empty, cannot load scene!" << std::endl;
-				}*/
 
 				// Mark entities as dirty to refresh the rendering cache
-				entitiesDirty_ = true;
+				//entitiesDirty_ = true;
 				// Toggle flag
 				playAfterStop = true;
 				hasBegun = false;
@@ -978,6 +963,7 @@ void GameApplication::updateEntities() {
 		{
 			if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
 			{
+				
 				if (b.onClick(inputManager, v, t, d))
 				{
 

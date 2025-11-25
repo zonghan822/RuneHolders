@@ -3014,16 +3014,16 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	auto& sceneEditor = engine_.getEnoEditor();
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
-	// Display toolbar for PLAY/PAUSE/STOP (moved from Game View)
+	// Display toolbar for PLAY/PAUSE/STOP
 	static bool isPlaying = false;
-	isPlaying = (sceneEditor.getCurrentScene().getState() == Editor::State::Playing) ? true : false;
+	isPlaying = (sceneEditor.getCurrentScene().getState() != Editor::State::Stopped) ? true : false;
 
 	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
 		isPlaying = !isPlaying;
 		isPlaying ? sceneEditor.playScene() : sceneEditor.stopScene();
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Pause")) {
+	if (ImGui::Button(sceneEditor.getCurrentScene().getState() != Editor::State::Paused ? "Pause" : "Unpause")) {
 		if (sceneEditor.getCurrentScene().getState() != Editor::State::Stopped) {
 			(sceneEditor.getCurrentScene().getState() == Editor::State::Playing ? sceneEditor.pauseScene() : sceneEditor.playScene());
 		}
@@ -3130,7 +3130,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				// Add camera offset to convert screen space to world space
 				float worldX = screenX + g_game->getEditorCameraX();
 				float worldY = screenY + g_game->getEditorCameraY();
-
+				
 				return ImVec2(worldX, worldY);
 				};
 

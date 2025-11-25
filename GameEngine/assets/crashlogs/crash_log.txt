@@ -51,3 +51,6 @@
 [2025-11-16 23:42:53] Failed to find the sound 
 [2025-11-17 00:01:31] Failed to find the sound 
 [2025-11-17 00:07:49] Failed to find the sound 
+[2025-11-25 13:31:51] Failed to find this entity in the Entity Map!
+[2025-11-25 13:32:14] Failed to find this entity in the Entity Map!
+[2025-11-25 13:34:56] Failed to find this entity in the Entity Map!
