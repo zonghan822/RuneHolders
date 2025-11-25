@@ -294,8 +294,46 @@ namespace ECS
 		{
 			// Clean up archetype and related chunks
 			EntityLoc loc = entityMap_.find(entityID)->second;
+			Chunk* chunk = loc.archetype->chunks_[loc.chunkIndex].get();
 
-			--loc.archetype->chunks_[loc.chunkIndex]->current;
+			// Implement swap-and-pop: move the last entity to fill the gap
+			size_t deletedIndex = loc.entityIndexInChunk;
+			size_t lastIndex = chunk->current - 1;
+
+			if (deletedIndex != lastIndex)
+			{
+				// Find the entity at the last position
+				uint32_t lastEntityID = UINT32_MAX;
+				for (const auto& [id, entityLoc] : entityMap_)
+				{
+					if (entityLoc.archetype == loc.archetype &&
+						entityLoc.chunkIndex == loc.chunkIndex &&
+						entityLoc.entityIndexInChunk == lastIndex)
+					{
+						lastEntityID = id;
+						break;
+					}
+				}
+
+				// Swap component data from last position to deleted position
+				if (lastEntityID != UINT32_MAX)
+				{
+					for (size_t compIdx = 0; compIdx < chunk->pComponent.size(); ++compIdx)
+					{
+						char* deletedPtr = chunk->search(compIdx, deletedIndex);
+						char* lastPtr = chunk->search(compIdx, lastIndex);
+						size_t compSize = chunk->componentSizes[compIdx];
+
+						// Copy last entity's data to deleted entity's position
+						std::memcpy(deletedPtr, lastPtr, compSize);
+					}
+
+					// Update the last entity's index in the map
+					entityMap_[lastEntityID].entityIndexInChunk = deletedIndex;
+				}
+			}
+
+			--chunk->current;
 			cleanup(loc.archetype, loc.chunkIndex);
 
 			// Clean up destroyed entity in entity map
@@ -483,20 +521,9 @@ namespace ECS
 		*//*========================================================================================*/
 		uint32_t assignID()
 		{
-			uint32_t curID;
-			if (destroyedEntityIDs_.empty())
-			{
-				curID = id++;
-			}
-			else
-			{
-				uint32_t prevEntID = destroyedEntityIDs_.back();
-				destroyedEntityIDs_.pop_back();
-
-				curID = prevEntID;
-			}
-
-			return curID;
+			// Simply increment the ID counter without reusing destroyed IDs
+			// This prevents nodes from referencing wrong entities after deletion
+			return id++;
 		}
 
 		/*============================================================================================
