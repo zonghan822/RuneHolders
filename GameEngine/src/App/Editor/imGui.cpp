@@ -1085,13 +1085,22 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		newEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
 		newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
 		
+
+
 		// Add collision component for physics interactions
 		ECSComponents::CollisionComponent collisionComp;
-		collisionComp.isActive = true;
-		collisionComp.isTrigger = false;
-		collisionComp.type = ECSComponents::ColliderType::RECTANGLE;
-		collisionComp.data.rectangle.width = 50.0f;  // Match render width
-		collisionComp.data.rectangle.height = 50.0f; // Match render height
+		if (strcmp(renderComp.shape, "Circle") == 0) {
+			// Auto-calculate circle collider from render dimensions
+			collisionComp = ECSComponents::CreateCircleFromRender(renderComp);
+		}
+		else {
+			// Auto-calculate rectangle collider from render dimensions
+			collisionComp.isActive = true;
+			collisionComp.isTrigger = false;
+			collisionComp.type = ECSComponents::ColliderType::RECTANGLE;
+			collisionComp.data.rectangle.width = renderComp.width;
+			collisionComp.data.rectangle.height = renderComp.height;
+		}
 		newEntity.add<ECSComponents::CollisionComponent>(entityManager,
 			collisionComp);
 
@@ -1777,8 +1786,29 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		auto& draw = entity.get<ECSComponents::DrawInfoComponent>(entMng);
 
 		ImGui::SeparatorText("Draw Info");
+
+		// Track if width/height changed to auto-update collision
+		float oldWidth = draw.width;
+		float oldHeight = draw.height;
+
 		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
 		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+
+		// Auto-update collision when width/height changes
+		if ((draw.width != oldWidth || draw.height != oldHeight) && entity.has<ECSComponents::CollisionComponent>(entMng)) {
+
+			auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
+
+			if (strcmp(draw.shape, "Circle") == 0) {
+				// Update circle radius
+				collision.data.circle.radius = draw.width * 0.5f;
+			}
+			else {
+				// Update rectangle dimensions
+				collision.data.rectangle.width = draw.width;
+				collision.data.rectangle.height = draw.height;
+			}
+		}
 
 		// Shape type selector (Circle or Rectangle)
 		const char* shapeTypes[] = { "Circle", "Rectangle" };
@@ -1786,6 +1816,23 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::Combo("Shape", &currentShapeIndex, shapeTypes, IM_ARRAYSIZE(shapeTypes))) {
 			strncpy_s(draw.shape, shapeTypes[currentShapeIndex], sizeof(draw.shape) - 1);
 			draw.shape[sizeof(draw.shape) - 1] = '\0';
+
+			// Auto-update collision component to match new shape
+			if (entity.has<ECSComponents::CollisionComponent>(entMng)) {
+				auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
+
+				if (strcmp(draw.shape, "Circle") == 0) {
+					// Changed to circle - auto-calculate circle collider
+					collision.type = ECSComponents::ColliderType::CIRCLE;
+					collision.data.circle.radius = draw.width * 0.5f;
+				}
+				else {
+					// Changed to Rectangle - auto-calculate rectangle collider
+					collision.type = ECSComponents::ColliderType::RECTANGLE;
+					collision.data.rectangle.width = draw.width;
+					collision.data.rectangle.height = draw.height; 
+				}
+			}
 			if (g_game) g_game->markEntitiesDirty();
 		}
 

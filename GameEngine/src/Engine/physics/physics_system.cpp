@@ -180,9 +180,8 @@ namespace Physics
         ECS::EntityManager& entityManager,
         float deltaTime)
     {
-        // Only handle rectangle colliders for now (can extend to circles later)
-        if (collision.type != ECSComponents::ColliderType::RECTANGLE)
-            return;
+        // Handle both rectangle and circle colliders
+        // (Note: for circles, we treat them as square AABBS for simplified physics)
 
         // Calculate displacement from velocity: displacement = velocity * dt
         Math::eVec2<float> displacement = {
