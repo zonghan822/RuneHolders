@@ -30,7 +30,7 @@ namespace ECSComponents
 		Audio::EnoAudioModule audioMod_;
 
 		double volume_{ 50.0 };
-		double pitchScale_{ 0.0 };
+		double pitchScale_{ 1.0 };  // 1.0 = normal pitch (was 0.0 which would silence audio!)
 		double panScale_{ 0.0 };
 		
 		// Audio position resets when false
