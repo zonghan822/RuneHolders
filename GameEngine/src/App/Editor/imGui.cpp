@@ -214,7 +214,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 	// Scene select
 	ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoCollapse);
-	displaySceneTab(sceneTree);
+	displaySceneTab(engine_.getEnoEditor());
 	ImGui::End();
 
 	// Audio select
@@ -980,7 +980,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			std::uniform_real_distribution<float> posY(0.0f, 720.0f);   // Screen height
 			std::uniform_real_distribution<float> rotSpeed(-3.14f, 3.14f); // Rotation speed (radians/sec)
 
-			for (int i = 0; i < 1000; ++i) {
+			for (int i = 0; i < 10; ++i) {
 				// Create transform with random position and rotation speed
 				// rot.x = current rotation angle, rot.y = rotation speed
 				ECSComponents::TransformComponent transform{
@@ -1308,17 +1308,14 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	}
 }
 
-void displaySceneTab(Editor::EnoSceneTree& sceneTree)
+void displaySceneTab(Editor::EnoEditor& editor_)
 {
 	// Heading
 	ImGui::Text("=== Scene Select===");
 	ImGui::Text("Current Scene:");
 
 	// Get current scene
-	std::string currScene = sceneTree.getSceneName();
-
-	ImGui::Text(currScene.c_str());
-	ImGui::Separator();
+	std::string currScene = editor_.getCurrentScene().getSceneName();
 
 	// Create a container for all scene names inside my scene folder
 	static std::vector<std::filesystem::path> sceneNames;
@@ -1327,26 +1324,44 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 	// Buffer to change scene name
 	static char scene_name[64] = "";
 
-	ImGui::Separator();
-
 	if (refreshSceneName)
 	{
 		// Clear the current container
 		sceneNames.clear();
 		// A string path to the assets folder
-		std::string sceneSavePath = (ASSETS_DIR_PATH"saves/scenes/");
-
+		std::string sceneSavePath = (ASSET_SCENE_PATH);
 		// Check that the file is a .txt file
 		try {
 			for (const auto& fileEntry : std::filesystem::directory_iterator(sceneSavePath))
 			{
-				if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (sceneSavePath + "CurrentSavedScene.txt"))
+				if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (sceneSavePath + "LastSavedScene.txt"))
 				{
 					// Add file to container
 					sceneNames.push_back(fileEntry.path());
 					//std::cout << "Filename: " << fileEntry.path() << std::endl;
 				}
 			}
+
+			// Check that scene list contains at least one scene
+			if (!sceneNames.empty())
+			{
+				// Check that no scene was recently deleted
+				auto it = std::find_if(sceneNames.begin(), sceneNames.end(),
+					[&](const std::filesystem::path& fileName)
+					{
+						return fileName.filename() == currScene;
+					});
+
+				if (it == sceneNames.end())
+				{
+					std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
+					// Scene deleted, load the first available scene instead
+					editor_.selectScene(sceneNames.front().filename().string());
+					// Update last saved scene file
+					editor_.updateLastSavedScene();
+					g_game->markEntitiesDirty();
+				}
+			} 
 			// Set refresh to false to prevent reopening
 			refreshSceneName = false;
 		}
@@ -1357,6 +1372,14 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 			return;
 		}
 	}
+
+	// No scenes created
+	if (sceneNames.empty()) currScene = "No scenes available.";
+
+	// Display active scene name
+	ImGui::Text(currScene.c_str());
+	
+	ImGui::Separator();
 
 	// Display scene names
 	for (const auto& filePath : sceneNames)
@@ -1376,12 +1399,13 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 		if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
 		{
 			// Load scene
-			std::cout << "sceneName: " << sceneTree.getSceneName() << ", filename: " << filename << std::endl;
+			std::cout << "current scene: " << editor_.getCurrentScene().getSceneName() << ", filename: " << filename << std::endl;
 			// Check that scene is not currently loaded
-			if (sceneTree.getSceneName() != filename)
+			if (editor_.getCurrentScene().getSceneName() != filename)
 			{
 				std::cout << "Loading file: " << filename << std::endl;
-				sceneTree.load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
+				//editor_.getSceneTree().load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
+				editor_.selectScene(filename);
 				g_game->markEntitiesDirty();
 			}
 			else
@@ -1426,24 +1450,19 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 						std::string newSceneName = scene_name;
 						if (newSceneName.find(".txt") == std::string::npos) newSceneName += ".txt";
 
-						std::filesystem::path newPath = ASSETS_DIR_PATH"saves/scenes/" + newSceneName;
+						std::filesystem::path newPath = ASSET_SCENE_PATH + newSceneName;
 						std::filesystem::rename(currentPath, newPath);
 
 						// Check if we're renaming the currently active scene
-						bool isCurrentScene = (filename == sceneTree.getSceneName());
+						bool isCurrentScene = (filename == editor_.getCurrentScene().getSceneName());
 
 						// If we renamed the active scene, update the current scene name
 						if (isCurrentScene)
 						{
-							sceneTree.getSceneName() = newSceneName;
+							editor_.getCurrentScene().setSceneName(newSceneName);
 
-							// Update CurrentSavedScene.txt
-							std::ofstream currentSceneSave{ ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt" };
-							if (currentSceneSave.is_open())
-							{
-								currentSceneSave << newSceneName;
-								currentSceneSave.close();
-							}
+							// Update LastSavedScene.txt
+							editor_.updateLastSavedScene();
 						}
 
 						// Close popup after renaming
@@ -1462,22 +1481,6 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 				}
 
 			}
-			// Cancel edits
-			if (ImGui::Button("Cancel"))
-			{
-				// Close popup
-				ImGui::CloseCurrentPopup();
-				// In case theres some random stuff inside the input box, clear the buffer
-				memset(scene_name, 0, sizeof(scene_name));
-			}
-
-			// Save scene
-			if (ImGui::Button("Save scene"))
-			{
-				// Save scene
-				sceneTree.save(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
-			}
-
 			// Delete scene
 			if (ImGui::Button("Delete scene"))
 			{
@@ -1485,6 +1488,8 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 				{
 					// Remove file
 					std::filesystem::remove(filePath);
+					// Remove active scene name
+					//editor_.getCurrentScene().setSceneName("");
 					// Close current popup
 					ImGui::CloseCurrentPopup();
 					// Refresh list
@@ -1494,6 +1499,15 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 				{
 					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
 				}
+			}
+
+			// Cancel edits
+			if (ImGui::Button("Close menu"))
+			{
+				// Close popup
+				ImGui::CloseCurrentPopup();
+				// In case theres some random stuff inside the input box, clear the buffer
+				memset(scene_name, 0, sizeof(scene_name));
 			}
 
 			ImGui::EndPopup();
@@ -1518,9 +1532,19 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 
 	}
 
+	// Save scene
+	if (ImGui::Button("Save scene"))
+	{
+		std::string sceneName = editor_.getCurrentScene().getSceneName();
+		// Save scene
+		editor_.getSceneTree().save(ASSET_SCENE_PATH + sceneName, sceneName);
+		// Update last saved scene
+		editor_.updateLastSavedScene();
+	}
+
 	if (ImGui::Button("Create new scene"))
 	{
-		sceneTree.createEmptyScene(ASSETS_DIR_PATH"saves/scenes/");
+		editor_.createEmptyScene(ASSET_SCENE_PATH);
 		refreshSceneName = true;
 	}
 
@@ -3152,26 +3176,27 @@ bool isMouseOverGizmoHandle(ImVec2 mousePos, ImVec2 entityCenter, float gizmoSiz
 
 void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
 	auto& entityManager = engine_.getEntityManager();
+	auto& sceneEditor = engine_.getEnoEditor();
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
-	// Display toolbar for PLAY/PAUSE/STOP (moved from Game View)
+	// Display toolbar for PLAY/PAUSE/STOP
 	static bool isPlaying = false;
-	isPlaying = (g_game->getEditorState() == Playing) ? true : false;
+	isPlaying = (sceneEditor.getCurrentScene().getState() != Editor::State::Stopped) ? true : false;
 
 	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
 		isPlaying = !isPlaying;
-		g_game->setEditorState(isPlaying ? Playing : Stopped);
+		isPlaying ? sceneEditor.playScene() : sceneEditor.stopScene();
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Pause")) {
-		if (g_game->getEditorState() != Stopped) {
-			g_game->setEditorState(g_game->getEditorState() == Playing ? Paused : Playing);
+	if (ImGui::Button(sceneEditor.getCurrentScene().getState() != Editor::State::Paused ? "Pause" : "Unpause")) {
+		if (sceneEditor.getCurrentScene().getState() != Editor::State::Stopped) {
+			(sceneEditor.getCurrentScene().getState() == Editor::State::Playing ? sceneEditor.pauseScene() : sceneEditor.playScene());
 		}
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Next")) {
-		if (g_game->getEditorState() == Paused) {
-			g_game->setEditorState(NextKeyFrame);
+		if (sceneEditor.getCurrentScene().getState() == Editor::State::Paused) {
+			sceneEditor.getCurrentScene().next();
 		}
 	}
 
@@ -3256,7 +3281,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				ImVec2 imageMin = ImGui::GetItemRectMin();
 				ImVec2 imageMax = ImGui::GetItemRectMax();
 
-				// Get mouse position relative to the image (0.0 to 1.0)
+				// Get mouse position relative to the image (0.0 to 1.0)g
 				float relX = (screenPos.x - imageMin.x) / (imageMax.x - imageMin.x);
 				float relY = (screenPos.y - imageMin.y) / (imageMax.y - imageMin.y);
 
@@ -3270,7 +3295,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				// Add camera offset to convert screen space to world space
 				float worldX = screenX + g_game->getEditorCameraX();
 				float worldY = screenY + g_game->getEditorCameraY();
-
+				
 				return ImVec2(worldX, worldY);
 				};
 
@@ -3341,7 +3366,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 			// --- Gizmo-based entity transformation logic ---
 			// Draw gizmos for selected entity
-			if (selectedEntityID != UINT32_MAX && g_game->getEditorState() == Stopped) {
+			if (selectedEntityID != UINT32_MAX && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) {
 				auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 				for (auto& e : allEntities) {
 					if (e.id() == selectedEntityID) {
@@ -3362,7 +3387,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 			// Begin gizmo interaction
 			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
-				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && !isRotating && !isScaling && g_game->getEditorState() == Stopped) {
+				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && !isRotating && !isScaling && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) {
 
 				ImVec2 mouseScreenPos = ImGui::GetMousePos();
 				ImVec2 worldPos = screenToWorldCoords(mouseScreenPos);

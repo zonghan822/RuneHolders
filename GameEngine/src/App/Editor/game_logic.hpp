@@ -20,14 +20,6 @@
 #include "enemy/chasing_state.hpp"
 #include "enemy/idle_state.hpp"
 
-// Enum for different editor states
-enum EditorState {
-    Stopped = 1,
-    Playing,
-    Paused,
-    NextKeyFrame
-};
-
 class GameApplication {
 private:
     // Engine instance
@@ -82,9 +74,6 @@ private:
     Player::PlayerConfig playerConfig_;
     std::unique_ptr<Player::PlayerSystem> playerSystem_;
 
-    // Editor State
-    EditorState g_editorState = Stopped;
-
     // Scene Tree (note: must be initialized after engine_ is initialized)
     std::unique_ptr<Editor::EnoSceneTree> sceneTree_;
 
@@ -110,11 +99,7 @@ public:
     //void setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex);
     void applyTextureToPlayer(const Graphics::TextureData& texData);
 
-    // Accessor and mutators to access editor state
-    EditorState getEditorState() const;
-    EditorState getEditorState();
 
-    void setEditorState(EditorState state);
     Graphics::EnoFramebuffer* getGameFramebuffer() { return gameFramebuffer_.get(); }
     Graphics::EnoFramebuffer* getEditorFramebuffer() { return editorFramebuffer_.get(); }
 

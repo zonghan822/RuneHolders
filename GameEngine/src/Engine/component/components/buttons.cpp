@@ -13,6 +13,8 @@ namespace ECSComponents{
 		// Check if button is visible
 		if (!v.visible) return false;
 
+		
+
 		// Get mouse position
 		std::pair<double, double> inputMousePos = input.getMousePosition();
 		Math::eVec2<float> mousePos(static_cast<float>(inputMousePos.first), static_cast<float>(inputMousePos.second));
