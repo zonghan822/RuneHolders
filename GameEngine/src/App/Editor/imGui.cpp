@@ -1822,10 +1822,10 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			}
 		}
 		else if (collider.type == ECSComponents::ColliderType::RECTANGLE) {
-			if (ImGui::DragFloat("Width", &collider.data.rectangle.width, 0.5f, 1.0f, 500.0f)) {
+			if (ImGui::DragFloat("Width##collider", &collider.data.rectangle.width, 0.5f, 1.0f, 500.0f)) {
 				if (g_game) g_game->markEntitiesDirty();
 			}
-			if (ImGui::DragFloat("Height", &collider.data.rectangle.height, 0.5f, 1.0f, 500.0f)) {
+			if (ImGui::DragFloat("Height##collider", &collider.data.rectangle.height, 0.5f, 1.0f, 500.0f)) {
 				if (g_game) g_game->markEntitiesDirty();
 			}
 
