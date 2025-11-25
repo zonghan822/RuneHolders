@@ -3116,7 +3116,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				ImVec2 imageMin = ImGui::GetItemRectMin();
 				ImVec2 imageMax = ImGui::GetItemRectMax();
 
-				// Get mouse position relative to the image (0.0 to 1.0)
+				// Get mouse position relative to the image (0.0 to 1.0)g
 				float relX = (screenPos.x - imageMin.x) / (imageMax.x - imageMin.x);
 				float relY = (screenPos.y - imageMin.y) / (imageMax.y - imageMin.y);
 
