@@ -299,8 +299,6 @@ void GameApplication::updateGameLogic() {
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 
-	// =========================
-
 	pathfinder_->update(entityManager, 1.f);
 
 	// Only update player movement when in play mode
@@ -560,7 +558,8 @@ void GameApplication::updateGameLogic() {
 										renderInfo.texture,
 										frame.uvStart,
 										frame.uvEnd,
-										renderInfo.color
+										renderInfo.color,
+										rotation
 									);
 								}
 								else {
@@ -732,8 +731,7 @@ void GameApplication::loadEntityTextures() {
 
 		// Get RenderComponent
 		size_t renderIndex = entityLoc.archetype->findComponentIndex<ECSComponents::RenderComponent>();
-		auto& renderComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::RenderComponent>(
-			renderIndex, entityLoc.entityIndexInChunk);
+		auto& renderComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::RenderComponent>(renderIndex, entityLoc.entityIndexInChunk);
 
 		// If texture path is set but texture is not loaded, load it
 		if (strlen(renderComp.texturePath) > 0 && (!renderComp.texture || !renderComp.texture->isValid())) {

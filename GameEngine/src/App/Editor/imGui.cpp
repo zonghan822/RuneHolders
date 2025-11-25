@@ -2219,6 +2219,9 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		drawComp.color = Graphics::Color::White;   
 
 
+		//std::strncpy(drawComp.texturePath, ctrl->currentAnimation_->.c_str(), sizeof(drawComp.texturePath) - 1);
+		//drawComp.texturePath[sizeof(drawComp.texturePath) - 1] = '\0';
+
 		drawComp.texID = 0;
 
 		//checkpoint

@@ -180,6 +180,7 @@ namespace ECSComponents
 		void reflect(Visitor&& l)
 		{
 			l("ControllerID", controllerID, "uint32_t");
+
 		}
 
 		template <typename Visitor>
