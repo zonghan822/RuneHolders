@@ -1084,6 +1084,29 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		newEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 		newEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
 		newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
+		
+		// Add collision component for physics interactions
+		ECSComponents::CollisionComponent collisionComp;
+		collisionComp.isActive = true;
+		collisionComp.isTrigger = false;
+		collisionComp.type = ECSComponents::ColliderType::RECTANGLE;
+		collisionComp.data.rectangle.width = 50.0f;  // Match render width
+		collisionComp.data.rectangle.height = 50.0f; // Match render height
+		newEntity.add<ECSComponents::CollisionComponent>(entityManager,
+			collisionComp);
+
+		// Add physics component to enable pushing
+		ECSComponents::PhysicsComponent physicsComp;
+		physicsComp.mass = 2.0f;          // Mass (heavier = harder to push)
+		physicsComp.drag = 8.0f;          // Higher drag for quick stopping
+		physicsComp.isKinematic = false;  // NOT kinematic (can be pushed)
+		physicsComp.useGravity = false;   // No gravity for top-down game
+		newEntity.add<ECSComponents::PhysicsComponent>(entityManager,
+			physicsComp);
+
+		
+		
+		newEntity.add<ECSComponents::BoxComponent>(entityManager, ECSComponents::BoxComponent());
 
 
 		// Name root nodes as "Entity 1", "Entity 2", etc.
@@ -1145,7 +1168,29 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				childEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 				childEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
 				childEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
+				
+				
+				// Add collision component for physics interactions
+				ECSComponents::CollisionComponent childCollisionComp;
+				childCollisionComp.isActive = true;
+				childCollisionComp.isTrigger = false;
+				childCollisionComp.type = ECSComponents::ColliderType::RECTANGLE;
+				childCollisionComp.data.rectangle.width = 50.0f;
+				childCollisionComp.data.rectangle.height = 50.0f;
+				childEntity.add<ECSComponents::CollisionComponent>(entityManager,
+					childCollisionComp);
 
+				// Add physics component to enable pushing
+				ECSComponents::PhysicsComponent childPhysicsComp;
+				childPhysicsComp.mass = 2.0f;
+				childPhysicsComp.drag = 8.0f;
+				childPhysicsComp.isKinematic = false;
+				childPhysicsComp.useGravity = false;
+				childEntity.add<ECSComponents::PhysicsComponent>(entityManager,
+					childPhysicsComp);
+
+				childEntity.add<ECSComponents::BoxComponent>(entityManager,
+					ECSComponents::BoxComponent());
 				// Name child nodes as "Entity #" using the same counter
 				auto& nameComp = childEntity.get<ECSComponents::NameComponent>(entityManager);
 				std::string entityName = "Entity " + std::to_string(entityCounter++);
@@ -1860,6 +1905,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::Checkbox("Is Active", &collider.isActive)) {
 			if (g_game) g_game->markEntitiesDirty();
 		}
+		
 	}
 	else {
 		// Allow adding a collider if the entity doesn't have one
@@ -1870,7 +1916,11 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (entity.has<ECSComponents::RenderComponent>(entMng)) {
 				auto& render = entity.get<ECSComponents::RenderComponent>(entMng);
 				auto collision = ECSComponents::CreateAABBFromRender(render);
-				entity.add<ECSComponents::CollisionComponent>(entMng, collision);
+				if (!entity.has<ECSComponents::CollisionComponent>(entMng)) {
+					std::cout << "attempting to add collision component\n";
+					entity.add<ECSComponents::CollisionComponent>(entMng, collision);
+				
+				}
 			}
 			else {
 				entity.add<ECSComponents::CollisionComponent>(entMng, ECSComponents::CollisionComponent(10.0f));
@@ -1883,7 +1933,27 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			ImGui::TextDisabled("Will auto-size: %.1f x %.1f", render.width, render.height);
 		}
 	}
+	if (entity.has<ECSComponents::BoxComponent>(entMng)) {
+		auto& pushComp = entity.get<ECSComponents::BoxComponent>(entMng);
+		ImGui::SeparatorText("Box (Pushable)");
+		if (ImGui::Checkbox("Is Pushable", &pushComp.isPushable)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+		ImGui::DragFloat("Push Resistance", &pushComp.pushResistance, 0.01f, 0.0f, 1.0f);
+	}
+#if 0
+	else {
+		// Allow adding Box component if the entity doesn't have one
+		ImGui::SeparatorText("Box (Pushable)");
+		ImGui::TextDisabled("No Box component attached");
 
+		if (ImGui::Button("Add Box Component")) {
+			entity.add<ECSComponents::BoxComponent>(entMng);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+#endif
+	
 	// --- AIComponent ---
 	if (entity.has<ECSComponents::AIComponent>(entMng)) {
 		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
