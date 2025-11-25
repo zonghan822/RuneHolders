@@ -43,12 +43,12 @@ namespace ECSComponents
 		void reflect(Visitor&& v)
 		{
 			// Audio Module
-			//v("Sound Name",			audioMod_.name_,		"char32");
-			//v("Sound Path",			audioMod_.path_,		"char256");
-			//v("Channel Group",		audioMod_.chGroup_,		"char32");
-			//v("Loop Mod",			audioMod_.loop_,		"char32");
-			//v("Loop Start",			audioMod_.loopStart_,	"float");
-			//v("Loop End",			audioMod_.loopEnd_,		"float");
+			v("Sound Name",			audioMod_.name_,		"char32");
+			v("Sound Path",			audioMod_.path_,		"char256");
+			v("Channel Group",		audioMod_.chGroup_,		"char32");
+			//v("Loop Mod",			audioMod_.loop_,		"char32");  // Commented: enum causes conversion issues
+			v("Loop Start",			audioMod_.loopStart_,	"float");
+			v("Loop End",			audioMod_.loopEnd_,		"float");
 
 			// Component Properties
 			v("Volume",				volume_,				"double");
@@ -62,13 +62,13 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& v) const
 		{
-			// Audio Module
-			//v("Sound Name", audioMod_.name_, "char32");
-			//v("Sound Path", audioMod_.path_, "char256");
-			//v("Channel Group", audioMod_.chGroup_, "char32");
-			//v("Loop Mod", audioMod_.loop_, "char32");
-			//v("Loop Start", audioMod_.loopStart_, "float");
-			//v("Loop End", audioMod_.loopEnd_, "float");
+			 //Audio Module
+			v("Sound Name", audioMod_.name_, "char32");
+			v("Sound Path", audioMod_.path_, "char256");
+			v("Channel Group", audioMod_.chGroup_, "char32");
+			//v("Loop Mod", audioMod_.loop_, "char32");  // Commented: enum causes conversion issues
+			v("Loop Start", audioMod_.loopStart_, "float");
+			v("Loop End", audioMod_.loopEnd_, "float");
 
 			// Component Properties
 			v("Volume", volume_, "double");

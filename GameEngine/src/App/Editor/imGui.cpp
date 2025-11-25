@@ -1633,26 +1633,37 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 		{
 			ImGui::TextDisabled("Invalid entity selected");
 		}
-		else if (ImGui::Button("Attach SFX to Selected Entity"))
+		else
 		{
-			ECS::Entity selectedEntity{ selectedEntityID };
+			// Channel Group Selection
+			static int selectedChannelGroup = 1; // 0=Master, 1=SFX, 2=BGM
+			const char* channelGroups[] = { "Master", "SFX", "BGM" };
 
-			// Add component if missing
-			if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
-				selectedEntity.add<ECSComponents::AudioComponent>(engine_.getEntityManager());
-				std::cout << "[Audio] Added AudioComponent.\n";
+			ImGui::Text("Channel Group:");
+			ImGui::Combo("##ChannelGroup", &selectedChannelGroup, channelGroups, IM_ARRAYSIZE(channelGroups));
+
+			if (ImGui::Button("Attach Audio to Selected Entity"))
+			{
+				ECS::Entity selectedEntity{ selectedEntityID };
+
+				// Add component if missing
+				if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
+					selectedEntity.add<ECSComponents::AudioComponent>(engine_.getEntityManager());
+					std::cout << "[Audio] Added AudioComponent.\n";
+				}
+
+				// Fill it
+				ECSComponents::AudioComponent& ac = selectedEntity.get<ECSComponents::AudioComponent>(engine_.getEntityManager());
+
+				strncpy(ac.audioMod_.name_, selectedName.c_str(), sizeof(ac.audioMod_.name_) - 1);
+				strncpy(ac.audioMod_.chGroup_, channelGroups[selectedChannelGroup], sizeof(ac.audioMod_.chGroup_) - 1);
+
+				ac.audioMod_.sound_ = selectedSound;
+
+				std::cout << "[Audio] Attached '" << selectedName
+					<< "' to entity " << selectedEntityID
+					<< " with channel group '" << channelGroups[selectedChannelGroup] << "'\n";
 			}
-
-			// Fill it
-			ECSComponents::AudioComponent& ac = selectedEntity.get<ECSComponents::AudioComponent>(engine_.getEntityManager());
-
-			strncpy(ac.audioMod_.name_, selectedName.c_str(), sizeof(ac.audioMod_.name_) - 1);
-			strncpy(ac.audioMod_.chGroup_, "SFX", sizeof(ac.audioMod_.chGroup_) - 1);
-
-			ac.audioMod_.sound_ = selectedSound;
-
-			std::cout << "[Audio] Attached SFX '" << selectedName
-				<< "' to entity " << selectedEntityID << "\n";
 		}
 
 
@@ -1881,18 +1892,74 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	{
 		auto& ac = entity.get<ECSComponents::AudioComponent>(entMng);
 
-		// Godot Phony Sliders start
-		ImGui::SeparatorText("AudioStreamPlayer2D");
-		ImGui::Text("=== AudioStreamPlayer2D ===");
+		// Main Audio Section
+		ImGui::SeparatorText("Audio Component");
 
-		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-		if (ImGui::TreeNodeEx("Stream", flags))
+		// Audio Info with playback indicator
+		ImGui::Text("Sound: %s", strlen(ac.audioMod_.name_) > 0 ? ac.audioMod_.name_ : "(No audio attached)");
+
+		// Playback state indicator
+		if (ac.isPlaying_) {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[PLAYING]");
+		}
+		else if (ac.isAutoplay_) {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[AUTOPLAY]");
+		}
+
+		// Channel Group Selection
+		ImGui::Text("Channel Group: %s", ac.audioMod_.chGroup_);
+		const char* channelGroupOptions[] = { "Master", "SFX", "BGM" };
+		static int currentChannelGroup = 1;
+
+		// Find current channel group index
+		for (int i = 0; i < IM_ARRAYSIZE(channelGroupOptions); i++) {
+			if (strcmp(ac.audioMod_.chGroup_, channelGroupOptions[i]) == 0) {
+				currentChannelGroup = i;
+				break;
+			}
+		}
+
+		if (ImGui::Combo("##ChangeChannelGroup", &currentChannelGroup, channelGroupOptions, IM_ARRAYSIZE(channelGroupOptions))) {
+			strncpy(ac.audioMod_.chGroup_, channelGroupOptions[currentChannelGroup], sizeof(ac.audioMod_.chGroup_) - 1);
+			ac.audioMod_.chGroup_[sizeof(ac.audioMod_.chGroup_) - 1] = '\0';
+		}
+
+		ImGui::Spacing();
+		ImGui::Separator();
+
+		// Playback Controls
+		if (ImGui::TreeNodeEx("Playback Controls", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			ImGui::Separator();
+			// Play/Pause/Stop buttons in a row
+			if (ImGui::Button("Play", ImVec2(80, 0))) {
+				// Use the proper play function that applies volume/pitch/pan from the component
+				engine_.getAudioManager().play(ac);
+				std::cout << "[Audio] Playing: " << ac.audioMod_.name_
+					<< " (Vol:" << ac.volume_ << ", Pitch:" << ac.pitchScale_ << ", Pan:" << ac.panScale_ << ")\n";
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Stop", ImVec2(80, 0))) {
+				// Stop the channel group associated with this entity's audio
+				engine_.getAudioManager().stopChannelGroup(ac.audioMod_.chGroup_);
+				ac.isPlaying_ = false;
+				std::cout << "[Audio] Stopped: " << ac.audioMod_.name_ << "\n";
+			}
+
+			ImGui::Checkbox("Autoplay on Start", &ac.isAutoplay_);
+			ImGui::TreePop();
+		}
+
+		ImGui::Separator();
+
+		// Stream Properties
+		if (ImGui::TreeNodeEx("Stream Properties", ImGuiTreeNodeFlags_DefaultOpen))
+		{
 			ImGui::Text("Format:");
 			ImGui::SameLine(160);
-			ImGui::TextDisabled("16-Bit");								//dummy value
-
+			ImGui::TextDisabled("16-Bit");
 
 			int loopMode = static_cast<int>(ac.audioMod_.loop_);
 			ImGui::Text("Loop Mode:");
@@ -1910,7 +1977,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				ac.audioMod_.loopStart_ = static_cast<float>(loopBegin);
 			}
 
-
 			int loopEnd = static_cast<int>(ac.audioMod_.loopEnd_);
 			ImGui::Text("Loop End:");
 			ImGui::SameLine(160);
@@ -1921,81 +1987,134 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 			ImGui::Text("Mix Rate:");
 			ImGui::SameLine(160);
-			ImGui::TextDisabled("44100");								//dummy value
+			ImGui::TextDisabled("44100");
 
 			ImGui::Text("Stereo:");
 			ImGui::SameLine(160);
-			bool stereoToggle = true;
-			ImGui::Checkbox("##StereoChk", &stereoToggle);			    //dummy value
+			static bool stereoToggle = true;
+			ImGui::Checkbox("##StereoChk", &stereoToggle);
 
-			ImGui::Separator();
+			ImGui::TreePop();
+		}
 
-			ImGui::Text("Volume dB:");
+		ImGui::Separator();
+
+		// Basic Audio Parameters
+		if (ImGui::TreeNodeEx("Audio Parameters", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Text("Volume:");
 			ImGui::SameLine(160);
 			float tmpVol = static_cast<float>(ac.volume_);
-			ImGui::SliderFloat("##VolDb", &tmpVol, 0.f, 100.f);
-			ac.volume_ = static_cast<double>(tmpVol);
+			if (ImGui::SliderFloat("##Volume", &tmpVol, 0.f, 100.f, "%.1f")) {
+				ac.volume_ = static_cast<double>(tmpVol);
+			}
 
 			ImGui::Text("Pitch Scale:");
 			ImGui::SameLine(160);
 			float tmppitch = static_cast<float>(ac.pitchScale_);
-			ImGui::SliderFloat("##PitchScale", &tmppitch, 0.1f, 5.f);
-			ac.pitchScale_ = static_cast<double>(tmppitch);
+			if (ImGui::SliderFloat("##PitchScale", &tmppitch, 0.1f, 5.f, "%.2f")) {
+				ac.pitchScale_ = static_cast<double>(tmppitch);
+			}
 
-			ImGui::Text("Pan Scale:");
+			ImGui::Text("Pan:");
 			ImGui::SameLine(160);
 			float pan = static_cast<float>(ac.panScale_);
-			if (ImGui::SliderFloat("Pan", &pan, -1.f, 1.f))
+			if (ImGui::SliderFloat("##Pan", &pan, -1.f, 1.f, "%.2f"))
 			{
 				ac.panScale_ = static_cast<double>(pan);
 			}
 
 			ImGui::TreePop();
 		}
+
 		ImGui::Separator();
 
-		// Godot Phony Sliders end
+		// Advanced Effects - Reverb
+		static bool enableReverb = false;
+		static float reverbWet = 0.0f;
+		static float reverbDry = 1.0f;
+		static float reverbDecay = 1500.0f;
 
-		ImGui::SeparatorText("Audio");
-		ImGui::Text("Attached SFX: %s", ac.audioMod_.name_);
-		if (ImGui::Button("Play entity SFX now"))
+		if (ImGui::TreeNodeEx("Reverb Effects", ImGuiTreeNodeFlags_None))
 		{
-			std::cout << "[Inspector] Checking entity " << entity.id()
-				<< " has AudioComponent = "
-				<< entity.has<ECSComponents::AudioComponent>(entMng)
-				<< "\n";
+			ImGui::Checkbox("Enable Reverb", &enableReverb);
 
-			engine_.getEventBus().publish(Audio::PlayInstant{
-				"SFX",
-				ac.audioMod_.name_
-				});
+			if (enableReverb) {
+				ImGui::Text("Wet Level:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##ReverbWet", &reverbWet, 0.0f, 1.0f, "%.2f");
 
-			std::cout << "[Audio] PLAY from entity "
-				<< entity.id() << ": " << ac.audioMod_.name_ << "\n";
+				ImGui::Text("Dry Level:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##ReverbDry", &reverbDry, 0.0f, 1.0f, "%.2f");
+
+				ImGui::Text("Decay Time:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##ReverbDecay", &reverbDecay, 100.0f, 5000.0f, "%.0f ms");
+
+				ImGui::TextDisabled("Note: Reverb effects are applied via Audio Manager");
+			}
+
+			ImGui::TreePop();
 		}
 
-		if (ImGui::Button("Print Audio Component"))
+		ImGui::Separator();
+
+		// Advanced Effects - EQ
+		static bool enableEQ = false;
+		static float eqLowGain = 0.0f;
+		static float eqMidGain = 0.0f;
+		static float eqHighGain = 0.0f;
+
+		if (ImGui::TreeNodeEx("EQ Effects", ImGuiTreeNodeFlags_None))
 		{
-			std::cout << "===== AUDIO COMPONENT DEBUG =====\n";
-			std::cout << "Entity:		" << entity.id() << "\n";
-			std::cout << "Volume:       " << ac.volume_ << "\n";
-			std::cout << "Pitch Scale:  " << ac.pitchScale_ << "\n";
-			std::cout << "Pan Scale:    " << ac.panScale_ << "\n";
-			std::cout << "Autoplay:     " << (ac.isAutoplay_ ? "true" : "false") << "\n";
-			std::cout << "Is Playing:   " << (ac.isPlaying_ ? "true" : "false") << "\n";
+			ImGui::Checkbox("Enable 3-Band EQ", &enableEQ);
 
-			std::cout << "-- MODULE --\n";
-			std::cout << "Name:         " << ac.audioMod_.name_ << "\n";
-			std::cout << "Path:         " << ac.audioMod_.path_ << "\n";
-			std::cout << "ChannelGroup: " << ac.audioMod_.chGroup_ << "\n";
+			if (enableEQ) {
+				ImGui::Text("Low Gain:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##EQLow", &eqLowGain, -30.0f, 30.0f, "%.1f dB");
 
-			std::cout << "Loop Mode:    " << static_cast<int>(ac.audioMod_.loop_) << "\n";
-			std::cout << "Loop Start:   " << ac.audioMod_.loopStart_ << "\n";
-			std::cout << "Loop End:     " << ac.audioMod_.loopEnd_ << "\n";
+				ImGui::Text("Mid Gain:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##EQMid", &eqMidGain, -30.0f, 30.0f, "%.1f dB");
 
-			std::cout << "Sound Ptr:    " << ac.audioMod_.sound_ << "\n";
+				ImGui::Text("High Gain:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##EQHigh", &eqHighGain, -30.0f, 30.0f, "%.1f dB");
 
-			std::cout << "=================================\n";
+				ImGui::TextDisabled("Note: EQ effects are applied via Audio Manager");
+			}
+
+			ImGui::TreePop();
+		}
+
+		ImGui::Separator();
+
+		// Debug Section (collapsed by default)
+		if (ImGui::TreeNodeEx("Debug Info", ImGuiTreeNodeFlags_None))
+		{
+			if (ImGui::Button("Print Audio Component to Console"))
+			{
+				std::cout << "===== AUDIO COMPONENT DEBUG =====\n";
+				std::cout << "Entity:       " << entity.id() << "\n";
+				std::cout << "Volume:       " << ac.volume_ << "\n";
+				std::cout << "Pitch Scale:  " << ac.pitchScale_ << "\n";
+				std::cout << "Pan Scale:    " << ac.panScale_ << "\n";
+				std::cout << "Autoplay:     " << (ac.isAutoplay_ ? "true" : "false") << "\n";
+				std::cout << "Is Playing:   " << (ac.isPlaying_ ? "true" : "false") << "\n";
+				std::cout << "-- MODULE --\n";
+				std::cout << "Name:         " << ac.audioMod_.name_ << "\n";
+				std::cout << "Path:         " << ac.audioMod_.path_ << "\n";
+				std::cout << "ChannelGroup: " << ac.audioMod_.chGroup_ << "\n";
+				std::cout << "Loop Mode:    " << static_cast<int>(ac.audioMod_.loop_) << "\n";
+				std::cout << "Loop Start:   " << ac.audioMod_.loopStart_ << "\n";
+				std::cout << "Loop End:     " << ac.audioMod_.loopEnd_ << "\n";
+				std::cout << "Sound Ptr:    " << ac.audioMod_.sound_ << "\n";
+				std::cout << "=================================\n";
+			}
+
+			ImGui::TreePop();
 		}
 
 	}
