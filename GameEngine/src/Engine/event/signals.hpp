@@ -27,16 +27,16 @@ namespace Events
 		// Subcribe
 		void connect(Callback cb)
 		{
-			callbacks.push_back(cb);
+			callbacks_.push_back(cb);
 		}
 
 		// Ping
 		void emit(const std::vector<std::any>& p = {})
 		{
-			for (auto& callb : callbacks) { callb(p); }
+			for (auto& callb : callbacks_) { callb(p); }
 		}
 
 	private:
-		std::vector<Callback> callbacks;
+		std::vector<Callback> callbacks_;
 	};
 }

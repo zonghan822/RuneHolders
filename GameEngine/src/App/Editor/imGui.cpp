@@ -222,7 +222,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displayAudioTab(engine_);
 	ImGui::End();
 
-	// Edit tab 
+
+	// Edit tab
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_, sceneTree);
 	displayAllEntitiesTab(engine_, sceneTree, undoManager);
@@ -247,13 +248,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	ImGui::Begin("Assets Browser", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayAssetTab(engine_);
 	ImGui::End();
-
-	// Asset Presets
-	//ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_NoCollapse);
-	//assetPresetsTab(engine_);
-	//ImGui::End();
-
-
 
 	// FPS
 	ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoCollapse);
@@ -1694,6 +1688,9 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	}
 
 }
+
+
+
 
 void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager, Editor::EnoSceneTree& sceneTree)
 {
@@ -3223,18 +3220,110 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			// Position the image with offset (centered with letterboxing)
 			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
 
-			// Display the editor framebuffer texture scaled to fit                           
-			ImGui::Image(                                                                     
-				(void*)(intptr_t)fb->getTextureID(),                                      
-				displaySize,                                                              
-				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)                   
-				ImVec2(1, 0)                                                              
-			);                                                                                
-			                        
+			// Display the editor framebuffer texture scaled to fit
+			ImGui::Image(
+				(void*)(intptr_t)fb->getTextureID(),
+				displaySize,
+				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
+				ImVec2(1, 0)
+			);
+
 			// Capture the editor view min/max coordinates and store them in GameApplication
 			ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
 			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
 			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
+
+			// ========== DRAG-AND-DROP TEXTURE FROM ASSET BROWSER ==========
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
+				{
+					std::string textureName = (const char*)payload->Data;
+					Resources::EnoLoader& loader = engine_.getResourceLoader();
+
+					// Get the texture from the loader
+					auto texture = loader.getTexture(textureName);
+					if (texture && texture->isValid())
+					{
+						// Get mouse position and convert to world coordinates
+						ImVec2 mousePos = ImGui::GetMousePos();
+						Math::eVec2<float> worldPos = Graphics::screenToWorld(
+							{ mousePos.x, mousePos.y },
+							g_game->getEditorViewMin(),
+							g_game->getEditorViewMax(),
+							editorWidth,
+							editorHeight,
+							g_game->getEditorCameraX(),
+							g_game->getEditorCameraY()
+						);
+
+						// Create entity at drop location
+						ECSComponents::TransformComponent transform;
+						transform.pos = worldPos;
+						transform.rot = Math::eVec2<float>(0.0f, 0.0f);
+						transform.scale = Math::eVec2<float>(1.0f, 1.0f);
+
+						ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
+
+						// Add render component with texture
+						ECSComponents::RenderComponent render;
+						render.texture = texture;
+						render.width = static_cast<float>(texture->getWidth());
+						render.height = static_cast<float>(texture->getHeight());
+						strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
+						render.texturePath[sizeof(render.texturePath) - 1] = '\0';
+						render.color = Graphics::Color::White;
+						newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
+
+						// Add name component
+						ECSComponents::NameComponent nameComp;
+						strncpy_s(nameComp.name, textureName.c_str(), sizeof(nameComp.name) - 1);
+						nameComp.name[sizeof(nameComp.name) - 1] = '\0';
+						newEntity.add<ECSComponents::NameComponent>(entityManager, nameComp);
+
+						// Create animation controller
+						uint32_t controllerID = engine_.getAnimationRegistry().createController();
+						newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
+
+						// Get the controller and add a simple 1x1 animation
+						Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(controllerID);
+						if (ctrl)
+						{
+							// Create a single-frame animation (1x1 grid, UV 0,0 to 1,1)
+							Animation::EnoAnimation singleFrameAnim = Animation::createSpriteSheetAnimation(
+								texture->getWidth(),   // frame width = full texture width
+								texture->getHeight(),  // frame height = full texture height
+								texture->getWidth(),   // sheet width
+								texture->getHeight(),  // sheet height
+								0,                     // start frame
+								1,                     // frame count (single frame)
+								0.1f                   // frame duration (doesn't matter for single frame)
+							);
+
+							ctrl->addAnimation("idle", singleFrameAnim);
+							ctrl->setAnimation("idle");
+						}
+
+						// Add to scene tree
+						Node* node = sceneTree.createFromEntity(newEntity, nullptr);
+						node->name_ = textureName;
+
+						// Record creation for undo/redo
+						auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
+							sceneTree,
+							entityManager,
+							newEntity
+						);
+						undoManager.executeCommand(std::move(createCmd));
+
+						std::cout << "[Drag-Drop] Created entity '" << textureName
+								  << "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
+
+						if (g_game) g_game->markEntitiesDirty();
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
 			// ========== ALL EDITOR INTERACTIONS (moved from Game View) ==========
 
 			// Helper function to convert screen coordinates to world coordinates (accounting for camera)                                                                                               

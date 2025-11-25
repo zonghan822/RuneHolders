@@ -354,7 +354,7 @@ void GameApplication::updateGameLogic() {
 		// Ensure that node has audio component and is enabled
 		if (in && node->enabled_)
 		{
-			std::cout << "Enabled node " << node->name_ << "has the Audio Component!" << std::endl;
+			//std::cout << "Enabled node " << node->name_ << "has the Audio Component!" << std::endl;
 
 			auto mod = node->entity_.get<ECSComponents::AudioComponent>(entityManager);
 
