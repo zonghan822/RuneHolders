@@ -208,8 +208,7 @@ namespace Editor
 				siblings.end());
 		}
 
-		// Save the ID for reuse before erasing
-		salvagedID_.push_back(selectedNode_->sceneObjectID_);
+		// Remove from tree
 		tree_.erase(selectedNode_->sceneObjectID_);
 		selectedNode_ = nullptr;
 	}
@@ -242,8 +241,7 @@ namespace Editor
 				siblings.end());
 		}
 
-		// Save the ID for reuse before erasing
-		salvagedID_.push_back(node->sceneObjectID_);
+		// Remove from tree
 		tree_.erase(node->sceneObjectID_);
 	}
 
@@ -714,14 +712,9 @@ namespace Editor
 	// 0 will be a sentinel to indicate that there is no id
 	uint32_t EnoSceneTree::generateID()
 	{
-		if (salvagedID_.empty())
-			return static_cast<uint32_t>(tree_.size());
-		else
-		{
-			uint32_t id = salvagedID_.back();
-			salvagedID_.pop_back();
-			return id;
-		}
+		// Simply use the static counter and increment it
+		// Don't reuse IDs
+		return id_++;
 	}
 
 	// Helper for printing Node information
