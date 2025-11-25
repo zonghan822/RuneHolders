@@ -104,6 +104,12 @@ namespace Editor
 				auto& comp = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
 				snapshot.components.emplace_back(comp);
 			}
+			// DrawInfo
+			if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+			{
+				auto& comp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+				snapshot.components.emplace_back(comp);
+			}
 
 			// Collision
 			if (entity.has<ECSComponents::CollisionComponent>(entityManager))
@@ -288,6 +294,11 @@ namespace Editor
 			{
 				auto& comp = snapshot.get<ECSComponents::DrawInfoComponent>();
 				entity.add<ECSComponents::DrawInfoComponent>(entityManager, comp);
+			}
+			else if (snapshot.type == typeid(ECSComponents::AnimationControllerComponent))
+			{
+				auto& comp = snapshot.get<ECSComponents::AnimationControllerComponent>();
+				entity.add<ECSComponents::AnimationControllerComponent>(entityManager, comp);
 			}
 			else if (snapshot.type == typeid(ECSComponents::NameComponent))
 			{

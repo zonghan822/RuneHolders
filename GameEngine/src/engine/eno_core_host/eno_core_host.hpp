@@ -119,7 +119,7 @@ namespace Core
 			std::wstring method_;
 
 			const wchar_t* className_;
-			uint32_t* entityID_;
+			uint32_t entityID_;
 		};
 
 		// For instanced calling
@@ -132,7 +132,7 @@ namespace Core
 
 			const wchar_t* className_;
 			const wchar_t* methodName_;
-			uint32_t* entityID_;
+			uint32_t entityID_;
 		};
 
 
@@ -150,7 +150,7 @@ namespace Core
 		using AddSignalMethod = void(*)(const wchar_t*, const wchar_t*, const wchar_t*, const wchar_t*);
 		using ProxyMethod = void(*)(const wchar_t* className_, const wchar_t* methodName_);
 		using InstancedProxyMethod = void(*)(const wchar_t* className_, const wchar_t* methodName_, uint32_t entityID);
-		using RegisterInstanceProxyMethod = void(*)(const wchar_t* className_, uint32_t entityID);
+		using RegisterInstanceProxyMethod = void(*)(const wchar_t* className_, uint32_t entityID, uint8_t operation);
 		using GetScriptFieldsMethod = Script::PortedField* (__stdcall*)(const wchar_t* scriptName, int* count);
 		using GetFileClassNamesMethod = void* (*)(const wchar_t* pAssemblyPath, int* count);
 
@@ -191,8 +191,8 @@ namespace Core
 
 		// Helper for using the proxy call
 		ProxyMethod proxyCall(const wchar_t*, const wchar_t*);
-		RegisterInstanceProxyMethod proxyCall(const wchar_t*, uint32_t*);
-		InstancedProxyMethod proxyCall(const wchar_t*, const wchar_t*, uint32_t*);
+		RegisterInstanceProxyMethod proxyCall(const wchar_t*, uint32_t, uint8_t);
+		InstancedProxyMethod proxyCall(const wchar_t*, const wchar_t*, uint32_t);
 
 		// Define and call any method within the assembly via proxy (a method in C#)
 		ProxyMethod defineProxyDelegate(
@@ -201,11 +201,11 @@ namespace Core
 
 		RegisterInstanceProxyMethod defineProxyDelegate(
 			const char_t*, const char_t*, void*,
-			const wchar_t*, uint32_t*);
+			const wchar_t*, uint32_t, uint8_t);
 
 		InstancedProxyMethod defineProxyDelegate(
 			const char_t*, const char_t*, void*,
-			const wchar_t*, const wchar_t*, uint32_t*);
+			const wchar_t*, const wchar_t*, uint32_t);
 
 		// ---------  Handling script state based on engine state ---------
 		void HRSetup();
@@ -218,7 +218,7 @@ namespace Core
 		void update(const std::wstring&, uint32_t);
 		void frameEnd();
 
-		void setMetaData(const std::wstring&, uint32_t);
+		void setMetaData(const std::wstring&, uint32_t, uint8_t);
 
 		//need to call this before getting into the gameplay loop
 		void defineBegin();

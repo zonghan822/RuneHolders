@@ -4,9 +4,9 @@
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
 * @date         01-10-2025
 * @brief        This file contains the functions that are required for Dear ImGui displays,
-*				which includes the init, update and terminate functions. 
+*				which includes the init, update and terminate functions.
 *     			There are also functions for spawning and counting entities.
-* 
+*
 *  NOTE: System pointers (collision, physics, player) are no longer global variables.
 *        Access them through engine_.getXXXSystem() methods.
 *//*========================================================================================*/
@@ -61,11 +61,18 @@ struct SystemTimer {
     }
 };
 
+//YunQi
+struct AnimationPreset {
+    std::string name;
 
+    Graphics::TextureData idleTex;
+    Graphics::TextureData walkTex;
+    Graphics::TextureData attackTex;
+};
 
 // ImGui functions
 /*============================================================================================
- * \brief       Initialises Dear ImGui 
+ * \brief       Initialises Dear ImGui
  * \param[in]   GLFWwindow* window
  * \return      void
 *//*========================================================================================*/
@@ -98,7 +105,7 @@ float randomFloat(float min, float max);
 /*============================================================================================
  * \brief       Displays total active entity count
  * \param[in]   Engine::EnoEngine& engine_
- * \return      void 
+ * \return      void
 *//*========================================================================================*/
 void displayEntityCount(Engine::EnoEngine& engine_);
 
@@ -152,6 +159,9 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
  * \return      void
 *//*========================================================================================*/
 void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager);
+
+
+void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity);
 
 /*============================================================================================
  * \brief       Displays Assets in the Assets menu
@@ -274,4 +284,4 @@ void clearSelectedEntity();
  * \param[in]   ECS::EntityManager& entityManager
  * \return      void
 *//*========================================================================================*/
-void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager);
+void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager);

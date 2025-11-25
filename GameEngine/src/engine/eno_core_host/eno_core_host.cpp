@@ -381,7 +381,7 @@ namespace Core
 
 	void EnoCoreHost::defineBegin() {
 
-		begin_ = proxyCall(nullptr, L"Begin", nullptr);
+		begin_ = proxyCall(nullptr, L"Begin", 0);
 
 		//for (auto& entry : std::filesystem::directory_iterator(SCRIPT_SRC_PATH)) {
 		//	if (!entry.is_regular_file() || entry.path().extension() != ".cs")
@@ -420,12 +420,12 @@ namespace Core
 	// Handling script metadata uploading to the scripting end
 	void EnoCoreHost::defineSMD()
 	{
-		rpm_ = proxyCall(nullptr, lastID);
+		rpm_ = proxyCall(nullptr, UINT32_MAX, 0);
 	}
 
 	void EnoCoreHost::defineUpdate() {
 
-		update_ = proxyCall(nullptr, L"Update", nullptr);
+		update_ = proxyCall(nullptr, L"Update", 0);
 
 		//for (auto& entry : std::filesystem::directory_iterator(SCRIPT_SRC_PATH)) {
 		//	if (!entry.is_regular_file() || entry.path().extension() != ".cs")
@@ -594,10 +594,10 @@ namespace Core
 //
 
 	// Calling a delegate with input parameters
-	void EnoCoreHost::setMetaData(const std::wstring& org, uint32_t entityID)
+	void EnoCoreHost::setMetaData(const std::wstring& org, uint32_t entityID, uint8_t operation)
 	{
 		if (rpm_)
-			rpm_(org.c_str(), entityID);
+			rpm_(org.c_str(), entityID, operation);
 	}
 
 // Handling state when frame has ended on the engine side
@@ -658,21 +658,23 @@ namespace Core
 	// Helper for registering each class instance
 	EnoCoreHost::RegisterInstanceProxyMethod EnoCoreHost::proxyCall(
 		const wchar_t* className,
-		uint32_t* id)
+		uint32_t id,
+		uint8_t op)
 	{
 		return defineProxyDelegate(
 			L"Eno.ProxyEntry, GameScripts",
-			L"RegisterInstance",
+			L"InstanceRegistration",
 			proxyDelegate_,
 			className,
-			id);
+			id,
+			op);
 	}
 
 	// Helper for using the instanced proxy call
 	EnoCoreHost::InstancedProxyMethod EnoCoreHost::proxyCall(
 		const wchar_t* className,
 		const wchar_t* methodName,
-		uint32_t* id)
+		uint32_t id)
 	{
 		return defineProxyDelegate(
 			L"Eno.ProxyEntry, GameScripts",
@@ -734,7 +736,7 @@ namespace Core
 	// Combines both the load and get delegate operations
 	EnoCoreHost::InstancedProxyMethod EnoCoreHost::defineProxyDelegate(
 		const char_t* typeName, const char_t* methodName, void* d,
-		const wchar_t* className, const wchar_t* callMethodName, uint32_t* id)
+		const wchar_t* className, const wchar_t* callMethodName, uint32_t id)
 	{
 		auto load = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(d);
 
@@ -779,7 +781,7 @@ namespace Core
 
 	EnoCoreHost::RegisterInstanceProxyMethod EnoCoreHost::defineProxyDelegate(
 		const char_t* typeName, const char_t* methodName, void* d,
-		const wchar_t* className, uint32_t* id)
+		const wchar_t* className, uint32_t id, uint8_t op)
 	{
 		auto load = reinterpret_cast<load_assembly_and_get_function_pointer_fn>(d);
 
