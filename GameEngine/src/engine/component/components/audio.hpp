@@ -39,6 +39,18 @@ namespace ECSComponents
 		// Keeps playback position, as stream is paused
 		bool isAutoplay_{ false };
 
+		// Reverb settings (per entity)
+		bool enableReverb_{ false };
+		float reverbWet_{ 0.0f };
+		float reverbDry_{ 1.0f };
+		float reverbDecay_{ 1500.0f };
+
+		// EQ settings (per entity)
+		bool enableEQ_{ false };
+		float eqLowGain_{ 0.0f };
+		float eqMidGain_{ 0.0f };
+		float eqHighGain_{ 0.0f };
+
 		template <typename Visitor>
 		void reflect(Visitor&& v)
 		{
@@ -57,6 +69,18 @@ namespace ECSComponents
 
 			v("Is Playing",			isPlaying_,				"bool");
 			v("Is Autoplay",		isAutoplay_,			"bool");
+
+			// Reverb settings
+			v("Enable Reverb",		enableReverb_,			"bool");
+			v("Reverb Wet",			reverbWet_,				"float");
+			v("Reverb Dry",			reverbDry_,				"float");
+			v("Reverb Decay",		reverbDecay_,			"float");
+
+			// EQ settings
+			v("Enable EQ",			enableEQ_,				"bool");
+			v("EQ Low Gain",		eqLowGain_,				"float");
+			v("EQ Mid Gain",		eqMidGain_,				"float");
+			v("EQ High Gain",		eqHighGain_,			"float");
 		}
 
 		template <typename Visitor>
@@ -77,6 +101,18 @@ namespace ECSComponents
 
 			v("Is Playing", isPlaying_, "bool");
 			v("Is Autoplay", isAutoplay_, "bool");
+
+			// Reverb settings
+			v("Enable Reverb", enableReverb_, "bool");
+			v("Reverb Wet", reverbWet_, "float");
+			v("Reverb Dry", reverbDry_, "float");
+			v("Reverb Decay", reverbDecay_, "float");
+
+			// EQ settings
+			v("Enable EQ", enableEQ_, "bool");
+			v("EQ Low Gain", eqLowGain_, "float");
+			v("EQ Mid Gain", eqMidGain_, "float");
+			v("EQ High Gain", eqHighGain_, "float");
 		}
 	};
 }

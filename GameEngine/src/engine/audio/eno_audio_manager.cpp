@@ -177,7 +177,9 @@ namespace Audio
 		{
 			modifyBasic(channel, createSP(audioComp));
 
-			// Unpause to start playback (unless autoplay is false)
+			// Always unpause when play() is called - the function is meant to play audio!
+			// Note: isAutoplay_ only affects whether audio plays on scene start, not manual play calls
+			/*channel->setPaused(false);*/
 			channel->setPaused(!audioComp.isAutoplay_);
 
 			// Store the channel for later use

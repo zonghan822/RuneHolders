@@ -2029,28 +2029,23 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		ImGui::Separator();
 
-		// Advanced Effects - Reverb
-		static bool enableReverb = false;
-		static float reverbWet = 0.0f;
-		static float reverbDry = 1.0f;
-		static float reverbDecay = 1500.0f;
-
+		// Advanced Effects - Reverb (now per-entity!)
 		if (ImGui::TreeNodeEx("Reverb Effects", ImGuiTreeNodeFlags_None))
 		{
-			ImGui::Checkbox("Enable Reverb", &enableReverb);
+			ImGui::Checkbox("Enable Reverb", &ac.enableReverb_);
 
-			if (enableReverb) {
+			if (ac.enableReverb_) {
 				ImGui::Text("Wet Level:");
 				ImGui::SameLine(160);
-				ImGui::SliderFloat("##ReverbWet", &reverbWet, 0.0f, 1.0f, "%.2f");
+				ImGui::SliderFloat("##ReverbWet", &ac.reverbWet_, 0.0f, 1.0f, "%.2f");
 
 				ImGui::Text("Dry Level:");
 				ImGui::SameLine(160);
-				ImGui::SliderFloat("##ReverbDry", &reverbDry, 0.0f, 1.0f, "%.2f");
+				ImGui::SliderFloat("##ReverbDry", &ac.reverbDry_, 0.0f, 1.0f, "%.2f");
 
 				ImGui::Text("Decay Time:");
 				ImGui::SameLine(160);
-				ImGui::SliderFloat("##ReverbDecay", &reverbDecay, 100.0f, 5000.0f, "%.0f ms");
+				ImGui::SliderFloat("##ReverbDecay", &ac.reverbDecay_, 100.0f, 5000.0f, "%.0f ms");
 
 				ImGui::TextDisabled("Note: Reverb effects are applied via Audio Manager");
 			}
@@ -2060,28 +2055,23 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		ImGui::Separator();
 
-		// Advanced Effects - EQ
-		static bool enableEQ = false;
-		static float eqLowGain = 0.0f;
-		static float eqMidGain = 0.0f;
-		static float eqHighGain = 0.0f;
-
+		// Advanced Effects - EQ (now per-entity!)
 		if (ImGui::TreeNodeEx("EQ Effects", ImGuiTreeNodeFlags_None))
 		{
-			ImGui::Checkbox("Enable 3-Band EQ", &enableEQ);
+			ImGui::Checkbox("Enable 3-Band EQ", &ac.enableEQ_);
 
-			if (enableEQ) {
+			if (ac.enableEQ_) {
 				ImGui::Text("Low Gain:");
 				ImGui::SameLine(160);
-				ImGui::SliderFloat("##EQLow", &eqLowGain, -30.0f, 30.0f, "%.1f dB");
+				ImGui::SliderFloat("##EQLow", &ac.eqLowGain_, -30.0f, 30.0f, "%.1f dB");
 
 				ImGui::Text("Mid Gain:");
 				ImGui::SameLine(160);
-				ImGui::SliderFloat("##EQMid", &eqMidGain, -30.0f, 30.0f, "%.1f dB");
+				ImGui::SliderFloat("##EQMid", &ac.eqMidGain_, -30.0f, 30.0f, "%.1f dB");
 
 				ImGui::Text("High Gain:");
 				ImGui::SameLine(160);
-				ImGui::SliderFloat("##EQHigh", &eqHighGain, -30.0f, 30.0f, "%.1f dB");
+				ImGui::SliderFloat("##EQHigh", &ac.eqHighGain_, -30.0f, 30.0f, "%.1f dB");
 
 				ImGui::TextDisabled("Note: EQ effects are applied via Audio Manager");
 			}
@@ -2111,6 +2101,16 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				std::cout << "Loop Start:   " << ac.audioMod_.loopStart_ << "\n";
 				std::cout << "Loop End:     " << ac.audioMod_.loopEnd_ << "\n";
 				std::cout << "Sound Ptr:    " << ac.audioMod_.sound_ << "\n";
+				std::cout << "-- REVERB --\n";
+				std::cout << "Enabled:      " << (ac.enableReverb_ ? "true" : "false") << "\n";
+				std::cout << "Wet:          " << ac.reverbWet_ << "\n";
+				std::cout << "Dry:          " << ac.reverbDry_ << "\n";
+				std::cout << "Decay:        " << ac.reverbDecay_ << " ms\n";
+				std::cout << "-- EQ --\n";
+				std::cout << "Enabled:      " << (ac.enableEQ_ ? "true" : "false") << "\n";
+				std::cout << "Low Gain:     " << ac.eqLowGain_ << " dB\n";
+				std::cout << "Mid Gain:     " << ac.eqMidGain_ << " dB\n";
+				std::cout << "High Gain:    " << ac.eqHighGain_ << " dB\n";
 				std::cout << "=================================\n";
 			}
 
