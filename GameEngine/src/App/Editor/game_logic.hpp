@@ -30,7 +30,7 @@ private:
     bool musicStarted_ = false;
 
     // For delta time calculation
-    float lastFrameTime_ = 0.0f;  
+    float lastFrameTime_ = 0.0f;
 
     // Caching
     std::vector<ECS::Entity> cachedDrawableEntities_;
@@ -42,6 +42,7 @@ private:
     std::shared_ptr<Graphics::EnoTexture> backgroundTexture_;
     std::shared_ptr<Graphics::EnoTexture> playerWalkTexture_;
     Animation::AnimationController playerAnimController_;
+    //Animation::AnimationController enemyAnimController_;
     int playerFacingDirection_ = 1;
 
     std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
@@ -141,7 +142,7 @@ private:
 
     void drawPlayerAndIndicator();
 
-    void drawShapes(); 
+    void drawShapes();
 
     void drawText(Math::eVec2<float> windowSize);
 };

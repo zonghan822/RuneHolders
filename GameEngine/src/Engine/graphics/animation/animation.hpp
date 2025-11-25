@@ -93,6 +93,8 @@ namespace Animation
         size_t getFrameCount() const { return frames_.size(); }
         size_t getCurrentFrameIndex() const { return currentFrameIndex_; }
 
+        //yunqi
+        std::vector<AnimationFrame>& getFrames() { return frames_; };
     private:
         std::vector<AnimationFrame> frames_;
         size_t currentFrameIndex_;
@@ -152,11 +154,43 @@ namespace Animation
         EnoAnimation* getCurrentAnimation() { return currentAnimation_; }
         const std::string& getCurrentAnimationName() const { return currentAnimationName_; }
 
-    private:
+        //yunqi moved private data members out for debug
         std::unordered_map<std::string, EnoAnimation> animations_;
         EnoAnimation* currentAnimation_;
         std::string currentAnimationName_;
+    private:
     };
+
+
+
+    //===========================  Yun Qi's implementation ==========================
+    class AnimationControllerRegistry {
+    public:
+        // controllerID -> actual controller
+        std::unordered_map<uint32_t, Animation::AnimationController> controllers; //this is where the entity's controller will be stored
+
+        uint32_t createController() {
+            uint32_t id = nextID++;
+            controllers[id] = Animation::AnimationController();
+            return id;
+        }
+
+        Animation::AnimationController* get(uint32_t id) {
+            auto it = controllers.find(id);
+            if (it != controllers.end()) return &it->second;
+            return nullptr;
+        }
+
+        void remove(uint32_t id) {
+            controllers.erase(id);
+        }
+
+    private:
+        uint32_t nextID = 1;
+    };
+
+
+
 
     // Helper function to create animations from sprite sheets
     inline EnoAnimation createSpriteSheetAnimation(
@@ -195,4 +229,20 @@ namespace Animation
 
         return animation;
     }
+
+
+    inline EnoAnimation createAnimationFromTexture(const Graphics::TextureData& tex, float speed = 0.1f)
+    {
+        return createSpriteSheetAnimation(
+            tex.frameWidth,
+            tex.frameHeight,
+            tex.texture->getWidth(),
+            tex.texture->getHeight(),
+            0,
+            tex.rows * tex.cols,
+            speed
+        );
+    }
+
+
 }
