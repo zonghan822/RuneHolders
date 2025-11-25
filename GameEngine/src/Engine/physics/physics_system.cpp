@@ -231,25 +231,54 @@ namespace Physics
             if (!otherCollision.isActive || otherCollision.isTrigger)
                 continue;
 
-            // Only handle rectangle-rectangle collisions for now
-            if (otherCollision.type != ECSComponents::ColliderType::RECTANGLE)
-                continue;
+            // Check collision based on collider types
+            bool overlaps = false;
 
-            // Get scaled collision dimensions for both entities
-            float scaledWidthA, scaledHeightA;
-            float scaledWidthB, scaledHeightB;
-            GetScaledColliderDimensions(transform, collision, scaledWidthA, scaledHeightA);
-            GetScaledColliderDimensions(otherTransform, otherCollision, scaledWidthB, scaledHeightB);
-            
-            // Check AABB overlap at target position
-            bool overlaps = CheckAABBOverlap(
-                targetPos,
-                scaledWidthA,
-                scaledHeightA,
-                otherTransform.pos,
-                scaledWidthB,
-                scaledHeightB
-            );
+            // Handle different collision type combinations
+            if (collision.type == ECSComponents::ColliderType::RECTANGLE &&
+                otherCollision.type == ECSComponents::ColliderType::RECTANGLE)
+            {
+                // Rectangle vs Rectangle - use AABB
+                float scaledWidthA, scaledHeightA;
+                float scaledWidthB, scaledHeightB;
+                GetScaledColliderDimensions(transform, collision, scaledWidthA, scaledHeightA);
+                GetScaledColliderDimensions(otherTransform, otherCollision, scaledWidthB, scaledHeightB);
+
+                overlaps = CheckAABBOverlap(
+                    targetPos,
+                    scaledWidthA,
+                    scaledHeightA,
+                    otherTransform.pos,
+                    scaledWidthB,
+                    scaledHeightB
+                );
+            }
+            else if (collision.type == ECSComponents::ColliderType::CIRCLE &&
+                     otherCollision.type == ECSComponents::ColliderType::CIRCLE)
+            {
+                // Circle vs Circle
+                float radiusA = collision.data.circle.radius * transform.scale.x;
+                float radiusB = otherCollision.data.circle.radius * otherTransform.scale.x;
+                overlaps = CheckCircleCircleOverlap(targetPos, radiusA, otherTransform.pos, radiusB);
+            }
+            else if (collision.type == ECSComponents::ColliderType::CIRCLE &&
+                     otherCollision.type == ECSComponents::ColliderType::RECTANGLE)
+            {
+                // Circle vs Rectangle
+                float radius = collision.data.circle.radius * transform.scale.x;
+                float scaledWidthB, scaledHeightB;
+                GetScaledColliderDimensions(otherTransform, otherCollision, scaledWidthB, scaledHeightB);
+                overlaps = CheckCircleRectOverlap(targetPos, radius, otherTransform.pos, scaledWidthB, scaledHeightB);
+            }
+            else if (collision.type == ECSComponents::ColliderType::RECTANGLE &&
+                     otherCollision.type == ECSComponents::ColliderType::CIRCLE)
+            {
+                // Rectangle vs Circle (same as Circle vs Rectangle, just swapped)
+                float radius = otherCollision.data.circle.radius * otherTransform.scale.x;
+                float scaledWidthA, scaledHeightA;
+                GetScaledColliderDimensions(transform, collision, scaledWidthA, scaledHeightA);
+                overlaps = CheckCircleRectOverlap(otherTransform.pos, radius, targetPos, scaledWidthA, scaledHeightA);
+            }
 
             if (overlaps)
             {
@@ -263,9 +292,7 @@ namespace Physics
                     // Don't push kinematic objects (like walls)
                     if (!otherPhysics.isKinematic)
                     {
-                        // First, move to target position to initiate the push
-                        transform.pos.x = targetPos.x;
-                        transform.pos.y = targetPos.y;
+
                         
                         // Resolve collision with momentum transfer (this enables pushing!)
                         ResolveCollision(
@@ -326,6 +353,49 @@ namespace Physics
     }
 
     /*============================================================================================
+     * \brief       Check if two circles overlap
+     * \return      bool - True if circles intersect
+     *===========================================================================================*/
+    bool PhysicsSystem::CheckCircleCircleOverlap(
+        const Math::eVec2<float>& posA, float radiusA,
+        const Math::eVec2<float>& posB, float radiusB) const
+    {
+        // Calculate distance between circle centers
+        float dx = posB.x - posA.x;
+        float dy = posB.y - posA.y;
+        float distanceSquared = dx * dx + dy * dy;
+
+        // Check if distance is less than sum of radii
+        float radiusSum = radiusA + radiusB;
+        return distanceSquared < (radiusSum * radiusSum);
+    }
+
+    /*============================================================================================
+     * \brief       Check if a circle overlaps with a rectangle
+     * \return      bool - True if circle and rectangle intersect
+     *===========================================================================================*/
+    bool PhysicsSystem::CheckCircleRectOverlap(
+        const Math::eVec2<float>& circlePos, float radius,
+        const Math::eVec2<float>& rectPos, float rectWidth, float rectHeight) const
+    {
+        // Find the closest point on the rectangle to the circle
+        float halfWidth = rectWidth * 0.5f;
+        float halfHeight = rectHeight * 0.5f;
+
+        // Clamp circle center to rectangle bounds
+        float closestX = std::max(rectPos.x - halfWidth, std::min(circlePos.x, rectPos.x + halfWidth));
+        float closestY = std::max(rectPos.y - halfHeight, std::min(circlePos.y, rectPos.y + halfHeight));
+
+        // Calculate distance from circle center to closest point
+        float dx = circlePos.x - closestX;
+        float dy = circlePos.y - closestY;
+        float distanceSquared = dx * dx + dy * dy;
+
+        // Check if distance is less than radius
+        return distanceSquared < (radius * radius);
+    }
+
+    /*============================================================================================
      * \brief       Resolve collision between two entities with momentum transfer (PUSHING!)
      * \return      void
      *
@@ -343,26 +413,80 @@ namespace Physics
         ECSComponents::PhysicsComponent& physicsB,
         ECSComponents::CollisionComponent& collisionB)
     {
-        // Calculate penetration depth and collision normal
+        // Calculate penetration depth and collision normal based on collider types
         Math::eVec2<float> normal;
         float penetration;
 
-        // Get scaled collision dimensions for both entities
-        float scaledWidthA, scaledHeightA;
-        float scaledWidthB, scaledHeightB;
-        GetScaledColliderDimensions(transformA, collisionA, scaledWidthA, scaledHeightA);
-        GetScaledColliderDimensions(transformB, collisionB, scaledWidthB, scaledHeightB);
+        // Handle different collision type combinations
+        if (collisionA.type == ECSComponents::ColliderType::RECTANGLE &&
+            collisionB.type == ECSComponents::ColliderType::RECTANGLE)
+        {
+            // Rectangle vs Rectangle
+            float scaledWidthA, scaledHeightA;
+            float scaledWidthB, scaledHeightB;
+            GetScaledColliderDimensions(transformA, collisionA, scaledWidthA, scaledHeightA);
+            GetScaledColliderDimensions(transformB, collisionB, scaledWidthB, scaledHeightB);
 
-        CalculateAABBPenetration(
-            transformA.pos,
-            scaledWidthA,
-            scaledHeightA,
-            transformB.pos,
-            scaledWidthB,
-            scaledHeightB,
-            normal,
-            penetration
-        );
+            CalculateAABBPenetration(
+                transformA.pos,
+                scaledWidthA,
+                scaledHeightA,
+                transformB.pos,
+                scaledWidthB,
+                scaledHeightB,
+                normal,
+                penetration
+            );
+        }
+        else if (collisionA.type == ECSComponents::ColliderType::CIRCLE &&
+                 collisionB.type == ECSComponents::ColliderType::CIRCLE)
+        {
+            // Circle vs Circle
+            float radiusA = collisionA.data.circle.radius * transformA.scale.x;
+            float radiusB = collisionB.data.circle.radius * transformB.scale.x;
+
+            CalculateCirclePenetration(
+                transformA.pos, radiusA,
+                transformB.pos, radiusB,
+                normal, penetration
+            );
+        }
+        else if (collisionA.type == ECSComponents::ColliderType::CIRCLE &&
+                 collisionB.type == ECSComponents::ColliderType::RECTANGLE)
+        {
+            // Circle vs Rectangle
+            float radius = collisionA.data.circle.radius * transformA.scale.x;
+            float scaledWidthB, scaledHeightB;
+            GetScaledColliderDimensions(transformB, collisionB, scaledWidthB, scaledHeightB);
+
+            CalculateCircleRectPenetration(
+                transformA.pos, radius,
+                transformB.pos, scaledWidthB, scaledHeightB,
+                normal, penetration
+            );
+        }
+        else if (collisionA.type == ECSComponents::ColliderType::RECTANGLE &&
+                 collisionB.type == ECSComponents::ColliderType::CIRCLE)
+        {
+            // Rectangle vs Circle
+            float scaledWidthA, scaledHeightA;
+            GetScaledColliderDimensions(transformA, collisionA, scaledWidthA, scaledHeightA);
+            float radiusB = collisionB.data.circle.radius * transformB.scale.x;
+
+            CalculateCircleRectPenetration(
+                transformB.pos, radiusB,
+                transformA.pos, scaledWidthA, scaledHeightA,
+                normal, penetration
+            );
+            // Flip the normal since we calculated from B to A
+            normal.x = -normal.x;
+            normal.y = -normal.y;
+        }
+        else
+        {
+            // Unsupported collision type, return early
+            return;
+        }
 
         // Separate the objects (remove overlap)
         // Move both objects by half the penetration distance
@@ -374,44 +498,38 @@ namespace Physics
         transformB.pos.x += normal.x * separationB;
         transformB.pos.y += normal.y * separationB;
 
-        // Calculate relative velocity along collision normal
-        Math::eVec2<float> relativeVel = {
-            physicsA.velocity.x - physicsB.velocity.x,
-            physicsA.velocity.y - physicsB.velocity.y
-        };
+        // Velocity-based pushing -> calculate how fast each object is 
+        // moving along the collision normal
+        float velAAlongNormal = physicsA.velocity.x * normal.x + physicsA.velocity.y * normal.y;
+        float velBAlongNormal = physicsB.velocity.x * normal.x + physicsB.velocity.y * normal.y;
 
-        float velAlongNormal = relativeVel.x * normal.x + relativeVel.y * normal.y;
+        // Calculate relative velocity (how fast they're approaching)
+        float relativeVel = velAAlongNormal - velBAlongNormal;
 
-        // Calculate restitution (bounciness) - use minimum of both objects
-        float restitution = (physicsA.restitution < physicsB.restitution) ?
-            physicsA.restitution : physicsB.restitution;
+        // Only resolve if objects are moving toward each other
+        if (relativeVel > 0) {
+            const float PUSH_STRENGTH = 0.5f; // How much velocity transfers (0-1)
+            const float DAMPING = 0.7f;       // How much to reduce velocities (friction)
 
-        // Check if object A is actively moving toward the collision
-        float pusherVelAlongNormal = physicsA.velocity.x * normal.x + physicsA.velocity.y * normal.y;
+            // Calculate velocity transfer amount
+            float velocityTransfer = relativeVel * PUSH_STRENGTH;
 
-        if (velAlongNormal > 0 && pusherVelAlongNormal >= 0)
-            return;
+            // Transfer velocity from A to B
+            physicsB.velocity.x += normal.x * velocityTransfer;
+            physicsB.velocity.y += normal.y * velocityTransfer;
 
-        // Calculate impulse scalar (momentum transfer magnitude)
-        // Formula: j = -(1 + e) * velAlongNormal / (1/massA + 1/massB)
-        float velocityForImpulse = (velAlongNormal > 0) ? pusherVelAlongNormal : velAlongNormal;
-        float impulseMagnitude = -(1.0f + restitution) * velocityForImpulse;
-        impulseMagnitude /= (1.0f / physicsA.mass) + (1.0f / physicsB.mass);
+            // Reduce A's velocity (friction/resistance)
+            physicsA.velocity.x -= normal.x * velocityTransfer;
+            physicsA.velocity.y -= normal.y * velocityTransfer;
 
-        // Calculate impulse vector
-        Math::eVec2<float> impulse = {
-            normal.x * impulseMagnitude,
-            normal.y * impulseMagnitude
-        };
+            physicsA.velocity.x *= DAMPING;
+            physicsB.velocity.x *= DAMPING;
+            physicsA.velocity.y *= DAMPING;
+            physicsB.velocity.y *= DAMPING;
 
-        // Apply impulse to both objects (momentum transfer - THIS IS THE PUSHING!)
-        // Object A (pusher) loses momentum
-        physicsA.velocity.x -= impulse.x / physicsA.mass;
-        physicsA.velocity.y -= impulse.y / physicsA.mass;
 
-        // Object B (being pushed) gains momentum
-        physicsB.velocity.x += impulse.x / physicsB.mass;
-        physicsB.velocity.y += impulse.y / physicsB.mass;
+        }
+
     }
 
     /*============================================================================================
@@ -453,6 +571,112 @@ namespace Physics
             penetration = overlapY;
             normal.x = 0.0f;
             normal.y = (distance.y > 0) ? 1.0f : -1.0f;
+        }
+    }
+
+    /*============================================================================================
+     * \brief       Calculate penetration depth and collision normal between two circles
+     * \return      void
+     *===========================================================================================*/
+    void PhysicsSystem::CalculateCirclePenetration(
+        const Math::eVec2<float>& posA, float radiusA,
+        const Math::eVec2<float>& posB, float radiusB,
+        Math::eVec2<float>& normal, float& penetration) const
+    {
+        // Calculate vector from A to B
+        Math::eVec2<float> distance = {
+            posB.x - posA.x,
+            posB.y - posA.y
+        };
+
+        // Calculate actual distance
+        float distLength = std::sqrt(distance.x * distance.x + distance.y * distance.y);
+
+        // Calculate penetration (how much circles overlap)
+        penetration = (radiusA + radiusB) - distLength;
+
+        // Calculate normal (direction from A to B)
+        if (distLength > 0.0001f) {
+            normal.x = distance.x / distLength;
+            normal.y = distance.y / distLength;
+        } else {
+            // Circles are exactly on top of each other, use arbitrary direction
+            normal.x = 1.0f;
+            normal.y = 0.0f;
+        }
+    }
+
+    /*============================================================================================
+     * \brief       Calculate penetration depth and collision normal between circle and rectangle
+     * \return      void
+     *===========================================================================================*/
+    void PhysicsSystem::CalculateCircleRectPenetration(
+        const Math::eVec2<float>& circlePos, float radius,
+        const Math::eVec2<float>& rectPos, float rectWidth, float rectHeight,
+        Math::eVec2<float>& normal, float& penetration) const
+    {
+        // Find the closest point on the rectangle to the circle
+        float halfWidth = rectWidth * 0.5f;
+        float halfHeight = rectHeight * 0.5f;
+
+        // Clamp circle center to rectangle bounds
+        float closestX = std::max(rectPos.x - halfWidth, std::min(circlePos.x, rectPos.x + halfWidth));
+        float closestY = std::max(rectPos.y - halfHeight, std::min(circlePos.y, rectPos.y + halfHeight));
+
+        // Calculate vector from closest point to circle center
+        Math::eVec2<float> distance = {
+            circlePos.x - closestX,
+            circlePos.y - closestY
+        };
+
+        // Calculate actual distance
+        float distLength = std::sqrt(distance.x * distance.x + distance.y * distance.y);
+
+        // Calculate normal (direction from closest point to circle center)
+        if (distLength > 0.0001f) {
+            // Circle center is outside or on edge of rectangle
+            // Normal points from closest point to circle center 
+
+            normal.x = distance.x / distLength;
+            normal.y = distance.y / distLength;
+
+            // Calculate penetration
+            penetration = radius - distLength;
+
+        } else {
+            // Circle center is inside rectangle
+            // Find the closest edge and push the circle out through that edge
+            float dx = circlePos.x - rectPos.x;
+            float dy = circlePos.y - rectPos.y;
+
+            // Calculate distance to each edge
+            float distToRight = (rectPos.x + halfWidth) - circlePos.x;
+            float distToLeft = circlePos.x - (rectPos.x - halfWidth);
+            float distToBottom = (rectPos.y + halfHeight) - circlePos.y;
+            float distToTop = circlePos.y - (rectPos.y - halfHeight);
+
+            // Find minimum distance to any edge
+            float minDist = distToRight;
+            normal.x = 1.0f;
+            normal.y = 0.0f;
+
+            if (distToLeft < minDist) {
+                minDist = distToLeft;
+                normal.x = -1.0f;
+                normal.y = 0.0f;
+            }
+            if (distToBottom < minDist) {
+                minDist = distToBottom;
+                normal.x = 0.0f;
+                normal.y = 1.0f;
+            }
+            if (distToTop < minDist) {
+                minDist = distToTop;
+                normal.x = 0.0f;
+                normal.y = -1.0f;
+            }
+
+            penetration = radius + minDist;
         }
     }
 
