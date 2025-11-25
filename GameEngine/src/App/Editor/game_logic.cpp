@@ -25,13 +25,6 @@ void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
 	engine_.setup();
 
-	// Initialize scene tree (must be after engine setup)
-	/*sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
-		engine_.getEntityManager(),
-		engine_.getCoreHost()
-	);*/
-
-
 	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 

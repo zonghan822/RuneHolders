@@ -94,6 +94,8 @@ static int activeTransformAxis = 0; // 0=none, 1=X-axis, 2=Y-axis, 3=uniform sca
 static float initialAngle = 0.0f;
 static float initialRotation = 0.0f;
 static ImVec2 initialScale = ImVec2(1.0f, 1.0f);
+static float initialDrawWidth = 0.0f; // For scaling draw info
+static float initialDrawHeight = 0.0f; // For scaling draw info
 static ImVec2 lastScale = ImVec2(1.0f, 1.0f);  // Track last frame scale for delta calculation
 static ImVec2 scaleStartPos = ImVec2(0.0f, 0.0f);
 static ImVec2 dragStartWorldPos = ImVec2(0.0f, 0.0f);
@@ -3278,7 +3280,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 					for (auto& e : allEntities) {
 						if (e.id() == selectedEntityID) {
-							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);                                                                                         
+							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
 							Math::eVec2<float> currentEntityWorldPos = {tc.pos.x, tc.pos.y};
 							Math::eVec2<float> screenPos = Graphics::worldToScreen(
 								currentEntityWorldPos,
@@ -3335,6 +3337,12 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									initialScale = ImVec2(tc.scale.x, tc.scale.y);
 									lastScale = ImVec2(tc.scale.x, tc.scale.y);  // Initialize last scale
 									scaleBeforeDrag = tc.scale;  // Store for undo
+									// Store initial draw info size
+									if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+										auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
+										initialDrawWidth = dc.width;
+										initialDrawHeight = dc.height;
+									}
 									if (handleType == 3) {
 										std::cout << "Started uniform scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
 									}
@@ -3461,7 +3469,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							if (activeTransformAxis == 3) {                   
 								// Uniform scaling using diagonal handle  
 								Math::eVec2<float> entityWorldPosForScaling = {tc.pos.x, tc.pos.y};
-								ImVec2 entityScreenPosForScaling = {
+								Math::eVec2<float> entityScreenPosForScaling = {
 									Graphics::worldToScreen(
 									entityWorldPosForScaling,
 									g_game->getEditorViewMin(),
@@ -3469,16 +3477,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									editorWidth,
 									editorHeight,
 									g_game->getEditorCameraX(),
-									g_game->getEditorCameraY()).x,
-									Graphics::worldToScreen(
-									entityWorldPosForScaling,
-									g_game->getEditorViewMin(),
-									g_game->getEditorViewMax(),
-									editorWidth,
-									editorHeight,
-									g_game->getEditorCameraX(),
-									g_game->getEditorCameraY()).y
-								};
+									g_game->getEditorCameraY()) };
 
 								float initialDist = sqrtf((scaleStartPos.x - entityScreenPosForScaling.x) * (scaleStartPos.x - entityScreenPosForScaling.x) 
 														+ (scaleStartPos.y - entityScreenPosForScaling.y) * (scaleStartPos.y - entityScreenPosForScaling.y)); 
@@ -3516,6 +3515,19 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							tc.scale.x = newScaleX;
 							tc.scale.y = newScaleY;
 							lastScale = ImVec2(newScaleX, newScaleY);
+
+							// Update DrawInfoComponent's width and height
+							if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
+								if (initialScale.x > 0.0f)
+								{
+									dc.width = initialDrawWidth * (newScaleX / initialScale.x);
+								}
+								if (initialScale.y > 0.0f)
+								{
+									dc.height = initialDrawHeight * (newScaleY / initialScale.y);
+								}
+							}
 
 							// Scale all children recursively from parent position
 							Editor::Node* scaledNode = sceneTree.getNodeByEntityID(draggedEntityID);
