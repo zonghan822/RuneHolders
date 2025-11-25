@@ -26,10 +26,11 @@ void GameApplication::initialize() {
 	engine_.setup();
 
 	// Initialize scene tree (must be after engine setup)
-	sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
+	/*sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
 		engine_.getEntityManager(),
 		engine_.getCoreHost()
-	);
+	);*/
+
 
 	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
@@ -45,9 +46,6 @@ void GameApplication::initialize() {
 	setupAnimations();
 	setupScripting();
 	setupFont();
-
-	// ============= LOAD LAST ACTIVE SAVED SCENE ========================= //
-	engine_.getEnoEditor().getSceneTree().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
@@ -69,7 +67,8 @@ void GameApplication::initialize() {
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
 		{
 			extern void deleteSelectedEntity(Editor::EnoSceneTree&, ECS::EntityManager&, Editor::UndoManager&);
-			deleteSelectedEntity(*sceneTree_, engine_.getEntityManager(), engine_.getEnoEditor().getUndoManager());
+			//deleteSelectedEntity(*sceneTree_, engine_.getEntityManager(), engine_.getEnoEditor().getUndoManager());
+			deleteSelectedEntity(engine_.getEnoEditor().getSceneTree(), engine_.getEntityManager(), engine_.getEnoEditor().getUndoManager());
 		});
 
 	std::cout << "Game initialized successfully!" << std::endl;
@@ -277,7 +276,7 @@ void GameApplication::createTestObjectsAndAddToSceneTree() {
 
 	for (auto& entity : testEntities) {
 		// Add each entity to the scene tree as a root node
-		sceneTree_->createFromEntity(entity, nullptr);
+		engine_.getEnoEditor().getSceneTree().createFromEntity(entity, nullptr);
 		std::cout << "[GameLogic] Added entity " << entity.id() << " to scene tree" << std::endl;
 	}
 
@@ -300,14 +299,15 @@ void GameApplication::updateGameLogic() {
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 
 	pathfinder_->update(entityManager, 1.f);
+	//Editor::State editorState = engine_.getEnoEditor().getCurrentScene().getState();
 
 	// Only update player movement when in play mode
-	if (getEditorState() == Playing || getEditorState() == NextKeyFrame) {
+	if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame) {
 		playerSystem_->Update(entityManager, inputMng, deltaTime);
 	}
 
 	// Update engine playing state based on editor state
-	engine_.setIsPlaying(getEditorState() == Playing || getEditorState() == NextKeyFrame);
+	engine_.setIsPlaying(engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
 
 	// Use FIXED virtual resolution for consistent rendering
 	Math::eVec2<float> renderSize{
@@ -411,7 +411,7 @@ void GameApplication::updateGameLogic() {
 	}
 
 	// ==== CAMERA PANNING INPUT (ONLY IN PLAY MODE) ====
-	if (getEditorState() == Playing) {
+	if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing) {
 		auto& inputManager = engine_.getInputManager();
 		// Trigger camera pan upward when UP arrow is pressed
 		if (inputManager.isKeyDown(GLFW_KEY_UP) && !isPanning_) {
@@ -448,7 +448,7 @@ void GameApplication::updateGameLogic() {
 			}
 		}
 		// Manual camera control (only when not panning and in edit mode)
-		else if (getEditorState() == Stopped) {
+		else if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Stopped) {
 			// NOTE: WASD controls BOTH player movement AND editor camera
 			// To move ONLY the camera, set the editor state to stopped (edit) mode
 			auto& inputManager = engine_.getInputManager();
@@ -702,13 +702,13 @@ void GameApplication::updateGameLogic() {
 
 	// Update engine playing state for NEXT frame based on current editor state
 	// This must happen BEFORE we transition NextKeyFrame->Paused
-	bool shouldPlayNextFrame = (getEditorState() == Playing || getEditorState() == NextKeyFrame);
+	bool shouldPlayNextFrame = (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
 	engine_.setIsPlaying(shouldPlayNextFrame);
 
 	// Handle NextKeyFrame state transition at the END of the frame
 	// This ensures physics/collision will have already updated with isPlaying=true in the next frame
-	if (getEditorState() == NextKeyFrame) {
-		setEditorState(Paused);
+	if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame) {
+		engine_.getEnoEditor().getCurrentScene().pause();
 	}
 }
 
@@ -801,7 +801,7 @@ void GameApplication::updateEntities() {
 	}
 
 	// Check if editor state is in play and player is moving and switch animation accordingly
-	if (playerSystem_ && playerSpawned_ && getEditorState() == Playing) {
+	if (playerSystem_ && playerSpawned_ && engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing) {
 		// Check for WASD input
 		bool isMoving =
 			inputManager.isKeyPressed(GLFW_KEY_W) ||
@@ -844,24 +844,20 @@ void GameApplication::updateEntities() {
 	auto& coreHost = engine_.getCoreHost();
 
 	// Editor state = play game
-	switch (getEditorState())
+	switch (engine_.getEnoEditor().getCurrentScene().getState())
 	{
-		case Playing:
+	case Editor::State::Playing:
 		{
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
 			{
-				// Save the current scene tree state before playing
-				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
-				sceneTree_->save(ASSETS_DIR_PATH "saves/scenes/" + sceneTree_->getSceneName(), sceneTree_->getSceneName());
-				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
 			}
 
 			if (!hasBegun)
 			{
-				for (const auto& node : sceneTree_->getAllNodes())
+				for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
 				{
 					if (node->script_)
 					{
@@ -888,18 +884,6 @@ void GameApplication::updateEntities() {
 				hasBegun = true;
 			}
 
-			// Get list of entities to store current pos to reset later
-			// Check that the last frame editor state was 'Stopped'
-			if (playAfterStop)
-			{
-				// Save the current scene tree state before playing
-				std::cout << "[GameLogic] Saving scene tree before playing..." << std::endl;
-				sceneTree_->save(ASSETS_DIR_PATH"/saves/scenes/" + sceneTree_->getSceneName(), sceneTree_->getSceneName());
-				std::cout << "[GameLogic] Scene tree saved successfully!" << std::endl;
-				// Toggle flag to make it a one time event
-				playAfterStop = false;
-			}
-
 			//for (auto* node : sceneTree_->getAllNodes())
 			//{
 			//	if (!node->script_) continue;
@@ -907,7 +891,10 @@ void GameApplication::updateEntities() {
 			//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
 			//	coreHost.runScriptMethod(className, L"Update");
 			//}
-			for (const auto& node : sceneTree_->getAllNodes())
+			
+			
+			//for (const auto& node : sceneTree_->getAllNodes())
+			for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
 			{
 				if (node->script_)
 				{
@@ -919,16 +906,51 @@ void GameApplication::updateEntities() {
 			}
 			updateTestObject(engine_.getEntityManager(), engine_);
 
+			// loop to check for UI button entities 
+			std::vector<ECS::Entity> entityList = engine_.getEntityManager().findEntity<ECSComponents::ButtonComponent>();
+
+			for (auto& ent : entityList)
+			{
+				auto& v = ent.get<ECSComponents::VisibilityComponent>(engine_.getEntityManager());
+				auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
+				auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
+				auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
+
+				if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
+				{
+					// Get mouse to screen pos
+					std::pair<double, double> gMousePos = inputManager.getMousePosition();
+					Math::eVec2<float> mousePos = Graphics::screenToWorld
+					({ static_cast<float>(gMousePos.first),static_cast<float>(gMousePos.second) },
+						getEditorViewMin(),
+						getEditorViewMax(),
+						getEditorWidth(),
+						getEditorHeight(),
+						getEditorCameraX(),
+						getEditorCameraY());
+
+					if (b.onClick(mousePos, v, t, d))
+					{
+
+						std::cout << "CLICK!" << std::endl;
+						engine_.getEnoEditor().getCurrentScene().stop();
+					}
+					
+				}
+			}
+
+
+
 			break;
 
 		}
-		case Paused:
+		case Editor::State::Paused:
 		{
 			// This toggles keyframe mode
 			keyFrameMode = true;
 			break;
 		}
-		case NextKeyFrame:
+		case Editor::State::NextFrame:
 		{
 			// Check if key frame mode is true
 			if (keyFrameMode)
@@ -940,29 +962,17 @@ void GameApplication::updateEntities() {
 				// NOTE: Don't set state back to Paused here! It happens too early in the frame.
 				// The state will be reset to Paused at the end of this function after rendering.
 			}
+			engine_.getEnoEditor().getCurrentScene().pause();
 			break;
 		}
-		case Stopped:
+		case Editor::State::Stopped:
 		{
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
-				// Load the saved scene tree state to restore positions
-				std::cout << "[GameLogic] Loading saved scene tree to restore state..." << std::endl;
-				std::string sceneName = sceneTree_->getSceneName();
-				if (!sceneName.empty())
-				{
-					std::string scenePath = ASSETS_DIR_PATH "saves/scenes/" + sceneName;
-					sceneTree_->load(scenePath, sceneName);
-					std::cout << "[GameLogic] Scene tree loaded successfully!" << std::endl;
-				}
-				else
-				{
-					std::cerr << "[GameLogic] Warning: Scene name is empty, cannot load scene!" << std::endl;
-				}
 
 				// Mark entities as dirty to refresh the rendering cache
-				entitiesDirty_ = true;
+				//entitiesDirty_ = true;
 				// Toggle flag
 				playAfterStop = true;
 				hasBegun = false;
@@ -972,29 +982,7 @@ void GameApplication::updateEntities() {
 	}
 
 
-	// loop to check for UI button entities 
-	std::vector<ECS::Entity> entityList = engine_.getEntityManager().findEntity<ECSComponents::ButtonComponent>();
-
-	for (auto& ent : entityList)
-	{
-		auto& v = ent.get<ECSComponents::VisibilityComponent>(engine_.getEntityManager());
-		auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
-		auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
-		auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
-
-		if (getEditorState() == Playing)
-		{
-			if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
-			{
-				if (b.onClick(inputManager, v, t, d))
-				{
-
-					std::cout << "CLICK!" << std::endl;
-					setEditorState(Stopped);
-				}
-			}
-		}
-	}
+	
 
 }
 
@@ -1131,7 +1119,7 @@ void GameApplication::drawPlayerAndIndicator() {
 
 void GameApplication::updateImGui() {
 	SystemTimer ImGuiTimer("ImGui", systemTimes_);
-	imGuiDisplay(engine_, *sceneTree_, engine_.getEnoEditor().getUndoManager());
+	imGuiDisplay(engine_, engine_.getEnoEditor().getSceneTree(), engine_.getEnoEditor().getUndoManager());
 }
 
 void GameApplication::drawShapes() {
@@ -1306,21 +1294,6 @@ void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData)
 	// Keep the same current state
 	if (playerAnimController_.getCurrentAnimationName().empty())
 		playerAnimController_.setAnimation("idle");
-}
-
-// Accessor and mutators to access editor state
-EditorState GameApplication::getEditorState() const
-{
-	return g_editorState;
-}
-EditorState GameApplication::getEditorState()
-{
-	return g_editorState;
-}
-
-void GameApplication::setEditorState(EditorState state)
-{
-	g_editorState = state;
 }
 
 // Camera panning for room transitions

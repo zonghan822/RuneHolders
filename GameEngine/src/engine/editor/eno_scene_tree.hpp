@@ -85,13 +85,7 @@ namespace Editor
 
 		// Serialize/Deserialize scene tree data
 		void save(const std::string&, const std::string& sceneName);
-		void load(const std::string&, const std::string& sceneName);
-
-		// Create empty scene
-		void createEmptyScene(const std::string& filePath);
-
-		// Load last saved scene
-		void loadLastSavedScene();
+		void load(const std::string&);
 
 		template<typename T>
 		std::optional<T> extract(
@@ -106,10 +100,6 @@ namespace Editor
 
 		// View tree structure
 		void treeView();
-
-		// Get current scene
-		std::string& getSceneName();
-		std::string getSceneName() const;
 
 		// ====================== Signals ======================
 
@@ -150,9 +140,6 @@ namespace Editor
 
 		// Button input operation states
 		bool creating_{ false };
-
-		// Scene name
-		std::string currentScene;
 
 		// Generate an id for a node
 		uint32_t generateID();

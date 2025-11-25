@@ -214,7 +214,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 	// Scene select
 	ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoCollapse);
-	displaySceneTab(sceneTree);
+	displaySceneTab(engine_.getEnoEditor());
 	ImGui::End();
 
 	// Audio select
@@ -442,7 +442,7 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 
 }
 
-std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse)
+std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, Math::eVec2<float> mouse)
 {
 	auto& entityManager = engine_.getEntityManager();
 
@@ -980,7 +980,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			std::uniform_real_distribution<float> posY(0.0f, 720.0f);   // Screen height
 			std::uniform_real_distribution<float> rotSpeed(-3.14f, 3.14f); // Rotation speed (radians/sec)
 
-			for (int i = 0; i < 1000; ++i) {
+			for (int i = 0; i < 10; ++i) {
 				// Create transform with random position and rotation speed
 				// rot.x = current rotation angle, rot.y = rotation speed
 				ECSComponents::TransformComponent transform{
@@ -1254,17 +1254,14 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	}
 }
 
-void displaySceneTab(Editor::EnoSceneTree& sceneTree)
+void displaySceneTab(Editor::EnoEditor& editor_)
 {
 	// Heading
 	ImGui::Text("=== Scene Select===");
 	ImGui::Text("Current Scene:");
 
 	// Get current scene
-	std::string currScene = sceneTree.getSceneName();
-
-	ImGui::Text(currScene.c_str());
-	ImGui::Separator();
+	std::string currScene = editor_.getCurrentScene().getSceneName();
 
 	// Create a container for all scene names inside my scene folder
 	static std::vector<std::filesystem::path> sceneNames;
@@ -1273,26 +1270,44 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 	// Buffer to change scene name
 	static char scene_name[64] = "";
 
-	ImGui::Separator();
-
 	if (refreshSceneName)
 	{
 		// Clear the current container
 		sceneNames.clear();
 		// A string path to the assets folder
-		std::string sceneSavePath = (ASSETS_DIR_PATH"saves/scenes/");
-
+		std::string sceneSavePath = (ASSET_SCENE_PATH);
 		// Check that the file is a .txt file
 		try {
 			for (const auto& fileEntry : std::filesystem::directory_iterator(sceneSavePath))
 			{
-				if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (sceneSavePath + "CurrentSavedScene.txt"))
+				if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (sceneSavePath + "LastSavedScene.txt"))
 				{
 					// Add file to container
 					sceneNames.push_back(fileEntry.path());
 					//std::cout << "Filename: " << fileEntry.path() << std::endl;
 				}
 			}
+
+			// Check that scene list contains at least one scene
+			if (!sceneNames.empty())
+			{
+				// Check that no scene was recently deleted
+				auto it = std::find_if(sceneNames.begin(), sceneNames.end(),
+					[&](const std::filesystem::path& fileName)
+					{
+						return fileName.filename() == currScene;
+					});
+
+				if (it == sceneNames.end())
+				{
+					std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
+					// Scene deleted, load the first available scene instead
+					editor_.selectScene(sceneNames.front().filename().string());
+					// Update last saved scene file
+					editor_.updateLastSavedScene();
+					g_game->markEntitiesDirty();
+				}
+			} 
 			// Set refresh to false to prevent reopening
 			refreshSceneName = false;
 		}
@@ -1303,6 +1318,14 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 			return;
 		}
 	}
+
+	// No scenes created
+	if (sceneNames.empty()) currScene = "No scenes available.";
+
+	// Display active scene name
+	ImGui::Text(currScene.c_str());
+	
+	ImGui::Separator();
 
 	// Display scene names
 	for (const auto& filePath : sceneNames)
@@ -1322,12 +1345,13 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 		if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
 		{
 			// Load scene
-			std::cout << "sceneName: " << sceneTree.getSceneName() << ", filename: " << filename << std::endl;
+			std::cout << "current scene: " << editor_.getCurrentScene().getSceneName() << ", filename: " << filename << std::endl;
 			// Check that scene is not currently loaded
-			if (sceneTree.getSceneName() != filename)
+			if (editor_.getCurrentScene().getSceneName() != filename)
 			{
 				std::cout << "Loading file: " << filename << std::endl;
-				sceneTree.load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
+				//editor_.getSceneTree().load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
+				editor_.selectScene(filename);
 				g_game->markEntitiesDirty();
 			}
 			else
@@ -1372,24 +1396,19 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 						std::string newSceneName = scene_name;
 						if (newSceneName.find(".txt") == std::string::npos) newSceneName += ".txt";
 
-						std::filesystem::path newPath = ASSETS_DIR_PATH"saves/scenes/" + newSceneName;
+						std::filesystem::path newPath = ASSET_SCENE_PATH + newSceneName;
 						std::filesystem::rename(currentPath, newPath);
 
 						// Check if we're renaming the currently active scene
-						bool isCurrentScene = (filename == sceneTree.getSceneName());
+						bool isCurrentScene = (filename == editor_.getCurrentScene().getSceneName());
 
 						// If we renamed the active scene, update the current scene name
 						if (isCurrentScene)
 						{
-							sceneTree.getSceneName() = newSceneName;
+							editor_.getCurrentScene().setSceneName(newSceneName);
 
-							// Update CurrentSavedScene.txt
-							std::ofstream currentSceneSave{ ASSETS_DIR_PATH "/saves/scenes/CurrentSavedScene.txt" };
-							if (currentSceneSave.is_open())
-							{
-								currentSceneSave << newSceneName;
-								currentSceneSave.close();
-							}
+							// Update LastSavedScene.txt
+							editor_.updateLastSavedScene();
 						}
 
 						// Close popup after renaming
@@ -1408,22 +1427,6 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 				}
 
 			}
-			// Cancel edits
-			if (ImGui::Button("Cancel"))
-			{
-				// Close popup
-				ImGui::CloseCurrentPopup();
-				// In case theres some random stuff inside the input box, clear the buffer
-				memset(scene_name, 0, sizeof(scene_name));
-			}
-
-			// Save scene
-			if (ImGui::Button("Save scene"))
-			{
-				// Save scene
-				sceneTree.save(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
-			}
-
 			// Delete scene
 			if (ImGui::Button("Delete scene"))
 			{
@@ -1431,6 +1434,8 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 				{
 					// Remove file
 					std::filesystem::remove(filePath);
+					// Remove active scene name
+					//editor_.getCurrentScene().setSceneName("");
 					// Close current popup
 					ImGui::CloseCurrentPopup();
 					// Refresh list
@@ -1440,6 +1445,15 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 				{
 					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
 				}
+			}
+
+			// Cancel edits
+			if (ImGui::Button("Close menu"))
+			{
+				// Close popup
+				ImGui::CloseCurrentPopup();
+				// In case theres some random stuff inside the input box, clear the buffer
+				memset(scene_name, 0, sizeof(scene_name));
 			}
 
 			ImGui::EndPopup();
@@ -1464,9 +1478,19 @@ void displaySceneTab(Editor::EnoSceneTree& sceneTree)
 
 	}
 
+	// Save scene
+	if (ImGui::Button("Save scene"))
+	{
+		std::string sceneName = editor_.getCurrentScene().getSceneName();
+		// Save scene
+		editor_.getSceneTree().save(ASSET_SCENE_PATH + sceneName, sceneName);
+		// Update last saved scene
+		editor_.updateLastSavedScene();
+	}
+
 	if (ImGui::Button("Create new scene"))
 	{
-		sceneTree.createEmptyScene(ASSETS_DIR_PATH"saves/scenes/");
+		editor_.createEmptyScene(ASSET_SCENE_PATH);
 		refreshSceneName = true;
 	}
 
@@ -3109,26 +3133,27 @@ bool isMouseOverGizmoHandle(ImVec2 mousePos, ImVec2 entityCenter, float gizmoSiz
 
 void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
 	auto& entityManager = engine_.getEntityManager();
+	auto& sceneEditor = engine_.getEnoEditor();
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
-	// Display toolbar for PLAY/PAUSE/STOP (moved from Game View)
+	// Display toolbar for PLAY/PAUSE/STOP
 	static bool isPlaying = false;
-	isPlaying = (g_game->getEditorState() == Playing) ? true : false;
+	isPlaying = (sceneEditor.getCurrentScene().getState() != Editor::State::Stopped) ? true : false;
 
 	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
 		isPlaying = !isPlaying;
-		g_game->setEditorState(isPlaying ? Playing : Stopped);
+		isPlaying ? sceneEditor.playScene() : sceneEditor.stopScene();
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Pause")) {
-		if (g_game->getEditorState() != Stopped) {
-			g_game->setEditorState(g_game->getEditorState() == Playing ? Paused : Playing);
+	if (ImGui::Button(sceneEditor.getCurrentScene().getState() != Editor::State::Paused ? "Pause" : "Unpause")) {
+		if (sceneEditor.getCurrentScene().getState() != Editor::State::Stopped) {
+			(sceneEditor.getCurrentScene().getState() == Editor::State::Playing ? sceneEditor.pauseScene() : sceneEditor.playScene());
 		}
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Next")) {
-		if (g_game->getEditorState() == Paused) {
-			g_game->setEditorState(NextKeyFrame);
+		if (sceneEditor.getCurrentScene().getState() == Editor::State::Paused) {
+			sceneEditor.getCurrentScene().next();
 		}
 	}
 
@@ -3198,62 +3223,79 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			// Position the image with offset (centered with letterboxing)
 			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
 
-			// Display the editor framebuffer texture scaled to fit
-			ImGui::Image(
-				(void*)(intptr_t)fb->getTextureID(),
-				displaySize,
-				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
-				ImVec2(1, 0)
-			);
-
+			// Display the editor framebuffer texture scaled to fit                           
+			ImGui::Image(                                                                     
+				(void*)(intptr_t)fb->getTextureID(),                                      
+				displaySize,                                                              
+				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)                   
+				ImVec2(1, 0)                                                              
+			);                                                                                
+			                        
+			// Capture the editor view min/max coordinates and store them in GameApplication
+			ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
+			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
+			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
 			// ========== ALL EDITOR INTERACTIONS (moved from Game View) ==========
 
-			// Helper function to convert screen coordinates to world coordinates (accounting for camera)
-			auto screenToWorldCoords = [&](ImVec2 screenPos) -> ImVec2 {
-				ImVec2 imageMin = ImGui::GetItemRectMin();
-				ImVec2 imageMax = ImGui::GetItemRectMax();
+			// Helper function to convert screen coordinates to world coordinates (accounting for camera)                                                                                               
+
+			// auto screenToWorldCoords = [&](ImVec2 screenPos) -> ImVec2 {                      
+				//ImVec2 imageMin = ImGui::GetItemRectMin
+				//ImVec2 imageMax = ImGui::GetItemRectMax();                                
 
 				// Get mouse position relative to the image (0.0 to 1.0)
-				float relX = (screenPos.x - imageMin.x) / (imageMax.x - imageMin.x);
-				float relY = (screenPos.y - imageMin.y) / (imageMax.y - imageMin.y);
+				//float relX = (screenPos.x - imageMin.x) / (imageMax.x - imageMin.x);      
 
-				relX = std::clamp(relX, 0.0f, 1.0f);
-				relY = std::clamp(relY, 0.0f, 1.0f);
+				//float relY = (screenPos.y - imageMin.y) / (imageMax.y - imageMin.y);                                                                                   
+				//relX = std::clamp(relX, 0.0f, 1.0f);                                      
+				//relY = std::clamp(relY, 0.0f, 1.0f); 
+                                    
+				// Convert to screen space coordinates (within the editor viewport)       
+				//float screenX = relX * editorWidth;                                       
+				//float screenY = relY * editorHeight;                                      
 
-				// Convert to screen space coordinates (within the editor viewport)
-				float screenX = relX * editorWidth;
-				float screenY = relY * editorHeight;
+				// Add camera offset to convert screen space to world space               
+				//float worldX = screenX + g_game->getEditorCameraX();                      
+				//float worldY = screenY + g_game->getEditorCameraY();                      
 
-				// Add camera offset to convert screen space to world space
-				float worldX = screenX + g_game->getEditorCameraX();
-				float worldY = screenY + g_game->getEditorCameraY();
+				//return ImVec2(worldX, worldY);                                            
 
-				return ImVec2(worldX, worldY);
-				};
+			//};
 
-			// Helper function to convert world coordinates to screen coordinates (for drawing gizmos)
-			auto worldToScreenCoords = [&](ImVec2 worldPos) -> ImVec2 {
-				ImVec2 imageMin = ImGui::GetItemRectMin();
-				ImVec2 imageMax = ImGui::GetItemRectMax();
+			// Helper function to convert world coordinates to screen coordinates (for drawing gizmos)                                                                                                  
+			//auto worldToScreenCoords = [&](ImVec2 worldPos) -> ImVec2 {                       
 
-				// Subtract camera offset to convert world space to screen space
-				float screenX = worldPos.x - g_game->getEditorCameraX();
-				float screenY = worldPos.y - g_game->getEditorCameraY();
+				//ImVec2 imageMin = ImGui::GetItemRectMin();                                
+				//ImVec2 imageMax = ImGui::GetItemRectMax();                                
 
-				// Convert to normalized coordinates (0.0 to 1.0)
-				float relX = screenX / editorWidth;
-				float relY = screenY / editorHeight;
+				// Subtract camera offset to convert world space to screen space          
+				//float screenX = worldPos.x - g_game->getEditorCameraX();                  
+				//float screenY = worldPos.y - g_game->getEditorCameraY();                  
 
-				// Convert to actual screen position
-				float finalX = imageMin.x + relX * (imageMax.x - imageMin.x);
-				float finalY = imageMin.y + relY * (imageMax.y - imageMin.y);
+				// Convert to normalized coordinates (0.0 to 1.0)                         
+				//float relX = screenX / editorWidth;                                       
+				//float relY = screenY / editorHeight;                                                                                                             
 
-				return ImVec2(finalX, finalY);
-				};
+				// Convert to actual screen position                                      
+				//float finalX = imageMin.x + relX * (imageMax.x - imageMin.x);             
+				//float finalY = imageMin.y + relY * (imageMax.y - imageMin.y);             
 
-			// --- Handle entity deletion by click ---
-			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
-				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
+				//return ImVec2(finalX, finalY);                                            
+
+			//};
+
+			// --- Handle entity deletion by click ---                                        
+
+			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {                                                                                                     
+
+				Math::eVec2<float> worldPos = Graphics::screenToWorld(
+											{ ImGui::GetMousePos().x, ImGui::GetMousePos().y },
+											g_game->getEditorViewMin(),
+											g_game->getEditorViewMax(),
+											editorWidth,
+											editorHeight,
+											g_game->getEditorCameraX(),
+											g_game->getEditorCameraY());
 
 				auto clicked = getEntityUnderMouse(engine_, worldPos);
 				if (clicked.has_value()) {
@@ -3285,9 +3327,18 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				g_waitingForEntityDeletion = false;
 			}
 
-			// --- Handle prefab placement ---
-			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {
-				ImVec2 worldPos = screenToWorldCoords(ImGui::GetMousePos());
+			// --- Handle prefab placement ---                                                
+
+			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {                                                                                         
+
+				Math::eVec2<float> worldPos = Graphics::screenToWorld(
+											{ ImGui::GetMousePos().x, ImGui::GetMousePos().y },
+											g_game->getEditorViewMin(),
+											g_game->getEditorViewMax(),
+											editorWidth,
+											editorHeight,
+											g_game->getEditorCameraX(),
+											g_game->getEditorCameraY());
 
 				// Spawn prefab at clicked position
 				spawnPrefabAt(worldPos.x, worldPos.y, g_selectedPrefabForPlacement, engine_, sceneTree, undoManager);
@@ -3298,16 +3349,26 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 			// --- Gizmo-based entity transformation logic ---
 			// Draw gizmos for selected entity
-			if (selectedEntityID != UINT32_MAX && g_game->getEditorState() == Stopped) {
+			if (selectedEntityID != UINT32_MAX && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) {
 				auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 				for (auto& e : allEntities) {
 					if (e.id() == selectedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
 						auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 
-						// Convert entity position to screen coordinates
-						ImVec2 entityWorldPos = ImVec2(tc.pos.x, tc.pos.y);
-						ImVec2 entityScreenPos = worldToScreenCoords(entityWorldPos);
+						// Convert entity position to screen coordinates          
+						Math::eVec2<float> entityWorldPos = {tc.pos.x, tc.pos.y}; 
+						Math::eVec2<float> screenPos = Graphics::worldToScreen(
+														entityWorldPos,
+														g_game->getEditorViewMin(),
+														g_game->getEditorViewMax(),
+														editorWidth,
+														editorHeight,
+														g_game->getEditorCameraX(),
+														g_game->getEditorCameraY());
+
+						// Convert to ImVec2 for easier logic comparison
+						ImVec2 entityScreenPos = { screenPos.x, screenPos.y };
 
 						// Draw gizmo based on current mode
 						float gizmoSize = 50.0f;
@@ -3317,20 +3378,39 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				}
 			}
 
-			// Begin gizmo interaction
-			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
-				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && !isRotating && !isScaling && g_game->getEditorState() == Stopped) {
-
-				ImVec2 mouseScreenPos = ImGui::GetMousePos();
-				ImVec2 worldPos = screenToWorldCoords(mouseScreenPos);
+			// Begin gizmo interaction                                                    
+			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&        
+				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && !isRotating && !isScaling 
+				&& sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) 
+			{             
+				                                                                                                       
+				ImVec2 mouseScreenPos = ImGui::GetMousePos();                             
+				Math::eVec2<float> worldPos = 
+					Graphics::screenToWorld(
+					{ mouseScreenPos.x, mouseScreenPos.y },
+					g_game->getEditorViewMin(),
+					g_game->getEditorViewMax(),
+					editorWidth,
+					editorHeight,
+					g_game->getEditorCameraX(),
+					g_game->getEditorCameraY());
 
 				// Check if we have a selected entity
 				if (selectedEntityID != UINT32_MAX) {
 					auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 					for (auto& e : allEntities) {
 						if (e.id() == selectedEntityID) {
-							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
-							ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
+							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);                                                                                         
+							Math::eVec2<float> currentEntityWorldPos = {tc.pos.x, tc.pos.y};
+							Math::eVec2<float> screenPos = Graphics::worldToScreen(
+								currentEntityWorldPos,
+								g_game->getEditorViewMin(),
+								g_game->getEditorViewMax(),
+								editorWidth,
+								editorHeight,
+								g_game->getEditorCameraX(),
+								g_game->getEditorCameraY());
+							ImVec2 entityScreenPos = {screenPos.x,screenPos.y};
 
 							int handleType = 0;
 							float gizmoSize = 50.0f;
@@ -3354,15 +3434,18 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									pendingTransformCommand->captureOldState(affectedEntityIDs);
 								}
 
-								if (currentGizmoMode == GIZMO_ROTATE) {
-									// Start rotation (handleType 3 for rotation)
-									isRotating = true;
-									draggedEntityID = selectedEntityID;
-									activeTransformAxis = 3;
-									initialAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
-									initialRotation = tc.rot.x;
+								if (currentGizmoMode == GIZMO_ROTATE) {   
+
+									// Start rotation (handleType 3 for rotation)                                                                                               
+									isRotating = true;                
+									draggedEntityID = selectedEntityID;                                                                                                         
+									activeTransformAxis = 3;          
+									initialAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);                                          
+									initialRotation = tc.rot.x;       
 									rotationBeforeDrag = tc.rot;  // Store for undo
-									std::cout << "Started rotating entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
+
+									std::cout << "Started rotating entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";                
+
 								}
 								else if (currentGizmoMode == GIZMO_SCALE) {
 									// Start scaling
@@ -3370,7 +3453,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									draggedEntityID = selectedEntityID;
 									activeTransformAxis = handleType; // 3=uniform, 4=X-scale, 5=Y-scale
 									scaleStartPos = mouseScreenPos;
-									dragStartWorldPos = worldPos;
+									dragStartWorldPos = { worldPos.x, worldPos.y };
 									initialScale = ImVec2(tc.scale.x, tc.scale.y);
 									lastScale = ImVec2(tc.scale.x, tc.scale.y);  // Initialize last scale
 									scaleBeforeDrag = tc.scale;  // Store for undo
@@ -3391,7 +3474,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									activeTransformAxis = handleType; // 1=X-axis, 2=Y-axis
 									dragOffset.x = worldPos.x - tc.pos.x;
 									dragOffset.y = worldPos.y - tc.pos.y;
-									dragStartWorldPos = worldPos;
+									dragStartWorldPos = { worldPos.x, worldPos.y };
 									lastDragPos = ImVec2(tc.pos.x, tc.pos.y);
 									transformBeforeDrag = tc.pos;  // Store for undo
 									if (handleType == 1) {
@@ -3421,7 +3504,15 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			// While transforming (drag, rotate, or scale)
 			if ((isDragging || isRotating || isScaling) && ImGui::IsMouseDown(0)) {
 				ImVec2 mouseScreenPos = ImGui::GetMousePos();
-				ImVec2 worldPos = screenToWorldCoords(mouseScreenPos);
+				Math::eVec2<float> eWorldPos = Graphics::screenToWorld(
+					{ mouseScreenPos.x, mouseScreenPos.y },
+					g_game->getEditorViewMin(),
+					g_game->getEditorViewMax(),
+					editorWidth,
+					editorHeight,
+					g_game->getEditorCameraX(),
+					g_game->getEditorCameraY());
+				ImVec2 worldPos = { eWorldPos.x, eWorldPos.y };
 
 				auto all = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
 				for (auto& e : all) {
@@ -3461,7 +3552,18 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						}
 						else if (isRotating) {
 							// Calculate rotation based on mouse angle
-							ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
+							Math::eVec2<float> eEntityScreenPos =
+								Graphics::worldToScreen(
+									tc.pos,
+									g_game->getEditorViewMin(),
+									g_game->getEditorViewMax(),
+									editorWidth,
+									editorHeight,
+									g_game->getEditorCameraX(),
+									g_game->getEditorCameraY()
+								);
+
+							ImVec2 entityScreenPos = {eEntityScreenPos.x, eEntityScreenPos.y};
 							float currentAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
 							float newRotation = initialRotation + (currentAngle - initialAngle);
 							float deltaAngle = newRotation - tc.rot.x;
@@ -3478,15 +3580,36 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							float newScaleX = tc.scale.x;
 							float newScaleY = tc.scale.y;
 
-							if (activeTransformAxis == 3) {
-								// Uniform scaling using diagonal handle
-								ImVec2 entityScreenPos = worldToScreenCoords(ImVec2(tc.pos.x, tc.pos.y));
-								float initialDist = sqrtf((scaleStartPos.x - entityScreenPos.x) * (scaleStartPos.x - entityScreenPos.x) +
-									(scaleStartPos.y - entityScreenPos.y) * (scaleStartPos.y - entityScreenPos.y));
-								float currentDist = sqrtf((mouseScreenPos.x - entityScreenPos.x) * (mouseScreenPos.x - entityScreenPos.x) +
-									(mouseScreenPos.y - entityScreenPos.y) * (mouseScreenPos.y - entityScreenPos.y));
+							if (activeTransformAxis == 3) {                   
+								// Uniform scaling using diagonal handle  
+								Math::eVec2<float> entityWorldPosForScaling = {tc.pos.x, tc.pos.y};
+								ImVec2 entityScreenPosForScaling = {
+									Graphics::worldToScreen(
+									entityWorldPosForScaling,
+									g_game->getEditorViewMin(),
+									g_game->getEditorViewMax(),
+									editorWidth,
+									editorHeight,
+									g_game->getEditorCameraX(),
+									g_game->getEditorCameraY()).x,
+									Graphics::worldToScreen(
+									entityWorldPosForScaling,
+									g_game->getEditorViewMin(),
+									g_game->getEditorViewMax(),
+									editorWidth,
+									editorHeight,
+									g_game->getEditorCameraX(),
+									g_game->getEditorCameraY()).y
+								};
+
+								float initialDist = sqrtf((scaleStartPos.x - entityScreenPosForScaling.x) * (scaleStartPos.x - entityScreenPosForScaling.x) 
+														+ (scaleStartPos.y - entityScreenPosForScaling.y) * (scaleStartPos.y - entityScreenPosForScaling.y)); 
+
+								float currentDist = sqrtf((mouseScreenPos.x - entityScreenPosForScaling.x) * (mouseScreenPos.x - entityScreenPosForScaling.x) 
+														+ (mouseScreenPos.y - entityScreenPosForScaling.y) * (mouseScreenPos.y - entityScreenPosForScaling.y));                                                           
 
 								float scaleFactor = currentDist / std::max(initialDist, 1.0f);
+
 								newScaleX = initialScale.x * scaleFactor;
 								newScaleY = initialScale.y * scaleFactor;
 							}

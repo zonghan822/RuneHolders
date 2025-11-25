@@ -14,6 +14,7 @@ namespace Editor
 	{
 		Playing,
 		Paused,
+		NextFrame,
 		Stopped
 	};
 
@@ -23,7 +24,7 @@ namespace Editor
 		EnoScene(Event::EnoEventBus bus)
 			:
 			bus_{ bus },
-			state { State::Paused }
+			state { State::Stopped }
 		{
 			defineTag("Human");
 		}
@@ -53,9 +54,43 @@ namespace Editor
 			state = State::Stopped;
 		}
 
+		void next()
+		{
+			state = State::NextFrame;
+		}
+
+		State getState() const
+		{
+			return state;
+		}
+
+		State& getState()
+		{
+			return state;
+		}
+
+		// Get current scene name
+		std::string getSceneName() const
+		{
+			return sceneName;
+		}
+
+		// Set current scene name
+		void setSceneName(const std::string& name)
+		{
+			if (!name.empty())
+			{
+				sceneName = name;
+			}
+			
+		}
+
 	private:
 		// Scene state
 		State state;
+
+		// Scene name
+		std::string sceneName;
 
 		// Event bus
 		Event::EnoEventBus& bus_;

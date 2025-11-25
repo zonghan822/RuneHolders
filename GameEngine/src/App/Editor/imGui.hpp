@@ -189,7 +189,7 @@ void displayFPSTab(Engine::EnoEngine& engine_);
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void displaySceneTab(Editor::EnoSceneTree& sceneTree);
+void displaySceneTab(Editor::EnoEditor& editor_);
 
 /*============================================================================================
  * \brief       Helper function to load music and sounds for Audio Tab

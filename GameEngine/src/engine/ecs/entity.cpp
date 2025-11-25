@@ -606,8 +606,11 @@ namespace ECS
 			// Map Texture
 			bus_.publish<Graphics::TextureMapping>(Graphics::TextureMapping{ tvalue, tex });
 
+			// Add the macro to asset path
+			std::string fullpath = ASSETS_DIR_PATH "/art/" + tvalue + ".png";
+
 			// Load
-			tex->loadFromFile(tvalue);
+			tex->loadFromFile(fullpath);
 			return tex;
 		}
 
