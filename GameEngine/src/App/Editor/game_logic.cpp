@@ -908,6 +908,41 @@ void GameApplication::updateEntities() {
 			}
 			updateTestObject(engine_.getEntityManager(), engine_);
 
+			// loop to check for UI button entities 
+			std::vector<ECS::Entity> entityList = engine_.getEntityManager().findEntity<ECSComponents::ButtonComponent>();
+
+			for (auto& ent : entityList)
+			{
+				auto& v = ent.get<ECSComponents::VisibilityComponent>(engine_.getEntityManager());
+				auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
+				auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
+				auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
+
+				if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
+				{
+					// Get mouse to screen pos
+					std::pair<double, double> gMousePos = inputManager.getMousePosition();
+					Math::eVec2<float> mousePos = Graphics::screenToWorld
+					({ static_cast<float>(gMousePos.first),static_cast<float>(gMousePos.second) },
+						getEditorViewMin(),
+						getEditorViewMax(),
+						getEditorWidth(),
+						getEditorHeight(),
+						getEditorCameraX(),
+						getEditorCameraY());
+
+					if (b.onClick(mousePos, v, t, d))
+					{
+
+						std::cout << "CLICK!" << std::endl;
+						engine_.getEnoEditor().getCurrentScene().stop();
+					}
+					
+				}
+			}
+
+
+
 			break;
 
 		}
@@ -949,30 +984,7 @@ void GameApplication::updateEntities() {
 	}
 
 
-	// loop to check for UI button entities 
-	std::vector<ECS::Entity> entityList = engine_.getEntityManager().findEntity<ECSComponents::ButtonComponent>();
-
-	for (auto& ent : entityList)
-	{
-		auto& v = ent.get<ECSComponents::VisibilityComponent>(engine_.getEntityManager());
-		auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
-		auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
-		auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
-
-		if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing)
-		{
-			if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
-			{
-				
-				if (b.onClick(inputManager, v, t, d))
-				{
-
-					std::cout << "CLICK!" << std::endl;
-					engine_.getEnoEditor().getCurrentScene().stop();
-				}
-			}
-		}
-	}
+	
 
 }
 
