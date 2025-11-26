@@ -2244,6 +2244,14 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
+	// Check if the selected entity has an AnimationControllerComponent
+	if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng))
+	{
+		ImGui::TextWrapped("The currently selected entity does not have an Animation Controller component.");
+		ImGui::End();
+		return;
+	}
+
 	//================================= IDLE ANIMATION ===================================
 	ImGui::Text("IDLE");
 
