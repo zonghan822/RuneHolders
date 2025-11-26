@@ -32,6 +32,29 @@ namespace Editor
 			coreHost_{ coreHost },
 			undoManager_{ bus, entMng, 20 }
 		{
+
+			// Get all available scenes
+			// Check that the file is a .txt file
+			try {
+				for (const auto& fileEntry : std::filesystem::directory_iterator(ASSET_SCENE_PATH))
+				{
+					if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (ASSET_SCENE_PATH "LastSavedScene.txt"))
+					{
+						// Add file to scenes_
+						std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
+						scene->setSceneName(fileEntry.path().filename().string());
+						std::cout << "[Eno_Editor] appeneding scene: " << scene->getSceneName() << std::endl;
+						scenes_.push_back(std::move(scene));
+					}
+				}
+			}
+			// In case of invalid file
+			catch (const std::filesystem::filesystem_error& e)
+			{
+				std::cout << "Error: " << e.what();
+				return;
+			}
+
 			// Find the last loaded scene if possible
 			loadLastSavedScene();
 
@@ -171,7 +194,7 @@ namespace Editor
 			selectedScene_->setSceneName(filename);
 
 			// Set editor state to stop
-			if (selectedScene_->getState() != State::Stopped) selectedScene_->stop();
+			//if (selectedScene_->getState() != State::Stopped) selectedScene_->stop();
 
 		}
 
@@ -317,7 +340,7 @@ namespace Editor
 			std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
 			scenes_.push_back(std::move(scene));
 
-			selectedScene_ = scenes_.front().get();
+			selectedScene_ = scenes_.back().get();
 
 			// Set current scene name
 			selectedScene_->setSceneName(defaultSceneName);
@@ -335,7 +358,7 @@ namespace Editor
 			if (!savedSceneFile.is_open())
 			{
 				// File doesn't exist, create a new scene
-				std::cout << "[EnoSceneTree] No saved scene found, creating new scene" << std::endl;
+				std::cout << "[Eno_Editor] No saved scene found, creating new scene" << std::endl;
 				createEmptyScene(ASSET_SCENE_PATH);
 			}
 			else
@@ -351,7 +374,7 @@ namespace Editor
 				// If save scene file is empty, create a new scene
 				if (savefile.empty())
 				{
-					std::cout << "[EnoSceneTree] LastSavedScene.txt is empty, creating new scene..." << std::endl;
+					std::cout << "[Eno_Editor] LastSavedScene.txt is empty, creating new scene..." << std::endl;
 					createEmptyScene(ASSET_SCENE_PATH);
 				}
 				else
@@ -362,14 +385,16 @@ namespace Editor
 					{
 						tree_.load(fullScenePath);
 
-						// Create and append a new scene
-						std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
-						scenes_.push_back(std::move(scene));
+						// Find scene index in scenes_ list
+						auto index = std::find_if(scenes_.begin(), scenes_.end(), [&](const std::unique_ptr<EnoScene>& scene) {return savefile == scene->getSceneName(); });
+						if (index != scenes_.end())
+						{
+							// Set selected scene pointer to the index in the scenes vector
+							selectedScene_ = index->get();
+							// Set current scene name
+							std::cout << "[Eno_Editor] Loaded scene name: " << selectedScene_->getSceneName() << std::endl;
 
-						selectedScene_ = scenes_.front().get();
-
-						// Set current scene name
-						selectedScene_->setSceneName(savefile);
+						}
 
 						updateLastSavedScene();
 					}
@@ -406,6 +431,11 @@ namespace Editor
 		EnoScene& getCurrentScene()
 		{
 			return *selectedScene_;
+		}
+
+		std::vector<std::unique_ptr<EnoScene>>& getScenes()
+		{
+			return scenes_;
 		}
 
 		Script::EnoScriptManager& getScriptManager() {

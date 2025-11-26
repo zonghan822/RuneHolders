@@ -928,7 +928,7 @@ void GameApplication::updateEntities() {
 					{
 
 						std::cout << "CLICK!" << std::endl;
-						engine_.getEnoEditor().getCurrentScene().stop();
+						b.executeSignal(ECSComponents::signalType::onClick, engine_);
 					}
 					
 				}

@@ -59,3 +59,9 @@
 [2025-11-25 20:41:31] Failed to find this entity in the Entity Map!
 [2025-11-25 20:42:06] Failed to find this entity in the Entity Map!
 [2025-11-25 20:43:00] Failed to find this entity in the Entity Map!
+[2025-11-26 18:12:49] Failed to find this entity in the Entity Map!
+[2025-11-27 07:20:51] Failed to find this entity in the Entity Map!
+[2025-11-27 07:24:00] Failed to find this entity in the Entity Map!
+[2025-11-27 07:24:20] Failed to find this entity in the Entity Map!
+[2025-11-27 07:24:57] Failed to find this entity in the Entity Map!
+[2025-11-27 07:26:26] Failed to find this entity in the Entity Map!

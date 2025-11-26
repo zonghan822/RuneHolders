@@ -2115,6 +2115,139 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 	}
 
+
+	// --------- Button Component ----------
+	bool hasButtonComponent = entity.has<ECSComponents::ButtonComponent>(entMng);
+	if (hasButtonComponent)
+	{
+		ImGui::SeparatorText("Button Component");
+		ImGui::Separator();
+		auto& button = entity.get<ECSComponents::ButtonComponent>(entMng);
+		auto& signals = button.getSignals();
+		// Track signals to delete
+		int signalToDelete = -1;
+		size_t signalCount = button.signalsSize();
+
+		for (size_t i = 0; i < signalCount; i++)
+		{
+			ImGui::PushID(static_cast<int>(i));  // Unique ID for each signal
+
+			// Signal container
+			ImGui::BeginGroup();
+
+			// Signal number header
+			ImGui::Text("Signal #%zu", i + 1);
+			ImGui::SameLine();
+
+			// Delete button (aligned to right)
+			float contentWidth = ImGui::GetContentRegionAvail().x;
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + contentWidth - 60);
+			if (ImGui::Button("Delete", ImVec2(60, 0))) 
+			{
+				signalToDelete = static_cast<int>(i);
+					
+				ImGui::EndGroup();
+				ImGui::PopID();
+				break;
+				//goto process_deletion;
+			}
+
+			// Signal type dropdown
+			// List of signal types for combo
+			const char* signalTypes[] = { "Select..", "On Click", "On Hover", "On Press" };
+			int currentSignalType = static_cast<int>(signals[i].first);
+
+			ImGui::SetNextItemWidth(100);
+			if (ImGui::Combo("##SignalType", &currentSignalType, signalTypes, IM_ARRAYSIZE(signalTypes))) 
+			{
+				// Update button signal type
+				signals[i].first = static_cast<ECSComponents::signalType>(currentSignalType);
+				//std::cout << "[Imgui] signal type:" << signals[i].first << std::endl;
+			}
+
+			ImGui::SameLine();
+
+			// Function type dropdown
+			// List of function types for combo (for now just 1)
+			const char* functionTypes[] = { "Select..", "Load Scene" };
+			int currentFunctionType = static_cast<int>(signals[i].second);
+
+			ImGui::SetNextItemWidth(120);
+			if (ImGui::Combo("##FunctionType", &currentFunctionType, functionTypes, IM_ARRAYSIZE(functionTypes))) 
+			{
+				// Update button function type
+				signals[i].second = static_cast<ECSComponents::functionType>(currentFunctionType);
+				//std::cout << "[Imgui] function type:" << signals[i].second << std::endl;
+			}
+
+			// Input parameter drop down depending on function type
+			ImGui::SetNextItemWidth(100);
+			switch (signals[i].second)
+			{
+			case ECSComponents::functionType::loadScene:
+				// Get list of available scenes
+				auto& sceneList = engine_.getEnoEditor().getScenes();
+
+				// Placeholder for string data
+				std::vector<std::string> sceneStrings;
+				// Convert to const char* array
+				std::vector<const char*> sceneNames;
+				sceneNames.push_back("Select..");
+				for (const auto& scene : sceneList) {
+					//std::cout << "[Imgui] scene name:" << scene->getSceneName() << std::endl;
+					sceneStrings.push_back(scene->getSceneName());
+					//std::cout << "[Imgui] scene name in sceneNames:" << sceneNames.back() << std::endl;
+				}
+
+				// Populate the char vector for imgui usage
+				for (const auto& str : sceneStrings) {
+					sceneNames.push_back(str.c_str());
+				}
+
+				// Find current selection
+				int selectedIndex = 0;
+				for (size_t i = 0; i < sceneNames.size(); i++) {
+					if (sceneNames[i] == button.getTargetScene()) {
+						selectedIndex = static_cast<int>(i);
+						break;
+					}
+				}
+
+				ImGui::SetNextItemWidth(200);
+				if (ImGui::Combo("##SceneParam", &selectedIndex, sceneNames.data(), sceneNames.size())) {
+					button.setTargetScene(sceneNames[selectedIndex]);
+				}
+
+				//std::cout << "[Imgui] Scene list size:" << sceneList.size() << std::endl;
+				break;
+			}
+
+			// End group
+			ImGui::EndGroup();
+			ImGui::PopID();
+		}
+
+		// Delete signal if requested 
+		if (signalToDelete >= 0)
+		{
+			
+			button.deleteSignal(static_cast<size_t>(signalToDelete));
+
+		}
+
+
+		ImGui::Spacing();
+
+		// Add Signal button
+		if (ImGui::Button("Add Signal", ImVec2(150, 0)))
+		{
+			// Add new empty signal
+			button.addSignal();  
+		}
+
+	}
+
+
 	ImGui::End();
 }
 
