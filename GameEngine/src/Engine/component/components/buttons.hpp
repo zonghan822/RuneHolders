@@ -24,7 +24,7 @@ namespace ECSComponents {
 		std::string getName() const;
 
 		// Onclick function
-		bool onClick(Input::EnoInputManager& input, const ECSComponents::VisibilityComponent& v, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d);
+		bool onClick(Math::eVec2<float> mousePos, const ECSComponents::VisibilityComponent& v, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d);
 
 		template <typename Visitor>
 		void reflect(Visitor&& l)

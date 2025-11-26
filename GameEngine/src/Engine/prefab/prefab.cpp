@@ -159,8 +159,9 @@ ECS::Entity instantiatePrefab(const PrefabData& prefab, ECS::EntityManager& entM
         );
     }
 
+    std::cout << "[Legacy] Prefab name :" << prefab.name << std::endl;
     // Button component
-    if (prefab.name == "ExitButton")
+    if (prefab.name == "EXIT_BUTTON")
     {
         ECSComponents::VisibilityComponent visibility;
         visibility.visible = true;
