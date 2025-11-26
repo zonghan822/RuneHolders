@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration file for the audio manager
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once
@@ -339,6 +339,13 @@ namespace Audio
 			ch->setPitch(parameters.pitch);
 			ch->setPan(parameters.pan);
 		}
+
+		/*============================================================================================
+		 * \brief						Apply loop settings from AudioComponent to FMOD sound
+		 * \param[in]					Pointer to FMOD::Sound
+		 * \param[in]					AudioComponent with loop settings
+		*//*========================================================================================*/
+		void applyLoopSettings(FMOD::Sound* sound, ECSComponents::AudioComponent& audioComp);
 
 		/*============================================================================================
 		 * \brief						Helper for modifying a reverb DSP

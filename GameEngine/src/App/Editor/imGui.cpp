@@ -231,7 +231,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displayAudioTab(engine_);
 	ImGui::End();
 
-	// Edit tab 
+
+	// Edit tab
 	ImGui::Begin("Edit", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayEditTab(engine_, sceneTree);
 	displayAllEntitiesTab(engine_, sceneTree, undoManager);
@@ -256,13 +257,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	ImGui::Begin("Assets Browser", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayAssetTab(engine_);
 	ImGui::End();
-
-	// Asset Presets
-	//ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_NoCollapse);
-	//assetPresetsTab(engine_);
-	//ImGui::End();
-
-
 
 	// FPS
 	ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoCollapse);
@@ -1774,32 +1768,46 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 		{
 			ImGui::TextDisabled("Invalid entity selected");
 		}
-		else if (ImGui::Button("Attach SFX to Selected Entity"))
+		else
 		{
-			ECS::Entity selectedEntity{ selectedEntityID };
+			// Channel Group Selection
+			static int selectedChannelGroup = 1; // 0=Master, 1=SFX, 2=BGM
+			const char* channelGroups[] = { "Master", "SFX", "BGM" };
 
-			// Add component if missing
-			if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
-				selectedEntity.add<ECSComponents::AudioComponent>(engine_.getEntityManager());
-				std::cout << "[Audio] Added AudioComponent.\n";
+			ImGui::Text("Channel Group:");
+			ImGui::Combo("##ChannelGroup", &selectedChannelGroup, channelGroups, IM_ARRAYSIZE(channelGroups));
+
+			if (ImGui::Button("Attach Audio to Selected Entity"))
+			{
+				ECS::Entity selectedEntity{ selectedEntityID };
+
+				// Add component if missing
+				if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
+					selectedEntity.add<ECSComponents::AudioComponent>(engine_.getEntityManager());
+					std::cout << "[Audio] Added AudioComponent.\n";
+				}
+
+				// Fill it
+				ECSComponents::AudioComponent& ac = selectedEntity.get<ECSComponents::AudioComponent>(engine_.getEntityManager());
+
+				strncpy(ac.audioMod_.name_, selectedName.c_str(), sizeof(ac.audioMod_.name_) - 1);
+				strncpy(ac.audioMod_.chGroup_, channelGroups[selectedChannelGroup], sizeof(ac.audioMod_.chGroup_) - 1);
+
+				ac.audioMod_.sound_ = selectedSound;
+
+				std::cout << "[Audio] Attached '" << selectedName
+					<< "' to entity " << selectedEntityID
+					<< " with channel group '" << channelGroups[selectedChannelGroup] << "'\n";
 			}
-
-			// Fill it
-			ECSComponents::AudioComponent& ac = selectedEntity.get<ECSComponents::AudioComponent>(engine_.getEntityManager());
-
-			strncpy(ac.audioMod_.name_, selectedName.c_str(), sizeof(ac.audioMod_.name_) - 1);
-			strncpy(ac.audioMod_.chGroup_, "SFX", sizeof(ac.audioMod_.chGroup_) - 1);
-
-			ac.audioMod_.sound_ = selectedSound;
-
-			std::cout << "[Audio] Attached SFX '" << selectedName
-				<< "' to entity " << selectedEntityID << "\n";
 		}
 
 
 	}
 
 }
+
+
+
 
 void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager, Editor::EnoSceneTree& sceneTree)
 {
@@ -2163,18 +2171,80 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	{
 		auto& ac = entity.get<ECSComponents::AudioComponent>(entMng);
 
-		// Godot Phony Sliders start
-		ImGui::SeparatorText("AudioStreamPlayer2D");
-		ImGui::Text("=== AudioStreamPlayer2D ===");
+		// Main Audio Section
+		ImGui::SeparatorText("Audio Component");
 
-		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-		if (ImGui::TreeNodeEx("Stream", flags))
+		// Audio Info with playback indicator
+		ImGui::Text("Sound: %s", strlen(ac.audioMod_.name_) > 0 ? ac.audioMod_.name_ : "(No audio attached)");
+
+		// Playback state indicator
+		if (ac.isPlaying_) {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[PLAYING]");
+		}
+		else if (ac.isAutoplay_) {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "[AUTOPLAY]");
+		}
+
+		// Channel Group Selection
+		ImGui::Text("Channel Group: %s", ac.audioMod_.chGroup_);
+		const char* channelGroupOptions[] = { "Master", "SFX", "BGM" };
+		static int currentChannelGroup = 1;
+
+		// Find current channel group index
+		for (int i = 0; i < IM_ARRAYSIZE(channelGroupOptions); i++) {
+			if (strcmp(ac.audioMod_.chGroup_, channelGroupOptions[i]) == 0) {
+				currentChannelGroup = i;
+				break;
+			}
+		}
+
+		if (ImGui::Combo("##ChangeChannelGroup", &currentChannelGroup, channelGroupOptions, IM_ARRAYSIZE(channelGroupOptions))) {
+			strncpy(ac.audioMod_.chGroup_, channelGroupOptions[currentChannelGroup], sizeof(ac.audioMod_.chGroup_) - 1);
+			ac.audioMod_.chGroup_[sizeof(ac.audioMod_.chGroup_) - 1] = '\0';
+		}
+
+		ImGui::Spacing();
+		ImGui::Separator();
+
+		// Playback Controls
+		if (ImGui::TreeNodeEx("Playback Controls", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			ImGui::Separator();
+			// Play/Pause/Stop buttons in a row
+			if (ImGui::Button("Play", ImVec2(80, 0))) {
+				// If audio is already playing, stop it first to restart from beginning
+				if (ac.isPlaying_) {
+					engine_.getAudioManager().stopChannelGroup(ac.audioMod_.chGroup_);
+					ac.isPlaying_ = false;
+				}
+
+				// Use the proper play function that applies volume/pitch/pan from the component
+				engine_.getAudioManager().play(ac);
+				std::cout << "[Audio] Playing: " << ac.audioMod_.name_
+					<< " (Vol:" << ac.volume_ << ", Pitch:" << ac.pitchScale_ << ", Pan:" << ac.panScale_ << ")\n";
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Stop", ImVec2(80, 0))) {
+				// Stop the channel group associated with this entity's audio
+				engine_.getAudioManager().stopChannelGroup(ac.audioMod_.chGroup_);
+				ac.isPlaying_ = false;
+				std::cout << "[Audio] Stopped: " << ac.audioMod_.name_ << "\n";
+			}
+
+			ImGui::Checkbox("Autoplay on Start", &ac.isAutoplay_);
+			ImGui::TreePop();
+		}
+
+		ImGui::Separator();
+
+		// Stream Properties
+		if (ImGui::TreeNodeEx("Stream Properties", ImGuiTreeNodeFlags_DefaultOpen))
+		{
 			ImGui::Text("Format:");
 			ImGui::SameLine(160);
-			ImGui::TextDisabled("16-Bit");								//dummy value
-
+			ImGui::TextDisabled("16-Bit");
 
 			int loopMode = static_cast<int>(ac.audioMod_.loop_);
 			ImGui::Text("Loop Mode:");
@@ -2192,7 +2262,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				ac.audioMod_.loopStart_ = static_cast<float>(loopBegin);
 			}
 
-
 			int loopEnd = static_cast<int>(ac.audioMod_.loopEnd_);
 			ImGui::Text("Loop End:");
 			ImGui::SameLine(160);
@@ -2203,81 +2272,134 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 			ImGui::Text("Mix Rate:");
 			ImGui::SameLine(160);
-			ImGui::TextDisabled("44100");								//dummy value
+			ImGui::TextDisabled("44100");
 
 			ImGui::Text("Stereo:");
 			ImGui::SameLine(160);
-			bool stereoToggle = true;
-			ImGui::Checkbox("##StereoChk", &stereoToggle);			    //dummy value
+			static bool stereoToggle = true;
+			ImGui::Checkbox("##StereoChk", &stereoToggle);
 
-			ImGui::Separator();
+			ImGui::TreePop();
+		}
 
-			ImGui::Text("Volume dB:");
+		ImGui::Separator();
+
+		// Basic Audio Parameters
+		if (ImGui::TreeNodeEx("Audio Parameters", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Text("Volume:");
 			ImGui::SameLine(160);
 			float tmpVol = static_cast<float>(ac.volume_);
-			ImGui::SliderFloat("##VolDb", &tmpVol, 0.f, 100.f);
-			ac.volume_ = static_cast<double>(tmpVol);
+			if (ImGui::SliderFloat("##Volume", &tmpVol, 0.f, 100.f, "%.1f")) {
+				ac.volume_ = static_cast<double>(tmpVol);
+			}
 
 			ImGui::Text("Pitch Scale:");
 			ImGui::SameLine(160);
 			float tmppitch = static_cast<float>(ac.pitchScale_);
-			ImGui::SliderFloat("##PitchScale", &tmppitch, 0.1f, 5.f);
-			ac.pitchScale_ = static_cast<double>(tmppitch);
+			if (ImGui::SliderFloat("##PitchScale", &tmppitch, 0.1f, 5.f, "%.2f")) {
+				ac.pitchScale_ = static_cast<double>(tmppitch);
+			}
 
-			ImGui::Text("Pan Scale:");
+			ImGui::Text("Pan:");
 			ImGui::SameLine(160);
 			float pan = static_cast<float>(ac.panScale_);
-			if (ImGui::SliderFloat("Pan", &pan, -1.f, 1.f))
+			if (ImGui::SliderFloat("##Pan", &pan, -1.f, 1.f, "%.2f"))
 			{
 				ac.panScale_ = static_cast<double>(pan);
 			}
 
 			ImGui::TreePop();
 		}
+
 		ImGui::Separator();
 
-		// Godot Phony Sliders end
-
-		ImGui::SeparatorText("Audio");
-		ImGui::Text("Attached SFX: %s", ac.audioMod_.name_);
-		if (ImGui::Button("Play entity SFX now"))
+		// Advanced Effects - Reverb (now per-entity!)
+		if (ImGui::TreeNodeEx("Reverb Effects", ImGuiTreeNodeFlags_None))
 		{
-			std::cout << "[Inspector] Checking entity " << entity.id()
-				<< " has AudioComponent = "
-				<< entity.has<ECSComponents::AudioComponent>(entMng)
-				<< "\n";
+			ImGui::Checkbox("Enable Reverb", &ac.enableReverb_);
 
-			engine_.getEventBus().publish(Audio::PlayInstant{
-				"SFX",
-				ac.audioMod_.name_
-				});
+			if (ac.enableReverb_) {
+				ImGui::Text("Wet Level:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##ReverbWet", &ac.reverbWet_, 0.0f, 1.0f, "%.2f");
 
-			std::cout << "[Audio] PLAY from entity "
-				<< entity.id() << ": " << ac.audioMod_.name_ << "\n";
+				ImGui::Text("Dry Level:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##ReverbDry", &ac.reverbDry_, 0.0f, 1.0f, "%.2f");
+
+				ImGui::Text("Decay Time:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##ReverbDecay", &ac.reverbDecay_, 100.0f, 5000.0f, "%.0f ms");
+
+				ImGui::TextDisabled("Note: Reverb effects are applied via Audio Manager");
+			}
+
+			ImGui::TreePop();
 		}
 
-		if (ImGui::Button("Print Audio Component"))
+		ImGui::Separator();
+
+		// Advanced Effects - EQ (now per-entity!)
+		if (ImGui::TreeNodeEx("EQ Effects", ImGuiTreeNodeFlags_None))
 		{
-			std::cout << "===== AUDIO COMPONENT DEBUG =====\n";
-			std::cout << "Entity:		" << entity.id() << "\n";
-			std::cout << "Volume:       " << ac.volume_ << "\n";
-			std::cout << "Pitch Scale:  " << ac.pitchScale_ << "\n";
-			std::cout << "Pan Scale:    " << ac.panScale_ << "\n";
-			std::cout << "Autoplay:     " << (ac.isAutoplay_ ? "true" : "false") << "\n";
-			std::cout << "Is Playing:   " << (ac.isPlaying_ ? "true" : "false") << "\n";
+			ImGui::Checkbox("Enable 3-Band EQ", &ac.enableEQ_);
 
-			std::cout << "-- MODULE --\n";
-			std::cout << "Name:         " << ac.audioMod_.name_ << "\n";
-			std::cout << "Path:         " << ac.audioMod_.path_ << "\n";
-			std::cout << "ChannelGroup: " << ac.audioMod_.chGroup_ << "\n";
+			if (ac.enableEQ_) {
+				ImGui::Text("Low Gain:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##EQLow", &ac.eqLowGain_, -30.0f, 30.0f, "%.1f dB");
 
-			std::cout << "Loop Mode:    " << static_cast<int>(ac.audioMod_.loop_) << "\n";
-			std::cout << "Loop Start:   " << ac.audioMod_.loopStart_ << "\n";
-			std::cout << "Loop End:     " << ac.audioMod_.loopEnd_ << "\n";
+				ImGui::Text("Mid Gain:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##EQMid", &ac.eqMidGain_, -30.0f, 30.0f, "%.1f dB");
 
-			std::cout << "Sound Ptr:    " << ac.audioMod_.sound_ << "\n";
+				ImGui::Text("High Gain:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##EQHigh", &ac.eqHighGain_, -30.0f, 30.0f, "%.1f dB");
 
-			std::cout << "=================================\n";
+				ImGui::TextDisabled("Note: EQ effects are applied via Audio Manager");
+			}
+
+			ImGui::TreePop();
+		}
+
+		ImGui::Separator();
+
+		// Debug Section (collapsed by default)
+		if (ImGui::TreeNodeEx("Debug Info", ImGuiTreeNodeFlags_None))
+		{
+			if (ImGui::Button("Print Audio Component to Console"))
+			{
+				std::cout << "===== AUDIO COMPONENT DEBUG =====\n";
+				std::cout << "Entity:       " << entity.id() << "\n";
+				std::cout << "Volume:       " << ac.volume_ << "\n";
+				std::cout << "Pitch Scale:  " << ac.pitchScale_ << "\n";
+				std::cout << "Pan Scale:    " << ac.panScale_ << "\n";
+				std::cout << "Autoplay:     " << (ac.isAutoplay_ ? "true" : "false") << "\n";
+				std::cout << "Is Playing:   " << (ac.isPlaying_ ? "true" : "false") << "\n";
+				std::cout << "-- MODULE --\n";
+				std::cout << "Name:         " << ac.audioMod_.name_ << "\n";
+				std::cout << "Path:         " << ac.audioMod_.path_ << "\n";
+				std::cout << "ChannelGroup: " << ac.audioMod_.chGroup_ << "\n";
+				std::cout << "Loop Mode:    " << static_cast<int>(ac.audioMod_.loop_) << "\n";
+				std::cout << "Loop Start:   " << ac.audioMod_.loopStart_ << "\n";
+				std::cout << "Loop End:     " << ac.audioMod_.loopEnd_ << "\n";
+				std::cout << "Sound Ptr:    " << ac.audioMod_.sound_ << "\n";
+				std::cout << "-- REVERB --\n";
+				std::cout << "Enabled:      " << (ac.enableReverb_ ? "true" : "false") << "\n";
+				std::cout << "Wet:          " << ac.reverbWet_ << "\n";
+				std::cout << "Dry:          " << ac.reverbDry_ << "\n";
+				std::cout << "Decay:        " << ac.reverbDecay_ << " ms\n";
+				std::cout << "-- EQ --\n";
+				std::cout << "Enabled:      " << (ac.enableEQ_ ? "true" : "false") << "\n";
+				std::cout << "Low Gain:     " << ac.eqLowGain_ << " dB\n";
+				std::cout << "Mid Gain:     " << ac.eqMidGain_ << " dB\n";
+				std::cout << "High Gain:    " << ac.eqHighGain_ << " dB\n";
+				std::cout << "=================================\n";
+			}
+
+			ImGui::TreePop();
 		}
 
 	}
@@ -2386,6 +2508,14 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
+	// Check if the selected entity has an AnimationControllerComponent
+	if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng))
+	{
+		ImGui::TextWrapped("The currently selected entity does not have an Animation Controller component.");
+		ImGui::End();
+		return;
+	}
+
 	//================================= IDLE ANIMATION ===================================
 	ImGui::Text("IDLE");
 
@@ -2487,6 +2617,13 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	ImGui::Spacing();
 
 	// ================== APPLY BUTTON FOR IDLE ANIMATION ==================
+	// Disable button if no texture is selected
+	bool idleHasTexture = idleTexData.texture != nullptr && !idleSelected.empty();
+	if (!idleHasTexture)
+	{
+		ImGui::BeginDisabled();
+	}
+
 	if (ImGui::Button("APPLY IDLE"))
 	{
 		ECS::Entity e{ selectedEntityID };
@@ -2497,9 +2634,22 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
 
+		// Safety check: Ensure texture is valid before proceeding
+		if (!idleTexData.texture)
+		{
+			ImGui::OpenPopup("Error##IdleNoTexture");
+			if (!idleHasTexture) ImGui::EndDisabled();
+			return;
+		}
+
+		//drawComp.texture = idleTexData.texture;
+		//drawComp.color = Graphics::Color::White;
 		drawComp.setTexture(idleTexData.texture, idleSelected);
 		drawComp.color = Graphics::Color::White;
 
+
+		//std::strncpy(drawComp.texturePath, ctrl->currentAnimation_->.c_str(), sizeof(drawComp.texturePath) - 1);
+		//drawComp.texturePath[sizeof(drawComp.texturePath) - 1] = '\0';
 
 		drawComp.texID = 0;
 
@@ -2534,7 +2684,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			//const auto& frame = idleAnim.getCurrentFrame();
 			//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
 			//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
-		
+
 
 
 		idleAnim.setLooping(true);
@@ -2549,6 +2699,24 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		animComp.frameDuration = 0.1f;
 		animComp.looping = true;
 		std::strncpy(animComp.currentAnimationName, "idle", sizeof(animComp.currentAnimationName) - 1);
+	}
+
+	if (!idleHasTexture)
+	{
+		ImGui::EndDisabled();
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("Please select a texture first");
+		}
+	}
+
+	// Error popup for missing texture
+	if (ImGui::BeginPopupModal("Error##IdleNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Error: No texture selected!");
+		ImGui::Text("Please drag and drop a texture onto the preview box first.");
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
 	}
 
 
@@ -2645,6 +2813,13 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	//  ================== APPLY BUTTON FOR WALK ANIMATION ==================
+	// Disable button if no texture is selected
+	bool walkHasTexture = walkTexData.texture != nullptr && !walkSelected.empty();
+	if (!walkHasTexture)
+	{
+		ImGui::BeginDisabled();
+	}
+
 	if (ImGui::Button("APPLY WALK"))
 	{
 		ECS::Entity e{ selectedEntityID };
@@ -2655,6 +2830,16 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
 
+		
+		// Safety check: Ensure texture is valid before proceeding
+		if (!walkTexData.texture)
+		{
+			ImGui::OpenPopup("Error##WalkNoTexture");
+			if (!walkHasTexture) ImGui::EndDisabled();
+			return;
+		}
+
+		//drawComp.texture = walkTexData.texture;
 		drawComp.setTexture(walkTexData.texture, walkSelected);
 		drawComp.color = Graphics::Color::White;
 
@@ -2705,6 +2890,24 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		animComp.frameDuration = 0.1f;
 		animComp.looping = true;
 		std::strncpy(animComp.currentAnimationName, "walk", sizeof(animComp.currentAnimationName) - 1);
+	}
+
+	if (!walkHasTexture)
+	{
+		ImGui::EndDisabled();
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("Please select a texture first");
+		}
+	}
+
+	// Error popup for missing texture
+	if (ImGui::BeginPopupModal("Error##WalkNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Error: No texture selected!");
+		ImGui::Text("Please drag and drop a texture onto the preview box first.");
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
 	}
 
 
@@ -2803,6 +3006,13 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 
+	// Disable button if no texture is selected
+	bool attackHasTexture = attackTexData.texture != nullptr && !attackSelected.empty();
+	if (!attackHasTexture)
+	{
+		ImGui::BeginDisabled();
+	}
+
 	if (ImGui::Button("APPLY ATTACK"))
 	{
 		ECS::Entity e{ selectedEntityID };
@@ -2813,6 +3023,15 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
 
+		// Safety check: Ensure texture is valid before proceeding
+		if (!attackTexData.texture)
+		{
+			ImGui::OpenPopup("Error##AttackNoTexture");
+			if (!attackHasTexture) ImGui::EndDisabled();
+			return;
+		}
+
+		//drawComp.texture = attackTexData.texture;
 		drawComp.setTexture(attackTexData.texture, attackSelected);
 		drawComp.color = Graphics::Color::White;
 
@@ -2863,6 +3082,25 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		animComp.looping = true;
 		std::strncpy(animComp.currentAnimationName, "attack", sizeof(animComp.currentAnimationName) - 1);
 	}
+
+	if (!attackHasTexture)
+	{
+		ImGui::EndDisabled();
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("Please select a texture first");
+		}
+	}
+
+	// Error popup for missing texture
+	if (ImGui::BeginPopupModal("Error##AttackNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Error: No texture selected!");
+		ImGui::Text("Please drag and drop a texture onto the preview box first.");
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+
 	ImGui::Separator();
 	ImGui::End();
 }
@@ -3392,18 +3630,110 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			// Position the image with offset (centered with letterboxing)
 			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
 
-			// Display the editor framebuffer texture scaled to fit                           
-			ImGui::Image(                                                                     
-				(void*)(intptr_t)fb->getTextureID(),                                      
-				displaySize,                                                              
-				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)                   
-				ImVec2(1, 0)                                                              
-			);                                                                                
-			                        
+			// Display the editor framebuffer texture scaled to fit
+			ImGui::Image(
+				(void*)(intptr_t)fb->getTextureID(),
+				displaySize,
+				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
+				ImVec2(1, 0)
+			);
+
 			// Capture the editor view min/max coordinates and store them in GameApplication
 			ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
 			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
 			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
+
+			// ========== DRAG-AND-DROP TEXTURE FROM ASSET BROWSER ==========
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
+				{
+					std::string textureName = (const char*)payload->Data;
+					Resources::EnoLoader& loader = engine_.getResourceLoader();
+
+					// Get the texture from the loader
+					auto texture = loader.getTexture(textureName);
+					if (texture && texture->isValid())
+					{
+						// Get mouse position and convert to world coordinates
+						ImVec2 mousePos = ImGui::GetMousePos();
+						Math::eVec2<float> worldPos = Graphics::screenToWorld(
+							{ mousePos.x, mousePos.y },
+							g_game->getEditorViewMin(),
+							g_game->getEditorViewMax(),
+							editorWidth,
+							editorHeight,
+							g_game->getEditorCameraX(),
+							g_game->getEditorCameraY()
+						);
+
+						// Create entity at drop location
+						ECSComponents::TransformComponent transform;
+						transform.pos = worldPos;
+						transform.rot = Math::eVec2<float>(0.0f, 0.0f);
+						transform.scale = Math::eVec2<float>(1.0f, 1.0f);
+
+						ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
+
+						// Add render component with texture
+						ECSComponents::RenderComponent render;
+						render.texture = texture;
+						render.width = static_cast<float>(texture->getWidth());
+						render.height = static_cast<float>(texture->getHeight());
+						strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
+						render.texturePath[sizeof(render.texturePath) - 1] = '\0';
+						render.color = Graphics::Color::White;
+						newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
+
+						// Add name component
+						ECSComponents::NameComponent nameComp;
+						strncpy_s(nameComp.name, textureName.c_str(), sizeof(nameComp.name) - 1);
+						nameComp.name[sizeof(nameComp.name) - 1] = '\0';
+						newEntity.add<ECSComponents::NameComponent>(entityManager, nameComp);
+
+						// Create animation controller
+						uint32_t controllerID = engine_.getAnimationRegistry().createController();
+						newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
+
+						// Get the controller and add a simple 1x1 animation
+						Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(controllerID);
+						if (ctrl)
+						{
+							// Create a single-frame animation (1x1 grid, UV 0,0 to 1,1)
+							Animation::EnoAnimation singleFrameAnim = Animation::createSpriteSheetAnimation(
+								texture->getWidth(),   // frame width = full texture width
+								texture->getHeight(),  // frame height = full texture height
+								texture->getWidth(),   // sheet width
+								texture->getHeight(),  // sheet height
+								0,                     // start frame
+								1,                     // frame count (single frame)
+								0.1f                   // frame duration (doesn't matter for single frame)
+							);
+
+							ctrl->addAnimation("idle", singleFrameAnim);
+							ctrl->setAnimation("idle");
+						}
+
+						// Add to scene tree
+						Node* node = sceneTree.createFromEntity(newEntity, nullptr);
+						node->name_ = textureName;
+
+						// Record creation for undo/redo
+						auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
+							sceneTree,
+							entityManager,
+							newEntity
+						);
+						undoManager.executeCommand(std::move(createCmd));
+
+						std::cout << "[Drag-Drop] Created entity '" << textureName
+								  << "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
+
+						if (g_game) g_game->markEntitiesDirty();
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
 			// ========== ALL EDITOR INTERACTIONS (moved from Game View) ==========
 
 			// Helper function to convert screen coordinates to world coordinates (accounting for camera)                                                                                               

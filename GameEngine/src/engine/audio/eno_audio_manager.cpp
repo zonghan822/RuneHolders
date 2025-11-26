@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Definition file for the audio manager
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #include "eno_audio_manager.hpp"
@@ -142,7 +142,12 @@ namespace Audio
 	*//*========================================================================================*/
 	void EnoAudioManager::play(ECSComponents::AudioComponent& audioComp)
 	{
-		audioComp.isPlaying_ = true;
+		// CRITICAL FIX: Don't restart audio that's already playing
+		// This prevents the game loop from constantly restarting audio every frame
+		if (audioComp.isPlaying_)
+		{
+			return; // Audio already playing, nothing to do
+		}
 
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
@@ -161,19 +166,33 @@ namespace Audio
 			chGroup = it->second;
 		}
 
-		// Prime channel
+		// Apply loop settings to the sound before playing
+		applyLoopSettings(sound, audioComp);
+
+		// Play the sound (channel is created here)
 		FMOD::Channel* channel{ nullptr };
-		channels_.push_back(channel);
-
-		// Set audio params
-		modifyBasic(channel, createSP(audioComp));
-
-		// Play
 		system->playSound(
 			audioComp.audioMod_.sound_,
 			chGroup,
-			audioComp.isAutoplay_,
+			true,  // Start paused so we can apply settings first
 			&channel);
+
+		// Now that channel exists, apply volume/pitch/pan
+		if (channel)
+		{
+			modifyBasic(channel, createSP(audioComp));
+
+			// CRITICAL FIX: Always unpause when play() is called
+			// The play() function is meant to START playback
+			// isAutoplay_ should only control scene-start behavior, not manual play
+			channel->setPaused(false);
+
+			// Store the channel for later use
+			channels_.push_back(channel);
+
+			// Mark as playing AFTER successfully starting playback
+			audioComp.isPlaying_ = true;
+		}
 
 		// Emit signals
 		auto signalIt = audioComp.signals.find("started");
@@ -344,9 +363,21 @@ namespace Audio
 	SoundParameters EnoAudioManager::createSP(ECSComponents::AudioComponent& ac)
 	{
 		SoundParameters sp;
-		sp.volume = ac.volume_;
-		sp.pitch = ac.pitchScale_;
-		sp.pan = ac.panScale_;
+		// Convert volume from 0-100 range to 0.0-1.0 range for FMOD
+		sp.volume = static_cast<float>(ac.volume_ / 100.0);
+		// Clamp volume to valid range
+		if (sp.volume < 0.0f) sp.volume = 0.0f;
+		if (sp.volume > 1.0f) sp.volume = 1.0f;
+
+		// Pitch scale - ensure it's at least 0.1 to avoid silent/broken audio
+		sp.pitch = static_cast<float>(ac.pitchScale_);
+		if (sp.pitch < 0.1f) sp.pitch = 0.1f;
+		if (sp.pitch > 5.0f) sp.pitch = 5.0f;
+
+		// Pan - clamp to -1.0 to 1.0
+		sp.pan = static_cast<float>(ac.panScale_);
+		if (sp.pan < -1.0f) sp.pan = -1.0f;
+		if (sp.pan > 1.0f) sp.pan = 1.0f;
 
 		return sp;
 	}
@@ -625,6 +656,74 @@ namespace Audio
 		FMOD::Channel* channel = playByChannel(sound->second, true);
 		scheduleGroupFade("SFX", FADE_IN, FADE_OUT, getSoundDurSec(sound->second));
 		setPauseChannel(channel, false);
+	}
+
+	/*============================================================================================
+	 * \brief			Apply loop settings from AudioComponent to FMOD sound
+	 * \param[in]		Pointer to FMOD::Sound
+	 * \param[in]		AudioComponent with loop settings
+	*//*========================================================================================*/
+	void EnoAudioManager::applyLoopSettings(FMOD::Sound* sound, ECSComponents::AudioComponent& audioComp)
+	{
+		if (!sound) return;
+
+		// Set loop mode based on the enum
+		switch (audioComp.audioMod_.loop_)
+		{
+		case Audio::EnoAudioModule::LoopMode::Disabled:
+			sound->setMode(FMOD_LOOP_OFF);
+			break;
+
+		case Audio::EnoAudioModule::LoopMode::Forward:
+			sound->setMode(FMOD_LOOP_NORMAL);
+			// Set loop points if specified (convert seconds to PCM samples)
+			if (audioComp.audioMod_.loopStart_ > 0.0f || audioComp.audioMod_.loopEnd_ > 0.0f)
+			{
+				// Get sound format info
+				float frequency{};
+				sound->getDefaults(&frequency, nullptr);
+
+				unsigned int startPCM = static_cast<unsigned int>(audioComp.audioMod_.loopStart_ * frequency);
+				unsigned int endPCM = 0;
+
+				if (audioComp.audioMod_.loopEnd_ > 0.0f)
+				{
+					endPCM = static_cast<unsigned int>(audioComp.audioMod_.loopEnd_ * frequency);
+				}
+				else
+				{
+					// If no end specified, loop to the end of the sound
+					sound->getLength(&endPCM, FMOD_TIMEUNIT_PCM);
+				}
+
+				sound->setLoopPoints(startPCM, FMOD_TIMEUNIT_PCM, endPCM, FMOD_TIMEUNIT_PCM);
+			}
+			break;
+
+		case Audio::EnoAudioModule::LoopMode::PingPong:
+			sound->setMode(FMOD_LOOP_BIDI); // Bidirectional loop (ping-pong)
+			// Set loop points if specified
+			if (audioComp.audioMod_.loopStart_ > 0.0f || audioComp.audioMod_.loopEnd_ > 0.0f)
+			{
+				float frequency{};
+				sound->getDefaults(&frequency, nullptr);
+
+				unsigned int startPCM = static_cast<unsigned int>(audioComp.audioMod_.loopStart_ * frequency);
+				unsigned int endPCM = 0;
+
+				if (audioComp.audioMod_.loopEnd_ > 0.0f)
+				{
+					endPCM = static_cast<unsigned int>(audioComp.audioMod_.loopEnd_ * frequency);
+				}
+				else
+				{
+					sound->getLength(&endPCM, FMOD_TIMEUNIT_PCM);
+				}
+
+				sound->setLoopPoints(startPCM, FMOD_TIMEUNIT_PCM, endPCM, FMOD_TIMEUNIT_PCM);
+			}
+			break;
+		}
 	}
 
 	/*============================================================================================
