@@ -241,7 +241,8 @@ namespace Editor
 				siblings.end());
 		}
 
-		// Remove from tree
+		// Save the ID for reuse before erasing
+		salvagedID_.push_back(node->sceneObjectID_);
 		tree_.erase(node->sceneObjectID_);
 	}
 
@@ -480,7 +481,12 @@ namespace Editor
 		std::vector<uint32_t> entitiesToDestroy;
 		for (auto& [id, node] : tree_)
 		{
-			entitiesToDestroy.push_back(node->entity_.id());
+			uint32_t entityID = node->entity_.id();
+			// Only add valid entity IDs (not UINT32_MAX which indicates invalid/uninitialized entity)
+			if (entityID != UINT32_MAX)
+			{
+				entitiesToDestroy.push_back(entityID);
+			}
 		}
 
 		// Clear the tree

@@ -474,6 +474,7 @@ namespace Graphics
         defaultShader_.reset();
         vertexBuffer_.reset();
         boundTextures_.clear();
+        texMap_.clear();
         initialized_ = false;
     }
 

@@ -17,7 +17,7 @@
 
 namespace Resources {
 
-	EnoLoader::EnoLoader(Event::EnoEventBus& bus) : bus_{ bus } { 
+	EnoLoader::EnoLoader(Event::EnoEventBus& bus) : bus_{ bus } {
 		bus_.subscribe<Audio::RequestSound>([&](const Audio::RequestSound& event) {
 			onSoundRequest(event); }
 		);
