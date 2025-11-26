@@ -142,7 +142,12 @@ namespace Audio
 	*//*========================================================================================*/
 	void EnoAudioManager::play(ECSComponents::AudioComponent& audioComp)
 	{
-		audioComp.isPlaying_ = true;
+		// CRITICAL FIX: Don't restart audio that's already playing
+		// This prevents the game loop from constantly restarting audio every frame
+		if (audioComp.isPlaying_)
+		{
+			return; // Audio already playing, nothing to do
+		}
 
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
@@ -177,13 +182,16 @@ namespace Audio
 		{
 			modifyBasic(channel, createSP(audioComp));
 
-			// Always unpause when play() is called - the function is meant to play audio!
-			// Note: isAutoplay_ only affects whether audio plays on scene start, not manual play calls
-			/*channel->setPaused(false);*/
-			channel->setPaused(!audioComp.isAutoplay_);
+			// CRITICAL FIX: Always unpause when play() is called
+			// The play() function is meant to START playback
+			// isAutoplay_ should only control scene-start behavior, not manual play
+			channel->setPaused(false);
 
 			// Store the channel for later use
 			channels_.push_back(channel);
+
+			// Mark as playing AFTER successfully starting playback
+			audioComp.isPlaying_ = true;
 		}
 
 		// Emit signals

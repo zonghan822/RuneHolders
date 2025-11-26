@@ -2183,6 +2183,12 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		{
 			// Play/Pause/Stop buttons in a row
 			if (ImGui::Button("Play", ImVec2(80, 0))) {
+				// If audio is already playing, stop it first to restart from beginning
+				if (ac.isPlaying_) {
+					engine_.getAudioManager().stopChannelGroup(ac.audioMod_.chGroup_);
+					ac.isPlaying_ = false;
+				}
+
 				// Use the proper play function that applies volume/pitch/pan from the component
 				engine_.getAudioManager().play(ac);
 				std::cout << "[Audio] Playing: " << ac.audioMod_.name_

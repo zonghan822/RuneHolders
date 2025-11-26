@@ -356,24 +356,42 @@ void GameApplication::updateGameLogic() {
 	}
 	
 	// ========= Audio =========
+	// CRITICAL FIX: Only handle autoplay on scene start, not every frame
+	// Manual play is triggered via the "Play" button in ImGui
 
-	// Get entities with the audio component
-	auto sceneTreeNodes = engine_.getEnoEditor().getSceneTree().getAllNodes();
-	for (const auto& node : sceneTreeNodes)
+	// Track scene state to detect when we enter play mode
+	static Editor::State lastSceneState = Editor::State::Stopped;
+	Editor::State currentSceneState = engine_.getEnoEditor().getCurrentScene().getState();
+
+	// Check if we just entered play mode (scene state changed to Playing)
+	bool justStartedPlaying = (lastSceneState != Editor::State::Playing &&
+	                           currentSceneState == Editor::State::Playing);
+
+	if (justStartedPlaying)
 	{
-		bool in = node->entity_.has<ECSComponents::AudioComponent>(entityManager);
-
-		// Ensure that node has audio component and is enabled
-		if (in && node->enabled_)
+		// Scene just started - handle autoplay for all audio components
+		auto sceneTreeNodes = engine_.getEnoEditor().getSceneTree().getAllNodes();
+		for (const auto& node : sceneTreeNodes)
 		{
-			//std::cout << "Enabled node " << node->name_ << "has the Audio Component!" << std::endl;
+			bool in = node->entity_.has<ECSComponents::AudioComponent>(entityManager);
 
-			auto mod = node->entity_.get<ECSComponents::AudioComponent>(entityManager);
+			// Ensure that node has audio component and is enabled
+			if (in && node->enabled_)
+			{
+				auto& audioComp = node->entity_.get<ECSComponents::AudioComponent>(entityManager);
 
-			// Play audio based on audio mod stored
-			engine_.getAudioManager().play(mod);
+				// Auto-start audio if autoplay is enabled
+				// This only happens once when scene starts, not every frame
+				if (audioComp.isAutoplay_)
+				{
+					engine_.getAudioManager().play(audioComp);
+				}
+			}
 		}
 	}
+
+	// Update last scene state for next frame
+	lastSceneState = currentSceneState;
 
 	// =========================
 
