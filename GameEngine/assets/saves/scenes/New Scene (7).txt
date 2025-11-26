@@ -1,6 +1,6 @@
 {
 
-	[EXIT_BUTTON #0]
+	[EXIT_BUTTON #1]
 	{
 		"ID": { 0 }
 		"Layer": { 0 }
@@ -8,7 +8,7 @@
 		{
 			[struct ECSComponents::NameComponent]
 			{
-				"Name": <char32> { EXIT_BUTTON #0 }
+				"Name": <char32> { EXIT_BUTTON #1 }
 			}
 
 			[struct ECSComponents::VisibilityComponent]
@@ -19,7 +19,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 445.799 | y : 393.728 }
+				"Position": <eVec2(float)> { x : 574.32 | y : 351.834 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -38,7 +38,7 @@
 			[struct ECSComponents::ButtonComponent]
 			{
 				"BtnText": <char32> { Button }
-				"TargetScene": <char32> { my little pony.txt }
+				"TargetScene": <char32> { New Scene (5).txt }
 			}
 
 			[struct ECSComponents::PrefabInstanceComponent]
