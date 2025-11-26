@@ -71,6 +71,7 @@ void MapEditor::displayMenu() {
 		// Cancel edits
 		if (ImGui::Button("Cancel")) {
 			warningBuf.clear();
+			memset(renameBuf, 0, sizeof(renameBuf));
 			ImGui::CloseCurrentPopup();
 		}
 
@@ -106,6 +107,7 @@ void MapEditor::displayMenu() {
 		// Cancel add
 		if (ImGui::Button("Cancel")) {
 			warningBuf.clear();
+			memset(newLayerBuf, 0, sizeof(newLayerBuf));
 			ImGui::CloseCurrentPopup();
 		}
 
@@ -138,14 +140,107 @@ void MapEditor::displayMenu() {
 	ImGui::Separator();
 
 	// --- Save / Load ---
-	if (ImGui::Button("Save Tilemap")) {
-		std::cout << "Saving Tilemap..." << std::endl;
-		// tilemap.saveToFile();
+	ImGui::Text("-- Save / Load Tilemap --");
+
+	if (!currentFile_.empty()) {
+		if (ImGui::Button("Save")) {
+			tilemap_.saveToFile(currentFile_);
+		}
+		ImGui::SameLine();
 	}
-	ImGui::SameLine();
-	if (ImGui::Button("Load Tilemap")) {
-		std::cout << "Loading Tilemap..." << std::endl;
-		// tilemap.loadFromFile();
+	
+	if (ImGui::Button("Save As")) {
+		ImGui::OpenPopup("map_save");
+	}
+
+	if (ImGui::Button("Load Map")) {
+		ImGui::OpenPopup("map_load");
+	}
+
+	if (ImGui::BeginPopup("map_save")) {
+		static std::string warningBuf;
+		static char mapSaveBuf[64];
+		ImGui::Text("Enter file name:");
+		ImGui::InputText("##Map_Name", mapSaveBuf, sizeof(mapSaveBuf));
+
+		if (!warningBuf.empty())
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf.c_str());
+
+		if (ImGui::Button("Save")) {
+
+			if (!mapSaveBuf || mapSaveBuf[0] == '\0') {
+				warningBuf = "Empty name not allowed!";
+			}
+			else {
+				std::string newMapName = mapSaveBuf;
+				if (newMapName.find(".json") == std::string::npos) newMapName += ".json";
+
+				std::string mapsDir = std::string(ASSETS_DIR_PATH) + "saves/maps/";
+				if (!std::filesystem::exists(mapsDir)) {
+					std::filesystem::create_directories(mapsDir);
+				}
+
+				std::string fullpath = mapsDir + newMapName;
+
+				tilemap_.saveToFile(fullpath);
+				currentFile_ = fullpath;
+				warningBuf.clear();
+				ImGui::CloseCurrentPopup();
+				memset(mapSaveBuf, 0, sizeof(mapSaveBuf));
+			}
+		}
+
+		// Cancel save
+		if (ImGui::Button("Cancel")) {
+			memset(mapSaveBuf, 0, sizeof(mapSaveBuf));
+			warningBuf.clear();
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	if (ImGui::BeginPopup("map_load")) {
+		ImGui::Text("Select map to load:");
+		static int selected = -1;
+
+		std::vector<std::string> files;
+		std::string mapsDir = std::string(ASSETS_DIR_PATH) + "saves/maps/";
+
+		if (!std::filesystem::exists(mapsDir)) {
+			std::filesystem::create_directories(mapsDir);
+		}
+
+		for (auto& entry : std::filesystem::directory_iterator(mapsDir)) {
+			if (entry.path().extension() == ".json")
+				files.push_back(entry.path().filename().string());
+		}
+
+		if (files.empty()) {
+			ImGui::Text("No map files found!");
+		}
+		else {
+			for (int i = 0; i < (int)files.size(); i++) {
+				bool isSelected = (selected == i);
+
+				if (ImGui::Selectable(files[i].c_str(), isSelected)) {
+					selected = i;
+					std::string full = mapsDir + files[selected];
+					tilemap_.loadFromFile(full);
+					currentFile_ = full;
+					selected = -1;
+					selectedLayer_ = 0;
+				}
+			}
+		}
+
+		// Cancel load
+		if (ImGui::Button("Cancel")) {
+			ImGui::CloseCurrentPopup();
+			selected = -1;
+		}
+
+		ImGui::EndPopup();
 	}
 
 	ImGui::Separator();
@@ -163,58 +258,22 @@ void MapEditor::displayMenu() {
 	ImGui::End();
 }
 
-// Helper function to convert screen coordinates to world coordinates (accounting for camera)
-Math::eVec2<float> screenToWorldCoords(ImVec2 screenPos, float editorWidth, float editorHeight) {
-	ImVec2 imageMin = ImGui::GetItemRectMin();
-	ImVec2 imageMax = ImGui::GetItemRectMax();
-
-	// Get mouse position relative to the image (0.0 to 1.0)
-	float relX = (screenPos.x - imageMin.x) / (imageMax.x - imageMin.x);
-	float relY = (screenPos.y - imageMin.y) / (imageMax.y - imageMin.y);
-
-	relX = std::clamp(relX, 0.0f, 1.0f);
-	relY = std::clamp(relY, 0.0f, 1.0f);
-
-	// Convert to screen space coordinates (within the editor viewport)
-	float screenX = relX * editorWidth;
-	float screenY = relY * editorHeight;
-
-	// Add camera offset to convert screen space to world space
-	float worldX = screenX + g_game->getEditorCameraX();
-	float worldY = screenY + g_game->getEditorCameraY();
-
-	return Math::eVec2(worldX, worldY);
-};
-
-// Helper function to convert world coordinates to screen coordinates (for drawing gizmos)
-Math::eVec2<float> worldToScreenCoords (ImVec2 worldPos, float editorWidth, float editorHeight) {
-	ImVec2 imageMin = ImGui::GetItemRectMin();
-	ImVec2 imageMax = ImGui::GetItemRectMax();
-
-	// Subtract camera offset to convert world space to screen space
-	float screenX = worldPos.x - g_game->getEditorCameraX();
-	float screenY = worldPos.y - g_game->getEditorCameraY();
-
-	// Convert to normalized coordinates (0.0 to 1.0)
-	float relX = screenX / editorWidth;
-	float relY = screenY / editorHeight;
-
-	// Convert to actual screen position
-	float finalX = imageMin.x + relX * (imageMax.x - imageMin.x);
-	float finalY = imageMin.y + relY * (imageMax.y - imageMin.y);
-
-	return Math::eVec2(finalX, finalY);
-};
-
 void MapEditor::paint(GameApplication* g) {
 	if (!editMode_) return;
 
-	float editorWidth = static_cast<float>(g->getEditorWidth());
-	float editorHeight = static_cast<float>(g->getEditorHeight());
+	Math::eVec2<float> mousePos = { ImGui::GetMousePos().x, ImGui::GetMousePos().y };
+	float cameraWidth = static_cast<float>(g->getEditorWidth());
+	float cameraHeight = static_cast<float>(g->getEditorHeight());
+	Math::eVec2<float> editorMin = g->getEditorViewMin();
+	Math::eVec2<float> editorMax = g->getEditorViewMax();
+	float cameraPosX = g_game->getEditorCameraX();
+	float cameraPosY = g_game->getEditorCameraY();
 
 	// Left Mouse Click
 	if (ImGui::IsItemHovered() && ImGui::IsMouseDown(0)) {
-		Math::eVec2<float> worldPos = screenToWorldCoords(ImGui::GetMousePos(), editorWidth, editorHeight);
+		Math::eVec2<float> worldPos = Graphics::screenToWorld(
+			mousePos, editorMin, editorMax, cameraWidth, cameraHeight, cameraPosX, cameraPosY
+		);
 		Math::eVec2<int> tilePos = tilemap_.worldToTile(worldPos);
 
 		if (tilemap_.inBounds(tilePos.x, tilePos.y)) {
@@ -229,7 +288,9 @@ void MapEditor::paint(GameApplication* g) {
 
 	// Right Mouse Click
 	if (ImGui::IsItemHovered() && ImGui::IsMouseDown(1)) {
-		Math::eVec2<float> worldPos = screenToWorldCoords(ImGui::GetMousePos(), editorWidth, editorHeight);
+		Math::eVec2<float> worldPos = Graphics::screenToWorld(
+			mousePos, editorMin, editorMax, cameraWidth, cameraHeight, cameraPosX, cameraPosY
+		);
 		Math::eVec2<int> tilePos = tilemap_.worldToTile(worldPos);
 
 		if (tilemap_.inBounds(tilePos.x, tilePos.y)) {
@@ -243,22 +304,38 @@ void MapEditor::paint(GameApplication* g) {
 void MapEditor::draw(GameApplication* g, ImDrawList* drawList) {
 	if (!editMode_) return;
 
-	float editorWidth = static_cast<float>(g->getEditorWidth());
-	float editorHeight = static_cast<float>(g->getEditorHeight());
+	float cameraWidth = static_cast<float>(g->getEditorWidth());
+	float cameraHeight = static_cast<float>(g->getEditorHeight());
+	Math::eVec2<float> editorMin = g->getEditorViewMin();
+	Math::eVec2<float> editorMax = g->getEditorViewMax();
+	float cameraPosX = g_game->getEditorCameraX();
+	float cameraPosY = g_game->getEditorCameraY();
+
+	drawList->PushClipRect(ImVec2(editorMin.x, editorMin.y), ImVec2(editorMax.x, editorMax.y), true);
 
 	auto& layer = tilemap_.layers()[selectedLayer_];
 	for (int y = 0; y < tilemap_.height(); ++y) {
 		for (int x = 0; x < tilemap_.width(); ++x) {
 			float cs = tilemap_.cellSize();
-			Math::eVec2<float> pt1 = worldToScreenCoords({ x * cs, y * cs }, editorWidth, editorHeight);
-			Math::eVec2<float> pt2 = worldToScreenCoords({ (x + 1) * cs, (y + 1) * cs }, editorWidth, editorHeight);
+			Math::eVec2<float> pt1 = Graphics::worldToScreen(
+				{ x * cs, y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, cameraPosX, cameraPosY
+			);
+			Math::eVec2<float> pt2 = Graphics::worldToScreen(
+				{ (x + 1) * cs, (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, cameraPosX, cameraPosY
+			);
+
+			ImVec2 p1{ pt1.x, pt1.y }, p2{ pt2.x, pt2.y };
+
+			// ignore if outside image viewport
+			if (p2.x < editorMin.x || p1.x > editorMax.x) continue;
+			if (p2.y < editorMin.y || p1.y > editorMax.y) continue;
 
 			bool walk = layer.isWalkable(x, y);
 
-			ImU32 col = walk ? IM_COL32(0, 255, 0, 80) : IM_COL32(255, 0, 0, 80);
-			ImVec2 p1{ pt1.x, pt1.y }, p2{ pt2.x, pt2.y };
+			ImU32 col = walk ? IM_COL32(0, 255, 0, 60) : IM_COL32(255, 0, 0, 60);
 			drawList->AddRectFilled(p1, p2, col);
 			drawList->AddRect(p1, p2, IM_COL32(255, 255, 255, 20));
 		}
 	}
+	drawList->PopClipRect();
 }

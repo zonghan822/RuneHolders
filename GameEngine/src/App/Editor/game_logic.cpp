@@ -22,13 +22,6 @@ void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
 	engine_.setup();
 
-	// Initialize scene tree (must be after engine setup)
-	/*sceneTree_ = std::make_unique<Editor::EnoSceneTree>(
-		engine_.getEntityManager(),
-		engine_.getCoreHost()
-	);*/
-
-
 	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 
@@ -50,12 +43,15 @@ void GameApplication::initialize() {
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
 
-	// Center editor camera on the middle of the game world initially
-	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
-	editorCameraY_ = (VIRTUAL_HEIGHT - EDITOR_HEIGHT) / 2.0f;
+	auto& tileMap = engine_.getTileMap();
 
 	// Set up tile map editor (To be removed after tile map node is set up)
-	mapEditor_ = std::make_unique<MapEditor>(engine_.getTileMap());
+	mapEditor_ = std::make_unique<MapEditor>(tileMap);
+
+	// Center editor camera on the middle of the game world initially
+	Math::eVec2<float> worldSize = tileMap.getWorldSize();
+	editorCameraX_ = worldSize.x / 2.0f;
+	editorCameraY_ = worldSize.y / 2.0f;
 
 	// Subscribe to delete selected entity event (using GameApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)

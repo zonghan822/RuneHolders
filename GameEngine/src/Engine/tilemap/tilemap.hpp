@@ -33,20 +33,22 @@ namespace Map {
         Math::eVec2<int> worldToTile(const Math::eVec2<float>& pos) const;
         Math::eVec2<float> tileToWorld(int x, int y) const;
 
-        // Serialize
-        bool saveToFile(const std::string& filepath) const;
-        bool loadFromFile(const std::string& filepath);
-
         // Accessor
         int width() const;
         int height() const;
         float cellSize() const;
         const std::vector<TileLayer>& layers() const;
 
+        Math::eVec2<float> getWorldSize() const;
+
         // Modifier
         void resize(int newWidth, int newHeight, float newCellSize = -1.0f, bool preserveData = true);
         void renameLayer(int id, std::string const& newName);
         void setNavLayer(int id, bool);
+
+        // Serialize
+        bool saveToFile(const std::string& filepath) const;
+        bool loadFromFile(const std::string& filepath);
 
     private:
         int width_;

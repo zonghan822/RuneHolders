@@ -310,15 +310,15 @@ namespace Graphics
         return { worldX, worldY };
     }
 
-    inline Math::eVec2<float> worldToScreen(const Math::eVec2<float>& worldPos, const Math::eVec2<float>& imageMin, const Math::eVec2<float>& imageMax, float editorWidth, float editorHeight, float cameraX, float cameraY)
+    inline Math::eVec2<float> worldToScreen(const Math::eVec2<float>& worldPos, const Math::eVec2<float>& imageMin, const Math::eVec2<float>& imageMax, float viewPortWidth, float viewPortHeight, float cameraX, float cameraY)
     {
         // Subtract camera offset to convert world space to screen space
         float screenX = worldPos.x - cameraX;
         float screenY = worldPos.y - cameraY;
 
         // Convert to normalized coordinates (0.0 to 1.0)
-        float relX = screenX / editorWidth;
-        float relY = screenY / editorHeight;
+        float relX = screenX / viewPortWidth;
+        float relY = screenY / viewPortHeight;
 
         // Convert to actual screen position
         float finalX = imageMin.x + relX * (imageMax.x - imageMin.x);

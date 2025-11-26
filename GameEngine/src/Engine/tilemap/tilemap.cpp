@@ -73,6 +73,13 @@ namespace Map {
     float TileMapSystem::cellSize() const { return cellSize_; }
     const std::vector<TileLayer>& TileMapSystem::layers() const { return layers_; }
 
+    Math::eVec2<float> TileMapSystem::getWorldSize() const {
+        return {
+            static_cast<float>(width_) * cellSize_,
+            static_cast<float>(height_) * cellSize_,
+        };
+    }
+
     bool TileMapSystem::saveToFile(const std::string& filepath) const {
 
         rapidjson::Document doc;

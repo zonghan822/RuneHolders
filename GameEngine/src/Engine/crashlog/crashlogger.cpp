@@ -11,7 +11,8 @@
 #include <ctime>
 
 void CrashLogger::logError(const std::string& message) {
-    std::ofstream log("../../../assets/crashlogs/crash_log.txt", std::ios::app);
+    std::string logPath = ASSETS_DIR_PATH + std::string("crashlogs/crash_log.txt");
+    std::ofstream log(logPath.c_str(), std::ios::app);
 
     if (!log) {
         std::cerr << "Failed to open crash_log.txt\n";

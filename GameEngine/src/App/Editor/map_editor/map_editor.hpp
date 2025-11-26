@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <filesystem>
 
 #include "engine/eno_engine.hpp"
 
@@ -27,10 +28,13 @@ public:
 	void paint(GameApplication* g);
 	void draw(GameApplication* g, ImDrawList* drawList);
 
+
 private:
 	Map::TileMapSystem& tilemap_;
 
 	bool editMode_{false};
 	int brush_{0};
 	int selectedLayer_{0};
+
+	std::string currentFile_;
 };

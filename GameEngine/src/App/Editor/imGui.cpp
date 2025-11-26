@@ -3060,7 +3060,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	auto& mapEditor = g_game->getMapEditor();
 	bool wasEdit = mapEditor.isEditMode();
 	if (wasEdit) {
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 1.0f, 0.0f, 1.0f)); // green
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.8f, 0.2f, 1.0f)); // green
 	}
 
 	if (ImGui::Button("Map Editor")) {
@@ -3127,54 +3127,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
 			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
 			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
-			// ========== ALL EDITOR INTERACTIONS (moved from Game View) ==========
 
-			// Helper function to convert screen coordinates to world coordinates (accounting for camera)                                                                                               
-
-			// auto screenToWorldCoords = [&](ImVec2 screenPos) -> ImVec2 {                      
-				//ImVec2 imageMin = ImGui::GetItemRectMin
-				//ImVec2 imageMax = ImGui::GetItemRectMax();                                
-
-				// Get mouse position relative to the image (0.0 to 1.0)
-				//float relX = (screenPos.x - imageMin.x) / (imageMax.x - imageMin.x);      
-
-				//float relY = (screenPos.y - imageMin.y) / (imageMax.y - imageMin.y);                                                                                   
-				//relX = std::clamp(relX, 0.0f, 1.0f);                                      
-				//relY = std::clamp(relY, 0.0f, 1.0f); 
-                                    
-				// Convert to screen space coordinates (within the editor viewport)       
-				//float screenX = relX * editorWidth;                                       
-				//float screenY = relY * editorHeight;                                      
-
-				// Add camera offset to convert screen space to world space               
-				//float worldX = screenX + g_game->getEditorCameraX();                      
-				//float worldY = screenY + g_game->getEditorCameraY();                      
-
-				//return ImVec2(worldX, worldY);                                            
-
-			//};
-
-			// Helper function to convert world coordinates to screen coordinates (for drawing gizmos)                                                                                                  
-			//auto worldToScreenCoords = [&](ImVec2 worldPos) -> ImVec2 {                       
-
-				//ImVec2 imageMin = ImGui::GetItemRectMin();                                
-				//ImVec2 imageMax = ImGui::GetItemRectMax();                                
-
-				// Subtract camera offset to convert world space to screen space          
-				//float screenX = worldPos.x - g_game->getEditorCameraX();                  
-				//float screenY = worldPos.y - g_game->getEditorCameraY();                  
-
-				// Convert to normalized coordinates (0.0 to 1.0)                         
-				//float relX = screenX / editorWidth;                                       
-				//float relY = screenY / editorHeight;                                                                                                             
-
-				// Convert to actual screen position                                      
-				//float finalX = imageMin.x + relX * (imageMax.x - imageMin.x);             
-				//float finalY = imageMin.y + relY * (imageMax.y - imageMin.y);             
-
-				//return ImVec2(finalX, finalY);                                            
-
-			//};
 
 			// --- Handle entity deletion by click ---                                        
 
