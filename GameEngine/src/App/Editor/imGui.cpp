@@ -117,6 +117,9 @@ static bool g_pendingSceneLoad = false;
 static std::string g_sceneToLoad = "";
 static bool g_refreshSceneList = false;  // Flag to refresh scene list after operations
 
+// Scene deletion error tracking
+static bool g_cannotDeleteActiveScene = false;
+
 // Audio filesystems
 static std::vector<std::string> audioAssets;
 
@@ -1513,19 +1516,44 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 				}
 
 			}
+
+			// Show error message if trying to delete active scene
+			if (g_cannotDeleteActiveScene)
+			{
+				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f),
+					"Cannot delete active scene!");
+				ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f),
+					"Switch to another scene first.");
+			}
+
 			// Delete scene
 			if (ImGui::Button("Delete scene"))
 			{
 				try
 				{
-					// Remove file
-					std::filesystem::remove(filePath);
-					// Remove active scene name
-					//editor_.getCurrentScene().setSceneName("");
-					// Close current popup
-					ImGui::CloseCurrentPopup();
-					// Refresh list
-					refreshSceneName = true;
+					// Check if we're deleting the currently active scene
+					bool isCurrentScene = (filename == editor_.getCurrentScene().getSceneName());
+
+					if (isCurrentScene)
+					{
+						// Set error flag instead of showing popup
+						g_cannotDeleteActiveScene = true;
+						std::cout << "[ImGui] Cannot delete currently active scene" << std::endl;
+					}
+					else
+					{
+						// Safe to delete - scene is not currently loaded
+						std::filesystem::remove(filePath);
+						std::cout << "[ImGui] Scene deleted: " << filename << std::endl;
+
+						// Reset error flag
+						g_cannotDeleteActiveScene = false;
+
+						// Close current popup
+						ImGui::CloseCurrentPopup();
+						// Refresh list
+						refreshSceneName = true;
+					}
 				}
 				catch (const std::filesystem::filesystem_error& e)
 				{
@@ -1540,6 +1568,8 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 				ImGui::CloseCurrentPopup();
 				// In case theres some random stuff inside the input box, clear the buffer
 				memset(scene_name, 0, sizeof(scene_name));
+				// Reset error flag
+				g_cannotDeleteActiveScene = false;
 			}
 
 			ImGui::EndPopup();
