@@ -2345,6 +2345,13 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	ImGui::Spacing();
 
 	// ================== APPLY BUTTON FOR IDLE ANIMATION ==================
+	// Disable button if no texture is selected
+	bool idleHasTexture = idleTexData.texture != nullptr && !idleSelected.empty();
+	if (!idleHasTexture)
+	{
+		ImGui::BeginDisabled();
+	}
+
 	if (ImGui::Button("APPLY IDLE"))
 	{
 		ECS::Entity e{ selectedEntityID };
@@ -2355,8 +2362,16 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
 
+		// Safety check: Ensure texture is valid before proceeding
+		if (!idleTexData.texture)
+		{
+			ImGui::OpenPopup("Error##IdleNoTexture");
+			if (!idleHasTexture) ImGui::EndDisabled();
+			return;
+		}
+
 		drawComp.texture = idleTexData.texture;
-		drawComp.color = Graphics::Color::White;   
+		drawComp.color = Graphics::Color::White;
 
 
 		//std::strncpy(drawComp.texturePath, ctrl->currentAnimation_->.c_str(), sizeof(drawComp.texturePath) - 1);
@@ -2395,12 +2410,30 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			//const auto& frame = idleAnim.getCurrentFrame();
 			//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
 			//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
-		
+
 
 
 		idleAnim.setLooping(true);
 		ctrl->addAnimation("idle", idleAnim);
 		ctrl->setAnimation("idle");
+	}
+
+	if (!idleHasTexture)
+	{
+		ImGui::EndDisabled();
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("Please select a texture first");
+		}
+	}
+
+	// Error popup for missing texture
+	if (ImGui::BeginPopupModal("Error##IdleNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Error: No texture selected!");
+		ImGui::Text("Please drag and drop a texture onto the preview box first.");
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
 	}
 
 
@@ -2497,6 +2530,13 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	//  ================== APPLY BUTTON FOR WALK ANIMATION ==================
+	// Disable button if no texture is selected
+	bool walkHasTexture = walkTexData.texture != nullptr && !walkSelected.empty();
+	if (!walkHasTexture)
+	{
+		ImGui::BeginDisabled();
+	}
+
 	if (ImGui::Button("APPLY WALK"))
 	{
 		ECS::Entity e{ selectedEntityID };
@@ -2506,6 +2546,14 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
+
+		// Safety check: Ensure texture is valid before proceeding
+		if (!walkTexData.texture)
+		{
+			ImGui::OpenPopup("Error##WalkNoTexture");
+			if (!walkHasTexture) ImGui::EndDisabled();
+			return;
+		}
 
 		drawComp.texture = walkTexData.texture;
 		drawComp.color = Graphics::Color::White;
@@ -2548,6 +2596,24 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		walkAnim.setLooping(true);
 		ctrl->addAnimation("walk", walkAnim);
 		ctrl->setAnimation("walk");
+	}
+
+	if (!walkHasTexture)
+	{
+		ImGui::EndDisabled();
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("Please select a texture first");
+		}
+	}
+
+	// Error popup for missing texture
+	if (ImGui::BeginPopupModal("Error##WalkNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Error: No texture selected!");
+		ImGui::Text("Please drag and drop a texture onto the preview box first.");
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
 	}
 
 
@@ -2646,6 +2712,13 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 
+	// Disable button if no texture is selected
+	bool attackHasTexture = attackTexData.texture != nullptr && !attackSelected.empty();
+	if (!attackHasTexture)
+	{
+		ImGui::BeginDisabled();
+	}
+
 	if (ImGui::Button("APPLY ATTACK"))
 	{
 		ECS::Entity e{ selectedEntityID };
@@ -2655,6 +2728,14 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
+
+		// Safety check: Ensure texture is valid before proceeding
+		if (!attackTexData.texture)
+		{
+			ImGui::OpenPopup("Error##AttackNoTexture");
+			if (!attackHasTexture) ImGui::EndDisabled();
+			return;
+		}
 
 		drawComp.texture = attackTexData.texture;
 		drawComp.color = Graphics::Color::White;
@@ -2697,6 +2778,25 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ctrl->addAnimation("attack", attackAnim);
 		ctrl->setAnimation("attack");
 	}
+
+	if (!attackHasTexture)
+	{
+		ImGui::EndDisabled();
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("Please select a texture first");
+		}
+	}
+
+	// Error popup for missing texture
+	if (ImGui::BeginPopupModal("Error##AttackNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Error: No texture selected!");
+		ImGui::Text("Please drag and drop a texture onto the preview box first.");
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+
 	ImGui::Separator();
 	ImGui::End();
 }
