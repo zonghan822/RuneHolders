@@ -279,4 +279,136 @@ namespace ECSComponents
         default:    return os << "Invalid collider type passed";
         }
     }
+    
+    /*============================================================================================
+    * \brief       Auto-calculate AABB collision bounds from RenderComponent dimensions
+    * \param[in]   RenderComponent const& render - Rendering component with width/height
+    * \param[in]   Math::eVec2<float> const& offset - Optional offset from entity center
+    * \param[in]   bool isTrigger - Whether this should be a trigger collider
+    * \return      CollisionComponent - Rectangle collider matching render dimensions
+    *===========================================================================================*/
+    inline CollisionComponent CreateAABBFromRender(
+        const struct RenderComponent& render,
+        const Math::eVec2<float>& offset = { 0.0f, 0.0f },
+        bool isTrigger = false
+    );
+
+    /*============================================================================================
+    * \brief       Auto-calculate scaled AABB collision bounds from RenderComponent + Transform
+    * \param[in]   RenderComponent const& render - Rendering component with width/height
+    * \param[in]   TransformComponent const& transform - Transform with scale values
+    * \param[in]   Math::eVec2<float> const& offset - Optional offset from entity center
+    * \param[in]   bool isTrigger - Whether this should be a trigger collider
+    * \return      CollisionComponent - Rectangle collider matching scaled render dimensions
+    *===========================================================================================*/
+    inline CollisionComponent CreateScaledAABBFromRender(
+        const struct RenderComponent& render,
+        const struct TransformComponent& transform,
+        const Math::eVec2<float>& offset = { 0.0f, 0.0f},
+        bool isTrigger = false
+    );
+
+    /*============================================================================================
+    * \brief       Auto-calculate circle collision bounds from RenderComponent dimensions
+    * \param[in]   RenderComponent const& render - Rendering component with width/height
+    * \param[in]   Math::eVec2<float> const& offset - Optional offset from entity center
+    * \param[in]   bool isTrigger - Whether this should be a trigger collider
+    * \return      CollisionComponent - Circle collider with radius = width/2
+    * \note        Uses width to determine radius (radius =width * 0.5f)
+    *===========================================================================================*/
+     inline CollisionComponent CreateCircleFromRender(
+     const struct RenderComponent& render,
+     const Math::eVec2<float>&offset = { 0.0f, 0.0f },
+     bool isTrigger = false
+     );
+
+     /*============================================================================================
+     * \brief       Auto-calculate scaled circle collision bounds from RenderComponent + Transform
+     * \param[in]   RenderComponent const& render - Renderingcomponent with width/height
+     * \param[in]   TransformComponent const& transform - Transform with scale values
+     * \param[in]   Math::eVec2<float> const& offset - Optional offset from entity center
+     * \param[in]   bool isTrigger - Whether this should be a trigger collider
+     * \return      CollisionComponent - Circle collider with scaled radius
+     * \note        Uses width * scale.x to determine radius (radius = (width * scale.x) * 0.5f)
+     *===========================================================================================*/
+     inline CollisionComponent CreateScaledCircleFromRender(
+        const struct RenderComponent& render,
+        const struct TransformComponent& transform,
+        const Math::eVec2<float>&offset = { 0.0f, 0.0f },
+        bool isTrigger = false
+        );
+    
+} // namespace ECSComponents (close namespace temporarily)
+
+#include "drawInfo.hpp"
+#include "transform.hpp"
+
+namespace ECSComponents
+{
+    // Implementations
+
+    inline CollisionComponent CreateAABBFromRender(
+        const RenderComponent& render,
+        const Math::eVec2<float>& offset,
+        bool isTrigger
+    )
+    {
+        return CollisionComponent(
+            render.width,
+            render.height,
+            offset,
+            isTrigger
+        );
+    }
+
+    inline CollisionComponent CreateScaledAABBFromRender(
+        const RenderComponent& render,
+        const TransformComponent& transform,
+        const Math::eVec2<float>& offset,
+        bool isTrigger
+    )
+    {
+        float scaledWidth = render.width * transform.scale.x;
+        float scaledHeight = render.height * transform.scale.y;
+
+        return CollisionComponent(
+            scaledWidth,
+            scaledHeight,
+            offset,
+            isTrigger
+        );
+    }
+
+    inline CollisionComponent CreateCircleFromRender(
+        const RenderComponent& render,
+        const Math::eVec2<float>& offset,
+        bool isTrigger
+    ) {
+        // Calculate radius from width (radius = width/2)
+        float radius = render.width * 0.5f;
+
+        return CollisionComponent(
+            radius, // Circle constructor takes raidus as first param
+            offset,
+            isTrigger
+        );
+    }
+
+    inline CollisionComponent CreateScaledCircleFromRender(
+        const RenderComponent& render,
+        const TransformComponent& transform,
+        const Math::eVec2<float>& offset,
+        bool isTrigger
+    ) {
+        // Calculate scaled radius from width (radius = (width * scale)/2)
+        float scaledWidth = render.width * transform.scale.x;
+        float radius = scaledWidth * 0.5f;
+
+        return CollisionComponent(
+            radius, // Circle constructor takes radius as first param
+            offset,
+            isTrigger
+        );
+    }
+
 } // namespace ECSComponents

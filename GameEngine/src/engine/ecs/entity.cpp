@@ -230,6 +230,54 @@ namespace ECS
 				break;
 		}
 
+		// After loading all components, load textures if needed
+		if (entity.has<ECSComponents::RenderComponent>(entMng))
+		{
+			auto& renderComp = entity.get<ECSComponents::RenderComponent>(entMng);
+
+			std::cout << "[DEBUG TEXTURE LOAD] Entity " << entity.id()
+					  << " - texturePath: '" << renderComp.texturePath << "'"
+					  << " - texture ptr null: " << (renderComp.texture == nullptr ? "YES" : "NO") << "\n";
+
+			// If texturePath is set but texture is null, load the texture
+			if (renderComp.texturePath[0] != '\0' && !renderComp.texture)
+			{
+				auto tex = std::make_shared<Graphics::EnoTexture>();
+				std::string fullpath = ASSETS_DIR_PATH "/art/" + std::string(renderComp.texturePath) + ".png";
+
+				std::cout << "[DEBUG TEXTURE LOAD] Attempting to load: " << fullpath << "\n";
+
+				if (tex->loadFromFile(fullpath))
+				{
+					renderComp.texture = tex;
+
+					// Map texture for graphics system
+					bus_.publish<Graphics::TextureMapping>(Graphics::TextureMapping{
+						std::string(renderComp.texturePath),
+						tex
+					});
+
+					std::cout << "[EntityManager] SUCCESS - Loaded texture: " << renderComp.texturePath << "\n";
+				}
+				else
+				{
+					std::cerr << "[EntityManager] FAILED to load texture: " << fullpath << "\n";
+				}
+			}
+			else if (renderComp.texturePath[0] == '\0')
+			{
+				std::cout << "[DEBUG TEXTURE LOAD] texturePath is empty, skipping\n";
+			}
+			else if (renderComp.texture != nullptr)
+			{
+				std::cout << "[DEBUG TEXTURE LOAD] texture already set, skipping\n";
+			}
+		}
+		else
+		{
+			std::cout << "[DEBUG TEXTURE LOAD] Entity " << entity.id() << " has no RenderComponent\n";
+		}
+
 		// After loading all components, check if this entity is a prefab instance
 		// If so, register it in the prefab tracking system
 		if (entity.has<ECSComponents::PrefabInstanceComponent>(entMng))
@@ -598,20 +646,12 @@ namespace ECS
 			return Graphics::Color{ r, g, b, a };
 		}
 
-		// File path types
+		// File path types (texchar240 is for texture paths, not the texture itself)
 		if (ttype == "texchar240")
 		{
-			auto tex = std::make_shared<Graphics::EnoTexture>();
-
-			// Map Texture
-			bus_.publish<Graphics::TextureMapping>(Graphics::TextureMapping{ tvalue, tex });
-
-			// Add the macro to asset path
-			std::string fullpath = ASSETS_DIR_PATH "art/" + tvalue + ".png";
-
-			// Load
-			tex->loadFromFile(fullpath);
-			return tex;
+			// Just return the path string - texture will be loaded later
+			// in the post-load phase (see loadJson where we check for texturePath)
+			return tvalue;
 		}
 
 		throw std::runtime_error("Unknown type { " + ttype + " } has been set in the save file!");

@@ -121,6 +121,31 @@ namespace Physics
             const Math::eVec2<float>& posB, float widthB, float heightB) const;
 
         /*============================================================================================
+         * \brief       Check if two circles overlap
+         * \param[in]   Math::eVec2<float> const& posA - Position of first circle
+         * \param[in]   float radiusA - Radius of first circle
+         * \param[in]   Math::eVec2<float> const& posB - Position of second circle
+         * \param[in]   float radiusB - Radius of second circle
+         * \return      bool - True if circles overlap
+         *===========================================================================================*/
+        bool CheckCircleCircleOverlap(
+            const Math::eVec2<float>& posA, float radiusA,
+            const Math::eVec2<float>& posB, float radiusB) const;
+
+        /*============================================================================================
+         * \brief       Check if a circle overlaps with a rectangle
+         * \param[in]   Math::eVec2<float> const& circlePos - Position of circle
+         * \param[in]   float radius - Radius of circle
+         * \param[in]   Math::eVec2<float> const& rectPos - Position of rectangle
+         * \param[in]   float rectWidth - Width of rectangle
+         * \param[in]   float rectHeight - Height of rectangle
+         * \return      bool - True if circle and rectangle overlap
+         *===========================================================================================*/
+        bool CheckCircleRectOverlap(
+            const Math::eVec2<float>& circlePos, float radius,
+            const Math::eVec2<float>& rectPos, float rectWidth, float rectHeight) const;
+
+        /*============================================================================================
          * \brief       Resolve collision between two entities with momentum transfer
          * \param[in]   ECSComponents::TransformComponent& transformA - First entity's transform
          * \param[in]   ECSComponents::PhysicsComponent& physicsA - First entity's physics
@@ -161,6 +186,37 @@ namespace Physics
         void CalculateAABBPenetration(
             const Math::eVec2<float>& posA, float widthA, float heightA,
             const Math::eVec2<float>& posB, float widthB, float heightB,
+            Math::eVec2<float>& normal, float& penetration) const;
+
+        /*============================================================================================
+         * \brief       Calculate penetration depth and collision normal between two circles
+         * \param[in]   Math::eVec2<float> const& posA - Position of first circle
+         * \param[in]   float radiusA - Radius of first circle
+         * \param[in]   Math::eVec2<float> const& posB - Position of second circle
+         * \param[in]   float radiusB - Radius of second circle
+         * \param[out]  Math::eVec2<float>& normal - Collision normal (direction to separate)
+         * \param[out]  float& penetration - How much the circles overlap
+         * \return      void
+         *===========================================================================================*/
+        void CalculateCirclePenetration(
+            const Math::eVec2<float>& posA, float radiusA,
+            const Math::eVec2<float>& posB, float radiusB,
+            Math::eVec2<float>& normal, float& penetration) const;
+
+        /*============================================================================================
+         * \brief       Calculate penetration depth and collision normal between circle and rectangle
+         * \param[in]   Math::eVec2<float> const& circlePos - Position of circle
+         * \param[in]   float radius - Radius of circle
+         * \param[in]   Math::eVec2<float> const& rectPos - Position of rectangle
+         * \param[in]   float rectWidth - Width of rectangle
+         * \param[in]   float rectHeight - Height of rectangle
+         * \param[out]  Math::eVec2<float>& normal - Collision normal (direction to separate)
+         * \param[out]  float& penetration - How much they overlap
+         * \return      void
+         *===========================================================================================*/
+        void CalculateCircleRectPenetration(
+            const Math::eVec2<float>& circlePos, float radius,
+            const Math::eVec2<float>& rectPos, float rectWidth, float rectHeight,
             Math::eVec2<float>& normal, float& penetration) const;
 
         /*============================================================================================

@@ -201,8 +201,8 @@ namespace Collision {
 			scaledRectB.width *= transformB.scale.x;
 			scaledRectB.height *= transformB.scale.y;
 
-			return CheckRectangleRectangleSAT(posA, scaledRectA, colliderA.rotation,
-				posB, scaledRectB, colliderB.rotation);
+			return CheckRectangleRectangleSAT(posA, scaledRectA, transformA.rot.x,
+				posB, scaledRectB, transformB.rot.x);
 		}
 
 		// Scenario 3: if collider A is a circle, and collider B is a rectangle
@@ -833,7 +833,7 @@ namespace Collision {
 					Math::eVec2<float>{scaledWidth, scaledHeight},
 					color,
 					false,				// Not filled, just outline
-					collision.rotation		// Use transform rotation
+					transform.rot.x		// Use transform rotation
 				);
 
 				break;
@@ -925,7 +925,7 @@ namespace Collision {
 					Math::eVec2<float>{scaledWidth, scaledHeight},
 					color,
 					false,				// Not filled, just outline
-					collision.rotation		// Use transform rotation
+					transform.rot.x		// Use transform rotation
 				);
 
 				break;

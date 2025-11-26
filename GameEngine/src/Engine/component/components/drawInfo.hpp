@@ -111,9 +111,19 @@ namespace ECSComponents
 				shape[sizeof(shape) - 1] = '\0';
 				color = other.color;
 				texture = other.texture;
+				strncpy_s(texturePath, other.texturePath, sizeof(texturePath) - 1);
+				texturePath[sizeof(texturePath) - 1] = '\0';
 				texID = other.texID;
 			}
 			return *this;
+		}
+
+		// Helper function to set texture with path
+		void setTexture(std::shared_ptr<Graphics::EnoTexture> tex, const std::string& path)
+		{
+			texture = tex;
+			strncpy_s(texturePath, path.c_str(), sizeof(texturePath) - 1);
+			texturePath[sizeof(texturePath) - 1] = '\0';
 		}
 
 		// For serialization purposes
@@ -172,6 +182,15 @@ namespace ECSComponents
 	struct AnimationControllerComponent {
 		uint32_t controllerID;
 
+		// Animation configuration data for serialization
+		int frameWidth = 0;
+		int frameHeight = 0;
+		int rows = 0;
+		int cols = 0;
+		float frameDuration = 0.1f;
+		bool looping = true;
+		char currentAnimationName[64] = "";
+
 		AnimationControllerComponent(): controllerID(0) {}
 
 		AnimationControllerComponent(uint32_t id): controllerID(id) {}
@@ -179,13 +198,28 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
-			l("ControllerID", controllerID, "uint32_t");
+			// Don't serialize controllerID - it will be reassigned when component is added
+			// But DO serialize the animation configuration data
+			l("Frame Width", frameWidth, "int");
+			l("Frame Height", frameHeight, "int");
+			l("Rows", rows, "int");
+			l("Cols", cols, "int");
+			l("Frame Duration", frameDuration, "float");
+			l("Looping", looping, "bool");
+			l("Current Animation", currentAnimationName, "char64");
 		}
 
 		template <typename Visitor>
 		void reflect(Visitor&& l) const
 		{
-			l("ControllerID", controllerID, "uint32_t");
+			// Serialize animation configuration data for saving
+			l("Frame Width", frameWidth, "int");
+			l("Frame Height", frameHeight, "int");
+			l("Rows", rows, "int");
+			l("Cols", cols, "int");
+			l("Frame Duration", frameDuration, "float");
+			l("Looping", looping, "bool");
+			l("Current Animation", currentAnimationName, "char64");
 		}
 
 	};

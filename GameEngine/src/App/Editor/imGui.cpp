@@ -109,6 +109,12 @@ static std::string g_selectedPrefabForPlacement = "";
 // Entity deletion by click
 static bool g_waitingForEntityDeletion = false;
 
+// Deferred scene loading to prevent crashes during ImGui rendering
+static bool g_pendingNewScene = false;
+static bool g_pendingSceneLoad = false;
+static std::string g_sceneToLoad = "";
+static bool g_refreshSceneList = false;  // Flag to refresh scene list after operations
+
 // Audio filesystems
 static std::vector<std::string> audioAssets;
 
@@ -261,6 +267,26 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 	// END DOCKSPACE
 	imGuiEndDockspace();
+
+	// Process deferred scene operations AFTER all ImGui rendering is complete
+	// This prevents crashes from destroying entities while ImGui is iterating over them
+	if (g_pendingNewScene)
+	{
+		clearSelectedEntity();
+		engine_.getEnoEditor().createEmptyScene(ASSET_SCENE_PATH);
+		g_game->markEntitiesDirty();  // Force entity cache refresh
+		g_pendingNewScene = false;
+		std::cout << "[ImGui] Deferred: Created new scene" << std::endl;
+	}
+	else if (g_pendingSceneLoad)
+	{
+		clearSelectedEntity();
+		engine_.getEnoEditor().selectScene(g_sceneToLoad);
+		g_game->markEntitiesDirty();  // Force entity cache refresh
+		g_pendingSceneLoad = false;
+		g_sceneToLoad = "";
+		std::cout << "[ImGui] Deferred: Loaded scene " << g_sceneToLoad << std::endl;
+	}
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -992,8 +1018,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				renderComp.width = 96.0f;   // Frame size
 				renderComp.height = 96.0f;
 				strncpy_s(renderComp.shape, "Sprite", sizeof(renderComp.shape) - 1);
-				renderComp.texture = walkTexture;
-				strncpy_s(renderComp.texturePath, "Protagonist-Walk-Sheet", sizeof(renderComp.texturePath) - 1);
+				renderComp.setTexture(walkTexture, "Protagonist-Walk-Sheet");
 				renderComp.color = Graphics::Color::White;
 				renderComp.texID = 0;  // Start at first frame, will animate
 
@@ -1082,6 +1107,38 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		newEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 		newEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
 		newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
+		
+
+
+		// Add collision component for physics interactions
+		ECSComponents::CollisionComponent collisionComp;
+		if (strcmp(renderComp.shape, "Circle") == 0) {
+			// Auto-calculate circle collider from render dimensions
+			collisionComp = ECSComponents::CreateCircleFromRender(renderComp);
+		}
+		else {
+			// Auto-calculate rectangle collider from render dimensions
+			collisionComp.isActive = true;
+			collisionComp.isTrigger = false;
+			collisionComp.type = ECSComponents::ColliderType::RECTANGLE;
+			collisionComp.data.rectangle.width = renderComp.width;
+			collisionComp.data.rectangle.height = renderComp.height;
+		}
+		newEntity.add<ECSComponents::CollisionComponent>(entityManager,
+			collisionComp);
+
+		// Add physics component to enable pushing
+		ECSComponents::PhysicsComponent physicsComp;
+		physicsComp.mass = 2.0f;          // Mass (heavier = harder to push)
+		physicsComp.drag = 8.0f;          // Higher drag for quick stopping
+		physicsComp.isKinematic = false;  // NOT kinematic (can be pushed)
+		physicsComp.useGravity = false;   // No gravity for top-down game
+		newEntity.add<ECSComponents::PhysicsComponent>(entityManager,
+			physicsComp);
+
+		
+		
+		newEntity.add<ECSComponents::BoxComponent>(entityManager, ECSComponents::BoxComponent());
 
 
 		// Name root nodes as "Entity 1", "Entity 2", etc.
@@ -1143,7 +1200,29 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				childEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 				childEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
 				childEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
+				
+				
+				// Add collision component for physics interactions
+				ECSComponents::CollisionComponent childCollisionComp;
+				childCollisionComp.isActive = true;
+				childCollisionComp.isTrigger = false;
+				childCollisionComp.type = ECSComponents::ColliderType::RECTANGLE;
+				childCollisionComp.data.rectangle.width = 50.0f;
+				childCollisionComp.data.rectangle.height = 50.0f;
+				childEntity.add<ECSComponents::CollisionComponent>(entityManager,
+					childCollisionComp);
 
+				// Add physics component to enable pushing
+				ECSComponents::PhysicsComponent childPhysicsComp;
+				childPhysicsComp.mass = 2.0f;
+				childPhysicsComp.drag = 8.0f;
+				childPhysicsComp.isKinematic = false;
+				childPhysicsComp.useGravity = false;
+				childEntity.add<ECSComponents::PhysicsComponent>(entityManager,
+					childPhysicsComp);
+
+				childEntity.add<ECSComponents::BoxComponent>(entityManager,
+					ECSComponents::BoxComponent());
 				// Name child nodes as "Entity #" using the same counter
 				auto& nameComp = childEntity.get<ECSComponents::NameComponent>(entityManager);
 				std::string entityName = "Entity " + std::to_string(entityCounter++);
@@ -1268,6 +1347,13 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	// Buffer to change scene name
 	static char scene_name[64] = "";
 
+	// Check global flag for scene list refresh
+	if (g_refreshSceneList)
+	{
+		refreshSceneName = true;
+		g_refreshSceneList = false;
+	}
+
 	if (refreshSceneName)
 	{
 		// Clear the current container
@@ -1348,9 +1434,9 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 			if (editor_.getCurrentScene().getSceneName() != filename)
 			{
 				std::cout << "Loading file: " << filename << std::endl;
-				//editor_.getSceneTree().load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
-				editor_.selectScene(filename);
-				g_game->markEntitiesDirty();
+				// Defer scene loading until after ImGui rendering completes
+				g_pendingSceneLoad = true;
+				g_sceneToLoad = filename;
 			}
 			else
 			{
@@ -1496,8 +1582,9 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 	if (ImGui::Button("Create new scene"))
 	{
-		editor_.createEmptyScene(ASSET_SCENE_PATH);
-		refreshSceneName = true;
+		// Defer scene creation until after ImGui rendering completes
+		g_pendingNewScene = true;
+		g_refreshSceneList = true;
 	}
 
 
@@ -1762,8 +1849,59 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		auto& draw = entity.get<ECSComponents::DrawInfoComponent>(entMng);
 
 		ImGui::SeparatorText("Draw Info");
+
+		// Track if width/height changed to auto-update collision
+		float oldWidth = draw.width;
+		float oldHeight = draw.height;
+
 		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
 		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+
+		// Auto-update collision when width/height changes
+		if ((draw.width != oldWidth || draw.height != oldHeight) && entity.has<ECSComponents::CollisionComponent>(entMng)) {
+
+			auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
+
+			if (strcmp(draw.shape, "Circle") == 0) {
+				// Update circle radius
+				collision.data.circle.radius = draw.width * 0.5f;
+			}
+			else {
+				// Update rectangle dimensions
+				collision.data.rectangle.width = draw.width;
+				collision.data.rectangle.height = draw.height;
+			}
+		}
+
+		// Rotation field (edits TransformComponent rotation)
+		if (entity.has<ECSComponents::TransformComponent>(entMng)) {
+			auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
+
+			// Track rotation editing for undo
+			static Math::eVec2<float> oldRotInspector;
+			static bool editingRotInspector = false;
+
+			if (ImGui::IsItemActive() && !editingRotInspector) {
+				oldRotInspector = transform.rot;
+				editingRotInspector = true;
+			}
+
+			// Convert radians to degrees for user-friendly editing
+			float rotationDegrees = transform.rot.x * (180.0f / 3.14159265f);
+			if (ImGui::DragFloat("Rotation", &rotationDegrees, 1.0f, -360.0f, 360.0f, "%.1f deg")) {
+				// Convert degrees back to radians
+				transform.rot.x = rotationDegrees * (3.14159265f / 180.0f);
+				if (g_game) g_game->markEntitiesDirty();
+			}
+
+			if (editingRotInspector && !ImGui::IsItemActive()) {
+				// Record undo when user finishes editing
+				if (oldRotInspector.x != transform.rot.x || oldRotInspector.y != transform.rot.y) {
+					undoManager.recordRotation(entity, oldRotInspector, transform.rot);
+				}
+				editingRotInspector = false;
+			}
+		}
 
 		// Shape type selector (Circle or Rectangle)
 		const char* shapeTypes[] = { "Circle", "Rectangle" };
@@ -1771,6 +1909,23 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::Combo("Shape", &currentShapeIndex, shapeTypes, IM_ARRAYSIZE(shapeTypes))) {
 			strncpy_s(draw.shape, shapeTypes[currentShapeIndex], sizeof(draw.shape) - 1);
 			draw.shape[sizeof(draw.shape) - 1] = '\0';
+
+			// Auto-update collision component to match new shape
+			if (entity.has<ECSComponents::CollisionComponent>(entMng)) {
+				auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
+
+				if (strcmp(draw.shape, "Circle") == 0) {
+					// Changed to circle - auto-calculate circle collider
+					collision.type = ECSComponents::ColliderType::CIRCLE;
+					collision.data.circle.radius = draw.width * 0.5f;
+				}
+				else {
+					// Changed to Rectangle - auto-calculate rectangle collider
+					collision.type = ECSComponents::ColliderType::RECTANGLE;
+					collision.data.rectangle.width = draw.width;
+					collision.data.rectangle.height = draw.height; 
+				}
+			}
 			if (g_game) g_game->markEntitiesDirty();
 		}
 
@@ -1847,12 +2002,50 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		// Display and edit collider dimensions based on type
 		if (collider.type == ECSComponents::ColliderType::CIRCLE) {
-			ImGui::DragFloat("Collider Radius", &collider.data.circle.radius, 0.5f, 1.0f, 200.0f);
+			if (ImGui::DragFloat("Radius", &collider.data.circle.radius, 0.5f, 1.0f, 200.0f)) {
+				if (g_game) g_game->markEntitiesDirty();
+			}
 		}
 		else if (collider.type == ECSComponents::ColliderType::RECTANGLE) {
-			ImGui::DragFloat("Collider Width", &collider.data.rectangle.width, 0.5f, 1.0f, 200.0f);
-			ImGui::DragFloat("Collider Height", &collider.data.rectangle.height, 0.5f, 1.0f, 200.0f);
+			if (ImGui::DragFloat("Width##collider", &collider.data.rectangle.width, 0.5f, 1.0f, 500.0f)) {
+				if (g_game) g_game->markEntitiesDirty();
+			}
+			if (ImGui::DragFloat("Height##collider", &collider.data.rectangle.height, 0.5f, 1.0f, 500.0f)) {
+				if (g_game) g_game->markEntitiesDirty();
+			}
+
+			// Show auto-calculated dimensions if entity has RenderComponent
+			if (entity.has<ECSComponents::RenderComponent>(entMng)) {
+				auto& render = entity.get<ECSComponents::RenderComponent>(entMng);
+				ImGui::TextDisabled("Auto : %.1f x %.1f", render.width, render.height);
+
+				if (ImGui::Button("Reset to Render Size")) {
+					collider.data.rectangle.width = render.width;
+					collider.data.rectangle.height = render.height;
+					if (g_game) g_game->markEntitiesDirty();
+				}
+			}
 		}
+
+		// Offset controls
+		ImGui::Spacing();
+		ImGui::Text("Offset:");
+		if (ImGui::DragFloat("X##offset", &collider.offset.x, 0.5f, -200.0f, 200.0f)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+		if (ImGui::DragFloat("Y##offset", &collider.offset.y, 0.5f, -200.0f, 200.0f)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		// Trigger and Active flags
+		ImGui::Spacing();
+		if (ImGui::Checkbox("Is Trigger", &collider.isTrigger)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+		if (ImGui::Checkbox("Is Active", &collider.isActive)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+		
 	}
 	else {
 		// Allow adding a collider if the entity doesn't have one
@@ -1860,12 +2053,47 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::TextDisabled("No collider attached");
 
 		if (ImGui::Button("Add Collider")) {
-			// Add a default circle collider
-			entity.add<ECSComponents::CollisionComponent>(entMng, ECSComponents::CollisionComponent(10.0f));
+			if (entity.has<ECSComponents::RenderComponent>(entMng)) {
+				auto& render = entity.get<ECSComponents::RenderComponent>(entMng);
+				auto collision = ECSComponents::CreateAABBFromRender(render);
+				if (!entity.has<ECSComponents::CollisionComponent>(entMng)) {
+					std::cout << "attempting to add collision component\n";
+					entity.add<ECSComponents::CollisionComponent>(entMng, collision);
+				
+				}
+			}
+			else {
+				entity.add<ECSComponents::CollisionComponent>(entMng, ECSComponents::CollisionComponent(10.0f));
+			}
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		if (entity.has<ECSComponents::RenderComponent>(entMng)) {
+			auto& render = entity.get<ECSComponents::RenderComponent>(entMng);
+			ImGui::TextDisabled("Will auto-size: %.1f x %.1f", render.width, render.height);
+		}
+	}
+	if (entity.has<ECSComponents::BoxComponent>(entMng)) {
+		auto& pushComp = entity.get<ECSComponents::BoxComponent>(entMng);
+		ImGui::SeparatorText("Box (Pushable)");
+		if (ImGui::Checkbox("Is Pushable", &pushComp.isPushable)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+		ImGui::DragFloat("Push Resistance", &pushComp.pushResistance, 0.01f, 0.0f, 1.0f);
+	}
+#if 0
+	else {
+		// Allow adding Box component if the entity doesn't have one
+		ImGui::SeparatorText("Box (Pushable)");
+		ImGui::TextDisabled("No Box component attached");
+
+		if (ImGui::Button("Add Box Component")) {
+			entity.add<ECSComponents::BoxComponent>(entMng);
 			if (g_game) g_game->markEntitiesDirty();
 		}
 	}
-
+#endif
+	
 	// --- AIComponent ---
 	if (entity.has<ECSComponents::AIComponent>(entMng)) {
 		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
@@ -2236,8 +2464,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
 
-		drawComp.texture = idleTexData.texture;
-		drawComp.color = Graphics::Color::White;   
+		drawComp.setTexture(idleTexData.texture, idleSelected);
+		drawComp.color = Graphics::Color::White;
 
 
 		drawComp.texID = 0;
@@ -2279,6 +2507,15 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		idleAnim.setLooping(true);
 		ctrl->addAnimation("idle", idleAnim);
 		ctrl->setAnimation("idle");
+
+		// Save animation configuration to component for serialization
+		animComp.frameWidth = idleTexData.frameWidth;
+		animComp.frameHeight = idleTexData.frameHeight;
+		animComp.rows = idleTexData.rows;
+		animComp.cols = idleTexData.cols;
+		animComp.frameDuration = 0.1f;
+		animComp.looping = true;
+		std::strncpy(animComp.currentAnimationName, "idle", sizeof(animComp.currentAnimationName) - 1);
 	}
 
 
@@ -2385,7 +2622,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
 
-		drawComp.texture = walkTexData.texture;
+		drawComp.setTexture(walkTexData.texture, walkSelected);
 		drawComp.color = Graphics::Color::White;
 
 
@@ -2426,6 +2663,15 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		walkAnim.setLooping(true);
 		ctrl->addAnimation("walk", walkAnim);
 		ctrl->setAnimation("walk");
+
+		// Save animation configuration to component for serialization
+		animComp.frameWidth = walkTexData.frameWidth;
+		animComp.frameHeight = walkTexData.frameHeight;
+		animComp.rows = walkTexData.rows;
+		animComp.cols = walkTexData.cols;
+		animComp.frameDuration = 0.1f;
+		animComp.looping = true;
+		std::strncpy(animComp.currentAnimationName, "walk", sizeof(animComp.currentAnimationName) - 1);
 	}
 
 
@@ -2534,7 +2780,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
 
-		drawComp.texture = attackTexData.texture;
+		drawComp.setTexture(attackTexData.texture, attackSelected);
 		drawComp.color = Graphics::Color::White;
 
 
@@ -2574,6 +2820,15 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		attackAnim.setLooping(true);
 		ctrl->addAnimation("attack", attackAnim);
 		ctrl->setAnimation("attack");
+
+		// Save animation configuration to component for serialization
+		animComp.frameWidth = attackTexData.frameWidth;
+		animComp.frameHeight = attackTexData.frameHeight;
+		animComp.rows = attackTexData.rows;
+		animComp.cols = attackTexData.cols;
+		animComp.frameDuration = 0.1f;
+		animComp.looping = true;
+		std::strncpy(animComp.currentAnimationName, "attack", sizeof(animComp.currentAnimationName) - 1);
 	}
 	ImGui::Separator();
 	ImGui::End();
@@ -3016,7 +3271,13 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 	if (ImGui::Button(isPlaying ? "Stop" : "Play")) {
 		isPlaying = !isPlaying;
-		isPlaying ? sceneEditor.playScene() : sceneEditor.stopScene();
+		if (isPlaying) {
+			sceneEditor.playScene();
+		} else {
+			sceneEditor.stopScene();
+			// Immediately invalidate entity cache after stopping scene
+			if (g_game) g_game->markEntitiesDirty();
+		}
 	}
 	ImGui::SameLine();
 	if (ImGui::Button(sceneEditor.getCurrentScene().getState() != Editor::State::Paused ? "Pause" : "Unpause")) {
@@ -3431,8 +3692,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							float newScaleX = tc.scale.x;
 							float newScaleY = tc.scale.y;
 
-							if (activeTransformAxis == 3) {                   
-								// Uniform scaling using diagonal handle  
+							if (activeTransformAxis == 3) {
+								// Uniform scaling using diagonal handle
 								Math::eVec2<float> entityWorldPosForScaling = {tc.pos.x, tc.pos.y};
 								ImVec2 entityScreenPosForScaling = {
 									Graphics::worldToScreen(
@@ -3453,11 +3714,11 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									g_game->getEditorCameraY()).y
 								};
 
-								float initialDist = sqrtf((scaleStartPos.x - entityScreenPosForScaling.x) * (scaleStartPos.x - entityScreenPosForScaling.x) 
-														+ (scaleStartPos.y - entityScreenPosForScaling.y) * (scaleStartPos.y - entityScreenPosForScaling.y)); 
+								float initialDist = sqrtf((scaleStartPos.x - entityScreenPosForScaling.x) * (scaleStartPos.x - entityScreenPosForScaling.x)
+														+ (scaleStartPos.y - entityScreenPosForScaling.y) * (scaleStartPos.y - entityScreenPosForScaling.y));
 
-								float currentDist = sqrtf((mouseScreenPos.x - entityScreenPosForScaling.x) * (mouseScreenPos.x - entityScreenPosForScaling.x) 
-														+ (mouseScreenPos.y - entityScreenPosForScaling.y) * (mouseScreenPos.y - entityScreenPosForScaling.y));                                                           
+								float currentDist = sqrtf((mouseScreenPos.x - entityScreenPosForScaling.x) * (mouseScreenPos.x - entityScreenPosForScaling.x)
+														+ (mouseScreenPos.y - entityScreenPosForScaling.y) * (mouseScreenPos.y - entityScreenPosForScaling.y));
 
 								float scaleFactor = currentDist / std::max(initialDist, 1.0f);
 
@@ -3489,6 +3750,24 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							tc.scale.x = newScaleX;
 							tc.scale.y = newScaleY;
 							lastScale = ImVec2(newScaleX, newScaleY);
+
+							// Update DrawInfo width and height to reflect the scale
+							if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
+								dc.width = dc.width * scaleFactorX;
+								dc.height = dc.height * scaleFactorY;
+
+								// Auto-update collision component if it exists
+								if (e.has<ECSComponents::CollisionComponent>(entityManager)) {
+									auto& collision = e.get<ECSComponents::CollisionComponent>(entityManager);
+									if (collision.type == ECSComponents::ColliderType::CIRCLE) {
+										collision.data.circle.radius = dc.width * 0.5f;
+									} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
+										collision.data.rectangle.width = dc.width;
+										collision.data.rectangle.height = dc.height;
+									}
+								}
+							}
 
 							// Scale all children recursively from parent position
 							Editor::Node* scaledNode = sceneTree.getNodeByEntityID(draggedEntityID);
