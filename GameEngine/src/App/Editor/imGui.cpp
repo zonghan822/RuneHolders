@@ -111,6 +111,12 @@ static std::string g_selectedPrefabForPlacement = "";
 // Entity deletion by click
 static bool g_waitingForEntityDeletion = false;
 
+// Deferred scene loading to prevent crashes during ImGui rendering
+static bool g_pendingNewScene = false;
+static bool g_pendingSceneLoad = false;
+static std::string g_sceneToLoad = "";
+static bool g_refreshSceneList = false;  // Flag to refresh scene list after operations
+
 // Audio filesystems
 static std::vector<std::string> audioAssets;
 
@@ -263,6 +269,26 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 	// END DOCKSPACE
 	imGuiEndDockspace();
+
+	// Process deferred scene operations AFTER all ImGui rendering is complete
+	// This prevents crashes from destroying entities while ImGui is iterating over them
+	if (g_pendingNewScene)
+	{
+		clearSelectedEntity();
+		engine_.getEnoEditor().createEmptyScene(ASSET_SCENE_PATH);
+		g_game->markEntitiesDirty();  // Force entity cache refresh
+		g_pendingNewScene = false;
+		std::cout << "[ImGui] Deferred: Created new scene" << std::endl;
+	}
+	else if (g_pendingSceneLoad)
+	{
+		clearSelectedEntity();
+		engine_.getEnoEditor().selectScene(g_sceneToLoad);
+		g_game->markEntitiesDirty();  // Force entity cache refresh
+		g_pendingSceneLoad = false;
+		g_sceneToLoad = "";
+		std::cout << "[ImGui] Deferred: Loaded scene " << g_sceneToLoad << std::endl;
+	}
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -994,8 +1020,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				renderComp.width = 96.0f;   // Frame size
 				renderComp.height = 96.0f;
 				strncpy_s(renderComp.shape, "Sprite", sizeof(renderComp.shape) - 1);
-				renderComp.texture = walkTexture;
-				strncpy_s(renderComp.texturePath, "Protagonist-Walk-Sheet", sizeof(renderComp.texturePath) - 1);
+				renderComp.setTexture(walkTexture, "Protagonist-Walk-Sheet");
 				renderComp.color = Graphics::Color::White;
 				renderComp.texID = 0;  // Start at first frame, will animate
 
@@ -1270,6 +1295,13 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	// Buffer to change scene name
 	static char scene_name[64] = "";
 
+	// Check global flag for scene list refresh
+	if (g_refreshSceneList)
+	{
+		refreshSceneName = true;
+		g_refreshSceneList = false;
+	}
+
 	if (refreshSceneName)
 	{
 		// Clear the current container
@@ -1350,9 +1382,9 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 			if (editor_.getCurrentScene().getSceneName() != filename)
 			{
 				std::cout << "Loading file: " << filename << std::endl;
-				//editor_.getSceneTree().load(ASSETS_DIR_PATH"saves/scenes/" + filename, filename);
-				editor_.selectScene(filename);
-				g_game->markEntitiesDirty();
+				// Defer scene loading until after ImGui rendering completes
+				g_pendingSceneLoad = true;
+				g_sceneToLoad = filename;
 			}
 			else
 			{
@@ -1490,8 +1522,9 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 	if (ImGui::Button("Create new scene"))
 	{
-		editor_.createEmptyScene(ASSET_SCENE_PATH);
-		refreshSceneName = true;
+		// Defer scene creation until after ImGui rendering completes
+		g_pendingNewScene = true;
+		g_refreshSceneList = true;
 	}
 
 
@@ -2239,8 +2272,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
 
-		drawComp.texture = idleTexData.texture;
-		drawComp.color = Graphics::Color::White;   
+		drawComp.setTexture(idleTexData.texture, idleSelected);
+		drawComp.color = Graphics::Color::White;
 
 
 		drawComp.texID = 0;
@@ -2282,6 +2315,15 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		idleAnim.setLooping(true);
 		ctrl->addAnimation("idle", idleAnim);
 		ctrl->setAnimation("idle");
+
+		// Save animation configuration to component for serialization
+		animComp.frameWidth = idleTexData.frameWidth;
+		animComp.frameHeight = idleTexData.frameHeight;
+		animComp.rows = idleTexData.rows;
+		animComp.cols = idleTexData.cols;
+		animComp.frameDuration = 0.1f;
+		animComp.looping = true;
+		std::strncpy(animComp.currentAnimationName, "idle", sizeof(animComp.currentAnimationName) - 1);
 	}
 
 
@@ -2388,7 +2430,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
 
-		drawComp.texture = walkTexData.texture;
+		drawComp.setTexture(walkTexData.texture, walkSelected);
 		drawComp.color = Graphics::Color::White;
 
 
@@ -2429,6 +2471,15 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		walkAnim.setLooping(true);
 		ctrl->addAnimation("walk", walkAnim);
 		ctrl->setAnimation("walk");
+
+		// Save animation configuration to component for serialization
+		animComp.frameWidth = walkTexData.frameWidth;
+		animComp.frameHeight = walkTexData.frameHeight;
+		animComp.rows = walkTexData.rows;
+		animComp.cols = walkTexData.cols;
+		animComp.frameDuration = 0.1f;
+		animComp.looping = true;
+		std::strncpy(animComp.currentAnimationName, "walk", sizeof(animComp.currentAnimationName) - 1);
 	}
 
 
@@ -2537,7 +2588,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 		if (!ctrl) return;
 
-		drawComp.texture = attackTexData.texture;
+		drawComp.setTexture(attackTexData.texture, attackSelected);
 		drawComp.color = Graphics::Color::White;
 
 
@@ -2577,6 +2628,15 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		attackAnim.setLooping(true);
 		ctrl->addAnimation("attack", attackAnim);
 		ctrl->setAnimation("attack");
+
+		// Save animation configuration to component for serialization
+		animComp.frameWidth = attackTexData.frameWidth;
+		animComp.frameHeight = attackTexData.frameHeight;
+		animComp.rows = attackTexData.rows;
+		animComp.cols = attackTexData.cols;
+		animComp.frameDuration = 0.1f;
+		animComp.looping = true;
+		std::strncpy(animComp.currentAnimationName, "attack", sizeof(animComp.currentAnimationName) - 1);
 	}
 	ImGui::Separator();
 	ImGui::End();

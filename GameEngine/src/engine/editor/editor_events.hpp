@@ -46,4 +46,9 @@ namespace Editor
 	 * \brief				Request to redo the last undone action
 	*//*========================================================================================*/
 	struct RedoAction {};
+
+	/*============================================================================================
+	 * \brief				Event published when a scene is cleared/loaded to reset UI state
+	*//*========================================================================================*/
+	struct SceneCleared {};
 }

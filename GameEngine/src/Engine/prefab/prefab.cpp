@@ -325,6 +325,29 @@ ECS::Entity instantiatePrefabFromSnapshot(
             Editor::EntitySerializer::restoreComponent(newEntity, compSnapshot, entityManager);
         }
 
+        // After restoring components, load textures if needed
+        if (newEntity.has<ECSComponents::RenderComponent>(entityManager))
+        {
+            auto& renderComp = newEntity.get<ECSComponents::RenderComponent>(entityManager);
+
+            // If texturePath is set but texture is null, load the texture
+            if (renderComp.texturePath[0] != '\0' && !renderComp.texture)
+            {
+                auto tex = std::make_shared<Graphics::EnoTexture>();
+                std::string fullpath = ASSETS_DIR_PATH "/art/" + std::string(renderComp.texturePath) + ".png";
+
+                if (tex->loadFromFile(fullpath))
+                {
+                    renderComp.texture = tex;
+                    std::cout << "[Prefab] Loaded texture: " << renderComp.texturePath << "\n";
+                }
+                else
+                {
+                    std::cerr << "[Prefab] Failed to load texture: " << fullpath << "\n";
+                }
+            }
+        }
+
         // Add PrefabInstanceComponent to track which prefab this came from
         newEntity.add<ECSComponents::PrefabInstanceComponent>(entityManager, prefabName.c_str());
 
