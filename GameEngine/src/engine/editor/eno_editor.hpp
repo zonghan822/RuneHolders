@@ -173,6 +173,8 @@ namespace Editor
 			// Set editor state to stop
 			if (selectedScene_->getState() != State::Stopped) selectedScene_->stop();
 
+			// Publish event to notify UI that scene was cleared
+			bus_.publish(SceneCleared{});
 		}
 
 		// Plays the selected scene
@@ -311,7 +313,7 @@ namespace Editor
 			newFile.close();
 
 			// Load file first (this sets currentScene)
-			tree_.load(fullPath);	
+			tree_.load(fullPath);
 
 			// Create and append a new scene
 			std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
@@ -324,6 +326,9 @@ namespace Editor
 
 			// Save the current scene name to LastSavedScene.txt
 			updateLastSavedScene();
+
+			// Publish event to notify UI that scene was cleared
+			bus_.publish(SceneCleared{});
 		}
 
 		// Load last saved scene

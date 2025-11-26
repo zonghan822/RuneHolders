@@ -167,6 +167,13 @@ namespace Editor
 				snapshot.components.emplace_back(comp);
 			}
 
+			// Box (Pushable)
+			if (entity.has<ECSComponents::BoxComponent>(entityManager))
+			{
+				auto& comp = entity.get<ECSComponents::BoxComponent>(entityManager);
+				snapshot.components.emplace_back(comp);
+			}
+
 			// PrefabInstance
 			if (entity.has<ECSComponents::PrefabInstanceComponent>(entityManager))
 			{

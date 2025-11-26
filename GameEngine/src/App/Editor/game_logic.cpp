@@ -71,6 +71,18 @@ void GameApplication::initialize() {
 			deleteSelectedEntity(engine_.getEnoEditor().getSceneTree(), engine_.getEntityManager(), engine_.getEnoEditor().getUndoManager());
 		});
 
+	// Subscribe to scene cleared event to reset UI state
+	engine_.getEventBus().subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)
+		{
+			extern void clearSelectedEntity();
+			clearSelectedEntity();
+			// Clear entity caches immediately to prevent accessing destroyed entities
+			cachedDrawableEntities_.clear();
+			cachedSceneTwoEntities_.clear();
+			entitiesDirty_ = true;
+			std::cout << "[GameApplication] Scene cleared, reset selected entity and cleared caches" << std::endl;
+		});
+
 	std::cout << "Game initialized successfully!" << std::endl;
 }
 
@@ -784,6 +796,43 @@ void GameApplication::updateEntities() {
 		cachedDrawableEntities_ = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
 		cachedSceneTwoEntities_ = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
 		entitiesDirty_ = false;
+
+		// Restore animations from serialized data after scene load
+		for (auto& entity : cachedDrawableEntities_) {
+			if (entity.has<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager()) &&
+				entity.has<ECSComponents::DrawInfoComponent>(engine_.getEntityManager())) {
+				auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager());
+				auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
+
+				// Check if animation data exists but controller is not initialized
+				if (animComp.frameWidth > 0 && animComp.frameHeight > 0 && animComp.controllerID == 0) {
+					// Create new controller
+					animComp.controllerID = engine_.getAnimationRegistry().createController();
+					Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+
+					if (ctrl && drawComp.texture) {
+						// Recreate the animation from saved configuration
+						Animation::EnoAnimation anim = Animation::createSpriteSheetAnimation(
+							animComp.frameWidth,
+							animComp.frameHeight,
+							drawComp.texture->getWidth(),
+							drawComp.texture->getHeight(),
+							0,  // start frame
+							animComp.rows * animComp.cols,  // total frames
+							animComp.frameDuration
+						);
+
+						anim.setLooping(animComp.looping);
+						ctrl->addAnimation(animComp.currentAnimationName, anim);
+						ctrl->setAnimation(animComp.currentAnimationName);
+
+						std::cout << "[GameLogic] Restored animation '" << animComp.currentAnimationName
+							<< "' for entity (frames: " << animComp.frameWidth << "x" << animComp.frameHeight
+							<< ", grid: " << animComp.rows << "x" << animComp.cols << ")" << std::endl;
+					}
+				}
+			}
+		}
 	}
 
 
@@ -972,7 +1021,7 @@ void GameApplication::updateEntities() {
 			{
 
 				// Mark entities as dirty to refresh the rendering cache
-				//entitiesDirty_ = true;
+				entitiesDirty_ = true;
 				// Toggle flag
 				playAfterStop = true;
 				hasBegun = false;

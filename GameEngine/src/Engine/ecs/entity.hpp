@@ -292,8 +292,16 @@ namespace ECS
 		*//*========================================================================================*/
 		void destroyEntity(const uint32_t& entityID)
 		{
+			// Check if entity exists in the map
+			auto it = entityMap_.find(entityID);
+			if (it == entityMap_.end())
+			{
+				std::cerr << "[EntityManager] Failed to find this entity in the Entity Map!" << std::endl;
+				return;
+			}
+
 			// Clean up archetype and related chunks
-			EntityLoc loc = entityMap_.find(entityID)->second;
+			EntityLoc loc = it->second;
 			Chunk* chunk = loc.archetype->chunks_[loc.chunkIndex].get();
 
 			// Implement swap-and-pop: move the last entity to fill the gap
