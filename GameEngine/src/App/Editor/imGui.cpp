@@ -1867,6 +1867,36 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			}
 		}
 
+		// Rotation field (edits TransformComponent rotation)
+		if (entity.has<ECSComponents::TransformComponent>(entMng)) {
+			auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
+
+			// Track rotation editing for undo
+			static Math::eVec2<float> oldRotInspector;
+			static bool editingRotInspector = false;
+
+			if (ImGui::IsItemActive() && !editingRotInspector) {
+				oldRotInspector = transform.rot;
+				editingRotInspector = true;
+			}
+
+			// Convert radians to degrees for user-friendly editing
+			float rotationDegrees = transform.rot.x * (180.0f / 3.14159265f);
+			if (ImGui::DragFloat("Rotation", &rotationDegrees, 1.0f, -360.0f, 360.0f, "%.1f deg")) {
+				// Convert degrees back to radians
+				transform.rot.x = rotationDegrees * (3.14159265f / 180.0f);
+				if (g_game) g_game->markEntitiesDirty();
+			}
+
+			if (editingRotInspector && !ImGui::IsItemActive()) {
+				// Record undo when user finishes editing
+				if (oldRotInspector.x != transform.rot.x || oldRotInspector.y != transform.rot.y) {
+					undoManager.recordRotation(entity, oldRotInspector, transform.rot);
+				}
+				editingRotInspector = false;
+			}
+		}
+
 		// Shape type selector (Circle or Rectangle)
 		const char* shapeTypes[] = { "Circle", "Rectangle" };
 		int currentShapeIndex = (strcmp(draw.shape, "Circle") == 0) ? 0 : 1;
@@ -3689,8 +3719,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							float newScaleX = tc.scale.x;
 							float newScaleY = tc.scale.y;
 
-							if (activeTransformAxis == 3) {                   
-								// Uniform scaling using diagonal handle  
+							if (activeTransformAxis == 3) {
+								// Uniform scaling using diagonal handle
 								Math::eVec2<float> entityWorldPosForScaling = {tc.pos.x, tc.pos.y};
 								ImVec2 entityScreenPosForScaling = {
 									Graphics::worldToScreen(
@@ -3711,11 +3741,11 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									g_game->getEditorCameraY()).y
 								};
 
-								float initialDist = sqrtf((scaleStartPos.x - entityScreenPosForScaling.x) * (scaleStartPos.x - entityScreenPosForScaling.x) 
-														+ (scaleStartPos.y - entityScreenPosForScaling.y) * (scaleStartPos.y - entityScreenPosForScaling.y)); 
+								float initialDist = sqrtf((scaleStartPos.x - entityScreenPosForScaling.x) * (scaleStartPos.x - entityScreenPosForScaling.x)
+														+ (scaleStartPos.y - entityScreenPosForScaling.y) * (scaleStartPos.y - entityScreenPosForScaling.y));
 
-								float currentDist = sqrtf((mouseScreenPos.x - entityScreenPosForScaling.x) * (mouseScreenPos.x - entityScreenPosForScaling.x) 
-														+ (mouseScreenPos.y - entityScreenPosForScaling.y) * (mouseScreenPos.y - entityScreenPosForScaling.y));                                                           
+								float currentDist = sqrtf((mouseScreenPos.x - entityScreenPosForScaling.x) * (mouseScreenPos.x - entityScreenPosForScaling.x)
+														+ (mouseScreenPos.y - entityScreenPosForScaling.y) * (mouseScreenPos.y - entityScreenPosForScaling.y));
 
 								float scaleFactor = currentDist / std::max(initialDist, 1.0f);
 
@@ -3747,6 +3777,24 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							tc.scale.x = newScaleX;
 							tc.scale.y = newScaleY;
 							lastScale = ImVec2(newScaleX, newScaleY);
+
+							// Update DrawInfo width and height to reflect the scale
+							if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
+								dc.width = dc.width * scaleFactorX;
+								dc.height = dc.height * scaleFactorY;
+
+								// Auto-update collision component if it exists
+								if (e.has<ECSComponents::CollisionComponent>(entityManager)) {
+									auto& collision = e.get<ECSComponents::CollisionComponent>(entityManager);
+									if (collision.type == ECSComponents::ColliderType::CIRCLE) {
+										collision.data.circle.radius = dc.width * 0.5f;
+									} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
+										collision.data.rectangle.width = dc.width;
+										collision.data.rectangle.height = dc.height;
+									}
+								}
+							}
 
 							// Scale all children recursively from parent position
 							Editor::Node* scaledNode = sceneTree.getNodeByEntityID(draggedEntityID);
