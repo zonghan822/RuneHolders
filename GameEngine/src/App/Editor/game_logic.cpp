@@ -37,21 +37,21 @@ void GameApplication::initialize() {
 	setupScripting();
 	setupFont();
 
+	auto& tileMap = engine_.getTileMap();
+
+	// Set up tile map editor (To be removed after tile map node is set up)
+	mapEditor_ = std::make_unique<MapEditor>(tileMap);
+	Math::eVec2<float> worldSize = tileMap.getWorldSize();
+
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
 
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
 
-	auto& tileMap = engine_.getTileMap();
-
-	// Set up tile map editor (To be removed after tile map node is set up)
-	mapEditor_ = std::make_unique<MapEditor>(tileMap);
-
 	// Center editor camera on the middle of the game world initially
-	Math::eVec2<float> worldSize = tileMap.getWorldSize();
-	editorCameraX_ = worldSize.x / 2.0f;
-	editorCameraY_ = worldSize.y / 2.0f;
+	editorCameraX_ = (worldSize.x / 2.0f) - static_cast<float>(EDITOR_WIDTH) / 2.f;
+	editorCameraY_ = (worldSize.y / 2.0f) - static_cast<float>(EDITOR_HEIGHT) / 2.f;
 
 	// Subscribe to delete selected entity event (using GameApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
@@ -296,6 +296,8 @@ void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& graphics_ = engine_.getGraphicsManager();
 	auto& inputMng = engine_.getInputManager();
+	auto& tileMap = engine_.getTileMap();
+	Math::eVec2<float> worldSize = tileMap.getWorldSize();
 
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
@@ -308,13 +310,8 @@ void GameApplication::updateGameLogic() {
 	// Update engine playing state based on editor state
 	engine_.setIsPlaying(engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
 
-	// Use FIXED virtual resolution for consistent rendering
-	Math::eVec2<float> renderSize{
-		static_cast<float>(VIRTUAL_WIDTH),
-		static_cast<float>(VIRTUAL_HEIGHT)
-	};
-
 	if (gameFramebuffer_) {
+
 		// CRITICAL: Set projection matrix to fixed virtual resolution
 		engine_.getGraphicsManager().setProjectionMatrix(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
@@ -402,7 +399,6 @@ void GameApplication::updateGameLogic() {
 	//drawShapes();
 	drawPlayerAndIndicator();
 	graphics_.flush();
-	drawText(renderSize);
 
 	// Unbind game framebuffer
 	if (gameFramebuffer_) {
@@ -459,8 +455,8 @@ void GameApplication::updateGameLogic() {
 		}
 
 		// Clamp camera to world bounds
-		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, static_cast<float>(VIRTUAL_WIDTH - EDITOR_WIDTH));
-		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, static_cast<float>(VIRTUAL_HEIGHT - EDITOR_HEIGHT));
+		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, worldSize.x -  static_cast<float>(EDITOR_WIDTH));
+		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, worldSize.y - static_cast<float>(EDITOR_HEIGHT));
 
 		// Set projection for editor view
 		engine_.getGraphicsManager().setProjectionMatrix(EDITOR_WIDTH, EDITOR_HEIGHT);
@@ -478,8 +474,8 @@ void GameApplication::updateGameLogic() {
 			int bgHeight = backgroundTexture_->getHeight();
 
 			// Calculate how many times to tile the background to cover the virtual world
-			int tilesX = (VIRTUAL_WIDTH + bgWidth - 1) / bgWidth;  // Ceiling division
-			int tilesY = (VIRTUAL_HEIGHT + bgHeight - 1) / bgHeight;
+			int tilesX = (worldSize.x + bgWidth - 1) / bgWidth;  // Ceiling division
+			int tilesY = (worldSize.y + bgHeight - 1) / bgHeight;
 
 			// Draw tiled background
 			for (int ty = 0; ty < tilesY; ++ty) {
@@ -1022,32 +1018,6 @@ void GameApplication::updateEntities() {
 
 }
 
-
-void GameApplication::drawText(Math::eVec2<float> windowSize) {
-	// DEMO DRAW TEXT
-	auto& graphics = engine_.getGraphicsManager();
-	auto& input = engine_.getInputManager();
-	std::string text;
-	if (input.isMousePressed(GLFW_MOUSE_BUTTON_LEFT) && input.isMousePressed(GLFW_MOUSE_BUTTON_RIGHT)) {
-		text = "Left and Right Mouse Button pressed!";
-	}
-	else if (input.isMousePressed(GLFW_MOUSE_BUTTON_LEFT)) {
-		text = "Left Mouse Button pressed!";
-	}
-	else if (input.isMousePressed(GLFW_MOUSE_BUTTON_RIGHT)) {
-		text = "Right Mouse Button pressed!";
-	}
-	else {
-		text = "No Mouse Button pressed!";
-	}
-	std::stringstream fpsSs;
-	fpsSs.precision(2);      // 2 significant digits
-	fpsSs << std::fixed;     // fixed-point notation
-	fpsSs << "FPS: " << engine_.getFPS();
-	graphics.drawText(timesFont_, text, { 25.f , 50.f }, 1.f, Graphics::Color::Black);
-	graphics.drawText(timesFont_, fpsSs.str(), { windowSize.x - 125.f , 25.f }, 0.5f, Graphics::Color::Red);
-	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.x / 2.f, windowSize.y - 25.f }, 0.75f, Graphics::Color::Blue);
-}
 
 void GameApplication::drawPlayerAndIndicator() {
 	auto& graphics = engine_.getGraphicsManager();

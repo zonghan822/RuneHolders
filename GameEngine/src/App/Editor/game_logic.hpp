@@ -156,6 +156,4 @@ private:
     void drawPlayerAndIndicator();
 
     void drawShapes();
-
-    void drawText(Math::eVec2<float> windowSize);
 };

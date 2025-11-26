@@ -1089,10 +1089,13 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		auto& entityManager = engine_.getEntityManager();
 
 		// Create transform with default position at center of screen
+		float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
+		float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
+
 		ECSComponents::TransformComponent transform{
-			{600.0f, 450.0f},  // Center position
-			{0.0f, 0.0f},      // Velocity
-			{1.0f, 1.0f}       // Scale
+			{nodePosX, nodePosY}, // Center position
+			{0.0f, 0.0f},		  // Velocity
+			{1.0f, 1.0f}          // Scale
 		};
 
 		// Create render component with default size and color
@@ -3083,7 +3086,7 @@ void displayGameView() {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
 	// Display info text - this is now a read-only overview window
-	ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Game View - Full Scene Overview (Read-Only)");
+	ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Mini Map - Full Scene Overview (Read-Only)");
 	ImGui::Separator();
 
 	if (g_game && g_game->getGameFramebuffer()) {
