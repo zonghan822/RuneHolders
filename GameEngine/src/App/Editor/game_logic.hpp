@@ -52,11 +52,16 @@ private:
     float worldHeight_;
 
     // Editor camera settings (zoomed in view)
-    static constexpr int EDITOR_WIDTH = 640;   // Half width for zoomed view
-    static constexpr int EDITOR_HEIGHT = 360;   // Half height for zoomed view
+    static constexpr int EDITOR_WIDTH = 640;   // Base width for zoomed view
+    static constexpr int EDITOR_HEIGHT = 360;   // Base height for zoomed view
     float editorCameraX_ = 0.0f;  // Camera offset X
     float editorCameraY_ = 0.0f;  // Camera offset Y
     float editorCameraSpeed_ = 300.0f;  // Camera movement speed
+    float editorZoomLevel_ = 1.0f;  // Zoom level (1.0 = normal, >1.0 = zoomed in, <1.0 = zoomed out)
+
+    // Track last framebuffer size to avoid recreating every frame
+    int lastEditorFbWidth_ = 0;
+    int lastEditorFbHeight_ = 0;
 
     // Editor view min/max coordinates
     Math::eVec2<float> editorViewMin_{ 0.f, 0.f };
@@ -109,12 +114,25 @@ public:
     // Get fixed virtual resolution
     float getWorldWidth() const { return worldWidth_; }
     float getWorldHeight() const { return worldHeight_; }
-    int getEditorWidth() const { return EDITOR_WIDTH; }
-    int getEditorHeight() const { return EDITOR_HEIGHT; }
+    int getEditorWidth() const { return static_cast<int>(EDITOR_WIDTH / editorZoomLevel_); }
+    int getEditorHeight() const { return static_cast<int>(EDITOR_HEIGHT / editorZoomLevel_); }
 
     // Get editor camera position
     float getEditorCameraX() const { return editorCameraX_; }
     float getEditorCameraY() const { return editorCameraY_; }
+
+    // Zoom control
+    void setEditorZoom(float zoom) {
+        // Calculate minimum zoom based on world size to prevent viewport exceeding world bounds
+        float minZoomX = EDITOR_WIDTH / worldWidth_;
+        float minZoomY = EDITOR_HEIGHT / worldHeight_;
+        float minZoom = std::max(minZoomX, minZoomY);  // Use the larger to ensure we don't exceed in either dimension
+        minZoom = std::max(minZoom, 0.1f);  // Absolute minimum of 0.1x
+
+        editorZoomLevel_ = std::clamp(zoom, minZoom, 4.0f);
+    }
+    float getEditorZoom() const { return editorZoomLevel_; }
+    void adjustEditorZoom(float delta) { setEditorZoom(editorZoomLevel_ + delta); }
 
     // Get/Set editor view min/max
     void setEditorViewRect(const Math::eVec2<float>& min, const Math::eVec2<float>& max) {

@@ -986,68 +986,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	}
 	ImGui::Separator();
 
-	// ==================== SPAWN ANIMATED ENTITIES ====================
-	ImGui::Text("=== ANIMATED SPAWNER ===");
-	if (ImGui::Button("Spawn 1000 Animated Entities")) {
-		auto& entityManager = engine_.getEntityManager();
-		auto& loader = engine_.getResourceLoader();
-
-		// Load the walking animation spritesheet
-		auto walkTexture = loader.getTexture("Protagonist-Walk-Sheet");
-		if (!walkTexture) {
-			std::cout << "[ERROR] Failed to load Protagonist-Walk-Sheet texture!\n";
-		}
-		else {
-			std::cout << "[INFO] Spawning 1000 animated rotating entities...\n";
-
-			// Random number generation setup
-			std::random_device rd;
-			std::mt19937 gen(rd());
-			std::uniform_real_distribution<float> posX(0.0f, 1280.0f);  // Screen width
-			std::uniform_real_distribution<float> posY(0.0f, 720.0f);   // Screen height
-			std::uniform_real_distribution<float> rotSpeed(-3.14f, 3.14f); // Rotation speed (radians/sec)
-
-			for (int i = 0; i < 10; ++i) {
-				// Create transform with random position and rotation speed
-				// rot.x = current rotation angle, rot.y = rotation speed
-				ECSComponents::TransformComponent transform{
-					{posX(gen), posY(gen)},      // Random position
-					{0.0f, rotSpeed(gen)},       // rot.x = angle (0), rot.y = rotation speed
-					{1.0f, 1.0f}                 // Scale
-				};
-
-				// Create render component with walk animation texture
-				ECSComponents::RenderComponent renderComp;
-				renderComp.width = 96.0f;   // Frame size
-				renderComp.height = 96.0f;
-				strncpy_s(renderComp.shape, "Sprite", sizeof(renderComp.shape) - 1);
-				renderComp.setTexture(walkTexture, "Protagonist-Walk-Sheet");
-				renderComp.color = Graphics::Color::White;
-				renderComp.texID = 0;  // Start at first frame, will animate
-
-				// Create name component
-				ECSComponents::NameComponent nameComp;
-				std::string entityName = "AnimatedEntity " + std::to_string(i + 1);
-				strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
-				nameComp.name[sizeof(nameComp.name) - 1] = '\0';
-
-				// Create entity with all components
-				ECS::Entity entity = entityManager.create<ECSComponents::TransformComponent>(transform);
-				entity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
-				entity.add<ECSComponents::NameComponent>(entityManager, nameComp);
-				
-
-
-				// Add to scene tree as root node
-				sceneTree.createFromEntity(entity, nullptr);
-			}
-
-			if (g_game) g_game->markEntitiesDirty();
-			std::cout << "[SUCCESS] Spawned 1000 animated rotating entities!\n";
-		}
-	}
-	ImGui::Separator();
-
 	// ==================== HIERARCHY CONTROLS ====================
 	static int entityCounter = 1;  // Track entity numbering
 	static bool attachScript = false; // Checkbox state
@@ -2420,6 +2358,41 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		//}
 	}
 
+	// --------- Camera Component ----------
+	if (entity.has<ECSComponents::CameraComponent>(entMng)) {
+		auto& camera = entity.get<ECSComponents::CameraComponent>(entMng);
+		ImGui::SeparatorText("Camera");
+
+		// Active toggle (unique label to avoid conflicts with CollisionComponent)
+		ImGui::Checkbox("Is Active##camera", &camera.isActive);
+
+		// Viewport size
+		ImGui::DragFloat("Viewport Width", &camera.viewportWidth, 10.0f, 100.0f, 10000.0f);
+		ImGui::DragFloat("Viewport Height", &camera.viewportHeight, 10.0f, 100.0f, 10000.0f);
+
+		// Camera position (center of viewport)
+		ImGui::DragFloat2("Camera Position", (float*)&camera.position, 1.0f);
+	}
+	else {
+		// Allow adding camera component
+		ImGui::SeparatorText("Camera");
+		ImGui::TextDisabled("No camera attached");
+
+		if (ImGui::Button("Add Camera")) {
+			ECSComponents::CameraComponent camera;
+			camera.viewportWidth = 1920.0f;
+			camera.viewportHeight = 1080.0f;
+			camera.isActive = false; // Don't activate by default
+
+			// Set position to center of world
+			auto& tileMap = engine_.getTileMap();
+			Math::eVec2<float> worldSize = tileMap.getWorldSize();
+			camera.position = Math::eVec2<float>{ worldSize.x * 0.5f, worldSize.y * 0.5f };
+
+			entity.add<ECSComponents::CameraComponent>(entMng, camera);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
 
 	// --------- Button Component ----------
 	bool hasButtonComponent = entity.has<ECSComponents::ButtonComponent>(entMng);
@@ -3716,6 +3689,16 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	if (ImGui::IsKeyPressed(ImGuiKey_E)) currentGizmoMode = GIZMO_ROTATE;
 	if (ImGui::IsKeyPressed(ImGuiKey_R)) currentGizmoMode = GIZMO_SCALE;
 
+	// Keyboard shortcuts for zoom (+ and - keys)
+	if (g_game) {
+		if (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)) {
+			g_game->adjustEditorZoom(0.1f);  // Zoom in
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_Minus) || ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract)) {
+			g_game->adjustEditorZoom(-0.1f);  // Zoom out
+		}
+	}
+
 	ImGui::SameLine();
 	ImGui::Text("|");
 	ImGui::SameLine();
@@ -3736,8 +3719,14 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 	ImGui::Separator();
 
-	// Informational text
-	ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Editor View - Use WASD to move camera");
+	// Informational text with zoom level
+	if (g_game) {
+		ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f),
+			"Editor View - WASD: Move | Mouse Wheel/+/-: Zoom (%.2fx)",
+			g_game->getEditorZoom());
+	} else {
+		ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Editor View - Use WASD to move camera");
+	}
 	ImGui::Separator();
 
 	if (g_game && g_game->getEditorFramebuffer()) {
@@ -3790,6 +3779,28 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
 			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
 			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
+
+			// ========== MOUSE WHEEL ZOOM ==========
+			if (ImGui::IsItemHovered()) {
+				float wheel = ImGui::GetIO().MouseWheel;
+				if (wheel != 0.0f) {
+					// Get mouse position in viewport before zoom
+					ImVec2 mousePos = ImGui::GetMousePos();
+					Math::eVec2<float> worldPosBeforeZoom = Graphics::screenToWorld(
+						{ mousePos.x, mousePos.y },
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY()
+					);
+
+					// Adjust zoom (0.1 per wheel notch)
+					float zoomDelta = wheel * 0.1f;
+					g_game->adjustEditorZoom(zoomDelta);
+				}
+			}
 
 			// ========== DRAG-AND-DROP TEXTURE FROM ASSET BROWSER ==========
 			if (ImGui::BeginDragDropTarget())
@@ -3976,6 +3987,87 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						drawGizmos(drawList, windowPos, entityScreenPos, gizmoSize, currentGizmoMode);
 						break;
 					}
+				}
+			}
+
+			// Draw camera preview rectangle for all active cameras
+			auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+			for (auto& camEntity : cameraEntities) {
+				auto& cam = camEntity.get<ECSComponents::CameraComponent>(entityManager);
+
+				if (cam.isActive) {
+					// Calculate camera bounds in world space
+					// Camera position is CENTER, so calculate edges from center
+					float camLeft = cam.position.x - cam.viewportWidth * 0.5f;
+					float camRight = cam.position.x + cam.viewportWidth * 0.5f;
+					float camTop = cam.position.y - cam.viewportHeight * 0.5f;
+					float camBottom = cam.position.y + cam.viewportHeight * 0.5f;
+
+					// Convert camera corners to screen space
+					Math::eVec2<float> topLeft = Graphics::worldToScreen(
+						{ camLeft, camTop },
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY()
+					);
+
+					Math::eVec2<float> bottomRight = Graphics::worldToScreen(
+						{ camRight, camBottom },
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY()
+					);
+
+					// Draw camera viewport rectangle (cyan border, semi-transparent fill)
+					drawList->AddRectFilled(
+						ImVec2(topLeft.x, topLeft.y),
+						ImVec2(bottomRight.x, bottomRight.y),
+						IM_COL32(0, 255, 255, 30)  // Cyan fill with low alpha
+					);
+					drawList->AddRect(
+						ImVec2(topLeft.x, topLeft.y),
+						ImVec2(bottomRight.x, bottomRight.y),
+						IM_COL32(0, 255, 255, 255),  // Solid cyan border
+						0.0f, 0, 2.0f  // 2px thick border
+					);
+
+					// Draw camera center crosshair
+					Math::eVec2<float> camCenterScreen = Graphics::worldToScreen(
+						cam.position,
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY()
+					);
+					float crossSize = 10.0f;
+					drawList->AddLine(
+						ImVec2(camCenterScreen.x - crossSize, camCenterScreen.y),
+						ImVec2(camCenterScreen.x + crossSize, camCenterScreen.y),
+						IM_COL32(0, 255, 255, 255), 2.0f
+					);
+					drawList->AddLine(
+						ImVec2(camCenterScreen.x, camCenterScreen.y - crossSize),
+						ImVec2(camCenterScreen.x, camCenterScreen.y + crossSize),
+						IM_COL32(0, 255, 255, 255), 2.0f
+					);
+
+					// Draw label
+					char label[128];
+					snprintf(label, sizeof(label), "Camera %.0fx%.0f",
+						cam.viewportWidth, cam.viewportHeight);
+					drawList->AddText(
+						ImVec2(topLeft.x + 5, topLeft.y + 5),
+						IM_COL32(0, 255, 255, 255),
+						label
+					);
 				}
 			}
 

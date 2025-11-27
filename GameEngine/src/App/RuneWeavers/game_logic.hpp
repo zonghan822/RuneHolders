@@ -101,11 +101,13 @@ private:
     void setupAnimations();
     void setupScripting();
     void setupFont();           // setup font
+    void setupCamera();         // setup camera system
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
     void loadEntityTextures();  // Load textures for entities with texture paths
+    void updateCamera(float deltaTime);  // Update camera position and projection
 
     void drawPlayerAndIndicator();
 

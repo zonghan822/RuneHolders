@@ -10,6 +10,7 @@
 *//*========================================================================================*/
 
 #include "game_logic.hpp"
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include "math/math.hpp"
 
@@ -20,6 +21,9 @@ float rotationRadians = 0.f;
 void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
 	engine_.setup();
+
+	// Set RuneWeavers to fullscreen mode (Editor stays windowed)
+	engine_.getWindowManager().setFullscreen(true);
 
 	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
@@ -34,6 +38,7 @@ void GameApplication::initialize() {
 	setupAnimations();
 	setupScripting();
 	setupFont();
+	setupCamera();
 
 	auto& tileMap = engine_.getTileMap();
 
@@ -134,6 +139,33 @@ void GameApplication::setupGameSystems() {
 void GameApplication::setupFont() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
+}
+
+void GameApplication::setupCamera() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Check if a camera already exists in the scene
+	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+
+	if (cameraEntities.empty()) {
+		// No camera found, create one
+		std::cout << "[RuneWeavers] No camera found, creating default camera" << std::endl;
+
+		// Create camera component with default viewport
+		ECSComponents::CameraComponent camera;
+		camera.viewportWidth = 1920.0f;
+		camera.viewportHeight = 1080.0f;
+		camera.position = Math::eVec2<float>{ camera.viewportWidth * 0.5f, camera.viewportHeight * 0.5f };
+		camera.isActive = true;
+
+		ECSComponents::NameComponent nameComp("Main Camera");
+		ECS::Entity cameraEntity = entityManager.create<ECSComponents::NameComponent, ECSComponents::CameraComponent>(nameComp, camera);
+
+		std::cout << "[RuneWeavers] Camera created at position ("
+				  << camera.position.x << ", " << camera.position.y << ")" << std::endl;
+	} else {
+		std::cout << "[RuneWeavers] Camera found in scene" << std::endl;
+	}
 }
 
 void GameApplication::setupScripting() {
@@ -287,6 +319,48 @@ void GameApplication::setupAnimations() {
 	std::cout << "Player animation setup complete!" << std::endl;
 }
 
+void GameApplication::updateCamera(float deltaTime) {
+	auto& entityManager = engine_.getEntityManager();
+	auto& inputMng = engine_.getInputManager();
+
+	// Find the active camera
+	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+
+	for (auto& cameraEntity : cameraEntities) {
+		auto& camera = cameraEntity.get<ECSComponents::CameraComponent>(entityManager);
+
+		if (!camera.isActive) continue;
+
+		// Camera is static - position and viewport are set in editor only
+		// Set projection matrix based on camera
+		// The camera position is the center of the viewport
+		float left = camera.position.x - camera.viewportWidth * 0.5f;
+		float right = camera.position.x + camera.viewportWidth * 0.5f;
+		float top = camera.position.y - camera.viewportHeight * 0.5f;
+		float bottom = camera.position.y + camera.viewportHeight * 0.5f;
+
+		// Create orthographic projection matrix
+		std::array<float, 16> projectionMatrix;
+		projectionMatrix.fill(0.0f);
+		projectionMatrix[0] = 2.0f / (right - left);
+		projectionMatrix[5] = 2.0f / (top - bottom);
+		projectionMatrix[10] = -2.0f / (1.0f - (-1.0f));
+		projectionMatrix[12] = -(right + left) / (right - left);
+		projectionMatrix[13] = -(top + bottom) / (top - bottom);
+		projectionMatrix[14] = -(1.0f + (-1.0f)) / (1.0f - (-1.0f));
+		projectionMatrix[15] = 1.0f;
+
+		engine_.getGraphicsManager().setProjectionMatrix(projectionMatrix.data());
+
+		// Set OpenGL viewport to match window size
+		auto [windowWidth, windowHeight] = engine_.getWindowManager().getFramebufferSize();
+		glViewport(0, 0, windowWidth, windowHeight);
+
+		// Only use the first active camera
+		break;
+	}
+}
+
 void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& graphics_ = engine_.getGraphicsManager();
@@ -304,8 +378,8 @@ void GameApplication::updateGameLogic() {
 	// Game is always playing
 	engine_.setIsPlaying(true);
 
-	// CRITICAL: Set projection matrix to fixed virtual resolution
-	engine_.getGraphicsManager().setProjectionMatrix(worldWidth_, worldHeight_);
+	// Update camera system (replaces the old fixed projection)
+	updateCamera(deltaTime);
 
 	if (playerTexture_ && playerSpawned_) {
 		playerAnimController_.update(deltaTime);

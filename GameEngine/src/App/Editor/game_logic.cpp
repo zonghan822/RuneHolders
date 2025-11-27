@@ -478,14 +478,22 @@ void GameApplication::updateGameLogic() {
 			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
 		}
 
-		int editorFbSizeX = std::min(EDITOR_WIDTH, static_cast<int>(worldWidth_));
-		int editorFbSizeY = std::min(EDITOR_HEIGHT, static_cast<int>(worldHeight_));
+		// Calculate viewport size with zoom (zoom is now limited to prevent exceeding world bounds)
+		int editorFbSizeX = getEditorWidth();
+		int editorFbSizeY = getEditorHeight();
 
-		// Clamp camera to world bounds
+		// Clamp camera to world bounds (accounting for zoom)
 		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, worldWidth_ - static_cast<float>(editorFbSizeX));
 		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, worldHeight_ - static_cast<float>(editorFbSizeY));
 
-		// Set projection for editor view
+		// Only resize framebuffer when size changes (expensive operation)
+		if (editorFbSizeX != lastEditorFbWidth_ || editorFbSizeY != lastEditorFbHeight_) {
+			editorFramebuffer_->create(editorFbSizeX, editorFbSizeY);
+			lastEditorFbWidth_ = editorFbSizeX;
+			lastEditorFbHeight_ = editorFbSizeY;
+		}
+
+		// Set projection for editor view (uses zoomed size to enable zoom functionality)
 		engine_.getGraphicsManager().setProjectionMatrix(editorFbSizeX, editorFbSizeY);
 		editorFramebuffer_->bind();
 

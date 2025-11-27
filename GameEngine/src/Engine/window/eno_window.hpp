@@ -115,6 +115,12 @@ namespace Window
 		*//*========================================================================================*/
 		void setVSync(bool enabled) const;
 
+		/*============================================================================================
+		* \brief	Toggles fullscreen mode
+		* \param[in] fullscreen	true to enable fullscreen, false for windowed
+		*//*========================================================================================*/
+		void setFullscreen(bool fullscreen);
+
 		//(YunQi)
 		static std::vector<std::string>& GetDroppedFiles();
 

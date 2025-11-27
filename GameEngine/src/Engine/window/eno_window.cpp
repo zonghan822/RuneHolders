@@ -182,4 +182,23 @@ namespace Window
 		self->bus_.publish(ScrollEvent{ xoffset, yoffset });
 	}
 
+	void EnoWindow::setFullscreen(bool fullscreen) {
+		if (!window_) return;
+
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+		if (fullscreen) {
+			// Switch to fullscreen
+			glfwSetWindowMonitor(window_, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+		} else {
+			// Switch to windowed mode (centered on screen)
+			int windowWidth = 1200;
+			int windowHeight = 800;
+			int xpos = (mode->width - windowWidth) / 2;
+			int ypos = (mode->height - windowHeight) / 2;
+			glfwSetWindowMonitor(window_, nullptr, xpos, ypos, windowWidth, windowHeight, 0);
+		}
+	}
+
 }
