@@ -5,6 +5,7 @@
 
 #include "../scripting/eno_script.hpp"
 #include "../eno_core_host/eno_core_host.hpp"
+#include "../tilemap/tilemap.hpp"
 
 
 // stds
@@ -40,7 +41,7 @@ namespace Editor
 
 		enum BraceType { Open, Close };
 
-		EnoSceneTree(ECS::EntityManager&, Core::EnoCoreHost&);
+		EnoSceneTree(ECS::EntityManager&, Core::EnoCoreHost&, Map::TileMapSystem&);
 		EnoSceneTree(const EnoSceneTree&) = delete;
 		EnoSceneTree(EnoSceneTree&&) = delete;
 
@@ -132,6 +133,7 @@ namespace Editor
 
 		ECS::EntityManager& entMng_;
 		Core::EnoCoreHost& coreHost_;
+		Map::TileMapSystem& tileMap_;
 
 		std::unordered_map<uint32_t, std::unique_ptr<Node>> tree_;
 		Node* selectedNode_{ nullptr };
@@ -159,6 +161,9 @@ namespace Editor
 		std::string trim(const std::string&);
 
 		std::string extractFname(const std::string&);
+
+		// Helper for tilemap loading
+		void loadTilemapData(const std::string& data, size_t tilemapStart, size_t tilemapEnd, uint32_t width, uint32_t height);
 
 		void setParent(const std::vector<std::pair<uint32_t, uint32_t>>&);
 		void setChildren(const std::vector<std::pair<uint32_t, std::vector<uint32_t>>>&);
