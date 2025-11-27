@@ -654,7 +654,7 @@ namespace Audio
 		}
 
 		FMOD::Channel* channel = playByChannel(sound->second, true);
-		scheduleGroupFade("SFX", FADE_IN, FADE_OUT, getSoundDurSec(sound->second));
+		//scheduleGroupFade("SFX", FADE_IN, FADE_OUT, getSoundDurSec(sound->second));
 		setPauseChannel(channel, false);
 	}
 
