@@ -25,12 +25,13 @@ namespace Editor
 		EnoEditor(const EnoEditor&) = delete;
 		EnoEditor(EnoEditor&&) = delete;
 
-		EnoEditor(Event::EnoEventBus& bus, ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost)
+		EnoEditor(Event::EnoEventBus& bus, ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost, Map::TileMapSystem& tileMap)
 			:
 			bus_ { bus },
 			entMng_{ entMng },
 			coreHost_{ coreHost },
-			undoManager_{ bus, entMng, 20 }
+			undoManager_{ bus, entMng, 20 },
+			tree_{ entMng, coreHost, tileMap }
 		{
 
 			// Get all available scenes
@@ -469,7 +470,7 @@ namespace Editor
 		Event::EnoEventBus& bus_;
 
 		// Scene tree
-		EnoSceneTree tree_{ entMng_, coreHost_ };
+		EnoSceneTree tree_;
 
 		// Undo system
 		UndoManager undoManager_;
