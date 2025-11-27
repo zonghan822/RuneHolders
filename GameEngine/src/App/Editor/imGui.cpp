@@ -27,8 +27,6 @@ using Editor::Node;
 
 #pragma region Game Variables
 
-extern GameApplication game;
-
 bool showColliders_ = true;
 
 GameApplication* g_game = nullptr;
@@ -173,6 +171,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 	// get engine systems
 	auto& entityManager = engine_.getEntityManager();
+	auto& loader = engine_.getResourceLoader();
 
 	// BEGIN DOCKSPACE
 	imGuiBeginDockspace();
@@ -245,8 +244,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displayPrefabsTab(engine_, sceneTree, undoManager);
 	ImGui::End();
 
-	// Game View (full scene, bottom-right)
-	//ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
+	//// Mini Map (full scene, bottom-right)
+	//ImGui::Begin("Mini Map", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	//displayGameView();
 	//ImGui::End();
 
@@ -265,7 +264,10 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displayFPSTab(engine_);
 	ImGui::End();
 
-
+	// Tilemap Editor
+	g_game->getMapEditor().displayMenu();
+	g_game->getMapEditor().displayTilesetMenu(loader);
+	
 	// END DOCKSPACE
 	imGuiEndDockspace();
 
@@ -1090,10 +1092,13 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		auto& entityManager = engine_.getEntityManager();
 
 		// Create transform with default position at center of screen
+		float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
+		float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
+
 		ECSComponents::TransformComponent transform{
-			{600.0f, 450.0f},  // Center position
-			{0.0f, 0.0f},      // Velocity
-			{1.0f, 1.0f}       // Scale
+			{nodePosX, nodePosY}, // Center position
+			{0.0f, 0.0f},		  // Velocity
+			{1.0f, 1.0f}          // Scale
 		};
 
 		// Create render component with default size and color
@@ -1464,6 +1469,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		if (ImGui::BeginPopup("scene_menu"))
 		{
 			ImGui::Text("%s", sceneName.c_str());
+			static std::string warningBuf;
 			ImGui::Separator();
 
 			// Input box to change name
@@ -1474,7 +1480,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 			{
 				if (!scene_name || scene_name[0] == '\0')
 				{
-					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: no input detected!");
+					warningBuf = "Error[Name]: Empty name not allowed!";
 				}
 				else
 				{
@@ -1506,6 +1512,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 						// Close popup after renaming
 						ImGui::CloseCurrentPopup();
 						// Clear buffer
+						warningBuf.clear();
 						memset(scene_name, 0, sizeof(scene_name));
 
 						// If file rename is successful
@@ -1513,7 +1520,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 					}
 					catch (const std::filesystem::filesystem_error& e)
 					{
-						ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
+						warningBuf = "Error[Name]: " + std::string(e.what());
 						return;
 					}
 				}
@@ -1570,7 +1577,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 				}
 				catch (const std::filesystem::filesystem_error& e)
 				{
-					ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
+					warningBuf = "Error[Delete]: " + std::string(e.what());
 				}
 			}
 
@@ -1580,10 +1587,14 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 				// Close popup
 				ImGui::CloseCurrentPopup();
 				// In case theres some random stuff inside the input box, clear the buffer
+				warningBuf.clear();
 				memset(scene_name, 0, sizeof(scene_name));
 				// Reset error flag
 				g_cannotDeleteActiveScene = false;
 			}
+
+			if (!warningBuf.empty())
+				ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf.c_str());
 
 			ImGui::EndPopup();
 
@@ -2170,16 +2181,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		if (ImGui::Button("Add AI")) {
 			// Add a default AI component
-			auto& aiMng = engine_.getAIManager();
-			auto& pathfinder = g_game->getPathfinder();
 			entity.add<ECSComponents::AIComponent>(entMng);
-			aiMng.registerEntity(entity, entMng);
-
-			// Setup FSM
-			AI::StateMachine& sm = aiMng.getStateMachine(entity);
-			sm.addState("Idle", std::make_unique<AI::IdleState>(aiMng, pathfinder));
-			sm.addState("Chase", std::make_unique<AI::ChaseState>(pathfinder, aiMng));
-			sm.changeState("Idle", entity, entMng);
 		}
 	}
 
@@ -3257,7 +3259,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	ImGui::End();
 }
 
-
 void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
 {
 	using namespace Editor;
@@ -3506,18 +3507,12 @@ void imGuiBeginDockspace() {
 void displayGameView() {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
-	// Display info text - this is now a read-only overview window
-	ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Game View - Full Scene Overview (Read-Only)");
-	ImGui::Separator();
-
 	if (g_game && g_game->getGameFramebuffer()) {
 		auto* fb = g_game->getGameFramebuffer();
 
 		if (contentSize.x > 0 && contentSize.y > 0) {
 			// Get fixed virtual resolution from game
-			float virtualWidth = static_cast<float>(g_game->getVirtualWidth());
-			float virtualHeight = static_cast<float>(g_game->getVirtualHeight());
-			float virtualAspect = virtualWidth / virtualHeight;
+			float virtualAspect = g_game->getWorldWidth() / g_game->getWorldHeight();
 
 			// Calculate aspect-ratio-preserving size to fit in the Game View
 			float contentAspect = contentSize.x / contentSize.y;
@@ -3738,6 +3733,24 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	if (ImGui::IsKeyPressed(ImGuiKey_E)) currentGizmoMode = GIZMO_ROTATE;
 	if (ImGui::IsKeyPressed(ImGuiKey_R)) currentGizmoMode = GIZMO_SCALE;
 
+	ImGui::SameLine();
+	ImGui::Text("|");
+	ImGui::SameLine();
+
+	auto& mapEditor = g_game->getMapEditor();
+	bool wasEdit = mapEditor.isEditMode();
+	if (wasEdit) {
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.8f, 0.2f, 1.0f)); // green
+	}
+
+	if (ImGui::Button("Map Editor")) {
+		mapEditor.setEditMode(!wasEdit);
+	}
+
+	if (wasEdit) {
+		ImGui::PopStyleColor();
+	}
+
 	ImGui::Separator();
 
 	// Informational text
@@ -3888,52 +3901,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			}
 			// ========== ALL EDITOR INTERACTIONS (moved from Game View) ==========
 
-			// Helper function to convert screen coordinates to world coordinates (accounting for camera)                                                                                               
-
-			// auto screenToWorldCoords = [&](ImVec2 screenPos) -> ImVec2 {                      
-				//ImVec2 imageMin = ImGui::GetItemRectMin
-				//ImVec2 imageMax = ImGui::GetItemRectMax();                                
-
-				// Get mouse position relative to the image (0.0 to 1.0)
-				//float relX = (screenPos.x - imageMin.x) / (imageMax.x - imageMin.x);      
-
-				//float relY = (screenPos.y - imageMin.y) / (imageMax.y - imageMin.y);                                                                                   
-				//relX = std::clamp(relX, 0.0f, 1.0f);                                      
-				//relY = std::clamp(relY, 0.0f, 1.0f); 
-                                    
-				// Convert to screen space coordinates (within the editor viewport)       
-				//float screenX = relX * editorWidth;                                       
-				//float screenY = relY * editorHeight;                                      
-
-				// Add camera offset to convert screen space to world space               
-				//float worldX = screenX + g_game->getEditorCameraX();                      
-				//float worldY = screenY + g_game->getEditorCameraY();                      
-
-				//return ImVec2(worldX, worldY);                                            
-
-			//};
-
-			// Helper function to convert world coordinates to screen coordinates (for drawing gizmos)                                                                                                  
-			//auto worldToScreenCoords = [&](ImVec2 worldPos) -> ImVec2 {                       
-
-				//ImVec2 imageMin = ImGui::GetItemRectMin();                                
-				//ImVec2 imageMax = ImGui::GetItemRectMax();                                
-
-				// Subtract camera offset to convert world space to screen space          
-				//float screenX = worldPos.x - g_game->getEditorCameraX();                  
-				//float screenY = worldPos.y - g_game->getEditorCameraY();                  
-
-				// Convert to normalized coordinates (0.0 to 1.0)                         
-				//float relX = screenX / editorWidth;                                       
-				//float relY = screenY / editorHeight;                                                                                                             
-
-				// Convert to actual screen position                                      
-				//float finalX = imageMin.x + relX * (imageMax.x - imageMin.x);             
-				//float finalY = imageMin.y + relY * (imageMax.y - imageMin.y);             
-
-				//return ImVec2(finalX, finalY);                                            
-
-			//};
 
 			// --- Handle entity deletion by click ---                                        
 
@@ -4146,7 +4113,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						}
 					}
 				}
-
+				
 				// If not clicking gizmo, check if clicking on entity
 				if (!isDragging && !isRotating && !isScaling) {
 					auto clicked = getEntityUnderMouse(engine_, worldPos);
@@ -4157,6 +4124,12 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					}
 				}
 			}
+
+			// --- TILEMAP PAINTING ---
+			g_game->getMapEditor().paint(g_game);
+
+			// --- Draw tilemap overlay ---
+			g_game->getMapEditor().draw(g_game, drawList);
 
 			// While transforming (drag, rotate, or scale)
 			if ((isDragging || isRotating || isScaling) && ImGui::IsMouseDown(0)) {
@@ -4400,10 +4373,11 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 	// Split right side vertically to have Assets on top and Game View on bottom
 	ImGuiID dock_id_right_top = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Up, 0.5f, nullptr, &dock_id_right);
+	ImGuiID dock_id_right_bottom = ImGui::DockBuilderSplitNode(dock_id_bottom, ImGuiDir_Right, 0.5f, nullptr, &dock_id_bottom);
 
 	// Dock windows to their respective nodes
 	// Left side - all three windows docked to same node will appear as tabs
-	ImGui::DockBuilderDockWindow("Heirarchy", dock_id_left);
+	ImGui::DockBuilderDockWindow("Hierarchy", dock_id_left);
 	ImGui::DockBuilderDockWindow("Prefabs", dock_id_left);
 	ImGui::DockBuilderDockWindow("Edit", dock_id_left);
 	ImGui::DockBuilderDockWindow("Scene", dock_id_left);
@@ -4414,9 +4388,12 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	// Right side top - Assets Browser
 	ImGui::DockBuilderDockWindow("Entity Inspector", dock_id_right_top);
 	ImGui::DockBuilderDockWindow("Assets Presets", dock_id_right_top);
+	ImGui::DockBuilderDockWindow("Tilemap Editor", dock_id_right_top);
+	ImGui::DockBuilderDockWindow("Tileset", dock_id_right);
 
-	// Right side bottom - Game View (full scene)
-	ImGui::DockBuilderDockWindow("Game View", dock_id_right);
+
+	// Right side bottom - Mini Map
+	ImGui::DockBuilderDockWindow("Mini Map", dock_id_right_bottom);
 
 	// Bottom - FPS
 	ImGui::DockBuilderDockWindow("FPS", dock_id_bottom);
@@ -4437,5 +4414,3 @@ void imGuiTerminate() {
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 }
-
-

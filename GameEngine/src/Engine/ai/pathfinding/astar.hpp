@@ -6,64 +6,62 @@
 #include <cstdint>
 #include <algorithm>
 
-#include "path.hpp"
 #include "../../math/math.hpp"
 #include "../../component/components/transform.hpp"
 #include "../../component/components/collision_component.hpp"
 #include "../../ecs/entity.hpp"
+#include "../../tilemap/tilemap.hpp"
 
 #undef min
 #undef max
 
 namespace AI {
 
+    struct Path {
+        std::vector<Math::eVec2<int>> nodes;
+        bool completed = false;
+    };
+
     class PathfindingSystem {
     public:
 
-        PathfindingSystem(int width, int height, bool allowDiagonal = false)
-            : w_(width), h_(height), allowDiagonal_(allowDiagonal),
-            walkable_(height, std::vector<uint8_t>(width, 1)) {
+        PathfindingSystem(Event::EnoEventBus& bus, Map::TileMapSystem& tilemap)
+            : bus_(bus), tilemap_(tilemap) {
         }
 
-        int  width()  const { return w_; }
-        int  height() const { return h_; }
+        void setAllowDiagonal(bool allow) { allowDiagonal_ = allow; }
+        bool allowDiagonal() const { return allowDiagonal_; }
 
-        void setWalkable(int x, int y, bool walkable) {
-            if (inBounds(x, y)) walkable_[y][x] = walkable ? 1 : 0;
-        }
-        bool isWalkable(int x, int y) const {
-            return inBounds(x, y) && walkable_[y][x] != 0;
-        }
-
-        void update(ECS::EntityManager& entMng, float cellSize);
-
-        // Finds path from start to goal. Returns empty Path if none.
-        Path findPath(const Math::eVec2<int>& start, const Math::eVec2<int>& goal);
+        Path findPath(const Math::eVec2<int>& start,
+            const Math::eVec2<int>& goal);
 
     private:
-        bool inBounds(int x, int y) const {
-            return (x >= 0 && y >= 0 && x < w_ && y < h_);
-        }
+        Event::EnoEventBus& bus_;
 
-        float heuristic(const Math::eVec2<int>& a, const Math::eVec2<int>& b) const {
-            // Manhattan if not diagonal; Chebyshev if diagonal enabled (works nicely on 8-neighborhood)
-            if (!allowDiagonal_) return float(std::abs(a.x - b.x) + std::abs(a.y - b.y));
-            return float(std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)));
-        }
+        Map::TileMapSystem& tilemap_;
+        bool allowDiagonal_ = false;
 
         struct Node {
-            int x, y;
-            float f, g; // f = g + h
-        };
-        struct NodeGreater {
-            bool operator()(const Node& a, const Node& b) const { return a.f > b.f; }
+            Math::eVec2<int> pos;
+            int g, h;
+            int f() const { return g + h; }
+            bool operator>(const Node& rhs) const {
+                if (f() == rhs.f()) return h < rhs.h;
+                return f() > rhs.f();
+            }
         };
 
-        void collectNeighbors(const Math::eVec2<int>& p, std::vector<Math::eVec2<int>>& out) const;
+        int heuristic(const Math::eVec2<int>& a, const Math::eVec2<int>& b) const;
 
-        int w_, h_;
-        bool allowDiagonal_;
-        std::vector<std::vector<uint8_t>> walkable_; // 1 = walkable, 0 = blocked
+        inline bool isWalkable(int x, int y) const {
+            return tilemap_.isWalkable(x, y);
+        }
+
+        inline bool inBounds(int x, int y) const {
+            return x >= 0 && y >= 0 &&
+                x < tilemap_.width() &&
+                y < tilemap_.height();
+        }
     };
 
 }

@@ -39,6 +39,9 @@ namespace Config
 			{ "Engine Version", "0"},
 			{ "Window Width",	"0"},
 			{ "Window Height",	"0"},
+			{ "Tilemap Width",    "0"},
+			{ "Tilemap Height",   "0"},
+			{ "Tilemap CellSize", "0"},
 		};
 
 		static constexpr uint8_t COLON_OFFSET = 2;
@@ -56,6 +59,8 @@ namespace Config
 		 * \return				Window width and height respectively
 		*//*========================================================================================*/
 		std::pair<int, int> getWindowDim();
+
+		std::tuple<int, int, float> getTilemapConfig();
 
 		/*============================================================================================
 		 * \brief				Read the local Settings file and store configurations

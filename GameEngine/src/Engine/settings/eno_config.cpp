@@ -28,6 +28,26 @@ namespace Config {
 		return { std::stoi(it->second), std::stoi(it2->second) };
 	}
 
+	std::tuple<int, int, float> EnoConfigManager::getTilemapConfig()
+	{
+		auto itW = configMap_.find("Tilemap Width");
+		auto itH = configMap_.find("Tilemap Height");
+		auto itC = configMap_.find("Tilemap CellSize");
+
+		if (itW == configMap_.end() ||
+			itH == configMap_.end() ||
+			itC == configMap_.end())
+		{
+			throw std::runtime_error("Failed to retrieve tilemap width/height/cell size!");
+		}
+
+		int width = std::stoi(itW->second);
+		int height = std::stoi(itH->second);
+		float cell = std::stof(itC->second);
+
+		return { width, height, cell };
+	}
+
 	// Read the local Settings file and
 	// store configurations
 	void EnoConfigManager::retrieveSettings() {

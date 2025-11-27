@@ -5,38 +5,42 @@
 #include <cstring>
 
 #include "pathfinding/astar.hpp"
+#include "pathfinding/ai_path_agent.hpp"
 #include "state/state_machine.hpp"
+
 #include "../event/event_bus.hpp"
 #include "../ecs/entity.hpp"
+#include "../ecs/component_events.hpp"
 #include "../component/components/ai_component.hpp"
-#include "../component/components/physics_component.hpp"
-#include "../component/components/transform.hpp"
 
 
 namespace AI {
 
     class AIManager {
     public:
-        AIManager(Event::EnoEventBus& bus);
+        AIManager(Event::EnoEventBus& bus,
+            PathfindingSystem& pathfinder);
 
         void update(ECS::EntityManager& entMng, float dt);
 
-        void registerEntity(ECS::Entity& entity, ECS::EntityManager& entMng);
+        // Accessors
+        StateMachine& getStateMachine(ECS::Entity& entity);
+        AIPathAgent& getPathAgent(ECS::Entity& entity);
+        PathfindingSystem& getPathfinder() { return pathfinder_; }
 
-        void unregisterEntity(ECS::Entity& entity, ECS::EntityManager& entMng);
-
-        AI::StateMachine& getStateMachine(ECS::Entity& entity);
-        const AI::StateMachine& getStateMachine(ECS::Entity& entity) const;
-
-        Path& getPath(ECS::Entity& entity);
-
-        void removePath(ECS::Entity& entity) { paths_.erase(entity.id()); }
-
+        // Cleanup on scene unload
+        void clearAll();
 
     private:
         Event::EnoEventBus& bus_;
-        std::unordered_map<uint32_t, std::unique_ptr<AI::StateMachine>> stateMachines_;
-        std::unordered_map<uint32_t, Path> paths_;
+        PathfindingSystem& pathfinder_;
+
+        std::unordered_map<uint32_t, std::unique_ptr<StateMachine>> stateMachines_;
+        std::unordered_map<uint32_t, std::unique_ptr<AIPathAgent>> pathAgents_;
+
+        // AI component lifecycle
+        void registerEntity(uint32_t entityId);
+        void unregisterEntity(uint32_t entityId);
     };
 
 }

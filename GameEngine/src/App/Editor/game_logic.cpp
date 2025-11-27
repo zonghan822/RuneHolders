@@ -14,9 +14,6 @@
 #include "imGui.hpp"
 #include "math/math.hpp"
 
-using Clock = std::chrono::high_resolution_clock;
-//throw std::runtime_error("error logging");
-
 float scaleSize = 1.0f;
 float rotationRadians = 0.f;
 
@@ -40,21 +37,24 @@ void GameApplication::initialize() {
 	setupScripting();
 	setupFont();
 
+	auto& tileMap = engine_.getTileMap();
+
+	// Set up tile map editor (To be removed after tile map node is set up)
+	mapEditor_ = std::make_unique<MapEditor>(tileMap);
+	Math::eVec2<float> worldSize = tileMap.getWorldSize();
+
+	worldWidth_ = worldSize.x;
+	worldHeight_ = worldSize.y;
+
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
-	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
+	gameFramebuffer_->create(worldWidth_, worldHeight_); // Fixed virtual resolution
 
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
 
-	pathfinder_ = std::make_unique<AI::PathfindingSystem>(
-		gameFramebuffer_->getWidth(),
-		gameFramebuffer_->getHeight(),
-		true
-	);
-
 	// Center editor camera on the middle of the game world initially
-	editorCameraX_ = (VIRTUAL_WIDTH - EDITOR_WIDTH) / 2.0f;
-	editorCameraY_ = (VIRTUAL_HEIGHT - EDITOR_HEIGHT) / 2.0f;
+	editorCameraX_ = (worldWidth_ / 2.0f) - static_cast<float>(EDITOR_WIDTH) / 2.f;
+	editorCameraY_ = (worldHeight_ / 2.0f) - static_cast<float>(EDITOR_HEIGHT) / 2.f;
 
 	// Subscribe to delete selected entity event (using GameApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
@@ -299,12 +299,14 @@ void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& graphics_ = engine_.getGraphicsManager();
 	auto& inputMng = engine_.getInputManager();
+	auto& tileMap = engine_.getTileMap();
+	auto& loader = engine_.getResourceLoader();
+
+	Math::eVec2<float> worldSize = tileMap.getWorldSize();
+	worldWidth_ = worldSize.x, worldHeight_ = worldSize.y;
 
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
-
-	pathfinder_->update(entityManager, 1.f);
-	//Editor::State editorState = engine_.getEnoEditor().getCurrentScene().getState();
 
 	// Only update player movement when in play mode
 	if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame) {
@@ -314,15 +316,10 @@ void GameApplication::updateGameLogic() {
 	// Update engine playing state based on editor state
 	engine_.setIsPlaying(engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
 
-	// Use FIXED virtual resolution for consistent rendering
-	Math::eVec2<float> renderSize{
-		static_cast<float>(VIRTUAL_WIDTH),
-		static_cast<float>(VIRTUAL_HEIGHT)
-	};
-
 	if (gameFramebuffer_) {
+
 		// CRITICAL: Set projection matrix to fixed virtual resolution
-		engine_.getGraphicsManager().setProjectionMatrix(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+		engine_.getGraphicsManager().setProjectionMatrix(worldWidth_, worldHeight_);
 
 		// Bind framebuffer for rendering
 		gameFramebuffer_->bind();
@@ -426,7 +423,6 @@ void GameApplication::updateGameLogic() {
 	//drawShapes();
 	drawPlayerAndIndicator();
 	graphics_.flush();
-	drawText(renderSize);
 
 	// Unbind game framebuffer
 	if (gameFramebuffer_) {
@@ -482,48 +478,69 @@ void GameApplication::updateGameLogic() {
 			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
 		}
 
+		int editorFbSizeX = std::min(EDITOR_WIDTH, static_cast<int>(worldWidth_));
+		int editorFbSizeY = std::min(EDITOR_HEIGHT, static_cast<int>(worldHeight_));
+
 		// Clamp camera to world bounds
-		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, static_cast<float>(VIRTUAL_WIDTH - EDITOR_WIDTH));
-		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, static_cast<float>(VIRTUAL_HEIGHT - EDITOR_HEIGHT));
+		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, worldWidth_ - static_cast<float>(editorFbSizeX));
+		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, worldHeight_ - static_cast<float>(editorFbSizeY));
 
 		// Set projection for editor view
-		engine_.getGraphicsManager().setProjectionMatrix(EDITOR_WIDTH, EDITOR_HEIGHT);
+		engine_.getGraphicsManager().setProjectionMatrix(editorFbSizeX, editorFbSizeY);
 		editorFramebuffer_->bind();
 
 		// Clear editor framebuffer
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Draw background texture with camera offset
-		// The background should be positioned in world space, then camera offset is applied
-		if (backgroundTexture_ && backgroundTexture_->isValid()) {
-			// Get background texture dimensions
-			int bgWidth = backgroundTexture_->getWidth();
-			int bgHeight = backgroundTexture_->getHeight();
+		// ============================================================
+		// DRAW TILEMAP (all layers from lowest index to highest)
+		// ============================================================
+		if (!mapEditor_->isEditMode()) {
+			auto& layers = tileMap.layers();
 
-			// Calculate how many times to tile the background to cover the virtual world
-			int tilesX = (VIRTUAL_WIDTH + bgWidth - 1) / bgWidth;  // Ceiling division
-			int tilesY = (VIRTUAL_HEIGHT + bgHeight - 1) / bgHeight;
+			int mapW = tileMap.width();
+			int mapH = tileMap.height();
+			float cellSize = tileMap.cellSize();
 
-			// Draw tiled background
-			for (int ty = 0; ty < tilesY; ++ty) {
-				for (int tx = 0; tx < tilesX; ++tx) {
-					// World position of this tile
-					float worldX = static_cast<float>(tx * bgWidth);
-					float worldY = static_cast<float>(ty * bgHeight);
+			// For every layer (0 = background, higher = foreground)
+			for (size_t layerIndex = 0; layerIndex < layers.size(); ++layerIndex) {
+				const auto& layer = layers[layerIndex];
 
-					// Convert to screen space (apply camera offset)
-					float screenX = worldX - editorCameraX_;
-					float screenY = worldY - editorCameraY_;
+				for (int y = 0; y < mapH; ++y) {
+					for (int x = 0; x < mapW; ++x) {
+						const auto& tile = layer.tiles()[y][x];
 
-					// Only draw if tile is visible in editor view
-					if (screenX + bgWidth >= 0 && screenX < EDITOR_WIDTH &&
-						screenY + bgHeight >= 0 && screenY < EDITOR_HEIGHT) {
+						// Skip empty tile
+						if (!tile.hasTexture)
+							continue;
 
-						engine_.getGraphicsManager().drawTexturedQuad(
+						// Convert tile coord to world position
+						float worldX = x * cellSize;
+						float worldY = y * cellSize;
+
+						// Convert to screen space (apply camera offset)
+						float screenX = worldX - editorCameraX_;
+						float screenY = worldY - editorCameraY_;
+
+						// Visibility check (skips drawing offscreen tiles)
+						if (screenX + cellSize < 0 || screenX > EDITOR_WIDTH ||
+							screenY + cellSize < 0 || screenY > EDITOR_HEIGHT)
+							continue;
+
+						// Fetch the texture from loader (textureName stored inside Tile struct)
+						std::shared_ptr<Graphics::EnoTexture> tex = loader.getTexture(tile.textureName);
+
+						if (!tex || !tex->isValid())
+							continue;
+
+						// Draw the tile quad using its UV coordinates
+						engine_.getGraphicsManager().drawTexturedQuadUV(
 							Math::eVec2<float>{screenX, screenY},
-							Math::eVec2<float>{static_cast<float>(bgWidth), static_cast<float>(bgHeight)},
-							backgroundTexture_,
+							Math::eVec2<float>{cellSize, cellSize},
+							tex,
+							tile.uv0,
+							tile.uv1,
 							Graphics::Color::White
 						);
 					}
@@ -785,16 +802,10 @@ void GameApplication::updateEntities() {
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
 
-	// Use fixed virtual resolution for consistent rendering
-	Math::eVec2<float> renderSize{
-		static_cast<float>(VIRTUAL_WIDTH),
-		static_cast<float>(VIRTUAL_HEIGHT)
-	};
-
 	// Draw background
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
-		renderSize,                                // Use fixed virtual resolution
+		{worldWidth_, worldHeight_},			  // World Size
 		backgroundTexture_,
 		Math::eVec2<float>{0.0f, 0.0f},           // UV start
 		Math::eVec2<float>{1.0f, 1.0f},           // UV end
@@ -1046,32 +1057,6 @@ void GameApplication::updateEntities() {
 
 }
 
-
-void GameApplication::drawText(Math::eVec2<float> windowSize) {
-	// DEMO DRAW TEXT
-	auto& graphics = engine_.getGraphicsManager();
-	auto& input = engine_.getInputManager();
-	std::string text;
-	if (input.isMousePressed(GLFW_MOUSE_BUTTON_LEFT) && input.isMousePressed(GLFW_MOUSE_BUTTON_RIGHT)) {
-		text = "Left and Right Mouse Button pressed!";
-	}
-	else if (input.isMousePressed(GLFW_MOUSE_BUTTON_LEFT)) {
-		text = "Left Mouse Button pressed!";
-	}
-	else if (input.isMousePressed(GLFW_MOUSE_BUTTON_RIGHT)) {
-		text = "Right Mouse Button pressed!";
-	}
-	else {
-		text = "No Mouse Button pressed!";
-	}
-	std::stringstream fpsSs;
-	fpsSs.precision(2);      // 2 significant digits
-	fpsSs << std::fixed;     // fixed-point notation
-	fpsSs << "FPS: " << engine_.getFPS();
-	graphics.drawText(timesFont_, text, { 25.f , 50.f }, 1.f, Graphics::Color::Black);
-	graphics.drawText(timesFont_, fpsSs.str(), { windowSize.x - 125.f , 25.f }, 0.5f, Graphics::Color::Red);
-	graphics.drawText(pixelifyFont_, "Copyright reserved RuneHolders", { windowSize.x / 2.f, windowSize.y - 25.f }, 0.75f, Graphics::Color::Blue);
-}
 
 void GameApplication::drawPlayerAndIndicator() {
 	auto& graphics = engine_.getGraphicsManager();

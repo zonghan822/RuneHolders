@@ -17,9 +17,8 @@
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
-#include "enemy/chasing_state.hpp"
-#include "enemy/idle_state.hpp"
-#include "math/math.hpp" // Added for Math::eVec2<float>
+#include "map_editor/map_editor.hpp"
+
 
 class GameApplication {
 private:
@@ -49,9 +48,8 @@ private:
     std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
     std::unique_ptr<Graphics::EnoFramebuffer> editorFramebuffer_;
 
-    // Fixed virtual resolution (game always renders to this size)
-    static constexpr int VIRTUAL_WIDTH = 1280;
-    static constexpr int VIRTUAL_HEIGHT = 720;
+    float worldWidth_;
+    float worldHeight_;
 
     // Editor camera settings (zoomed in view)
     static constexpr int EDITOR_WIDTH = 640;   // Half width for zoomed view
@@ -82,8 +80,8 @@ private:
     // Scene Tree (note: must be initialized after engine_ is initialized)
     std::unique_ptr<Editor::EnoSceneTree> sceneTree_;
 
-    // Pathfinding system
-    std::unique_ptr<AI::PathfindingSystem> pathfinder_;
+    // Map Editor (To be removed after set tilemap as node)
+    std::unique_ptr<MapEditor> mapEditor_;
 
 public:
     // Constructors
@@ -109,8 +107,8 @@ public:
     Graphics::EnoFramebuffer* getEditorFramebuffer() { return editorFramebuffer_.get(); }
 
     // Get fixed virtual resolution
-    int getVirtualWidth() const { return VIRTUAL_WIDTH; }
-    int getVirtualHeight() const { return VIRTUAL_HEIGHT; }
+    float getWorldWidth() const { return worldWidth_; }
+    float getWorldHeight() const { return worldHeight_; }
     int getEditorWidth() const { return EDITOR_WIDTH; }
     int getEditorHeight() const { return EDITOR_HEIGHT; }
 
@@ -126,11 +124,12 @@ public:
     Math::eVec2<float> getEditorViewMin() const { return editorViewMin_; }
     Math::eVec2<float> getEditorViewMax() const { return editorViewMax_; }
 
-    // Get pathfinding system
-    AI::PathfindingSystem& getPathfinder() { return *pathfinder_; }
     // Camera panning for room transitions
     void startCameraPan(float targetY, float duration = 1.0f);
     bool isCameraPanning() const { return isPanning_; }
+
+    // Get map editor
+    MapEditor& getMapEditor() { return *mapEditor_; }
 
 
 private:
@@ -156,6 +155,4 @@ private:
     void drawPlayerAndIndicator();
 
     void drawShapes();
-
-    void drawText(Math::eVec2<float> windowSize);
 };

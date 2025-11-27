@@ -87,12 +87,6 @@ namespace Resources {
 		return path;
 	}
 
-	// Engine data getters
-	const std::string& EnoLoader::getECSSavePath() const {
-		static const std::string path{ entityPath_.data(), entityPath_.size() };
-		return path;
-	}
-
 	// Load Images (png | jpg)
 	void EnoLoader::loadImages(const std::string& path) {
 		if (!std::filesystem::exists(path))

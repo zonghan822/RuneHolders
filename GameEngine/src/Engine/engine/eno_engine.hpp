@@ -28,9 +28,9 @@
 #include "../prefab/prefab.hpp"
 #include "../crashlog/crashlogger.hpp"
 #include "../graphics/animation/animation.hpp"
-#include "../game_instance/eno_scene_tree.hpp"
 #include "../ai/ai_manager.hpp"
 #include "../physics/physics_system.hpp"
+#include "../tilemap/tilemap.hpp"
 
 
 // stds
@@ -155,7 +155,7 @@ namespace Engine
 		* \brief		Gets the AI Manager for AI operations (State Manager)
 		* \return		Reference to the AIManager instance
 		*//*========================================================================================*/
-		AI::AIManager& getAIManager() { return aiMng_; }
+		AI::AIManager& getAIManager() { return *aiMng_; }
 
 		/*============================================================================================
 		* \brief		Gets the time elapsed since the last frame
@@ -180,6 +180,10 @@ namespace Engine
 		* \return		Pointer to CollisionSystem instance (may be null if not initialized)
 		*//*========================================================================================*/
 		Collision::CollisionSystem* getCollisionSystem() { return collisionSys_.get(); }
+
+		Map::TileMapSystem& getTileMap() { return *tilemapSystem_; }
+
+		AI::PathfindingSystem& getPathfinder() { return *pathfinder_; }
 
 		/*============================================================================================
 		* \brief		Sets whether the game is in playing mode (affects player input processing)
@@ -217,13 +221,15 @@ namespace Engine
 		ECSComponents::EnoPrefabManager prefabMng_{ bus_ };
 		Core::EnoCoreHost coreHost_{ bus_ };
 		Editor::EnoEditor editor_{ bus_, entityMng_, coreHost_ };
+		std::unique_ptr<Map::TileMapSystem> tilemapSystem_;
+		std::unique_ptr<AI::PathfindingSystem> pathfinder_;
 		Animation::AnimationControllerRegistry animRegistry;
 
 		// Systems
 		Input::EnoInputManager inputMng_{ bus_ };
 		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };
 		Audio::EnoAudioManager audioMng_{ bus_ };
-		AI::AIManager aiMng_{ bus_ };
+		std::unique_ptr<AI::AIManager> aiMng_;
 		std::unique_ptr<Physics::PhysicsSystem> physicsSys_;
 		std::unique_ptr<Collision::CollisionSystem> collisionSys_;
 

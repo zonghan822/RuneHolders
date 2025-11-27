@@ -198,22 +198,19 @@ macro(set_dotnet)
         foreach(RETRY RANGE 1 ${MAX_RETRIES})
             message(STATUS "Attempt ${RETRY} to install .NET runtime...")
 
-            # --- Kill local dotnet.exe processes before each retry ---
             execute_process(
-                COMMAND powershell -ExecutionPolicy Bypass 
-                -Command "& {
-                    $procs = Get-Process dotnet -ErrorAction SilentlyContinue;
-                    foreach ($p in $procs) {
-                        if ($p.Path -like '*${DOTNET_RUNTIME_PATH}\\*') {
-                            Write-Host ('Terminating local dotnet process ID ' + $p.Id);
-                            Stop-Process -Id $p.Id -Force;
-                        }
+                COMMAND powershell -ExecutionPolicy Bypass -Command "
+                    $names = 'dotnet','MSBuild','VBCSCompiler','ServiceHub.*'
+                    foreach ($n in $names) {
+                        Get-Process -Name $n -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
                     }
-                }"
-                RESULT_VARIABLE KILL_RESULT
+                "
                 OUTPUT_QUIET
                 ERROR_QUIET
             )
+
+            # Allow Windows to release DLL handles
+            execute_process(COMMAND ${CMAKE_COMMAND} -E sleep 1)
 
             execute_process(
                 COMMAND powershell -ExecutionPolicy Bypass
