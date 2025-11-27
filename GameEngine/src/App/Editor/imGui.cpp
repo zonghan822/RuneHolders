@@ -244,10 +244,10 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displayPrefabsTab(engine_, sceneTree, undoManager);
 	ImGui::End();
 
-	// Mini Map (full scene, bottom-right)
-	ImGui::Begin("Mini Map", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-	displayGameView();
-	ImGui::End();
+	//// Mini Map (full scene, bottom-right)
+	//ImGui::Begin("Mini Map", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
+	//displayGameView();
+	//ImGui::End();
 
 	// Editor View (zoomed in, center - replaces old Game View behavior)
 	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
@@ -4371,6 +4371,9 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	// Right side top - Assets Browser
 	ImGui::DockBuilderDockWindow("Entity Inspector", dock_id_right_top);
 	ImGui::DockBuilderDockWindow("Assets Presets", dock_id_right_top);
+	ImGui::DockBuilderDockWindow("Tilemap Editor", dock_id_right_top);
+	ImGui::DockBuilderDockWindow("Tileset", dock_id_right);
+
 
 	// Right side bottom - Mini Map
 	ImGui::DockBuilderDockWindow("Mini Map", dock_id_right_bottom);
