@@ -4,11 +4,10 @@
 
 namespace Editor
 {
-	EnoSceneTree::EnoSceneTree(ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost, Map::TileMapSystem& tileMap)
+	EnoSceneTree::EnoSceneTree(ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost)
 		:
 		entMng_{ entMng },
-		coreHost_{ coreHost },
-		tileMap_{ tileMap }
+		coreHost_{ coreHost }
 	{}
 
 	std::vector<Node*> EnoSceneTree::getAllNodes()
@@ -377,16 +376,6 @@ namespace Editor
 		auto it = tree_.cbegin();
 		while (it != tree_.cend())
 		{
-			// Check if entity is valid before saving
-			uint32_t entityID = it->second->entity_.id();
-			auto& entityMap = entMng_.getMap();
-			if (entityID == UINT32_MAX || entityMap.find(entityID) == entityMap.end()) {
-				std::cerr << "[EnoSceneTree] Warning: Skipping node '" << it->second->name_
-						  << "' with invalid/unmapped entity (ID: " << entityID << ")" << std::endl;
-				++it;
-				continue;
-			}
-
 			// Name
 			appendIndent(save, ++jsonLevel);
 			save << "[" <<it->second->name_ << "]\n";
@@ -403,7 +392,7 @@ namespace Editor
 			appendIndent(save, jsonLevel);
 			save << "\"Layer\": { " << it->second->nestedLayer_ << " }\n";
 
-			// Entity
+			// Entity 
 			entMng_.saveJson(save, it->second->entity_, jsonLevel, [&](std::ofstream& file, const uint32_t& level)
 				{
 					appendIndent(file, level);
@@ -463,69 +452,6 @@ namespace Editor
 		}
 
 		// Closing brace (for a node)
-		save << "}\n\n";
-
-		// Save tilemap data embedded in scene file
-		save << "\"TileMap\":\n";
-		save << "{\n";
-		appendIndent(save, 1);
-		save << "\"Width\": { " << tileMap_.width() << " }\n";
-		appendIndent(save, 1);
-		save << "\"Height\": { " << tileMap_.height() << " }\n";
-		appendIndent(save, 1);
-		save << "\"CellSize\": { " << tileMap_.cellSize() << " }\n";
-
-		// Save layers
-		appendIndent(save, 1);
-		save << "\"Layers\":\n";
-		appendIndent(save, 1);
-		save << "[\n";
-
-		const auto& layers = tileMap_.layers();
-		for (size_t i = 0; i < layers.size(); ++i) {
-			const auto& layer = layers[i];
-			appendIndent(save, 2);
-			save << "{\n";
-
-			appendIndent(save, 3);
-			save << "\"Name\": { " << layer.name() << " }\n";
-			appendIndent(save, 3);
-			save << "\"IsNav\": { " << (layer.isNavLayer() ? "true" : "false") << " }\n";
-
-			// Save tiles for this layer
-			appendIndent(save, 3);
-			save << "\"Tiles\":\n";
-			appendIndent(save, 3);
-			save << "[\n";
-
-			for (int y = 0; y < tileMap_.height(); ++y) {
-				appendIndent(save, 4);
-				save << "[ ";
-				for (int x = 0; x < tileMap_.width(); ++x) {
-					const auto& tile = layer.tiles()[y][x];
-					save << "{ \"walk\": " << (tile.walkable ? "true" : "false")
-						 << ", \"tex\": \"" << tile.textureName << "\""
-						 << ", \"uv0\": [" << tile.uv0.x << ", " << tile.uv0.y << "]"
-						 << ", \"uv1\": [" << tile.uv1.x << ", " << tile.uv1.y << "]"
-						 << ", \"hasTex\": " << (tile.hasTexture ? "true" : "false") << " }";
-					if (x < tileMap_.width() - 1) save << ", ";
-				}
-				save << " ]";
-				if (y < tileMap_.height() - 1) save << ",";
-				save << "\n";
-			}
-
-			appendIndent(save, 3);
-			save << "]\n";
-
-			appendIndent(save, 2);
-			save << "}";
-			if (i < layers.size() - 1) save << ",";
-			save << "\n";
-		}
-
-		appendIndent(save, 1);
-		save << "]\n";
 		save << "}\n";
 	}
 
@@ -551,6 +477,7 @@ namespace Editor
 		std::string data = text.str();
 
 		// Clear existing scene tree and destroy all entities before loading
+		std::cout << "[EnoSceneTree] Clearing existing scene tree before loading..." << std::endl;
 		std::vector<uint32_t> entitiesToDestroy;
 		for (auto& [id, node] : tree_)
 		{
@@ -571,10 +498,7 @@ namespace Editor
 		{
 			entMng_.destroyEntity(entityID);
 		}
-
-		if (entitiesToDestroy.size() > 0) {
-			std::cout << "[EnoSceneTree] Cleared " << entitiesToDestroy.size() << " entities when loading scene" << std::endl;
-		}
+		std::cout << "[EnoSceneTree] Cleared " << entitiesToDestroy.size() << " existing entities" << std::endl;
 
 		// Setup
 		// Relationships are set after all nodes are instantiated
@@ -585,21 +509,14 @@ namespace Editor
 		// children => { node : children of node, ... }
 		std::vector<std::pair<uint32_t, std::vector<uint32_t>>> children;
 
-		// Find the end of the nodes section (before TileMap section)
-		size_t nodesEndPos = data.find("\"TileMap\"");
-		if (nodesEndPos == std::string::npos) {
-			nodesEndPos = data.length();
-		}
-
-		// Find context node first - only search within nodes section
+		// Find context node first
 		size_t start = data.find('[');
-		while (start != std::string::npos && start < nodesEndPos)
+		while (start != std::string::npos)
 		{
 			auto node = std::make_unique<Node>();
 
 			// Extract name
 			size_t end = data.find(']', start);
-			if (end >= nodesEndPos) break;  // Stop if we're past the nodes section
 			node->name_ = data.substr(start + 1, end - start - 1);
 
 			// Find start and end braces of the indentation of context node
@@ -660,259 +577,21 @@ namespace Editor
 
 			// Enabled
 			any = extract<bool>(data, "Enabled", nodeStart, nodeEnd);
-			if (!any.has_value()) {
-				std::cerr << "[EnoSceneTree] Warning: Enabled field missing for node, defaulting to false" << std::endl;
-			}
+			if (!any.has_value()) missingData = true;
 			node->enabled_ = any.value_or(false);
 
-			if (missingData) {
-				std::cerr << "[EnoSceneTree] Warning: Some fields missing for node " << node->name_ << ", using defaults" << std::endl;
-			}
+			if (missingData)
+				throw std::runtime_error("Failed to retrieve value for one of the save data fields!");
 
 			// Map new node
 			tree_[node->sceneObjectID_] = std::move(node);
 
-			// Find the next context node - only within nodes section
+			// Find the next context node
 			start = data.find('[', nodeEnd);
-			if (start >= nodesEndPos) break;  // Stop if we found a bracket in tilemap section
 		}
 
 		setParent(parents);
 		setChildren(children);
-
-		// Load tilemap data embedded in scene file
-		size_t tilemapPos = data.find("\"TileMap\"");
-		if (tilemapPos != std::string::npos) {
-			std::cout << "[EnoSceneTree] Loading tilemap data..." << std::endl;
-
-			size_t tilemapStart = data.find('{', tilemapPos);
-			if (tilemapStart == std::string::npos) {
-				std::cerr << "[EnoSceneTree] Warning: TileMap section malformed, skipping" << std::endl;
-			}
-			else {
-				size_t tilemapEnd = findMatchingBrace(data, tilemapStart);
-				if (tilemapEnd == std::string::npos) {
-					std::cerr << "[EnoSceneTree] Warning: TileMap section incomplete, skipping" << std::endl;
-				}
-				else {
-					// Extract tilemap dimensions
-					auto width = extract<uint32_t>(data, "Width", tilemapStart, tilemapEnd);
-					auto height = extract<uint32_t>(data, "Height", tilemapStart, tilemapEnd);
-
-					std::cout << "[EnoSceneTree] Width: " << (width.has_value() ? std::to_string(width.value()) : "missing")
-							  << ", Height: " << (height.has_value() ? std::to_string(height.value()) : "missing") << std::endl;
-
-					if (!width.has_value() || !height.has_value()) {
-						std::cerr << "[EnoSceneTree] Warning: TileMap dimensions missing, using defaults" << std::endl;
-					}
-					else if (width.value() == UINT32_MAX || height.value() == UINT32_MAX) {
-						std::cerr << "[EnoSceneTree] Warning: TileMap dimensions empty, using defaults" << std::endl;
-					}
-					else {
-						std::cout << "[EnoSceneTree] Loading tilemap with dimensions " << width.value() << "x" << height.value() << std::endl;
-						loadTilemapData(data, tilemapStart, tilemapEnd, width.value(), height.value());
-						std::cout << "[EnoSceneTree] Tilemap loaded, layers count: " << tileMap_.layers().size() << std::endl;
-					}
-				}
-			}
-		}
-		else {
-			std::cout << "[EnoSceneTree] No tilemap section found, clearing tilemap" << std::endl;
-			// Scene doesn't have tilemap data - reset to default empty tilemap
-			// Clear all layers
-			while (tileMap_.layers().size() > 0) {
-				tileMap_.removeLayer(0);
-			}
-
-			// Add one default empty layer
-			tileMap_.addLayer("Tile Layer 1", false);
-		}
-
-	}
-
-	void EnoSceneTree::loadTilemapData(const std::string& data, size_t tilemapStart, size_t tilemapEnd, uint32_t width, uint32_t height) {
-		// Extract cell size - need a float version
-		size_t cellSizePos = data.find("CellSize", tilemapStart);
-		float cellSize = tileMap_.cellSize(); // default
-		if (cellSizePos != std::string::npos && cellSizePos < tilemapEnd) {
-			size_t cellSizeStart = data.find('{', cellSizePos);
-			size_t cellSizeClose = data.find('}', cellSizeStart);
-			if (cellSizeStart != std::string::npos && cellSizeClose != std::string::npos) {
-				std::string cellSizeStr = trim(data.substr(cellSizeStart + 1, cellSizeClose - cellSizeStart - 1));
-				if (!cellSizeStr.empty()) {
-					try {
-						cellSize = std::stof(cellSizeStr);
-					}
-					catch (...) {
-						std::cerr << "[EnoSceneTree] Warning: Failed to parse cell size, using default" << std::endl;
-					}
-				}
-			}
-		}
-
-		// DON'T resize or clear - we'll update existing tilemap structure
-		// This preserves the tilemap if scene doesn't have tilemap data
-		bool needsResize = (tileMap_.width() != static_cast<int>(width) ||
-							tileMap_.height() != static_cast<int>(height) ||
-							tileMap_.cellSize() != cellSize);
-
-		if (needsResize) {
-			tileMap_.resize(static_cast<int>(width), static_cast<int>(height), cellSize, false);
-		}
-
-		// Clear existing layers and reload from scene
-		while (tileMap_.layers().size() > 0) {
-			tileMap_.removeLayer(0);
-		}
-
-		// Find layers array
-		size_t layersPos = data.find("\"Layers\"", tilemapStart);
-		if (layersPos != std::string::npos && layersPos < tilemapEnd) {
-			size_t layersArrayStart = data.find('[', layersPos);
-			if (layersArrayStart == std::string::npos) {
-				std::cerr << "[EnoSceneTree] Warning: Layers array not found" << std::endl;
-				return;
-			}
-
-			// Find matching closing bracket for layers array
-			size_t layersArrayEnd = layersArrayStart;
-			int bracketDepth = 1;
-			size_t searchPos = layersArrayStart + 1;
-			while (bracketDepth > 0 && searchPos < tilemapEnd) {
-				if (data[searchPos] == '[') bracketDepth++;
-				else if (data[searchPos] == ']') bracketDepth--;
-
-				if (bracketDepth == 0) {
-					layersArrayEnd = searchPos;
-					break;
-				}
-				searchPos++;
-			}
-
-			if (layersArrayEnd == layersArrayStart) {
-				std::cerr << "[EnoSceneTree] Warning: Layers array incomplete (no matching ])" << std::endl;
-				return;
-			}
-
-	
-			// Parse each layer
-			size_t layerPos = data.find('{', layersArrayStart);
-			while (layerPos != std::string::npos && layerPos < layersArrayEnd) {
-				size_t layerEnd = findMatchingBrace(data, layerPos);
-				if (layerEnd == std::string::npos || layerEnd > layersArrayEnd) break;
-
-				// Extract layer properties
-				auto layerName = extract<std::string>(data, "Name", layerPos, layerEnd);
-				auto isNav = extract<bool>(data, "IsNav", layerPos, layerEnd);
-
-				if (layerName.has_value() && isNav.has_value()) {
-					// Add new layer
-					tileMap_.addLayer(layerName.value(), isNav.value());
-					int layerIdx = static_cast<int>(tileMap_.layers().size()) - 1;
-
-					// Parse tiles
-					size_t tilesPos = data.find("\"Tiles\"", layerPos);
-					if (tilesPos != std::string::npos && tilesPos < layerEnd) {
-						size_t tilesArrayStart = data.find('[', tilesPos);
-
-						// Parse each row
-						for (int y = 0; y < static_cast<int>(height); ++y) {
-							size_t rowStart = data.find('[', tilesArrayStart + 1);
-							if (rowStart == std::string::npos) break;
-
-							// Find matching closing bracket for row array (using depth matching)
-							size_t rowEnd = rowStart;
-							int bracketDepth = 1;
-							size_t searchPos = rowStart + 1;
-							while (bracketDepth > 0 && searchPos < data.length()) {
-								if (data[searchPos] == '[') bracketDepth++;
-								else if (data[searchPos] == ']') bracketDepth--;
-
-								if (bracketDepth == 0) {
-									rowEnd = searchPos;
-									break;
-								}
-								searchPos++;
-							}
-							if (rowEnd == rowStart) break;
-
-							// Move to next row for next iteration
-							tilesArrayStart = rowEnd;
-
-
-							// Parse each tile in the row
-							for (int x = 0; x < static_cast<int>(width); ++x) {
-								size_t tileStart = data.find('{', rowStart);
-								if (tileStart == std::string::npos || tileStart > rowEnd) break;
-
-								size_t tileEnd = data.find('}', tileStart);
-								if (tileEnd == std::string::npos) break;
-
-								std::string tileData = data.substr(tileStart, tileEnd - tileStart + 1);
-
-								// Parse tile properties
-								bool walkable = tileData.find("\"walk\": true") != std::string::npos;
-								bool hasTex = tileData.find("\"hasTex\": true") != std::string::npos;
-
-
-								tileMap_.setWalkable(layerIdx, x, y, walkable);
-
-								if (hasTex) {
-									// Extract texture name
-									size_t texPos = tileData.find("\"tex\": \"");
-									if (texPos != std::string::npos) {
-										size_t texStart = texPos + 8;
-										size_t texEnd = tileData.find('\"', texStart);
-										std::string texName = tileData.substr(texStart, texEnd - texStart);
-
-
-										// Extract UV coordinates
-										size_t uv0Pos = tileData.find("\"uv0\": [");
-										size_t uv1Pos = tileData.find("\"uv1\": [");
-
-										float uv0x = 0, uv0y = 0, uv1x = 1, uv1y = 1;
-										if (uv0Pos != std::string::npos) {
-											try {
-												size_t uv0Start = uv0Pos + 8;
-												size_t uv0End = tileData.find(']', uv0Start);
-												std::string uv0Str = tileData.substr(uv0Start, uv0End - uv0Start);
-												size_t comma = uv0Str.find(',');
-												uv0x = std::stof(uv0Str.substr(0, comma));
-												uv0y = std::stof(uv0Str.substr(comma + 1));
-											}
-											catch (...) {}
-										}
-										if (uv1Pos != std::string::npos) {
-											try {
-												size_t uv1Start = uv1Pos + 8;
-												size_t uv1End = tileData.find(']', uv1Start);
-												std::string uv1Str = tileData.substr(uv1Start, uv1End - uv1Start);
-												size_t comma = uv1Str.find(',');
-												uv1x = std::stof(uv1Str.substr(0, comma));
-												uv1y = std::stof(uv1Str.substr(comma + 1));
-											}
-											catch (...) {}
-										}
-
-										tileMap_.setTile(layerIdx, x, y, texName, {uv0x, uv0y}, {uv1x, uv1y});
-									}
-								}
-
-								rowStart = tileEnd + 1;
-							}
-						}
-					}
-				}
-
-				// Find next layer
-				layerPos = data.find('{', layerEnd);
-			}
-		}
-
-		// Ensure we always have at least one layer
-		if (tileMap_.layers().empty()) {
-			tileMap_.addLayer("Tile Layer 1", false);
-		}
 
 	}
 	
