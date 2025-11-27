@@ -144,7 +144,7 @@ private:
     void setupAnimations();
     void setupScripting();
     void setupFont();           // setup font
-    void createTestObjectsAndAddToSceneTree();  // Create test objects and add them to scene tree
+    //void createTestObjectsAndAddToSceneTree();  // Create test objects and add them to scene tree
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop

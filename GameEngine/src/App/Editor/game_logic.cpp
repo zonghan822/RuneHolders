@@ -265,28 +265,28 @@ void GameApplication::setupAnimations() {
 	std::cout << "Player animation setup complete!" << std::endl;
 }
 
-void GameApplication::createTestObjectsAndAddToSceneTree() {
-	auto& entityManager = engine_.getEntityManager();
-
-	// Create the test objects (boxes)
-	createTestObject(entityManager);
-
-
-	// Now add all entities with NameComponent "testcaven" to the scene tree
-	std::vector<ECS::Entity> testEntities = entityManager.findEntity<ECSComponents::NameComponent>(
-		ECSComponents::NameComponent("testcaven")
-	);
-
-	std::cout << "[GameLogic] Adding " << testEntities.size() << " test objects to scene tree..." << std::endl;
-
-	for (auto& entity : testEntities) {
-		// Add each entity to the scene tree as a root node
-		engine_.getEnoEditor().getSceneTree().createFromEntity(entity, nullptr);
-		std::cout << "[GameLogic] Added entity " << entity.id() << " to scene tree" << std::endl;
-	}
-
-	std::cout << "[GameLogic] Test objects added to scene tree successfully!" << std::endl;
-}
+//void GameApplication::createTestObjectsAndAddToSceneTree() {
+//	auto& entityManager = engine_.getEntityManager();
+//
+//	// Create the test objects (boxes)
+//	createTestObject(entityManager);
+//
+//
+//	// Now add all entities with NameComponent "testcaven" to the scene tree
+//	std::vector<ECS::Entity> testEntities = entityManager.findEntity<ECSComponents::NameComponent>(
+//		ECSComponents::NameComponent("testcaven")
+//	);
+//
+//	std::cout << "[GameLogic] Adding " << testEntities.size() << " test objects to scene tree..." << std::endl;
+//
+//	for (auto& entity : testEntities) {
+//		// Add each entity to the scene tree as a root node
+//		engine_.getEnoEditor().getSceneTree().createFromEntity(entity, nullptr);
+//		std::cout << "[GameLogic] Added entity " << entity.id() << " to scene tree" << std::endl;
+//	}
+//
+//	std::cout << "[GameLogic] Test objects added to scene tree successfully!" << std::endl;
+//}
 
 void GameApplication::setupImGui() {
 	GLFWwindow* window = engine_.getWindowManager().getWindow();
