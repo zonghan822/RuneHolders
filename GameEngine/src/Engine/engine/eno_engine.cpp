@@ -82,7 +82,8 @@ namespace Engine
 	}
 
 	void EnoEngine::shutDown() {
-
+		// Clean up graphics system resources
+		graphicsMng_.shutdown();
 	}
 
 	// Loader

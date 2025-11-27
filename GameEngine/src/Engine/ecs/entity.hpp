@@ -323,6 +323,19 @@ namespace ECS
 			size_t deletedIndex = loc.entityIndexInChunk;
 			size_t lastIndex = chunk->current - 1;
 
+			// IMPORTANT: Call destructors for the deleted entity's components BEFORE swap
+			// This ensures shared_ptr and other resources are properly cleaned up
+			for (size_t compIdx = 0; compIdx < chunk->componentTypes.size(); ++compIdx)
+			{
+				char* deletedPtr = chunk->search(compIdx, deletedIndex);
+
+				// Call the appropriate destructor based on component type
+				ECSComponents::EnoComponentRegistry::DeduceCompType(chunk->componentTypes[compIdx],
+					[deletedPtr]<typename T>() {
+						reinterpret_cast<T*>(deletedPtr)->~T();
+					});
+			}
+
 			if (deletedIndex != lastIndex)
 			{
 				// Find the entity at the last position
@@ -348,6 +361,7 @@ namespace ECS
 						size_t compSize = chunk->componentSizes[compIdx];
 
 						// Copy last entity's data to deleted entity's position
+						// NOTE: We already called destructors above, so this is safe
 						std::memcpy(deletedPtr, lastPtr, compSize);
 					}
 

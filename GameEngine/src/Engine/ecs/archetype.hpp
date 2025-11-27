@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration/Implemnentation file for archetypes
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 
@@ -20,6 +20,26 @@
 
 namespace ECS
 {
+	// Chunk destructor implementation (defined here to avoid circular dependency)
+	inline Chunk::~Chunk()
+	{
+		// Call destructors for all active entities' components
+		// This is critical for components with resources like shared_ptr
+		for (size_t entityIdx = 0; entityIdx < current; ++entityIdx)
+		{
+			for (size_t compIdx = 0; compIdx < componentTypes.size(); ++compIdx)
+			{
+				char* componentPtr = search(compIdx, entityIdx);
+
+				// Call the appropriate destructor based on component type
+				ECSComponents::EnoComponentRegistry::DeduceCompType(componentTypes[compIdx],
+					[componentPtr]<typename T>() {
+						reinterpret_cast<T*>(componentPtr)->~T();
+					});
+			}
+		}
+	}
+
 	/*============================================================================================
 		* \brief       Defined by a collection of components created at any point in time
 	*//*========================================================================================*/

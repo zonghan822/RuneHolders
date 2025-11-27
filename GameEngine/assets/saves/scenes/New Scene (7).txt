@@ -1,0 +1,55 @@
+{
+
+	[EXIT_BUTTON #1]
+	{
+		"ID": { 0 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { EXIT_BUTTON #1 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 574.32 | y : 351.834 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 30 }
+				"Height": <float> { 30 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::ButtonComponent]
+			{
+				"BtnText": <char32> { Button }
+				"TargetScene": <char32> { New Scene (5).txt }
+			}
+
+			[struct ECSComponents::PrefabInstanceComponent]
+			{
+				"Prefab Name": <char64> { EXIT_BUTTON }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Enabled": { true }
+	}
+
+}

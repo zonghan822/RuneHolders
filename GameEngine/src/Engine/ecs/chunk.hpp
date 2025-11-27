@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration/definition file for chunks
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once
@@ -28,6 +28,7 @@ namespace ECS
 		std::unique_ptr<std::byte[]> data;					// Starting address of the chunk
 		std::vector<void*> pComponent;						// Pointer to each component
 		std::vector<size_t> componentSizes;					// Size of each component
+		std::vector<std::type_index> componentTypes;		// Type of each component (for calling destructors)
 
 		size_t capacity;									// Max number of entities for the chunk to store
 		size_t current;										// Current number of entities stored
@@ -44,7 +45,8 @@ namespace ECS
 			std::vector<size_t>& sizes)
 			:
 			capacity{ chunkCapacity },
-			current{ 0 }
+			current{ 0 },
+			componentTypes{ types }
 		{
 			// Allocate the size of the chunk
 			// based on components
@@ -66,6 +68,11 @@ namespace ECS
 				offset += size * capacity;
 			}
 		}
+
+		/*============================================================================================
+			* \brief			Chunk Destructor - properly destroys all components
+		*//*========================================================================================*/
+		~Chunk();  // Implemented in archetype.hpp to avoid circular dependency
 
 		/*============================================================================================
 			* \brief			Retrieve the value of an entity's component
