@@ -149,7 +149,7 @@ namespace Engine
 		* \brief		Gets the Eno Editor for scripting operations
 		* \return		Reference to the EnoCoreHost instance
 		*//*========================================================================================*/
-		Editor::EnoEditor& getEnoEditor() { return editor_; }
+		Editor::EnoEditor& getEnoEditor() { return *editor_; }
 
 		/*============================================================================================
 		* \brief		Gets the AI Manager for AI operations (State Manager)
@@ -220,9 +220,9 @@ namespace Engine
 		ECS::EntityManager entityMng_{ bus_ };
 		ECSComponents::EnoPrefabManager prefabMng_{ bus_ };
 		Core::EnoCoreHost coreHost_{ bus_ };
-		Editor::EnoEditor editor_{ bus_, entityMng_, coreHost_ };
 		std::unique_ptr<Map::TileMapSystem> tilemapSystem_;
 		std::unique_ptr<AI::PathfindingSystem> pathfinder_;
+		std::unique_ptr<Editor::EnoEditor> editor_;
 		Animation::AnimationControllerRegistry animRegistry;
 
 		// Systems
