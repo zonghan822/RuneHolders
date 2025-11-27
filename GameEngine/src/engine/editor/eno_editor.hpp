@@ -42,8 +42,9 @@ namespace Editor
 					{
 						// Add file to scenes_
 						std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
+						// Set scene name
 						scene->setSceneName(fileEntry.path().filename().string());
-						std::cout << "[Eno_Editor] appeneding scene: " << scene->getSceneName() << std::endl;
+						std::cout << "[Eno_Editor] appending scene: " << scene->getSceneName() << std::endl;
 						scenes_.push_back(std::move(scene));
 					}
 				}
@@ -57,12 +58,6 @@ namespace Editor
 
 			// Find the last loaded scene if possible
 			loadLastSavedScene();
-
-			// Create a new empty scene
-			//createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
-
-			// First scene will be selected first
-			//selectedScene_ = scenes_.front().get();
 
 			// *** TBD when operation isnt needed! ***
 			bus_.subscribe<Editor::TestTree>([&](const Editor::TestTree)
@@ -82,101 +77,7 @@ namespace Editor
 		// Testing the scene tree
 		void operation()
 		{
-			//Node* node1 = tree_.create();
-			//Node* node2 = tree_.create();
-			//tree_.select(0);
 
-			//tree_.nest(node2);
-
-			//Node* node3 = tree_.create();
-			//Node* node4 = tree_.create();
-			//Node* node5 = tree_.create();
-			//Node* node6 = tree_.create();
-			//Node* node7 = tree_.create();
-
-			//tree_.nest(node4, node1);
-			//tree_.nest(node6, node2);
-
-			//tree_.detach(node6, node3);
-			//tree_.nest(node5, node6);
-
-			//tree_.kill(node1);
-
-			//// prints nothing, selected node was destroyed, which is
-			//// expected behaviour
-			//tree_.selectedNodeView();
-
-			//// Create and open a new script
-			////scriptMng_.createAndOpenScript("EnemyController");
-			//std::cout << "Script Source: " << SCRIPT_SRC_PATH << std::endl;
-			//scriptMng_.createAndOpenScript("EnemyController");
-			//// We attach the script onto node5 and open it
-			//auto script = scriptMng_.selectScript();
-			//tree_.attachScript(node5, std::move(script));
-
-			//Node* node1 = tree_.create();
-			//Node* node2 = tree_.create();
-			//tree_.save(ASSETS_DIR_PATH "saves/SceneTreeSave", tree_.getSceneName());
-			
-			//tree_.load(ASSETS_DIR_PATH "saves/SceneTreeSave");
-
-			//auto nodes = tree_.getAllNodes();
-			////auto collioffset = nodes[0]->entity_.get<ECSComponents::CollisionComponent>(entMng_).offset.x; // should give me 5
-			////auto colliRectWidth = nodes[0]->entity_.get<ECSComponents::CollisionComponent>(entMng_).data.rectangle.width; // should give me 10
-			////auto physicsVelMin = nodes[0]->entity_.get<ECSComponents::PhysicsComponent>(entMng_).velocityMin; // should give me -1000
-			////auto physicsVelMax = nodes[0]->entity_.get<ECSComponents::PhysicsComponent>(entMng_).velocityMax; // should give me 1000
-
-			//std::cout << "Collision offset: " << collioffset << std::endl <<
-			//	"Collision rect width: " << colliRectWidth << std::endl <<
-			//	"Velocity min: " << physicsVelMin << std::endl <<
-			//	"Velocity max: " << physicsVelMax << std::endl;
-			//auto nodes = tree_.getAllNodes();
-			//auto vis = nodes[0]->entity_.get<ECSComponents::VisibilityComponent>(entMng_);
-			//auto lay = nodes[0]->entity_.get<ECSComponents::LayerComponent>(entMng_);
-
-			//entMng_.viewMap();
-			//std::cout << "Visibility Z Index: " << vis.z_index << std::endl;
-			//std::cout << "Visibility Enabled?: " << vis.visible << std::endl;
-			//std::cout << "Layer: " << lay.layer << std::endl;
-
-
-			// Call script delegate to get exposed fields
-			// after attaching the script
-			//int count{};
-			//Core::EnoCoreHost::Field* data = (coreHost_.fields())(L"PlayerController", &count);
-
-			//for (size_t i = 0; i < count; i++)
-			//{
-			//	Core::EnoCoreHost::Field& field = data[i];
-
-			//	std::wcout << "Name : " << field.name_ << std::endl <<
-			//		"Type: " << field.type_ << std::endl <<
-			//		"Field: " << field.value_ << std::endl;
-			//}
-			//
-			// Modify value and run a function in C# to verify value change
-			// PlayerController script attached
-			//node5->script_->displayVars();
-			//node5->script_->modValue(L"playerName", L"Anthony");
-			//node5->script_->displayVars();
-			
-
-			////////////////////////////////////////////////////////////////
-			//Core::EnoCoreHost::Field* data1 = (coreHost_.fields())(L"PlayerController", &count);
-
-			//for (size_t i = 0; i < count; i++)
-			//{
-			//	Core::EnoCoreHost::Field& field = data1[i];
-
-			//	std::wcout << "Name : " << field.name_ << std::endl <<
-			//		"Type: " << field.type_ << std::endl <<
-			//		"Field: " << field.value_ << std::endl;
-			//}
-			// Opens the script
-			//if (node5->script_)
-			//{
-			//	scriptMng_.openScript(node5->script_->path());
-			//}
 		}
 
 		// Create and append a new scene
@@ -187,6 +88,7 @@ namespace Editor
 
 		void selectScene(const std::string& filename)
 		{
+			
 			// Load selected scene
 			tree_.load(ASSET_SCENE_PATH + filename);
 
@@ -225,19 +127,8 @@ namespace Editor
 		{
 
 			// Load initial setting of the scene
-			std::cout << "[Eno_editor] Loading saved scene tree to restore state..." << std::endl;
-			// Check scene name exists
-			std::string sceneName = selectedScene_->getSceneName();
-			if (!sceneName.empty())
-			{
-				std::string scenePath = ASSET_SCENE_PATH + sceneName;
-				tree_.load(scenePath);
-				std::cout << "[Eno_editor] Scene tree loaded successfully!" << std::endl;
-			}
-			else
-			{
-				std::cerr << "[Eno_editor] Warning: Scene name is empty, cannot load scene!" << std::endl;
-			}
+			//std::cout << "[Eno_editor] Loading saved scene tree to restore state..." << std::endl;
+			loadLastSavedScene();
 
 			// Set editor state to stop
 			selectedScene_->stop();
@@ -421,7 +312,7 @@ namespace Editor
 			std::ofstream lastSceneSave{ ASSET_SCENE_PATH "LastSavedScene.txt" };
 			if (!lastSceneSave)
 			{
-				throw std::runtime_error("Failed to save current active scene name!");
+				throw std::runtime_error("[Eno_Editor] Failed to save current active scene name!");
 			}
 			lastSceneSave << selectedScene_->getSceneName();
 			lastSceneSave.close();

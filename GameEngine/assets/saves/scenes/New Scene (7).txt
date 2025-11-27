@@ -38,7 +38,7 @@
 			[struct ECSComponents::ButtonComponent]
 			{
 				"BtnText": <char32> { Button }
-				"TargetScene": <char32> { New Scene (5).txt }
+				"TargetScene": <char32> { New Scene (1).txt }
 			}
 
 			[struct ECSComponents::PrefabInstanceComponent]

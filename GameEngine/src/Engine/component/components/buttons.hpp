@@ -6,6 +6,8 @@
 #include "visibility.hpp"
 #include "../../math/math.hpp"
 #include <string>
+#include <unordered_map>
+#include "../../event/signals.hpp"
 
 // Forward declaration
 namespace Engine
@@ -36,7 +38,12 @@ namespace ECSComponents {
 	public:
 
 		// Default constructor
-		ButtonComponent() = default;
+		ButtonComponent()
+		{
+			signalsMap["onClick"] = Events::EnoSignal();
+			signalsMap["onHover"] = Events::EnoSignal();
+			signalsMap["onPressed"] = Events::EnoSignal();
+		}
 
 		// Get name
 		std::string getName() const
@@ -70,6 +77,8 @@ namespace ECSComponents {
 				mousePos.y >= (t.pos.y - (d.height * 0.5f)) &&	// Upper limit
 				mousePos.y <= (t.pos.y + (d.height * 0.5f)))	// Lower limit
 			{
+				// Emit signal
+
 				// Button is clicked
 				return true;
 			}
@@ -132,10 +141,12 @@ namespace ECSComponents {
 		// Button name
 		char btnText[32] = "Button";
 
-		// Signal types
+		// Signal types (To be deleted after bridging)
 		std::vector<std::pair<signalType, functionType>> signals;
+		
+		std::unordered_map<std::string, Events::EnoSignal> signalsMap;
 
-		// Parameter for scene selection
+		// Parameter for scene selection (To be deleted after bridging)
 		char targetScene[32] = "NIL";
 	};
 

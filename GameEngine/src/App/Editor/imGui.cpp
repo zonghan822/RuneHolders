@@ -1340,9 +1340,15 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 	// Get current scene
 	std::string currScene = editor_.getCurrentScene().getSceneName();
+	std::cout << "scene name in imgui: " << currScene << std::endl;
 
 	// Create a container for all scene names inside my scene folder
-	static std::vector<std::filesystem::path> sceneNames;
+	std::vector<std::unique_ptr<Editor::EnoScene>>& sceneList = editor_.getScenes();
+	std::vector<std::string> sceneNames;
+	for (auto& scene : sceneList)
+	{
+		sceneNames.push_back(scene->getSceneName());
+	}
 	// A toggle flag to refresh the scene list
 	static bool refreshSceneName = true;
 	// Buffer to change scene name
@@ -1363,33 +1369,33 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		std::string sceneSavePath = (ASSET_SCENE_PATH);
 		// Check that the file is a .txt file
 		try {
-			for (const auto& fileEntry : std::filesystem::directory_iterator(sceneSavePath))
-			{
-				if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (sceneSavePath + "LastSavedScene.txt"))
-				{
-					// Add file to container
-					sceneNames.push_back(fileEntry.path());
-					//std::cout << "Filename: " << fileEntry.path() << std::endl;
-				}
-			}
+			//for (const auto& fileEntry : std::filesystem::directory_iterator(sceneSavePath))
+			//{
+			//	if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (sceneSavePath + "LastSavedScene.txt"))
+			//	{
+			//		// Add file to container
+			//		sceneNames.push_back(fileEntry.path());
+			//		//std::cout << "Filename: " << fileEntry.path() << std::endl;
+			//	}
+			//}
 
 			// Check that scene list contains at least one scene
 			if (!sceneNames.empty())
 			{
 				// Check that no scene was recently deleted
 				auto it = std::find_if(sceneNames.begin(), sceneNames.end(),
-					[&](const std::filesystem::path& fileName)
+					[&](const std::string& scenename)
 					{
-						return fileName.filename() == currScene;
+						return scenename == currScene;
 					});
 
 				if (it == sceneNames.end())
 				{
 					std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
 					// Scene deleted, load the first available scene instead
-					editor_.selectScene(sceneNames.front().filename().string());
+					editor_.selectScene(sceneList.front()->getSceneName());
 					// Update last saved scene file
-					editor_.updateLastSavedScene();
+					//editor_.updateLastSavedScene();
 					g_game->markEntitiesDirty();
 				}
 			} 
@@ -1413,16 +1419,17 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	ImGui::Separator();
 
 	// Display scene names
-	for (const auto& filePath : sceneNames)
+	for (auto& name : sceneNames)
 	{
-		std::string filename = filePath.filename().string();
-
+		std::cout << "get scene name aosjow :" << name << std::endl;
+		std::string sceneName = name;
+		std::cout << "scene name is : " << sceneName << std::endl;
 		// Give it an id
-		ImGui::PushID(filename.c_str());
+		ImGui::PushID(sceneName.c_str());
 
 		// Create an invisible button over the text
 		// Size of invisible button
-		ImVec2 textSize = ImGui::CalcTextSize(filename.c_str());
+		ImVec2 textSize = ImGui::CalcTextSize(sceneName.c_str());
 		ImGui::InvisibleButton("##scene", textSize);
 
 		// Left click loads scene
@@ -1430,14 +1437,14 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
 		{
 			// Load scene
-			std::cout << "current scene: " << editor_.getCurrentScene().getSceneName() << ", filename: " << filename << std::endl;
+			std::cout << "current scene: " << editor_.getCurrentScene().getSceneName() << ", filename: " << sceneName << std::endl;
 			// Check that scene is not currently loaded
-			if (editor_.getCurrentScene().getSceneName() != filename)
+			if (editor_.getCurrentScene().getSceneName() != sceneName)
 			{
-				std::cout << "Loading file: " << filename << std::endl;
+				std::cout << "Loading file: " << sceneName << std::endl;
 				// Defer scene loading until after ImGui rendering completes
 				g_pendingSceneLoad = true;
-				g_sceneToLoad = filename;
+				g_sceneToLoad = sceneName;
 			}
 			else
 			{
@@ -1456,7 +1463,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		// Create menu popup
 		if (ImGui::BeginPopup("scene_menu"))
 		{
-			ImGui::Text("%s", filename.c_str());
+			ImGui::Text("%s", sceneName.c_str());
 			ImGui::Separator();
 
 			// Input box to change name
@@ -1475,7 +1482,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 					try
 					{
 						// Get current filepath
-						std::filesystem::path currentPath = filePath;
+						std::filesystem::path currentPath = ASSET_SCENE_PATH + sceneName;
 
 						// Check for .txt extension in new file
 						std::string newSceneName = scene_name;
@@ -1485,7 +1492,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 						std::filesystem::rename(currentPath, newPath);
 
 						// Check if we're renaming the currently active scene
-						bool isCurrentScene = (filename == editor_.getCurrentScene().getSceneName());
+						bool isCurrentScene = (sceneName == editor_.getCurrentScene().getSceneName());
 
 						// If we renamed the active scene, update the current scene name
 						if (isCurrentScene)
@@ -1528,7 +1535,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 				try
 				{
 					// Check if we're deleting the currently active scene
-					bool isCurrentScene = (filename == editor_.getCurrentScene().getSceneName());
+					bool isCurrentScene = (sceneName == editor_.getCurrentScene().getSceneName());
 
 					if (isCurrentScene)
 					{
@@ -1539,8 +1546,18 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 					else
 					{
 						// Safe to delete - scene is not currently loaded
-						std::filesystem::remove(filePath);
-						std::cout << "[ImGui] Scene deleted: " << filename << std::endl;
+						std::filesystem::remove(ASSET_SCENE_PATH + sceneName);
+						std::cout << "[ImGui] Scene deleted: " << sceneName << std::endl;
+
+						// Find scene index in scenes_ list
+						auto index = std::find_if(sceneList.begin(), sceneList.end(), 
+									[&](const std::unique_ptr<Editor::EnoScene>& scene) {return sceneName == scene->getSceneName(); });
+
+						// Delete pointer to scene
+						if (index != sceneList.end())
+						{
+							sceneList.erase(index);
+						}
 
 						// Reset error flag
 						g_cannotDeleteActiveScene = false;
@@ -1577,7 +1594,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		// Minus button size offset
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() - textSize.x);
 		// Display file name as text
-		ImGui::Text("%s", filename.c_str());
+		ImGui::Text("%s", sceneName.c_str());
 
 		if (ImGui::IsItemHovered())
 		{
@@ -2452,7 +2469,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				ImGui::EndGroup();
 				ImGui::PopID();
 				break;
-				//goto process_deletion;
 			}
 
 			// Signal type dropdown
@@ -2519,6 +2535,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				ImGui::SetNextItemWidth(200);
 				if (ImGui::Combo("##SceneParam", &selectedIndex, sceneNames.data(), sceneNames.size())) {
 					button.setTargetScene(sceneNames[selectedIndex]);
+					// Connect to itself for now
 				}
 
 				//std::cout << "[Imgui] Scene list size:" << sceneList.size() << std::endl;
