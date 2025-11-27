@@ -2,11 +2,17 @@
 #include <vector>
 #include <string>
 
+#include "../math/math.hpp"
+
 namespace Map {
 
     struct Tile {
         bool walkable = true;
-        uint32_t tileID = 0;  // Texture ID for rendering
+
+        std::string textureName = "";
+        Math::eVec2<float> uv0 = { 0, 0 };   // top-left UV
+        Math::eVec2<float> uv1 = { 0, 0 };   // bottom-right UV
+        bool hasTexture = false;
     };
 
     class TileLayer {
@@ -17,8 +23,10 @@ namespace Map {
         bool isWalkable(int x, int y) const;
         void setWalkable(int x, int y, bool value);
 
-        uint32_t getTexture(int x, int y) const;
-        void setTexture(int x, int y, uint32_t textureID);
+        bool hasTileTexture(int x, int y) const;
+        const Tile& getTile(int x, int y) const;
+        Tile& getTile(int x, int y);
+        void setTile(int x, int y, const std::string& textureName, Math::eVec2<float> uv0, Math::eVec2<float> uv1);
 
         // Accessor
         std::string name() const;

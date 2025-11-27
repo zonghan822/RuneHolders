@@ -38,7 +38,8 @@ private:
 	int selectedLayer_{0};
 
 	// --- Tileset Feature ---
-	std::shared_ptr<Graphics::EnoTexture> tilesetTexture_{ nullptr };
+	std::string tilesetName_ = "";
+	std::shared_ptr<Graphics::EnoTexture> tilesetTexture_;
 	int tilesetRows_ = 1;
 	int tilesetCols_ = 1;
 	int selectedTileX_ = -1;

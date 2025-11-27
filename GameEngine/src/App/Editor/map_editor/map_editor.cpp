@@ -252,8 +252,8 @@ void MapEditor::displayMenu() {
 	ImGui::Separator();
 
 	// Instructions
+	ImGui::Text("Load and Select Tile from Tileset");
 	ImGui::Text("Left-click: Paint");
-	ImGui::Text("Right-click: Erase");
 
 	ImGui::End();
 }
@@ -268,10 +268,10 @@ void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
 
 	if (ImGui::BeginDragDropTarget()) {
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME")) {
-			const char* name = (const char*)payload->Data;
+			tilesetName_ = (const char*)payload->Data;
 
 			// Get texture from resource loader
-			tilesetTexture_ = loader.getTexture(name);
+			tilesetTexture_ = loader.getTexture(tilesetName_.c_str());
 
 			if (tilesetTexture_) {
 				int texW = tilesetTexture_->getWidth();
@@ -377,36 +377,44 @@ void MapEditor::paint(GameApplication* g) {
 	float cameraHeight = static_cast<float>(g->getEditorHeight());
 	Math::eVec2<float> editorMin = g->getEditorViewMin();
 	Math::eVec2<float> editorMax = g->getEditorViewMax();
-	float cameraPosX = g_game->getEditorCameraX();
-	float cameraPosY = g_game->getEditorCameraY();
+	float camX = g_game->getEditorCameraX();
+	float camY = g_game->getEditorCameraY();
 
-	// Left Mouse Click
-	if (ImGui::IsItemHovered() && ImGui::IsMouseDown(0)) {
-		Math::eVec2<float> worldPos = Graphics::screenToWorld(
-			mousePos, editorMin, editorMax, cameraWidth, cameraHeight, cameraPosX, cameraPosY
-		);
-		Math::eVec2<int> tilePos = tilemap_.worldToTile(worldPos);
+	bool left = ImGui::IsItemHovered() && ImGui::IsMouseDown(0);
 
-		if (tilemap_.inBounds(tilePos.x, tilePos.y)) {
-			// paint using brush
-			bool isWalkable = (brush_ == 1);
-			tilemap_.setWalkable(selectedLayer_, tilePos.x, tilePos.y, isWalkable);
-
-			// mark render dirty
-			g->markEntitiesDirty();
+	if (!tilesetReady_) {
+		// default walkability mode
+		if (left) {
+			auto world = Graphics::screenToWorld(mousePos, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+			auto tile = tilemap_.worldToTile(world);
+			if (tilemap_.inBounds(tile.x, tile.y)) {
+				tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, (brush_ == 1));
+				g->markEntitiesDirty();
+			}
 		}
+		return;
 	}
 
-	// Right Mouse Click
-	if (ImGui::IsItemHovered() && ImGui::IsMouseDown(1)) {
-		Math::eVec2<float> worldPos = Graphics::screenToWorld(
-			mousePos, editorMin, editorMax, cameraWidth, cameraHeight, cameraPosX, cameraPosY
-		);
-		Math::eVec2<int> tilePos = tilemap_.worldToTile(worldPos);
+	// TILESET PAINT MODE ----------------------------------
+	if (left && selectedTileX_ >= 0) {
+		auto world = Graphics::screenToWorld(mousePos, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+		auto tile = tilemap_.worldToTile(world);
 
-		if (tilemap_.inBounds(tilePos.x, tilePos.y)) {
-			tilemap_.setWalkable(selectedLayer_, tilePos.x, tilePos.y, true);
+		if (tilemap_.inBounds(tile.x, tile.y)) {
+			float u0 = (float)selectedTileX_ / tilesetCols_;
+			float v0 = (float)selectedTileY_ / tilesetRows_;
+			float u1 = (float)(selectedTileX_ + 1) / tilesetCols_;
+			float v1 = (float)(selectedTileY_ + 1) / tilesetRows_;
 
+			tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, (brush_ == 1));
+			tilemap_.setTile(
+				selectedLayer_,
+				tile.x, tile.y,
+				tilesetName_,
+				{ u0, v0 },
+				{ u1, v1 }
+			);
+			
 			g->markEntitiesDirty();
 		}
 	}
@@ -419,20 +427,46 @@ void MapEditor::draw(GameApplication* g, ImDrawList* drawList) {
 	float cameraHeight = static_cast<float>(g->getEditorHeight());
 	Math::eVec2<float> editorMin = g->getEditorViewMin();
 	Math::eVec2<float> editorMax = g->getEditorViewMax();
-	float cameraPosX = g_game->getEditorCameraX();
-	float cameraPosY = g_game->getEditorCameraY();
+	float camX = g_game->getEditorCameraX();
+	float camY = g_game->getEditorCameraY();
 
 	drawList->PushClipRect(ImVec2(editorMin.x, editorMin.y), ImVec2(editorMax.x, editorMax.y), true);
 
 	auto& layer = tilemap_.layers()[selectedLayer_];
+
+	// Draw tileset-based tiles
+	if (tilesetReady_) {
+		float cs = tilemap_.cellSize();
+		for (int y = 0; y < tilemap_.height(); ++y) {
+			for (int x = 0; x < tilemap_.width(); ++x) {
+				if (!layer.hasTileTexture(x, y)) continue;
+				auto tile = layer.getTile(x, y);
+
+				Math::eVec2<float> p1 = Graphics::worldToScreen(
+					{ x * cs, y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+
+				Math::eVec2<float> p2 = Graphics::worldToScreen(
+					{ (x + 1) * cs, (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+
+				ImGui::GetWindowDrawList()->AddImage(
+					(ImTextureID)(intptr_t)tilesetTexture_->getID(),
+					ImVec2(p1.x, p1.y),
+					ImVec2(p2.x, p2.y),
+					ImVec2(tile.uv0.x, tile.uv0.y),
+					ImVec2(tile.uv1.x, tile.uv1.y)
+				);
+			}
+		}
+	}
+
 	for (int y = 0; y < tilemap_.height(); ++y) {
 		for (int x = 0; x < tilemap_.width(); ++x) {
 			float cs = tilemap_.cellSize();
 			Math::eVec2<float> pt1 = Graphics::worldToScreen(
-				{ x * cs, y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, cameraPosX, cameraPosY
+				{ x * cs, y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY
 			);
 			Math::eVec2<float> pt2 = Graphics::worldToScreen(
-				{ (x + 1) * cs, (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, cameraPosX, cameraPosY
+				{ (x + 1) * cs, (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY
 			);
 
 			ImVec2 p1{ pt1.x, pt1.y }, p2{ pt2.x, pt2.y };
@@ -443,7 +477,7 @@ void MapEditor::draw(GameApplication* g, ImDrawList* drawList) {
 
 			bool walk = layer.isWalkable(x, y);
 
-			ImU32 col = walk ? IM_COL32(0, 255, 0, 60) : IM_COL32(255, 0, 0, 60);
+			ImU32 col = walk ? IM_COL32(0, 255, 0, 20) : IM_COL32(255, 0, 0, 20);
 			drawList->AddRectFilled(p1, p2, col);
 			drawList->AddRect(p1, p2, IM_COL32(255, 255, 255, 20));
 		}

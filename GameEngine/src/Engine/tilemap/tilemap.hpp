@@ -21,6 +21,7 @@ namespace Map {
         void removeLayer(int id);
 
         void setWalkable(int layerIndex, int x, int y, bool value);
+        void setTile(int layerIndex, int x, int y, const std::string& textureName, Math::eVec2<float> uv0, Math::eVec2<float> uv1);
 
         void paintRectangle(int layerIndex,
             int x0, int y0, int x1, int y1,

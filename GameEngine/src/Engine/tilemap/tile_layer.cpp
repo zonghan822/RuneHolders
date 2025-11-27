@@ -24,15 +24,34 @@ namespace Map {
         if (x < 0 || y < 0 || x >= width_ || y >= height_) return;
         tiles_[y][x].walkable = value;
     }
-
-    uint32_t TileLayer::getTexture(int x, int y) const {
-        if (x < 0 || y < 0 || x >= width_ || y >= height_) return 0;
-        return tiles_[y][x].tileID;
+    
+    // Returns whether tile has a visual texture
+    bool TileLayer::hasTileTexture(int x, int y) const {
+        if (x < 0 || y < 0 || x >= width_ || y >= height_) return false;
+        return tiles_[y][x].hasTexture;
     }
 
-    void TileLayer::setTexture(int x, int y, uint32_t textureID) {
+    const Tile& TileLayer::getTile(int x, int y) const {
+        return tiles_[y][x];
+    }
+
+    Tile& TileLayer::getTile(int x, int y) {
+        return tiles_[y][x];
+    }
+
+    void TileLayer::setTile(
+        int x, int y,
+        const std::string& textureName,
+        Math::eVec2<float> uv0,
+        Math::eVec2<float> uv1)
+    {
         if (x < 0 || y < 0 || x >= width_ || y >= height_) return;
-        tiles_[y][x].tileID = textureID;
+
+        Tile& t = tiles_[y][x];
+        t.textureName = textureName;
+        t.uv0 = uv0;
+        t.uv1 = uv1;
+        t.hasTexture = true;
     }
 
     std::string TileLayer::name() const { return name_; }

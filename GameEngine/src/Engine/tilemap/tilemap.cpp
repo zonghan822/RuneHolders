@@ -31,6 +31,10 @@ namespace Map {
         layers_[layerIndex].setWalkable(x, y, value);
     }
 
+    void TileMapSystem::setTile(int layerIndex, int x, int y, const std::string& textureName, Math::eVec2<float> uv0, Math::eVec2<float> uv1) {
+        layers_[layerIndex].setTile(x, y, textureName, uv0, uv1);
+    }
+
     void TileMapSystem::paintRectangle(int layerIndex,
         int x0, int y0, int x1, int y1,
         bool walkable)
@@ -115,7 +119,19 @@ namespace Map {
 
                     rapidjson::Value tile(rapidjson::kObjectType);
                     tile.AddMember("walk", t.walkable, alloc);
-                    tile.AddMember("id", t.tileID, alloc);
+                    tile.AddMember("tex", rapidjson::Value(t.textureName.c_str(), alloc), alloc);
+
+                    rapidjson::Value uv0(rapidjson::kArrayType);
+                    uv0.PushBack(t.uv0.x, alloc);
+                    uv0.PushBack(t.uv0.y, alloc);
+                    tile.AddMember("uv0", uv0, alloc);
+
+                    rapidjson::Value uv1(rapidjson::kArrayType);
+                    uv1.PushBack(t.uv1.x, alloc);
+                    uv1.PushBack(t.uv1.y, alloc);
+                    tile.AddMember("uv1", uv1, alloc);
+
+                    tile.AddMember("hasTex", t.hasTexture, alloc);
 
                     row.PushBack(tile, alloc);
                 }
@@ -179,7 +195,16 @@ namespace Map {
                 for (int x = 0; x < width_; ++x) {
                     const auto& jt = jrow[x];
                     layer.setWalkable(x, y, jt["walk"].GetBool());
-                    layer.setTexture(x, y, jt["id"].GetUint());
+
+                    Tile& t = layer.getTile(x, y);
+
+                    t.hasTexture = jt["hasTex"].GetBool();
+
+                    if (t.hasTexture) {
+                        t.textureName = jt["tex"].GetString();
+                        t.uv0 = { jt["uv0"][0].GetFloat(), jt["uv0"][1].GetFloat() };
+                        t.uv1 = { jt["uv1"][0].GetFloat(), jt["uv1"][1].GetFloat() };
+                    }
                 }
             }
 
