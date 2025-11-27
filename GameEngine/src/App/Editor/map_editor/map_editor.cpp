@@ -258,6 +258,117 @@ void MapEditor::displayMenu() {
 	ImGui::End();
 }
 
+void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
+	if (!editMode_) return;
+
+	ImGui::Begin("Tileset", nullptr, ImGuiWindowFlags_NoCollapse);
+
+	// Drop target for texture from Assets Browser
+	ImGui::Button("Drop Texture Here", ImVec2(200, 40));
+
+	if (ImGui::BeginDragDropTarget()) {
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME")) {
+			const char* name = (const char*)payload->Data;
+
+			// Get texture from resource loader
+			tilesetTexture_ = loader.getTexture(name);
+
+			if (tilesetTexture_) {
+				int texW = tilesetTexture_->getWidth();
+				int texH = tilesetTexture_->getHeight();
+
+				// auto-generate rows/cols using tilemap cell size
+				float cs = tilemap_.cellSize();
+				tilesetCols_ = static_cast<int>(texW / cs);
+				tilesetRows_ = static_cast<int>(texH / cs);
+
+				tilesetReady_ = true;
+			}
+		}
+		ImGui::EndDragDropTarget();
+	}
+
+	if (!tilesetReady_) {
+		ImGui::TextColored(ImVec4(1, 0, 0, 1), "No tileset loaded.");
+		ImGui::End();
+		return;
+	}
+
+	ImGui::Separator();
+
+	// ================================
+	// AUTO-SCALED TILESET PREVIEW
+	// ================================
+
+	float windowWidth = ImGui::GetContentRegionAvail().x;
+	float maxPreviewSize = std::min(windowWidth, 512.0f);    // safety cap
+	float aspect = (float)tilesetTexture_->getWidth() / (float)tilesetTexture_->getHeight();
+	float previewW = maxPreviewSize;
+	float previewH = maxPreviewSize / aspect;
+
+	ImTextureID texID = (ImTextureID)(intptr_t)tilesetTexture_->getID();
+	ImGui::Image(texID, ImVec2(previewW, previewH));   // draw scaled image
+
+	ImVec2 imgMin = ImGui::GetItemRectMin();
+	ImVec2 imgMax = ImGui::GetItemRectMax();
+
+	// Tile size on screen
+	float tileW = previewW / tilesetCols_;
+	float tileH = previewH / tilesetRows_;
+
+	// ================================
+	// CLICK TO PICK TILE
+	// ================================
+	ImVec2 mouse = ImGui::GetMousePos();
+
+	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
+		int tx = (mouse.x - imgMin.x) / tileW;
+		int ty = (mouse.y - imgMin.y) / tileH;
+
+		if (tx >= 0 && tx < tilesetCols_ && ty >= 0 && ty < tilesetRows_) {
+			selectedTileX_ = tx;
+			selectedTileY_ = ty;
+		}
+	}
+
+	// ================================
+	// DRAW TILE GRID LINES
+	// ================================
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+
+	for (int x = 0; x <= tilesetCols_; ++x) {
+		float px = imgMin.x + x * tileW;
+		dl->AddLine(ImVec2(px, imgMin.y), ImVec2(px, imgMax.y), IM_COL32(255, 255, 255, 80));
+	}
+
+	for (int y = 0; y <= tilesetRows_; ++y) {
+		float py = imgMin.y + y * tileH;
+		dl->AddLine(ImVec2(imgMin.x, py), ImVec2(imgMax.x, py), IM_COL32(255, 255, 255, 80));
+	}
+
+	// ================================
+	// HIGHLIGHT SELECTED TILE
+	// ================================
+	if (selectedTileX_ >= 0) {
+		ImVec2 p1(
+			imgMin.x + selectedTileX_ * tileW,
+			imgMin.y + selectedTileY_ * tileH
+		);
+		ImVec2 p2(
+			imgMin.x + (selectedTileX_ + 1) * tileW,
+			imgMin.y + (selectedTileY_ + 1) * tileH
+		);
+
+		dl->AddRect(p1, p2, IM_COL32(255, 255, 0, 255), 0, 0, 3.0f);       // yellow border
+		dl->AddRect(p1, p2, IM_COL32(0, 0, 0, 120), 0, 0, 1.5f);           // subtle outline
+	}
+
+	ImGui::Separator();
+	ImGui::Text("Selected Tile: (%d, %d)", selectedTileX_, selectedTileY_);
+
+	ImGui::End();
+}
+
 void MapEditor::paint(GameApplication* g) {
 	if (!editMode_) return;
 

@@ -43,15 +43,18 @@ void GameApplication::initialize() {
 	mapEditor_ = std::make_unique<MapEditor>(tileMap);
 	Math::eVec2<float> worldSize = tileMap.getWorldSize();
 
+	worldWidth_ = worldSize.x;
+	worldHeight_ = worldSize.y;
+
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
-	gameFramebuffer_->create(VIRTUAL_WIDTH, VIRTUAL_HEIGHT); // Fixed virtual resolution
+	gameFramebuffer_->create(worldWidth_, worldHeight_); // Fixed virtual resolution
 
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
 
 	// Center editor camera on the middle of the game world initially
-	editorCameraX_ = (worldSize.x / 2.0f) - static_cast<float>(EDITOR_WIDTH) / 2.f;
-	editorCameraY_ = (worldSize.y / 2.0f) - static_cast<float>(EDITOR_HEIGHT) / 2.f;
+	editorCameraX_ = (worldWidth_ / 2.0f) - static_cast<float>(EDITOR_WIDTH) / 2.f;
+	editorCameraY_ = (worldHeight_ / 2.0f) - static_cast<float>(EDITOR_HEIGHT) / 2.f;
 
 	// Subscribe to delete selected entity event (using GameApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
@@ -298,6 +301,7 @@ void GameApplication::updateGameLogic() {
 	auto& inputMng = engine_.getInputManager();
 	auto& tileMap = engine_.getTileMap();
 	Math::eVec2<float> worldSize = tileMap.getWorldSize();
+	worldWidth_ = worldSize.x, worldHeight_ = worldSize.y;
 
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
@@ -313,7 +317,7 @@ void GameApplication::updateGameLogic() {
 	if (gameFramebuffer_) {
 
 		// CRITICAL: Set projection matrix to fixed virtual resolution
-		engine_.getGraphicsManager().setProjectionMatrix(VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+		engine_.getGraphicsManager().setProjectionMatrix(worldWidth_, worldHeight_);
 
 		// Bind framebuffer for rendering
 		gameFramebuffer_->bind();
@@ -455,8 +459,8 @@ void GameApplication::updateGameLogic() {
 		}
 
 		// Clamp camera to world bounds
-		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, worldSize.x -  static_cast<float>(EDITOR_WIDTH));
-		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, worldSize.y - static_cast<float>(EDITOR_HEIGHT));
+		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, worldWidth_ -  static_cast<float>(EDITOR_WIDTH));
+		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, worldHeight_ - static_cast<float>(EDITOR_HEIGHT));
 
 		// Set projection for editor view
 		engine_.getGraphicsManager().setProjectionMatrix(EDITOR_WIDTH, EDITOR_HEIGHT);
@@ -474,8 +478,8 @@ void GameApplication::updateGameLogic() {
 			int bgHeight = backgroundTexture_->getHeight();
 
 			// Calculate how many times to tile the background to cover the virtual world
-			int tilesX = (worldSize.x + bgWidth - 1) / bgWidth;  // Ceiling division
-			int tilesY = (worldSize.y + bgHeight - 1) / bgHeight;
+			int tilesX = (worldWidth_ + bgWidth - 1) / bgWidth;  // Ceiling division
+			int tilesY = (worldHeight_ + bgHeight - 1) / bgHeight;
 
 			// Draw tiled background
 			for (int ty = 0; ty < tilesY; ++ty) {
@@ -757,16 +761,10 @@ void GameApplication::updateEntities() {
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
 
-	// Use fixed virtual resolution for consistent rendering
-	Math::eVec2<float> renderSize{
-		static_cast<float>(VIRTUAL_WIDTH),
-		static_cast<float>(VIRTUAL_HEIGHT)
-	};
-
 	// Draw background
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
-		renderSize,                                // Use fixed virtual resolution
+		{worldWidth_, worldHeight_},			  // World Size
 		backgroundTexture_,
 		Math::eVec2<float>{0.0f, 0.0f},           // UV start
 		Math::eVec2<float>{1.0f, 1.0f},           // UV end

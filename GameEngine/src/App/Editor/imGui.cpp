@@ -166,6 +166,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 	// get engine systems
 	auto& entityManager = engine_.getEntityManager();
+	auto& loader = engine_.getResourceLoader();
 
 	// BEGIN DOCKSPACE
 	imGuiBeginDockspace();
@@ -237,10 +238,10 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displayPrefabsTab(engine_, sceneTree, undoManager);
 	ImGui::End();
 
-	// Game View (full scene, bottom-right)
-	//ImGui::Begin("Game View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-	//displayGameView();
-	//ImGui::End();
+	// Mini Map (full scene, bottom-right)
+	ImGui::Begin("Mini Map", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
+	displayGameView();
+	ImGui::End();
 
 	// Editor View (zoomed in, center - replaces old Game View behavior)
 	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
@@ -264,7 +265,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 	// Tilemap Editor
 	g_game->getMapEditor().displayMenu();
-
+	g_game->getMapEditor().displayTilesetMenu(loader);
+	
 	// END DOCKSPACE
 	imGuiEndDockspace();
 
@@ -3085,18 +3087,12 @@ void imGuiBeginDockspace() {
 void displayGameView() {
 	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
-	// Display info text - this is now a read-only overview window
-	ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Mini Map - Full Scene Overview (Read-Only)");
-	ImGui::Separator();
-
 	if (g_game && g_game->getGameFramebuffer()) {
 		auto* fb = g_game->getGameFramebuffer();
 
 		if (contentSize.x > 0 && contentSize.y > 0) {
 			// Get fixed virtual resolution from game
-			float virtualWidth = static_cast<float>(g_game->getVirtualWidth());
-			float virtualHeight = static_cast<float>(g_game->getVirtualHeight());
-			float virtualAspect = virtualWidth / virtualHeight;
+			float virtualAspect = g_game->getWorldWidth() / g_game->getWorldHeight();
 
 			// Calculate aspect-ratio-preserving size to fit in the Game View
 			float contentAspect = contentSize.x / contentSize.y;
@@ -3867,6 +3863,7 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 	// Split right side vertically to have Assets on top and Game View on bottom
 	ImGuiID dock_id_right_top = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Up, 0.5f, nullptr, &dock_id_right);
+	ImGuiID dock_id_right_bottom = ImGui::DockBuilderSplitNode(dock_id_bottom, ImGuiDir_Right, 0.5f, nullptr, &dock_id_bottom);
 
 	// Dock windows to their respective nodes
 	// Left side - all three windows docked to same node will appear as tabs
@@ -3882,8 +3879,8 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	ImGui::DockBuilderDockWindow("Entity Inspector", dock_id_right_top);
 	ImGui::DockBuilderDockWindow("Assets Presets", dock_id_right_top);
 
-	// Right side bottom - Game View (full scene)
-	ImGui::DockBuilderDockWindow("Game View", dock_id_right);
+	// Right side bottom - Mini Map
+	ImGui::DockBuilderDockWindow("Mini Map", dock_id_right_bottom);
 
 	// Bottom - FPS
 	ImGui::DockBuilderDockWindow("FPS", dock_id_bottom);

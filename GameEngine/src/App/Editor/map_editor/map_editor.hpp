@@ -25,6 +25,7 @@ public:
 	void selectLayer(int layerId) { selectedLayer_ = layerId; }
 
 	void displayMenu();
+	void displayTilesetMenu(Resources::EnoLoader& loader);
 	void paint(GameApplication* g);
 	void draw(GameApplication* g, ImDrawList* drawList);
 
@@ -36,5 +37,14 @@ private:
 	int brush_{0};
 	int selectedLayer_{0};
 
+	// --- Tileset Feature ---
+	std::shared_ptr<Graphics::EnoTexture> tilesetTexture_{ nullptr };
+	int tilesetRows_ = 1;
+	int tilesetCols_ = 1;
+	int selectedTileX_ = -1;
+	int selectedTileY_ = -1;
+	bool tilesetReady_ = false;
+
+	// --- Serializing ---
 	std::string currentFile_;
 };

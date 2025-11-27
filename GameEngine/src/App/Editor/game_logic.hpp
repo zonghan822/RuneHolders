@@ -48,9 +48,8 @@ private:
     std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
     std::unique_ptr<Graphics::EnoFramebuffer> editorFramebuffer_;
 
-    // Fixed virtual resolution (game always renders to this size)
-    static constexpr int VIRTUAL_WIDTH = 1280;
-    static constexpr int VIRTUAL_HEIGHT = 720;
+    float worldWidth_;
+    float worldHeight_;
 
     // Editor camera settings (zoomed in view)
     static constexpr int EDITOR_WIDTH = 640;   // Half width for zoomed view
@@ -108,8 +107,8 @@ public:
     Graphics::EnoFramebuffer* getEditorFramebuffer() { return editorFramebuffer_.get(); }
 
     // Get fixed virtual resolution
-    int getVirtualWidth() const { return VIRTUAL_WIDTH; }
-    int getVirtualHeight() const { return VIRTUAL_HEIGHT; }
+    float getWorldWidth() const { return worldWidth_; }
+    float getWorldHeight() const { return worldHeight_; }
     int getEditorWidth() const { return EDITOR_WIDTH; }
     int getEditorHeight() const { return EDITOR_HEIGHT; }
 
