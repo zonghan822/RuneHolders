@@ -42,10 +42,54 @@ void GameApplication::initialize() {
 	worldWidth_ = worldSize.x;
 	worldHeight_ = worldSize.y;
 
-	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
-	gameFramebuffer_->create(worldWidth_, worldHeight_); // Fixed virtual resolution
-
 	std::cout << "Game initialized successfully!" << std::endl;
+
+	// ========== SCENE DEBUG INFO ==========
+	auto& sceneTree = engine_.getEnoEditor().getSceneTree();
+	auto& entityMng = engine_.getEntityManager();
+
+	std::cout << "\n========== LOADED SCENE DEBUG ==========\n";
+	//std::cout << "Scene Name: " << sceneTree.getSceneName() << "\n";
+	std::cout << "Total Scene Nodes: " << sceneTree.getAllNodes().size() << "\n\n";
+
+	int nodeCount = 0;
+	for (const auto& node : sceneTree.getAllNodes()) {
+		std::cout << "Node " << nodeCount++ << ":\n";
+		std::cout << "  - Scene Object ID: " << node->sceneObjectID_ << "\n";
+		std::cout << "  - Entity ID: " << node->entity_.id() << "\n";
+		std::cout << "  - Enabled: " << (node->enabled_ ? "true" : "false") << "\n";
+
+		if (node->entity_.has<ECSComponents::NameComponent>(entityMng)) {
+			auto& name = node->entity_.get<ECSComponents::NameComponent>(entityMng);
+			std::cout << "  - Name: " << name.name << "\n";
+		}
+
+		if (node->entity_.has<ECSComponents::TransformComponent>(entityMng)) {
+			auto& transform = node->entity_.get<ECSComponents::TransformComponent>(entityMng);
+			std::cout << "  - Position: (" << transform.pos.x << ", " << transform.pos.y << ")\n";
+		}
+
+		if (node->entity_.has<ECSComponents::RenderComponent>(entityMng)) {
+			auto& render = node->entity_.get<ECSComponents::RenderComponent>(entityMng);
+			std::cout << "  - Has RenderComponent: YES\n";
+			std::cout << "  - Size: " << render.width << "x" << render.height << "\n";
+			std::cout << "  - Color: (" << render.color.r << ", " << render.color.g
+					  << ", " << render.color.b << ", " << render.color.a << ")\n";
+			std::cout << "  - Shape: " << render.shape << "\n";
+			if (strlen(render.texturePath) > 0) {
+				std::cout << "  - Texture Path: " << render.texturePath << "\n";
+			}
+		} else {
+			std::cout << "  - Has RenderComponent: NO\n";
+		}
+
+		std::cout << "\n";
+	}
+
+	// Check how many entities have DrawInfoComponent
+	auto drawableEntities = entityMng.findEntity<ECSComponents::DrawInfoComponent>();
+	std::cout << "Total entities with DrawInfoComponent: " << drawableEntities.size() << "\n";
+	std::cout << "========================================\n\n";
 }
 
 void GameApplication::run() {
@@ -260,18 +304,8 @@ void GameApplication::updateGameLogic() {
 	// Game is always playing
 	engine_.setIsPlaying(true);
 
-	if (gameFramebuffer_) {
-
-		// CRITICAL: Set projection matrix to fixed virtual resolution
-		engine_.getGraphicsManager().setProjectionMatrix(worldWidth_, worldHeight_);
-
-		// Bind framebuffer for rendering
-		gameFramebuffer_->bind();
-	}
-
-	// Clear the framebuffer
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// CRITICAL: Set projection matrix to fixed virtual resolution
+	engine_.getGraphicsManager().setProjectionMatrix(worldWidth_, worldHeight_);
 
 	if (playerTexture_ && playerSpawned_) {
 		playerAnimController_.update(deltaTime);
@@ -350,189 +384,9 @@ void GameApplication::updateGameLogic() {
 
 	updateEntities();
 	// Draw all entities
-	//drawShapes();
+	drawShapes();
 	drawPlayerAndIndicator();
 	graphics_.flush();
-
-	// Unbind game framebuffer
-	if (gameFramebuffer_) {
-		gameFramebuffer_->unbind();
-	}
-
-	// Clear editor framebuffer
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-	// Draw all entities (with camera offset - convert world space to screen space)
-	for (ECS::Entity& entity : cachedDrawableEntities_) {
-		try {
-			if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
-				if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
-					continue; // Skip player, drawn separately
-				}
-
-				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
-				auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
-
-				// Apply scale to width and height
-				float scaledWidth = renderInfo.width * transform.scale.x;
-				float scaledHeight = renderInfo.height * transform.scale.y;
-
-				// Get rotation from transform component
-				float rotation = transform.rot.x;
-
-				// Convert world position to screen position (relative to camera)
-				float screenX = transform.pos.x;
-				float screenY = transform.pos.y;
-
-				// Only draw if entity is within visible camera bounds
-				float halfW = scaledWidth * 0.5f;
-				float halfH = scaledHeight * 0.5f;
-				if (screenX + halfW >= 0 && screenX - halfW && screenY + halfH >= 0 && screenY - halfH) {
-
-					// Check if entity has a texture
-					if (renderInfo.texture && renderInfo.texture->isValid()) {
-						// Draw textured quad (top-left position)
-						float topLeftX = screenX - halfW;
-						float topLeftY = screenY - halfH;
-
-						// Check if entity has animation controller
-						if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager)) {
-							auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
-							Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-
-							if (ctrl && ctrl->getCurrentAnimation()) {
-								// Update animation and get current frame
-								const Animation::AnimationFrame& frame = ctrl->update(static_cast<float>(deltaTime));
-
-								// Draw with animation UV coordinates
-								engine_.getGraphicsManager().drawTexturedQuadUV(
-									Math::eVec2<float>{topLeftX, topLeftY},
-									Math::eVec2<float>{scaledWidth, scaledHeight},
-									renderInfo.texture,
-									frame.uvStart,
-									frame.uvEnd,
-									renderInfo.color,
-									rotation
-								);
-							}
-							else {
-								// No active animation, draw full texture
-								engine_.getGraphicsManager().drawTexturedQuad(
-									Math::eVec2<float>{topLeftX, topLeftY},
-									Math::eVec2<float>{scaledWidth, scaledHeight},
-									renderInfo.texture,
-									renderInfo.color
-								);
-							}
-						}
-						else {
-							// No animation controller, draw full texture
-							engine_.getGraphicsManager().drawTexturedQuad(
-								Math::eVec2<float>{topLeftX, topLeftY},
-								Math::eVec2<float>{scaledWidth, scaledHeight},
-								renderInfo.texture,
-								renderInfo.color
-							);
-						}
-					}
-					// Check shape type and draw accordingly
-					else if (strcmp(renderInfo.shape, "Circle") == 0) {
-						// Draw circle at screen position (center)
-						engine_.getGraphicsManager().drawCircle(
-							Math::eVec2<float>{screenX, screenY},
-							scaledWidth * 0.5f,  // Use scaled width/2 as radius
-							renderInfo.color,
-							true,  // Filled
-							32     // Segments
-						);
-					}
-					else {
-						// Draw rectangle (top-left position)
-						float topLeftX = screenX - halfW;
-						float topLeftY = screenY - halfH;
-
-						engine_.getGraphicsManager().drawRect(
-							Math::eVec2<float>{topLeftX, topLeftY},
-							Math::eVec2<float>{scaledWidth, scaledHeight},
-							renderInfo.color,
-							true,
-							rotation
-						);
-					}
-
-				}
-			}
-		}
-		catch (...) {
-			entitiesDirty_ = true;
-			continue;
-		}
-	}
-
-	// Draw player in editor view (with camera offset - convert to screen space) - NO RED CURSOR
-	if (playerSpawned_) {
-		try {
-			auto& entityMap = engine_.getEntityManager().getMap();
-			auto it = entityMap.find(playerEntityID_);
-			if (it != entityMap.end()) {
-				// Get player system from engine (no longer a global)
-				if (playerSystem_) {
-					auto& transform = playerSystem_->GetTransform(it->second);
-					auto& frame = playerAnimController_.getCurrentFrame();
-
-					std::shared_ptr<Graphics::EnoTexture> currentTexture;
-					if (playerAnimController_.getCurrentAnimationName() == "walk") {
-						currentTexture = playerWalkTexture_;
-					}
-					else {
-						currentTexture = playerTexture_;
-					}
-
-					Math::eVec2<float> uvStart = frame.uvStart;
-					Math::eVec2<float> uvEnd = frame.uvEnd;
-
-					if (playerFacingDirection_ == -1) {
-						std::swap(uvStart.x, uvEnd.x);
-					}
-
-					if (currentTexture && currentTexture->isValid()) {
-						float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
-						float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
-
-						// Apply camera offset to player position
-						float screenX = transform.pos.x;
-						float screenY = transform.pos.y;
-						Math::eVec2<float> topLeft = {
-							screenX - (scaledWidth * 0.5f),
-							screenY - (scaledHeight * 0.5f)
-						};
-
-						graphics_.drawTexturedQuadUV(
-							topLeft,
-							Math::eVec2<float>{scaledWidth, scaledHeight},
-							currentTexture,
-							uvStart,
-							uvEnd,
-							Graphics::Color::White,
-							rotationRadians
-						);
-					}
-				}
-			}
-		}
-		catch (...) {}
-	}
-
-	engine_.getGraphicsManager().flush();
-	// CRITICAL: Restore viewport to window size for ImGui rendering
-	auto windowSize = engine_.getWindowManager().getFramebufferSize();
-	glViewport(0, 0, windowSize.first, windowSize.second);
-
-	// Restore projection matrix to window size
-	engine_.getGraphicsManager().setProjectionMatrix(windowSize.first, windowSize.second);
-	engine_.getGraphicsManager().flush();
 }
 
 void GameApplication::loadEntityTextures() {
@@ -600,6 +454,9 @@ void GameApplication::updateEntities() {
 	if (entitiesDirty_) {
 		cachedDrawableEntities_ = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
 		cachedSceneTwoEntities_ = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
+
+		std::cout << "[DEBUG] Entity cache rebuilt! Found " << cachedDrawableEntities_.size() << " drawable entities\n";
+
 		entitiesDirty_ = false;
 
 		// Restore animations from serialized data after scene load
@@ -838,6 +695,12 @@ void GameApplication::drawShapes() {
 	auto& entityManager = engine_.getEntityManager();
 
 	using drawInfo = ECSComponents::DrawInfoComponent;
+
+	static bool firstRun = true;
+	if (firstRun) {
+		std::cout << "[DEBUG] drawShapes() called! Total cached entities: " << cachedDrawableEntities_.size() << "\n";
+		firstRun = false;
+	}
 
 	// USE CACHED ENTITIES with validation
 	for (ECS::Entity& entity : cachedDrawableEntities_) {
