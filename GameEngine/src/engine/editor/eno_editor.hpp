@@ -93,11 +93,21 @@ namespace Editor
 			// Load selected scene
 			tree_.load(ASSET_SCENE_PATH + filename);
 
-			// Update current scene name
-			selectedScene_->setSceneName(filename);
+			// Point to selected scene
+			auto index = std::find_if(scenes_.begin(), scenes_.end(),
+				[&](const std::unique_ptr<Editor::EnoScene>& scene) {return filename == scene->getSceneName(); });
 
-			// Set editor state to stop
-			//if (selectedScene_->getState() != State::Stopped) selectedScene_->stop();
+			// Update current scene pointer
+			if (index != scenes_.end())
+			{
+				selectedScene_ = index->get();
+			}
+			else
+			{
+				selectedScene_ = nullptr;
+				std::cout << "[Eno_Editor] Selecting scene: " << filename << " unsuccessful, unable to find scene!" << std::endl;
+			}
+
 
 			// Publish event to notify UI that scene was cleared
 			bus_.publish(SceneCleared{});

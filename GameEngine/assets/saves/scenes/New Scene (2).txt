@@ -1,8 +1,100 @@
 {
 
-	[Node0]
+	[Tilemap-M2]
 	{
 		"ID": { 0 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Tilemap-M2 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 941.988 | y : 936.308 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 384 }
+				"Height": <float> { 384 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Tilemap-M2 }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Enabled": { true }
+	}
+
+	[EnemyBat]
+	{
+		"ID": { 1 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { EnemyBat }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1218.91 | y : 1044.24 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 64 }
+				"Height": <float> { 64 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { EnemyBat }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Enabled": { true }
+	}
+
+	[Node2]
+	{
+		"ID": { 2 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -13,19 +105,19 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 393.5 | y : 1065.5 }
+				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1.76897 | y : 1.76897 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
 			}
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 88.4484 }
-				"Height": <float> { 88.4484 }
+				"Width": <float> { 50 }
+				"Height": <float> { 50 }
 				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { cat }
+				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
+				"Texture Path": <texchar240> {  }
 				"TexID": <int> { 0 }
 			}
 
@@ -36,8 +128,8 @@
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 88.4484 }
-				"Height": <float> { 88.4484 }
+				"Width": <float> { 50 }
+				"Height": <float> { 50 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -63,21 +155,13 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 350 }
-				"Frame Height": <int> { 350 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 1 }
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Current Animation": <char64> { idle }
-			}
-
-			[struct ECSComponents::CameraComponent]
-			{
-				"Viewport Width": <float> { 144.661 }
-				"Viewport Height": <float> { 144.661 }
-				"Position": <eVec2(float)> { x : 393.5 | y : 1065.5 }
-				"Is Active": <bool> { 1 }
+				"Current Animation": <char64> {  }
 			}
 		}
 		"Script": { }

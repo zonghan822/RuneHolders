@@ -1283,7 +1283,6 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 	// Get current scene
 	std::string currScene = editor_.getCurrentScene().getSceneName();
-	std::cout << "scene name in imgui: " << currScene << std::endl;
 
 	// Create a container for all scene names inside my scene folder
 	std::vector<std::unique_ptr<Editor::EnoScene>>& sceneList = editor_.getScenes();
@@ -1310,47 +1309,31 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		sceneNames.clear();
 		// A string path to the assets folder
 		std::string sceneSavePath = (ASSET_SCENE_PATH);
-		// Check that the file is a .txt file
-		try {
-			//for (const auto& fileEntry : std::filesystem::directory_iterator(sceneSavePath))
-			//{
-			//	if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (sceneSavePath + "LastSavedScene.txt"))
-			//	{
-			//		// Add file to container
-			//		sceneNames.push_back(fileEntry.path());
-			//		//std::cout << "Filename: " << fileEntry.path() << std::endl;
-			//	}
-			//}
 
-			// Check that scene list contains at least one scene
-			if (!sceneNames.empty())
-			{
-				// Check that no scene was recently deleted
-				auto it = std::find_if(sceneNames.begin(), sceneNames.end(),
-					[&](const std::string& scenename)
-					{
-						return scenename == currScene;
-					});
-
-				if (it == sceneNames.end())
-				{
-					std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
-					// Scene deleted, load the first available scene instead
-					editor_.selectScene(sceneList.front()->getSceneName());
-					// Update last saved scene file
-					//editor_.updateLastSavedScene();
-					g_game->markEntitiesDirty();
-				}
-			} 
-			// Set refresh to false to prevent reopening
-			refreshSceneName = false;
-		}
-		// In case of invalid file
-		catch (const std::filesystem::filesystem_error& e)
+		// Check that scene list contains at least one scene
+		if (!sceneNames.empty())
 		{
-			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error: %s", e.what());
-			return;
-		}
+			// Check that no scene was recently deleted
+			auto it = std::find_if(sceneNames.begin(), sceneNames.end(),
+				[&](const std::string& scenename)
+				{
+					return scenename == currScene;
+				});
+
+			if (it == sceneNames.end())
+			{
+				std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
+				// Scene deleted, load the first available scene instead
+				editor_.selectScene(sceneList.front()->getSceneName());
+				// Update last saved scene file
+				//editor_.updateLastSavedScene();
+				g_game->markEntitiesDirty();
+			}
+		} 
+
+		// Set refresh to false to prevent reopening
+		refreshSceneName = false;
+
 	}
 
 	// No scenes created
@@ -1364,9 +1347,9 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	// Display scene names
 	for (auto& name : sceneNames)
 	{
-		std::cout << "get scene name aosjow :" << name << std::endl;
+
 		std::string sceneName = name;
-		std::cout << "scene name is : " << sceneName << std::endl;
+
 		// Give it an id
 		ImGui::PushID(sceneName.c_str());
 
