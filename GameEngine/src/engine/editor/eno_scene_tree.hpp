@@ -14,6 +14,18 @@
 
 namespace Editor
 {
+	struct Listener
+	{
+		uint32_t listenerID_;
+		std::string component_;
+		std::string signal_;
+	};
+
+	inline std::ostream& operator<<(std::ostream& os, const Listener& l)
+	{
+		return os << l.listenerID_ << ", " << l.component_ << ", " << l.signal_;
+	}
+
 	struct Node
 	{
 		// Scene Data
@@ -30,6 +42,8 @@ namespace Editor
 		// Relationships
 		Node* parent_{ nullptr };
 		std::vector<Node*> children_;
+
+		std::vector<Listener> listeners_;
 
 		// Enabled
 		bool enabled_{ false };
@@ -120,6 +134,13 @@ namespace Editor
 				// Write the signal (receiving) function into the listener's script
 				std::pair<std::string, std::string> funcClassPair = listener->script_->signalWrite(emitName, signalName);
 
+				// Record listeners on the emitter for serialization process
+				emitter->listeners_.push_back(
+					Listener{
+						listener->sceneObjectID_,
+						std::string{ typeid(Component).name() },
+						signalName });
+
 				// Connect the listener to the emitter
 				component.signals[signalName].connect([this, signalName, funcClassPair](const std::vector<std::any>& params)
 					{
@@ -159,7 +180,7 @@ namespace Editor
 		void appendIndent(std::ofstream&, const uint32_t&);
 		size_t findMatchingBrace(const std::string&, const size_t&);
 		std::string trim(const std::string&);
-
+		std::string stripPrefix(const std::string&);
 		std::string extractFname(const std::string&);
 
 		// Helper for tilemap loading
@@ -167,6 +188,10 @@ namespace Editor
 
 		void setParent(const std::vector<std::pair<uint32_t, uint32_t>>&);
 		void setChildren(const std::vector<std::pair<uint32_t, std::vector<uint32_t>>>&);
+		void setListeners(std::vector<std::pair<uint32_t, std::vector<Listener>>>&);
+
+
+		// ================== Extract Specializations ==================
 
 		// Find the specified parameter in a file (ID, Layer, Parent)
 		// UINT32_MAX indicates that either brace encasing the value cannot be found or 
@@ -193,67 +218,12 @@ namespace Editor
 				{
 					return static_cast<uint32_t>(std::stoul(str));
 				}
-				catch(...)
+				catch (...)
 				{
 					return std::nullopt;
 				}
 			}
 
-			std::cout << "No " << param << " found!" << std::endl;
-			return std::nullopt;
-		}
-
-		// Find the specified parameter in a file (ID, Layer, Parent)
-		// "ERROR" indicates either brace encasing the value cannot be found
-		// std::nullopt means that param being looked for does not exist
-		template<>
-		std::optional<std::string> extract<std::string>(
-			const std::string& data, const std::string& param,
-			const size_t& start, const size_t& end)
-		{
-			size_t paramPos = data.find(param, start);
-			if (paramPos != std::string::npos && paramPos < end)
-			{
-				size_t paramStrt = data.find_first_of('{', paramPos);
-				size_t paramEnd = data.find_first_of('}', paramStrt);
-				if (paramStrt == std::string::npos || paramEnd == std::string::npos)
-					return "ERROR";
-
-				return trim(data.substr(paramStrt + 1, paramEnd - paramStrt - 1));
-			}
-
-			std::cout << "No " << param << " found!" << std::endl;
-			return std::nullopt;
-		}
-
-		// Find the specified parameter in a file (Children)
-		std::optional<std::vector<uint32_t>> extractCont(
-			const std::string& data, const std::string& param, 
-			const size_t& start, const size_t& end)
-		{
-			size_t paramPos = data.find(param, start);
-			if (paramPos != std::string::npos && paramPos < end)
-			{
-				size_t paramStrt = data.find_first_of('{', paramPos);
-				size_t paramEnd = data.find_first_of('}', paramStrt);
-
-				// Collect and return all ids
-				std::string str = trim(data.substr(paramStrt + 1, paramEnd - paramStrt - 1));
-				std::istringstream iss{ str };
-
-				std::vector<uint32_t> ids;
-				uint32_t num;
-				while (iss >> num)
-				{
-					ids.push_back(num);
-					
-					// If next immediate character is not uint32_t, consume
-					if (!std::isalnum(iss.peek())) iss.get();
-				}
-
-				return ids;
-			}
-			
 			std::cout << "No " << param << " found!" << std::endl;
 			return std::nullopt;
 		}
@@ -284,6 +254,111 @@ namespace Editor
 			}
 
 			std::cout << "No " << param << " found!" << std::endl;
+			return std::nullopt;
+		}
+
+		// Find the specified parameter in a file (ID, Layer, Parent)
+		// "ERROR" indicates either brace encasing the value cannot be found
+		// std::nullopt means that param being looked for does not exist
+		template <>
+		std::optional<std::string> extract<std::string>(
+			const std::string& data, const std::string& param,
+			const size_t& start, const size_t& end)
+		{
+			size_t paramPos = data.find(param, start);
+			if (paramPos != std::string::npos && paramPos < end)
+			{
+				size_t paramStrt = data.find_first_of('{', paramPos);
+				size_t paramEnd = data.find_first_of('}', paramStrt);
+				if (paramStrt == std::string::npos || paramEnd == std::string::npos)
+					return "ERROR";
+
+				return trim(data.substr(paramStrt + 1, paramEnd - paramStrt - 1));
+			}
+
+			std::cout << "No " << param << " found!" << std::endl;
+			return std::nullopt;
+		}
+
+		// Finding the specified parameter in a file (Children)
+		std::optional<std::vector<uint32_t>> extractChildren(
+			const std::string& data, const std::string& param,
+			const size_t& start, const size_t& end)
+		{
+			size_t paramPos = data.find(param, start);
+			if (paramPos != std::string::npos && paramPos < end)
+			{
+				size_t paramStrt = data.find_first_of('{', paramPos);
+				size_t paramEnd = data.find_first_of('}', paramStrt);
+
+				// Collect and return all ids
+				std::string str = trim(data.substr(paramStrt + 1, paramEnd - paramStrt - 1));
+				std::istringstream iss{ str };
+
+				std::vector<uint32_t> ids;
+				uint32_t num;
+				while (iss >> num)
+				{
+					ids.push_back(num);
+
+					// If next immediate character is not uint32_t, consume
+					if (!std::isalnum(iss.peek())) iss.get();
+				}
+
+				return ids;
+			}
+
+			return std::nullopt;
+		}
+
+		// Specialization for finding the specified parameter in a file (Listener)
+		std::optional<std::vector<Listener>> extractListeners(
+			const std::string& data,
+			const std::string& param,
+			const size_t& start,
+			const size_t& end)
+		{
+			std::vector<Listener> ltnVec{};
+
+			size_t paramPos = data.find(param, start);
+			if (paramPos != std::string::npos && paramPos < end)
+			{
+				size_t paramStrt = data.find_first_of('{', paramPos);
+				size_t paramEnd = data.find_first_of('}', paramStrt);
+
+				std::string listeners = data.substr(paramStrt + 1, paramEnd - paramStrt - 1);
+
+				size_t pos{};
+				while (pos < listeners.size())
+				{
+					size_t ltnStrt = listeners.find_first_of('[', pos);
+					if (ltnStrt == std::string::npos) break;
+
+					size_t ltnEnd = listeners.find_first_of(']', ltnStrt);
+					if (ltnEnd == std::string::npos) break;
+
+					std::string str = trim(listeners.substr(ltnStrt + 1, ltnEnd - ltnStrt - 1));
+
+					std::istringstream iss{ str };
+					std::string idStr, compStr, sigStr;
+
+					std::getline(iss, idStr, ',');
+					std::getline(iss, compStr, ',');
+					std::getline(iss, sigStr, ',');
+
+					Listener l;
+					l.listenerID_ = static_cast<uint32_t>(std::stoul(trim(idStr)));
+					l.component_ = stripPrefix(trim(compStr));
+					l.signal_ = trim(sigStr);
+
+					ltnVec.push_back(l);
+
+					pos = ltnEnd + 1;
+				}
+
+				return ltnVec;
+			}
+
 			return std::nullopt;
 		}
 	};

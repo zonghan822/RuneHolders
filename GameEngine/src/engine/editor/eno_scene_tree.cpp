@@ -448,6 +448,25 @@ namespace Editor
 				save << "\"Children\": { }\n";
 			}
 
+			// Listeners
+			appendIndent(save, jsonLevel);
+			size_t ltnCount{};
+
+			if (!it->second->listeners_.empty())
+			{
+				save << "\"Listeners\": { ";
+				for (const auto& listener : it->second->listeners_)
+				{
+					save << "[ " << listener << " ]";
+					if (ltnCount < it->second->listeners_.size() - 1)
+						save << ", ";
+					++ltnCount;
+				}
+				save << " }\n";
+			}
+			else
+				save << "\"Listeners\": { }\n";
+
 			// Enabled
 			appendIndent(save, jsonLevel);
 			save << "\"Enabled\": { " << (it->second->enabled_ ? "true" : "false") << " }\n";
@@ -585,6 +604,9 @@ namespace Editor
 		// children => { node : children of node, ... }
 		std::vector<std::pair<uint32_t, std::vector<uint32_t>>> children;
 
+		// listeners => { node : listener of node, ... }
+		std::vector<std::pair<uint32_t, std::vector<Listener>>> listeners;
+
 		// Find the end of the nodes section (before TileMap section)
 		size_t nodesEndPos = data.find("\"TileMap\"");
 		if (nodesEndPos == std::string::npos) {
@@ -652,11 +674,16 @@ namespace Editor
 			}
 
 			// Children
-			auto cids = extractCont(data, "Children", nodeStart, nodeEnd);
+			auto cids = extractChildren(data, "Children", nodeStart, nodeEnd);
 			if (cids.has_value())
 				children.push_back({ node->sceneObjectID_, cids.value() });
 			else
 				missingData = true;
+
+			// Listeners
+			auto ltnVec = extractListeners(data, "Listeners", nodeStart, nodeEnd);
+			if (ltnVec.has_value())
+				listeners.push_back({ node->sceneObjectID_, std::move(ltnVec.value()) });
 
 			// Enabled
 			any = extract<bool>(data, "Enabled", nodeStart, nodeEnd);
@@ -679,6 +706,7 @@ namespace Editor
 
 		setParent(parents);
 		setChildren(children);
+		setListeners(listeners);
 
 		// Load tilemap data embedded in scene file
 		size_t tilemapPos = data.find("\"TileMap\"");
@@ -952,6 +980,31 @@ namespace Editor
 		}
 	}
 
+	// Helper for assigning listeners when deserializing save file
+	void EnoSceneTree::setListeners(std::vector<std::pair<uint32_t, std::vector<Listener>>>& nodeLtnPair)
+	{
+		for (const auto& [node, listener] : nodeLtnPair)
+		{
+			auto it = tree_.find(node);
+			if (it != tree_.end())
+			{
+				std::for_each(listener.begin(), listener.end(), [&](const Listener& lid)
+					{
+						auto it2 = tree_.find(lid.listenerID_);
+						if (it2 != tree_.end())
+						{
+							ECSComponents::EnoComponentRegistry::DeduceCompType(lid.component_, [&]<typename Component>()
+							{
+								connect<Component>(it->second.get(), it2->second.get(), lid.signal_);
+							});
+						}
+						else
+							std::cerr << "Listener in deserialization transit does not exist!" << std::endl;
+					});
+			}
+		}
+	}
+
 	// Appends indentation(s) to save file for json format
 	void EnoSceneTree::appendIndent(std::ofstream& save, const uint32_t& level)
 	{
@@ -997,6 +1050,17 @@ namespace Editor
 
 		const auto end = str.find_last_not_of(" \t\n\r");
 		return str.substr(start, end - start + 1);
+	}
+
+	std::string stripPrefix(const std::string& str)
+	{
+		std::string prefix = "struct ECSComponents::";
+
+		if (str.rfind(prefix, 0) == 0)
+			return str.substr(prefix.length());
+
+		std::cerr << "Prefix to strip cannot be found!" << std::endl;
+		return str;
 	}
 
 	// Extract file name from the path specified
