@@ -63,6 +63,10 @@ private:
     bool showColliders_ = true;
     std::unordered_map<std::string, double> systemTimes_;
 
+    // Rune System
+    uint32_t runeSystemEntityID_;  // ID of entity holding RuneSystemStateComponent
+    bool runeSystemInitialized_ = false;
+
 public:
     // Constructors
     GameApplication() = default;
@@ -112,4 +116,13 @@ private:
     void drawPlayerAndIndicator();
 
     void drawShapes();
+
+    // Rune system methods
+    void initializeRuneSystem();                    // Initialize rune system entity
+    void updateRuneSystem();                        // Update rune system logic each frame
+    void spawnRunes(const Math::eVec2<float>& mouseWorldPos);   // Spawn left and right runes
+    void destroyRunes();                            // Destroy spawned runes
+    void updateRuneHover(const Math::eVec2<float>& mouseWorldPos);  // Check if mouse hovers over runes
+    void drawRuneConnectionLine();                  // Draw line connecting runes
+    void spawnFireball(const Math::eVec2<float>& pos);  // Spawn fireball when runes connect
 };

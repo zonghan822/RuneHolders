@@ -26,6 +26,11 @@
 	X(PrefabInstanceComponent) \
 	X(AnimationControllerComponent)\
 	X(CameraComponent) \
+	X(RuneComponent) \
+	X(RuneSystemStateComponent) \
+	X(FireballComponent) \
+	X(HealthComponent) \
+	X(DamageComponent) \
 
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
