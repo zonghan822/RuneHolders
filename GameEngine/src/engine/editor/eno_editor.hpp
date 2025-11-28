@@ -131,6 +131,53 @@ namespace Editor
 			bus_.publish(SceneCleared{});
 		}
 
+		void renameScene(const std::string& newName, const std::string& oldName)
+		{
+			try
+			{
+				// Get current filepath
+				std::filesystem::path currentPath = ASSET_SCENE_PATH + oldName;
+
+				// Check for .txt extension in new file
+				std::string newSceneName = newName;
+				if (newSceneName.find(".txt") == std::string::npos) newSceneName += ".txt";
+
+				std::filesystem::path newPath = ASSET_SCENE_PATH + newSceneName;
+				std::filesystem::rename(currentPath, newPath);
+
+				// Check if we're renaming the currently active scene
+				bool isCurrentScene = (oldName == selectedScene_->getSceneName());
+
+				// If we renamed the active scene, update the current scene name
+				if (isCurrentScene)
+				{
+					// Update scene name
+					selectedScene_->setSceneName(newSceneName);
+
+					// Update LastSavedScene.txt
+					updateLastSavedScene();
+				} 
+				else
+				{
+					// Find the scene being changed
+					auto it = std::find_if(scenes_.begin(), scenes_.end(),
+						[&](const std::unique_ptr<EnoScene>& scene) {return oldName == scene->getSceneName(); });
+
+					if (it != scenes_.end())
+					{
+						// Update scene name
+						it->get()->setSceneName(newSceneName);
+					}
+				}
+
+			}
+			catch (const std::filesystem::filesystem_error& e)
+			{
+				std::string str = "Error[Name]: " + std::string(e.what());
+				return;
+			}
+		}
+
 		// Plays the selected scene
 		void playScene()
 		{

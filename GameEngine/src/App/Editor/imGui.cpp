@@ -1287,6 +1287,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	// Create a container for all scene names inside my scene folder
 	std::vector<std::unique_ptr<Editor::EnoScene>>& sceneList = editor_.getScenes();
 	std::vector<std::string> sceneNames;
+	// Populate the container
 	for (auto& scene : sceneList)
 	{
 		sceneNames.push_back(scene->getSceneName());
@@ -1306,36 +1307,42 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	if (refreshSceneName)
 	{
 		// Clear the current container
-		sceneNames.clear();
+		//sceneNames.clear();
 		// A string path to the assets folder
-		std::string sceneSavePath = (ASSET_SCENE_PATH);
 
-		// Check that scene list contains at least one scene
+		// Check if scene list contains at least one scene
 		if (!sceneNames.empty())
 		{
 			// Check that no scene was recently deleted
-			auto it = std::find_if(sceneNames.begin(), sceneNames.end(),
-				[&](const std::string& scenename)
-				{
-					return scenename == currScene;
-				});
+			//auto it = std::find_if(sceneNames.begin(), sceneNames.end(),
+			//	[&](const std::string& scenename)
+			//	{
+			//		return scenename == currScene;
+			//	});
 
-			if (it == sceneNames.end())
-			{
-				std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
-				// Scene deleted, load the first available scene instead
-				editor_.selectScene(sceneList.front()->getSceneName());
+			//if (it == sceneNames.end())
+			//{
+			//	std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
+			//	// Scene deleted, load the first available scene instead
+			//	editor_.selectScene(sceneList.front()->getSceneName());
 
-				g_game->markEntitiesDirty();
-			}
+			//	g_game->markEntitiesDirty();
+			//}
+			sceneNames.clear();
 		} 
+
+		// Repopulate the scene list
+		for (auto& scene : sceneList)
+		{
+			sceneNames.push_back(scene->getSceneName());
+		}
 
 		// Set refresh to false to prevent reopening
 		refreshSceneName = false;
 
 	}
 
-	// No scenes created
+	// If there are no scenes to create
 	if (sceneNames.empty()) currScene = "No scenes available.";
 
 	// Display active scene name
@@ -1404,46 +1411,18 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 				}
 				else
 				{
-					// Rename scene file
-					try
-					{
-						// Get current filepath
-						std::filesystem::path currentPath = ASSET_SCENE_PATH + sceneName;
+					// Rename scene
+					editor_.renameScene(scene_name, sceneName);
 
-						// Check for .txt extension in new file
-						std::string newSceneName = scene_name;
-						if (newSceneName.find(".txt") == std::string::npos) newSceneName += ".txt";
+					// Close popup after renaming
+					ImGui::CloseCurrentPopup();
+					// Clear buffer
+					warningBuf.clear();
+					memset(scene_name, 0, sizeof(scene_name));
 
-						std::filesystem::path newPath = ASSET_SCENE_PATH + newSceneName;
-						std::filesystem::rename(currentPath, newPath);
-
-						// Check if we're renaming the currently active scene
-						bool isCurrentScene = (sceneName == editor_.getCurrentScene().getSceneName());
-
-						// If we renamed the active scene, update the current scene name
-						if (isCurrentScene)
-						{
-							// Update scene name
-							editor_.getCurrentScene().setSceneName(newSceneName);
-
-							// Update LastSavedScene.txt
-							editor_.updateLastSavedScene();
-						}
-
-						// Close popup after renaming
-						ImGui::CloseCurrentPopup();
-						// Clear buffer
-						warningBuf.clear();
-						memset(scene_name, 0, sizeof(scene_name));
-
-						// If file rename is successful
-						refreshSceneName = true;
-					}
-					catch (const std::filesystem::filesystem_error& e)
-					{
-						warningBuf = "Error[Name]: " + std::string(e.what());
-						return;
-					}
+					// Refresh scene name
+					g_refreshSceneList = true;
+					
 				}
 
 			}
@@ -1479,10 +1458,9 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 						// Reset error flag
 						g_cannotDeleteActiveScene = false;
 
-						// Close current popup
+						// Close current popup	
 						ImGui::CloseCurrentPopup();
-						// Refresh list
-						refreshSceneName = true;
+
 					}
 				}
 				catch (const std::filesystem::filesystem_error& e)
@@ -1542,7 +1520,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	{
 		// Defer scene creation until after ImGui rendering completes
 		g_pendingNewScene = true;
-		g_refreshSceneList = true;
+		//g_refreshSceneList = true;
 	}
 
 
