@@ -9,6 +9,7 @@
 *===========================================================================================*/
 
 #include "physics_system.hpp"
+#include "physics_events.hpp"
 #include <cmath>
 #include <typeindex>
 
@@ -283,6 +284,7 @@ namespace Physics
             if (overlaps)
             {
                 hadCollision = true;
+                bus_.publish(CollideEvent{ entityID, otherID });
 
                 // If other entity has physics, resolve collision with momentum transfer
                 if (otherHasPhysics)
@@ -300,7 +302,9 @@ namespace Physics
                     }
                     else
                     {
-                        // Publish 
+                        // Publish collision event
+
+
 
                         // Hit a static wall - just stop movement
                         physics.velocity = { 0.0f, 0.0f };
