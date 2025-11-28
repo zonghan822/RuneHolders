@@ -82,7 +82,7 @@ target_link_libraries(${ENGINE_NAME}_shared PRIVATE
 # ----------------------------------------------------------
 foreach(target ${ENGINE_NAME}_static ${ENGINE_NAME}_shared)
     target_compile_definitions(${target} PRIVATE 
-        ASSETS_DIR_PATH="${CMAKE_BINARY_DIR}/assets/"
+        ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
         SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}/user_scripts/"
         SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}/$<CONFIG>/"
         WSCRIPT_SRC_PATH=L"${SCRIPT_SOURCE_DIR}/user_scripts/"
@@ -90,7 +90,6 @@ foreach(target ${ENGINE_NAME}_static ${ENGINE_NAME}_shared)
         DOTNET_ROOT="${DOTNET_RUNTIME_PATH}/"
         -DGLEW_STATIC
         -D_CRT_NONSTDC_NO_DEPRECATE
-	ASSET_SCENE_PATH="${CMAKE_SOURCE_DIR}/assets/saves/scenes/"
     )
 endforeach()
 

@@ -9,6 +9,9 @@
 
 #pragma once
 
+// Signals
+#include "../../event/signals.hpp"
+
 //stds
 #include <iostream>
 #include <string>
@@ -26,6 +29,8 @@ namespace ECSComponents
 		// Visibility
 		bool visible = false;
 
+		// Signals
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
 		// For serialization purposes
 		// Generalized way of using reflection to access and iterate

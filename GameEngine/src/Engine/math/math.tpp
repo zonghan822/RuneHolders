@@ -235,7 +235,7 @@ namespace Math
 	Type eVec2Distance(const eVec2<Type>& vec1, const eVec2<Type>& vec2)
 	{
 		//distance = sqrt((x1 - x2)^2, (y1-y2)^2)
-		return std::sqrt(eVec2<Type>::eVec2SquaredDistance(vec1, vec2));
+		return std::sqrt(eVec2SquaredDistance(vec1, vec2));
 
 	}
 

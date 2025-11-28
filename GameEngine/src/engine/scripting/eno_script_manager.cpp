@@ -142,9 +142,9 @@ namespace Script
 		std::wcout << L"[DEBUG] loadScript() called for: " << className << std::endl;
 		// Construct and return your script object as usual
 
-		std::filesystem::path scriptPath = WSCRIPT_SRC_PATH;
-		scriptPath /= className + L".cs";
-		return std::make_unique<EnoScript>(coreHost_, className, scriptPath.wstring());
+		std::filesystem::path path = WSCRIPT_SRC_PATH;
+		path /= className + L".cs";
+		return std::make_unique<EnoScript>(coreHost_, className, path.wstring());
 	}
 
 	// Create a CS script in the user_scripts folder

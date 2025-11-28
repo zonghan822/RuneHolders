@@ -8,6 +8,9 @@
 
 #pragma once
 
+// Signals
+#include "../../event/signals.hpp"
+
 #include "../../math/math.hpp"
 
 namespace ECSComponents
@@ -91,6 +94,8 @@ namespace ECSComponents
             if (velocity.y > velocityMax.y) velocity.y = velocityMax.y;
         }
 
+        // Signals
+        std::unordered_map<std::string, Events::EnoSignal> signals_;
 
         // For serialization purposes
         // Generalized way of using reflection to access and iterate

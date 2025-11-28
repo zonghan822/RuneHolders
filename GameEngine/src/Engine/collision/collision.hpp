@@ -393,23 +393,6 @@ namespace Collision
 		}
 	};
 
-	// COLLISION EVENTS
-
-	/*============================================================================================
-	* \brief       Event sent when a collision occurs between two entities
-	*//*========================================================================================*/
-	struct CollisionEvent
-	{
-		uint32_t entityA_ID;	// ID of first entity in collision
-		uint32_t entityB_ID;	// ID of second entity in collision
-		CollisionResult result; // Detailed collision information
-		bool isEntityA_Trigger;	// Is entity A's collider a trigger?
-		bool isEntityB_Trigger; // Is entity B's collider a trigger?
-
-		// Default constructor
-		CollisionEvent();
-	};
-
 	
 	// Event sent when an Entity enters a trigger area
 	struct TriggerEnterEvent 
@@ -429,6 +412,23 @@ namespace Collision
 		uint32_t otherEntityID;				// Entity that exited the trigger
 
 		TriggerExitEvent();
+	};
+
+	// COLLISION EVENTS
+
+	/*============================================================================================
+	* \brief       Event sent when a collision occurs between two entities
+	*//*========================================================================================*/
+	struct CollisionEvent
+	{
+		uint32_t entityA_ID;	// ID of first entity in collision
+		uint32_t entityB_ID;	// ID of second entity in collision
+		CollisionResult result; // Detailed collision information
+		bool isEntityA_Trigger;	// Is entity A's collider a trigger?
+		bool isEntityB_Trigger; // Is entity B's collider a trigger?
+
+		// Default constructor
+		CollisionEvent();
 	};
 
 	// COLLISION SYSTEMS

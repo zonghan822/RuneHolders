@@ -1,10 +1,11 @@
 #include "ai_path_agent.hpp"
+#include "../state/ai_events.hpp"
 
 namespace AI {
 
     AIPathAgent::AIPathAgent(PathfindingSystem& pf)
         : pf_(pf)
-    { /*empty by design*/ }
+    { }
 
     // Compute full path from start to goal
     void AIPathAgent::computePath(const Math::eVec2<int>& start, const Math::eVec2<int>& goal) {
