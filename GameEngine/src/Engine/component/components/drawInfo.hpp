@@ -46,10 +46,9 @@ enum Color {
 
 //supposed to be in edit but i'll put here for now -yunqi
 enum Filters {
-	Architype = 0,
-	Last = 1,
-	Select = 2,
-	All = 3
+	Last = 0,
+	Select = 1,
+	All = 2
 };
 
 namespace ECSComponents

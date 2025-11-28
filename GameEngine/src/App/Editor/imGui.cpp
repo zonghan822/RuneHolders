@@ -344,64 +344,15 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_) {
 void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 
 	auto& entityManager = engine_.getEntityManager();
-	const char* filters[] = { "Archetype" , "Last Spawned", "Mouse Select", "All" };
-	static int FilterType = Filters::Architype;
+	const char* filters[] = { "Last Spawned", "Mouse Select", "All" };
+	static int FilterType = Filters::Select;
 
 	std::vector<ECS::Entity> toDelete;
 
 	ImGui::Combo("Filters", &FilterType, filters, IM_ARRAYSIZE(filters));
 
 
-	if (FilterType == Filters::Architype) {
-		if (ImGui::Button("DEBUG: List Named Entities")) {
-			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-				std::cout << "Entity " << e.id() << " name: '" << nameComp.name << "'\n";
-			}
-		}
-
-
-		static char searchInput[32] = ""; // to enter archetype name
-		ImGui::InputTextWithHint("##Search", "Enter Name to delete...", searchInput, sizeof(searchInput));
-
-
-		if (ImGui::Button("Delete Entities")) {
-			std::string target = searchInput;
-			bool deletedSelected = false;
-
-			// Iterate only once through all entities that have NameComponent
-			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				ECSComponents::NameComponent& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-
-				if (!deletedSelected && e.id() == selectedEntityID) {
-					if (playerEntityID_ == e.id()) playerSpawned_ = false;
-
-					// Remove from scene hierarchy and destroy children
-					Node* node = sceneTree.getNodeByEntityID(e.id());
-					if (node) {
-						destroyChildrenRecursive(node, entityManager);
-						sceneTree.kill(node);
-					}
-					entityManager.destroyEntity(e.id());
-
-					selectedEntityID = UINT32_MAX;
-					deletedSelected = true;
-					std::cout << "Deleted selected entity and its children\n";
-					continue;
-				}
-
-				if (nameComp.name == target) {
-					if (playerEntityID_ == e.id()) playerSpawned_ = false;
-					toDelete.push_back(e);
-				}
-
-			}
-
-			if (g_game)
-				g_game->markEntitiesDirty();
-		}
-	}
-	else if (FilterType == Filters::Last) {
+	if (FilterType == Filters::Last) {
 		if (ImGui::Button("Delete Last Spawned")) {
 			if (!ECS::spawnHistory.empty()) {
 				uint32_t lastID = ECS::spawnHistory.back();
