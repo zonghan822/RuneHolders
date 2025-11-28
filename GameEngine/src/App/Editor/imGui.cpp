@@ -3298,11 +3298,42 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 			auto ext = filePath.extension().string();
 
 			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
-				auto tex = std::make_shared<Graphics::EnoTexture>();
-				if (tex->loadFromFile(path)) {
-					std::string name = filePath.stem().string();
-					loader.addTexture(name, tex);
-					std::cout << "[DEBUG] Imported: " << name << std::endl;
+				// Construct destination path in assets folder
+				std::string assetsImagePath = std::string(ASSETS_DIR_PATH) + "art/";
+				std::string filename = filePath.filename().string();
+				std::filesystem::path destPath = std::filesystem::path(assetsImagePath) / filename;
+
+				// Copy file to assets folder if it doesn't exist or is different
+				try {
+					// Create assets/art directory if it doesn't exist
+					std::filesystem::create_directories(assetsImagePath);
+
+					// Check if we need to copy the file
+					bool needsCopy = !std::filesystem::exists(destPath);
+					if (!needsCopy) {
+						// File exists, check if it's the same file (by comparing paths)
+						auto sourceAbsolute = std::filesystem::absolute(filePath);
+						auto destAbsolute = std::filesystem::absolute(destPath);
+						needsCopy = (sourceAbsolute != destAbsolute);
+					}
+
+					if (needsCopy) {
+						std::filesystem::copy_file(filePath, destPath, std::filesystem::copy_options::overwrite_existing);
+						std::cout << "[Asset Import] Copied " << filename << " to assets folder\n";
+					} else {
+						std::cout << "[Asset Import] File " << filename << " already exists in assets folder\n";
+					}
+
+					// Load texture from the assets folder location
+					auto tex = std::make_shared<Graphics::EnoTexture>();
+					if (tex->loadFromFile(destPath.string())) {
+						std::string name = filePath.stem().string();
+						loader.addTexture(name, tex);
+						std::cout << "[DEBUG] Imported texture: " << name << std::endl;
+					}
+				}
+				catch (const std::filesystem::filesystem_error& e) {
+					std::cerr << "[Asset Import] Failed to copy file: " << e.what() << std::endl;
 				}
 			}
 		}
@@ -3799,6 +3830,142 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					// Adjust zoom (0.1 per wheel notch)
 					float zoomDelta = wheel * 0.1f;
 					g_game->adjustEditorZoom(zoomDelta);
+				}
+			}
+
+			auto& g_droppedFiles_editor = Window::EnoWindow::GetDroppedFiles();
+			if (!g_droppedFiles_editor.empty() && ImGui::IsItemHovered())
+			{
+				Resources::EnoLoader& loader = engine_.getResourceLoader();
+
+				for (auto& path : g_droppedFiles_editor)
+				{
+					std::filesystem::path filePath(path);
+					auto ext = filePath.extension().string();
+
+					// Only process image files
+					if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+					{
+						// Construct destination path in assets folder
+						std::string assetsImagePath = std::string(ASSET_SAVE_DIR_PATH) + "art/";
+						std::string filename = filePath.filename().string();
+						std::string textureName = filePath.stem().string();
+						std::filesystem::path destPath = std::filesystem::path(assetsImagePath) / filename;
+
+						try {
+							// Create assets/art directory if it doesn't exist
+							std::filesystem::create_directories(assetsImagePath);
+
+							// Check if we need to copy the file
+							bool needsCopy = !std::filesystem::exists(destPath);
+							if (!needsCopy) {
+								auto sourceAbsolute = std::filesystem::absolute(filePath);
+								auto destAbsolute = std::filesystem::absolute(destPath);
+								needsCopy = (sourceAbsolute != destAbsolute);
+							}
+
+							if (needsCopy) {
+								std::filesystem::copy_file(filePath, destPath, std::filesystem::copy_options::overwrite_existing);
+								std::cout << "[Asset Import] Copied " << filename << " to assets folder\n";
+							}
+
+							// Load or get the texture
+							auto texture = loader.getTexture(textureName);
+							if (!texture || !texture->isValid()) {
+								// Need to load it
+								texture = std::make_shared<Graphics::EnoTexture>();
+								if (texture->loadFromFile(destPath.string())) {
+									loader.addTexture(textureName, texture);
+									std::cout << "[Asset Import] Loaded texture: " << textureName << std::endl;
+								} else {
+									std::cerr << "[Asset Import] Failed to load texture from: " << destPath << std::endl;
+									continue;
+								}
+							}
+
+							// Get mouse position and convert to world coordinates
+							ImVec2 mousePos = ImGui::GetMousePos();
+							Math::eVec2<float> worldPos = Graphics::screenToWorld(
+								{ mousePos.x, mousePos.y },
+								g_game->getEditorViewMin(),
+								g_game->getEditorViewMax(),
+								editorWidth,
+								editorHeight,
+								g_game->getEditorCameraX(),
+								g_game->getEditorCameraY()
+							);
+
+							// Create entity at drop location
+							ECSComponents::TransformComponent transform;
+							transform.pos = worldPos;
+							transform.rot = Math::eVec2<float>(0.0f, 0.0f);
+							transform.scale = Math::eVec2<float>(1.0f, 1.0f);
+
+							ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
+
+							// Add render component with texture
+							ECSComponents::RenderComponent render;
+							render.texture = texture;
+							render.width = static_cast<float>(texture->getWidth());
+							render.height = static_cast<float>(texture->getHeight());
+							strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
+							render.texturePath[sizeof(render.texturePath) - 1] = '\0';
+							render.color = Graphics::Color::White;
+							newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
+
+							// Add name component
+							ECSComponents::NameComponent nameComp;
+							strncpy_s(nameComp.name, textureName.c_str(), sizeof(nameComp.name) - 1);
+							nameComp.name[sizeof(nameComp.name) - 1] = '\0';
+							newEntity.add<ECSComponents::NameComponent>(entityManager, nameComp);
+
+							// Create animation controller
+							uint32_t controllerID = engine_.getAnimationRegistry().createController();
+							newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
+
+							// Get the controller and add a simple 1x1 animation
+							Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(controllerID);
+							if (ctrl)
+							{
+								// Create a single-frame animation (1x1 grid, UV 0,0 to 1,1)
+								Animation::EnoAnimation singleFrameAnim = Animation::createSpriteSheetAnimation(
+									texture->getWidth(),   // frame width = full texture width
+									texture->getHeight(),  // frame height = full texture height
+									texture->getWidth(),   // sheet width
+									texture->getHeight(),  // sheet height
+									0,                     // start frame
+									1,                     // frame count (single frame)
+									0.1f                   // frame duration (doesn't matter for single frame)
+								);
+
+								ctrl->addAnimation("idle", singleFrameAnim);
+								ctrl->setAnimation("idle");
+							}
+
+							// Add to scene tree
+							Node* node = sceneTree.createFromEntity(newEntity, nullptr);
+							node->name_ = textureName;
+
+							// Record creation for undo/redo
+							auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
+								sceneTree,
+								entityManager,
+								newEntity
+							);
+							undoManager.executeCommand(std::move(createCmd));
+
+							std::cout << "[Drag-Drop] Created entity '" << textureName
+									  << "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
+
+							if (g_game) g_game->markEntitiesDirty();
+						}
+						catch (const std::filesystem::filesystem_error& e) {
+							std::cerr << "[Asset Import] Filesystem error: " << e.what() << std::endl;
+						}
+						catch (const std::exception& e) {
+							std::cerr << "[Asset Import] Error creating entity: " << e.what() << std::endl;
+						}
+					}
 				}
 			}
 
