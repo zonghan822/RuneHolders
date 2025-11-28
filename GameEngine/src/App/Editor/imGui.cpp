@@ -276,7 +276,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	if (g_pendingNewScene)
 	{
 		clearSelectedEntity();
-		engine_.getEnoEditor().createEmptyScene(ASSET_SCENE_PATH);
+		engine_.getEnoEditor().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 		g_game->markEntitiesDirty();  // Force entity cache refresh
 		g_pendingNewScene = false;
 		std::cout << "[ImGui] Deferred: Created new scene" << std::endl;
@@ -1308,7 +1308,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		// Clear the current container
 		sceneNames.clear();
 		// A string path to the assets folder
-		std::string sceneSavePath = (ASSET_SCENE_PATH);
+		std::string sceneSavePath = (ASSETS_DIR_PATH "saves/scenes");
 		// Check that the file is a .txt file
 		try {
 			for (const auto& fileEntry : std::filesystem::directory_iterator(sceneSavePath))
@@ -1430,7 +1430,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 						std::string newSceneName = scene_name;
 						if (newSceneName.find(".txt") == std::string::npos) newSceneName += ".txt";
 
-						std::filesystem::path newPath = ASSET_SCENE_PATH + newSceneName;
+						std::filesystem::path newPath = ASSETS_DIR_PATH "saves/scenes" + newSceneName;
 						std::filesystem::rename(currentPath, newPath);
 
 						// Check if we're renaming the currently active scene
@@ -1549,7 +1549,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	{
 		std::string sceneName = editor_.getCurrentScene().getSceneName();
 		// Save scene
-		editor_.getSceneTree().save(ASSET_SCENE_PATH + sceneName, sceneName);
+		editor_.getSceneTree().save(ASSETS_DIR_PATH "saves/scenes" + sceneName, sceneName);
 		// Update last saved scene
 		editor_.updateLastSavedScene();
 	}
@@ -3847,7 +3847,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
 					{
 						// Construct destination path in assets folder
-						std::string assetsImagePath = std::string(ASSET_SAVE_DIR_PATH) + "art/";
+						std::string assetsImagePath = std::string(ASSETS_DIR_PATH) + "art/";
 						std::string filename = filePath.filename().string();
 						std::string textureName = filePath.stem().string();
 						std::filesystem::path destPath = std::filesystem::path(assetsImagePath) / filename;

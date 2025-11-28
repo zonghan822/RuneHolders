@@ -131,7 +131,6 @@ namespace Editor
 	private:
 		inline static uint32_t id_ = 0;
 
-		Event::EnoEventBus& bus_;
 		ECS::EntityManager& entMng_;
 		Core::EnoCoreHost& coreHost_;
 		Map::TileMapSystem& tileMap_;

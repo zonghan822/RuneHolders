@@ -90,7 +90,6 @@ foreach(target ${ENGINE_NAME}_static ${ENGINE_NAME}_shared)
         DOTNET_ROOT="${DOTNET_RUNTIME_PATH}/"
         -DGLEW_STATIC
         -D_CRT_NONSTDC_NO_DEPRECATE
-	ASSET_SCENE_PATH="${CMAKE_SOURCE_DIR}/assets/saves/scenes/"
     )
 endforeach()
 
