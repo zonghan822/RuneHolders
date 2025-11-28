@@ -709,6 +709,19 @@ namespace Editor
 		setChildren(children);
 		setListeners(listeners);
 
+		// Update the static id_ counter to be higher than any loaded sceneObjectID
+		// This prevents newly created nodes from reusing IDs and overwriting existing nodes
+		uint32_t maxLoadedID = 0;
+		for (const auto& [nodeID, node] : tree_) {
+			if (nodeID > maxLoadedID) {
+				maxLoadedID = nodeID;
+			}
+		}
+		// Set id_ to one more than the highest loaded ID
+		if (maxLoadedID >= id_) {
+			id_ = maxLoadedID + 1;
+		}
+
 		// Load tilemap data embedded in scene file
 		size_t tilemapPos = data.find("\"TileMap\"");
 		if (tilemapPos != std::string::npos) {
