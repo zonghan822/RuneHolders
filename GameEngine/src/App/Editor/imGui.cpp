@@ -2495,7 +2495,29 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 
 	}
+	else 
+	{
+		// Allow adding button component
+		ImGui::SeparatorText("Button Component");
+		ImGui::TextDisabled("No button component attached");
 
+		if (ImGui::Button("Add Button Component")) 
+		{
+			ECSComponents::ButtonComponent button;
+
+			// Check for collider component
+			if (!entity.has<ECSComponents::CollisionComponent>(entMng))
+			{
+				ECSComponents::CollisionComponent collider;
+				// Make it non-collidable
+				collider.isTrigger = true;
+				entity.add<ECSComponents::CollisionComponent>(entMng, collider);
+			}
+
+			entity.add<ECSComponents::ButtonComponent>(entMng, button);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
 
 	// --- Prefab Section ---
 	ImGui::SeparatorText("Prefab");

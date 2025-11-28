@@ -91,7 +91,7 @@ namespace Editor
 		void deleteScene(std::string sceneName)
 		{
 			// Remove from files
-			std::filesystem::remove(ASSET_SCENE_PATH + sceneName);
+			std::filesystem::remove(ASSETS_DIR_PATH"saves/scenes/" + sceneName);
 			//std::cout << "[Eno_Editor] Scene deleted: " << sceneName << std::endl;
 
 			// Find scene index in scenes_ list
@@ -136,13 +136,13 @@ namespace Editor
 			try
 			{
 				// Get current filepath
-				std::filesystem::path currentPath = ASSET_SCENE_PATH + oldName;
+				std::filesystem::path currentPath = ASSETS_DIR_PATH"saves/scenes/" + oldName;
 
 				// Check for .txt extension in new file
 				std::string newSceneName = newName;
 				if (newSceneName.find(".txt") == std::string::npos) newSceneName += ".txt";
 
-				std::filesystem::path newPath = ASSET_SCENE_PATH + newSceneName;
+				std::filesystem::path newPath = ASSETS_DIR_PATH"saves/scenes/" + newSceneName;
 				std::filesystem::rename(currentPath, newPath);
 
 				// Check if we're renaming the currently active scene

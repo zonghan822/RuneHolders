@@ -69,8 +69,8 @@ namespace ECSComponents {
 		// Onclick function
 		bool onClick(Math::eVec2<float> mousePos, const ECSComponents::VisibilityComponent& v, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d)
 		{
-			// Check if button is visible
-			if (!v.visible) return false;
+			// Check if button is interactable
+			if (!isActive) return false;
 
 			//std::cout << "mouse pos :" << mousePos << std::endl;
 
@@ -133,6 +133,7 @@ namespace ECSComponents {
 		{
 			l("BtnText", btnText, "char32");
 			l("TargetScene", targetScene, "char32");
+			l("IsActive", isActive, "bool");
 		}
 
 		template <typename Visitor>
@@ -140,6 +141,7 @@ namespace ECSComponents {
 		{
 			l("BtnText", btnText, "char32");
 			l("TargetScene", targetScene, "char32");
+			l("IsActive", isActive, "bool");
 		}
 
 
@@ -154,6 +156,9 @@ namespace ECSComponents {
 
 		// Parameter for scene selection (To be deleted after bridging)
 		char targetScene[32] = "NIL";
+		
+		// If in use
+		bool isActive = true;
 	};
 
 }

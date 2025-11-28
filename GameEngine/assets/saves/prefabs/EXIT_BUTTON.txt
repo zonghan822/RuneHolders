@@ -25,6 +25,10 @@
 		"TargetScene": {
 			"value": "NIL",
 			"type": "char32"
+		},
+		"IsActive": {
+			"value": "1",
+			"type": "bool"
 		}
 	},
 	"struct ECSComponents::RenderComponent": {
