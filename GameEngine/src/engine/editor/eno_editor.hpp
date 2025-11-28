@@ -87,6 +87,24 @@ namespace Editor
 
 		}
 
+		// Delete and erase a scene
+		void deleteScene(std::string sceneName)
+		{
+			// Remove from files
+			std::filesystem::remove(ASSET_SCENE_PATH + sceneName);
+			//std::cout << "[Eno_Editor] Scene deleted: " << sceneName << std::endl;
+
+			// Find scene index in scenes_ list
+			auto index = std::find_if(scenes_.begin(), scenes_.end(),
+				[&](const std::unique_ptr<Editor::EnoScene>& scene) {return sceneName == scene->getSceneName(); });
+
+			// Delete pointer to scene
+			if (index != scenes_.end())
+			{
+				scenes_.erase(index);
+			}
+		}
+
 		void selectScene(const std::string& filename)
 		{
 			

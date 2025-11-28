@@ -1325,8 +1325,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 				std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
 				// Scene deleted, load the first available scene instead
 				editor_.selectScene(sceneList.front()->getSceneName());
-				// Update last saved scene file
-				//editor_.updateLastSavedScene();
+
 				g_game->markEntitiesDirty();
 			}
 		} 
@@ -1424,6 +1423,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 						// If we renamed the active scene, update the current scene name
 						if (isCurrentScene)
 						{
+							// Update scene name
 							editor_.getCurrentScene().setSceneName(newSceneName);
 
 							// Update LastSavedScene.txt
@@ -1474,18 +1474,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 					else
 					{
 						// Safe to delete - scene is not currently loaded
-						std::filesystem::remove(ASSET_SCENE_PATH + sceneName);
-						std::cout << "[ImGui] Scene deleted: " << sceneName << std::endl;
-
-						// Find scene index in scenes_ list
-						auto index = std::find_if(sceneList.begin(), sceneList.end(), 
-									[&](const std::unique_ptr<Editor::EnoScene>& scene) {return sceneName == scene->getSceneName(); });
-
-						// Delete pointer to scene
-						if (index != sceneList.end())
-						{
-							sceneList.erase(index);
-						}
+						editor_.deleteScene(sceneName);
 
 						// Reset error flag
 						g_cannotDeleteActiveScene = false;
