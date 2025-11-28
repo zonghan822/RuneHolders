@@ -5,6 +5,10 @@
 *===========================================================================================*/
 
 #pragma once
+
+// Signals
+#include "../../event/signals.hpp"
+
 #include <string>
 #include <cstring>
 
@@ -25,6 +29,9 @@ namespace ECSComponents
             std::strncpy(prefabName, name, sizeof(prefabName) - 1);
             prefabName[sizeof(prefabName) - 1] = '\0';
         }
+
+        // Signals
+        std::unordered_map<std::string, Events::EnoSignal> signals_;
 
         // Reflection for serialization (const version for saving)
         template <typename Visitor>

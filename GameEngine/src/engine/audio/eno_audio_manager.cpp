@@ -195,8 +195,8 @@ namespace Audio
 		}
 
 		// Emit signals
-		auto signalIt = audioComp.signals.find("started");
-		if (signalIt != audioComp.signals.end())
+		auto signalIt = audioComp.signals_.find("started");
+		if (signalIt != audioComp.signals_.end())
 		{
 			signalIt->second.emit({ audioComp.volume_ });
 		}

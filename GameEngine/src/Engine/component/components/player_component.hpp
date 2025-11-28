@@ -9,6 +9,9 @@
 
 #pragma once
 
+// Signals
+#include "../../event/signals.hpp"
+
 #include "../../../Engine/math/math.hpp"
 
 namespace ECSComponents
@@ -76,6 +79,8 @@ namespace ECSComponents
             , dashStartPos{ 0.0f, 0.0f }
         {}
 
+        // Signals
+        std::unordered_map<std::string, Events::EnoSignal> signals_;
 
         // For serialization purposes
         // Generalized way of using reflection to access and iterate

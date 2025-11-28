@@ -142,7 +142,7 @@ namespace Editor
 						signalName });
 
 				// Connect the listener to the emitter
-				component.signals[signalName].connect([this, signalName, funcClassPair](const std::vector<std::any>& params)
+				component.signals_[signalName].connect([this, signalName, funcClassPair](const std::vector<std::any>& params)
 					{
 						coreHost_.signalEmitted(signalName, funcClassPair.first, funcClassPair.second);
 					});
@@ -282,84 +282,12 @@ namespace Editor
 
 		// Finding the specified parameter in a file (Children)
 		std::optional<std::vector<uint32_t>> extractChildren(
-			const std::string& data, const std::string& param,
-			const size_t& start, const size_t& end)
-		{
-			size_t paramPos = data.find(param, start);
-			if (paramPos != std::string::npos && paramPos < end)
-			{
-				size_t paramStrt = data.find_first_of('{', paramPos);
-				size_t paramEnd = data.find_first_of('}', paramStrt);
-
-				// Collect and return all ids
-				std::string str = trim(data.substr(paramStrt + 1, paramEnd - paramStrt - 1));
-				std::istringstream iss{ str };
-
-				std::vector<uint32_t> ids;
-				uint32_t num;
-				while (iss >> num)
-				{
-					ids.push_back(num);
-
-					// If next immediate character is not uint32_t, consume
-					if (!std::isalnum(iss.peek())) iss.get();
-				}
-
-				return ids;
-			}
-
-			return std::nullopt;
-		}
+			const std::string&, const std::string&,
+			const size_t&, const size_t&);
 
 		// Specialization for finding the specified parameter in a file (Listener)
 		std::optional<std::vector<Listener>> extractListeners(
-			const std::string& data,
-			const std::string& param,
-			const size_t& start,
-			const size_t& end)
-		{
-			std::vector<Listener> ltnVec{};
-
-			size_t paramPos = data.find(param, start);
-			if (paramPos != std::string::npos && paramPos < end)
-			{
-				size_t paramStrt = data.find_first_of('{', paramPos);
-				size_t paramEnd = data.find_first_of('}', paramStrt);
-
-				std::string listeners = data.substr(paramStrt + 1, paramEnd - paramStrt - 1);
-
-				size_t pos{};
-				while (pos < listeners.size())
-				{
-					size_t ltnStrt = listeners.find_first_of('[', pos);
-					if (ltnStrt == std::string::npos) break;
-
-					size_t ltnEnd = listeners.find_first_of(']', ltnStrt);
-					if (ltnEnd == std::string::npos) break;
-
-					std::string str = trim(listeners.substr(ltnStrt + 1, ltnEnd - ltnStrt - 1));
-
-					std::istringstream iss{ str };
-					std::string idStr, compStr, sigStr;
-
-					std::getline(iss, idStr, ',');
-					std::getline(iss, compStr, ',');
-					std::getline(iss, sigStr, ',');
-
-					Listener l;
-					l.listenerID_ = static_cast<uint32_t>(std::stoul(trim(idStr)));
-					l.component_ = stripPrefix(trim(compStr));
-					l.signal_ = trim(sigStr);
-
-					ltnVec.push_back(l);
-
-					pos = ltnEnd + 1;
-				}
-
-				return ltnVec;
-			}
-
-			return std::nullopt;
-		}
+			const std::string&, const std::string&,
+			const size_t&, const size_t&);
 	};
 }
