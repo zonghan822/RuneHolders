@@ -56,6 +56,7 @@ namespace Window
 		//(YunQi's file dropping)
 		glfwSetDropCallback(window_, [](GLFWwindow* w, int count, const char** paths)
 			{
+				(void)w;
 				for (int i = 0; i < count; ++i)
 					g_droppedFiles.emplace_back(paths[i]);   // store dropped file path
 				std::cout << "[DEBUG] File drop callback triggered!\n";

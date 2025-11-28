@@ -49,7 +49,7 @@ target_compile_definitions(${APP_NAME} PRIVATE
     SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}/$<CONFIG>/"
     APP_SRC_PATH="${PROJECT_SOURCE_DIR}/${APP_NAME}/"
     APP_BIN_PATH="${PROJECT_BINARY_DIR}/"
-    ASSET_SCENE_PATH="${CMAKE_SOURCE_DIR}/assets/saves/scenes/"
+    ASSET_SCENE_PATH="${CMAKE_BINARY_DIR}/assets/saves/scenes/"
 )
 
 # Link the library to the executable using the CMake target

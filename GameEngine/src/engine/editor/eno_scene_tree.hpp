@@ -40,7 +40,7 @@ namespace Editor
 
 		enum BraceType { Open, Close };
 
-		EnoSceneTree(ECS::EntityManager&, Core::EnoCoreHost&);
+		EnoSceneTree(Event::EnoEventBus&, ECS::EntityManager&, Core::EnoCoreHost&);
 		EnoSceneTree(const EnoSceneTree&) = delete;
 		EnoSceneTree(EnoSceneTree&&) = delete;
 
@@ -130,6 +130,7 @@ namespace Editor
 	private:
 		inline static uint32_t id_ = 0;
 
+		Event::EnoEventBus& bus_;
 		ECS::EntityManager& entMng_;
 		Core::EnoCoreHost& coreHost_;
 

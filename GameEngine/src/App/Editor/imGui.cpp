@@ -947,8 +947,9 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			playerConfig.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
 
 			// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
-			constexpr float centerX = 640.0f;
-			constexpr float centerY = 360.0f;
+			// Create transform with default position at center of screen
+			float centerX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
+			float centerY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
 
 			// Create complete player entity using the config
 			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
@@ -1188,8 +1189,12 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				auto& entityManager = engine_.getEntityManager();
 
 				// Create transform with default position at center of screen
+				float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
+				float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
+				
+				// Create transform with default position at center of screen
 				ECSComponents::TransformComponent transform{
-					{600.0f, 450.0f},  // Center position
+					{nodePosX, nodePosY},  // Center position
 					{0.0f, 0.0f},      // Velocity
 					{1.0f, 1.0f}       // Scale
 				};
@@ -2155,7 +2160,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 
 		ImGui::DragFloat("Radar radius", &ai.awarenessRadius, 0.1f, 0.1f, 100.0f);
-		ImGui::DragFloat("Speed", &ai.speed, 1.f, 10.f, 300.0f);
+		ImGui::DragFloat("Speed", &ai.chaseSpeed, 1.f, 10.f, 300.0f);
 	}
 	else {
 		// Allow adding AI component if the entity doesn't have one
@@ -2511,15 +2516,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 				// Find current selection
 				int selectedIndex = 0;
-				for (size_t i = 0; i < sceneNames.size(); i++) {
-					if (sceneNames[i] == button.getTargetScene()) {
-						selectedIndex = static_cast<int>(i);
+				for (size_t idx = 0; idx < sceneNames.size(); idx++) {
+					if (sceneNames[idx] == button.getTargetScene()) {
+						selectedIndex = static_cast<int>(idx);
 						break;
 					}
 				}
 
 				ImGui::SetNextItemWidth(200);
-				if (ImGui::Combo("##SceneParam", &selectedIndex, sceneNames.data(), sceneNames.size())) {
+				if (ImGui::Combo("##SceneParam", &selectedIndex, sceneNames.data(), static_cast<int>(sceneNames.size()))) {
 					button.setTargetScene(sceneNames[selectedIndex]);
 				}
 
@@ -2718,8 +2723,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		if (it != textures.end())
 		{
 			auto tex = it->second;
-			int texW = tex->getWidth();
-			int texH = tex->getHeight();
+			
 
 			if (idleMode == 0)
 			{
@@ -2916,8 +2920,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		if (it != textures.end())
 		{
 			auto tex = it->second;
-			int texW = tex->getWidth();
-			int texH = tex->getHeight();
 
 			if (walkMode == 0)
 			{
@@ -3109,8 +3111,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		if (it != textures.end())
 		{
 			auto tex = it->second;
-			int texW = tex->getWidth();
-			int texH = tex->getHeight();
 
 			if (attackMode == 0)
 			{

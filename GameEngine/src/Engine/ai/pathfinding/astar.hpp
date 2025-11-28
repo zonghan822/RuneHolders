@@ -32,8 +32,10 @@ namespace AI {
         void setAllowDiagonal(bool allow) { allowDiagonal_ = allow; }
         bool allowDiagonal() const { return allowDiagonal_; }
 
-        Path findPath(const Math::eVec2<int>& start,
-            const Math::eVec2<int>& goal);
+        Path findPath(const Math::eVec2<int>& start, const Math::eVec2<int>& goal);
+
+        Math::eVec2<int> worldToTile(const Math::eVec2<float>& pos) const;
+        Math::eVec2<float> tileToWorld(const Math::eVec2<int>& pos) const;
 
     private:
         Event::EnoEventBus& bus_;

@@ -469,7 +469,7 @@ namespace Editor
 		Event::EnoEventBus& bus_;
 
 		// Scene tree
-		EnoSceneTree tree_{ entMng_, coreHost_ };
+		EnoSceneTree tree_{ bus_, entMng_, coreHost_ };
 
 		// Undo system
 		UndoManager undoManager_;

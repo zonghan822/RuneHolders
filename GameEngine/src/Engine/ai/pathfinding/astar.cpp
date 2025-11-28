@@ -107,4 +107,12 @@ namespace AI {
 
         return result;
     }
+
+    Math::eVec2<int> PathfindingSystem::worldToTile(const Math::eVec2<float>& pos) const {
+        return tilemap_.worldToTile(pos);
+    }
+
+    Math::eVec2<float> PathfindingSystem::tileToWorld(const Math::eVec2<int>& pos) const {
+        return tilemap_.tileToWorld(pos.x, pos.y);
+    }
 }

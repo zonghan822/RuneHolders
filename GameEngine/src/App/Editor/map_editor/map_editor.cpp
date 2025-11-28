@@ -322,8 +322,8 @@ void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
 	ImVec2 mouse = ImGui::GetMousePos();
 
 	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
-		int tx = (mouse.x - imgMin.x) / tileW;
-		int ty = (mouse.y - imgMin.y) / tileH;
+		int tx = static_cast<int>((mouse.x - imgMin.x) / tileW);
+		int ty = static_cast<int>((mouse.y - imgMin.y) / tileH);
 
 		if (tx >= 0 && tx < tilesetCols_ && ty >= 0 && ty < tilesetRows_) {
 			selectedTileX_ = tx;

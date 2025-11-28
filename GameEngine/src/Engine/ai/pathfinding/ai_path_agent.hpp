@@ -34,6 +34,7 @@ namespace AI {
 
         Path path_;
         size_t currentIndex_ = 0;
+
     };
 
 } // namespace AI
