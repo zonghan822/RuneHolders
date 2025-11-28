@@ -2,6 +2,9 @@
 #include <vector>
 #include "../../math/math.hpp"
 
+// Signals
+#include "../../event/signals.hpp"
+
 namespace ECSComponents
 {
     struct AIComponent
@@ -47,10 +50,12 @@ namespace ECSComponents
         char cbDeathUpdate[64] = "";
         char cbDeathExit[64] = "";
 
+        // Signals
+        std::unordered_map<std::string, Events::EnoSignal> signals_;
+
 
         template <typename V>
-        void reflect(V&& v) const
-        {
+        void reflect(V&& v) const {
             v("currentState", currentState, "char32");
             v("nextState", nextState, "char32");
 
@@ -93,8 +98,7 @@ namespace ECSComponents
         }
 
         template <typename V>
-        void reflect(V&& v)
-        {
+        void reflect(V&& v) {
             v("currentState", currentState, "char32");
             v("nextState", nextState, "char32");
 

@@ -9,6 +9,9 @@
 
 #pragma once
 
+// Signals
+#include "../../event/signals.hpp"
+
 // stds
 #include <string>
 #include <iostream>
@@ -31,8 +34,10 @@ namespace ECSComponents
 			name[sizeof(name) - 1] = '\0';
 		}
 
-		char name[32] = "DefaultName";
+		// Signals
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
+		char name[32] = "DefaultName";
 
 		// For serialization purposes
 		// Generalized way of using reflection to access and iterate

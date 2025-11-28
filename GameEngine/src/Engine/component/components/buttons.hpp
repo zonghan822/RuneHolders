@@ -1,5 +1,8 @@
 #pragma once
 
+// Signals
+#include "../../event/signals.hpp"
+
 // ECS Components
 #include "drawInfo.hpp"
 #include "transform.hpp"
@@ -106,6 +109,9 @@ namespace ECSComponents {
 				signals.pop_back();
 			}
 		}
+
+		// Signals
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
 		// Get Signal container
 		std::vector<std::pair<signalType, functionType>>& getSignals()

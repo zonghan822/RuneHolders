@@ -1,6 +1,9 @@
 #pragma once
 
 
+// Signals
+#include "../../event/signals.hpp"
+
 // GLM
 #include <glm/glm.hpp>
 #include <iostream>
@@ -26,6 +29,8 @@ namespace ECSComponents
 		TransformComponent(Math::eVec2<float> _pos, Math::eVec2<float> _rot, Math::eVec2<float> _scale)
 			: pos(_pos), rot(_rot), scale(_scale) {}
 
+		// Signals
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
 		// For serialization purposes
 		// Generalized way of using reflection to access and iterate

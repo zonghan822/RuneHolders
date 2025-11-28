@@ -9,6 +9,9 @@
 
 #pragma once
 
+// Signals
+#include "../../event/signals.hpp"
+
 namespace ECSComponents
 {
     /*============================================================================================
@@ -48,6 +51,9 @@ namespace ECSComponents
             , pushResistance(resistance)
         {
         }
+
+        // Signals
+        std::unordered_map<std::string, Events::EnoSignal> signals_;
 
         // Serialization support (for saving/loading)
         template <typename Visitor>
