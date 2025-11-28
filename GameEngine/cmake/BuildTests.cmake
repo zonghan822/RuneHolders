@@ -44,7 +44,7 @@ add_dependencies(${APP_NAME} ${SCRIPT_NAME}_cs)
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/Engine)
 target_compile_definitions(${APP_NAME} PRIVATE
-    ASSETS_DIR_PATH="${CMAKE_BINARY_DIR}/assets/"
+    ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
     SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}/user_scripts/"
     SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}/$<CONFIG>/"
     APP_SRC_PATH="${PROJECT_SOURCE_DIR}/${APP_NAME}/"
