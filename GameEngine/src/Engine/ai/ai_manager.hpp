@@ -14,7 +14,7 @@
 #include "../ecs/entity.hpp"
 #include "../ecs/component_events.hpp"
 #include "../component/components/ai_component.hpp"
-#include "../collision/collision.hpp"
+#include "../physics/physics_events.hpp"
 #include "../math/math.hpp"
 
 

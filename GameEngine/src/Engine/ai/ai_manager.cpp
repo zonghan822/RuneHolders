@@ -46,8 +46,8 @@ namespace AI {
             }
         );
 
-        bus_.subscribe<Collision::CollisionEvent>(
-            [&](const Collision::CollisionEvent& ev) {
+        bus_.subscribe<Physics::CollideEvent>(
+            [&](const Physics::CollideEvent& ev) {
                 if (!handleCollisionForAI(ev.entityA_ID, ev.entityB_ID))
                     handleCollisionForAI(ev.entityB_ID, ev.entityA_ID);
             }
