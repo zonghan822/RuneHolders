@@ -20,8 +20,4 @@ namespace AI {
         uint32_t entityID;
         const char* methodName;
     };
-
-    struct AttackEvent {
-        uint32_t entityID;
-    };
 }

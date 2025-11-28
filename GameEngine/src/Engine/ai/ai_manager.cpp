@@ -46,8 +46,8 @@ namespace AI {
             }
         );
 
-        bus_.subscribe<Collision::CollisionEvent>(
-            [&](const Collision::CollisionEvent& ev) {
+        bus_.subscribe<Physics::CollideEvent>(
+            [&](const Physics::CollideEvent& ev) {
                 if (!handleCollisionForAI(ev.entityA_ID, ev.entityB_ID))
                     handleCollisionForAI(ev.entityB_ID, ev.entityA_ID);
             }
@@ -63,6 +63,7 @@ namespace AI {
             auto& machine = getStateMachine(entity);
 
             if (std::strcmp(ai.nextState, ai.currentState) != 0) {
+                strcpy(ai.currentState, ai.nextState);
                 machine.changeState(ai.nextState, entity, entMng_);
             }
             machine.update(entity, entMng_, dt);
