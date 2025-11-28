@@ -14,8 +14,6 @@ namespace AI {
         if (ai.useScriptCallbacks)
             tryScript(e, m, ai.cbIdleUpdate);
 
-        std::cout << "Idle updating..." << std::endl;
-
         auto& tf = e.get<ECSComponents::TransformComponent>(m);
         ECS::Entity player = m.findEntity<ECSComponents::PlayerComponent>()[0];
         auto& ptf = player.get<ECSComponents::TransformComponent>(m);

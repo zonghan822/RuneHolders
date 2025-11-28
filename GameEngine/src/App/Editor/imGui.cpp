@@ -2087,18 +2087,35 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
 		ImGui::SeparatorText("AI");
 
-		// State selector
-		const char* states[] = { "Idle", "Chasing" };
+		// ----------------------------
+		// 1. State Selector
+		// ----------------------------
+		const char* states[] = {
+			"Idle", "Chase", "Windup", "Attack", "Hurt", "Death"
+		};
 
-		// Map the current state to the combo index (0 = Idle, 1 = Chasing)
-		int stateIndex = (strcmp(ai.currentState, "Idle") == 0) ? 0 : 1;
+		int currentIndex = 0;
+		for (int i = 0; i < IM_ARRAYSIZE(states); i++)
+			if (strcmp(ai.currentState, states[i]) == 0)
+				currentIndex = i;
 
-		if (ImGui::Combo("State", &stateIndex, states, IM_ARRAYSIZE(states))) {
-			std::strncpy(ai.nextState, states[stateIndex], sizeof(ai.nextState));
+		if (ImGui::Combo("Current State", &currentIndex, states, IM_ARRAYSIZE(states))) {
+			std::strncpy(ai.nextState, states[currentIndex], sizeof(ai.nextState));
 		}
 
-		ImGui::DragFloat("Radar radius", &ai.awarenessRadius, 0.1f, 0.1f, 100.0f);
-		ImGui::DragFloat("Speed", &ai.chaseSpeed, 1.f, 10.f, 300.0f);
+		// ----------------------------
+		// 2. Core AI Behavior Params
+		// ----------------------------
+		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
+		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
+		ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal);
+
+		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
+		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
+
+		ImGui::DragInt("Health", &ai.health, 1, 0, 9999);
 	}
 	else {
 		// Allow adding AI component if the entity doesn't have one

@@ -33,6 +33,7 @@ namespace AI {
             e.id(),
             tf.pos,
             ptf.pos,
+            ai.allowDiagonal,
             next
         });
 

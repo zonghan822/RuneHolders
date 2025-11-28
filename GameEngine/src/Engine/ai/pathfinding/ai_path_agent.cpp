@@ -8,8 +8,9 @@ namespace AI {
     { }
 
     // Compute full path from start to goal
-    void AIPathAgent::computePath(const Math::eVec2<int>& start, const Math::eVec2<int>& goal) {
+    void AIPathAgent::computePath(const Math::eVec2<int>& start, const Math::eVec2<int>& goal, bool allowDiagonal) {
         path_ = pf_.findPath(start, goal);
+        pf_.setAllowDiagonal(allowDiagonal);
         currentIndex_ = 0;
     }
 
@@ -32,6 +33,11 @@ namespace AI {
     // Move to next tile in the path
     void AIPathAgent::advance() {
         if (hasPath()) currentIndex_++;
+    }
+
+    Math::eVec2<int> AIPathAgent::getGoal() const {
+        if (!hasPath()) return Math::eVec2<int>{-1, -1};
+        return path_.nodes.back();
     }
 
     // Full path access

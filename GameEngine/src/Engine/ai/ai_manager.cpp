@@ -34,8 +34,8 @@ namespace AI {
                 Math::eVec2<int> start = pathfinder_.worldToTile(ev.start);
                 Math::eVec2<int> goal = pathfinder_.worldToTile(ev.goal);
 
-                if (!agent.hasPath())
-                    agent.computePath(start, goal);
+                if (!agent.hasPath() || agent.getGoal() != goal)
+                    agent.computePath(start, goal, ev.allowDiagonal);
 
                 if (agent.hasPath()) {
                     ev.next = pathfinder_.tileToWorld(agent.getCurrentTile());
@@ -64,7 +64,6 @@ namespace AI {
 
             if (std::strcmp(ai.nextState, ai.currentState) != 0) {
                 machine.changeState(ai.nextState, entity, entMng_);
-                std::cout << "State Changed: " << ai.currentState << std::endl;
             }
             machine.update(entity, entMng_, dt);
         }

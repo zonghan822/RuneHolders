@@ -12,6 +12,7 @@ namespace AI {
         uint32_t entityID;
         Math::eVec2<float> start;
         Math::eVec2<float> goal;
+        bool allowDiagonal;
         Math::eVec2<float>& next;
     };
 
