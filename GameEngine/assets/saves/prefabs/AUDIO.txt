@@ -1,11 +1,31 @@
 {
 	"struct ECSComponents::AudioComponent": {
+		"Sound Name": {
+			"value": "",
+			"type": "char32"
+		},
+		"Sound Path": {
+			"value": "",
+			"type": "char256"
+		},
+		"Channel Group": {
+			"value": "Master",
+			"type": "char32"
+		},
+		"Loop Start": {
+			"value": "0",
+			"type": "float"
+		},
+		"Loop End": {
+			"value": "0",
+			"type": "float"
+		},
 		"Volume": {
 			"value": "50",
 			"type": "double"
 		},
 		"Pitch Scale": {
-			"value": "0",
+			"value": "1",
 			"type": "double"
 		},
 		"Pan Scale": {
@@ -19,6 +39,38 @@
 		"Is Autoplay": {
 			"value": "0",
 			"type": "bool"
+		},
+		"Enable Reverb": {
+			"value": "0",
+			"type": "bool"
+		},
+		"Reverb Wet": {
+			"value": "0",
+			"type": "float"
+		},
+		"Reverb Dry": {
+			"value": "1",
+			"type": "float"
+		},
+		"Reverb Decay": {
+			"value": "1500",
+			"type": "float"
+		},
+		"Enable EQ": {
+			"value": "0",
+			"type": "bool"
+		},
+		"EQ Low Gain": {
+			"value": "0",
+			"type": "float"
+		},
+		"EQ Mid Gain": {
+			"value": "0",
+			"type": "float"
+		},
+		"EQ High Gain": {
+			"value": "0",
+			"type": "float"
 		}
 	},
 	"struct ECSComponents::LayerComponent": {

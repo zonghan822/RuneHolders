@@ -1,6 +1,7 @@
 #include "eno_scene_tree.hpp"
 
 #include "../math/math.hpp"
+#include "../ai/state/ai_events.hpp"
 
 namespace Editor
 {
@@ -1216,6 +1217,7 @@ namespace Editor
 	// Helper for updating nested layer through children nodes
 	void EnoSceneTree::updateNestedLayer(Node* node, const uint32_t& diff)
 	{
+
 		if (!node) return;
 
 		node->nestedLayer_ -= diff;

@@ -292,8 +292,6 @@ namespace Physics
                     // Don't push kinematic objects (like walls)
                     if (!otherPhysics.isKinematic)
                     {
-
-                        
                         // Resolve collision with momentum transfer (this enables pushing!)
                         ResolveCollision(
                             transform, physics, collision,

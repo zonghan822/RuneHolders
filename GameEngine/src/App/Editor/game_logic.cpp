@@ -47,7 +47,7 @@ void GameApplication::initialize() {
 	worldHeight_ = worldSize.y;
 
 	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
-	gameFramebuffer_->create(worldWidth_, worldHeight_); // Fixed virtual resolution
+	gameFramebuffer_->create(static_cast<int>(worldWidth_), static_cast<int>(worldHeight_)); // Fixed virtual resolution
 
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
@@ -319,7 +319,7 @@ void GameApplication::updateGameLogic() {
 	if (gameFramebuffer_) {
 
 		// CRITICAL: Set projection matrix to fixed virtual resolution
-		engine_.getGraphicsManager().setProjectionMatrix(worldWidth_, worldHeight_);
+		engine_.getGraphicsManager().setProjectionMatrix(static_cast<int>(worldWidth_), static_cast<int>(worldHeight_));
 
 		// Bind framebuffer for rendering
 		gameFramebuffer_->bind();
@@ -873,7 +873,7 @@ void GameApplication::updateEntities() {
 			Animation::AnimationController* ctrl =	engine_.getAnimationRegistry().get(animComp.controllerID);
 
 			if (ctrl)
-				ctrl->update(engine_.getDeltaTime());
+				ctrl->update(static_cast<float>(engine_.getDeltaTime()));
 		}
 		
 
@@ -1003,8 +1003,8 @@ void GameApplication::updateEntities() {
 					({ static_cast<float>(gMousePos.first),static_cast<float>(gMousePos.second) },
 						getEditorViewMin(),
 						getEditorViewMax(),
-						getEditorWidth(),
-						getEditorHeight(),
+						static_cast<float>(getEditorWidth()),
+						static_cast<float>(getEditorHeight()),
 						getEditorCameraX(),
 						getEditorCameraY());
 

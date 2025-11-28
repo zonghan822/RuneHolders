@@ -38,7 +38,7 @@ namespace Physics
         /*============================================================================================
          * \brief       Default constructor
          *===========================================================================================*/
-        PhysicsSystem() = default;
+        PhysicsSystem(Event::EnoEventBus& bus) : bus_{bus} {}
 
         /*============================================================================================
          * \brief       Main physics update - call once per frame BEFORE rendering
@@ -259,6 +259,8 @@ namespace Physics
 
         // Physics constants
         static constexpr float GRAVITY = 980.0f;  // Pixels per second squared (gravity acceleration)
+
+        Event::EnoEventBus& bus_;
     };
 
 } // namespace Physics

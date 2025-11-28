@@ -276,7 +276,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	if (g_pendingNewScene)
 	{
 		clearSelectedEntity();
-		engine_.getEnoEditor().createEmptyScene(ASSET_SCENE_PATH);
+		engine_.getEnoEditor().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 		g_game->markEntitiesDirty();  // Force entity cache refresh
 		g_pendingNewScene = false;
 		std::cout << "[ImGui] Deferred: Created new scene" << std::endl;
@@ -947,8 +947,9 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			playerConfig.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
 
 			// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
-			constexpr float centerX = 640.0f;
-			constexpr float centerY = 360.0f;
+			// Create transform with default position at center of screen
+			float centerX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
+			float centerY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
 
 			// Create complete player entity using the config
 			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
@@ -1126,8 +1127,12 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				auto& entityManager = engine_.getEntityManager();
 
 				// Create transform with default position at center of screen
+				float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
+				float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
+				
+				// Create transform with default position at center of screen
 				ECSComponents::TransformComponent transform{
-					{600.0f, 450.0f},  // Center position
+					{nodePosX, nodePosY},  // Center position
 					{0.0f, 0.0f},      // Velocity
 					{1.0f, 1.0f}       // Scale
 				};
@@ -1511,7 +1516,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	{
 		std::string sceneName = editor_.getCurrentScene().getSceneName();
 		// Save scene
-		editor_.getSceneTree().save(ASSET_SCENE_PATH + sceneName, sceneName);
+		editor_.getSceneTree().save(ASSETS_DIR_PATH "saves/scenes/" + sceneName, sceneName);
 		// Update last saved scene
 		editor_.updateLastSavedScene();
 	}
@@ -2060,7 +2065,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 
 		ImGui::DragFloat("Radar radius", &ai.awarenessRadius, 0.1f, 0.1f, 100.0f);
-		ImGui::DragFloat("Speed", &ai.speed, 1.f, 10.f, 300.0f);
+		ImGui::DragFloat("Speed", &ai.chaseSpeed, 1.f, 10.f, 300.0f);
 	}
 	else {
 		// Allow adding AI component if the entity doesn't have one
@@ -2450,15 +2455,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 				// Find current selection
 				int selectedIndex = 0;
-				for (size_t i = 0; i < sceneNames.size(); i++) {
-					if (sceneNames[i] == button.getTargetScene()) {
-						selectedIndex = static_cast<int>(i);
+				for (size_t idx = 0; idx < sceneNames.size(); idx++) {
+					if (sceneNames[idx] == button.getTargetScene()) {
+						selectedIndex = static_cast<int>(idx);
 						break;
 					}
 				}
 
 				ImGui::SetNextItemWidth(200);
-				if (ImGui::Combo("##SceneParam", &selectedIndex, sceneNames.data(), sceneNames.size())) {
+				if (ImGui::Combo("##SceneParam", &selectedIndex, sceneNames.data(), static_cast<int>(sceneNames.size()))) {
 					button.setTargetScene(sceneNames[selectedIndex]);
 					// Connect to itself for now
 				}
@@ -2658,8 +2663,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		if (it != textures.end())
 		{
 			auto tex = it->second;
-			int texW = tex->getWidth();
-			int texH = tex->getHeight();
+			
 
 			if (idleMode == 0)
 			{
@@ -2856,8 +2860,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		if (it != textures.end())
 		{
 			auto tex = it->second;
-			int texW = tex->getWidth();
-			int texH = tex->getHeight();
 
 			if (walkMode == 0)
 			{
@@ -3049,8 +3051,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		if (it != textures.end())
 		{
 			auto tex = it->second;
-			int texW = tex->getWidth();
-			int texH = tex->getHeight();
 
 			if (attackMode == 0)
 			{
@@ -3814,7 +3814,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
 					{
 						// Construct destination path in assets folder
-						std::string assetsImagePath = std::string(ASSET_SAVE_DIR_PATH) + "art/";
+						std::string assetsImagePath = std::string(ASSETS_DIR_PATH) + "art/";
 						std::string filename = filePath.filename().string();
 						std::string textureName = filePath.stem().string();
 						std::filesystem::path destPath = std::filesystem::path(assetsImagePath) / filename;

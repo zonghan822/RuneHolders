@@ -21,7 +21,4 @@ namespace Eno
         }
 	}
 
-    // public class EnemyArm : ScriptBase
-    // {
-    // }
 }
