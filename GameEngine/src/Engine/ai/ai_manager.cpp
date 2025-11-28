@@ -63,6 +63,7 @@ namespace AI {
             auto& machine = getStateMachine(entity);
 
             if (std::strcmp(ai.nextState, ai.currentState) != 0) {
+                strcpy(ai.currentState, ai.nextState);
                 machine.changeState(ai.nextState, entity, entMng_);
             }
             machine.update(entity, entMng_, dt);
