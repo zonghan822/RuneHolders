@@ -13,7 +13,85 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1135.38 | y : 1024 }
+				"Position": <eVec2(float)> { x : 801.233 | y : 1024 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 50 }
+				"Height": <float> { 50 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Protagonist-Cast-Sheet }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 50 }
+				"Height": <float> { 50 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 2 }
+				"Drag": <float> { 8 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::BoxComponent]
+			{
+				"isPushable": <bool> { 1 }
+				"pushResistance": <float> { 0.2 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 12 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Current Animation": <char64> { idle }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Enabled": { true }
+	}
+
+	[Node1]
+	{
+		"ID": { 1 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Entity 2 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1024 | y : 916.268 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -59,38 +137,6 @@
 			{
 				"isPushable": <bool> { 1 }
 				"pushResistance": <float> { 0.2 }
-			}
-
-			[struct ECSComponents::AIComponent]
-			{
-				"currentState": <char32> { Idle }
-				"nextState": <char32> { Idle }
-				"awarenessRadius": <float> { 200 }
-				"chaseSpeed": <float> { 90 }
-				"attackRange": <float> { 40 }
-				"windupTime": <float> { 0.5 }
-				"attackDuration": <float> { 0.3 }
-				"hurtDuration": <float> { 0.4 }
-				"health": <int> { 100 }
-				"useScriptCallbacks": <bool> { 0 }
-				"cbIdleEnter": <char64> {  }
-				"cbIdleUpdate": <char64> {  }
-				"cbIdleExit": <char64> {  }
-				"cbChaseEnter": <char64> {  }
-				"cbChaseUpdate": <char64> {  }
-				"cbChaseExit": <char64> {  }
-				"cbWindupEnter": <char64> {  }
-				"cbWindupUpdate": <char64> {  }
-				"cbWindupExit": <char64> {  }
-				"cbAttackEnter": <char64> {  }
-				"cbAttackUpdate": <char64> {  }
-				"cbAttackExit": <char64> {  }
-				"cbHurtEnter": <char64> {  }
-				"cbHurtUpdate": <char64> {  }
-				"cbHurtExit": <char64> {  }
-				"cbDeathEnter": <char64> {  }
-				"cbDeathUpdate": <char64> {  }
-				"cbDeathExit": <char64> {  }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
@@ -110,20 +156,20 @@
 		"Enabled": { true }
 	}
 
-	[Node1]
+	[Node2]
 	{
-		"ID": { 1 }
+		"ID": { 2 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
 			[struct ECSComponents::NameComponent]
 			{
-				"Name": <char32> { Entity 1 }
+				"Name": <char32> { Entity 3 }
 			}
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 953.991 | y : 1035.69 }
+				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -134,8 +180,8 @@
 				"Width": <float> { 50 }
 				"Height": <float> { 50 }
 				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
-				"Texture Path": <texchar240> {  }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Protagonist-Idle-Sheet }
 				"TexID": <int> { 0 }
 			}
 
@@ -171,50 +217,18 @@
 				"pushResistance": <float> { 0.2 }
 			}
 
-			[struct ECSComponents::AIComponent]
-			{
-				"currentState": <char32> { Idle }
-				"nextState": <char32> { Idle }
-				"awarenessRadius": <float> { 200 }
-				"chaseSpeed": <float> { 90 }
-				"attackRange": <float> { 40 }
-				"windupTime": <float> { 0.5 }
-				"attackDuration": <float> { 0.3 }
-				"hurtDuration": <float> { 0.4 }
-				"health": <int> { 100 }
-				"useScriptCallbacks": <bool> { 0 }
-				"cbIdleEnter": <char64> {  }
-				"cbIdleUpdate": <char64> {  }
-				"cbIdleExit": <char64> {  }
-				"cbChaseEnter": <char64> {  }
-				"cbChaseUpdate": <char64> {  }
-				"cbChaseExit": <char64> {  }
-				"cbWindupEnter": <char64> {  }
-				"cbWindupUpdate": <char64> {  }
-				"cbWindupExit": <char64> {  }
-				"cbAttackEnter": <char64> {  }
-				"cbAttackUpdate": <char64> {  }
-				"cbAttackExit": <char64> {  }
-				"cbHurtEnter": <char64> {  }
-				"cbHurtUpdate": <char64> {  }
-				"cbHurtExit": <char64> {  }
-				"cbDeathEnter": <char64> {  }
-				"cbDeathUpdate": <char64> {  }
-				"cbDeathExit": <char64> {  }
-			}
-
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 24 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Current Animation": <char64> {  }
+				"Current Animation": <char64> { walk }
 			}
 		}
-		"Script": { 0 }
+		"Script": { }
 		"Parent": { }
 		"Children": { }
 		"Enabled": { true }

@@ -24,6 +24,7 @@
 #include "../component/components/buttons.hpp"
 #include "../component/components/audio.hpp"
 #include "../component/components/prefab_instance.hpp"
+#include "../component/components/camera_component.hpp"
 
 #include "../component/component_list.hpp"
 

@@ -14,11 +14,22 @@ void MapEditor::displayMenu() {
 
 	auto& tilemapLayers = tilemap_.layers();
 	int layerCount = static_cast<int>(tilemapLayers.size());
+
+	// Ensure selectedLayer_ is valid
+	if (selectedLayer_ >= layerCount) {
+		selectedLayer_ = layerCount > 0 ? 0 : 0;
+	}
+
 	std::vector<std::string> layerNames;
 	for (auto const& layer : tilemapLayers)
 		layerNames.push_back(layer.name());
 
-	if (ImGui::BeginCombo("##TilemapLayerCombo", layerNames[selectedLayer_].c_str())) {
+	// Only show combo if there are layers
+	const char* comboPreview = (layerCount > 0 && selectedLayer_ < layerCount)
+		? layerNames[selectedLayer_].c_str()
+		: "No layers";
+
+	if (ImGui::BeginCombo("##TilemapLayerCombo", comboPreview)) {
 		for (int i = 0; i < layerCount; ++i) {
 			bool isSelected = (i == selectedLayer_);
 			if (ImGui::Selectable(layerNames[i].c_str(), isSelected))
@@ -132,9 +143,14 @@ void MapEditor::displayMenu() {
 	ImGui::Separator();
 
 	// --- Set Navigation Checkbox ---
-	bool isNav = tilemapLayers[selectedLayer_].isNavLayer();
-	if (ImGui::Checkbox("Navigation Layer", &isNav)) {
-		tilemap_.setNavLayer(selectedLayer_, isNav);
+	if (layerCount > 0 && selectedLayer_ < layerCount) {
+		bool isNav = tilemapLayers[selectedLayer_].isNavLayer();
+		if (ImGui::Checkbox("Navigation Layer", &isNav)) {
+			tilemap_.setNavLayer(selectedLayer_, isNav);
+		}
+	}
+	else {
+		ImGui::TextDisabled("Navigation Layer (no layer selected)");
 	}
 
 	ImGui::Separator();
@@ -372,6 +388,12 @@ void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
 void MapEditor::paint(GameApplication* g) {
 	if (!editMode_) return;
 
+	// Safety check: ensure we have layers
+	if (tilemap_.layers().empty()) return;
+	if (selectedLayer_ >= static_cast<int>(tilemap_.layers().size())) {
+		selectedLayer_ = 0;
+	}
+
 	Math::eVec2<float> mousePos = { ImGui::GetMousePos().x, ImGui::GetMousePos().y };
 	float cameraWidth = static_cast<float>(g->getEditorWidth());
 	float cameraHeight = static_cast<float>(g->getEditorHeight());
@@ -422,6 +444,12 @@ void MapEditor::paint(GameApplication* g) {
 
 void MapEditor::draw(GameApplication* g, ImDrawList* drawList) {
 	if (!editMode_) return;
+
+	// Safety check: ensure we have layers
+	if (tilemap_.layers().empty()) return;
+	if (selectedLayer_ >= static_cast<int>(tilemap_.layers().size())) {
+		selectedLayer_ = 0;
+	}
 
 	float cameraWidth = static_cast<float>(g->getEditorWidth());
 	float cameraHeight = static_cast<float>(g->getEditorHeight());

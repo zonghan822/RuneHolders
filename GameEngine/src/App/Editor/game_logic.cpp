@@ -265,28 +265,28 @@ void GameApplication::setupAnimations() {
 	std::cout << "Player animation setup complete!" << std::endl;
 }
 
-void GameApplication::createTestObjectsAndAddToSceneTree() {
-	auto& entityManager = engine_.getEntityManager();
-
-	// Create the test objects (boxes)
-	createTestObject(entityManager);
-
-
-	// Now add all entities with NameComponent "testcaven" to the scene tree
-	std::vector<ECS::Entity> testEntities = entityManager.findEntity<ECSComponents::NameComponent>(
-		ECSComponents::NameComponent("testcaven")
-	);
-
-	std::cout << "[GameLogic] Adding " << testEntities.size() << " test objects to scene tree..." << std::endl;
-
-	for (auto& entity : testEntities) {
-		// Add each entity to the scene tree as a root node
-		engine_.getEnoEditor().getSceneTree().createFromEntity(entity, nullptr);
-		std::cout << "[GameLogic] Added entity " << entity.id() << " to scene tree" << std::endl;
-	}
-
-	std::cout << "[GameLogic] Test objects added to scene tree successfully!" << std::endl;
-}
+//void GameApplication::createTestObjectsAndAddToSceneTree() {
+//	auto& entityManager = engine_.getEntityManager();
+//
+//	// Create the test objects (boxes)
+//	createTestObject(entityManager);
+//
+//
+//	// Now add all entities with NameComponent "testcaven" to the scene tree
+//	std::vector<ECS::Entity> testEntities = entityManager.findEntity<ECSComponents::NameComponent>(
+//		ECSComponents::NameComponent("testcaven")
+//	);
+//
+//	std::cout << "[GameLogic] Adding " << testEntities.size() << " test objects to scene tree..." << std::endl;
+//
+//	for (auto& entity : testEntities) {
+//		// Add each entity to the scene tree as a root node
+//		engine_.getEnoEditor().getSceneTree().createFromEntity(entity, nullptr);
+//		std::cout << "[GameLogic] Added entity " << entity.id() << " to scene tree" << std::endl;
+//	}
+//
+//	std::cout << "[GameLogic] Test objects added to scene tree successfully!" << std::endl;
+//}
 
 void GameApplication::setupImGui() {
 	GLFWwindow* window = engine_.getWindowManager().getWindow();
@@ -478,14 +478,22 @@ void GameApplication::updateGameLogic() {
 			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
 		}
 
-		int editorFbSizeX = std::min(EDITOR_WIDTH, static_cast<int>(worldWidth_));
-		int editorFbSizeY = std::min(EDITOR_HEIGHT, static_cast<int>(worldHeight_));
+		// Calculate viewport size with zoom (zoom is now limited to prevent exceeding world bounds)
+		int editorFbSizeX = getEditorWidth();
+		int editorFbSizeY = getEditorHeight();
 
-		// Clamp camera to world bounds
+		// Clamp camera to world bounds (accounting for zoom)
 		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, worldWidth_ - static_cast<float>(editorFbSizeX));
 		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, worldHeight_ - static_cast<float>(editorFbSizeY));
 
-		// Set projection for editor view
+		// Only resize framebuffer when size changes (expensive operation)
+		if (editorFbSizeX != lastEditorFbWidth_ || editorFbSizeY != lastEditorFbHeight_) {
+			editorFramebuffer_->create(editorFbSizeX, editorFbSizeY);
+			lastEditorFbWidth_ = editorFbSizeX;
+			lastEditorFbHeight_ = editorFbSizeY;
+		}
+
+		// Set projection for editor view (uses zoomed size to enable zoom functionality)
 		engine_.getGraphicsManager().setProjectionMatrix(editorFbSizeX, editorFbSizeY);
 		editorFramebuffer_->bind();
 

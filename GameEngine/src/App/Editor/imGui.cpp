@@ -987,68 +987,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	}
 	ImGui::Separator();
 
-	// ==================== SPAWN ANIMATED ENTITIES ====================
-	ImGui::Text("=== ANIMATED SPAWNER ===");
-	if (ImGui::Button("Spawn 1000 Animated Entities")) {
-		auto& entityManager = engine_.getEntityManager();
-		auto& loader = engine_.getResourceLoader();
-
-		// Load the walking animation spritesheet
-		auto walkTexture = loader.getTexture("Protagonist-Walk-Sheet");
-		if (!walkTexture) {
-			std::cout << "[ERROR] Failed to load Protagonist-Walk-Sheet texture!\n";
-		}
-		else {
-			std::cout << "[INFO] Spawning 1000 animated rotating entities...\n";
-
-			// Random number generation setup
-			std::random_device rd;
-			std::mt19937 gen(rd());
-			std::uniform_real_distribution<float> posX(0.0f, 1280.0f);  // Screen width
-			std::uniform_real_distribution<float> posY(0.0f, 720.0f);   // Screen height
-			std::uniform_real_distribution<float> rotSpeed(-3.14f, 3.14f); // Rotation speed (radians/sec)
-
-			for (int i = 0; i < 10; ++i) {
-				// Create transform with random position and rotation speed
-				// rot.x = current rotation angle, rot.y = rotation speed
-				ECSComponents::TransformComponent transform{
-					{posX(gen), posY(gen)},      // Random position
-					{0.0f, rotSpeed(gen)},       // rot.x = angle (0), rot.y = rotation speed
-					{1.0f, 1.0f}                 // Scale
-				};
-
-				// Create render component with walk animation texture
-				ECSComponents::RenderComponent renderComp;
-				renderComp.width = 96.0f;   // Frame size
-				renderComp.height = 96.0f;
-				strncpy_s(renderComp.shape, "Sprite", sizeof(renderComp.shape) - 1);
-				renderComp.setTexture(walkTexture, "Protagonist-Walk-Sheet");
-				renderComp.color = Graphics::Color::White;
-				renderComp.texID = 0;  // Start at first frame, will animate
-
-				// Create name component
-				ECSComponents::NameComponent nameComp;
-				std::string entityName = "AnimatedEntity " + std::to_string(i + 1);
-				strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
-				nameComp.name[sizeof(nameComp.name) - 1] = '\0';
-
-				// Create entity with all components
-				ECS::Entity entity = entityManager.create<ECSComponents::TransformComponent>(transform);
-				entity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
-				entity.add<ECSComponents::NameComponent>(entityManager, nameComp);
-				
-
-
-				// Add to scene tree as root node
-				sceneTree.createFromEntity(entity, nullptr);
-			}
-
-			if (g_game) g_game->markEntitiesDirty();
-			std::cout << "[SUCCESS] Spawned 1000 animated rotating entities!\n";
-		}
-	}
-	ImGui::Separator();
-
 	// ==================== HIERARCHY CONTROLS ====================
 	static int entityCounter = 1;  // Track entity numbering
 	static bool attachScript = false; // Checkbox state
@@ -2425,6 +2363,41 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		//}
 	}
 
+	// --------- Camera Component ----------
+	if (entity.has<ECSComponents::CameraComponent>(entMng)) {
+		auto& camera = entity.get<ECSComponents::CameraComponent>(entMng);
+		ImGui::SeparatorText("Camera");
+
+		// Active toggle (unique label to avoid conflicts with CollisionComponent)
+		ImGui::Checkbox("Is Active##camera", &camera.isActive);
+
+		// Viewport size
+		ImGui::DragFloat("Viewport Width", &camera.viewportWidth, 10.0f, 100.0f, 10000.0f);
+		ImGui::DragFloat("Viewport Height", &camera.viewportHeight, 10.0f, 100.0f, 10000.0f);
+
+		// Camera position (center of viewport)
+		ImGui::DragFloat2("Camera Position", (float*)&camera.position, 1.0f);
+	}
+	else {
+		// Allow adding camera component
+		ImGui::SeparatorText("Camera");
+		ImGui::TextDisabled("No camera attached");
+
+		if (ImGui::Button("Add Camera")) {
+			ECSComponents::CameraComponent camera;
+			camera.viewportWidth = 1920.0f;
+			camera.viewportHeight = 1080.0f;
+			camera.isActive = false; // Don't activate by default
+
+			// Set position to center of world
+			auto& tileMap = engine_.getTileMap();
+			Math::eVec2<float> worldSize = tileMap.getWorldSize();
+			camera.position = Math::eVec2<float>{ worldSize.x * 0.5f, worldSize.y * 0.5f };
+
+			entity.add<ECSComponents::CameraComponent>(entMng, camera);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
 
 	// --------- Button Component ----------
 	bool hasButtonComponent = entity.has<ECSComponents::ButtonComponent>(entMng);
@@ -3325,11 +3298,42 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 			auto ext = filePath.extension().string();
 
 			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
-				auto tex = std::make_shared<Graphics::EnoTexture>();
-				if (tex->loadFromFile(path)) {
-					std::string name = filePath.stem().string();
-					loader.addTexture(name, tex);
-					std::cout << "[DEBUG] Imported: " << name << std::endl;
+				// Construct destination path in assets folder
+				std::string assetsImagePath = std::string(ASSETS_DIR_PATH) + "art/";
+				std::string filename = filePath.filename().string();
+				std::filesystem::path destPath = std::filesystem::path(assetsImagePath) / filename;
+
+				// Copy file to assets folder if it doesn't exist or is different
+				try {
+					// Create assets/art directory if it doesn't exist
+					std::filesystem::create_directories(assetsImagePath);
+
+					// Check if we need to copy the file
+					bool needsCopy = !std::filesystem::exists(destPath);
+					if (!needsCopy) {
+						// File exists, check if it's the same file (by comparing paths)
+						auto sourceAbsolute = std::filesystem::absolute(filePath);
+						auto destAbsolute = std::filesystem::absolute(destPath);
+						needsCopy = (sourceAbsolute != destAbsolute);
+					}
+
+					if (needsCopy) {
+						std::filesystem::copy_file(filePath, destPath, std::filesystem::copy_options::overwrite_existing);
+						std::cout << "[Asset Import] Copied " << filename << " to assets folder\n";
+					} else {
+						std::cout << "[Asset Import] File " << filename << " already exists in assets folder\n";
+					}
+
+					// Load texture from the assets folder location
+					auto tex = std::make_shared<Graphics::EnoTexture>();
+					if (tex->loadFromFile(destPath.string())) {
+						std::string name = filePath.stem().string();
+						loader.addTexture(name, tex);
+						std::cout << "[DEBUG] Imported texture: " << name << std::endl;
+					}
+				}
+				catch (const std::filesystem::filesystem_error& e) {
+					std::cerr << "[Asset Import] Failed to copy file: " << e.what() << std::endl;
 				}
 			}
 		}
@@ -3716,6 +3720,16 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	if (ImGui::IsKeyPressed(ImGuiKey_E)) currentGizmoMode = GIZMO_ROTATE;
 	if (ImGui::IsKeyPressed(ImGuiKey_R)) currentGizmoMode = GIZMO_SCALE;
 
+	// Keyboard shortcuts for zoom (+ and - keys)
+	if (g_game) {
+		if (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)) {
+			g_game->adjustEditorZoom(0.1f);  // Zoom in
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_Minus) || ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract)) {
+			g_game->adjustEditorZoom(-0.1f);  // Zoom out
+		}
+	}
+
 	ImGui::SameLine();
 	ImGui::Text("|");
 	ImGui::SameLine();
@@ -3736,8 +3750,14 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 	ImGui::Separator();
 
-	// Informational text
-	ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Editor View - Use WASD to move camera");
+	// Informational text with zoom level
+	if (g_game) {
+		ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f),
+			"Editor View - WASD: Move | Mouse Wheel/+/-: Zoom (%.2fx)",
+			g_game->getEditorZoom());
+	} else {
+		ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Editor View - Use WASD to move camera");
+	}
 	ImGui::Separator();
 
 	if (g_game && g_game->getEditorFramebuffer()) {
@@ -3790,6 +3810,164 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
 			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
 			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
+
+			// ========== MOUSE WHEEL ZOOM ==========
+			if (ImGui::IsItemHovered()) {
+				float wheel = ImGui::GetIO().MouseWheel;
+				if (wheel != 0.0f) {
+					// Get mouse position in viewport before zoom
+					ImVec2 mousePos = ImGui::GetMousePos();
+					Math::eVec2<float> worldPosBeforeZoom = Graphics::screenToWorld(
+						{ mousePos.x, mousePos.y },
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY()
+					);
+
+					// Adjust zoom (0.1 per wheel notch)
+					float zoomDelta = wheel * 0.1f;
+					g_game->adjustEditorZoom(zoomDelta);
+				}
+			}
+
+			auto& g_droppedFiles_editor = Window::EnoWindow::GetDroppedFiles();
+			if (!g_droppedFiles_editor.empty() && ImGui::IsItemHovered())
+			{
+				Resources::EnoLoader& loader = engine_.getResourceLoader();
+
+				for (auto& path : g_droppedFiles_editor)
+				{
+					std::filesystem::path filePath(path);
+					auto ext = filePath.extension().string();
+
+					// Only process image files
+					if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+					{
+						// Construct destination path in assets folder
+						std::string assetsImagePath = std::string(ASSET_SAVE_DIR_PATH) + "art/";
+						std::string filename = filePath.filename().string();
+						std::string textureName = filePath.stem().string();
+						std::filesystem::path destPath = std::filesystem::path(assetsImagePath) / filename;
+
+						try {
+							// Create assets/art directory if it doesn't exist
+							std::filesystem::create_directories(assetsImagePath);
+
+							// Check if we need to copy the file
+							bool needsCopy = !std::filesystem::exists(destPath);
+							if (!needsCopy) {
+								auto sourceAbsolute = std::filesystem::absolute(filePath);
+								auto destAbsolute = std::filesystem::absolute(destPath);
+								needsCopy = (sourceAbsolute != destAbsolute);
+							}
+
+							if (needsCopy) {
+								std::filesystem::copy_file(filePath, destPath, std::filesystem::copy_options::overwrite_existing);
+								std::cout << "[Asset Import] Copied " << filename << " to assets folder\n";
+							}
+
+							// Load or get the texture
+							auto texture = loader.getTexture(textureName);
+							if (!texture || !texture->isValid()) {
+								// Need to load it
+								texture = std::make_shared<Graphics::EnoTexture>();
+								if (texture->loadFromFile(destPath.string())) {
+									loader.addTexture(textureName, texture);
+									std::cout << "[Asset Import] Loaded texture: " << textureName << std::endl;
+								} else {
+									std::cerr << "[Asset Import] Failed to load texture from: " << destPath << std::endl;
+									continue;
+								}
+							}
+
+							// Get mouse position and convert to world coordinates
+							ImVec2 mousePos = ImGui::GetMousePos();
+							Math::eVec2<float> worldPos = Graphics::screenToWorld(
+								{ mousePos.x, mousePos.y },
+								g_game->getEditorViewMin(),
+								g_game->getEditorViewMax(),
+								editorWidth,
+								editorHeight,
+								g_game->getEditorCameraX(),
+								g_game->getEditorCameraY()
+							);
+
+							// Create entity at drop location
+							ECSComponents::TransformComponent transform;
+							transform.pos = worldPos;
+							transform.rot = Math::eVec2<float>(0.0f, 0.0f);
+							transform.scale = Math::eVec2<float>(1.0f, 1.0f);
+
+							ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
+
+							// Add render component with texture
+							ECSComponents::RenderComponent render;
+							render.texture = texture;
+							render.width = static_cast<float>(texture->getWidth());
+							render.height = static_cast<float>(texture->getHeight());
+							strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
+							render.texturePath[sizeof(render.texturePath) - 1] = '\0';
+							render.color = Graphics::Color::White;
+							newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
+
+							// Add name component
+							ECSComponents::NameComponent nameComp;
+							strncpy_s(nameComp.name, textureName.c_str(), sizeof(nameComp.name) - 1);
+							nameComp.name[sizeof(nameComp.name) - 1] = '\0';
+							newEntity.add<ECSComponents::NameComponent>(entityManager, nameComp);
+
+							// Create animation controller
+							uint32_t controllerID = engine_.getAnimationRegistry().createController();
+							newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
+
+							// Get the controller and add a simple 1x1 animation
+							Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(controllerID);
+							if (ctrl)
+							{
+								// Create a single-frame animation (1x1 grid, UV 0,0 to 1,1)
+								Animation::EnoAnimation singleFrameAnim = Animation::createSpriteSheetAnimation(
+									texture->getWidth(),   // frame width = full texture width
+									texture->getHeight(),  // frame height = full texture height
+									texture->getWidth(),   // sheet width
+									texture->getHeight(),  // sheet height
+									0,                     // start frame
+									1,                     // frame count (single frame)
+									0.1f                   // frame duration (doesn't matter for single frame)
+								);
+
+								ctrl->addAnimation("idle", singleFrameAnim);
+								ctrl->setAnimation("idle");
+							}
+
+							// Add to scene tree
+							Node* node = sceneTree.createFromEntity(newEntity, nullptr);
+							node->name_ = textureName;
+
+							// Record creation for undo/redo
+							auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
+								sceneTree,
+								entityManager,
+								newEntity
+							);
+							undoManager.executeCommand(std::move(createCmd));
+
+							std::cout << "[Drag-Drop] Created entity '" << textureName
+									  << "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
+
+							if (g_game) g_game->markEntitiesDirty();
+						}
+						catch (const std::filesystem::filesystem_error& e) {
+							std::cerr << "[Asset Import] Filesystem error: " << e.what() << std::endl;
+						}
+						catch (const std::exception& e) {
+							std::cerr << "[Asset Import] Error creating entity: " << e.what() << std::endl;
+						}
+					}
+				}
+			}
 
 			// ========== DRAG-AND-DROP TEXTURE FROM ASSET BROWSER ==========
 			if (ImGui::BeginDragDropTarget())
@@ -3976,6 +4154,87 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						drawGizmos(drawList, windowPos, entityScreenPos, gizmoSize, currentGizmoMode);
 						break;
 					}
+				}
+			}
+
+			// Draw camera preview rectangle for all active cameras
+			auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+			for (auto& camEntity : cameraEntities) {
+				auto& cam = camEntity.get<ECSComponents::CameraComponent>(entityManager);
+
+				if (cam.isActive) {
+					// Calculate camera bounds in world space
+					// Camera position is CENTER, so calculate edges from center
+					float camLeft = cam.position.x - cam.viewportWidth * 0.5f;
+					float camRight = cam.position.x + cam.viewportWidth * 0.5f;
+					float camTop = cam.position.y - cam.viewportHeight * 0.5f;
+					float camBottom = cam.position.y + cam.viewportHeight * 0.5f;
+
+					// Convert camera corners to screen space
+					Math::eVec2<float> topLeft = Graphics::worldToScreen(
+						{ camLeft, camTop },
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY()
+					);
+
+					Math::eVec2<float> bottomRight = Graphics::worldToScreen(
+						{ camRight, camBottom },
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY()
+					);
+
+					// Draw camera viewport rectangle (cyan border, semi-transparent fill)
+					drawList->AddRectFilled(
+						ImVec2(topLeft.x, topLeft.y),
+						ImVec2(bottomRight.x, bottomRight.y),
+						IM_COL32(0, 255, 255, 30)  // Cyan fill with low alpha
+					);
+					drawList->AddRect(
+						ImVec2(topLeft.x, topLeft.y),
+						ImVec2(bottomRight.x, bottomRight.y),
+						IM_COL32(0, 255, 255, 255),  // Solid cyan border
+						0.0f, 0, 2.0f  // 2px thick border
+					);
+
+					// Draw camera center crosshair
+					Math::eVec2<float> camCenterScreen = Graphics::worldToScreen(
+						cam.position,
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY()
+					);
+					float crossSize = 10.0f;
+					drawList->AddLine(
+						ImVec2(camCenterScreen.x - crossSize, camCenterScreen.y),
+						ImVec2(camCenterScreen.x + crossSize, camCenterScreen.y),
+						IM_COL32(0, 255, 255, 255), 2.0f
+					);
+					drawList->AddLine(
+						ImVec2(camCenterScreen.x, camCenterScreen.y - crossSize),
+						ImVec2(camCenterScreen.x, camCenterScreen.y + crossSize),
+						IM_COL32(0, 255, 255, 255), 2.0f
+					);
+
+					// Draw label
+					char label[128];
+					snprintf(label, sizeof(label), "Camera %.0fx%.0f",
+						cam.viewportWidth, cam.viewportHeight);
+					drawList->AddText(
+						ImVec2(topLeft.x + 5, topLeft.y + 5),
+						IM_COL32(0, 255, 255, 255),
+						label
+					);
 				}
 			}
 
