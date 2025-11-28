@@ -2,6 +2,8 @@
 * All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         imGui.cpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author		Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         01-10-2025
 * @brief        This file contains the functions that are required for Dear ImGui displays,
 *				which includes the init, update and terminate functions.
@@ -1872,8 +1874,8 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::Checkbox("Use Gravity", &physics.useGravity);
 	}
 
-	// --- DrawInfoComponent --- (skip for player)
-	if (!isPlayer && entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
+	// --- DrawInfoComponent ---
+	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
 		auto& draw = entity.get<ECSComponents::DrawInfoComponent>(entMng);
 
 		ImGui::SeparatorText("Draw Info");
@@ -1882,8 +1884,44 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		float oldWidth = draw.width;
 		float oldHeight = draw.height;
 
-		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
-		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+		// Special handling for player: uniform scaling
+		if (isPlayer) {
+			// For player, use a single scale slider that affects both width and height uniformly
+			static float playerScale = 1.0f;
+
+			// Calculate current scale from transform (more reliable than draw info)
+			if (entity.has<ECSComponents::TransformComponent>(entMng)) {
+				auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
+				playerScale = transform.scale.x;
+			}
+
+			if (ImGui::DragFloat("Scale", &playerScale, 0.01f, 0.1f, 10.0f)) {
+				// Update transform scale for rendering
+				if (entity.has<ECSComponents::TransformComponent>(entMng)) {
+					auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
+					transform.scale.x = playerScale;
+					transform.scale.y = playerScale;
+				}
+
+				// Keep DrawInfo at base size - rendering uses transform.scale
+				draw.width = 48.0f;
+				draw.height = 48.0f;
+
+				// Keep collision at base size - collision system uses transform.scale
+				if (entity.has<ECSComponents::CollisionComponent>(entMng)) {
+					auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
+					collision.data.rectangle.width = 48.0f;
+					collision.data.rectangle.height = 48.0f;
+				}
+
+				if (g_game) g_game->markEntitiesDirty();
+			}
+		}
+		else {
+			// For non-player entities, allow independent width/height scaling
+			ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+			ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+		}
 
 		// Auto-update collision when width/height changes
 		if ((draw.width != oldWidth || draw.height != oldHeight) && entity.has<ECSComponents::CollisionComponent>(entMng)) {
@@ -1919,6 +1957,13 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (ImGui::DragFloat("Rotation", &rotationDegrees, 1.0f, -360.0f, 360.0f, "%.1f deg")) {
 				// Convert degrees back to radians
 				transform.rot.x = rotationDegrees * (3.14159265f / 180.0f);
+
+				// Update collision component rotation for player
+				if (isPlayer && entity.has<ECSComponents::CollisionComponent>(entMng)) {
+					auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
+					collision.rotation = transform.rot.x;
+				}
+
 				if (g_game) g_game->markEntitiesDirty();
 			}
 
@@ -4552,20 +4597,39 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							tc.scale.y = newScaleY;
 							lastScale = ImVec2(newScaleX, newScaleY);
 
+							// Check if this is a player entity
+							bool isPlayerEntity = e.has<ECSComponents::PlayerComponent>(entityManager);
+
 							// Update DrawInfo width and height to reflect the scale
 							if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
 								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
-								dc.width = dc.width * scaleFactorX;
-								dc.height = dc.height * scaleFactorY;
+
+								if (isPlayerEntity) {
+									// For player, keep DrawInfo at base size (48x48)
+									dc.width = 48.0f;
+									dc.height = 48.0f;
+								} else {
+									// For non-player entities, scale DrawInfo
+									dc.width = dc.width * scaleFactorX;
+									dc.height = dc.height * scaleFactorY;
+								}
 
 								// Auto-update collision component if it exists
 								if (e.has<ECSComponents::CollisionComponent>(entityManager)) {
 									auto& collision = e.get<ECSComponents::CollisionComponent>(entityManager);
-									if (collision.type == ECSComponents::ColliderType::CIRCLE) {
-										collision.data.circle.radius = dc.width * 0.5f;
-									} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
-										collision.data.rectangle.width = dc.width;
-										collision.data.rectangle.height = dc.height;
+
+									if (isPlayerEntity) {
+										// For player, keep collision at base size (48x48)
+										collision.data.rectangle.width = 48.0f;
+										collision.data.rectangle.height = 48.0f;
+									} else {
+										// For non-player entities, update collision from DrawInfo
+										if (collision.type == ECSComponents::ColliderType::CIRCLE) {
+											collision.data.circle.radius = dc.width * 0.5f;
+										} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
+											collision.data.rectangle.width = dc.width;
+											collision.data.rectangle.height = dc.height;
+										}
 									}
 								}
 							}

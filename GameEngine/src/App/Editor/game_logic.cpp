@@ -14,9 +14,6 @@
 #include "imGui.hpp"
 #include "math/math.hpp"
 
-float scaleSize = 1.0f;
-float rotationRadians = 0.f;
-
 
 void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
@@ -696,8 +693,8 @@ void GameApplication::updateGameLogic() {
 						}
 
 						if (currentTexture && currentTexture->isValid()) {
-							float scaledWidth = (playerConfig_.spriteWidth * scaleSize);
-							float scaledHeight = (playerConfig_.spriteHeight * scaleSize);
+							float scaledWidth = (playerConfig_.spriteWidth * transform.scale.x);
+							float scaledHeight = (playerConfig_.spriteHeight * transform.scale.y);
 
 							// Apply camera offset to player position
 							float screenX = transform.pos.x - editorCameraX_;
@@ -714,7 +711,7 @@ void GameApplication::updateGameLogic() {
 								uvStart,
 								uvEnd,
 								Graphics::Color::White,
-								rotationRadians
+								transform.rot.x
 							);
 						}
 					}
@@ -1093,37 +1090,6 @@ void GameApplication::drawPlayerAndIndicator() {
 					Math::eVec2<float> uvStart = frame.uvStart;
 					Math::eVec2<float> uvEnd = frame.uvEnd;
 
-					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_1)) {
-						// I am placing it here first as a 4.0 scale speed * DT
-						scaleSize += static_cast<float>(3.0 * 0.01667);
-						scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
-						transform.scale.x = scaleSize;
-						transform.scale.y = scaleSize;
-						std::cout << "Scaling by: " << scaleSize << '\n';
-					}
-
-					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
-						scaleSize -= static_cast <float>(3.0 * 0.01667);
-						scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
-						transform.scale.x = scaleSize;
-						transform.scale.y = scaleSize;
-						std::cout << "Scaling by: " << scaleSize << '\n';
-					}
-
-					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
-						rotationRadians += static_cast <float>(3.0f * 0.0174533 * 0.01667);
-
-						auto& playerCollider = playerSystem_->GetCollision(it->second);
-						playerCollider.rotation = rotationRadians;
-						std::cout << "rotation in Radians:" << rotationRadians << '\n';
-					}
-
-					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
-						rotationRadians -= static_cast <float>(3.0f * 0.0174533 * 0.01667);
-						auto& playerCollider = playerSystem_->GetCollision(it->second);
-						playerCollider.rotation = rotationRadians;
-						std::cout << "rotation in Radians:" << rotationRadians << '\n';
-					}
 
 					if (playerFacingDirection_ == -1) {
 						// Swap horizontal UV coordinates to flip the sprite
@@ -1133,8 +1099,8 @@ void GameApplication::drawPlayerAndIndicator() {
 					if (currentTexture && currentTexture->isValid()) {
 
 						// calculate scaled dimensions (match the collider size)
-						float scaledWidth = (playerConfig_.spriteWidth * scaleSize); //48.0 for playerSpriteW
-						float scaledHeight = (playerConfig_.spriteHeight * scaleSize); //48.0 for playerspriteH
+						float scaledWidth = (playerConfig_.spriteWidth * transform.scale.x); //48.0 for playerSpriteW
+						float scaledHeight = (playerConfig_.spriteHeight * transform.scale.y); //48.0 for playerspriteH
 
 						// convert center position to top-left for drawing
 						Math::eVec2<float> topLeft = {
@@ -1149,17 +1115,17 @@ void GameApplication::drawPlayerAndIndicator() {
 							uvStart,  // Use potentially flipped UV coords
 							uvEnd,    // Use potentially flipped UV coords
 							Graphics::Color::White,
-							rotationRadians
+							transform.rot.x
 						);
 					}
 					else {
 						// Fallback to colored rect if texture invalid
 						graphics.drawRect(
 							Math::eVec2<float>{transform.pos.x, transform.pos.y},
-							Math::eVec2<float>{10 + scaleSize, 10 + scaleSize},
+							Math::eVec2<float>{10 + transform.scale.x, 10 + transform.scale.y},
 							Graphics::Color::Blue,
 							true,
-							rotationRadians
+							transform.rot.x
 						);
 					}
 				}
