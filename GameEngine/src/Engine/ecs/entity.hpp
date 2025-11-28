@@ -835,10 +835,7 @@ namespace ECS
 				}
 
 				auto& bus = entMng.getEventBus();
-				(bus.publish(ComponentAdded{
-					id_,
-					std::type_index(typeid(Components))
-				}), ...);
+				(bus.publish(ComponentAdded{id_, std::type_index(typeid(Components))}), ...);
 			}
 		}
 

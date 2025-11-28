@@ -118,6 +118,7 @@ static bool g_pendingNewScene = false;
 static bool g_pendingSceneLoad = false;
 static std::string g_sceneToLoad = "";
 static bool g_refreshSceneList = false;  // Flag to refresh scene list after operations
+static bool g_resetEntityCounter = false;  // Flag to reset entity counter when scene changes
 
 // Scene deletion error tracking
 static bool g_cannotDeleteActiveScene = false;
@@ -281,6 +282,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		engine_.getEnoEditor().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 		g_game->markEntitiesDirty();  // Force entity cache refresh
 		g_pendingNewScene = false;
+		g_resetEntityCounter = true;  // Reset counter for new scene
 		std::cout << "[ImGui] Deferred: Created new scene" << std::endl;
 	}
 	else if (g_pendingSceneLoad)
@@ -290,6 +292,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		g_game->markEntitiesDirty();  // Force entity cache refresh
 		g_pendingSceneLoad = false;
 		g_sceneToLoad = "";
+		g_resetEntityCounter = true;  // Reset counter for loaded scene
 		std::cout << "[ImGui] Deferred: Loaded scene " << g_sceneToLoad << std::endl;
 	}
 
@@ -991,6 +994,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 	// ==================== HIERARCHY CONTROLS ====================
 	static int entityCounter = 1;  // Track entity numbering
+	static bool entityCounterInitialized = false;  // Flag to ensure we only initialize once per scene load
 	static bool attachScript = false; // Checkbox state
 
 	static int selectedScriptIndex = -1;	// Script dropdown
@@ -998,6 +1002,42 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	static bool scriptsLoaded = false;
 
 	Script::EnoScriptManager& scriptMng = engine_.getEnoEditor().getScriptManager();
+
+	// Reset entity counter flag when scene changes
+	if (g_resetEntityCounter) {
+		entityCounterInitialized = false;
+		g_resetEntityCounter = false;
+	}
+
+	// Initialize entity counter based on existing entities in the scene
+	// This ensures we don't create duplicate names like "Entity 1" when one already exists
+	if (!entityCounterInitialized) {
+		int maxEntityNumber = 0;
+		auto& entityManager = engine_.getEntityManager();
+
+		// Scan all entities with NameComponent to find the highest "Entity N" number
+		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
+			auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
+			std::string name(nameComp.name);
+
+			// Check if name matches pattern "Entity <number>"
+			if (name.find("Entity ") == 0) {
+				try {
+					int num = std::stoi(name.substr(7));  // Extract number after "Entity "
+					if (num > maxEntityNumber) {
+						maxEntityNumber = num;
+					}
+				}
+				catch (...) {
+					// Ignore entities with non-numeric suffixes like "Entity ABC"
+				}
+			}
+		}
+
+		// Set counter to one more than the highest found number
+		entityCounter = maxEntityNumber + 1;
+		entityCounterInitialized = true;
+	}
 
 	ImGui::Checkbox("Attach Script to New Entity", &attachScript);
 
@@ -2132,18 +2172,35 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
 		ImGui::SeparatorText("AI");
 
-		// State selector
-		const char* states[] = { "Idle", "Chasing" };
+		// ----------------------------
+		// 1. State Selector
+		// ----------------------------
+		const char* states[] = {
+			"Idle", "Chase", "Windup", "Attack", "Hurt", "Death"
+		};
 
-		// Map the current state to the combo index (0 = Idle, 1 = Chasing)
-		int stateIndex = (strcmp(ai.currentState, "Idle") == 0) ? 0 : 1;
+		int currentIndex = 0;
+		for (int i = 0; i < IM_ARRAYSIZE(states); i++)
+			if (strcmp(ai.currentState, states[i]) == 0)
+				currentIndex = i;
 
-		if (ImGui::Combo("State", &stateIndex, states, IM_ARRAYSIZE(states))) {
-			std::strncpy(ai.nextState, states[stateIndex], sizeof(ai.nextState));
+		if (ImGui::Combo("Current State", &currentIndex, states, IM_ARRAYSIZE(states))) {
+			std::strncpy(ai.nextState, states[currentIndex], sizeof(ai.nextState));
 		}
 
-		ImGui::DragFloat("Radar radius", &ai.awarenessRadius, 0.1f, 0.1f, 100.0f);
-		ImGui::DragFloat("Speed", &ai.chaseSpeed, 1.f, 10.f, 300.0f);
+		// ----------------------------
+		// 2. Core AI Behavior Params
+		// ----------------------------
+		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
+		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
+		ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal);
+
+		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
+		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
+
+		ImGui::DragInt("Health", &ai.health, 1, 0, 9999);
 	}
 	else {
 		// Allow adding AI component if the entity doesn't have one
