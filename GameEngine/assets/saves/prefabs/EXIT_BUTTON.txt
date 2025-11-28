@@ -21,6 +21,10 @@
 		"BtnText": {
 			"value": "Button",
 			"type": "char32"
+		},
+		"TargetScene": {
+			"value": "NIL",
+			"type": "char32"
 		}
 	},
 	"struct ECSComponents::RenderComponent": {
