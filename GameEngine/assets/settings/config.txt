@@ -3,4 +3,4 @@ Window Width: 1200
 Window Height: 800
 Tilemap Width: 64
 Tilemap Height: 64
-Tilemap CellSize: 32
+Tilemap CellSize: 64

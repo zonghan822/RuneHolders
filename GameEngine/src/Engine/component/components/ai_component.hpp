@@ -10,11 +10,12 @@ namespace ECSComponents
     struct AIComponent
     {
         // Current & Next State
-        char currentState[32] = "Idle";
-        char nextState[32] = "Idle";
+        char currentState[32] = "None";
+        char nextState[32] = "None";
 
         float awarenessRadius = 200.f;
         float chaseSpeed = 90.f;
+        bool allowDiagonal = true;
 
         float attackRange = 40.f;
         float windupTime = 0.5f;
@@ -61,6 +62,7 @@ namespace ECSComponents
 
             v("awarenessRadius", awarenessRadius, "float");
             v("chaseSpeed", chaseSpeed, "float");
+            v("allowDiagonal", allowDiagonal, "bool");
 
             v("attackRange", attackRange, "float");
             v("windupTime", windupTime, "float");

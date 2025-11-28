@@ -15,14 +15,14 @@
 			{
 				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 3.98114 | y : 3.05766 }
+				"Scale": <eVec2(float)> { x : 6.28672 | y : 4.82843 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
 			}
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 199.057 }
-				"Height": <float> { 152.883 }
+				"Width": <float> { 314.336 }
+				"Height": <float> { 241.421 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Room01_Doors }
@@ -36,8 +36,8 @@
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 0 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 152 }
-				"Height": <float> { 187.383 }
+				"Width": <float> { 314.336 }
+				"Height": <float> { 241.421 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -74,8 +74,8 @@
 
 			[struct ECSComponents::CameraComponent]
 			{
-				"Viewport Width": <float> { 734 }
-				"Viewport Height": <float> { 460 }
+				"Viewport Width": <float> { 1920 }
+				"Viewport Height": <float> { 1080 }
 				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
 				"Is Active": <bool> { 1 }
 			}
@@ -100,7 +100,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 901.481 | y : 1023.97 }
+				"Position": <eVec2(float)> { x : 773.298 | y : 1023.97 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -123,8 +123,8 @@
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 38.5 }
-				"Height": <float> { 344.5 }
+				"Width": <float> { 40.5 }
+				"Height": <float> { 800 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -179,7 +179,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1147.23 | y : 1025.52 }
+				"Position": <eVec2(float)> { x : 1282.53 | y : 1025.52 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -203,7 +203,7 @@
 				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 37 }
-				"Height": <float> { 349 }
+				"Height": <float> { 800 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -258,7 +258,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1023.91 | y : 1181.02 }
+				"Position": <eVec2(float)> { x : 1023.91 | y : 1387.54 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -281,7 +281,7 @@
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 197 }
+				"Width": <float> { 450 }
 				"Height": <float> { 44 }
 			}
 
@@ -337,7 +337,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 960.872 | y : 867.471 }
+				"Position": <eVec2(float)> { x : 891.44 | y : 673.417 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -360,7 +360,7 @@
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 69 }
+				"Width": <float> { 167.5 }
 				"Height": <float> { 32 }
 			}
 
@@ -416,7 +416,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1087.82 | y : 869.976 }
+				"Position": <eVec2(float)> { x : 1167.93 | y : 677.702 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -439,7 +439,7 @@
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 69 }
+				"Width": <float> { 184.5 }
 				"Height": <float> { 28 }
 			}
 

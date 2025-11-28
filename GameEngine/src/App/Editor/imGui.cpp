@@ -2,6 +2,8 @@
 * All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         imGui.cpp
 * @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author		Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         01-10-2025
 * @brief        This file contains the functions that are required for Dear ImGui displays,
 *				which includes the init, update and terminate functions.
@@ -116,6 +118,7 @@ static bool g_pendingNewScene = false;
 static bool g_pendingSceneLoad = false;
 static std::string g_sceneToLoad = "";
 static bool g_refreshSceneList = false;  // Flag to refresh scene list after operations
+static bool g_resetEntityCounter = false;  // Flag to reset entity counter when scene changes
 
 // Scene deletion error tracking
 static bool g_cannotDeleteActiveScene = false;
@@ -279,6 +282,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		engine_.getEnoEditor().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
 		g_game->markEntitiesDirty();  // Force entity cache refresh
 		g_pendingNewScene = false;
+		g_resetEntityCounter = true;  // Reset counter for new scene
 		std::cout << "[ImGui] Deferred: Created new scene" << std::endl;
 	}
 	else if (g_pendingSceneLoad)
@@ -288,6 +292,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		g_game->markEntitiesDirty();  // Force entity cache refresh
 		g_pendingSceneLoad = false;
 		g_sceneToLoad = "";
+		g_resetEntityCounter = true;  // Reset counter for loaded scene
 		std::cout << "[ImGui] Deferred: Loaded scene " << g_sceneToLoad << std::endl;
 	}
 
@@ -957,6 +962,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 	// ==================== HIERARCHY CONTROLS ====================
 	static int entityCounter = 1;  // Track entity numbering
+	static bool entityCounterInitialized = false;  // Flag to ensure we only initialize once per scene load
 	static bool attachScript = false; // Checkbox state
 
 	static int selectedScriptIndex = -1;	// Script dropdown
@@ -964,6 +970,42 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	static bool scriptsLoaded = false;
 
 	Script::EnoScriptManager& scriptMng = engine_.getEnoEditor().getScriptManager();
+
+	// Reset entity counter flag when scene changes
+	if (g_resetEntityCounter) {
+		entityCounterInitialized = false;
+		g_resetEntityCounter = false;
+	}
+
+	// Initialize entity counter based on existing entities in the scene
+	// This ensures we don't create duplicate names like "Entity 1" when one already exists
+	if (!entityCounterInitialized) {
+		int maxEntityNumber = 0;
+		auto& entityManager = engine_.getEntityManager();
+
+		// Scan all entities with NameComponent to find the highest "Entity N" number
+		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
+			auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
+			std::string name(nameComp.name);
+
+			// Check if name matches pattern "Entity <number>"
+			if (name.find("Entity ") == 0) {
+				try {
+					int num = std::stoi(name.substr(7));  // Extract number after "Entity "
+					if (num > maxEntityNumber) {
+						maxEntityNumber = num;
+					}
+				}
+				catch (...) {
+					// Ignore entities with non-numeric suffixes like "Entity ABC"
+				}
+			}
+		}
+
+		// Set counter to one more than the highest found number
+		entityCounter = maxEntityNumber + 1;
+		entityCounterInitialized = true;
+	}
 
 	ImGui::Checkbox("Attach Script to New Entity", &attachScript);
 
@@ -1792,8 +1834,8 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 	
 
-	// --- DrawInfoComponent --- (skip for player)
-	if (!isPlayer && entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
+	// --- DrawInfoComponent ---
+	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
 		auto& draw = entity.get<ECSComponents::DrawInfoComponent>(entMng);
 
 		ImGui::SeparatorText("Draw Info");
@@ -1802,8 +1844,44 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		float oldWidth = draw.width;
 		float oldHeight = draw.height;
 
-		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
-		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+		// Special handling for player: uniform scaling
+		if (isPlayer) {
+			// For player, use a single scale slider that affects both width and height uniformly
+			static float playerScale = 1.0f;
+
+			// Calculate current scale from transform (more reliable than draw info)
+			if (entity.has<ECSComponents::TransformComponent>(entMng)) {
+				auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
+				playerScale = transform.scale.x;
+			}
+
+			if (ImGui::DragFloat("Scale", &playerScale, 0.01f, 0.1f, 10.0f)) {
+				// Update transform scale for rendering
+				if (entity.has<ECSComponents::TransformComponent>(entMng)) {
+					auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
+					transform.scale.x = playerScale;
+					transform.scale.y = playerScale;
+				}
+
+				// Keep DrawInfo at base size - rendering uses transform.scale
+				draw.width = 48.0f;
+				draw.height = 48.0f;
+
+				// Keep collision at base size - collision system uses transform.scale
+				if (entity.has<ECSComponents::CollisionComponent>(entMng)) {
+					auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
+					collision.data.rectangle.width = 48.0f;
+					collision.data.rectangle.height = 48.0f;
+				}
+
+				if (g_game) g_game->markEntitiesDirty();
+			}
+		}
+		else {
+			// For non-player entities, allow independent width/height scaling
+			ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+			ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+		}
 
 		// Auto-update collision when width/height changes
 		if ((draw.width != oldWidth || draw.height != oldHeight) && entity.has<ECSComponents::CollisionComponent>(entMng)) {
@@ -1839,6 +1917,13 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (ImGui::DragFloat("Rotation", &rotationDegrees, 1.0f, -360.0f, 360.0f, "%.1f deg")) {
 				// Convert degrees back to radians
 				transform.rot.x = rotationDegrees * (3.14159265f / 180.0f);
+
+				// Update collision component rotation for player
+				if (isPlayer && entity.has<ECSComponents::CollisionComponent>(entMng)) {
+					auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
+					collision.rotation = transform.rot.x;
+				}
+
 				if (g_game) g_game->markEntitiesDirty();
 			}
 
@@ -2057,18 +2142,35 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
 		ImGui::SeparatorText("AI");
 
-		// State selector
-		const char* states[] = { "Idle", "Chasing" };
+		// ----------------------------
+		// 1. State Selector
+		// ----------------------------
+		const char* states[] = {
+			"Idle", "Chase", "Windup", "Attack", "Hurt", "Death"
+		};
 
-		// Map the current state to the combo index (0 = Idle, 1 = Chasing)
-		int stateIndex = (strcmp(ai.currentState, "Idle") == 0) ? 0 : 1;
+		int currentIndex = 0;
+		for (int i = 0; i < IM_ARRAYSIZE(states); i++)
+			if (strcmp(ai.currentState, states[i]) == 0)
+				currentIndex = i;
 
-		if (ImGui::Combo("State", &stateIndex, states, IM_ARRAYSIZE(states))) {
-			std::strncpy(ai.nextState, states[stateIndex], sizeof(ai.nextState));
+		if (ImGui::Combo("Current State", &currentIndex, states, IM_ARRAYSIZE(states))) {
+			std::strncpy(ai.nextState, states[currentIndex], sizeof(ai.nextState));
 		}
 
-		ImGui::DragFloat("Radar radius", &ai.awarenessRadius, 0.1f, 0.1f, 100.0f);
-		ImGui::DragFloat("Speed", &ai.chaseSpeed, 1.f, 10.f, 300.0f);
+		// ----------------------------
+		// 2. Core AI Behavior Params
+		// ----------------------------
+		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
+		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
+		ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal);
+
+		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
+		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
+
+		ImGui::DragInt("Health", &ai.health, 1, 0, 9999);
 	}
 	else {
 		// Allow adding AI component if the entity doesn't have one
@@ -4472,20 +4574,39 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							tc.scale.y = newScaleY;
 							lastScale = ImVec2(newScaleX, newScaleY);
 
+							// Check if this is a player entity
+							bool isPlayerEntity = e.has<ECSComponents::PlayerComponent>(entityManager);
+
 							// Update DrawInfo width and height to reflect the scale
 							if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
 								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
-								dc.width = dc.width * scaleFactorX;
-								dc.height = dc.height * scaleFactorY;
+
+								if (isPlayerEntity) {
+									// For player, keep DrawInfo at base size (48x48)
+									dc.width = 48.0f;
+									dc.height = 48.0f;
+								} else {
+									// For non-player entities, scale DrawInfo
+									dc.width = dc.width * scaleFactorX;
+									dc.height = dc.height * scaleFactorY;
+								}
 
 								// Auto-update collision component if it exists
 								if (e.has<ECSComponents::CollisionComponent>(entityManager)) {
 									auto& collision = e.get<ECSComponents::CollisionComponent>(entityManager);
-									if (collision.type == ECSComponents::ColliderType::CIRCLE) {
-										collision.data.circle.radius = dc.width * 0.5f;
-									} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
-										collision.data.rectangle.width = dc.width;
-										collision.data.rectangle.height = dc.height;
+
+									if (isPlayerEntity) {
+										// For player, keep collision at base size (48x48)
+										collision.data.rectangle.width = 48.0f;
+										collision.data.rectangle.height = 48.0f;
+									} else {
+										// For non-player entities, update collision from DrawInfo
+										if (collision.type == ECSComponents::ColliderType::CIRCLE) {
+											collision.data.circle.radius = dc.width * 0.5f;
+										} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
+											collision.data.rectangle.width = dc.width;
+											collision.data.rectangle.height = dc.height;
+										}
 									}
 								}
 							}

@@ -24,9 +24,6 @@ namespace Engine
 		tilemapSystem_ = std::make_unique<Map::TileMapSystem>(bus_, tmW, tmH, tmCell);
 		pathfinder_ = std::make_unique<AI::PathfindingSystem>(bus_, *tilemapSystem_);
 
-		// Initialize editor after tilemap is created
-		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, coreHost_, *tilemapSystem_);
-
 		// Systems init
 		inputMng_.initialize();
 		physicsSys_ = std::make_unique<Physics::PhysicsSystem>(bus_);
@@ -34,6 +31,9 @@ namespace Engine
 		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
 		graphicsMng_.initialize(window_);
 		audioMng_.init();
+
+		// Initialize editor after tilemap is created
+		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, coreHost_, *tilemapSystem_);
 
 		Bridge::Bridge_Init(this);
 		setupResourceLoading();

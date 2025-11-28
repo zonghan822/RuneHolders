@@ -19,8 +19,9 @@ namespace AI {
     }
 
     void StateMachine::update(ECS::Entity& entity, ECS::EntityManager& entMng, float dt) {
-        if (strcmp(current_, "None") != 0)
+        if (strcmp(current_, "None") != 0) {
             states_[current_]->onUpdate(entity, entMng, dt);
+        }
     }
 
 }
