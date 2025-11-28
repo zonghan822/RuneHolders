@@ -2110,13 +2110,24 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (g_game) g_game->markEntitiesDirty();
 		}
 
-		// Trigger and Active flags
+		// Active and Trigger flags
 		ImGui::Spacing();
+		if (ImGui::Checkbox("Is Active", &collider.isActive)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
+		ImGui::SameLine();
+		ImGui::TextDisabled("(?)");
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Enable/disable collision detection for this collider");
+		}
+
 		if (ImGui::Checkbox("Is Trigger", &collider.isTrigger)) {
 			if (g_game) g_game->markEntitiesDirty();
 		}
-		if (ImGui::Checkbox("Is Active", &collider.isActive)) {
-			if (g_game) g_game->markEntitiesDirty();
+		ImGui::SameLine();
+		ImGui::TextDisabled("(?)");
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Trigger detects collisions but doesn't block movement.\nRequires 'Is Active' to be checked.");
 		}
 		
 	}

@@ -192,7 +192,41 @@ void GameApplication::setupTreeTesting()
 }
 
 void GameApplication::setupGameEvents() {
-	// setup event bus
+	// Subscribe to collision events for trigger tracking
+	auto& eventBus = engine_.getEventBus();
+
+	eventBus.subscribe<Collision::CollisionEvent>(
+		[this](const Collision::CollisionEvent& event) {
+			// Check if one of the entities is the player and the other is a trigger
+			uint32_t triggerID = 0;
+			bool isPlayerInvolved = false;
+
+			// Check if entityA is trigger and entityB is player
+			if (event.isEntityA_Trigger && event.entityB_ID == playerEntityID_) {
+				triggerID = event.entityA_ID;
+				isPlayerInvolved = true;
+			}
+			// Check if entityB is trigger and entityA is player
+			else if (event.isEntityB_Trigger && event.entityA_ID == playerEntityID_) {
+				triggerID = event.entityB_ID;
+				isPlayerInvolved = true;
+			}
+
+			// If player is colliding with a trigger, add it to current frame's set
+			if (isPlayerInvolved && triggerID != 0) {
+				currentTriggersPlayerIsIn_.insert(triggerID);
+			}
+		}
+	);
+
+	// Subscribe to EntityDestroyed to clean up tracking
+	eventBus.subscribe<ECS::EntityDestroyed>(
+		[this](const ECS::EntityDestroyed& event) {
+			// Remove destroyed entity from both tracking sets
+			currentTriggersPlayerIsIn_.erase(event.entityID);
+			previousTriggersPlayerWasIn_.erase(event.entityID);
+		}
+	);
 }
 
 void GameApplication::setupGameMath() {
@@ -807,6 +841,26 @@ void GameApplication::updateEntities() {
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
 
+	// Detect trigger entries (new triggers in current set that weren't in previous set)
+	for (uint32_t triggerID : currentTriggersPlayerIsIn_) {
+		if (previousTriggersPlayerWasIn_.find(triggerID) == previousTriggersPlayerWasIn_.end()) {
+			std::cout << "[Trigger] Player (ID:" << playerEntityID_ << ") ENTERED trigger (ID:" << triggerID << ")" << std::endl;
+		}
+	}
+
+	// Detect trigger exits (triggers in previous set that aren't in current set)
+	for (uint32_t triggerID : previousTriggersPlayerWasIn_) {
+		if (currentTriggersPlayerIsIn_.find(triggerID) == currentTriggersPlayerIsIn_.end()) {
+			std::cout << "[Trigger] Player (ID:" << playerEntityID_ << ") EXITED trigger (ID:" << triggerID << ")" << std::endl;
+		}
+	}
+
+	// Save current frame's triggers as previous for next frame
+	previousTriggersPlayerWasIn_ = currentTriggersPlayerIsIn_;
+
+	// Clear current set - it will be rebuilt by collision events this frame
+	currentTriggersPlayerIsIn_.clear();
+
 	// Draw background
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
@@ -1163,7 +1217,7 @@ void GameApplication::drawShapes() {
 				// Get rendering info from DrawInfoComponent (size, color, etc.)
 				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 				auto& renderInfo = entity.get<drawInfo>(entityManager);
-				
+
 
 				// Apply scale to width and height
 				float scaledWidth = renderInfo.width * transform.scale.x;
