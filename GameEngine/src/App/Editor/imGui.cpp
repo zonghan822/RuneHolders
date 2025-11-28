@@ -1822,15 +1822,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// Scale removed - doesn't do anything currently
 	}
 
-	// --- PhysicsComponent --- (skip for player)
-	if (!isPlayer && entity.has<ECSComponents::PhysicsComponent>(entMng)) {
-		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
-		ImGui::SeparatorText("Physics");
-		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
-		ImGui::DragFloat("Mass", &physics.mass, 0.1f, 0.1f, 100.0f);
-		ImGui::DragFloat("Drag", &physics.drag, 0.01f, 0.0f, 1.0f);
-		ImGui::Checkbox("Use Gravity", &physics.useGravity);
-	}
+	
 
 	// --- DrawInfoComponent --- (skip for player)
 	if (!isPlayer && entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
@@ -1949,6 +1941,16 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		else {
 			ImGui::TextDisabled("No texture assigned");
 		}
+	}
+
+	// --- PhysicsComponent --- (skip for player)
+	if (!isPlayer && entity.has<ECSComponents::PhysicsComponent>(entMng)) {
+		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
+		ImGui::SeparatorText("Physics");
+		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
+		ImGui::DragFloat("Mass", &physics.mass, 0.1f, 0.1f, 100.0f);
+		ImGui::DragFloat("Drag", &physics.drag, 0.01f, 0.0f, 1.0f);
+		ImGui::Checkbox("Use Gravity", &physics.useGravity);
 	}
 
 	// --- CollisionComponent ---
