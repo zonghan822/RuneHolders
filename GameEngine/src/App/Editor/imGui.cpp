@@ -2128,20 +2128,13 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::SeparatorText("AI");
 
 		// ----------------------------
-		// 1. State Selector
+		// 1. Show Current State (read-only)
 		// ----------------------------
-		const char* states[] = {
-			"Idle", "Chase", "Windup", "Attack", "Hurt", "Death"
-		};
+		ImGui::Text("Current State: ");
+		ImGui::SameLine();
 
-		int currentIndex = 0;
-		for (int i = 0; i < IM_ARRAYSIZE(states); i++)
-			if (strcmp(ai.currentState, states[i]) == 0)
-				currentIndex = i;
-
-		if (ImGui::Combo("Current State", &currentIndex, states, IM_ARRAYSIZE(states))) {
-			std::strncpy(ai.nextState, states[currentIndex], sizeof(ai.nextState));
-		}
+		ImGui::TextColored(ImVec4(0.6f, 0.9f, 1.0f, 1.0f), "%s", ai.currentState);
+		ImGui::Separator();
 
 		// ----------------------------
 		// 2. Core AI Behavior Params

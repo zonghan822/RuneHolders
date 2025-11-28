@@ -300,6 +300,8 @@ namespace Physics
                     }
                     else
                     {
+                        // Publish 
+
                         // Hit a static wall - just stop movement
                         physics.velocity = { 0.0f, 0.0f };
                     }
