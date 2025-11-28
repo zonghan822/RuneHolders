@@ -142,9 +142,10 @@ namespace Editor
 						signalName });
 
 				// Connect the listener to the emitter
-				component.signals_[signalName].connect([this, signalName, funcClassPair](const std::vector<std::any>& params)
+				component.signals_[signalName].connect(
+					[this, funcClassPair, listenerID = listener->sceneObjectID_](const std::vector<std::any>& params)
 					{
-						coreHost_.signalEmitted(signalName, funcClassPair.first, funcClassPair.second);
+						coreHost_.signalEmitted(listenerID, funcClassPair.first, funcClassPair.second);
 					});
 			}
 		}

@@ -238,7 +238,7 @@ namespace Core
 		// =================== Signals ===================
 
 		// Receive a signal emit
-		void signalEmitted(const std::string&, const std::string&, const std::string&);
+		void signalEmitted(uint32_t, const std::string&, const std::string&);
 
 	private:
 
@@ -294,13 +294,9 @@ namespace Core
 		InstancedProxyMethod begin_;
 		InstancedProxyMethod update_;
 		ProxyMethod synchronize_;
-		ProxyMethod signal_;
+		InstancedProxyMethod signal_;
 
 		RegisterInstanceProxyMethod rpm_;
 		uint32_t* lastID{ nullptr };
-
-		//std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> begin_;
-		//std::vector<std::pair<ProxyMethod, std::pair<std::wstring, std::wstring>>> update_;
-		//ProxyMethod signal_;
 	};
 }

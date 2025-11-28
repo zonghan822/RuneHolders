@@ -833,7 +833,7 @@ namespace Core
 	//}
 
 	// =================== Signals ===================
-	void EnoCoreHost::signalEmitted(const std::string& signalName, const std::string& signalFuncName, const std::string& className)
+	void EnoCoreHost::signalEmitted(uint32_t listenerID, const std::string& signalFuncName, const std::string& className)
 	{
 		// Construct the signal's function signature to call
 		std::wstring nmsp{ L"Eno" };
@@ -841,13 +841,11 @@ namespace Core
 		std::wstring wideSFN{ signalFuncName.begin(), signalFuncName.end() };
 		std::wstring signature = nmsp + L"." + cls;
 
-		std::wcout << "Class written to: " << cls << std::endl;
-
 		// L"Eno.EnemyController"
 		// Invoke the relevant function
-		signal_ = proxyCall(signature.c_str(), wideSFN.c_str());
+		signal_ = proxyCall(nullptr, wideSFN.c_str(), 0);
 
 		if (signal_)
-			signal_(signature.c_str(), wideSFN.c_str());
+			signal_(signature.c_str(), wideSFN.c_str(), listenerID);
 	}
 }
