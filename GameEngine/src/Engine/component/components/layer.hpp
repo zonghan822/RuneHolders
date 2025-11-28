@@ -9,6 +9,9 @@
 
 #pragma once
 
+// Signals
+#include "../../event/signals.hpp"
+
 //stds
 #include <string>
 #include <iostream>
@@ -31,8 +34,10 @@ namespace ECSComponents
 			layer[sizeof(layer) - 1] = '\0';
 		}
 
-		char layer[32] = "NULL";
+		// Signals
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
+		char layer[32] = "NULL";
 
 		// For serialization purposes
 		// Generalized way of using reflection to access and iterate

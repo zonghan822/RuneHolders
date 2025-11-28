@@ -13,6 +13,9 @@
 #include <iostream>
 #include <string>
 
+// Signals
+#include "../../event/signals.hpp"
+
 //i would want to add the math and graphics library here
 #include "../../graphics/graphics.hpp"
 #include "../../graphics/animation/animation.hpp"
@@ -100,6 +103,9 @@ namespace ECSComponents
 			strncpy_s(texturePath, other.texturePath, sizeof(texturePath) - 1);
 			texturePath[sizeof(texturePath) - 1] = '\0';
 		}
+
+		// Signals
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
 		// Copy assignment operator
 		RenderComponent& operator=(const RenderComponent& other)
@@ -194,6 +200,9 @@ namespace ECSComponents
 		AnimationControllerComponent(): controllerID(0) {}
 
 		AnimationControllerComponent(uint32_t id): controllerID(id) {}
+
+		// Signals
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
 		template <typename Visitor>
 		void reflect(Visitor&& l)

@@ -448,6 +448,25 @@ namespace Editor
 				save << "\"Children\": { }\n";
 			}
 
+			// Listeners
+			appendIndent(save, jsonLevel);
+			size_t ltnCount{};
+
+			if (!it->second->listeners_.empty())
+			{
+				save << "\"Listeners\": { ";
+				for (const auto& listener : it->second->listeners_)
+				{
+					save << "[ " << listener << " ]";
+					if (ltnCount < it->second->listeners_.size() - 1)
+						save << ", ";
+					++ltnCount;
+				}
+				save << " }\n";
+			}
+			else
+				save << "\"Listeners\": { }\n";
+
 			// Enabled
 			appendIndent(save, jsonLevel);
 			save << "\"Enabled\": { " << (it->second->enabled_ ? "true" : "false") << " }\n";
@@ -585,6 +604,9 @@ namespace Editor
 		// children => { node : children of node, ... }
 		std::vector<std::pair<uint32_t, std::vector<uint32_t>>> children;
 
+		// listeners => { node : listener of node, ... }
+		std::vector<std::pair<uint32_t, std::vector<Listener>>> listeners;
+
 		// Find the end of the nodes section (before TileMap section)
 		size_t nodesEndPos = data.find("\"TileMap\"");
 		if (nodesEndPos == std::string::npos) {
@@ -652,11 +674,16 @@ namespace Editor
 			}
 
 			// Children
-			auto cids = extractCont(data, "Children", nodeStart, nodeEnd);
+			auto cids = extractChildren(data, "Children", nodeStart, nodeEnd);
 			if (cids.has_value())
 				children.push_back({ node->sceneObjectID_, cids.value() });
 			else
 				missingData = true;
+
+			// Listeners
+			auto ltnVec = extractListeners(data, "Listeners", nodeStart, nodeEnd);
+			if (ltnVec.has_value())
+				listeners.push_back({ node->sceneObjectID_, std::move(ltnVec.value()) });
 
 			// Enabled
 			any = extract<bool>(data, "Enabled", nodeStart, nodeEnd);
@@ -679,6 +706,7 @@ namespace Editor
 
 		setParent(parents);
 		setChildren(children);
+		setListeners(listeners);
 
 		// Load tilemap data embedded in scene file
 		size_t tilemapPos = data.find("\"TileMap\"");
@@ -915,7 +943,86 @@ namespace Editor
 		}
 
 	}
-	
+
+	// Finding the specified parameter in a file (Children)
+	std::optional<std::vector<uint32_t>> EnoSceneTree::extractChildren(
+		const std::string& data, const std::string& param,
+		const size_t& start, const size_t& end)
+	{
+		size_t paramPos = data.find(param, start);
+		if (paramPos != std::string::npos && paramPos < end)
+		{
+			size_t paramStrt = data.find_first_of('{', paramPos);
+			size_t paramEnd = data.find_first_of('}', paramStrt);
+
+			// Collect and return all ids
+			std::string str = trim(data.substr(paramStrt + 1, paramEnd - paramStrt - 1));
+			std::istringstream iss{ str };
+
+			std::vector<uint32_t> ids;
+			uint32_t num;
+			while (iss >> num)
+			{
+				ids.push_back(num);
+
+				// If next immediate character is not uint32_t, consume
+				if (!std::isalnum(iss.peek())) iss.get();
+			}
+
+			return ids;
+		}
+
+		return std::nullopt;
+	}
+
+	// Specialization for finding the specified parameter in a file (Listener)
+	std::optional<std::vector<Listener>> EnoSceneTree::extractListeners(
+		const std::string& data, const std::string& param,
+		const size_t& start, const size_t& end)
+	{
+		std::vector<Listener> ltnVec{};
+
+		size_t paramPos = data.find(param, start);
+		if (paramPos != std::string::npos && paramPos < end)
+		{
+			size_t paramStrt = data.find_first_of('{', paramPos);
+			size_t paramEnd = data.find_first_of('}', paramStrt);
+
+			std::string listeners = data.substr(paramStrt + 1, paramEnd - paramStrt - 1);
+
+			size_t pos{};
+			while (pos < listeners.size())
+			{
+				size_t ltnStrt = listeners.find_first_of('[', pos);
+				if (ltnStrt == std::string::npos) break;
+
+				size_t ltnEnd = listeners.find_first_of(']', ltnStrt);
+				if (ltnEnd == std::string::npos) break;
+
+				std::string str = trim(listeners.substr(ltnStrt + 1, ltnEnd - ltnStrt - 1));
+
+				std::istringstream iss{ str };
+				std::string idStr, compStr, sigStr;
+
+				std::getline(iss, idStr, ',');
+				std::getline(iss, compStr, ',');
+				std::getline(iss, sigStr, ',');
+
+				Listener l;
+				l.listenerID_ = static_cast<uint32_t>(std::stoul(trim(idStr)));
+				l.component_ = stripPrefix(trim(compStr));
+				l.signal_ = trim(sigStr);
+
+				ltnVec.push_back(l);
+
+				pos = ltnEnd + 1;
+			}
+
+			return ltnVec;
+		}
+
+		return std::nullopt;
+	}
 
 	// Helper for assigning parents when deserializing save file
 	void EnoSceneTree::setParent(const std::vector<std::pair<uint32_t, uint32_t>>& parents)
@@ -947,6 +1054,31 @@ namespace Editor
 							it->second->children_.push_back(it2->second.get());
 						else
 							std::cerr << "Child in deserialization transit does not exist!" << std::endl;
+					});
+			}
+		}
+	}
+
+	// Helper for assigning listeners when deserializing save file
+	void EnoSceneTree::setListeners(std::vector<std::pair<uint32_t, std::vector<Listener>>>& nodeLtnPair)
+	{
+		for (const auto& [node, listener] : nodeLtnPair)
+		{
+			auto it = tree_.find(node);
+			if (it != tree_.end())
+			{
+				std::for_each(listener.begin(), listener.end(), [&](const Listener& lid)
+					{
+						auto it2 = tree_.find(lid.listenerID_);
+						if (it2 != tree_.end())
+						{
+							ECSComponents::EnoComponentRegistry::DeduceCompType(lid.component_, [&]<typename Component>()
+							{
+								connect<Component>(it->second.get(), it2->second.get(), lid.signal_);
+							});
+						}
+						else
+							std::cerr << "Listener in deserialization transit does not exist!" << std::endl;
 					});
 			}
 		}
@@ -997,6 +1129,17 @@ namespace Editor
 
 		const auto end = str.find_last_not_of(" \t\n\r");
 		return str.substr(start, end - start + 1);
+	}
+
+	std::string EnoSceneTree::stripPrefix(const std::string& str)
+	{
+		std::string prefix = "struct ECSComponents::";
+
+		if (str.rfind(prefix, 0) == 0)
+			return str.substr(prefix.length());
+
+		std::cerr << "Prefix to strip cannot be found!" << std::endl;
+		return str;
 	}
 
 	// Extract file name from the path specified

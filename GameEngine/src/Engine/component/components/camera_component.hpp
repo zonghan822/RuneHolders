@@ -1,5 +1,8 @@
 #pragma once
 
+// Signals
+#include "../../event/signals.hpp"
+
 #include "../../math/math.hpp"
 #include <iostream>
 
@@ -23,6 +26,9 @@ namespace ECSComponents
 		// Constructor with viewport size
 		CameraComponent(float width, float height)
 			: viewportWidth(width), viewportHeight(height) {}
+
+		// Signals
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
 		// For serialization
 		template <typename Visitor>

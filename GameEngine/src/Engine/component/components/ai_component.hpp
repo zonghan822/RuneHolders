@@ -2,6 +2,9 @@
 #include <vector>
 #include "../../math/math.hpp"
 
+// Signals
+#include "../../event/signals.hpp"
+
 namespace ECSComponents
 {
     struct AIComponent
@@ -15,6 +18,9 @@ namespace ECSComponents
         float awarenessRadius = 200.f;
         bool chasingPlayer = false;
         float speed = 100.f;
+
+        // Signals
+        std::unordered_map<std::string, Events::EnoSignal> signals_;
 
         template <typename Visitor>
         void reflect(Visitor&& l)
