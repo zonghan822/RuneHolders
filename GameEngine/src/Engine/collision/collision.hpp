@@ -549,4 +549,11 @@ namespace Collision
 	*//*========================================================================================*/	
 	void RunBasicCollisionTest();
 
+	void GetRotatedRectangleCorners(
+		const Math::eVec2<float>& center,
+		float width,
+		float height,
+		float rotation,
+		Math::eVec2<float> corners[4]);
+
 } // namespace Collision

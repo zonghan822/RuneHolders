@@ -1799,6 +1799,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 	}
 
+	// ---------- Visibility Component ---------
+	if (entity.has<ECSComponents::VisibilityComponent>(entMng))
+	{
+		auto& vi = entity.get<ECSComponents::VisibilityComponent>(entMng);
+
+		// Toggle checkbox for visibility
+		ImGui::Checkbox("Entity Visibility", &vi.visible);
+
+	}
 	// Check if this is a player entity
 	bool isPlayer = entity.has<ECSComponents::PlayerComponent>(entMng);
 
@@ -2412,13 +2421,18 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	{
 		ImGui::SeparatorText("Button Component");
 		ImGui::Separator();
+
 		auto& button = entity.get<ECSComponents::ButtonComponent>(entMng);
+
+		// Toggle box for button interactibility
+		ImGui::Checkbox("Is Active##button", &button.getActive());
+
 		auto& signals = button.getSignals();
 		// Track signals to delete
 		int signalToDelete = -1;
 		size_t signalCount = button.signalsSize();
 
-		for (size_t i = 0; i < signalCount; i++)
+		for (size_t i = 0; i < signalCount; i++) 
 		{
 			ImGui::PushID(static_cast<int>(i));  // Unique ID for each signal
 

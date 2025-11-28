@@ -990,7 +990,7 @@ void GameApplication::updateEntities() {
 
 			for (auto& ent : entityList)
 			{
-				auto& v = ent.get<ECSComponents::VisibilityComponent>(engine_.getEntityManager());
+				auto& c = ent.get<ECSComponents::CollisionComponent>(engine_.getEntityManager());
 				auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
 				auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
 				auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
@@ -1008,7 +1008,7 @@ void GameApplication::updateEntities() {
 						getEditorCameraX(),
 						getEditorCameraY());
 
-					if (b.onClick(mousePos, v, t, d))
+					if (b.onClick(mousePos, t, d, c))
 					{
 
 						std::cout << "CLICK!" << std::endl;

@@ -7,6 +7,7 @@
 #include "drawInfo.hpp"
 #include "transform.hpp"
 #include "visibility.hpp"
+#include "collision_component.hpp"
 #include "../../math/math.hpp"
 #include <string>
 #include <unordered_map>
@@ -67,27 +68,58 @@ namespace ECSComponents {
 		}
 
 		// Onclick function
-		bool onClick(Math::eVec2<float> mousePos, const ECSComponents::VisibilityComponent& v, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d)
+		bool onClick(Math::eVec2<float> mousePos, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d, const ECSComponents::CollisionComponent& c)
 		{
 			// Check if button is interactable
 			if (!isActive) return false;
 
 			//std::cout << "mouse pos :" << mousePos << std::endl;
 
-			// Check if mousePos is within button 
-			if (mousePos.x >= (t.pos.x - (d.width * 0.5f)) &&	// Left limit
-				mousePos.x <= (t.pos.x + (d.width * 0.5f)) &&	// Right limit
-				mousePos.y >= (t.pos.y - (d.height * 0.5f)) &&	// Upper limit
-				mousePos.y <= (t.pos.y + (d.height * 0.5f)))	// Lower limit
+			// Check if the entity is rotated
+			if (c.rotation != 0.0f)
 			{
-				// Emit signal
+				float halfW = d.width / 2;
+				float halfH = d.height / 2;
 
-				// Button is clicked
-				return true;
+				Math::eVec2<float> corners[4];
+				rotateRectCorners(t.pos, d.width, d.height, c.rotation, corners);
+				Math::eVec2<float> newMousePos = { mousePos.x - t.pos.x, mousePos.y - t.pos.y };
+
+				float cos = cosf(c.rotation);
+				float sin = sinf(c.rotation);
+
+				Math::eVec2<float> rotMousePos = { (newMousePos.x * cos) + (newMousePos.y * sin), (-newMousePos.x * sin) + (newMousePos.y * cos) };
+
+				if (rotMousePos.x >= -halfW && rotMousePos.x <= halfW &&
+					rotMousePos.y >= -halfH && rotMousePos.y <= halfH)
+				{
+					return true; // Point is inside
+				}
+				else
+				{
+					return false;
+				}
 			}
+			else
+			{
+				// Check if mousePos is within button 
+				if (mousePos.x >= (t.pos.x - (d.width * 0.5f)) &&	// Left limit
+					mousePos.x <= (t.pos.x + (d.width * 0.5f)) &&	// Right limit
+					mousePos.y >= (t.pos.y - (d.height * 0.5f)) &&	// Upper limit
+					mousePos.y <= (t.pos.y + (d.height * 0.5f)))	// Lower limit
+				{
+					// Emit signal
 
-			return false;
+					// Button is clicked
+					return true;
+				}
+				else
+				{
+					return false;
+				}
 
+			}
+			
 		}
 
 		void executeSignal(signalType signalType, Engine::EnoEngine& eng);
@@ -97,6 +129,11 @@ namespace ECSComponents {
 		size_t signalsSize() const
 		{
 			return signals.size();
+		}
+
+		bool& getActive()
+		{
+			return isActive;
 		}
 
 		// Add signal
@@ -144,6 +181,41 @@ namespace ECSComponents {
 			l("IsActive", isActive, "bool");
 		}
 
+		void rotateRectCorners(
+			const Math::eVec2<float>& center,
+			float width,
+			float height,
+			float rotation,
+			Math::eVec2<float> corners[4])
+		{
+			// Calculate half extents
+			float halfWidth = width * 0.5f;
+			float halfHeight = height * 0.5f;
+
+			// Pre-calculate sin and cos
+			float cosAngle = std::cos(rotation);
+			float sinAngle = std::sin(rotation);
+
+			// Local corner positions (before rotation)
+			Math::eVec2<float> localCorners[4] = {
+				{ -halfWidth, -halfHeight }, // Bottom-left
+				{ halfWidth, -halfHeight }, // Bottom-right
+				{ halfWidth, halfHeight },   // Top-right
+				{ -halfWidth, halfHeight }, // Top-left
+			};
+
+			// Rotate and translate each corner
+			for (int i = 0; i < 4; ++i) {
+				// Rotate the corner
+				float rotatedX = localCorners[i].x * cosAngle - localCorners[i].y * sinAngle;
+				float rotatedY = localCorners[i].x * sinAngle + localCorners[i].y * cosAngle;
+
+				// Translate to world position
+				corners[i].x = center.x + rotatedX;
+				corners[i].y = center.y + rotatedY;
+			}
+		}
+
 
 	private:
 		// Button name
@@ -157,8 +229,8 @@ namespace ECSComponents {
 		// Parameter for scene selection (To be deleted after bridging)
 		char targetScene[32] = "NIL";
 		
-		// If in use
-		bool isActive = true;
+		// If interactable
+		bool isActive = false;
 	};
 
 }
