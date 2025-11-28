@@ -8,7 +8,7 @@ namespace AI {
         // Auto-register when AIComponent added
         bus_.subscribe<ECS::ComponentAdded>(
             [this](const ECS::ComponentAdded& ev) {
-                if (ev.type == std::type_index(typeid(ECSComponents::AIComponent)))
+                if (ev.type == typeid(ECSComponents::AIComponent))
                     this->registerEntity(ev.entityID);
             }
         );
@@ -16,7 +16,7 @@ namespace AI {
         // Auto-unregister when AIComponent removed
         bus_.subscribe<ECS::ComponentRemoved>(
             [this](const ECS::ComponentRemoved& ev) {
-                if (ev.type == std::type_index(typeid(ECSComponents::AIComponent)))
+                if (ev.type == typeid(ECSComponents::AIComponent))
                     this->unregisterEntity(ev.entityID);
             }
         );
@@ -64,6 +64,7 @@ namespace AI {
 
             if (std::strcmp(ai.nextState, ai.currentState) != 0) {
                 machine.changeState(ai.nextState, entity, entMng_);
+                std::cout << "State Changed: " << ai.currentState << std::endl;
             }
             machine.update(entity, entMng_, dt);
         }
@@ -83,13 +84,12 @@ namespace AI {
             sm->addState("Death", std::make_unique<DeathState>());
 
             stateMachines_[id] = std::move(sm);
-            
-            std::cout << "AI ID: " << id << " registered!" << std::endl;
-        }
-        ECS::Entity aiEntity(id);
-        auto& ai = aiEntity.get<ECSComponents::AIComponent>(entMng_);
-        strcpy(ai.nextState, "Idle");
 
+            ECS::Entity aiEntity(id);
+            auto& ai = aiEntity.get<ECSComponents::AIComponent>(entMng_);
+            strcpy(ai.nextState, "Idle");
+        }
+        
         // Create PathAgent if not exists
         if (!pathAgents_.contains(id))
             pathAgents_[id] = std::make_unique<AIPathAgent>(pathfinder_);

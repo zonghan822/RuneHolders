@@ -517,7 +517,6 @@ namespace Core
 		//		Pairs.first(Pairs.second.first.c_str(), Pairs.second.second.c_str());
 		//	}
 		//}
-		std::cout << "calling begin" << std::endl;
 		if (begin_)
 			begin_(org.c_str(), L"Begin", id);
 

@@ -10,8 +10,8 @@ namespace ECSComponents
     struct AIComponent
     {
         // Current & Next State
-        char currentState[32] = "Idle";
-        char nextState[32] = "Idle";
+        char currentState[32] = "None";
+        char nextState[32] = "None";
 
         float awarenessRadius = 200.f;
         float chaseSpeed = 90.f;
