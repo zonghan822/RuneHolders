@@ -731,12 +731,30 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 	// Save a new prefab or edit existing value
 	if (ImGui::Button("Save New or Existing Prefabs:")) {
-		savePrefab(currentPrefab);
-		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
-		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
+		// Check if prefab name is not empty
+		if (currentPrefab.name.empty() || currentPrefab.name == "Empty") {
+			std::cerr << "[UI] Cannot save prefab: Please enter a valid prefab name\n";
+			statusMessage = "Error: Please enter a valid prefab name";
+		}
+		else {
+			savePrefab(currentPrefab);
+			prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
+			statusMessage = "Saved prefab: " + currentPrefab.name;
+			std::cout << "[UI] Saved prefab: " << currentPrefab.name << "\n";
+		}
 	}
 
-	//ImGui::Separator();
+	// Display status message
+	if (!statusMessage.empty()) {
+		if (statusMessage.find("Error") != std::string::npos) {
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s", statusMessage.c_str());
+		}
+		else {
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%s", statusMessage.c_str());
+		}
+	}
+
+	ImGui::Separator();
 
 	// Load performs a "read all file in directory" now
 	if (ImGui::Button("Load Existing Prefab")) {
@@ -747,17 +765,16 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						PrefabData loaded = loadPrefab(entry.path().string());
 						if (!loaded.name.empty()) {
 							prefabRegistry[loaded.name] = loaded;
-							std::cout << "[UI] Loaded prefab: " << loaded.name << "\n";
 						}
 					}
 					catch (const std::exception& e) {
-						std::cerr << "[UI] Failed to load prefab from " << entry.path() << ": " << e.what() << "\n";
+						std::cerr << " Failed to load prefab from " << entry.path() << ": " << e.what() << "\n";
 					}
 				}
 			}
 		}
 		catch (const std::exception& e) {
-			std::cerr << "[UI] Failed to read prefab directory: " << e.what() << "\n";
+			std::cerr << " Failed to read prefab directory: " << e.what() << "\n";
 		}
 	}
 
