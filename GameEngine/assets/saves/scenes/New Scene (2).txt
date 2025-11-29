@@ -69,6 +69,7 @@
 				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
 			}
 		}
@@ -148,7 +149,16 @@
 				"Cols": <int> { 1 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { Room02_Doors }
+				"Anim0 FrameW": <int> { 1920 }
+				"Anim0 FrameH": <int> { 1080 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::CameraComponent]
@@ -235,6 +245,7 @@
 				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
 			}
 		}
@@ -314,6 +325,7 @@
 				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
 			}
 		}
@@ -393,6 +405,7 @@
 				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
 			}
 		}
@@ -472,7 +485,16 @@
 				"Cols": <int> { 12 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { Tilemap-Lamp-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 12 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -551,6 +573,7 @@
 				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
 			}
 		}
@@ -630,7 +653,16 @@
 				"Cols": <int> { 12 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { Tilemap-Lamp-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 12 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -709,7 +741,16 @@
 				"Cols": <int> { 12 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { Tilemap-Plants-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 12 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -788,7 +829,16 @@
 				"Cols": <int> { 12 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { Tilemap-Plants-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 12 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -867,7 +917,16 @@
 				"Cols": <int> { 12 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { Tilemap-Plants-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 12 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -946,7 +1005,16 @@
 				"Cols": <int> { 6 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { Tilemap-Crystals2-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 6 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -1025,7 +1093,16 @@
 				"Cols": <int> { 6 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { Tilemap-Crystals-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 6 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -1104,7 +1181,16 @@
 				"Cols": <int> { 6 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { Tilemap-Crystals2-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 6 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -1183,7 +1269,16 @@
 				"Cols": <int> { 12 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { Tilemap-Plants-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 12 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -1279,20 +1374,20 @@
 		"Enabled": { true }
 	}
 
-	[Node27]
+	[Node28]
 	{
-		"ID": { 27 }
+		"ID": { 28 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
 			[struct ECSComponents::NameComponent]
 			{
-				"Name": <char32> { Entity 16 }
+				"Name": <char32> { Entity 17 }
 			}
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1067 | y : 1043.65 }
+				"Position": <eVec2(float)> { x : 1344 | y : 1204 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -1303,8 +1398,8 @@
 				"Width": <float> { 50 }
 				"Height": <float> { 50 }
 				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
-				"Texture Path": <texchar240> {  }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Enemy-Slug-Idle-Sheet }
 				"TexID": <int> { 0 }
 			}
 
@@ -1336,7 +1431,7 @@
 
 			[struct ECSComponents::BoxComponent]
 			{
-				"isPushable": <bool> { 0 }
+				"isPushable": <bool> { 1 }
 				"pushResistance": <float> { 0.2 }
 			}
 
@@ -1374,13 +1469,38 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 8 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 3 }
+				"Current Animation": <char64> { Idle }
+				"Anim0 Name": <char64> { Attack }
+				"Anim0 Texture": <texchar240> { Enemy-Slug-Hurt-Sheet }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { Walk }
+				"Anim1 Texture": <texchar240> { Enemy-Slug-Walk-Sheet }
+				"Anim1 FrameW": <int> { 96 }
+				"Anim1 FrameH": <int> { 96 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 9 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
+				"Anim2 Name": <char64> { Idle }
+				"Anim2 Texture": <texchar240> { Enemy-Slug-Idle-Sheet }
+				"Anim2 FrameW": <int> { 96 }
+				"Anim2 FrameH": <int> { 96 }
+				"Anim2 Rows": <int> { 1 }
+				"Anim2 Cols": <int> { 8 }
+				"Anim2 Duration": <float> { 0.1 }
+				"Anim2 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { 0 }
