@@ -3278,6 +3278,59 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	ImGui::Separator();
+
+	ImGui::Separator();
+	ImGui::Text("Quick Animation Test");
+
+	ECS::Entity e{ selectedEntityID };
+	if (e.has<ECSComponents::AnimationControllerComponent>(entMng))
+	{
+		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
+		Animation::AnimationController* ctrl =
+			engine_.getAnimationRegistry().get(animComp.controllerID);
+
+		if (ctrl)
+		{
+			if (ImGui::Button("Play IDLE"))
+			{
+				if (ctrl->animations_.count("idle"))
+					ctrl->setAnimation("idle");
+				else
+					std::cout << "[ImGui] idle animation not found!\n";
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Play WALK"))
+			{
+				if (ctrl->animations_.count("walk"))
+					ctrl->setAnimation("walk");
+				else
+					std::cout << "[ImGui] walk animation not found!\n";
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Play ATTACK"))
+			{
+				if (ctrl->animations_.count("attack"))
+					ctrl->setAnimation("attack");
+				else
+					std::cout << "[ImGui] attack animation not found!\n";
+			}
+		}
+		else
+		{
+			ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), "Invalid Animation Controller!");
+		}
+	}
+	else
+	{
+		ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
+			"This entity has no AnimationController component!");
+	}
+
+
 	ImGui::End();
 }
 
