@@ -107,6 +107,7 @@ private:
     void setupFont();           // setup font
     void setupCamera();         // setup camera system
     void setupCombatSystem();   // Add health/damage to player and enemies
+    void playSceneBGM();        // Play appropriate BGM based on current scene
 
     // Update methods (called every frame)
     void updateGameLogic();     // Called every frame in game loop
