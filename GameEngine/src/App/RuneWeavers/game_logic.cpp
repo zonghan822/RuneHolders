@@ -1624,6 +1624,41 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 		}
 	}
 
+	// If no enemy found, use mouse position as target
+	if (!foundEnemy) {
+		auto& inputManager = engine_.getInputManager();
+		auto mouseScreenPos = inputManager.getMousePosition();
+
+		// Get camera for world space conversion
+		std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+		float cameraX = 0.0f;
+		float cameraY = 0.0f;
+		float viewportWidth = 1920.0f;
+		float viewportHeight = 1080.0f;
+
+		if (!cameraEntities.empty()) {
+			auto& camera = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
+			cameraX = camera.position.x - camera.viewportWidth * 0.5f;
+			cameraY = camera.position.y - camera.viewportHeight * 0.5f;
+			viewportWidth = camera.viewportWidth;
+			viewportHeight = camera.viewportHeight;
+		}
+
+		// Get window size for conversion
+		auto windowSize = engine_.getWindowManager().getWindowSize();
+
+		// Convert mouse position to world space
+		targetPos = Graphics::screenToWorld(
+			{ static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
+			{ 0.0f, 0.0f },
+			{ static_cast<float>(windowSize.first), static_cast<float>(windowSize.second) },
+			viewportWidth,
+			viewportHeight,
+			cameraX,
+			cameraY
+		);
+	}
+
 	// Calculate direction to target
 	Math::eVec2<float> direction = { targetPos.x - playerPos.x, targetPos.y - playerPos.y };
 	float length = Math::eVec2Length(direction);
