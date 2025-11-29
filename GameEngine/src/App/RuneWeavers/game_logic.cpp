@@ -245,6 +245,10 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Stone_Impact");
 	audioMng.publishSoundRequest("Water_Drip");
 
+	// Rune hover audio
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
+
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
 
@@ -1349,6 +1353,8 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 				runeState.isDrawingLine = true;
 				runeState.lineStart = leftTransform.pos;
 				runeState.lineEnd = mouseWorldPos;
+				// Play left rune hover sound
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
 				std::cout << "[RuneSystem] Started drawing line from left rune" << std::endl;
 			}
 		}
@@ -1364,7 +1370,13 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 			auto& rightRune = rightRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
 
 			float distToRightRune = Math::eVec2Distance(mouseWorldPos, rightTransform.pos);
+			bool wasRightHovered = rightRune.isHovered;
 			rightRune.isHovered = (distToRightRune <= rightRune.radius);
+
+			// Play right rune hover sound when first hovering
+			if (rightRune.isHovered && !wasRightHovered) {
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+			}
 		}
 	}
 }

@@ -188,6 +188,8 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Flask");
 	audioMng.publishSoundRequest("Stone_Impact");
 	audioMng.publishSoundRequest("Water_Drip");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1"); 
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
 
 	// Fireball audio
 	audioMng.publishSoundRequest("Fireball-Cast");  // Add your fireball spawn sound file name here
@@ -1575,6 +1577,8 @@ void GameApplication::updateRuneSystem()
 
 	// SPAWN RUNES when left click is first pressed
 	if (leftClickPressed && !runeState.runesActive) {
+		// Play right rune hover sound when first hovering
+		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
 		spawnRunes(mouseWorldPos);
 		runeState.runesActive = true;
 		runeState.isLeftClickHeld = true;
@@ -1606,7 +1610,7 @@ void GameApplication::updateRuneSystem()
 						(runeState.lineStart.y + rightTransform.pos.y) / 2.0f
 					};
 					spawnFireball(fireballPos);
-
+					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
 					// Mark runes as connected
 					ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
 					if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
