@@ -152,7 +152,8 @@ namespace ECSComponents {
 		// Add signal
 		void addSignal()
 		{
-			signals.emplace_back();
+			// Add a default signal with onClick type and loadScene function
+			signals.emplace_back(signalType::onClick, functionType::loadScene);
 		}
 
 		// Delete signal

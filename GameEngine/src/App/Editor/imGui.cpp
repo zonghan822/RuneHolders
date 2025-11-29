@@ -2466,22 +2466,20 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		auto& signals = button.getSignals();
 		auto& signalMap = button.getSignalMap();
-		size_t signalCount = 0;
 
-		// Track signals to delete
-		int signalToDelete = -1;
-		if (!signalMap.empty())
+		// Initialize signals vector from signals_ map if empty but callbacks exist
+		// This handles persistence when the component is loaded from save
+		if (signals.empty() && !signalMap.empty())
 		{
 			for (const auto& [signalType, signalObj] : signalMap)
 			{
-				// Only display signals that have callbacks registered
+				// Only add signals that have callbacks registered (persisted signals)
 				if (!signalObj.hasCallbacks())
 					continue;
 
 				ECSComponents::signalType sigType;
 				ECSComponents::functionType funcType = ECSComponents::functionType::loadScene;
 
-				// Push back into vector
 				// Identify signal type
 				if (signalType == "onClick")
 				{
@@ -2497,12 +2495,14 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				}
 
 				signals.push_back(std::pair<ECSComponents::signalType, ECSComponents::functionType>(sigType, funcType));
-				++signalCount;
 			}
-			//signalCount = signalMap.size();
 		}
 
-		for (size_t i = 0; i < signalCount; i++) 
+		// Track signals to delete
+		int signalToDelete = -1;
+
+		// Display all signals from the vector
+		for (size_t i = 0; i < signals.size(); i++) 
 		{
 			ImGui::PushID(static_cast<int>(i));  // Unique ID for each signal
 

@@ -27,6 +27,11 @@ namespace Eno
         {
 
         }
+	
+		public void _when_node57_onclick()
+        {
+
+        }
 	}
 
 }
