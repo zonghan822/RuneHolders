@@ -55,6 +55,9 @@ namespace Script
 		//void beginAllScripts(Editor::EnoSceneTree& tree);
 		//void updateAllScripts(Editor::EnoSceneTree& tree);
 
+		// Helper function to convert std::string to wstring from script management
+		std::wstring StringToWString(const std::string& str);
+
 
 	private:
 		Core::EnoCoreHost& coreHost_;

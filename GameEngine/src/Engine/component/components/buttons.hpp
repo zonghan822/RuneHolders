@@ -68,10 +68,10 @@ namespace ECSComponents {
 		}
 
 		// Onclick function
-		bool onClick(Math::eVec2<float> mousePos, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d, const ECSComponents::CollisionComponent& c)
+		void onClick(Math::eVec2<float> mousePos, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d, const ECSComponents::CollisionComponent& c)
 		{
 			// Check if button is interactable
-			if (!isActive) return false;
+			if (!isActive) return;
 
 			//std::cout << "mouse pos :" << mousePos << std::endl;
 
@@ -93,11 +93,17 @@ namespace ECSComponents {
 				if (rotMousePos.x >= -halfW && rotMousePos.x <= halfW &&
 					rotMousePos.y >= -halfH && rotMousePos.y <= halfH)
 				{
-					return true; // Point is inside
+					//return true; // Point is inside
+					// The button is clicked, emit a singal
+					auto signalIt = signalsMap.find("onClick");
+					if (signalIt != signalsMap.end())
+					{
+						signalIt->second.emit();
+					}
 				}
 				else
 				{
-					return false;
+					return;
 				}
 			}
 			else
@@ -108,14 +114,18 @@ namespace ECSComponents {
 					mousePos.y >= (t.pos.y - (d.height * 0.5f)) &&	// Upper limit
 					mousePos.y <= (t.pos.y + (d.height * 0.5f)))	// Lower limit
 				{
-					// Emit signal
+					// The button is clicked, emit a singal
+					auto signalIt = signalsMap.find("onClick");
+					if (signalIt != signalsMap.end())
+					{
+						signalIt->second.emit();
+					}
+					//return true;
 
-					// Button is clicked
-					return true;
 				}
 				else
 				{
-					return false;
+					return;
 				}
 
 			}

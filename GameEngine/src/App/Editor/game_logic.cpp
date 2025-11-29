@@ -1062,12 +1062,14 @@ void GameApplication::updateEntities() {
 						getEditorCameraX(),
 						getEditorCameraY());
 
-					if (b.onClick(mousePos, t, d, c))
+					// Game logic calls the function, the function does the check
+					/*if (b.onClick(mousePos, t, d, c))
 					{
 
 						std::cout << "CLICK!" << std::endl;
 						b.executeSignal(ECSComponents::signalType::onClick, engine_);
-					}
+					}*/
+					b.onClick(mousePos, t, d, c);
 					
 				}
 			}

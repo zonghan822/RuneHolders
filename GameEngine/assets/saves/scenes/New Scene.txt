@@ -179,16 +179,16 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 814.014 | y : 974.699 }
-				"Rotation": <eVec2(float)> { x : 0.746309 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1.30287 | y : 1.31201 }
+				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
 			}
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 65.1436 }
-				"Height": <float> { 65.6007 }
+				"Width": <float> { 50 }
+				"Height": <float> { 50 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
 				"Texture Path": <texchar240> {  }
@@ -202,8 +202,8 @@
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 65.1436 }
-				"Height": <float> { 65.6007 }
+				"Width": <float> { 50 }
+				"Height": <float> { 50 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -231,7 +231,7 @@
 			{
 				"BtnText": <char32> { Button }
 				"TargetScene": <char32> { New Scene (4).txt }
-				"IsActive": <bool> { 1 }
+				"IsActive": <bool> { 0 }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]

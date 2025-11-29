@@ -19,6 +19,11 @@ namespace Eno
         {
             Console.WriteLine("Node1 has started with audio playing!");
         }
+	
+		public void _when_node2_()
+        {
+
+        }
 	}
 
 }

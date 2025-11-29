@@ -1051,9 +1051,9 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 		if (!availableScripts.empty()) {
 			std::vector<std::string> scriptNames;
-			for (const auto& ws : availableScripts)
+			for (const auto& ws : availableScripts) 
 				scriptNames.push_back(std::string(ws.begin(), ws.end()));
-
+				
 			// Convert vector to array for ImGui Combo
 			std::vector<const char*> scriptItems;
 			for (auto& name : scriptNames)
@@ -2523,14 +2523,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 			// Signal type dropdown
 			// List of signal types for combo
-			const char* signalTypes[] = { "Select..", "On Click", "On Hover", "On Press" };
+			const char* signalTypes[] = { "Select..", "onClick", "onHover", "onPress" };
 			int currentSignalType = static_cast<int>(signals[i].first);
-
+			std::string selectedSignalType;
+			
 			ImGui::SetNextItemWidth(100);
 			if (ImGui::Combo("##SignalType", &currentSignalType, signalTypes, IM_ARRAYSIZE(signalTypes)))
 			{
 				// Update button signal type
-				signals[i].first = static_cast<ECSComponents::signalType>(currentSignalType);
+				selectedSignalType = currentSignalType;
 				//std::cout << "[Imgui] signal type:" << signals[i].first << std::endl;
 			}
 
@@ -2586,6 +2587,8 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				if (ImGui::Combo("##SceneParam", &selectedIndex, sceneNames.data(), static_cast<int>(sceneNames.size()))) {
 					button.setTargetScene(sceneNames[selectedIndex]);
 					// Connect to itself for now
+					
+					sceneTree.connect<ECSComponents::ButtonComponent>(sceneTree.getNodeByEntityID(entity.id()), sceneTree.getNodeByEntityID(entity.id()), selectedSignalType);
 				}
 
 				//std::cout << "[Imgui] Scene list size:" << sceneList.size() << std::endl;
@@ -2612,6 +2615,14 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		{
 			// Add new empty signal
 			button.addSignal();
+			// When adding a new signal, attach a script to it
+			Script::EnoScriptManager& scriptMng = engine_.getEnoEditor().getScriptManager();
+			auto script = scriptMng.loadScript(scriptMng.StringToWString("ButtonScript"));
+			std::cout << "[imgui] script path: " << script->path() << std::endl;
+			if (script)
+			{
+				sceneTree.attachScript(sceneTree.getNodeByEntityID(entity.id()), std::move(script));
+			}
 		}
 
 	}
