@@ -189,6 +189,10 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Stone_Impact");
 	audioMng.publishSoundRequest("Water_Drip");
 
+	// Fireball audio
+	audioMng.publishSoundRequest("Fireball-Cast");  // Add your fireball spawn sound file name here
+	audioMng.publishSoundRequest("Fireball-Explosion-Small");    // Add your fireball hit sound file name here
+
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
 
@@ -1942,6 +1946,9 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	// Mark entities as dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
+	// Play fireball spawn sound effect
+	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Cast" });
+
 	std::cout << "[RuneSystem] Spawned fireball at position (" << pos.x << ", " << pos.y << ")" << std::endl;
 }
 
@@ -2018,6 +2025,9 @@ void GameApplication::updateCombatSystem(float dt)
 				// Deal damage to enemy
 				float damage = fireballDamage.getTotalDamage();
 				bool died = enemyHealth.takeDamage(damage);
+
+				// Play fireball hit sound effect
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Explosion-Small" });
 
 				std::cout << "[Combat] Fireball hit enemy! Dealt " << damage << " damage. "
 					<< "Enemy HP: " << enemyHealth.currentHealth << "/" << enemyHealth.maxHealth << std::endl;
