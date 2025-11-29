@@ -107,15 +107,18 @@ namespace Animation
     class AnimationController
     {
     public:
-        AnimationController() : currentAnimation_(nullptr) {}
+        AnimationController() : currentAnimation_(nullptr), currentTexture_(nullptr) {}
 
-        // Add an animation with a name
-        void addAnimation(const std::string& name, const EnoAnimation& animation)
+        // Add an animation with a name (and optional texture)
+        void addAnimation(const std::string& name, const EnoAnimation& animation, std::shared_ptr<Graphics::EnoTexture> texture = nullptr)
         {
             animations_[name] = animation;
+            if (texture) {
+                textures_[name] = texture;
+            }
         }
 
-        // Set the current animation
+        // Set the current animation (also updates current texture if one exists for this animation)
         bool setAnimation(const std::string& name)
         {
             auto it = animations_.find(name);
@@ -124,6 +127,13 @@ namespace Animation
                 currentAnimationName_ = name;
                 currentAnimation_ = &it->second;
                 currentAnimation_->reset();
+
+                // Also update the current texture if this animation has one
+                auto texIt = textures_.find(name);
+                if (texIt != textures_.end()) {
+                    currentTexture_ = texIt->second;
+                }
+
                 return true;
             }
             return false;
@@ -154,9 +164,23 @@ namespace Animation
         EnoAnimation* getCurrentAnimation() { return currentAnimation_; }
         const std::string& getCurrentAnimationName() const { return currentAnimationName_; }
 
+        // Get the texture associated with the current animation
+        std::shared_ptr<Graphics::EnoTexture> getCurrentTexture() const { return currentTexture_; }
+
+        // Get the texture associated with a specific animation by name
+        std::shared_ptr<Graphics::EnoTexture> getTexture(const std::string& name) const {
+            auto it = textures_.find(name);
+            if (it != textures_.end()) {
+                return it->second;
+            }
+            return nullptr;
+        }
+
         //yunqi moved private data members out for debug
         std::unordered_map<std::string, EnoAnimation> animations_;
+        std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>> textures_; // NEW: Store textures
         EnoAnimation* currentAnimation_;
+        std::shared_ptr<Graphics::EnoTexture> currentTexture_; // NEW: Track current texture
         std::string currentAnimationName_;
     private:
     };

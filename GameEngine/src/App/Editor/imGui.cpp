@@ -2868,7 +2868,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 
 		idleAnim.setLooping(true);
-		ctrl->addAnimation("idle", idleAnim);
+		ctrl->addAnimation("idle", idleAnim, idleTexData.texture); // Pass the texture
 		ctrl->setAnimation("idle");
 
 		// Save animation configuration to component for serialization
@@ -3057,7 +3057,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
 
 		walkAnim.setLooping(true);
-		ctrl->addAnimation("walk", walkAnim);
+		ctrl->addAnimation("walk", walkAnim, walkTexData.texture); // Pass the texture
 		ctrl->setAnimation("walk");
 
 		// Save animation configuration to component for serialization
@@ -3246,7 +3246,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
 		//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
 		attackAnim.setLooping(true);
-		ctrl->addAnimation("attack", attackAnim);
+		ctrl->addAnimation("attack", attackAnim, attackTexData.texture); // Pass the texture
 		ctrl->setAnimation("attack");
 
 		// Save animation configuration to component for serialization
@@ -3294,7 +3294,18 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			if (ImGui::Button("Play IDLE"))
 			{
 				if (ctrl->animations_.count("idle"))
+				{
 					ctrl->setAnimation("idle");
+					// Also update the texture when switching animations
+					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
+					{
+						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
+						auto tex = ctrl->getCurrentTexture();
+						if (tex) {
+							drawComp.texture = tex;
+						}
+					}
+				}
 				else
 					std::cout << "[ImGui] idle animation not found!\n";
 			}
@@ -3304,7 +3315,18 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			if (ImGui::Button("Play WALK"))
 			{
 				if (ctrl->animations_.count("walk"))
+				{
 					ctrl->setAnimation("walk");
+					// Also update the texture when switching animations
+					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
+					{
+						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
+						auto tex = ctrl->getCurrentTexture();
+						if (tex) {
+							drawComp.texture = tex;
+						}
+					}
+				}
 				else
 					std::cout << "[ImGui] walk animation not found!\n";
 			}
@@ -3314,7 +3336,18 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			if (ImGui::Button("Play ATTACK"))
 			{
 				if (ctrl->animations_.count("attack"))
+				{
 					ctrl->setAnimation("attack");
+					// Also update the texture when switching animations
+					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
+					{
+						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
+						auto tex = ctrl->getCurrentTexture();
+						if (tex) {
+							drawComp.texture = tex;
+						}
+					}
+				}
 				else
 					std::cout << "[ImGui] attack animation not found!\n";
 			}
