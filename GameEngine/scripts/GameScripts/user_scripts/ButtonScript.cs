@@ -17,6 +17,16 @@ namespace Eno
         {
 
         }
+	
+		public void _when_node2_onclick()
+        {
+
+        }
+	
+		public void _when_node1_onclick()
+        {
+
+        }
 	}
 
 }

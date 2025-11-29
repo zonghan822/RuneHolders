@@ -87,3 +87,26 @@
 [2025-11-29 15:03:33] Failed to find the file to write to!
 [2025-11-29 15:06:09] Unknown component passed to be deduced!
 [2025-11-29 15:06:24] Unknown component passed to be deduced!
+[2025-11-29 16:32:17] Unknown component passed to be deduced!
+[2025-11-29 17:04:31] Unknown component passed to be deduced!
+[2025-11-29 17:04:50] Unknown component passed to be deduced!
+[2025-11-29 17:06:01] Unknown component passed to be deduced!
+[2025-11-29 17:10:16] Unknown component passed to be deduced!
+[2025-11-29 17:15:24] Unknown component passed to be deduced!
+[2025-11-29 17:25:37] Unknown component passed to be deduced!
+[2025-11-29 17:39:59] Unknown component passed to be deduced!
+[2025-11-29 17:40:21] Unknown component passed to be deduced!
+[2025-11-29 17:46:28] Unknown component passed to be deduced!
+[2025-11-29 17:47:06] Unknown component passed to be deduced!
+[2025-11-29 17:51:45] Unknown component passed to be deduced!
+[2025-11-29 17:55:17] Unknown component passed to be deduced!
+[2025-11-29 18:08:12] Unknown component passed to be deduced!
+[2025-11-29 18:09:42] Unknown component passed to be deduced!
+[2025-11-29 18:11:12] Unknown component passed to be deduced!
+[2025-11-29 18:12:53] Unknown component passed to be deduced!
+[2025-11-29 18:14:32] Unknown component passed to be deduced!
+[2025-11-29 19:15:45] Unknown component passed to be deduced!
+[2025-11-29 19:27:34] Unknown component passed to be deduced!
+[2025-11-29 19:29:17] Unknown component passed to be deduced!
+[2025-11-29 19:53:34] Unknown component passed to be deduced!
+[2025-11-29 19:55:17] invalid stoul argument

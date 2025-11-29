@@ -230,8 +230,8 @@
 			[struct ECSComponents::ButtonComponent]
 			{
 				"BtnText": <char32> { Button }
-				"TargetScene": <char32> { New Scene (4).txt }
-				"IsActive": <bool> { 0 }
+				"TargetScene": <char32> { New Scene (3).txt }
+				"IsActive": <bool> { 1 }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
@@ -245,10 +245,10 @@
 				"Current Animation": <char64> {  }
 			}
 		}
-		"Script": { }
+		"Script": { C:/SIT/Y2T1 FALL 2025/GAM/csd2401f25_team_runeholders/GameEngine/scripts/GameScripts/user_scripts/ButtonScript.cs }
 		"Parent": { }
 		"Children": { }
-		"Listeners": { }
+		"Listeners": { - 2, struct ECSComponents::ButtonComponent, onClick ` }
 		"Enabled": { true }
 	}
 

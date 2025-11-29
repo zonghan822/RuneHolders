@@ -2494,9 +2494,42 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::Checkbox("Is Active##button", &button.getActive());
 
 		auto& signals = button.getSignals();
+		auto& signalMap = button.getSignalMap();
+		size_t signalCount = 0;
+
 		// Track signals to delete
 		int signalToDelete = -1;
-		size_t signalCount = button.signalsSize();
+		if (!signalMap.empty())
+		{
+			for (const auto& [signalType, signalObj] : signalMap)
+			{
+				// Only display signals that have callbacks registered
+				if (!signalObj.hasCallbacks())
+					continue;
+
+				ECSComponents::signalType sigType;
+				ECSComponents::functionType funcType = ECSComponents::functionType::loadScene;
+
+				// Push back into vector
+				// Identify signal type
+				if (signalType == "onClick")
+				{
+					sigType = ECSComponents::signalType::onClick;
+				}
+				else if (signalType == "onHover")
+				{
+					sigType = ECSComponents::signalType::onHover;
+				}
+				else if (signalType == "onPressed")
+				{
+					sigType = ECSComponents::signalType::onPress;
+				}
+
+				signals.push_back(std::pair<ECSComponents::signalType, ECSComponents::functionType>(sigType, funcType));
+				++signalCount;
+			}
+			//signalCount = signalMap.size();
+		}
 
 		for (size_t i = 0; i < signalCount; i++) 
 		{
@@ -2524,6 +2557,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			// Signal type dropdown
 			// List of signal types for combo
 			const char* signalTypes[] = { "Select..", "onClick", "onHover", "onPress" };
+
 			int currentSignalType = static_cast<int>(signals[i].first);
 			std::string selectedSignalType;
 			
@@ -2531,7 +2565,8 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (ImGui::Combo("##SignalType", &currentSignalType, signalTypes, IM_ARRAYSIZE(signalTypes)))
 			{
 				// Update button signal type
-				selectedSignalType = currentSignalType;
+				//selectedSignalType = currentSignalType;
+				signals[i].first = static_cast<ECSComponents::signalType>(currentSignalType);
 				//std::cout << "[Imgui] signal type:" << signals[i].first << std::endl;
 			}
 
@@ -2587,7 +2622,12 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				if (ImGui::Combo("##SceneParam", &selectedIndex, sceneNames.data(), static_cast<int>(sceneNames.size()))) {
 					button.setTargetScene(sceneNames[selectedIndex]);
 					// Connect to itself for now
-					
+					switch (signals[i].first)
+					{
+					case ECSComponents::signalType::onClick:
+						selectedSignalType = "onClick";
+					}
+					std::cout << "Selected signal type" << selectedSignalType;
 					sceneTree.connect<ECSComponents::ButtonComponent>(sceneTree.getNodeByEntityID(entity.id()), sceneTree.getNodeByEntityID(entity.id()), selectedSignalType);
 				}
 

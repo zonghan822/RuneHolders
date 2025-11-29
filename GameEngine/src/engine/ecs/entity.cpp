@@ -93,7 +93,7 @@ namespace ECS
 
 		// Find and identify component structs
 		size_t pos = data.find('[', start);
-		
+
 		entity = entMng.create();
 		// Parsing entity data blocks
 		while (pos != std::string::npos && pos < end)
@@ -151,12 +151,17 @@ namespace ECS
 			}
 
 			// Deduce component found
+			std::cout << "[DEBUG entity.cpp] About to call DeduceCompType with: '" << compName << "'" << std::endl;
+			
 			ECSComponents::EnoComponentRegistry::DeduceCompType(compName, [&]<typename T>()
 				{
+					std::cout << "[DEBUG entity.cpp lambda] Lambda called! Adding component to entity..." << std::endl;
 					entity.add<T>(entMng);
+					//std::cout << "[DEBUG entity.cpp lambda] Component added successfully" << std::endl;
 
 					// Packaging the data
 					T component{};
+					//std::cout << "[DEBUG entity.cpp lambda] Created component instance, loading data..." << std::endl;
 					for (const auto& [fname, fvalue] : dataMap)
 					{
 						// Modify each component mapped

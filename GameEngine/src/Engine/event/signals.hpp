@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration/definition file for the signals
 *
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once
@@ -17,7 +17,7 @@
 namespace Events
 {
 	// A signal is essentially a container of observers, with each callback stored within the signal
-	// allowed to contain a list of params of any type. 
+	// allowed to contain a list of params of any type.
 	// Inspired by: https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/c_sharp_signals.html
 	class EnoSignal
 	{
@@ -34,6 +34,12 @@ namespace Events
 		void emit(const std::vector<std::any>& p = {})
 		{
 			for (auto& callb : callbacks_) { callb(p); }
+		}
+
+		// Check if signal has any callbacks
+		bool hasCallbacks() const
+		{
+			return !callbacks_.empty();
 		}
 
 	private:

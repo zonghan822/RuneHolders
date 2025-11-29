@@ -458,7 +458,7 @@ namespace Editor
 				save << "\"Listeners\": { ";
 				for (const auto& listener : it->second->listeners_)
 				{
-					save << "[ " << listener << " ]";
+					save << "- " << listener << " `";
 					if (ltnCount < it->second->listeners_.size() - 1)
 						save << ", ";
 					++ltnCount;
@@ -682,9 +682,17 @@ namespace Editor
 				missingData = true;
 
 			// Listeners
+			std::cout << "[DEBUG] About to extract listeners for node " << node->sceneObjectID_ << std::endl;
 			auto ltnVec = extractListeners(data, "Listeners", nodeStart, nodeEnd);
 			if (ltnVec.has_value())
+			{
+				std::cout << "[DEBUG] Extracted " << ltnVec.value().size() << " listener(s) for node " << node->sceneObjectID_ << std::endl;
 				listeners.push_back({ node->sceneObjectID_, std::move(ltnVec.value()) });
+			}
+			else
+			{
+				std::cout << "[DEBUG] No listeners found for node " << node->sceneObjectID_ << std::endl;
+			}
 
 			// Enabled
 			any = extract<bool>(data, "Enabled", nodeStart, nodeEnd);
@@ -705,8 +713,12 @@ namespace Editor
 			if (start >= nodesEndPos) break;  // Stop if we found a bracket in tilemap section
 		}
 
+		std::cout << "[DEBUG] === Starting relationship setup ===" << std::endl;
+		std::cout << "[DEBUG] Setting parents..." << std::endl;
 		setParent(parents);
+		std::cout << "[DEBUG] Setting children..." << std::endl;
 		setChildren(children);
+		std::cout << "[DEBUG] Setting listeners (count: " << listeners.size() << ")..." << std::endl;
 		setListeners(listeners);
 
 		// Update the static id_ counter to be higher than any loaded sceneObjectID
@@ -994,26 +1006,53 @@ namespace Editor
 		const std::string& data, const std::string& param,
 		const size_t& start, const size_t& end)
 	{
+		std::cout << "[DEBUG extractListeners] ENTRY - param: '" << param
+				  << "', start: " << start << ", end: " << end << std::endl;
 		std::vector<Listener> ltnVec{};
 
 		size_t paramPos = data.find(param, start);
+		std::cout << "[DEBUG extractListeners] paramPos: " << paramPos
+				  << " (npos=" << std::string::npos << ")" << std::endl;
+
 		if (paramPos != std::string::npos && paramPos < end)
 		{
+			std::cout << "[DEBUG extractListeners] Found param '" << param << "' at position " << paramPos << std::endl;
+
 			size_t paramStrt = data.find_first_of('{', paramPos);
 			size_t paramEnd = data.find_first_of('}', paramStrt);
 
+			std::cout << "[DEBUG extractListeners] Bracket positions - start: " << paramStrt
+					  << ", end: " << paramEnd << std::endl;
+
 			std::string listeners = data.substr(paramStrt + 1, paramEnd - paramStrt - 1);
+			std::cout << "[DEBUG extractListeners] Raw listeners string: '" << listeners << "'" << std::endl;
 
 			size_t pos{};
+			int listenerCount = 0;
 			while (pos < listeners.size())
 			{
-				size_t ltnStrt = listeners.find_first_of('[', pos);
-				if (ltnStrt == std::string::npos) break;
+				std::cout << "[DEBUG extractListeners] Loop iteration - pos: " << pos
+						  << ", listeners.size(): " << listeners.size() << std::endl;
 
-				size_t ltnEnd = listeners.find_first_of(']', ltnStrt);
-				if (ltnEnd == std::string::npos) break;
+				size_t ltnStrt = listeners.find_first_of('-', pos);
+				if (ltnStrt == std::string::npos)
+				{
+					std::cout << "[DEBUG extractListeners] No more '[' found, breaking" << std::endl;
+					break;
+				}
+
+				size_t ltnEnd = listeners.find_first_of('`', ltnStrt);
+				if (ltnEnd == std::string::npos)
+				{
+					std::cout << "[DEBUG extractListeners] No matching ']' found, breaking" << std::endl;
+					break;
+				}
+
+				std::cout << "[DEBUG extractListeners] Found listener brackets at [" << ltnStrt
+						  << ", " << ltnEnd << "]" << std::endl;
 
 				std::string str = trim(listeners.substr(ltnStrt + 1, ltnEnd - ltnStrt - 1));
+				std::cout << "[DEBUG extractListeners] Extracted and trimmed: '" << str << "'" << std::endl;
 
 				std::istringstream iss{ str };
 				std::string idStr, compStr, sigStr;
@@ -1022,19 +1061,38 @@ namespace Editor
 				std::getline(iss, compStr, ',');
 				std::getline(iss, sigStr, ',');
 
+				std::cout << "[DEBUG extractListeners] parsing - Raw: idStr='" << idStr
+						  << "', compStr='" << compStr
+						  << "', sigStr='" << sigStr << "'" << std::endl;
+
 				Listener l;
 				l.listenerID_ = static_cast<uint32_t>(std::stoul(trim(idStr)));
-				l.component_ = stripPrefix(trim(compStr));
+
+				std::string trimmedComp = trim(compStr);
+				std::cout << "[DEBUG extractListeners] After trim: '" << trimmedComp << "'" << std::endl;
+
+				l.component_ = stripPrefix(trimmedComp);
+				std::cout << "[DEBUG extractListeners] After stripPrefix: '" << l.component_ << "'" << std::endl;
+
 				l.signal_ = trim(sigStr);
 
+				std::cout << "[DEBUG extractListeners] Created Listener #" << listenerCount
+						  << " - ID: " << l.listenerID_
+						  << ", component: '" << l.component_
+						  << "', signal: '" << l.signal_ << "'" << std::endl;
+
 				ltnVec.push_back(l);
+				listenerCount++;
 
 				pos = ltnEnd + 1;
 			}
 
+			std::cout << "[DEBUG extractListeners] RETURN - Extracted " << ltnVec.size()
+					  << " listener(s)" << std::endl;
 			return ltnVec;
 		}
 
+		std::cout << "[DEBUG extractListeners] RETURN - param not found, returning nullopt" << std::endl;
 		return std::nullopt;
 	}
 
@@ -1076,26 +1134,45 @@ namespace Editor
 	// Helper for assigning listeners when deserializing save file
 	void EnoSceneTree::setListeners(std::vector<std::pair<uint32_t, std::vector<Listener>>>& nodeLtnPair)
 	{
+		std::cout << "[DEBUG] setListeners called with " << nodeLtnPair.size() << " node(s)" << std::endl;
+
 		for (const auto& [node, listener] : nodeLtnPair)
 		{
+			std::cout << "[DEBUG] Processing node ID: " << node << " with " << listener.size() << " listener(s)" << std::endl;
+
 			auto it = tree_.find(node);
 			if (it != tree_.end())
 			{
+
 				std::for_each(listener.begin(), listener.end(), [&](const Listener& lid)
 					{
+						std::cout << "[DEBUG] Listener details - ID: " << lid.listenerID_
+								  << ", Component: '" << lid.component_
+								  << "', Signal: '" << lid.signal_ << "'" << std::endl;
+
 						auto it2 = tree_.find(lid.listenerID_);
 						if (it2 != tree_.end())
 						{
+							std::cout << "[DEBUG] Calling DeduceCompType with component: '" << lid.component_ << "'" << std::endl;
+
 							ECSComponents::EnoComponentRegistry::DeduceCompType(lid.component_, [&]<typename Component>()
 							{
+								std::cout << "[DEBUG] DeduceCompType succeeded! Connecting listener..." << std::endl;
 								connect<Component>(it->second.get(), it2->second.get(), lid.signal_);
+								std::cout << "[DEBUG] Listener connected successfully!" << std::endl;
 							});
 						}
 						else
 							std::cerr << "Listener in deserialization transit does not exist!" << std::endl;
 					});
 			}
+			else
+			{
+				std::cerr << "[DEBUG] Node " << node << " not found in tree!" << std::endl;
+			}
 		}
+
+		std::cout << "[DEBUG] setListeners completed" << std::endl;
 	}
 
 	// Appends indentation(s) to save file for json format

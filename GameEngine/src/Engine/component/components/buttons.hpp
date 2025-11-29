@@ -11,7 +11,7 @@
 #include "../../math/math.hpp"
 #include <string>
 #include <unordered_map>
-#include "../../event/signals.hpp"
+//#include "../../event/signals.hpp"
 
 // Forward declaration
 namespace Engine
@@ -44,9 +44,9 @@ namespace ECSComponents {
 		// Default constructor
 		ButtonComponent()
 		{
-			signalsMap["onClick"] = Events::EnoSignal();
-			signalsMap["onHover"] = Events::EnoSignal();
-			signalsMap["onPressed"] = Events::EnoSignal();
+			signals_["onClick"] = Events::EnoSignal();
+			signals_["onHover"] = Events::EnoSignal();
+			signals_["onPressed"] = Events::EnoSignal();
 		}
 
 		// Get name
@@ -95,11 +95,11 @@ namespace ECSComponents {
 				{
 					//return true; // Point is inside
 					// The button is clicked, emit a singal
-					auto signalIt = signalsMap.find("onClick");
-					if (signalIt != signalsMap.end())
-					{
-						signalIt->second.emit();
-					}
+					//auto signalIt = signalsMap.find("onClick");
+					//if (signalIt != signalsMap.end())
+					//{
+					//	signalIt->second.emit();
+					//}
 				}
 				else
 				{
@@ -115,11 +115,11 @@ namespace ECSComponents {
 					mousePos.y <= (t.pos.y + (d.height * 0.5f)))	// Lower limit
 				{
 					// The button is clicked, emit a singal
-					auto signalIt = signalsMap.find("onClick");
-					if (signalIt != signalsMap.end())
-					{
-						signalIt->second.emit();
-					}
+					//auto signalIt = signalsMap.find("onClick");
+					//if (signalIt != signalsMap.end())
+					//{
+					//	signalIt->second.emit();
+					//}
 					//return true;
 
 				}
@@ -134,6 +134,9 @@ namespace ECSComponents {
 
 		void executeSignal(signalType signalType, Engine::EnoEngine& eng);
 		void executeFunction(functionType funcType, Engine::EnoEngine& eng);
+
+		// Signals
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
 		// Getters
 		size_t signalsSize() const
@@ -166,8 +169,10 @@ namespace ECSComponents {
 			}
 		}
 
-		// Signals
-		std::unordered_map<std::string, Events::EnoSignal> signals_;
+		std::unordered_map<std::string, Events::EnoSignal>& getSignalMap()
+		{
+			return signals_;
+		}
 
 		// Get Signal container
 		std::vector<std::pair<signalType, functionType>>& getSignals()
@@ -233,9 +238,7 @@ namespace ECSComponents {
 
 		// Signal types (To be deleted after bridging)
 		std::vector<std::pair<signalType, functionType>> signals;
-		
-		std::unordered_map<std::string, Events::EnoSignal> signalsMap;
-
+	
 		// Parameter for scene selection (To be deleted after bridging)
 		char targetScene[32] = "NIL";
 		
