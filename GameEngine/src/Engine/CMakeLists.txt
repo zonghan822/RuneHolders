@@ -106,5 +106,5 @@ COPY_FOLDER_IF_DIFFERENT(
     ${ENGINE_NAME}_shared
     "${CMAKE_SOURCE_DIR}/scripts"
     DESTINATIONS
-        "${CMAKE_BINARY_DIR}/projects/Engine/$<CONFIG>/assets"
+        "${CMAKE_BINARY_DIR}/projects/Engine/$<CONFIG>/scripts"
 )
