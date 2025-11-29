@@ -2886,12 +2886,16 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ctrl->setAnimation("Idle");
 
 		// Save animation configuration to component for serialization
-		animComp.frameWidth = idleTexData.frameWidth;
-		animComp.frameHeight = idleTexData.frameHeight;
-		animComp.rows = idleTexData.rows;
-		animComp.cols = idleTexData.cols;
-		animComp.frameDuration = 0.1f;
-		animComp.looping = true;
+		animComp.setAnimationData(
+			"Idle",
+			idleSelected.c_str(),
+			idleTexData.frameWidth,
+			idleTexData.frameHeight,
+			idleTexData.rows,
+			idleTexData.cols,
+			0.1f,
+			true
+		);
 		std::strncpy(animComp.currentAnimationName, "Idle", sizeof(animComp.currentAnimationName) - 1);
 	}
 
@@ -3075,12 +3079,16 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ctrl->setAnimation("Walk");
 
 		// Save animation configuration to component for serialization
-		animComp.frameWidth = walkTexData.frameWidth;
-		animComp.frameHeight = walkTexData.frameHeight;
-		animComp.rows = walkTexData.rows;
-		animComp.cols = walkTexData.cols;
-		animComp.frameDuration = 0.1f;
-		animComp.looping = true;
+		animComp.setAnimationData(
+			"Walk",
+			walkSelected.c_str(),
+			walkTexData.frameWidth,
+			walkTexData.frameHeight,
+			walkTexData.rows,
+			walkTexData.cols,
+			0.1f,
+			true
+		);
 		std::strncpy(animComp.currentAnimationName, "Walk", sizeof(animComp.currentAnimationName) - 1);
 	}
 
@@ -3264,12 +3272,16 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ctrl->setAnimation("Attack");
 
 		// Save animation configuration to component for serialization
-		animComp.frameWidth = attackTexData.frameWidth;
-		animComp.frameHeight = attackTexData.frameHeight;
-		animComp.rows = attackTexData.rows;
-		animComp.cols = attackTexData.cols;
-		animComp.frameDuration = 0.1f;
-		animComp.looping = true;
+		animComp.setAnimationData(
+			"Attack",
+			attackSelected.c_str(),
+			attackTexData.frameWidth,
+			attackTexData.frameHeight,
+			attackTexData.rows,
+			attackTexData.cols,
+			0.1f,
+			true
+		);
 		std::strncpy(animComp.currentAnimationName, "Attack", sizeof(animComp.currentAnimationName) - 1);
 	}
 

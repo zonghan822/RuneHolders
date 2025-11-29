@@ -538,36 +538,61 @@ void GameApplication::updateEntities() {
 
 		// Restore animations from serialized data after scene load
 		for (auto& entity : cachedDrawableEntities_) {
-			if (entity.has<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager()) &&
-				entity.has<ECSComponents::DrawInfoComponent>(engine_.getEntityManager())) {
+			if (entity.has<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager())) {
 				auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager());
-				auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
 
 				// Check if animation data exists but controller is not initialized
-				if (animComp.frameWidth > 0 && animComp.frameHeight > 0 && animComp.controllerID == 0) {
+				if (animComp.animationCount > 0 && animComp.controllerID == 0) {
 					// Create new controller
 					animComp.controllerID = engine_.getAnimationRegistry().createController();
 					Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 
-					if (ctrl && drawComp.texture) {
-						// Recreate the animation from saved configuration
-						Animation::EnoAnimation anim = Animation::createSpriteSheetAnimation(
-							animComp.frameWidth,
-							animComp.frameHeight,
-							drawComp.texture->getWidth(),
-							drawComp.texture->getHeight(),
-							0,  // start frame
-							animComp.rows * animComp.cols,  // total frames
-							animComp.frameDuration
-						);
+					if (ctrl) {
+						// Recreate all animations from saved configuration
+						for (int i = 0; i < animComp.animationCount; ++i) {
+							const auto& animData = animComp.animations[i];
 
-						anim.setLooping(animComp.looping);
-						ctrl->addAnimation(animComp.currentAnimationName, anim);
-						ctrl->setAnimation(animComp.currentAnimationName);
+							// Skip if no valid data
+							if (animData.frameWidth <= 0 || animData.frameHeight <= 0) {
+								continue;
+							}
 
-						std::cout << "[GameLogic] Restored animation '" << animComp.currentAnimationName
-							<< "' for entity (frames: " << animComp.frameWidth << "x" << animComp.frameHeight
-							<< ", grid: " << animComp.rows << "x" << animComp.cols << ")" << std::endl;
+							// Load texture for this animation
+							std::shared_ptr<Graphics::EnoTexture> texture;
+							if (strlen(animData.texturePath) > 0) {
+								auto& textures = engine_.getResourceLoader().getAllTextures();
+								auto it = textures.find(animData.texturePath);
+								if (it != textures.end()) {
+									texture = it->second;
+								}
+							}
+
+							if (texture) {
+								// Recreate the animation
+								Animation::EnoAnimation anim = Animation::createSpriteSheetAnimation(
+									animData.frameWidth,
+									animData.frameHeight,
+									texture->getWidth(),
+									texture->getHeight(),
+									0,  // start frame
+									animData.rows * animData.cols,  // total frames
+									animData.frameDuration
+								);
+
+								anim.setLooping(animData.looping);
+								ctrl->addAnimation(animData.name, anim, texture);
+
+								std::cout << "[GameLogic] Restored animation '" << animData.name
+									<< "' for entity (frames: " << animData.frameWidth << "x" << animData.frameHeight
+									<< ", grid: " << animData.rows << "x" << animData.cols << ")" << std::endl;
+							}
+						}
+
+						// Set the current animation if specified
+						if (strlen(animComp.currentAnimationName) > 0) {
+							ctrl->setAnimation(animComp.currentAnimationName);
+							std::cout << "[GameLogic] Set current animation to '" << animComp.currentAnimationName << "'" << std::endl;
+						}
 					}
 				}
 			}
@@ -1309,12 +1334,16 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	// Setup animation configuration - fireball spritesheet is 360x48 with 4 frames (90x48 each)
 	auto& animComp = fireball.get<ECSComponents::AnimationControllerComponent>(entityManager);
 	if (fireballTexture && fireballTexture->isValid()) {
-		animComp.frameWidth = 90;    // Each frame is 90 pixels wide
-		animComp.frameHeight = 48;   // Each frame is 48 pixels tall
-		animComp.rows = 1;            // 1 row
-		animComp.cols = 4;            // 4 columns (frames)
-		animComp.frameDuration = 0.1f;  // Frame duration
-		animComp.looping = true;      // Loop the animation
+		animComp.setAnimationData(
+			"fly",                  // Animation name
+			"fireball.png",         // Texture path
+			90,                     // Frame width
+			48,                     // Frame height
+			1,                      // Rows
+			4,                      // Cols
+			0.1f,                   // Frame duration
+			true                    // Looping
+		);
 		strcpy_s(animComp.currentAnimationName, "fly");
 	}
 

@@ -183,17 +183,26 @@ namespace ECSComponents
 		return os;
 	}
 
-	//(Yun Qi) Animation Controller so that any entity that wants to have an animation has their own controller.
-	struct AnimationControllerComponent {
-		uint32_t controllerID;
-
-		// Animation configuration data for serialization
+	// Structure to hold data for a single animation
+	struct AnimationData {
+		char name[64] = "";
+		char texturePath[FILE_PATH_LEN] = "";
 		int frameWidth = 0;
 		int frameHeight = 0;
 		int rows = 0;
 		int cols = 0;
 		float frameDuration = 0.1f;
 		bool looping = true;
+	};
+
+	//(Yun Qi) Animation Controller so that any entity that wants to have an animation has their own controller.
+	struct AnimationControllerComponent {
+		uint32_t controllerID;
+
+		// Store up to 10 animations (idle, walk, attack, etc.)
+		static constexpr int MAX_ANIMATIONS = 10;
+		AnimationData animations[MAX_ANIMATIONS];
+		int animationCount = 0;
 		char currentAnimationName[64] = "";
 
 		AnimationControllerComponent(): controllerID(0) {}
@@ -203,31 +212,102 @@ namespace ECSComponents
 		// Signals
 		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
+		// Helper to add/update an animation
+		void setAnimationData(const char* name, const char* texPath, int fw, int fh, int r, int c, float dur, bool loop) {
+			// Check if animation already exists
+			int index = -1;
+			for (int i = 0; i < animationCount; ++i) {
+				if (strcmp(animations[i].name, name) == 0) {
+					index = i;
+					break;
+				}
+			}
+
+			// If not found and we have space, add new
+			if (index == -1) {
+				if (animationCount < MAX_ANIMATIONS) {
+					index = animationCount++;
+				} else {
+					return; // No space
+				}
+			}
+
+			// Set the data
+			strncpy_s(animations[index].name, name, sizeof(animations[index].name) - 1);
+			animations[index].name[sizeof(animations[index].name) - 1] = '\0';
+
+			strncpy_s(animations[index].texturePath, texPath, sizeof(animations[index].texturePath) - 1);
+			animations[index].texturePath[sizeof(animations[index].texturePath) - 1] = '\0';
+
+			animations[index].frameWidth = fw;
+			animations[index].frameHeight = fh;
+			animations[index].rows = r;
+			animations[index].cols = c;
+			animations[index].frameDuration = dur;
+			animations[index].looping = loop;
+		}
+
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
 			// Don't serialize controllerID - it will be reassigned when component is added
-			// But DO serialize the animation configuration data
-			l("Frame Width", frameWidth, "int");
-			l("Frame Height", frameHeight, "int");
-			l("Rows", rows, "int");
-			l("Cols", cols, "int");
-			l("Frame Duration", frameDuration, "float");
-			l("Looping", looping, "bool");
+			l("Animation Count", animationCount, "int");
 			l("Current Animation", currentAnimationName, "char64");
+
+			// Only serialize animations that actually have data (up to animationCount)
+			for (int i = 0; i < animationCount && i < MAX_ANIMATIONS; ++i) {
+				char indexStr[32];
+				sprintf_s(indexStr, "%d", i);
+
+				std::string nameField = std::string("Anim") + indexStr + " Name";
+				std::string texField = std::string("Anim") + indexStr + " Texture";
+				std::string fwField = std::string("Anim") + indexStr + " FrameW";
+				std::string fhField = std::string("Anim") + indexStr + " FrameH";
+				std::string rowsField = std::string("Anim") + indexStr + " Rows";
+				std::string colsField = std::string("Anim") + indexStr + " Cols";
+				std::string durField = std::string("Anim") + indexStr + " Duration";
+				std::string loopField = std::string("Anim") + indexStr + " Looping";
+
+				l(nameField.c_str(), animations[i].name, "char64");
+				l(texField.c_str(), animations[i].texturePath, "texchar240");
+				l(fwField.c_str(), animations[i].frameWidth, "int");
+				l(fhField.c_str(), animations[i].frameHeight, "int");
+				l(rowsField.c_str(), animations[i].rows, "int");
+				l(colsField.c_str(), animations[i].cols, "int");
+				l(durField.c_str(), animations[i].frameDuration, "float");
+				l(loopField.c_str(), animations[i].looping, "bool");
+			}
 		}
 
 		template <typename Visitor>
 		void reflect(Visitor&& l) const
 		{
-			// Serialize animation configuration data for saving
-			l("Frame Width", frameWidth, "int");
-			l("Frame Height", frameHeight, "int");
-			l("Rows", rows, "int");
-			l("Cols", cols, "int");
-			l("Frame Duration", frameDuration, "float");
-			l("Looping", looping, "bool");
+			l("Animation Count", animationCount, "int");
 			l("Current Animation", currentAnimationName, "char64");
+
+			// Only serialize animations that actually have data (up to animationCount)
+			for (int i = 0; i < animationCount && i < MAX_ANIMATIONS; ++i) {
+				char indexStr[32];
+				sprintf_s(indexStr, "%d", i);
+
+				std::string nameField = std::string("Anim") + indexStr + " Name";
+				std::string texField = std::string("Anim") + indexStr + " Texture";
+				std::string fwField = std::string("Anim") + indexStr + " FrameW";
+				std::string fhField = std::string("Anim") + indexStr + " FrameH";
+				std::string rowsField = std::string("Anim") + indexStr + " Rows";
+				std::string colsField = std::string("Anim") + indexStr + " Cols";
+				std::string durField = std::string("Anim") + indexStr + " Duration";
+				std::string loopField = std::string("Anim") + indexStr + " Looping";
+
+				l(nameField.c_str(), animations[i].name, "char64");
+				l(texField.c_str(), animations[i].texturePath, "texchar240");
+				l(fwField.c_str(), animations[i].frameWidth, "int");
+				l(fhField.c_str(), animations[i].frameHeight, "int");
+				l(rowsField.c_str(), animations[i].rows, "int");
+				l(colsField.c_str(), animations[i].cols, "int");
+				l(durField.c_str(), animations[i].frameDuration, "float");
+				l(loopField.c_str(), animations[i].looping, "bool");
+			}
 		}
 
 	};
