@@ -72,9 +72,20 @@ void GameApplication::initialize() {
 			cachedSceneTwoEntities_.clear();
 			entitiesDirty_ = true;
 			std::cout << "[GameApplication] Scene cleared, reset selected entity and cleared caches" << std::endl;
+		});
 
-			// Play appropriate BGM for the loaded scene
+	// Subscribe to PlayScene event to start BGM when game starts
+	engine_.getEventBus().subscribe<Editor::PlayScene>([this](const Editor::PlayScene&)
+		{
+			std::cout << "[GameApplication] Play button pressed - starting BGM" << std::endl;
 			playSceneBGM();
+		});
+
+	// Subscribe to StopScene event to stop BGM when game stops
+	engine_.getEventBus().subscribe<Editor::StopScene>([this](const Editor::StopScene&)
+		{
+			std::cout << "[GameApplication] Stop button pressed - stopping BGM" << std::endl;
+			engine_.getEventBus().publish(Audio::StopBGM{});
 		});
 
 	std::cout << "Game initialized successfully!" << std::endl;
