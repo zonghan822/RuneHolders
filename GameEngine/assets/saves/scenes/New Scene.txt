@@ -69,7 +69,16 @@
 				"Cols": <int> { 1 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { MainMenuV2 }
+				"Anim0 FrameW": <int> { 1920 }
+				"Anim0 FrameH": <int> { 1080 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::CameraComponent]
@@ -156,7 +165,16 @@
 				"Cols": <int> { 6 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { idle }
+				"Anim0 Name": <char64> { idle }
+				"Anim0 Texture": <texchar240> { MainMenuAnimSpriteSheet_TransV3 }
+				"Anim0 FrameW": <int> { 1170 }
+				"Anim0 FrameH": <int> { 1080 }
+				"Anim0 Rows": <int> { 5 }
+				"Anim0 Cols": <int> { 6 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -242,6 +260,7 @@
 				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
 			}
 		}

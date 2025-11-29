@@ -973,6 +973,25 @@ void GameApplication::updateEntities() {
 							ctrl->setAnimation(animComp.currentAnimationName);
 							std::cout << "[GameLogic] Set current animation to '" << animComp.currentAnimationName << "'" << std::endl;
 						}
+
+						// Sync the current texture to DrawInfoComponent
+						// This is crucial for the renderer to use drawTexturedQuadUV
+						if (entity.has<ECSComponents::DrawInfoComponent>(engine_.getEntityManager()) && ctrl->currentTexture_) {
+							auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
+							drawComp.texture = ctrl->currentTexture_;
+
+							// Also update the texture path in DrawInfoComponent to match
+							if (!ctrl->currentAnimationName_.empty()) {
+								for (int i = 0; i < animComp.animationCount; ++i) {
+									if (strcmp(animComp.animations[i].name, ctrl->currentAnimationName_.c_str()) == 0) {
+										strncpy_s(drawComp.texturePath, animComp.animations[i].texturePath, sizeof(drawComp.texturePath) - 1);
+										drawComp.texturePath[sizeof(drawComp.texturePath) - 1] = '\0';
+										break;
+									}
+								}
+							}
+							std::cout << "[GameLogic] Synced texture to DrawInfoComponent for animation '" << ctrl->currentAnimationName_ << "'" << std::endl;
+						}
 					}
 				}
 			}

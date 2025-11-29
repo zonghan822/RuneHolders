@@ -254,6 +254,12 @@ namespace ECSComponents
 			animations[index].frameDuration = dur;
 			animations[index].looping = loop;
 
+			// Set current animation name if not already set
+			if (strlen(currentAnimationName) == 0) {
+				strncpy_s(currentAnimationName, name, sizeof(currentAnimationName) - 1);
+				currentAnimationName[sizeof(currentAnimationName) - 1] = '\0';
+			}
+
 			// Update serialization fields from the current animation
 			updateSerializationFields();
 		}
@@ -286,11 +292,19 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
+			// Always save old format fields FIRST - these are required for backward compatibility and draw calls
+			l("Frame Width", frameWidth, "int");
+			l("Frame Height", frameHeight, "int");
+			l("Rows", rows, "int");
+			l("Cols", cols, "int");
+			l("Frame Duration", frameDuration, "float");
+			l("Looping", looping, "bool");
+
 			// Don't serialize controllerID - it will be reassigned when component is added
 			l("Animation Count", animationCount, "int");
 			l("Current Animation", currentAnimationName, "char64");
 
-			// Serialize all animations using old format (Frame Width, Height, Rows, Cols)
+			// Serialize all animations using new array format (ADDED, not replacing old format)
 			for (int i = 0; i < animationCount && i < MAX_ANIMATIONS; ++i) {
 				char indexStr[32];
 				sprintf_s(indexStr, "%d", i);
@@ -313,14 +327,6 @@ namespace ECSComponents
 				l(durField.c_str(), animations[i].frameDuration, "float");
 				l(loopField.c_str(), animations[i].looping, "bool");
 			}
-
-			// Also save old format fields for backward compatibility with existing saves
-			l("Frame Width", frameWidth, "int");
-			l("Frame Height", frameHeight, "int");
-			l("Rows", rows, "int");
-			l("Cols", cols, "int");
-			l("Frame Duration", frameDuration, "float");
-			l("Looping", looping, "bool");
 		}
 
 		template <typename Visitor>
