@@ -199,11 +199,19 @@ namespace ECSComponents
 	struct AnimationControllerComponent {
 		uint32_t controllerID;
 
-		// Store up to 10 animations (idle, walk, attack, etc.)
+		// Store up to 10 animations (idle, walk, attack, etc.) - for runtime use
 		static constexpr int MAX_ANIMATIONS = 10;
 		AnimationData animations[MAX_ANIMATIONS];
 		int animationCount = 0;
 		char currentAnimationName[64] = "";
+
+		// Serialization fields - using old format for persistence
+		int frameWidth = 0;
+		int frameHeight = 0;
+		int rows = 0;
+		int cols = 0;
+		float frameDuration = 0.1f;
+		bool looping = true;
 
 		AnimationControllerComponent(): controllerID(0) {}
 
@@ -245,6 +253,34 @@ namespace ECSComponents
 			animations[index].cols = c;
 			animations[index].frameDuration = dur;
 			animations[index].looping = loop;
+
+			// Update serialization fields from the current animation
+			updateSerializationFields();
+		}
+
+		// Sync serialization fields from current animation for saving
+		void updateSerializationFields() {
+			// Find the current animation and sync its data to the old format fields
+			for (int i = 0; i < animationCount; ++i) {
+				if (strcmp(animations[i].name, currentAnimationName) == 0) {
+					frameWidth = animations[i].frameWidth;
+					frameHeight = animations[i].frameHeight;
+					rows = animations[i].rows;
+					cols = animations[i].cols;
+					frameDuration = animations[i].frameDuration;
+					looping = animations[i].looping;
+					return;
+				}
+			}
+			// If no match found, use first animation if available
+			if (animationCount > 0) {
+				frameWidth = animations[0].frameWidth;
+				frameHeight = animations[0].frameHeight;
+				rows = animations[0].rows;
+				cols = animations[0].cols;
+				frameDuration = animations[0].frameDuration;
+				looping = animations[0].looping;
+			}
 		}
 
 		template <typename Visitor>
@@ -254,7 +290,7 @@ namespace ECSComponents
 			l("Animation Count", animationCount, "int");
 			l("Current Animation", currentAnimationName, "char64");
 
-			// Only serialize animations that actually have data (up to animationCount)
+			// Serialize all animations using old format (Frame Width, Height, Rows, Cols)
 			for (int i = 0; i < animationCount && i < MAX_ANIMATIONS; ++i) {
 				char indexStr[32];
 				sprintf_s(indexStr, "%d", i);
@@ -277,6 +313,14 @@ namespace ECSComponents
 				l(durField.c_str(), animations[i].frameDuration, "float");
 				l(loopField.c_str(), animations[i].looping, "bool");
 			}
+
+			// Also save old format fields for backward compatibility with existing saves
+			l("Frame Width", frameWidth, "int");
+			l("Frame Height", frameHeight, "int");
+			l("Rows", rows, "int");
+			l("Cols", cols, "int");
+			l("Frame Duration", frameDuration, "float");
+			l("Looping", looping, "bool");
 		}
 
 		template <typename Visitor>
@@ -285,7 +329,7 @@ namespace ECSComponents
 			l("Animation Count", animationCount, "int");
 			l("Current Animation", currentAnimationName, "char64");
 
-			// Only serialize animations that actually have data (up to animationCount)
+			// Serialize all animations using old format (Frame Width, Height, Rows, Cols)
 			for (int i = 0; i < animationCount && i < MAX_ANIMATIONS; ++i) {
 				char indexStr[32];
 				sprintf_s(indexStr, "%d", i);
@@ -308,6 +352,9 @@ namespace ECSComponents
 				l(durField.c_str(), animations[i].frameDuration, "float");
 				l(loopField.c_str(), animations[i].looping, "bool");
 			}
+
+			// Don't save old format fields when new format is used
+			// This is only for loading old saves
 		}
 
 	};

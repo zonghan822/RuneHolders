@@ -2886,6 +2886,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ctrl->setAnimation("Idle");
 
 		// Save animation configuration to component for serialization
+		std::strncpy(animComp.currentAnimationName, "Idle", sizeof(animComp.currentAnimationName) - 1);
 		animComp.setAnimationData(
 			"Idle",
 			idleSelected.c_str(),
@@ -2896,7 +2897,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			0.1f,
 			true
 		);
-		std::strncpy(animComp.currentAnimationName, "Idle", sizeof(animComp.currentAnimationName) - 1);
 	}
 
 	if (!idleHasTexture)
@@ -3079,6 +3079,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ctrl->setAnimation("Walk");
 
 		// Save animation configuration to component for serialization
+		std::strncpy(animComp.currentAnimationName, "Walk", sizeof(animComp.currentAnimationName) - 1);
 		animComp.setAnimationData(
 			"Walk",
 			walkSelected.c_str(),
@@ -3089,7 +3090,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			0.1f,
 			true
 		);
-		std::strncpy(animComp.currentAnimationName, "Walk", sizeof(animComp.currentAnimationName) - 1);
 	}
 
 	if (!walkHasTexture)
@@ -3272,6 +3272,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ctrl->setAnimation("Attack");
 
 		// Save animation configuration to component for serialization
+		std::strncpy(animComp.currentAnimationName, "Attack", sizeof(animComp.currentAnimationName) - 1);
 		animComp.setAnimationData(
 			"Attack",
 			attackSelected.c_str(),
@@ -3282,7 +3283,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			0.1f,
 			true
 		);
-		std::strncpy(animComp.currentAnimationName, "Attack", sizeof(animComp.currentAnimationName) - 1);
 	}
 
 	if (!attackHasTexture)

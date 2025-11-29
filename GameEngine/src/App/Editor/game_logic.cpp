@@ -886,7 +886,29 @@ void GameApplication::updateEntities() {
 			if (entity.has<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager())) {
 				auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager());
 
-				// Check if animation data exists but controller is not initialized
+				// Handle old format (backward compatibility) - single animation with Frame Width/Height/Rows/Cols
+				if (animComp.animationCount == 0 && animComp.frameWidth > 0 && animComp.frameHeight > 0) {
+					if (entity.has<ECSComponents::DrawInfoComponent>(engine_.getEntityManager())) {
+						auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
+
+						// Migrate old format to new array format
+						const char* animName = (strlen(animComp.currentAnimationName) > 0) ? animComp.currentAnimationName : "Default";
+						animComp.setAnimationData(
+							animName,
+							drawComp.texturePath,
+							animComp.frameWidth,
+							animComp.frameHeight,
+							animComp.rows,
+							animComp.cols,
+							animComp.frameDuration,
+							animComp.looping
+						);
+
+						std::cout << "[GameLogic] Migrated old format animation '" << animName << "' to new format" << std::endl;
+					}
+				}
+
+				// Restore all animations from the animations array
 				if (animComp.animationCount > 0 && animComp.controllerID == 0) {
 					// Create new controller
 					animComp.controllerID = engine_.getAnimationRegistry().createController();
@@ -913,7 +935,7 @@ void GameApplication::updateEntities() {
 							}
 
 							if (texture) {
-								// Recreate the animation
+								// Recreate the animation using Frame Width/Height/Rows/Cols
 								Animation::EnoAnimation anim = Animation::createSpriteSheetAnimation(
 									animData.frameWidth,
 									animData.frameHeight,
@@ -928,8 +950,8 @@ void GameApplication::updateEntities() {
 								ctrl->addAnimation(animData.name, anim, texture);
 
 								std::cout << "[GameLogic] Restored animation '" << animData.name
-									<< "' for entity (frames: " << animData.frameWidth << "x" << animData.frameHeight
-									<< ", grid: " << animData.rows << "x" << animData.cols << ")" << std::endl;
+									<< "' (FrameW: " << animData.frameWidth << ", FrameH: " << animData.frameHeight
+									<< ", Rows: " << animData.rows << ", Cols: " << animData.cols << ")" << std::endl;
 							}
 						}
 
