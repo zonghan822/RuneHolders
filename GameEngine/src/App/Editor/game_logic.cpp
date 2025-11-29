@@ -309,14 +309,14 @@ void GameApplication::setupAnimations() {
 		return;
 	}
 
-	// Create player idle animation (same sprite sheet as test)
+	// Create player idle animation - 1 row, 17 columns, 96x96 per frame
 	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
 		96,    // Frame width
 		96,    // Frame height
-		2304,  // Sheet width
+		1632,  // Sheet width (96 * 17 = 1632)
 		96,    // Sheet height
 		0,     // Start frame
-		24,    // Frame count
+		17,    // Frame count
 		0.1f   // Duration per frame
 	);
 
@@ -680,13 +680,32 @@ void GameApplication::updateGameLogic() {
 									// Update animation and get current frame
 									const Animation::AnimationFrame& frame = ctrl->update(static_cast<float>(deltaTime));
 
+									// Get UV coordinates
+									Math::eVec2<float> uvStart = frame.uvStart;
+									Math::eVec2<float> uvEnd = frame.uvEnd;
+
+									// Check if entity is a fireball and flip it horizontally
+									if (entity.has<ECSComponents::FireballComponent>(entityManager)) {
+										std::swap(uvStart.x, uvEnd.x);
+									}
+
+									// Check if entity is an enemy with AI and flip based on movement direction
+									if (entity.has<ECSComponents::AIComponent>(entityManager) &&
+										entity.has<ECSComponents::PhysicsComponent>(entityManager)) {
+										auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
+										// Flip sprite if moving right (positive x velocity)
+										if (physics.velocity.x > 0.1f) {
+											std::swap(uvStart.x, uvEnd.x);
+										}
+									}
+
 									// Draw with animation UV coordinates
 									engine_.getGraphicsManager().drawTexturedQuadUV(
 										Math::eVec2<float>{topLeftX, topLeftY},
 										Math::eVec2<float>{scaledWidth, scaledHeight},
 										renderInfo.texture,
-										frame.uvStart,
-										frame.uvEnd,
+										uvStart,
+										uvEnd,
 										renderInfo.color,
 										rotation
 									);
@@ -1877,6 +1896,11 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 		direction.y /= length;
 	}
 
+	// Calculate rotation angle for fireball orientation
+	// atan2 gives angle in radians, fireball sprite points left by default (-180 degrees or PI radians)
+	// So we need to add PI to make it point in the direction of movement
+	float fireballRotation = std::atan2(direction.y, direction.x);
+
 	// Offset spawn position so fireball doesn't collide with player
 	float spawnOffset = 100.0f;  // Spawn 100 pixels away from player center
 	Math::eVec2<float> spawnPos = {
@@ -1900,6 +1924,7 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	auto& transform = fireball.get<ECSComponents::TransformComponent>(entityManager);
 	transform.pos = spawnPos;  // Spawn offset from player
 	transform.scale = { 1.0f, 1.0f };
+	transform.rot.x = fireballRotation;  // Set rotation to face direction of travel
 
 	// Set fireball velocity toward target
 	auto& physics = fireball.get<ECSComponents::PhysicsComponent>(entityManager);
@@ -1923,18 +1948,18 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	);
 	fireball.add<ECSComponents::CollisionComponent>(entityManager, fireballCollision);
 
-	// Setup animation configuration - fireball spritesheet is 360x48 with 4 frames (90x48 each)
+	// Setup animation configuration - fireball spritesheet is 1 row, 4 columns, 90x48 per frame
 	auto& animComp = fireball.get<ECSComponents::AnimationControllerComponent>(entityManager);
 	if (fireballTexture && fireballTexture->isValid()) {
 		animComp.setAnimationData(
-			"fly",                  // Animation name
-			"fireball.png",         // Texture path
-			90,                     // Frame width
-			48,                     // Frame height
-			1,                      // Rows
-			4,                      // Cols
-			0.1f,                   // Frame duration
-			true                    // Looping
+			"fly",                              // Animation name
+			"Spell-Fireball-Flying-Sheet",      // Texture path (match resource loader name)
+			90,                                 // Frame width
+			48,                                 // Frame height
+			1,                                  // Rows
+			4,                                  // Cols
+			0.1f,                               // Frame duration
+			true                                // Looping
 		);
 		strcpy_s(animComp.currentAnimationName, "fly");
 	}
