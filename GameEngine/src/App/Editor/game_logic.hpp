@@ -171,6 +171,7 @@ private:
     void setupAnimations();
     void setupScripting();
     void setupFont();           // setup font
+    void setupCombatSystem();   // Add health/damage to player and enemies
     //void createTestObjectsAndAddToSceneTree();  // Create test objects and add them to scene tree
 
     // Update methods (called every frame)
@@ -191,4 +192,7 @@ private:
     void updateRuneHover(const Math::eVec2<float>& mouseWorldPos);  // Check if mouse hovers over runes
     void drawRuneConnectionLine();                  // Draw line connecting runes
     void spawnFireball(const Math::eVec2<float>& pos);  // Spawn fireball when runes connect
+
+    // Combat system methods
+    void updateCombatSystem(float deltaTime);       // Handle damage dealing and health updates
 };
