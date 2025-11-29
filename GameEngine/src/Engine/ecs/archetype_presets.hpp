@@ -145,7 +145,7 @@ namespace ECSComponents
 		template <typename Tuple>
 		void save(const std::string& name, Tuple&& tuple)
 		{
-			std::string filename = std::string(ASSETS_DIR_PATH) + "saves/prefabs/" + name;
+			std::string filename = FileSystem::GetAssetsDir().string() + "/saves/prefabs/" + name;
 			
 			// Append preferred extension for save file format
 			if (filename.find(".txt") == std::string::npos)
@@ -210,7 +210,7 @@ namespace ECSComponents
 			// has been appended with the appropriate extension
 			//
 			// This name passed will also serve as the name of the preset to look for
-			std::filesystem::path filePath = std::filesystem::path(ASSETS_DIR_PATH) / "saves/prefabs" / name;
+			std::filesystem::path filePath = FileSystem::GetAssetsDir() / "saves/prefabs" / name;
 
 			if (filePath.extension() != ".txt")
 				filePath += ".txt";

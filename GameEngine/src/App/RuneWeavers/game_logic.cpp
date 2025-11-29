@@ -409,8 +409,8 @@ void GameApplication::setupGameMath() {
 	// No need to initialize them here anymore
 
 	// Load player config
-	playerConfig_.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
-	std::cout << "[GameLogic] Player configg loaded" << std::endl;
+	playerConfig_.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
+	std::cout << "[GameLogic] Player config loaded" << std::endl;
 }
 
 void GameApplication::setupAnimations() {
@@ -881,7 +881,6 @@ void GameApplication::updateEntities() {
 			}
 		}
 	}
-	updateTestObject(engine_.getEntityManager(), engine_);
 }
 
 

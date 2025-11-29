@@ -16,7 +16,6 @@
 
 // FMOD
 #include "fmod.hpp"
-
 #include "../audio/eno_audio_module.hpp"
 
 // Events
@@ -28,6 +27,8 @@
 
 // Tile Map
 #include "../tilemap/tilemap.hpp"
+
+#include "../file/file_system.hpp"
 
 // stds
 #include <iostream>
@@ -53,23 +54,23 @@ namespace Resources
 	{
 	private:
 		// Sounds
-		static constexpr std::string_view musicPath_ = ASSETS_DIR_PATH "sound/music/";
-		static constexpr std::string_view sfxPath_ = ASSETS_DIR_PATH "sound/sfx/";
+		std::string musicPath_;
+		std::string sfxPath_;
 		static constexpr std::array<std::string_view, 2> soundExtensions_ = { ".wav", ".mp3" };
 		std::unordered_map<std::string, FMOD::Sound*> sounds_;
 		std::vector<std::unique_ptr<Audio::EnoAudioModule>> audioMods_;
 
 		// Images
-		static constexpr std::string_view imagePath_ = ASSETS_DIR_PATH "art/";
+		std::string imagePath_;
 		std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>> textures_;
 
 		// Shaders
-		static constexpr std::string_view shaderPath_ = ASSETS_DIR_PATH "shaders/";
+		std::string shaderPath_;
 		std::unordered_map<std::string, std::string> vertShaders_;
 		std::unordered_map<std::string, std::string> fragShaders_;
 
 		// Fonts
-		static constexpr std::string_view fontPath_ = ASSETS_DIR_PATH "fonts/";
+		std::string fontPath_;
 		Font::FontManager fontManager_;
 
 		// Event Bus

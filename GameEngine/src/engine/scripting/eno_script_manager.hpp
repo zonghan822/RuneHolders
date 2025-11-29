@@ -22,7 +22,7 @@ namespace Script
 	class EnoScriptManager
 	{
 	private:
-		static constexpr std::string_view scriptPath = SCRIPT_SRC_PATH;
+		std::string scriptPath;
 
 	public:
 		EnoScriptManager(Core::EnoCoreHost&);

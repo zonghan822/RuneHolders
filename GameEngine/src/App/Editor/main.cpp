@@ -11,9 +11,11 @@ void EnableMemoryLeakChecking(int breakAlloc = -1)
     if (breakAlloc != -1) _CrtSetBreakAlloc(breakAlloc);
 }
 
-int main() {
+int main(int argc, char** argv) {
     try {
         EnableMemoryLeakChecking();
+
+        FileSystem::Initialize(argv[0]);
 
         // Create game instance
         GameApplication game;

@@ -12,10 +12,6 @@
 
 namespace Config {
 
-	EnoConfigManager::EnoConfigManager() {
-		retrieveSettings();
-	}
-
 	std::pair<int, int> EnoConfigManager::getWindowDim() 
 	{
 		auto it = configMap_.find("Window Width");

@@ -335,7 +335,7 @@ ECS::Entity instantiatePrefabFromSnapshot(
             if (renderComp.texturePath[0] != '\0' && !renderComp.texture)
             {
                 auto tex = std::make_shared<Graphics::EnoTexture>();
-                std::string fullpath = ASSETS_DIR_PATH "/art/" + std::string(renderComp.texturePath) + ".png";
+                std::string fullpath = FileSystem::GetAssetsDir().string() + "/art/" + std::string(renderComp.texturePath) + ".png";
 
                 if (tex->loadFromFile(fullpath))
                 {

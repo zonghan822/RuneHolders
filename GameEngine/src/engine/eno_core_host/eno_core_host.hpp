@@ -10,6 +10,8 @@
 #include "../input/eno_input_events.hpp"
 #include "../event/signals.hpp"
 
+#include "../file/file_system.hpp"
+
 // Windows | CoreClr
 #include <Windows.h>
 #include <coreclr_delegates.h>
@@ -31,8 +33,8 @@ namespace Core
 	class EnoCoreHost
 	{
 	private:
-		const std::string asmDllPath = SCRIPT_BIN_PATH "GameScripts.dll";
-		const wchar_t* runtConfigJson = SCRIPT_BIN_PATH L"GameScripts.runtimeconfig.json";
+		std::filesystem::path asmDllPath;
+		std::filesystem::path runtConfigJson;
 
 		//const wchar_t* userScriptPath{ SCRIPT_SRC_PATH };
 		//const wchar_t* asmDllAbsPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/Publish/GameScripts.dll" };

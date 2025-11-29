@@ -34,20 +34,34 @@ macro(INCLUDE_DIR_BY_FOLDER ALL_FILES APP_NAME)
     target_include_directories(${APP_NAME} PRIVATE ${include_dirs})
 endmacro()
 
-# Define function to copy assets with conditional copying
-function(COPY_FOLDER_IF_DIFFERENT PROJECT_NAME source_dir dest_dir)
-    file(GLOB_RECURSE ASSET_FILES "${source_dir}/*")
 
-    foreach(asset ${ASSET_FILES})
-        get_filename_component(relative_path ${asset} DIRECTORY)
-        string(REPLACE "${source_dir}" "" relative_path "${relative_path}")
-        set(dest_file "${dest_dir}/${relative_path}")
-        
+# Define function to copy assets with conditional copying
+function(COPY_FOLDER_IF_DIFFERENT target source_dir)
+    # Remove first two arguments (target + source)
+    set(options)
+    set(oneValueArgs)
+    set(multiValueArgs DESTINATIONS)
+    cmake_parse_arguments(CF " " " " "DESTINATIONS" ${ARGN})
+
+    if(NOT EXISTS "${source_dir}")
+        message(FATAL_ERROR "[COPY_FOLDER_IF_DIFFERENT] Source not found: ${source_dir}")
+    endif()
+
+    foreach(dest ${CF_DESTINATIONS})
+        # Ensure directory expansion works with generator expressions
+        set(expanded_dest "${dest}")
+
         add_custom_command(
-            TARGET ${PROJECT_NAME}
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${dest_file}
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${asset} ${dest_file}
+            TARGET ${target} PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${expanded_dest}"
+        )
+
+        add_custom_command(
+            TARGET ${target} PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${source_dir}"
+                "${expanded_dest}"
+            COMMENT "Copying ${source_dir} -> ${expanded_dest}"
         )
     endforeach()
 endfunction()

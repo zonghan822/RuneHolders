@@ -10,6 +10,7 @@
 
 #pragma once
 // Engine component(s)
+#include "../file/file_system.hpp"
 #include "../graphics/graphics.hpp"
 #include "../settings/eno_config.hpp"
 #include "../resources/eno_loader.hpp"
@@ -60,6 +61,7 @@ namespace Engine
 	class ENGINE_API EnoEngine
 	{
 	public:
+
 		/*============================================================================================
 		* \brief		Initializes all engine systems and sets up the application window
 		*//*========================================================================================*/

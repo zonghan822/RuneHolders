@@ -190,7 +190,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	static Player::PlayerConfig playerConfig;
 	static bool configLoaded = false;
 	if (!configLoaded) {
-		configLoaded = playerConfig.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
+		configLoaded = playerConfig.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
 		if (configLoaded) {
 			std::cout << "[ImGui] Player config loaded successfully" << std::endl;
 		}
@@ -279,7 +279,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	if (g_pendingNewScene)
 	{
 		clearSelectedEntity();
-		engine_.getEnoEditor().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
+		engine_.getEnoEditor().createEmptyScene(FileSystem::GetAssetsDir().string() + "/saves/scenes/");
 		g_game->markEntitiesDirty();  // Force entity cache refresh
 		g_pendingNewScene = false;
 		g_resetEntityCounter = true;  // Reset counter for new scene
@@ -765,7 +765,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	// Load performs a "read all file in directory" now
 	if (ImGui::Button("Load Existing Prefab")) {
 		try {
-			for (auto& entry : std::filesystem::directory_iterator(ASSETS_DIR_PATH"saves/prefabs/")) {
+			for (auto& entry : std::filesystem::directory_iterator(FileSystem::GetAssetsDir().string() + "/saves/prefabs/")) {
 				if (entry.path().extension() == ".txt") {
 					try {
 						PrefabData loaded = loadPrefab(entry.path().string());
@@ -918,7 +918,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 			// Load player configuration from file
 			Player::PlayerConfig playerConfig;
-			playerConfig.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
+			playerConfig.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
 
 			// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
 			// Create transform with default position at center of screen
@@ -1526,8 +1526,10 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	if (ImGui::Button("Save scene"))
 	{
 		std::string sceneName = editor_.getCurrentScene().getSceneName();
+
 		// Save scene
-		editor_.getSceneTree().save(ASSETS_DIR_PATH "saves/scenes/" + sceneName, sceneName);
+		auto const& assetPath = FileSystem::GetAssetsDir().string();
+		editor_.getSceneTree().save(assetPath + "/saves/scenes/" + sceneName, sceneName);
 		// Update last saved scene
 		editor_.updateLastSavedScene();
 	}
@@ -3477,7 +3479,7 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 
 			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
 				// Construct destination path in assets folder
-				std::string assetsImagePath = std::string(ASSETS_DIR_PATH) + "art/";
+				std::string assetsImagePath = FileSystem::GetAssetsDir().string() + "/art/";
 				std::string filename = filePath.filename().string();
 				std::filesystem::path destPath = std::filesystem::path(assetsImagePath) / filename;
 
@@ -4025,7 +4027,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
 					{
 						// Construct destination path in assets folder
-						std::string assetsImagePath = std::string(ASSETS_DIR_PATH) + "art/";
+						std::string assetsImagePath = FileSystem::GetAssetsDir().string() + "/art/";
 						std::string filename = filePath.filename().string();
 						std::string textureName = filePath.stem().string();
 						std::filesystem::path destPath = std::filesystem::path(assetsImagePath) / filename;

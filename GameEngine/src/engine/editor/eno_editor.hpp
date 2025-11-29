@@ -37,9 +37,9 @@ namespace Editor
 			// Get all available scenes
 			// Check that the file is a .txt file
 			try {
-				for (const auto& fileEntry : std::filesystem::directory_iterator(ASSETS_DIR_PATH "saves/scenes/"))
+				for (const auto& fileEntry : std::filesystem::directory_iterator(FileSystem::GetAssetsDir() / "saves/scenes"))
 				{
-					if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (ASSETS_DIR_PATH "saves/scenes/" "LastSavedScene.txt"))
+					if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (FileSystem::GetAssetsDir() / "saves/scenes/LastSavedScene.txt"))
 					{
 						// Add file to scenes_
 						std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
@@ -91,7 +91,7 @@ namespace Editor
 		void deleteScene(std::string sceneName)
 		{
 			// Remove from files
-			std::filesystem::remove(ASSETS_DIR_PATH"saves/scenes/" + sceneName);
+			std::filesystem::remove(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName);
 			//std::cout << "[Eno_Editor] Scene deleted: " << sceneName << std::endl;
 
 			// Find scene index in scenes_ list
@@ -108,7 +108,7 @@ namespace Editor
 		void selectScene(const std::string& filename)
 		{
 			// Load selected scene
-			tree_.load(ASSETS_DIR_PATH "saves/scenes/" + filename);
+			tree_.load(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + filename);
 
 			// Point to selected scene
 			auto index = std::find_if(scenes_.begin(), scenes_.end(),
@@ -135,13 +135,13 @@ namespace Editor
 			try
 			{
 				// Get current filepath
-				std::filesystem::path currentPath = ASSETS_DIR_PATH"saves/scenes/" + oldName;
+				std::filesystem::path currentPath = FileSystem::GetAssetsDir().string() + "/saves/scenes/" + oldName;
 
 				// Check for .txt extension in new file
 				std::string newSceneName = newName;
 				if (newSceneName.find(".txt") == std::string::npos) newSceneName += ".txt";
 
-				std::filesystem::path newPath = ASSETS_DIR_PATH"saves/scenes/" + newSceneName;
+				std::filesystem::path newPath = FileSystem::GetAssetsDir().string() + "/saves/scenes/" + newSceneName;
 				std::filesystem::rename(currentPath, newPath);
 
 				// Check if we're renaming the currently active scene
@@ -183,7 +183,7 @@ namespace Editor
 			std::string sceneName = selectedScene_->getSceneName();
 
 			// Save the current state of the scene
-			tree_.save(ASSETS_DIR_PATH "saves/scenes/" + sceneName, sceneName);
+			tree_.save(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName, sceneName);
 
 			// Update last saved scene file
 			std::cout << "[Eno_editor] current scene: " << sceneName  << std::endl;
@@ -329,13 +329,13 @@ namespace Editor
 		void loadLastSavedScene()
 		{
 			// Get path to assets
-			std::string currentScenePath = ASSETS_DIR_PATH "saves/scenes/" "LastSavedScene.txt";
+			std::string currentScenePath = FileSystem::GetAssetsDir().string() + "/saves/scenes/LastSavedScene.txt";
 			std::ifstream savedSceneFile{ currentScenePath };
 			if (!savedSceneFile.is_open())
 			{
 				// File doesn't exist, create a new scene
 				std::cout << "[Eno_Editor] No saved scene found, creating new scene" << std::endl;
-				createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
+				createEmptyScene(FileSystem::GetAssetsDir().string() + "/saves/scenes/");
 			}
 			else
 			{
@@ -351,12 +351,12 @@ namespace Editor
 				if (savefile.empty())
 				{
 					std::cout << "[Eno_Editor] LastSavedScene.txt is empty, creating new scene..." << std::endl;
-					createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
+					createEmptyScene(FileSystem::GetAssetsDir().string() + "/saves/scenes/");
 				}
 				else
 				{
 					// Check if the scene file actually exists before loading
-					std::string fullScenePath = ASSETS_DIR_PATH "saves/scenes/" + savefile;
+					std::string fullScenePath = FileSystem::GetAssetsDir().string() + "/saves/scenes/" + savefile;
 					if (std::filesystem::exists(fullScenePath))
 					{
 						tree_.load(fullScenePath);
@@ -377,7 +377,7 @@ namespace Editor
 					else
 					{
 						std::cerr << "[EnoSceneTree] Scene file not found: " << fullScenePath << ", creating new scene..." << std::endl;
-						createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
+						createEmptyScene(FileSystem::GetAssetsDir().string() + "/saves/scenes/");
 					}
 				}
 			}
@@ -389,7 +389,7 @@ namespace Editor
 		*//*========================================================================================*/
 		void updateLastSavedScene()
 		{
-			std::ofstream lastSceneSave{ ASSETS_DIR_PATH "saves/scenes/" "LastSavedScene.txt" };
+			std::ofstream lastSceneSave{ FileSystem::GetAssetsDir().string() + "/saves/scenes/LastSavedScene.txt" };
 			if (!lastSceneSave)
 			{
 				throw std::runtime_error("[Eno_Editor] Failed to save current active scene name!");

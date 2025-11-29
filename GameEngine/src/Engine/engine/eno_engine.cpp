@@ -18,6 +18,7 @@ namespace Engine
 {
 	void EnoEngine::setup()
 	{
+		configMng_.retrieveSettings();
 		window_.initialize("RuneHolders", configMng_.getWindowDim().first, configMng_.getWindowDim().second);
 
 		auto [tmW, tmH, tmCell] = configMng_.getTilemapConfig();

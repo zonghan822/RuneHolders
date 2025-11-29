@@ -43,13 +43,6 @@ add_dependencies(${APP_NAME} ${SCRIPT_NAME}_cs)
 # Set common include directories
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/Engine)
-target_compile_definitions(${APP_NAME} PRIVATE
-    ASSETS_DIR_PATH="${CMAKE_SOURCE_DIR}/assets/"
-    SCRIPT_SRC_PATH="${SCRIPT_SOURCE_DIR}/user_scripts/"
-    SCRIPT_BIN_PATH="${SCRIPT_BINARY_DIR}/$<CONFIG>/"
-    APP_SRC_PATH="${PROJECT_SOURCE_DIR}/${APP_NAME}/"
-    APP_BIN_PATH="${PROJECT_BINARY_DIR}/"
-)
 
 # Link the library to the executable using the CMake target
 target_link_libraries(${APP_NAME} PUBLIC
@@ -59,5 +52,21 @@ target_link_libraries(${APP_NAME} PUBLIC
 _fmod_copy_dll(${APP_NAME})
 _dotnet_copy_dll(${APP_NAME})
 _engine_copy_dll(${APP_NAME})
+
+# Call the function to copy assets
+COPY_FOLDER_IF_DIFFERENT(
+    ${APP_NAME}
+    "${CMAKE_SOURCE_DIR}/assets"
+    DESTINATIONS
+        "${PROJECT_BINARY_DIR}/$<CONFIG>/assets"
+)
+
+# Call the function to copy scripts
+COPY_FOLDER_IF_DIFFERENT(
+    ${APP_NAME}
+    "${CMAKE_SOURCE_DIR}/scripts"
+    DESTINATIONS
+        "${PROJECT_BINARY_DIR}/$<CONFIG>/scripts"
+)
 
 ENDMACRO(SETUP_APP)

@@ -191,7 +191,7 @@ void MapEditor::displayMenu() {
 				std::string newMapName = mapSaveBuf;
 				if (newMapName.find(".json") == std::string::npos) newMapName += ".json";
 
-				std::string mapsDir = std::string(ASSETS_DIR_PATH) + "saves/maps/";
+				std::string mapsDir = FileSystem::GetAssetsDir().string() + "/saves/maps/";
 				if (!std::filesystem::exists(mapsDir)) {
 					std::filesystem::create_directories(mapsDir);
 				}
@@ -221,7 +221,7 @@ void MapEditor::displayMenu() {
 		static int selected = -1;
 
 		std::vector<std::string> files;
-		std::string mapsDir = std::string(ASSETS_DIR_PATH) + "saves/maps/";
+		std::string mapsDir = FileSystem::GetAssetsDir().string() + "/saves/maps/";
 
 		if (!std::filesystem::exists(mapsDir)) {
 			std::filesystem::create_directories(mapsDir);

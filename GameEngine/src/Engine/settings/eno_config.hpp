@@ -19,6 +19,7 @@
 
 // lib
 #include "../math/math.hpp"
+#include "../file/file_system.hpp"
 
 #define ENGINE_VER_SIZE 8
 
@@ -29,7 +30,7 @@ namespace Config
 	class EnoConfigManager 
 	{
 	private:
-		std::string cfgFileName_ = ASSETS_DIR_PATH "settings/config.txt";
+		std::string cfgFileName_ = FileSystem::GetAssetsDir().string() + "/settings/config.txt";
 
 		/*============================================================================================
 		 * \brief				Map for storing setting strings
@@ -47,11 +48,6 @@ namespace Config
 		static constexpr uint8_t COLON_OFFSET = 2;
 
 	public:
-
-		/*============================================================================================
-		 * \brief				Eno Config Constructor
-		*//*========================================================================================*/
-		EnoConfigManager();
 
 		/*============================================================================================
 		 * \brief				Finds the read window dimensions and casts them to int before
