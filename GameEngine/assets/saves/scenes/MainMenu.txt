@@ -1,180 +1,14 @@
 {
 
-	[Node0]
+	[MainMenuV3]
 	{
-		"ID": { 0 }
+		"ID": { 29 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
 			[struct ECSComponents::NameComponent]
 			{
-				"Name": <char32> { Entity 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 1018.52 | y : 1024 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 4.34606 | y : 3.39706 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 217.303 }
-				"Height": <float> { 169.853 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { MainMenuV2 }
-				"TexID": <int> { 0 }
-			}
-
-			[struct ECSComponents::CollisionComponent]
-			{
-				"Type": <ColliderType> { Rectangle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 0 }
-				"Rotation": <float> { 0 }
-				"Width": <float> { 217.303 }
-				"Height": <float> { 169.853 }
-			}
-
-			[struct ECSComponents::PhysicsComponent]
-			{
-				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
-				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
-				"Force": <eVec2(float)> { x : 0 | y : 0 }
-				"Mass": <float> { 2 }
-				"Drag": <float> { 8 }
-				"Restitution": <float> { 0.5 }
-				"UseGravity": <bool> { 0 }
-				"IsKinematic": <bool> { 0 }
-				"FreezeRotation": <bool> { 1 }
-				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
-				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
-			}
-
-			[struct ECSComponents::BoxComponent]
-			{
-				"isPushable": <bool> { 0 }
-				"pushResistance": <float> { 0.2 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 1920 }
-				"Frame Height": <int> { 1080 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 1 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Current Animation": <char64> { idle }
-			}
-
-			[struct ECSComponents::CameraComponent]
-			{
-				"Viewport Width": <float> { 930 }
-				"Viewport Height": <float> { 570 }
-				"Position": <eVec2(float)> { x : 1018.52 | y : 1024 }
-				"Is Active": <bool> { 1 }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-	}
-
-	[Node1]
-	{
-		"ID": { 1 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { Entity 2 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 1199.94 | y : 1027.76 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 3.40017 | y : 3.40017 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 170.009 }
-				"Height": <float> { 170.009 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { MainMenuAnimSpriteSheet_TransV3 }
-				"TexID": <int> { 0 }
-			}
-
-			[struct ECSComponents::CollisionComponent]
-			{
-				"Type": <ColliderType> { Rectangle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 0 }
-				"Rotation": <float> { 0 }
-				"Width": <float> { 170.009 }
-				"Height": <float> { 170.009 }
-			}
-
-			[struct ECSComponents::PhysicsComponent]
-			{
-				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
-				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
-				"Force": <eVec2(float)> { x : 0 | y : 0 }
-				"Mass": <float> { 2 }
-				"Drag": <float> { 8 }
-				"Restitution": <float> { 0.5 }
-				"UseGravity": <bool> { 0 }
-				"IsKinematic": <bool> { 0 }
-				"FreezeRotation": <bool> { 1 }
-				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
-				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
-			}
-
-			[struct ECSComponents::BoxComponent]
-			{
-				"isPushable": <bool> { 0 }
-				"pushResistance": <float> { 0.2 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 1170 }
-				"Frame Height": <int> { 1080 }
-				"Rows": <int> { 5 }
-				"Cols": <int> { 6 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Current Animation": <char64> { idle }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-	}
-
-	[Node2]
-	{
-		"ID": { 2 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { Entity 3 }
+				"Name": <char32> { MainMenuV3 }
 			}
 
 			[struct ECSComponents::TransformComponent]
@@ -187,11 +21,67 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 50 }
-				"Height": <float> { 50 }
+				"Width": <float> { 1920 }
+				"Height": <float> { 1080 }
 				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
-				"Texture Path": <texchar240> {  }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { MainMenuV3 }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::CameraComponent]
+			{
+				"Viewport Width": <float> { 1920 }
+				"Viewport Height": <float> { 1080 }
+				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
+				"Is Active": <bool> { 1 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Node30]
+	{
+		"ID": { 30 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Entity 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1395.04 | y : 1024 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1170 }
+				"Height": <float> { 1080 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { MainMenuAnimSpriteSheet_TransV3 }
 				"TexID": <int> { 0 }
 			}
 
@@ -202,8 +92,8 @@
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 50 }
-				"Height": <float> { 50 }
+				"Width": <float> { 1170 }
+				"Height": <float> { 1080 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -227,28 +117,30 @@
 				"pushResistance": <float> { 0.2 }
 			}
 
-			[struct ECSComponents::ButtonComponent]
-			{
-				"BtnText": <char32> { Button }
-				"TargetScene": <char32> { New Scene (3).txt }
-				"IsActive": <bool> { 1 }
-			}
-
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 1170 }
+				"Frame Height": <int> { 1080 }
+				"Rows": <int> { 5 }
+				"Cols": <int> { 6 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 1 }
+				"Current Animation": <char64> { Idle }
+				"Anim0 Name": <char64> { Idle }
+				"Anim0 Texture": <texchar240> { MainMenuAnimSpriteSheet_TransV3 }
+				"Anim0 FrameW": <int> { 1170 }
+				"Anim0 FrameH": <int> { 1080 }
+				"Anim0 Rows": <int> { 5 }
+				"Anim0 Cols": <int> { 6 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
-		"Script": { C:/SIT/Y2T1 FALL 2025/GAM/csd2401f25_team_runeholders/GameEngine/scripts/GameScripts/user_scripts/ButtonScript.cs }
+		"Script": { }
 		"Parent": { }
 		"Children": { }
-		"Listeners": { - 2, struct ECSComponents::ButtonComponent, onClick ` }
+		"Listeners": { }
 		"Enabled": { true }
 	}
 

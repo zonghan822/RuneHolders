@@ -2,8 +2,8 @@
 
 namespace AI {
 
-    AIManager::AIManager(Event::EnoEventBus& bus, PathfindingSystem& pathfinder, ECS::EntityManager& entMng)
-        : bus_(bus), pathfinder_(pathfinder), entMng_{entMng}
+    AIManager::AIManager(Event::EnoEventBus& bus, PathfindingSystem& pathfinder, ECS::EntityManager& entMng, Animation::AnimationControllerRegistry& animRegistry)
+        : bus_(bus), pathfinder_(pathfinder), entMng_{entMng}, animRegistry_(animRegistry)
     { 
         // Auto-register when AIComponent added
         bus_.subscribe<ECS::ComponentAdded>(
@@ -65,6 +65,39 @@ namespace AI {
             if (std::strcmp(ai.nextState, ai.currentState) != 0) {
                 strcpy(ai.currentState, ai.nextState);
                 machine.changeState(ai.nextState, entity, entMng_);
+
+                // Automatically switch animation when AI state changes
+                if (entity.has<ECSComponents::AnimationControllerComponent>(entMng_)) {
+                    auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entMng_);
+                    Animation::AnimationController* ctrl = animRegistry_.get(animComp.controllerID);
+
+                    if (ctrl) {
+                        // Map AI state names to animation names
+                        // This allows editor to use intuitive names like "Walk" while engine uses "Chase"
+                        std::string animationName = ai.currentState;
+                        if (strcmp(ai.currentState, "Chase") == 0) {
+                            animationName = "Walk";  // Chase state uses Walk animation
+                        }
+                        else if (strcmp(ai.currentState, "Windup") == 0) {
+                            animationName = "Attack";  // Windup state uses Attack animation
+                        }
+                        // Others map 1:1: Idle->Idle, Attack->Attack, Hurt->Hurt, Death->Death
+
+                        // Try to set the animation matching the mapped name
+                        if (ctrl->animations_.count(animationName)) {
+                            ctrl->setAnimation(animationName);
+
+                            // Also update the entity's texture to match the animation
+                            if (entity.has<ECSComponents::DrawInfoComponent>(entMng_)) {
+                                auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entMng_);
+                                auto tex = ctrl->getCurrentTexture();
+                                if (tex) {
+                                    drawComp.texture = tex;
+                                }
+                            }
+                        }
+                    }
+                }
             }
             machine.update(entity, entMng_, dt);
         }

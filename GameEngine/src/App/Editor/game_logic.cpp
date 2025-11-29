@@ -33,6 +33,7 @@ void GameApplication::initialize() {
 	setupAnimations();
 	setupScripting();
 	setupFont();
+	setupCombatSystem();
 
 	auto& tileMap = engine_.getTileMap();
 
@@ -108,6 +109,49 @@ void GameApplication::setupGameSystems() {
 void GameApplication::setupFont() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
+}
+
+void GameApplication::setupCombatSystem() {
+	auto& entityManager = engine_.getEntityManager();
+
+	std::cout << "[Editor] Setting up combat system..." << std::endl;
+
+	// Find player entity and add HealthComponent
+	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+	if (!playerEntities.empty()) {
+		ECS::Entity& playerEntity = playerEntities[0];
+		if (!playerEntity.has<ECSComponents::HealthComponent>(entityManager)) {
+			playerEntity.add<ECSComponents::HealthComponent>(entityManager, 100.0f);
+			std::cout << "[CombatSystem] Added HealthComponent to player (100 HP)" << std::endl;
+		}
+	}
+
+	// Find all enemies with AIComponent and add health/damage
+	std::vector<ECS::Entity> enemies = entityManager.findEntity<ECSComponents::AIComponent>();
+	for (auto& enemy : enemies) {
+		// Add or reset HealthComponent
+		if (!enemy.has<ECSComponents::HealthComponent>(entityManager)) {
+			enemy.add<ECSComponents::HealthComponent>(entityManager, 50.0f);
+			std::cout << "[CombatSystem] Added HealthComponent to enemy (50 HP)" << std::endl;
+		} else {
+			// Reset health to max if component already exists
+			auto& health = enemy.get<ECSComponents::HealthComponent>(entityManager);
+			health.currentHealth = 50.0f;
+			health.maxHealth = 50.0f;
+			health.isDead = false;
+			health.invulnerable = false;
+			health.invulnerabilityTimer = 0.0f;
+			std::cout << "[CombatSystem] Reset enemy health to 50 HP" << std::endl;
+		}
+
+		// Add DamageComponent if not already present
+		if (!enemy.has<ECSComponents::DamageComponent>(entityManager)) {
+			enemy.add<ECSComponents::DamageComponent>(entityManager, 10.0f);
+			std::cout << "[CombatSystem] Added DamageComponent to enemy (10 damage)" << std::endl;
+		}
+	}
+
+	std::cout << "[Editor] Combat system setup complete!" << std::endl;
 }
 
 void GameApplication::setupScripting() {
@@ -346,6 +390,9 @@ void GameApplication::updateGameLogic() {
 
 	// Update rune system
 	updateRuneSystem();
+
+	// Update combat system (damage dealing and health)
+	updateCombatSystem(deltaTime);
 
 	// Update engine playing state based on editor state
 	engine_.setIsPlaying(engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
@@ -883,36 +930,115 @@ void GameApplication::updateEntities() {
 
 		// Restore animations from serialized data after scene load
 		for (auto& entity : cachedDrawableEntities_) {
-			if (entity.has<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager()) &&
-				entity.has<ECSComponents::DrawInfoComponent>(engine_.getEntityManager())) {
+			if (entity.has<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager())) {
 				auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(engine_.getEntityManager());
-				auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
 
-				// Check if animation data exists but controller is not initialized
-				if (animComp.frameWidth > 0 && animComp.frameHeight > 0 && animComp.controllerID == 0) {
-					// Create new controller
-					animComp.controllerID = engine_.getAnimationRegistry().createController();
-					Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+				// Handle old format (backward compatibility) - single animation with Frame Width/Height/Rows/Cols
+				if (animComp.animationCount == 0 && animComp.frameWidth > 0 && animComp.frameHeight > 0) {
+					if (entity.has<ECSComponents::DrawInfoComponent>(engine_.getEntityManager())) {
+						auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
 
-					if (ctrl && drawComp.texture) {
-						// Recreate the animation from saved configuration
-						Animation::EnoAnimation anim = Animation::createSpriteSheetAnimation(
+						// Migrate old format to new array format
+						const char* animName = (strlen(animComp.currentAnimationName) > 0) ? animComp.currentAnimationName : "Default";
+						animComp.setAnimationData(
+							animName,
+							drawComp.texturePath,
 							animComp.frameWidth,
 							animComp.frameHeight,
-							drawComp.texture->getWidth(),
-							drawComp.texture->getHeight(),
-							0,  // start frame
-							animComp.rows * animComp.cols,  // total frames
-							animComp.frameDuration
+							animComp.rows,
+							animComp.cols,
+							animComp.frameDuration,
+							animComp.looping
 						);
 
-						anim.setLooping(animComp.looping);
-						ctrl->addAnimation(animComp.currentAnimationName, anim);
-						ctrl->setAnimation(animComp.currentAnimationName);
+						std::cout << "[GameLogic] Migrated old format animation '" << animName << "' to new format" << std::endl;
+					}
+				}
 
-						std::cout << "[GameLogic] Restored animation '" << animComp.currentAnimationName
-							<< "' for entity (frames: " << animComp.frameWidth << "x" << animComp.frameHeight
-							<< ", grid: " << animComp.rows << "x" << animComp.cols << ")" << std::endl;
+				// Restore all animations from the animations array
+				if (animComp.animationCount > 0) {
+					// Check if controller exists in registry, if not create a new one
+					Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+					if (!ctrl) {
+						// Controller doesn't exist (registry was cleared), create new one
+						animComp.controllerID = engine_.getAnimationRegistry().createController();
+						ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+						std::cout << "[GameLogic] Created new controller ID: " << animComp.controllerID << std::endl;
+					} else {
+						// Controller exists, clear it before restoring animations
+						ctrl->animations_.clear();
+						ctrl->textures_.clear();
+						ctrl->currentAnimation_ = nullptr;
+						ctrl->currentTexture_ = nullptr;
+						ctrl->currentAnimationName_.clear();
+						std::cout << "[GameLogic] Reusing existing controller ID: " << animComp.controllerID << std::endl;
+					}
+
+					if (ctrl) {
+						// Recreate all animations from saved configuration
+						for (int i = 0; i < animComp.animationCount; ++i) {
+							const auto& animData = animComp.animations[i];
+
+							// Skip if no valid data
+							if (animData.frameWidth <= 0 || animData.frameHeight <= 0) {
+								continue;
+							}
+
+							// Load texture for this animation
+							std::shared_ptr<Graphics::EnoTexture> texture;
+							if (strlen(animData.texturePath) > 0) {
+								auto& textures = engine_.getResourceLoader().getAllTextures();
+								auto it = textures.find(animData.texturePath);
+								if (it != textures.end()) {
+									texture = it->second;
+								}
+							}
+
+							if (texture) {
+								// Recreate the animation using Frame Width/Height/Rows/Cols
+								Animation::EnoAnimation anim = Animation::createSpriteSheetAnimation(
+									animData.frameWidth,
+									animData.frameHeight,
+									texture->getWidth(),
+									texture->getHeight(),
+									0,  // start frame
+									animData.rows * animData.cols,  // total frames
+									animData.frameDuration
+								);
+
+								anim.setLooping(animData.looping);
+								ctrl->addAnimation(animData.name, anim, texture);
+
+								std::cout << "[GameLogic] Restored animation '" << animData.name
+									<< "' (FrameW: " << animData.frameWidth << ", FrameH: " << animData.frameHeight
+									<< ", Rows: " << animData.rows << ", Cols: " << animData.cols << ")" << std::endl;
+							}
+						}
+
+						// Set the current animation if specified
+						if (strlen(animComp.currentAnimationName) > 0) {
+							ctrl->setAnimation(animComp.currentAnimationName);
+							std::cout << "[GameLogic] Set current animation to '" << animComp.currentAnimationName << "'" << std::endl;
+						}
+
+						// Sync the current texture to DrawInfoComponent
+						// This is crucial for the renderer to use drawTexturedQuadUV
+						if (entity.has<ECSComponents::DrawInfoComponent>(engine_.getEntityManager()) && ctrl->currentTexture_) {
+							auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
+							drawComp.texture = ctrl->currentTexture_;
+
+							// Also update the texture path in DrawInfoComponent to match
+							if (!ctrl->currentAnimationName_.empty()) {
+								for (int i = 0; i < animComp.animationCount; ++i) {
+									if (strcmp(animComp.animations[i].name, ctrl->currentAnimationName_.c_str()) == 0) {
+										strncpy_s(drawComp.texturePath, animComp.animations[i].texturePath, sizeof(drawComp.texturePath) - 1);
+										drawComp.texturePath[sizeof(drawComp.texturePath) - 1] = '\0';
+										break;
+									}
+								}
+							}
+							std::cout << "[GameLogic] Synced texture to DrawInfoComponent for animation '" << ctrl->currentAnimationName_ << "'" << std::endl;
+						}
 					}
 				}
 			}
@@ -969,7 +1095,7 @@ void GameApplication::updateEntities() {
 	// No need to call collisionSystem->Update() here anymore
 
 	// NOTE: Physics system update is now done in eno_engine.cpp::updateGameSystems()
-	// No need to call physicsSystem.Update() here anymore	
+	// No need to call physicsSystem.Update() here anymore
 
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
@@ -1719,6 +1845,47 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	auto& entityManager = engine_.getEntityManager();
 	auto& resourceLoader = engine_.getResourceLoader();
 
+	// Get player position
+	Math::eVec2<float> playerPos = pos;
+	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+	if (!playerEntities.empty()) {
+		auto& playerEntity = playerEntities[0];
+		if (playerEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+			playerPos = playerEntity.get<ECSComponents::TransformComponent>(entityManager).pos;
+		}
+	}
+
+	// Find nearest enemy
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent>();
+	Math::eVec2<float> targetPos = playerPos; // Default if no enemy found
+	float minDistance = FLT_MAX;
+	bool foundEnemy = false;
+
+	for (auto& enemy : enemies) {
+		auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+		float distance = Math::eVec2Distance(playerPos, enemyTransform.pos);
+		if (distance < minDistance) {
+			minDistance = distance;
+			targetPos = enemyTransform.pos;
+			foundEnemy = true;
+		}
+	}
+
+	// Calculate direction to target
+	Math::eVec2<float> direction = { targetPos.x - playerPos.x, targetPos.y - playerPos.y };
+	float length = Math::eVec2Length(direction);
+	if (length > 0.0f) {
+		direction.x /= length;  // Normalize
+		direction.y /= length;
+	}
+
+	// Offset spawn position so fireball doesn't collide with player
+	float spawnOffset = 100.0f;  // Spawn 100 pixels away from player center
+	Math::eVec2<float> spawnPos = {
+		playerPos.x + direction.x * spawnOffset,
+		playerPos.y + direction.y * spawnOffset
+	};
+
 	// Load fireball spritesheet texture
 	auto fireballTexture = resourceLoader.getTexture("Spell-Fireball-Flying-Sheet");
 
@@ -1729,10 +1896,18 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	fireball.add<ECSComponents::DrawInfoComponent>(entityManager);
 	fireball.add<ECSComponents::AnimationControllerComponent>(entityManager);
 	fireball.add<ECSComponents::FireballComponent>(entityManager, ECSComponents::FireballComponent(5.0f));
+	fireball.add<ECSComponents::DamageComponent>(entityManager, ECSComponents::DamageComponent(25.0f, true));
+	fireball.add<ECSComponents::PhysicsComponent>(entityManager);
 
 	auto& transform = fireball.get<ECSComponents::TransformComponent>(entityManager);
-	transform.pos = pos;
+	transform.pos = spawnPos;  // Spawn offset from player
 	transform.scale = { 1.0f, 1.0f };
+
+	// Set fireball velocity toward target
+	auto& physics = fireball.get<ECSComponents::PhysicsComponent>(entityManager);
+	float fireballSpeed = 400.0f;  // Pixels per second
+	physics.velocity.x = direction.x * fireballSpeed;
+	physics.velocity.y = direction.y * fireballSpeed;
 
 	auto& draw = fireball.get<ECSComponents::DrawInfoComponent>(entityManager);
 	draw.width = 90.0f;   // Match sprite frame width (360/4 = 90)
@@ -1741,15 +1916,28 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = fireballTexture;
 
+	// Setup collision box for fireball (rectangle collider)
+	ECSComponents::CollisionComponent fireballCollision(
+		60.0f,  // width - smaller than visual for better gameplay feel
+		40.0f,  // height
+		Math::eVec2<float>{0.0f, 0.0f},  // offset
+		false   // not a trigger
+	);
+	fireball.add<ECSComponents::CollisionComponent>(entityManager, fireballCollision);
+
 	// Setup animation configuration - fireball spritesheet is 360x48 with 4 frames (90x48 each)
 	auto& animComp = fireball.get<ECSComponents::AnimationControllerComponent>(entityManager);
 	if (fireballTexture && fireballTexture->isValid()) {
-		animComp.frameWidth = 90;    // Each frame is 90 pixels wide
-		animComp.frameHeight = 48;   // Each frame is 48 pixels tall
-		animComp.rows = 1;            // 1 row
-		animComp.cols = 4;            // 4 columns (frames)
-		animComp.frameDuration = 0.1f;  // Frame duration
-		animComp.looping = true;      // Loop the animation
+		animComp.setAnimationData(
+			"fly",                  // Animation name
+			"fireball.png",         // Texture path
+			90,                     // Frame width
+			48,                     // Frame height
+			1,                      // Rows
+			4,                      // Cols
+			0.1f,                   // Frame duration
+			true                    // Looping
+		);
 		strcpy_s(animComp.currentAnimationName, "fly");
 	}
 
@@ -1757,4 +1945,153 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	entitiesDirty_ = true;
 
 	std::cout << "[RuneSystem] Spawned fireball at position (" << pos.x << ", " << pos.y << ")" << std::endl;
+}
+
+void GameApplication::updateCombatSystem(float dt)
+{
+	auto& entityManager = engine_.getEntityManager();
+
+	// Helper lambda for AABB collision check
+	auto checkAABBCollision = [](
+		const ECSComponents::TransformComponent& transA, const ECSComponents::CollisionComponent& collA,
+		const ECSComponents::TransformComponent& transB, const ECSComponents::CollisionComponent& collB) -> bool
+		{
+			// Only check rectangle colliders
+			if (collA.type != ECSComponents::ColliderType::RECTANGLE || collB.type != ECSComponents::ColliderType::RECTANGLE)
+				return false;
+
+			// Get positions with offsets
+			float aX = transA.pos.x + collA.offset.x;
+			float aY = transA.pos.y + collA.offset.y;
+			float bX = transB.pos.x + collB.offset.x;
+			float bY = transB.pos.y + collB.offset.y;
+
+			// Get half dimensions
+			float aHalfW = collA.data.rectangle.width * 0.5f;
+			float aHalfH = collA.data.rectangle.height * 0.5f;
+			float bHalfW = collB.data.rectangle.width * 0.5f;
+			float bHalfH = collB.data.rectangle.height * 0.5f;
+
+			// AABB collision test - use <= to include touching edges
+			return (std::abs(aX - bX) <= (aHalfW + bHalfW)) &&
+				   (std::abs(aY - bY) <= (aHalfH + bHalfH));
+	};
+
+	// Update invulnerability timers
+	auto entitiesWithHealth = entityManager.findEntity<ECSComponents::HealthComponent>();
+	for (auto& entity : entitiesWithHealth) {
+		auto& health = entity.get<ECSComponents::HealthComponent>(entityManager);
+		if (health.invulnerable && health.invulnerabilityTimer > 0.0f) {
+			health.invulnerabilityTimer -= dt;
+			if (health.invulnerabilityTimer <= 0.0f) {
+				health.invulnerable = false;
+			}
+		}
+	}
+
+	// FIREBALL vs ENEMY collision damage
+	auto fireballs = entityManager.findEntity<ECSComponents::FireballComponent, ECSComponents::CollisionComponent, ECSComponents::DamageComponent>();
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::CollisionComponent, ECSComponents::HealthComponent>();
+
+	// Track entities to destroy (avoid destroying while iterating)
+	std::set<uint32_t> fireballsToDestroy;
+	std::set<uint32_t> enemiesToDestroy;
+
+	for (auto& fireball : fireballs) {
+		// Skip if already marked for destruction
+		if (fireballsToDestroy.count(fireball.id()) > 0) continue;
+		if (!fireball.has<ECSComponents::TransformComponent>(entityManager)) continue;
+
+		auto& fireballTransform = fireball.get<ECSComponents::TransformComponent>(entityManager);
+		auto& fireballCollision = fireball.get<ECSComponents::CollisionComponent>(entityManager);
+		auto& fireballDamage = fireball.get<ECSComponents::DamageComponent>(entityManager);
+
+		for (auto& enemy : enemies) {
+			// Skip if already marked for destruction
+			if (enemiesToDestroy.count(enemy.id()) > 0) continue;
+			if (!enemy.has<ECSComponents::TransformComponent>(entityManager)) continue;
+
+			auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+			auto& enemyCollision = enemy.get<ECSComponents::CollisionComponent>(entityManager);
+			auto& enemyHealth = enemy.get<ECSComponents::HealthComponent>(entityManager);
+
+			// Check AABB collision between fireball and enemy
+			if (checkAABBCollision(fireballTransform, fireballCollision, enemyTransform, enemyCollision)) {
+				// Deal damage to enemy
+				float damage = fireballDamage.getTotalDamage();
+				bool died = enemyHealth.takeDamage(damage);
+
+				std::cout << "[Combat] Fireball hit enemy! Dealt " << damage << " damage. "
+					<< "Enemy HP: " << enemyHealth.currentHealth << "/" << enemyHealth.maxHealth << std::endl;
+
+				if (died) {
+					std::cout << "[Combat] Enemy died!" << std::endl;
+					enemiesToDestroy.insert(enemy.id());
+				}
+
+				// Mark fireball for destruction
+				if (fireballDamage.destroyOnHit) {
+					fireballsToDestroy.insert(fireball.id());
+					break; // Exit enemy loop, this fireball hit something
+				}
+			}
+		}
+	}
+
+	// Destroy marked entities after iteration
+	for (uint32_t id : fireballsToDestroy) {
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
+	for (uint32_t id : enemiesToDestroy) {
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
+
+	// ENEMY vs PLAYER collision damage
+	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+	if (!playerEntities.empty()) {
+		ECS::Entity& playerEntity = playerEntities[0];
+		if (playerEntity.has<ECSComponents::HealthComponent>(entityManager) &&
+			playerEntity.has<ECSComponents::CollisionComponent>(entityManager) &&
+			playerEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+
+			auto& playerHealth = playerEntity.get<ECSComponents::HealthComponent>(entityManager);
+			auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
+			auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
+
+			for (auto& enemy : enemies) {
+				// Skip enemies that are marked for destruction
+				if (enemiesToDestroy.count(enemy.id()) > 0) continue;
+				if (!enemy.has<ECSComponents::TransformComponent>(entityManager) ||
+					!enemy.has<ECSComponents::DamageComponent>(entityManager)) continue;
+
+				auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+				auto& enemyCollision = enemy.get<ECSComponents::CollisionComponent>(entityManager);
+				auto& enemyDamage = enemy.get<ECSComponents::DamageComponent>(entityManager);
+
+				// Check AABB collision between enemy and player
+				if (checkAABBCollision(
+					playerTransform, playerCollision,
+					enemyTransform, enemyCollision)) {
+
+					// Deal damage to player
+					float damage = enemyDamage.getTotalDamage();
+					bool died = playerHealth.takeDamage(damage);
+
+					std::cout << "[Combat] Enemy hit player! Dealt " << damage << " damage. "
+						<< "Player HP: " << playerHealth.currentHealth << "/" << playerHealth.maxHealth << std::endl;
+
+					if (died) {
+						std::cout << "[Combat] Player died!" << std::endl;
+						// TODO: Handle player death (game over, respawn, etc.)
+					}
+
+					// Give player temporary invulnerability after being hit (0.5 seconds)
+					playerHealth.invulnerable = true;
+					playerHealth.invulnerabilityTimer = 0.5f;
+				}
+			}
+		}
+	}
 }

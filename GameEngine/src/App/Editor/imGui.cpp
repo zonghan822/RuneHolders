@@ -342,6 +342,7 @@ void displayEntityCount(Engine::EnoEngine& engine_) {
 }
 
 
+
 void displayEntityCharacteristics(Engine::EnoEngine& engine_) {
 	engine_.getEntityManager().viewMap();
 }
@@ -349,64 +350,15 @@ void displayEntityCharacteristics(Engine::EnoEngine& engine_) {
 void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree) {
 
 	auto& entityManager = engine_.getEntityManager();
-	const char* filters[] = { "Archetype" , "Last Spawned", "Mouse Select", "All" };
-	static int FilterType = Filters::Architype;
+	const char* filters[] = { "Last Spawned", "Mouse Select", "All" };
+	static int FilterType = Filters::Select;
 
 	std::vector<ECS::Entity> toDelete;
 
 	ImGui::Combo("Filters", &FilterType, filters, IM_ARRAYSIZE(filters));
 
 
-	if (FilterType == Filters::Architype) {
-		if (ImGui::Button("DEBUG: List Named Entities")) {
-			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-				std::cout << "Entity " << e.id() << " name: '" << nameComp.name << "'\n";
-			}
-		}
-
-
-		static char searchInput[32] = ""; // to enter archetype name
-		ImGui::InputTextWithHint("##Search", "Enter Name to delete...", searchInput, sizeof(searchInput));
-
-
-		if (ImGui::Button("Delete Entities")) {
-			std::string target = searchInput;
-			bool deletedSelected = false;
-
-			// Iterate only once through all entities that have NameComponent
-			for (ECS::Entity& e : engine_.getEntityManager().findEntity<ECSComponents::NameComponent>()) {
-				ECSComponents::NameComponent& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-
-				if (!deletedSelected && e.id() == selectedEntityID) {
-					if (playerEntityID_ == e.id()) playerSpawned_ = false;
-
-					// Remove from scene hierarchy and destroy children
-					Node* node = sceneTree.getNodeByEntityID(e.id());
-					if (node) {
-						destroyChildrenRecursive(node, entityManager);
-						sceneTree.kill(node);
-					}
-					entityManager.destroyEntity(e.id());
-
-					selectedEntityID = UINT32_MAX;
-					deletedSelected = true;
-					std::cout << "Deleted selected entity and its children\n";
-					continue;
-				}
-
-				if (nameComp.name == target) {
-					if (playerEntityID_ == e.id()) playerSpawned_ = false;
-					toDelete.push_back(e);
-				}
-
-			}
-
-			if (g_game)
-				g_game->markEntitiesDirty();
-		}
-	}
-	else if (FilterType == Filters::Last) {
+	if (FilterType == Filters::Last) {
 		if (ImGui::Button("Delete Last Spawned")) {
 			if (!ECS::spawnHistory.empty()) {
 				uint32_t lastID = ECS::spawnHistory.back();
@@ -785,12 +737,30 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 	// Save a new prefab or edit existing value
 	if (ImGui::Button("Save New or Existing Prefabs:")) {
-		savePrefab(currentPrefab);
-		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
-		prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
+		// Check if prefab name is not empty
+		if (currentPrefab.name.empty() || currentPrefab.name == "Empty") {
+			std::cerr << "[UI] Cannot save prefab: Please enter a valid prefab name\n";
+			statusMessage = "Error: Please enter a valid prefab name";
+		}
+		else {
+			savePrefab(currentPrefab);
+			prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
+			statusMessage = "Saved prefab: " + currentPrefab.name;
+			std::cout << "[UI] Saved prefab: " << currentPrefab.name << "\n";
+		}
 	}
 
-	//ImGui::Separator();
+	// Display status message
+	if (!statusMessage.empty()) {
+		if (statusMessage.find("Error") != std::string::npos) {
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s", statusMessage.c_str());
+		}
+		else {
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%s", statusMessage.c_str());
+		}
+	}
+
+	ImGui::Separator();
 
 	// Load performs a "read all file in directory" now
 	if (ImGui::Button("Load Existing Prefab")) {
@@ -801,17 +771,16 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						PrefabData loaded = loadPrefab(entry.path().string());
 						if (!loaded.name.empty()) {
 							prefabRegistry[loaded.name] = loaded;
-							std::cout << "[UI] Loaded prefab: " << loaded.name << "\n";
 						}
 					}
 					catch (const std::exception& e) {
-						std::cerr << "[UI] Failed to load prefab from " << entry.path() << ": " << e.what() << "\n";
+						std::cerr << " Failed to load prefab from " << entry.path() << ": " << e.what() << "\n";
 					}
 				}
 			}
 		}
 		catch (const std::exception& e) {
-			std::cerr << "[UI] Failed to read prefab directory: " << e.what() << "\n";
+			std::cerr << " Failed to read prefab directory: " << e.what() << "\n";
 		}
 	}
 
@@ -1840,15 +1809,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// Scale removed - doesn't do anything currently
 	}
 
-	// --- PhysicsComponent --- (skip for player)
-	if (!isPlayer && entity.has<ECSComponents::PhysicsComponent>(entMng)) {
-		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
-		ImGui::SeparatorText("Physics");
-		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
-		ImGui::DragFloat("Mass", &physics.mass, 0.1f, 0.1f, 100.0f);
-		ImGui::DragFloat("Drag", &physics.drag, 0.01f, 0.0f, 1.0f);
-		ImGui::Checkbox("Use Gravity", &physics.useGravity);
-	}
+	
 
 	// --- DrawInfoComponent ---
 	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
@@ -2010,6 +1971,16 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		else {
 			ImGui::TextDisabled("No texture assigned");
 		}
+	}
+
+	// --- PhysicsComponent --- (skip for player)
+	if (!isPlayer && entity.has<ECSComponents::PhysicsComponent>(entMng)) {
+		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
+		ImGui::SeparatorText("Physics");
+		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
+		ImGui::DragFloat("Mass", &physics.mass, 0.1f, 0.1f, 100.0f);
+		ImGui::DragFloat("Drag", &physics.drag, 0.01f, 0.0f, 1.0f);
+		ImGui::Checkbox("Use Gravity", &physics.useGravity);
 	}
 
 	// --- CollisionComponent ---
@@ -2962,17 +2933,21 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 
 		idleAnim.setLooping(true);
-		ctrl->addAnimation("idle", idleAnim);
-		ctrl->setAnimation("idle");
+		ctrl->addAnimation("Idle", idleAnim, idleTexData.texture); // Pass the texture
+		ctrl->setAnimation("Idle");
 
 		// Save animation configuration to component for serialization
-		animComp.frameWidth = idleTexData.frameWidth;
-		animComp.frameHeight = idleTexData.frameHeight;
-		animComp.rows = idleTexData.rows;
-		animComp.cols = idleTexData.cols;
-		animComp.frameDuration = 0.1f;
-		animComp.looping = true;
-		std::strncpy(animComp.currentAnimationName, "idle", sizeof(animComp.currentAnimationName) - 1);
+		std::strncpy(animComp.currentAnimationName, "Idle", sizeof(animComp.currentAnimationName) - 1);
+		animComp.setAnimationData(
+			"Idle",
+			idleSelected.c_str(),
+			idleTexData.frameWidth,
+			idleTexData.frameHeight,
+			idleTexData.rows,
+			idleTexData.cols,
+			0.1f,
+			true
+		);
 	}
 
 	if (!idleHasTexture)
@@ -3151,17 +3126,21 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
 
 		walkAnim.setLooping(true);
-		ctrl->addAnimation("walk", walkAnim);
-		ctrl->setAnimation("walk");
+		ctrl->addAnimation("Walk", walkAnim, walkTexData.texture); // Pass the texture
+		ctrl->setAnimation("Walk");
 
 		// Save animation configuration to component for serialization
-		animComp.frameWidth = walkTexData.frameWidth;
-		animComp.frameHeight = walkTexData.frameHeight;
-		animComp.rows = walkTexData.rows;
-		animComp.cols = walkTexData.cols;
-		animComp.frameDuration = 0.1f;
-		animComp.looping = true;
-		std::strncpy(animComp.currentAnimationName, "walk", sizeof(animComp.currentAnimationName) - 1);
+		std::strncpy(animComp.currentAnimationName, "Walk", sizeof(animComp.currentAnimationName) - 1);
+		animComp.setAnimationData(
+			"Walk",
+			walkSelected.c_str(),
+			walkTexData.frameWidth,
+			walkTexData.frameHeight,
+			walkTexData.rows,
+			walkTexData.cols,
+			0.1f,
+			true
+		);
 	}
 
 	if (!walkHasTexture)
@@ -3340,17 +3319,21 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
 		//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
 		attackAnim.setLooping(true);
-		ctrl->addAnimation("attack", attackAnim);
-		ctrl->setAnimation("attack");
+		ctrl->addAnimation("Attack", attackAnim, attackTexData.texture); // Pass the texture
+		ctrl->setAnimation("Attack");
 
 		// Save animation configuration to component for serialization
-		animComp.frameWidth = attackTexData.frameWidth;
-		animComp.frameHeight = attackTexData.frameHeight;
-		animComp.rows = attackTexData.rows;
-		animComp.cols = attackTexData.cols;
-		animComp.frameDuration = 0.1f;
-		animComp.looping = true;
-		std::strncpy(animComp.currentAnimationName, "attack", sizeof(animComp.currentAnimationName) - 1);
+		std::strncpy(animComp.currentAnimationName, "Attack", sizeof(animComp.currentAnimationName) - 1);
+		animComp.setAnimationData(
+			"Attack",
+			attackSelected.c_str(),
+			attackTexData.frameWidth,
+			attackTexData.frameHeight,
+			attackTexData.rows,
+			attackTexData.cols,
+			0.1f,
+			true
+		);
 	}
 
 	if (!attackHasTexture)
@@ -3372,6 +3355,92 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	ImGui::Separator();
+
+	ImGui::Separator();
+	ImGui::Text("Quick Animation Test");
+
+	ECS::Entity e{ selectedEntityID };
+	if (e.has<ECSComponents::AnimationControllerComponent>(entMng))
+	{
+		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
+		Animation::AnimationController* ctrl =
+			engine_.getAnimationRegistry().get(animComp.controllerID);
+
+		if (ctrl)
+		{
+			if (ImGui::Button("Play IDLE"))
+			{
+				if (ctrl->animations_.count("Idle"))
+				{
+					ctrl->setAnimation("Idle");
+					// Also update the texture when switching animations
+					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
+					{
+						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
+						auto tex = ctrl->getCurrentTexture();
+						if (tex) {
+							drawComp.texture = tex;
+						}
+					}
+				}
+				else
+					std::cout << "[ImGui] Idle animation not found!\n";
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Play WALK"))
+			{
+				if (ctrl->animations_.count("Walk"))
+				{
+					ctrl->setAnimation("Walk");
+					// Also update the texture when switching animations
+					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
+					{
+						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
+						auto tex = ctrl->getCurrentTexture();
+						if (tex) {
+							drawComp.texture = tex;
+						}
+					}
+				}
+				else
+					std::cout << "[ImGui] Walk animation not found!\n";
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Play ATTACK"))
+			{
+				if (ctrl->animations_.count("Attack"))
+				{
+					ctrl->setAnimation("Attack");
+					// Also update the texture when switching animations
+					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
+					{
+						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
+						auto tex = ctrl->getCurrentTexture();
+						if (tex) {
+							drawComp.texture = tex;
+						}
+					}
+				}
+				else
+					std::cout << "[ImGui] Attack animation not found!\n";
+			}
+		}
+		else
+		{
+			ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), "Invalid Animation Controller!");
+		}
+	}
+	else
+	{
+		ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
+			"This entity has no AnimationController component!");
+	}
+
+
 	ImGui::End();
 }
 
@@ -4098,8 +4167,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									0.1f                   // frame duration (doesn't matter for single frame)
 								);
 
-								ctrl->addAnimation("idle", singleFrameAnim);
-								ctrl->setAnimation("idle");
+								ctrl->addAnimation("Idle", singleFrameAnim);
+								ctrl->setAnimation("Idle");
 							}
 
 							// Add to scene tree
@@ -4196,8 +4265,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 								0.1f                   // frame duration (doesn't matter for single frame)
 							);
 
-							ctrl->addAnimation("idle", singleFrameAnim);
-							ctrl->setAnimation("idle");
+							ctrl->addAnimation("Idle", singleFrameAnim);
+							ctrl->setAnimation("Idle");
 						}
 
 						// Add to scene tree

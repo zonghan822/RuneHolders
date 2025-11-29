@@ -27,7 +27,7 @@ namespace Engine
 		// Systems init
 		inputMng_.initialize();
 		physicsSys_ = std::make_unique<Physics::PhysicsSystem>(bus_);
-		aiMng_ = std::make_unique<AI::AIManager>(bus_, *pathfinder_, entityMng_);
+		aiMng_ = std::make_unique<AI::AIManager>(bus_, *pathfinder_, entityMng_, animRegistry);
 		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
 		graphicsMng_.initialize(window_);
 		audioMng_.init();

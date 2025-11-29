@@ -4,7 +4,7 @@ namespace AI {
 
     void ChaseState::onEnter(ECS::Entity& e, ECS::EntityManager& m) {
         auto& ai = e.get<ECSComponents::AIComponent>(m);
-        if (ai.useScriptCallbacks) 
+        if (ai.useScriptCallbacks)
             tryScript(e, m, ai.cbChaseEnter);
 
         m.getEventBus().publish(PathClearRequest{ e.id() });

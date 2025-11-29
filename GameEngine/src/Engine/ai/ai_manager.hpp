@@ -14,15 +14,17 @@
 #include "../ecs/entity.hpp"
 #include "../ecs/component_events.hpp"
 #include "../component/components/ai_component.hpp"
+#include "../component/components/drawInfo.hpp"
 #include "../physics/physics_events.hpp"
 #include "../math/math.hpp"
+#include "../graphics/animation/animation.hpp"
 
 
 namespace AI {
 
     class AIManager {
     public:
-        AIManager(Event::EnoEventBus& bus, PathfindingSystem& pathfinder, ECS::EntityManager& entMng);
+        AIManager(Event::EnoEventBus& bus, PathfindingSystem& pathfinder, ECS::EntityManager& entMng, Animation::AnimationControllerRegistry& animRegistry);
 
         void update(float dt);
 
@@ -38,6 +40,7 @@ namespace AI {
         Event::EnoEventBus& bus_;
         PathfindingSystem& pathfinder_;
         ECS::EntityManager& entMng_;
+        Animation::AnimationControllerRegistry& animRegistry_;
 
         std::unordered_map<uint32_t, std::unique_ptr<StateMachine>> stateMachines_;
         std::unordered_map<uint32_t, std::unique_ptr<AIPathAgent>> pathAgents_;
