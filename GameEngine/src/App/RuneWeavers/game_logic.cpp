@@ -39,6 +39,7 @@ void GameApplication::initialize() {
 	setupScripting();
 	setupFont();
 	setupCamera();
+	setupCombatSystem();
 
 	auto& tileMap = engine_.getTileMap();
 
@@ -166,6 +167,48 @@ void GameApplication::setupCamera() {
 	} else {
 		std::cout << "[RuneWeavers] Camera found in scene" << std::endl;
 	}
+}
+
+void GameApplication::setupCombatSystem() {
+	auto& entityManager = engine_.getEntityManager();
+
+	std::cout << "[RuneWeavers] Setting up combat system..." << std::endl;
+
+	// Add HealthComponent to player if it exists
+	if (playerSpawned_) {
+		ECS::Entity playerEntity(playerEntityID_);
+		if (!playerEntity.has<ECSComponents::HealthComponent>(entityManager)) {
+			playerEntity.add<ECSComponents::HealthComponent>(entityManager, 100.0f);
+			std::cout << "[CombatSystem] Added HealthComponent to player (100 HP)" << std::endl;
+		}
+	}
+
+	// Find all enemies with AIComponent and add health/damage
+	std::vector<ECS::Entity> enemies = entityManager.findEntity<ECSComponents::AIComponent>();
+	for (auto& enemy : enemies) {
+		// Add or reset HealthComponent
+		if (!enemy.has<ECSComponents::HealthComponent>(entityManager)) {
+			enemy.add<ECSComponents::HealthComponent>(entityManager, 50.0f);
+			std::cout << "[CombatSystem] Added HealthComponent to enemy (50 HP)" << std::endl;
+		} else {
+			// Reset health to max if component already exists
+			auto& health = enemy.get<ECSComponents::HealthComponent>(entityManager);
+			health.currentHealth = 50.0f;
+			health.maxHealth = 50.0f;
+			health.isDead = false;
+			health.invulnerable = false;
+			health.invulnerabilityTimer = 0.0f;
+			std::cout << "[CombatSystem] Reset enemy health to 50 HP" << std::endl;
+		}
+
+		// Add DamageComponent if not already present
+		if (!enemy.has<ECSComponents::DamageComponent>(entityManager)) {
+			enemy.add<ECSComponents::DamageComponent>(entityManager, 10.0f);
+			std::cout << "[CombatSystem] Added DamageComponent to enemy (10 damage)" << std::endl;
+		}
+	}
+
+	std::cout << "[RuneWeavers] Combat system setup complete!" << std::endl;
 }
 
 void GameApplication::setupScripting() {
@@ -377,6 +420,9 @@ void GameApplication::updateGameLogic() {
 
 	// Update rune system
 	updateRuneSystem();
+
+	// Update combat system (damage dealing and health)
+	updateCombatSystem(deltaTime);
 
 	// Game is always playing
 	engine_.setIsPlaying(true);
@@ -1363,6 +1409,46 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	auto& entityManager = engine_.getEntityManager();
 	auto& resourceLoader = engine_.getResourceLoader();
 
+	// Get player position
+	Math::eVec2<float> playerPos = pos;
+	if (playerSpawned_) {
+		ECS::Entity playerEntity(playerEntityID_);
+		if (playerEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+			playerPos = playerEntity.get<ECSComponents::TransformComponent>(entityManager).pos;
+		}
+	}
+
+	// Find nearest enemy
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent>();
+	Math::eVec2<float> targetPos = playerPos; // Default if no enemy found
+	float minDistance = FLT_MAX;
+	bool foundEnemy = false;
+
+	for (auto& enemy : enemies) {
+		auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+		float distance = Math::eVec2Distance(playerPos, enemyTransform.pos);
+		if (distance < minDistance) {
+			minDistance = distance;
+			targetPos = enemyTransform.pos;
+			foundEnemy = true;
+		}
+	}
+
+	// Calculate direction to target
+	Math::eVec2<float> direction = { targetPos.x - playerPos.x, targetPos.y - playerPos.y };
+	float length = Math::eVec2Length(direction);
+	if (length > 0.0f) {
+		direction.x /= length;  // Normalize
+		direction.y /= length;
+	}
+
+	// Offset spawn position so fireball doesn't collide with player
+	float spawnOffset = 100.0f;  // Spawn 100 pixels away from player center
+	Math::eVec2<float> spawnPos = {
+		playerPos.x + direction.x * spawnOffset,
+		playerPos.y + direction.y * spawnOffset
+	};
+
 	// Load fireball spritesheet texture
 	auto fireballTexture = resourceLoader.getTexture("Spell-Fireball-Flying-Sheet");
 
@@ -1373,10 +1459,18 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	fireball.add<ECSComponents::DrawInfoComponent>(entityManager);
 	fireball.add<ECSComponents::AnimationControllerComponent>(entityManager);
 	fireball.add<ECSComponents::FireballComponent>(entityManager, ECSComponents::FireballComponent(5.0f));
+	fireball.add<ECSComponents::DamageComponent>(entityManager, ECSComponents::DamageComponent(25.0f, true));
+	fireball.add<ECSComponents::PhysicsComponent>(entityManager);
 
 	auto& transform = fireball.get<ECSComponents::TransformComponent>(entityManager);
-	transform.pos = pos;
+	transform.pos = spawnPos;  // Spawn offset from player
 	transform.scale = { 1.0f, 1.0f };
+
+	// Set fireball velocity toward target
+	auto& physics = fireball.get<ECSComponents::PhysicsComponent>(entityManager);
+	float fireballSpeed = 400.0f;  // Pixels per second
+	physics.velocity.x = direction.x * fireballSpeed;
+	physics.velocity.y = direction.y * fireballSpeed;
 
 	auto& draw = fireball.get<ECSComponents::DrawInfoComponent>(entityManager);
 	draw.width = 90.0f;   // Match sprite frame width (360/4 = 90)
@@ -1384,6 +1478,15 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	draw.color = Graphics::Color::White;
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = fireballTexture;
+
+	// Setup collision box for fireball (rectangle collider)
+	ECSComponents::CollisionComponent fireballCollision(
+		60.0f,  // width - smaller than visual for better gameplay feel
+		40.0f,  // height
+		Math::eVec2<float>{0.0f, 0.0f},  // offset
+		false   // not a trigger
+	);
+	fireball.add<ECSComponents::CollisionComponent>(entityManager, fireballCollision);
 
 	// Setup animation configuration - fireball spritesheet is 360x48 with 4 frames (90x48 each)
 	auto& animComp = fireball.get<ECSComponents::AnimationControllerComponent>(entityManager);
@@ -1405,5 +1508,149 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	entitiesDirty_ = true;
 
 	std::cout << "[RuneSystem] Spawned fireball at position (" << pos.x << ", " << pos.y << ")" << std::endl;
+}
+
+void GameApplication::updateCombatSystem(float dt)
+{
+	auto& entityManager = engine_.getEntityManager();
+
+	// Helper lambda for AABB collision check
+	auto checkAABBCollision = [](
+		const ECSComponents::TransformComponent& transA, const ECSComponents::CollisionComponent& collA,
+		const ECSComponents::TransformComponent& transB, const ECSComponents::CollisionComponent& collB) -> bool
+		{
+			// Only check rectangle colliders
+			if (collA.type != ECSComponents::ColliderType::RECTANGLE || collB.type != ECSComponents::ColliderType::RECTANGLE)
+				return false;
+
+			// Get positions with offsets
+			float aX = transA.pos.x + collA.offset.x;
+			float aY = transA.pos.y + collA.offset.y;
+			float bX = transB.pos.x + collB.offset.x;
+			float bY = transB.pos.y + collB.offset.y;
+
+			// Get half dimensions
+			float aHalfW = collA.data.rectangle.width * 0.5f;
+			float aHalfH = collA.data.rectangle.height * 0.5f;
+			float bHalfW = collB.data.rectangle.width * 0.5f;
+			float bHalfH = collB.data.rectangle.height * 0.5f;
+
+			// AABB collision test - use <= to include touching edges
+			return (std::abs(aX - bX) <= (aHalfW + bHalfW)) &&
+				   (std::abs(aY - bY) <= (aHalfH + bHalfH));
+	};
+
+	// Update invulnerability timers
+	auto entitiesWithHealth = entityManager.findEntity<ECSComponents::HealthComponent>();
+	for (auto& entity : entitiesWithHealth) {
+		auto& health = entity.get<ECSComponents::HealthComponent>(entityManager);
+		if (health.invulnerable && health.invulnerabilityTimer > 0.0f) {
+			health.invulnerabilityTimer -= dt;
+			if (health.invulnerabilityTimer <= 0.0f) {
+				health.invulnerable = false;
+			}
+		}
+	}
+
+	// FIREBALL vs ENEMY collision damage
+	auto fireballs = entityManager.findEntity<ECSComponents::FireballComponent, ECSComponents::CollisionComponent, ECSComponents::DamageComponent>();
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::CollisionComponent, ECSComponents::HealthComponent>();
+
+	// Track entities to destroy (avoid destroying while iterating)
+	std::set<uint32_t> fireballsToDestroy;
+	std::set<uint32_t> enemiesToDestroy;
+
+	for (auto& fireball : fireballs) {
+		// Skip if already marked for destruction
+		if (fireballsToDestroy.count(fireball.id()) > 0) continue;
+		if (!fireball.has<ECSComponents::TransformComponent>(entityManager)) continue;
+
+		auto& fireballTransform = fireball.get<ECSComponents::TransformComponent>(entityManager);
+		auto& fireballCollision = fireball.get<ECSComponents::CollisionComponent>(entityManager);
+		auto& fireballDamage = fireball.get<ECSComponents::DamageComponent>(entityManager);
+
+		for (auto& enemy : enemies) {
+			// Skip if already marked for destruction
+			if (enemiesToDestroy.count(enemy.id()) > 0) continue;
+			if (!enemy.has<ECSComponents::TransformComponent>(entityManager)) continue;
+
+			auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+			auto& enemyCollision = enemy.get<ECSComponents::CollisionComponent>(entityManager);
+			auto& enemyHealth = enemy.get<ECSComponents::HealthComponent>(entityManager);
+
+			// Check AABB collision between fireball and enemy
+			if (checkAABBCollision(fireballTransform, fireballCollision, enemyTransform, enemyCollision)) {
+				// Deal damage to enemy
+				float damage = fireballDamage.getTotalDamage();
+				bool died = enemyHealth.takeDamage(damage);
+
+				std::cout << "[Combat] Fireball hit enemy! Dealt " << damage << " damage. Enemy HP: "
+					<< enemyHealth.currentHealth << "/" << enemyHealth.maxHealth << std::endl;
+
+				if (died) {
+					std::cout << "[Combat] Enemy defeated!" << std::endl;
+					enemiesToDestroy.insert(enemy.id());
+				}
+
+				// Mark fireball for destruction
+				if (fireballDamage.destroyOnHit) {
+					fireballsToDestroy.insert(fireball.id());
+					break; // Exit enemy loop, this fireball hit something
+				}
+			}
+		}
+	}
+
+	// Destroy marked entities after iteration
+	for (uint32_t id : fireballsToDestroy) {
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
+	for (uint32_t id : enemiesToDestroy) {
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
+
+	// ENEMY vs PLAYER collision damage
+	if (playerSpawned_) {
+		ECS::Entity playerEntity(playerEntityID_);
+		if (playerEntity.has<ECSComponents::HealthComponent>(entityManager) &&
+			playerEntity.has<ECSComponents::CollisionComponent>(entityManager) &&
+			playerEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+
+			auto& playerHealth = playerEntity.get<ECSComponents::HealthComponent>(entityManager);
+			auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
+			auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
+
+			for (auto& enemy : enemies) {
+				// Skip enemies that are marked for destruction
+				if (enemiesToDestroy.count(enemy.id()) > 0) continue;
+				if (!enemy.has<ECSComponents::TransformComponent>(entityManager) ||
+					!enemy.has<ECSComponents::DamageComponent>(entityManager)) continue;
+
+				auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+				auto& enemyCollision = enemy.get<ECSComponents::CollisionComponent>(entityManager);
+				auto& enemyDamage = enemy.get<ECSComponents::DamageComponent>(entityManager);
+
+				// Check AABB collision between enemy and player
+				if (checkAABBCollision(playerTransform, playerCollision, enemyTransform, enemyCollision)) {
+					// Deal damage to player
+					float damage = enemyDamage.getTotalDamage();
+					bool died = playerHealth.takeDamage(damage);
+
+					std::cout << "[Combat] Enemy hit player! Dealt " << damage << " damage. Player HP: "
+						<< playerHealth.currentHealth << "/" << playerHealth.maxHealth << std::endl;
+
+					if (died) {
+						std::cout << "[Combat] Player defeated!" << std::endl;
+					}
+
+					// Give player temporary invulnerability after being hit
+					playerHealth.invulnerable = true;
+					playerHealth.invulnerabilityTimer = 0.5f;
+				}
+			}
+		}
+	}
 }
 

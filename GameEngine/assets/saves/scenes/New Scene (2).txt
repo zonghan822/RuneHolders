@@ -1366,6 +1366,15 @@
 				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
 				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
 			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 100 }
+				"maxHealth": <float> { 100 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
 		}
 		"Script": { }
 		"Parent": { }
@@ -1501,6 +1510,23 @@
 				"Anim2 Cols": <int> { 8 }
 				"Anim2 Duration": <float> { 0.1 }
 				"Anim2 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 50 }
+				"maxHealth": <float> { 50 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
+
+			[struct ECSComponents::DamageComponent]
+			{
+				"damageAmount": <float> { 10 }
+				"damageMultiplier": <float> { 1 }
+				"destroyOnHit": <bool> { 0 }
+				"damageType": <char32> { physical }
 			}
 		}
 		"Script": { 0 }
