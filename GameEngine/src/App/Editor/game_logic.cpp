@@ -909,10 +909,23 @@ void GameApplication::updateEntities() {
 				}
 
 				// Restore all animations from the animations array
-				if (animComp.animationCount > 0 && animComp.controllerID == 0) {
-					// Create new controller
-					animComp.controllerID = engine_.getAnimationRegistry().createController();
+				if (animComp.animationCount > 0) {
+					// Check if controller exists in registry, if not create a new one
 					Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+					if (!ctrl) {
+						// Controller doesn't exist (registry was cleared), create new one
+						animComp.controllerID = engine_.getAnimationRegistry().createController();
+						ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+						std::cout << "[GameLogic] Created new controller ID: " << animComp.controllerID << std::endl;
+					} else {
+						// Controller exists, clear it before restoring animations
+						ctrl->animations_.clear();
+						ctrl->textures_.clear();
+						ctrl->currentAnimation_ = nullptr;
+						ctrl->currentTexture_ = nullptr;
+						ctrl->currentAnimationName_.clear();
+						std::cout << "[GameLogic] Reusing existing controller ID: " << animComp.controllerID << std::endl;
+					}
 
 					if (ctrl) {
 						// Recreate all animations from saved configuration
