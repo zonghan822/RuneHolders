@@ -247,7 +247,11 @@ void GameApplication::setupGameAudio() {
 
 	// Rune hover audio
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
-	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");	
+	
+	// BGM
+	audioMng.publishSoundRequest("BGM_01_Layer2_loop");
+	audioMng.publishSoundRequest("Ambience_Creaking_Wood");
 
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
