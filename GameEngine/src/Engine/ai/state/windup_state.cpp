@@ -21,8 +21,9 @@ namespace AI {
         windupTimer_ += dt;
 
         if (windupTimer_ >= ai.windupTime)
-            strcpy(ai.nextState, "Attack");
+            strcpy(ai.nextState, "attack");
     }
+            //strcpy(ai.nextState, "Attack");
 
     void WindupState::onExit(ECS::Entity& e, ECS::EntityManager& m)
     {

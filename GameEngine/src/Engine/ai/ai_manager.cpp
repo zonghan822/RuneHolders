@@ -2,8 +2,8 @@
 
 namespace AI {
 
-    AIManager::AIManager(Event::EnoEventBus& bus, PathfindingSystem& pathfinder, ECS::EntityManager& entMng)
-        : bus_(bus), pathfinder_(pathfinder), entMng_{entMng}
+    AIManager::AIManager(Event::EnoEventBus& bus, PathfindingSystem& pathfinder, ECS::EntityManager& entMng, Animation::AnimationControllerRegistry& animRegistry)
+        : bus_(bus), pathfinder_(pathfinder), entMng_{entMng}, animRegistry_(animRegistry)
     { 
         // Auto-register when AIComponent added
         bus_.subscribe<ECS::ComponentAdded>(
@@ -65,6 +65,32 @@ namespace AI {
             if (std::strcmp(ai.nextState, ai.currentState) != 0) {
                 strcpy(ai.currentState, ai.nextState);
                 machine.changeState(ai.nextState, entity, entMng_);
+
+                // Automatically switch animation when AI state changes
+                if (entity.has<ECSComponents::AnimationControllerComponent>(entMng_)) {
+                    auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entMng_);
+                    Animation::AnimationController* ctrl = animRegistry_.get(animComp.controllerID);
+
+                    if (ctrl) {
+                        // Convert state name to lowercase for animation lookup
+                        std::string stateName = ai.currentState;
+                        std::transform(stateName.begin(), stateName.end(), stateName.begin(), ::tolower);
+
+                        // Try to set the animation matching the state name
+                        if (ctrl->animations_.count(stateName)) {
+                            ctrl->setAnimation(stateName);
+
+                            // Also update the entity's texture to match the animation
+                            if (entity.has<ECSComponents::DrawInfoComponent>(entMng_)) {
+                                auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entMng_);
+                                auto tex = ctrl->getCurrentTexture();
+                                if (tex) {
+                                    drawComp.texture = tex;
+                                }
+                            }
+                        }
+                    }
+                }
             }
             machine.update(entity, entMng_, dt);
         }
