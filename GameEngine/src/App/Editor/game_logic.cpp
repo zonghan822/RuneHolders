@@ -74,6 +74,20 @@ void GameApplication::initialize() {
 			std::cout << "[GameApplication] Scene cleared, reset selected entity and cleared caches" << std::endl;
 		});
 
+	// Subscribe to PlayScene event to start BGM when game starts
+	engine_.getEventBus().subscribe<Editor::PlayScene>([this](const Editor::PlayScene&)
+		{
+			std::cout << "[GameApplication] Play button pressed - starting BGM" << std::endl;
+			playSceneBGM();
+		});
+
+	// Subscribe to StopScene event to stop BGM when game stops
+	engine_.getEventBus().subscribe<Editor::StopScene>([this](const Editor::StopScene&)
+		{
+			std::cout << "[GameApplication] Stop button pressed - stopping BGM" << std::endl;
+			engine_.getEventBus().publish(Audio::StopBGM{});
+		});
+
 	std::cout << "Game initialized successfully!" << std::endl;
 }
 
@@ -188,6 +202,16 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Flask");
 	audioMng.publishSoundRequest("Stone_Impact");
 	audioMng.publishSoundRequest("Water_Drip");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
+
+	// Fireball audio
+	audioMng.publishSoundRequest("Fireball-Cast");  // Add your fireball spawn sound file name here
+	audioMng.publishSoundRequest("Fireball-Explosion-Small");    // Add your fireball hit sound file name here
+
+	// Scene BGM audio
+	audioMng.publishSoundRequest("BGM_01_Layer2_loop");  // Main menu BGM
+	audioMng.publishSoundRequest("Ambience_Creaking_Wood");  // General scene ambience
 
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
@@ -233,6 +257,93 @@ void GameApplication::setupTreeTesting()
 	// Setup Delete key for entity deletion
 	inputMng.setupKey("Delete Selected Entity", GLFW_KEY_DELETE, glfwGetKeyScancode(GLFW_KEY_DELETE), GLFW_RELEASE, 0);
 	inputMng.setupEvent<Editor::DeleteSelectedEntity>("Delete Selected Entity");
+}
+
+void GameApplication::playSceneBGM()
+{
+	auto& audioMng = engine_.getAudioManager();
+	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+	std::string sceneName = currentScene.getSceneName();
+
+	std::cout << "[GameApplication] Playing BGM for scene: " << sceneName << std::endl;
+
+	// Determine which BGM to play based on scene name
+	std::string bgmName;
+	if (sceneName == "MainMenu.txt")
+	{
+		bgmName = "BGM_01_Layer2_loop";
+	}
+	else
+	{
+		// All other scenes play the ambient creaking wood
+		bgmName = "Ambience_Creaking_Wood";
+	}
+
+	// Check if the sound is loaded before trying to play it
+	auto& sounds = audioMng.getSounds();
+	if (sounds.find(bgmName) == sounds.end())
+	{
+		std::cerr << "[GameApplication] Warning: BGM sound '" << bgmName << "' not loaded yet, skipping playback" << std::endl;
+		return;
+	}
+
+	// Find or create entity with AudioComponent for BGM
+	auto& entityManager = engine_.getEntityManager();
+	std::vector<ECS::Entity> audioEntities = entityManager.findEntity<ECSComponents::AudioComponent>();
+
+	// Look for existing BGM audio entity
+	ECS::Entity bgmEntity;
+	bool foundBGMEntity = false;
+
+	for (auto& entity : audioEntities)
+	{
+		auto& audioComp = entity.get<ECSComponents::AudioComponent>(entityManager);
+		// Check if this is a BGM entity (belongs to BGM channel group)
+		if (std::string(audioComp.audioMod_.chGroup_) == "BGM")
+		{
+			bgmEntity = entity;
+			foundBGMEntity = true;
+			break;
+		}
+	}
+
+	// If no BGM entity exists, create one
+	if (!foundBGMEntity)
+	{
+		bgmEntity = entityManager.create<ECSComponents::AudioComponent>();
+		std::cout << "[GameApplication] Created new BGM audio entity" << std::endl;
+	}
+
+	// Configure the audio component
+	auto& audioComp = bgmEntity.get<ECSComponents::AudioComponent>(entityManager);
+
+	// Use strncpy to copy strings to char arrays
+	std::string fullPath = "assets/sound/music/" + bgmName + ".wav";
+	strncpy(audioComp.audioMod_.name_, bgmName.c_str(), sizeof(audioComp.audioMod_.name_) - 1);
+	audioComp.audioMod_.name_[sizeof(audioComp.audioMod_.name_) - 1] = '\0';  // Ensure null termination
+
+	strncpy(audioComp.audioMod_.path_, fullPath.c_str(), sizeof(audioComp.audioMod_.path_) - 1);
+	audioComp.audioMod_.path_[sizeof(audioComp.audioMod_.path_) - 1] = '\0';  // Ensure null termination
+
+	strncpy(audioComp.audioMod_.chGroup_, "BGM", sizeof(audioComp.audioMod_.chGroup_) - 1);
+	audioComp.audioMod_.chGroup_[sizeof(audioComp.audioMod_.chGroup_) - 1] = '\0';  // Ensure null termination
+
+	audioComp.audioMod_.loop_ = Audio::EnoAudioModule::LoopMode::Forward;  // Loop the BGM
+	audioComp.volume_ = 70.0;  // Set volume to 70%
+	audioComp.isAutoplay_ = true;
+	audioComp.isPlaying_ = false;  // Reset playing state
+
+	// Prepare and play the audio
+	try
+	{
+		audioMng.prepareMod(audioComp);
+		audioMng.play(audioComp);
+		std::cout << "[GameApplication] Started playing BGM: " << bgmName << std::endl;
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "[GameApplication] Failed to play BGM: " << e.what() << std::endl;
+	}
 }
 
 void GameApplication::setupGameEvents() {
@@ -1590,6 +1701,8 @@ void GameApplication::updateRuneSystem()
 
 	// SPAWN RUNES when left click is first pressed
 	if (leftClickPressed && !runeState.runesActive) {
+		// Play right rune hover sound when first hovering
+		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
 		spawnRunes(mouseWorldPos);
 		runeState.runesActive = true;
 		runeState.isLeftClickHeld = true;
@@ -1621,7 +1734,7 @@ void GameApplication::updateRuneSystem()
 						(runeState.lineStart.y + rightTransform.pos.y) / 2.0f
 					};
 					spawnFireball(fireballPos);
-
+					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
 					// Mark runes as connected
 					ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
 					if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
@@ -1967,6 +2080,9 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	// Mark entities as dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
+	// Play fireball spawn sound effect
+	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Cast" });
+
 	std::cout << "[RuneSystem] Spawned fireball at position (" << pos.x << ", " << pos.y << ")" << std::endl;
 }
 
@@ -2043,6 +2159,9 @@ void GameApplication::updateCombatSystem(float dt)
 				// Deal damage to enemy
 				float damage = fireballDamage.getTotalDamage();
 				bool died = enemyHealth.takeDamage(damage);
+
+				// Play fireball hit sound effect
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Explosion-Small" });
 
 				std::cout << "[Combat] Fireball hit enemy! Dealt " << damage << " damage. "
 					<< "Enemy HP: " << enemyHealth.currentHealth << "/" << enemyHealth.maxHealth << std::endl;

@@ -166,6 +166,7 @@ private:
     void setupTreeTesting();    // Editor tree testing code
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
+    void playSceneBGM();        // Play appropriate BGM based on current scene
     void setupGameMath();       // math demonstration code
     void setupImGui();          // setup ImGui code
     void setupAnimations();

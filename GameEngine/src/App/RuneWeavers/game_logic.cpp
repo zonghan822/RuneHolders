@@ -96,6 +96,10 @@ void GameApplication::initialize() {
 	auto drawableEntities = entityMng.findEntity<ECSComponents::DrawInfoComponent>();
 	std::cout << "Total entities with DrawInfoComponent: " << drawableEntities.size() << "\n";
 	std::cout << "========================================\n\n";
+
+	// Auto-play BGM when game starts (RuneWeavers is a standalone game, not editor)
+	std::cout << "[GameApplication] Auto-starting BGM for RuneWeavers" << std::endl;
+	playSceneBGM();
 }
 
 void GameApplication::run() {
@@ -245,6 +249,14 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Stone_Impact");
 	audioMng.publishSoundRequest("Water_Drip");
 
+	// Rune hover audio
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");	
+	
+	// BGM
+	audioMng.publishSoundRequest("BGM_01_Layer2_loop");
+	audioMng.publishSoundRequest("Ambience_Creaking_Wood");
+
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
 
@@ -289,6 +301,93 @@ void GameApplication::setupTreeTesting()
 	// Setup Delete key for entity deletion
 	inputMng.setupKey("Delete Selected Entity", GLFW_KEY_DELETE, glfwGetKeyScancode(GLFW_KEY_DELETE), GLFW_RELEASE, 0);
 	inputMng.setupEvent<Editor::DeleteSelectedEntity>("Delete Selected Entity");
+}
+
+void GameApplication::playSceneBGM()
+{
+	auto& audioMng = engine_.getAudioManager();
+	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+	std::string sceneName = currentScene.getSceneName();
+
+	std::cout << "[GameApplication] Playing BGM for scene: " << sceneName << std::endl;
+
+	// Determine which BGM to play based on scene name
+	std::string bgmName;
+	if (sceneName == "MainMenu.txt")
+	{
+		bgmName = "BGM_01_Layer2_loop";
+	}
+	else
+	{
+		// All other scenes play the ambient creaking wood
+		bgmName = "Ambience_Creaking_Wood";
+	}
+
+	// Check if the sound is loaded before trying to play it
+	auto& sounds = audioMng.getSounds();
+	if (sounds.find(bgmName) == sounds.end())
+	{
+		std::cerr << "[GameApplication] Warning: BGM sound '" << bgmName << "' not loaded yet, skipping playback" << std::endl;
+		return;
+	}
+
+	// Find or create entity with AudioComponent for BGM
+	auto& entityManager = engine_.getEntityManager();
+	std::vector<ECS::Entity> audioEntities = entityManager.findEntity<ECSComponents::AudioComponent>();
+
+	// Look for existing BGM audio entity
+	ECS::Entity bgmEntity;
+	bool foundBGMEntity = false;
+
+	for (auto& entity : audioEntities)
+	{
+		auto& audioComp = entity.get<ECSComponents::AudioComponent>(entityManager);
+		// Check if this is a BGM entity (belongs to BGM channel group)
+		if (std::string(audioComp.audioMod_.chGroup_) == "BGM")
+		{
+			bgmEntity = entity;
+			foundBGMEntity = true;
+			break;
+		}
+	}
+
+	// If no BGM entity exists, create one
+	if (!foundBGMEntity)
+	{
+		bgmEntity = entityManager.create<ECSComponents::AudioComponent>();
+		std::cout << "[GameApplication] Created new BGM audio entity" << std::endl;
+	}
+
+	// Configure the audio component
+	auto& audioComp = bgmEntity.get<ECSComponents::AudioComponent>(entityManager);
+
+	// Use strncpy to copy strings to char arrays
+	std::string fullPath = "assets/sound/music/" + bgmName + ".wav";
+	strncpy(audioComp.audioMod_.name_, bgmName.c_str(), sizeof(audioComp.audioMod_.name_) - 1);
+	audioComp.audioMod_.name_[sizeof(audioComp.audioMod_.name_) - 1] = '\0';  // Ensure null termination
+
+	strncpy(audioComp.audioMod_.path_, fullPath.c_str(), sizeof(audioComp.audioMod_.path_) - 1);
+	audioComp.audioMod_.path_[sizeof(audioComp.audioMod_.path_) - 1] = '\0';  // Ensure null termination
+
+	strncpy(audioComp.audioMod_.chGroup_, "BGM", sizeof(audioComp.audioMod_.chGroup_) - 1);
+	audioComp.audioMod_.chGroup_[sizeof(audioComp.audioMod_.chGroup_) - 1] = '\0';  // Ensure null termination
+
+	audioComp.audioMod_.loop_ = Audio::EnoAudioModule::LoopMode::Forward;  // Loop the BGM
+	audioComp.volume_ = 30.0;  // Set volume to 30%
+	audioComp.isAutoplay_ = true;
+	audioComp.isPlaying_ = false;  // Reset playing state
+
+	// Prepare and play the audio
+	try
+	{
+		audioMng.prepareMod(audioComp);
+		audioMng.play(audioComp);
+		std::cout << "[GameApplication] Started playing BGM: " << bgmName << std::endl;
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "[GameApplication] Failed to play BGM: " << e.what() << std::endl;
+	}
 }
 
 void GameApplication::setupGameEvents() {
@@ -1364,6 +1463,8 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 				runeState.isDrawingLine = true;
 				runeState.lineStart = leftTransform.pos;
 				runeState.lineEnd = mouseWorldPos;
+				// Play left rune hover sound
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
 				std::cout << "[RuneSystem] Started drawing line from left rune" << std::endl;
 			}
 		}
@@ -1379,7 +1480,13 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 			auto& rightRune = rightRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
 
 			float distToRightRune = Math::eVec2Distance(mouseWorldPos, rightTransform.pos);
+			bool wasRightHovered = rightRune.isHovered;
 			rightRune.isHovered = (distToRightRune <= rightRune.radius);
+
+			// Play right rune hover sound when first hovering
+			if (rightRune.isHovered && !wasRightHovered) {
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+			}
 		}
 	}
 }

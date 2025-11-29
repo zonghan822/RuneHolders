@@ -107,7 +107,6 @@ namespace Editor
 
 		void selectScene(const std::string& filename)
 		{
-			
 			// Load selected scene
 			tree_.load(ASSETS_DIR_PATH "saves/scenes/" + filename);
 
@@ -182,7 +181,7 @@ namespace Editor
 		void playScene()
 		{
 			std::string sceneName = selectedScene_->getSceneName();
-				
+
 			// Save the current state of the scene
 			tree_.save(ASSETS_DIR_PATH "saves/scenes/" + sceneName, sceneName);
 
@@ -193,6 +192,9 @@ namespace Editor
 			// Set editor state to playing
 			selectedScene_->play();
 
+			// Publish PlayScene event to notify systems (e.g., audio)
+			bus_.publish(PlayScene{});
+
 			// Create an additional window
 			//bus_.publish(CreateGameWindow{});
 			//bus_.publish(GameInitialized{});
@@ -201,6 +203,8 @@ namespace Editor
 		// Stops playing a running scene
 		void stopScene()
 		{
+			// Publish StopScene event to notify systems (e.g., audio)
+			bus_.publish(StopScene{});
 
 			// Load initial setting of the scene
 			//std::cout << "[Eno_editor] Loading saved scene tree to restore state..." << std::endl;
