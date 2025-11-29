@@ -612,12 +612,12 @@ void GameApplication::updateGameLogic() {
 					float screenX = transform.pos.x - editorCameraX_;
 					float screenY = transform.pos.y - editorCameraY_;
 
-					// Only draw if entity is within visible camera bounds
+					// Calculate half dimensions for rendering
 					float halfW = scaledWidth * 0.5f;
 					float halfH = scaledHeight * 0.5f;
-					if (screenX + halfW >= 0 && screenX - halfW < EDITOR_WIDTH &&
-						screenY + halfH >= 0 && screenY - halfH < EDITOR_HEIGHT) {
 
+					// Culling disabled - draw all entities
+					{
 						// Check if entity has a texture
 						if (renderInfo.texture && renderInfo.texture->isValid()) {
 							// Draw textured quad (top-left position)
