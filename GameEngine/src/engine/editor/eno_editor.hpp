@@ -107,7 +107,9 @@ namespace Editor
 
 		void selectScene(const std::string& filename)
 		{
-			
+			// Stop any currently playing BGM before loading new scene
+			bus_.publish(Audio::StopBGM{});
+
 			// Load selected scene
 			tree_.load(ASSETS_DIR_PATH "saves/scenes/" + filename);
 
@@ -324,6 +326,9 @@ namespace Editor
 		// Load last saved scene
 		void loadLastSavedScene()
 		{
+			// Stop any currently playing BGM before loading scene
+			bus_.publish(Audio::StopBGM{});
+
 			// Get path to assets
 			std::string currentScenePath = ASSETS_DIR_PATH "saves/scenes/" "LastSavedScene.txt";
 			std::ifstream savedSceneFile{ currentScenePath };
