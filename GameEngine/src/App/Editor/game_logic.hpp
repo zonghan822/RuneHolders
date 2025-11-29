@@ -13,6 +13,7 @@
 #include "engine/eno_engine.hpp"
 #include <iostream>
 #include <memory>
+#include <set>
 #include <imgui.h>
 #include "movementTest.hpp"
 #include "player/player_config.hpp"
@@ -82,11 +83,19 @@ private:
     Player::PlayerConfig playerConfig_;
     std::unique_ptr<Player::PlayerSystem> playerSystem_;
 
+    // Trigger tracking (for one-time entry/exit logging)
+    std::set<uint32_t> currentTriggersPlayerIsIn_;
+    std::set<uint32_t> previousTriggersPlayerWasIn_;
+
     // Scene Tree (note: must be initialized after engine_ is initialized)
     std::unique_ptr<Editor::EnoSceneTree> sceneTree_;
 
     // Map Editor (To be removed after set tilemap as node)
     std::unique_ptr<MapEditor> mapEditor_;
+
+    // Rune System
+    uint32_t runeSystemEntityID_;  // ID of entity holding RuneSystemStateComponent
+    bool runeSystemInitialized_ = false;
 
 public:
     // Constructors
@@ -173,4 +182,13 @@ private:
     void drawPlayerAndIndicator();
 
     void drawShapes();
+
+    // Rune system methods
+    void initializeRuneSystem();                    // Initialize rune system entity
+    void updateRuneSystem();                        // Update rune system logic each frame
+    void spawnRunes(const Math::eVec2<float>& mouseWorldPos);   // Spawn left and right runes
+    void destroyRunes();                            // Destroy spawned runes
+    void updateRuneHover(const Math::eVec2<float>& mouseWorldPos);  // Check if mouse hovers over runes
+    void drawRuneConnectionLine();                  // Draw line connecting runes
+    void spawnFireball(const Math::eVec2<float>& pos);  // Spawn fireball when runes connect
 };

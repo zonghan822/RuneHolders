@@ -26,6 +26,11 @@
 	X(PrefabInstanceComponent) \
 	X(AnimationControllerComponent)\
 	X(CameraComponent) \
+	X(RuneComponent) \
+	X(RuneSystemStateComponent) \
+	X(FireballComponent) \
+	X(HealthComponent) \
+	X(DamageComponent) \
 
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
@@ -34,11 +39,11 @@
 	PRESET(AUDIO, AudioComponent, LayerComponent) \
 	PRESET(PUSHABLE_BOX, TransformComponent, PhysicsComponent, CollisionComponent, BoxComponent, RenderComponent, NameComponent) \
 	PRESET(PLAYER, TransformComponent, NameComponent, PlayerComponent, CollisionComponent, PhysicsComponent, RenderComponent) \
-	PRESET(EXIT_BUTTON, TransformComponent, ButtonComponent, DrawInfoComponent, VisibilityComponent) \
+	PRESET(EXIT_BUTTON, TransformComponent, ButtonComponent, DrawInfoComponent, VisibilityComponent, CollisionComponent) \
 
 
 // Expanding PRESET_LIST within the component namespace
-// to make use of hte PRESET using macro
+// to make use of the PRESET using macro
 //
 // This will allow the components to be visible to the list expansion
 namespace ECSComponents { PRESET_LIST }

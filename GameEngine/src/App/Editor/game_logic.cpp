@@ -192,7 +192,41 @@ void GameApplication::setupTreeTesting()
 }
 
 void GameApplication::setupGameEvents() {
-	// setup event bus
+	// Subscribe to collision events for trigger tracking
+	auto& eventBus = engine_.getEventBus();
+
+	eventBus.subscribe<Collision::CollisionEvent>(
+		[this](const Collision::CollisionEvent& event) {
+			// Check if one of the entities is the player and the other is a trigger
+			uint32_t triggerID = 0;
+			bool isPlayerInvolved = false;
+
+			// Check if entityA is trigger and entityB is player
+			if (event.isEntityA_Trigger && event.entityB_ID == playerEntityID_) {
+				triggerID = event.entityA_ID;
+				isPlayerInvolved = true;
+			}
+			// Check if entityB is trigger and entityA is player
+			else if (event.isEntityB_Trigger && event.entityA_ID == playerEntityID_) {
+				triggerID = event.entityB_ID;
+				isPlayerInvolved = true;
+			}
+
+			// If player is colliding with a trigger, add it to current frame's set
+			if (isPlayerInvolved && triggerID != 0) {
+				currentTriggersPlayerIsIn_.insert(triggerID);
+			}
+		}
+	);
+
+	// Subscribe to EntityDestroyed to clean up tracking
+	eventBus.subscribe<ECS::EntityDestroyed>(
+		[this](const ECS::EntityDestroyed& event) {
+			// Remove destroyed entity from both tracking sets
+			currentTriggersPlayerIsIn_.erase(event.entityID);
+			previousTriggersPlayerWasIn_.erase(event.entityID);
+		}
+	);
 }
 
 void GameApplication::setupGameMath() {
@@ -309,6 +343,9 @@ void GameApplication::updateGameLogic() {
 	if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame) {
 		playerSystem_->Update(entityManager, inputMng, deltaTime);
 	}
+
+	// Update rune system
+	updateRuneSystem();
 
 	// Update engine playing state based on editor state
 	engine_.setIsPlaying(engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing || engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
@@ -575,12 +612,12 @@ void GameApplication::updateGameLogic() {
 					float screenX = transform.pos.x - editorCameraX_;
 					float screenY = transform.pos.y - editorCameraY_;
 
-					// Only draw if entity is within visible camera bounds
+					// Calculate half dimensions for rendering
 					float halfW = scaledWidth * 0.5f;
 					float halfH = scaledHeight * 0.5f;
-					if (screenX + halfW >= 0 && screenX - halfW < EDITOR_WIDTH &&
-						screenY + halfH >= 0 && screenY - halfH < EDITOR_HEIGHT) {
 
+					// Culling disabled - draw all entities
+					{
 						// Check if entity has a texture
 						if (renderInfo.texture && renderInfo.texture->isValid()) {
 							// Draw textured quad (top-left position)
@@ -807,6 +844,26 @@ void GameApplication::updateEntities() {
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
 
+	// Detect trigger entries (new triggers in current set that weren't in previous set)
+	for (uint32_t triggerID : currentTriggersPlayerIsIn_) {
+		if (previousTriggersPlayerWasIn_.find(triggerID) == previousTriggersPlayerWasIn_.end()) {
+			std::cout << "[Trigger] Player (ID:" << playerEntityID_ << ") ENTERED trigger (ID:" << triggerID << ")" << std::endl;
+		}
+	}
+
+	// Detect trigger exits (triggers in previous set that aren't in current set)
+	for (uint32_t triggerID : previousTriggersPlayerWasIn_) {
+		if (currentTriggersPlayerIsIn_.find(triggerID) == currentTriggersPlayerIsIn_.end()) {
+			std::cout << "[Trigger] Player (ID:" << playerEntityID_ << ") EXITED trigger (ID:" << triggerID << ")" << std::endl;
+		}
+	}
+
+	// Save current frame's triggers as previous for next frame
+	previousTriggersPlayerWasIn_ = currentTriggersPlayerIsIn_;
+
+	// Clear current set - it will be rebuilt by collision events this frame
+	currentTriggersPlayerIsIn_.clear();
+
 	// Draw background
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
@@ -987,7 +1044,7 @@ void GameApplication::updateEntities() {
 
 			for (auto& ent : entityList)
 			{
-				auto& v = ent.get<ECSComponents::VisibilityComponent>(engine_.getEntityManager());
+				auto& c = ent.get<ECSComponents::CollisionComponent>(engine_.getEntityManager());
 				auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
 				auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
 				auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
@@ -1005,7 +1062,7 @@ void GameApplication::updateEntities() {
 						getEditorCameraX(),
 						getEditorCameraY());
 
-					if (b.onClick(mousePos, v, t, d))
+					if (b.onClick(mousePos, t, d, c))
 					{
 
 						std::cout << "CLICK!" << std::endl;
@@ -1163,7 +1220,7 @@ void GameApplication::drawShapes() {
 				// Get rendering info from DrawInfoComponent (size, color, etc.)
 				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 				auto& renderInfo = entity.get<drawInfo>(entityManager);
-				
+
 
 				// Apply scale to width and height
 				float scaledWidth = renderInfo.width * transform.scale.x;
@@ -1323,4 +1380,379 @@ void GameApplication::startCameraPan(float targetY, float duration)
 	panTargetY_ = targetY;
 	panDuration_ = duration;
 	panTimer_ = 0.0f;
+}
+
+// ============================================================================
+// RUNE SYSTEM IMPLEMENTATION
+// ============================================================================
+
+void GameApplication::initializeRuneSystem()
+{
+	auto& entityManager = engine_.getEntityManager();
+
+	// Create a dedicated entity to hold the rune system state
+	ECS::Entity runeSystemEntity = entityManager.create();
+	runeSystemEntity.add<ECSComponents::RuneSystemStateComponent>(entityManager);
+	runeSystemEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("RuneSystem"));
+
+	runeSystemEntityID_ = runeSystemEntity.id();
+
+	runeSystemInitialized_ = true;
+	std::cout << "[RuneSystem] Initialized rune system entity" << std::endl;
+}
+
+void GameApplication::updateRuneSystem()
+{
+	// Only update when in play mode
+	if (engine_.getEnoEditor().getCurrentScene().getState() != Editor::State::Playing) {
+		return;
+	}
+
+	// Initialize if not done yet
+	if (!runeSystemInitialized_) {
+		initializeRuneSystem();
+	}
+
+	auto& entityManager = engine_.getEntityManager();
+	auto& inputManager = engine_.getInputManager();
+
+	// Get rune system entity
+	ECS::Entity runeSystemEntity(runeSystemEntityID_);
+
+	// Check if rune system entity still exists
+	if (!runeSystemEntity.has<ECSComponents::RuneSystemStateComponent>(entityManager)) {
+		return;
+	}
+
+	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+
+	// Get mouse position and convert to world space
+	auto mouseScreenPos = inputManager.getMousePosition();
+	Math::eVec2<float> mouseWorldPos = Graphics::screenToWorld(
+		{ static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
+		getEditorViewMin(),
+		getEditorViewMax(),
+		static_cast<float>(getEditorWidth()),
+		static_cast<float>(getEditorHeight()),
+		getEditorCameraX(),
+		getEditorCameraY()
+	);
+
+	// Check if left mouse button is pressed this frame
+	bool leftClickPressed = inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT);
+	bool leftClickHeld = inputManager.isMousePressed(GLFW_MOUSE_BUTTON_LEFT);
+	bool leftClickReleased = inputManager.isMouseUp(GLFW_MOUSE_BUTTON_LEFT);
+
+	// SPAWN RUNES when left click is first pressed
+	if (leftClickPressed && !runeState.runesActive) {
+		spawnRunes(mouseWorldPos);
+		runeState.runesActive = true;
+		runeState.isLeftClickHeld = true;
+		runeState.fireballSpawned = false;  // Reset flag for new rune spawn
+	}
+
+	// UPDATE RUNES while left click is held
+	if (leftClickHeld && runeState.runesActive) {
+		updateRuneHover(mouseWorldPos);
+
+		// Update line drawing
+		if (runeState.isDrawingLine && !runeState.fireballSpawned) {
+			runeState.lineEnd = mouseWorldPos;
+
+			// Check if line connects to right rune
+			ECS::Entity rightRuneEntity(runeState.rightRuneEntityID);
+			if (rightRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
+			    rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
+
+				auto& rightTransform = rightRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
+				auto& rightRune = rightRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
+
+				float distToRightRune = Math::eVec2Distance(mouseWorldPos, rightTransform.pos);
+
+				if (distToRightRune <= rightRune.radius) {
+					// Connection successful! Spawn fireball
+					Math::eVec2<float> fireballPos = {
+						(runeState.lineStart.x + rightTransform.pos.x) / 2.0f,
+						(runeState.lineStart.y + rightTransform.pos.y) / 2.0f
+					};
+					spawnFireball(fireballPos);
+
+					// Mark runes as connected
+					ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
+					if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
+						leftRuneEntity.get<ECSComponents::RuneComponent>(entityManager).isConnected = true;
+					}
+					rightRune.isConnected = true;
+
+					// Set flag to prevent multiple fireballs
+					runeState.fireballSpawned = true;
+
+					// Destroy runes immediately after successful connection
+					destroyRunes();
+					runeState.runesActive = false;
+					runeState.isDrawingLine = false;
+
+					std::cout << "[RuneSystem] Runes connected! Spawning fireball" << std::endl;
+				}
+			}
+		}
+	}
+
+	// DESTROY RUNES when left click is released
+	if (leftClickReleased && runeState.runesActive) {
+		destroyRunes();
+		runeState.runesActive = false;
+		runeState.isLeftClickHeld = false;
+		runeState.isDrawingLine = false;
+		runeState.fireballSpawned = false;  // Reset for next cycle
+	}
+
+	// Draw connection line if active
+	if (runeState.isDrawingLine) {
+		drawRuneConnectionLine();
+	}
+
+	// Update fireballs - check lifetime and destroy expired ones
+	float deltaTime = static_cast<float>(engine_.getDeltaTime());
+	std::vector<uint32_t> fireballsToDestroy;
+
+	for (const auto& [id, loc] : entityManager.getMap()) {
+		ECS::Entity entity(id);
+		if (entity.has<ECSComponents::FireballComponent>(entityManager)) {
+			auto& fireballComp = entity.get<ECSComponents::FireballComponent>(entityManager);
+			fireballComp.elapsedTime += deltaTime;
+
+			// Check if fireball has exceeded its lifetime
+			if (fireballComp.elapsedTime >= fireballComp.lifetime) {
+				fireballsToDestroy.push_back(id);
+			}
+		}
+	}
+
+	// Destroy expired fireballs
+	for (uint32_t id : fireballsToDestroy) {
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+		std::cout << "[RuneSystem] Fireball expired and destroyed" << std::endl;
+	}
+}
+
+void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
+{
+	auto& entityManager = engine_.getEntityManager();
+	ECS::Entity runeSystemEntity(runeSystemEntityID_);
+	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+
+	// Load textures if not already loaded
+	auto& resourceLoader = engine_.getResourceLoader();
+	auto leftRuneTexture = resourceLoader.getTexture("Left_Rune");
+	auto rightRuneTexture = resourceLoader.getTexture("Right_Rune");
+
+	// Spawn LEFT rune
+	ECS::Entity leftRune = entityManager.create();
+	leftRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("LeftRune"));
+	leftRune.add<ECSComponents::TransformComponent>(entityManager);
+	leftRune.add<ECSComponents::DrawInfoComponent>(entityManager);
+	leftRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::LEFT, 30.0f));
+
+	auto& leftTransform = leftRune.get<ECSComponents::TransformComponent>(entityManager);
+	leftTransform.pos = { mouseWorldPos.x - runeState.runeSpawnOffset, mouseWorldPos.y };
+	leftTransform.scale = { 1.0f, 1.0f };
+
+	auto& leftDraw = leftRune.get<ECSComponents::DrawInfoComponent>(entityManager);
+	leftDraw.width = 60.0f;
+	leftDraw.height = 60.0f;
+	leftDraw.color = Graphics::Color::White;
+	strcpy_s(leftDraw.shape, "Rectangle");
+	leftDraw.texture = leftRuneTexture;
+
+	// Spawn RIGHT rune
+	ECS::Entity rightRune = entityManager.create();
+	rightRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("RightRune"));
+	rightRune.add<ECSComponents::TransformComponent>(entityManager);
+	rightRune.add<ECSComponents::DrawInfoComponent>(entityManager);
+	rightRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::RIGHT, 30.0f));
+
+	auto& rightTransform = rightRune.get<ECSComponents::TransformComponent>(entityManager);
+	rightTransform.pos = { mouseWorldPos.x + runeState.runeSpawnOffset, mouseWorldPos.y };
+	rightTransform.scale = { 1.0f, 1.0f };
+
+	auto& rightDraw = rightRune.get<ECSComponents::DrawInfoComponent>(entityManager);
+	rightDraw.width = 60.0f;
+	rightDraw.height = 60.0f;
+	rightDraw.color = Graphics::Color::White;
+	strcpy_s(rightDraw.shape, "Rectangle");
+	rightDraw.texture = rightRuneTexture;
+
+	// Store entity IDs
+	runeState.leftRuneEntityID = leftRune.id();
+	runeState.rightRuneEntityID = rightRune.id();
+
+	// Mark entities as dirty to refresh rendering cache
+	entitiesDirty_ = true;
+
+	std::cout << "[RuneSystem] Spawned runes at mouse position" << std::endl;
+}
+
+void GameApplication::destroyRunes()
+{
+	auto& entityManager = engine_.getEntityManager();
+	ECS::Entity runeSystemEntity(runeSystemEntityID_);
+	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+
+	// Destroy left rune if it exists
+	if (runeState.leftRuneEntityID != UINT32_MAX) {
+		ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
+		if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
+			entityManager.destroyEntity(runeState.leftRuneEntityID);
+		}
+		runeState.leftRuneEntityID = UINT32_MAX;
+	}
+
+	// Destroy right rune if it exists
+	if (runeState.rightRuneEntityID != UINT32_MAX) {
+		ECS::Entity rightRuneEntity(runeState.rightRuneEntityID);
+		if (rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
+			entityManager.destroyEntity(runeState.rightRuneEntityID);
+		}
+		runeState.rightRuneEntityID = UINT32_MAX;
+	}
+
+	// Mark entities as dirty to refresh rendering cache
+	entitiesDirty_ = true;
+
+	std::cout << "[RuneSystem] Destroyed runes" << std::endl;
+}
+
+void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
+{
+	auto& entityManager = engine_.getEntityManager();
+	ECS::Entity runeSystemEntity(runeSystemEntityID_);
+	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+
+	// Check if mouse hovers over left rune
+	if (runeState.leftRuneEntityID != UINT32_MAX) {
+		ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
+		if (leftRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
+		    leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
+
+			auto& leftTransform = leftRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
+			auto& leftRune = leftRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
+
+			float distToLeftRune = Math::eVec2Distance(mouseWorldPos, leftTransform.pos);
+			bool wasHovered = leftRune.isHovered;
+			leftRune.isHovered = (distToLeftRune <= leftRune.radius);
+
+			// Start drawing line when hovering over left rune
+			if (leftRune.isHovered && !wasHovered) {
+				runeState.isDrawingLine = true;
+				runeState.lineStart = leftTransform.pos;
+				runeState.lineEnd = mouseWorldPos;
+				std::cout << "[RuneSystem] Started drawing line from left rune" << std::endl;
+			}
+		}
+	}
+
+	// Update right rune hover state
+	if (runeState.rightRuneEntityID != UINT32_MAX) {
+		ECS::Entity rightRuneEntity(runeState.rightRuneEntityID);
+		if (rightRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
+		    rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
+
+			auto& rightTransform = rightRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
+			auto& rightRune = rightRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
+
+			float distToRightRune = Math::eVec2Distance(mouseWorldPos, rightTransform.pos);
+			rightRune.isHovered = (distToRightRune <= rightRune.radius);
+		}
+	}
+}
+
+void GameApplication::drawRuneConnectionLine()
+{
+	auto& entityManager = engine_.getEntityManager();
+	auto& graphics = engine_.getGraphicsManager();
+	ECS::Entity runeSystemEntity(runeSystemEntityID_);
+	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+
+	// Convert world positions to screen positions for drawing
+	Math::eVec2<float> screenStart = {
+		runeState.lineStart.x - editorCameraX_,
+		runeState.lineStart.y - editorCameraY_
+	};
+
+	Math::eVec2<float> screenEnd = {
+		runeState.lineEnd.x - editorCameraX_,
+		runeState.lineEnd.y - editorCameraY_
+	};
+
+	// Draw line using graphics system
+	// Note: You may need to implement a line drawing function in your graphics system
+	// For now, drawing as a thin rectangle
+	Math::eVec2<float> direction = {
+		screenEnd.x - screenStart.x,
+		screenEnd.y - screenStart.y
+	};
+	float length = Math::eVec2Length(direction);
+
+	if (length > 0.1f) {
+		float angle = std::atan2(direction.y, direction.x);
+		Math::eVec2<float> midpoint = {
+			screenStart.x + direction.x / 2.0f,
+			screenStart.y + direction.y / 2.0f
+		};
+
+		graphics.drawRect(
+			midpoint,
+			Math::eVec2<float>{length, 3.0f},  // 3 pixels wide
+			Graphics::Color(1.0f, 1.0f, 0.0f, 0.8f),  // Yellow with transparency
+			true,
+			angle
+		);
+	}
+}
+
+void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
+{
+	auto& entityManager = engine_.getEntityManager();
+	auto& resourceLoader = engine_.getResourceLoader();
+
+	// Load fireball spritesheet texture
+	auto fireballTexture = resourceLoader.getTexture("Spell-Fireball-Flying-Sheet");
+
+	// Create fireball entity
+	ECS::Entity fireball = entityManager.create();
+	fireball.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Fireball"));
+	fireball.add<ECSComponents::TransformComponent>(entityManager);
+	fireball.add<ECSComponents::DrawInfoComponent>(entityManager);
+	fireball.add<ECSComponents::AnimationControllerComponent>(entityManager);
+	fireball.add<ECSComponents::FireballComponent>(entityManager, ECSComponents::FireballComponent(5.0f));
+
+	auto& transform = fireball.get<ECSComponents::TransformComponent>(entityManager);
+	transform.pos = pos;
+	transform.scale = { 1.0f, 1.0f };
+
+	auto& draw = fireball.get<ECSComponents::DrawInfoComponent>(entityManager);
+	draw.width = 90.0f;   // Match sprite frame width (360/4 = 90)
+	draw.height = 48.0f;  // Match sprite frame height
+	draw.color = Graphics::Color::White;
+	strcpy_s(draw.shape, "Rectangle");
+	draw.texture = fireballTexture;
+
+	// Setup animation configuration - fireball spritesheet is 360x48 with 4 frames (90x48 each)
+	auto& animComp = fireball.get<ECSComponents::AnimationControllerComponent>(entityManager);
+	if (fireballTexture && fireballTexture->isValid()) {
+		animComp.frameWidth = 90;    // Each frame is 90 pixels wide
+		animComp.frameHeight = 48;   // Each frame is 48 pixels tall
+		animComp.rows = 1;            // 1 row
+		animComp.cols = 4;            // 4 columns (frames)
+		animComp.frameDuration = 0.1f;  // Frame duration
+		animComp.looping = true;      // Loop the animation
+		strcpy_s(animComp.currentAnimationName, "fly");
+	}
+
+	// Mark entities as dirty to refresh rendering cache
+	entitiesDirty_ = true;
+
+	std::cout << "[RuneSystem] Spawned fireball at position (" << pos.x << ", " << pos.y << ")" << std::endl;
 }
