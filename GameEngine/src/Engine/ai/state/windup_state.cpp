@@ -21,7 +21,7 @@ namespace AI {
         windupTimer_ += dt;
 
         if (windupTimer_ >= ai.windupTime)
-            strcpy(ai.nextState, "attack");
+            strcpy(ai.nextState, "Attack");
     }
             //strcpy(ai.nextState, "Attack");
 

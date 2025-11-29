@@ -2868,8 +2868,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 
 		idleAnim.setLooping(true);
-		ctrl->addAnimation("idle", idleAnim, idleTexData.texture); // Pass the texture
-		ctrl->setAnimation("idle");
+		ctrl->addAnimation("Idle", idleAnim, idleTexData.texture); // Pass the texture
+		ctrl->setAnimation("Idle");
 
 		// Save animation configuration to component for serialization
 		animComp.frameWidth = idleTexData.frameWidth;
@@ -2878,7 +2878,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		animComp.cols = idleTexData.cols;
 		animComp.frameDuration = 0.1f;
 		animComp.looping = true;
-		std::strncpy(animComp.currentAnimationName, "idle", sizeof(animComp.currentAnimationName) - 1);
+		std::strncpy(animComp.currentAnimationName, "Idle", sizeof(animComp.currentAnimationName) - 1);
 	}
 
 	if (!idleHasTexture)
@@ -3057,8 +3057,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
 
 		walkAnim.setLooping(true);
-		ctrl->addAnimation("walk", walkAnim, walkTexData.texture); // Pass the texture
-		ctrl->setAnimation("walk");
+		ctrl->addAnimation("Walk", walkAnim, walkTexData.texture); // Pass the texture
+		ctrl->setAnimation("Walk");
 
 		// Save animation configuration to component for serialization
 		animComp.frameWidth = walkTexData.frameWidth;
@@ -3067,7 +3067,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		animComp.cols = walkTexData.cols;
 		animComp.frameDuration = 0.1f;
 		animComp.looping = true;
-		std::strncpy(animComp.currentAnimationName, "walk", sizeof(animComp.currentAnimationName) - 1);
+		std::strncpy(animComp.currentAnimationName, "Walk", sizeof(animComp.currentAnimationName) - 1);
 	}
 
 	if (!walkHasTexture)
@@ -3246,8 +3246,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
 		//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
 		attackAnim.setLooping(true);
-		ctrl->addAnimation("attack", attackAnim, attackTexData.texture); // Pass the texture
-		ctrl->setAnimation("attack");
+		ctrl->addAnimation("Attack", attackAnim, attackTexData.texture); // Pass the texture
+		ctrl->setAnimation("Attack");
 
 		// Save animation configuration to component for serialization
 		animComp.frameWidth = attackTexData.frameWidth;
@@ -3256,7 +3256,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		animComp.cols = attackTexData.cols;
 		animComp.frameDuration = 0.1f;
 		animComp.looping = true;
-		std::strncpy(animComp.currentAnimationName, "attack", sizeof(animComp.currentAnimationName) - 1);
+		std::strncpy(animComp.currentAnimationName, "Attack", sizeof(animComp.currentAnimationName) - 1);
 	}
 
 	if (!attackHasTexture)
@@ -3293,9 +3293,9 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		{
 			if (ImGui::Button("Play IDLE"))
 			{
-				if (ctrl->animations_.count("idle"))
+				if (ctrl->animations_.count("Idle"))
 				{
-					ctrl->setAnimation("idle");
+					ctrl->setAnimation("Idle");
 					// Also update the texture when switching animations
 					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
 					{
@@ -3307,16 +3307,16 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 					}
 				}
 				else
-					std::cout << "[ImGui] idle animation not found!\n";
+					std::cout << "[ImGui] Idle animation not found!\n";
 			}
 
 			ImGui::SameLine();
 
 			if (ImGui::Button("Play WALK"))
 			{
-				if (ctrl->animations_.count("walk"))
+				if (ctrl->animations_.count("Walk"))
 				{
-					ctrl->setAnimation("walk");
+					ctrl->setAnimation("Walk");
 					// Also update the texture when switching animations
 					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
 					{
@@ -3328,16 +3328,16 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 					}
 				}
 				else
-					std::cout << "[ImGui] walk animation not found!\n";
+					std::cout << "[ImGui] Walk animation not found!\n";
 			}
 
 			ImGui::SameLine();
 
 			if (ImGui::Button("Play ATTACK"))
 			{
-				if (ctrl->animations_.count("attack"))
+				if (ctrl->animations_.count("Attack"))
 				{
-					ctrl->setAnimation("attack");
+					ctrl->setAnimation("Attack");
 					// Also update the texture when switching animations
 					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
 					{
@@ -3349,7 +3349,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 					}
 				}
 				else
-					std::cout << "[ImGui] attack animation not found!\n";
+					std::cout << "[ImGui] Attack animation not found!\n";
 			}
 		}
 		else
@@ -4090,8 +4090,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									0.1f                   // frame duration (doesn't matter for single frame)
 								);
 
-								ctrl->addAnimation("idle", singleFrameAnim);
-								ctrl->setAnimation("idle");
+								ctrl->addAnimation("Idle", singleFrameAnim);
+								ctrl->setAnimation("Idle");
 							}
 
 							// Add to scene tree
@@ -4188,8 +4188,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 								0.1f                   // frame duration (doesn't matter for single frame)
 							);
 
-							ctrl->addAnimation("idle", singleFrameAnim);
-							ctrl->setAnimation("idle");
+							ctrl->addAnimation("Idle", singleFrameAnim);
+							ctrl->setAnimation("Idle");
 						}
 
 						// Add to scene tree

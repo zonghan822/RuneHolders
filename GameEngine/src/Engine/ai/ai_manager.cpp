@@ -72,13 +72,20 @@ namespace AI {
                     Animation::AnimationController* ctrl = animRegistry_.get(animComp.controllerID);
 
                     if (ctrl) {
-                        // Convert state name to lowercase for animation lookup
-                        std::string stateName = ai.currentState;
-                        std::transform(stateName.begin(), stateName.end(), stateName.begin(), ::tolower);
+                        // Map AI state names to animation names
+                        // This allows editor to use intuitive names like "Walk" while engine uses "Chase"
+                        std::string animationName = ai.currentState;
+                        if (strcmp(ai.currentState, "Chase") == 0) {
+                            animationName = "Walk";  // Chase state uses Walk animation
+                        }
+                        else if (strcmp(ai.currentState, "Windup") == 0) {
+                            animationName = "Attack";  // Windup state uses Attack animation
+                        }
+                        // Others map 1:1: Idle->Idle, Attack->Attack, Hurt->Hurt, Death->Death
 
-                        // Try to set the animation matching the state name
-                        if (ctrl->animations_.count(stateName)) {
-                            ctrl->setAnimation(stateName);
+                        // Try to set the animation matching the mapped name
+                        if (ctrl->animations_.count(animationName)) {
+                            ctrl->setAnimation(animationName);
 
                             // Also update the entity's texture to match the animation
                             if (entity.has<ECSComponents::DrawInfoComponent>(entMng_)) {

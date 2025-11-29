@@ -15,7 +15,7 @@
 			{
 				"Position": <eVec2(float)> { x : 819.891 | y : 863.941 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1.78937 | y : 1.59694 }
+				"Scale": <eVec2(float)> { x : 1.85276 | y : 1.59694 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
 			}
 
@@ -99,7 +99,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1207.94 | y : 1093.18 }
+				"Position": <eVec2(float)> { x : 1224.37 | y : 1093.18 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1.44563 | y : 1.44563 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -111,7 +111,7 @@
 				"Height": <float> { 72.2815 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { SpellBook-HowToCast_Fireball }
+				"Texture Path": <texchar240> { EnemyBat }
 				"TexID": <int> { 0 }
 			}
 
@@ -183,11 +183,122 @@
 			{
 				"Frame Width": <int> { 96 }
 				"Frame Height": <int> { 96 }
-				"Rows": <int> { 10 }
-				"Cols": <int> { 16 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Current Animation": <char64> { attack }
+				"Current Animation": <char64> { Idle }
+			}
+		}
+		"Script": { 0 }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Node32]
+	{
+		"ID": { 32 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Entity 5 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1383.96 | y : 1101 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1.41125 | y : 1.41125 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 70.5625 }
+				"Height": <float> { 70.5625 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Tilemap-Crystals-Idle-Sheet }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 70.5625 }
+				"Height": <float> { 70.5625 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 2 }
+				"Drag": <float> { 8 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::BoxComponent]
+			{
+				"isPushable": <bool> { 1 }
+				"pushResistance": <float> { 0.2 }
+			}
+
+			[struct ECSComponents::AIComponent]
+			{
+				"currentState": <char32> { None }
+				"nextState": <char32> { Idle }
+				"awarenessRadius": <float> { 235 }
+				"chaseSpeed": <float> { 90 }
+				"attackRange": <float> { 40 }
+				"windupTime": <float> { 0.5 }
+				"attackDuration": <float> { 0.3 }
+				"hurtDuration": <float> { 0.4 }
+				"health": <int> { 100 }
+				"useScriptCallbacks": <bool> { 0 }
+				"cbIdleEnter": <char64> {  }
+				"cbIdleUpdate": <char64> {  }
+				"cbIdleExit": <char64> {  }
+				"cbChaseEnter": <char64> {  }
+				"cbChaseUpdate": <char64> {  }
+				"cbChaseExit": <char64> {  }
+				"cbWindupEnter": <char64> {  }
+				"cbWindupUpdate": <char64> {  }
+				"cbWindupExit": <char64> {  }
+				"cbAttackEnter": <char64> {  }
+				"cbAttackUpdate": <char64> {  }
+				"cbAttackExit": <char64> {  }
+				"cbHurtEnter": <char64> {  }
+				"cbHurtUpdate": <char64> {  }
+				"cbHurtExit": <char64> {  }
+				"cbDeathEnter": <char64> {  }
+				"cbDeathUpdate": <char64> {  }
+				"cbDeathExit": <char64> {  }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 4 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Current Animation": <char64> { Idle }
 			}
 		}
 		"Script": { 0 }
