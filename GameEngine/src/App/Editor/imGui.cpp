@@ -342,6 +342,7 @@ void displayEntityCount(Engine::EnoEngine& engine_) {
 }
 
 
+
 void displayEntityCharacteristics(Engine::EnoEngine& engine_) {
 	engine_.getEntityManager().viewMap();
 }
