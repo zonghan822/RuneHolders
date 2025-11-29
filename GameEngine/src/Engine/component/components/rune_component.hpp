@@ -168,7 +168,7 @@ namespace ECSComponents
             , lineEnd(0.0f, 0.0f)
             , leftRuneEntityID(UINT32_MAX)
             , rightRuneEntityID(UINT32_MAX)
-            , runeSpawnOffset(50.0f)
+            , runeSpawnOffset(100.0f)  // Increased from 50.0f for wider separation
         {
         }
 

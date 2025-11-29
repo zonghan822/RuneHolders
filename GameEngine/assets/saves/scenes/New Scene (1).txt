@@ -80,6 +80,101 @@
 		"Enabled": { true }
 	}
 
+	[Node27]
+	{
+		"ID": { 27 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Player }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1024.99 | y : 1259.49 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 2 | y : 2 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 48 }
+				"Height": <float> { 48 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::PlayerComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Movement Force": <float> { 800 }
+				"Acceleration": <float> { 0 }
+				"Friction": <float> { 0 }
+				"Mass": <float> { 1 }
+				"Max Speed": <float> { 200 }
+				"Friction Coefficient": <float> { 0.15 }
+				"Can Move": <bool> { 1 }
+				"Sprite Width": <float> { 48 }
+				"Sprite Height": <float> { 48 }
+				"Collider Width": <float> { 48 }
+				"Collider Height": <float> { 48 }
+				"Is Dashing": <bool> { 0 }
+				"Dash Timer": <float> { 0 }
+				"Dash Duration": <float> { 0.3 }
+				"Dash Distance": <float> { 150 }
+				"Dash Cooldown": <float> { 0.5 }
+				"Dash Cooldown Timer": <float> { 0 }
+				"Dash Direction": <eVec2(float)> { x : 0 | y : 0 }
+				"Dash Start Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 48 }
+				"Height": <float> { 48 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0.1 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 1 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 100 }
+				"maxHealth": <float> { 100 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
 	[Node3]
 	{
 		"ID": { 3 }
@@ -391,92 +486,6 @@
 				"Looping": <bool> { 1 }
 				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-	}
-
-	[Node27]
-	{
-		"ID": { 27 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { Player }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 1024.99 | y : 1259.49 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 2 | y : 2 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 48 }
-				"Height": <float> { 48 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
-				"Texture Path": <texchar240> {  }
-				"TexID": <int> { 0 }
-			}
-
-			[struct ECSComponents::PlayerComponent]
-			{
-				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
-				"Movement Force": <float> { 800 }
-				"Acceleration": <float> { 0 }
-				"Friction": <float> { 0 }
-				"Mass": <float> { 1 }
-				"Max Speed": <float> { 200 }
-				"Friction Coefficient": <float> { 0.15 }
-				"Can Move": <bool> { 1 }
-				"Sprite Width": <float> { 48 }
-				"Sprite Height": <float> { 48 }
-				"Collider Width": <float> { 48 }
-				"Collider Height": <float> { 48 }
-				"Is Dashing": <bool> { 0 }
-				"Dash Timer": <float> { 0 }
-				"Dash Duration": <float> { 0.3 }
-				"Dash Distance": <float> { 150 }
-				"Dash Cooldown": <float> { 0.5 }
-				"Dash Cooldown Timer": <float> { 0 }
-				"Dash Direction": <eVec2(float)> { x : 0 | y : 0 }
-				"Dash Start Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::CollisionComponent]
-			{
-				"Type": <ColliderType> { Rectangle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 1 }
-				"Rotation": <float> { 0 }
-				"Width": <float> { 48 }
-				"Height": <float> { 48 }
-			}
-
-			[struct ECSComponents::PhysicsComponent]
-			{
-				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
-				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
-				"Force": <eVec2(float)> { x : 0 | y : 0 }
-				"Mass": <float> { 1 }
-				"Drag": <float> { 0.1 }
-				"Restitution": <float> { 0.5 }
-				"UseGravity": <bool> { 0 }
-				"IsKinematic": <bool> { 1 }
-				"FreezeRotation": <bool> { 1 }
-				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
-				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
 			}
 		}
 		"Script": { }
@@ -1149,6 +1158,54 @@
 				"Anim0 Cols": <int> { 12 }
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[UI-Spellbook-Icon-F]
+	{
+		"ID": { 40 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { UI-Spellbook-Icon-F }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1770 | y : 1400 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 257 }
+				"Height": <float> { 257 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-Spellbook-Icon-F }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
 			}
 		}
 		"Script": { }

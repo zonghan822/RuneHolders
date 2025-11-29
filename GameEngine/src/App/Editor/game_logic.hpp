@@ -97,6 +97,13 @@ private:
     uint32_t runeSystemEntityID_;  // ID of entity holding RuneSystemStateComponent
     bool runeSystemInitialized_ = false;
 
+    // Pause Menu and Spellbook System
+    bool isPaused_ = false;
+    bool showSpellbook_ = false;
+    uint32_t pauseMenuEntityID_ = 0;
+    uint32_t spellbookEntityID_ = 0;
+    Math::eVec2<float> savedPlayerScale_ = { 2.0f, 2.0f };  // Save player scale when hiding (default to common scale)
+
 public:
     // Constructors
     GameApplication() = default;
@@ -166,6 +173,7 @@ private:
     void setupTreeTesting();    // Editor tree testing code
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
+    void playSceneBGM();        // Play appropriate BGM based on current scene
     void setupGameMath();       // math demonstration code
     void setupImGui();          // setup ImGui code
     void setupAnimations();
@@ -195,4 +203,12 @@ private:
 
     // Combat system methods
     void updateCombatSystem(float deltaTime);       // Handle damage dealing and health updates
+
+    // Pause Menu and Spellbook methods
+    void spawnSpellbook();                          // Spawn spellbook UI entity
+    void destroySpellbook();                        // Destroy spellbook UI entity
+    void spawnPauseMenu();                          // Spawn pause menu UI entity
+    void destroyPauseMenu();                        // Destroy pause menu UI entity
+    void hidePlayer();                              // Hide player by setting scale to 0
+    void showPlayer();                              // Show player by restoring scale
 };

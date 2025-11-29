@@ -1,5 +1,61 @@
 {
 
+	[Room02_Doors]
+	{
+		"ID": { 37 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Room02_Doors }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1920 }
+				"Height": <float> { 1080 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Room02_Doors }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::CameraComponent]
+			{
+				"Viewport Width": <float> { 1920 }
+				"Viewport Height": <float> { 1080 }
+				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
+				"Is Active": <bool> { 1 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
 	[Node45]
 	{
 		"ID": { 45 }
@@ -79,62 +135,6 @@
 				"Anim0 Cols": <int> { 12 }
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-	}
-
-	[Room02_Doors]
-	{
-		"ID": { 37 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { Room02_Doors }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 1920 }
-				"Height": <float> { 1080 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Room02_Doors }
-				"TexID": <int> { 0 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::CameraComponent]
-			{
-				"Viewport Width": <float> { 1920 }
-				"Viewport Height": <float> { 1080 }
-				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
-				"Is Active": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -1410,6 +1410,54 @@
 			}
 		}
 		"Script": { 0 }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[UI-Spellbook-Icon-F]
+	{
+		"ID": { 57 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { UI-Spellbook-Icon-F }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1770 | y : 1400 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 257 }
+				"Height": <float> { 257 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-Spellbook-Icon-F }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }

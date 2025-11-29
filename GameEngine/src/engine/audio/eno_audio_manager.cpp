@@ -531,7 +531,8 @@ namespace Audio
 		auto group = channelGroups_.find(name);
 		if (group == channelGroups_.end())
 		{
-			throw std::runtime_error("Failed to find group by name!");
+			// Group doesn't exist - nothing to stop, return silently
+			return;
 		}
 
 		group->second->stop();
