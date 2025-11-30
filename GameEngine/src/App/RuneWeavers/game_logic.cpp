@@ -568,26 +568,6 @@ void GameApplication::updateGameLogic() {
 	worldWidth_ = worldSize.x, worldHeight_ = worldSize.y;
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 
-	// ========== Handle Interrupts ================
-	// Skip game updates if window is minimized
-	//if (windowMinimized_) 
-	//{
-	//	// Still render pause menu if needed, but skip physics/logic
-	//	updateCamera(0.0f);
-	//	drawShapes();
-	//	graphics_.flush();
-	//	return;
-	//}
-
-	//// If window lost focus and game isn't paused yet, pause it
-	//if (!windowFocused_ && !isPaused_) 
-	//{
-	//	isPaused_ = true;
-	//	engine_.setIsPlaying(false);
-	//	hidePlayer();
-	//	spawnPauseMenu();
-	//}
-
 
 	// ========== PAUSE MENU AND SPELLBOOK INPUT HANDLING ==========
 	// Only handle pause/spellbook input when player exists
