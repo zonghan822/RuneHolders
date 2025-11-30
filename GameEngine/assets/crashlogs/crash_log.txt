@@ -80,3 +80,5 @@
 [2025-11-27 18:14:42] string too long
 [2025-11-29 18:39:33] Failed to find the requested sound!
 [2025-11-29 19:33:19] Failed to find the sound Rune-GalaxyBellPad-1
+[2025-11-30 14:57:45] Failed to find dropped in sound!
+[2025-11-30 14:59:40] Failed to find dropped in sound!

@@ -1709,6 +1709,17 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 	ImGui::Text("=== AUDIO ASSETS ===");
 
+	// Drag-drop hint
+	ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Drag & drop .wav or .mp3 files here to import!");
+
+	// Import destination selector
+	static int importDestination = 1; // 0=Music, 1=SFX
+	ImGui::Text("Import to:");
+	ImGui::SameLine();
+	ImGui::RadioButton("Music", &importDestination, 0);
+	ImGui::SameLine();
+	ImGui::RadioButton("SFX", &importDestination, 1);
+
 	// Button to load/reload audio assets
 	if (ImGui::Button("Load Audio Files"))
 	{
@@ -1725,6 +1736,107 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 	ImGui::Separator();
 
+	// --- Handle dropped audio files ---
+	auto& g_droppedFiles = Window::EnoWindow::GetDroppedFiles();
+	if (!g_droppedFiles.empty()) {
+		auto& audioManager = engine_.getAudioManager();
+
+		for (auto& path : g_droppedFiles) {
+			std::filesystem::path filePath(path);
+			auto ext = filePath.extension().string();
+
+			// Check if this is an audio file
+			if (ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac" ||
+				ext == ".aac" || ext == ".wma" || ext == ".m4a" || ext == ".aiff") {
+
+				std::cout << "[Audio Drop] Processing dropped file: " << filePath.filename().string() << std::endl;
+
+				// Determine destination folder based on user selection
+				std::string destFolder = (importDestination == 0) ? loader.getMusicPath() : loader.getSFXPath();
+				std::string folderName = (importDestination == 0) ? "Music" : "SFX";
+				std::string filename = filePath.filename().string();
+				std::filesystem::path destPath = std::filesystem::path(destFolder) / filename;
+
+				try {
+					// Create directory if it doesn't exist
+					std::filesystem::create_directories(destFolder);
+
+					// Check if we need to copy the file
+					bool needsCopy = !std::filesystem::exists(destPath);
+					if (!needsCopy) {
+						auto sourceAbsolute = std::filesystem::absolute(filePath);
+						auto destAbsolute = std::filesystem::absolute(destPath);
+						needsCopy = (sourceAbsolute != destAbsolute);
+					}
+
+					if (needsCopy) {
+						std::filesystem::copy_file(filePath, destPath,
+							std::filesystem::copy_options::overwrite_existing);
+						std::cout << "[Audio Drop] Copied " << filename << " to " << folderName << " folder" << std::endl;
+					} else {
+						std::cout << "[Audio Drop] File " << filename << " already exists in " << folderName << " folder" << std::endl;
+					}
+
+					// Now try to load the audio file with FMOD
+					// This will trigger error events if the format is unsupported
+					FMOD::Sound* sound = nullptr;
+					FMOD_RESULT result = audioManager.getSystem()->createSound(
+						destPath.string().c_str(), FMOD_DEFAULT, nullptr, &sound);
+
+					if (result == FMOD_OK && (ext == ".wav" || ext == ".mp3")) {
+						// Successfully loaded - store it in loader and notify audio manager via event
+						std::string soundName = filePath.stem().string();
+
+						// Store in loader (used by UI and serialization)
+						loader.addSound(soundName, sound);
+
+						// Publish LoadSound event so audio manager receives it too
+						bus.publish(Audio::LoadSound{ soundName, sound });
+
+						std::cout << "[Audio Drop] Successfully loaded: " << filename << " as '" << soundName << "'" << std::endl;
+
+						// Refresh the UI list
+						LoadAudioAssets(engine_);
+					} else {
+						// Failed to load or unsupported format
+						if (ext == ".wav" || ext == ".mp3") {
+							// Supported format but FMOD failed
+							bus.publish(Audio::AudioLoadError{
+								filename,
+								destPath.string(),
+								ext,
+								"FMOD failed to load the file. The file may be corrupted or in an unsupported codec."
+								});
+						} else {
+							// Unsupported format
+							bus.publish(Audio::AudioLoadError{
+								filename,
+								destPath.string(),
+								ext,
+								"File format is not supported. Only .wav and .mp3 files are supported."
+								});
+						}
+
+						// Clean up the FMOD sound if it was partially created
+						if (sound) {
+							sound->release();
+						}
+
+						std::cout << "[Audio Drop] Failed to load: " << filename << " (unsupported or corrupted)" << std::endl;
+					}
+
+				} catch (const std::exception& e) {
+					std::cerr << "[Audio Drop] Error processing file: " << e.what() << std::endl;
+					bus.publish(Audio::AudioLoadError{
+						filename,
+						path,
+						ext,
+						std::string("File operation failed: ") + e.what()
+						});
+				}
+			}
+		}
+	}
 
 	static int selectedAsset = -1;
 	static std::string selectedName{};

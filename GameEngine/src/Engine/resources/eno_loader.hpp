@@ -253,9 +253,19 @@ namespace Resources
 		* \brief			Store Audio modules
 		* \param[in] path	Directory path for textures.
 		*//*========================================================================================*/
-		void storeAudioMod(std::unique_ptr<Audio::EnoAudioModule> mod) 
+		void storeAudioMod(std::unique_ptr<Audio::EnoAudioModule> mod)
 		{
 			audioMods_.push_back(std::move(mod));
+		}
+
+		/*============================================================================================
+		* \brief			Add a loaded sound to the sound map
+		* \param[in] name	Name/key for the sound (usually filename without extension)
+		* \param[in] sound	Pointer to the FMOD sound object
+		*//*========================================================================================*/
+		void addSound(const std::string& name, FMOD::Sound* sound)
+		{
+			sounds_[name] = sound;
 		}
 
 		/*============================================================================================
