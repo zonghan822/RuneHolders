@@ -566,6 +566,7 @@ void GameApplication::updateGameLogic() {
 				hidePlayer();
 				spawnPauseMenu();
 				engine_.setIsPlaying(false);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Open_01" });
 				std::cout << "[Input] Pause menu opened (ESC key pressed)" << std::endl;
 			}
 			else {
@@ -574,6 +575,7 @@ void GameApplication::updateGameLogic() {
 				destroyPauseMenu();
 				showPlayer();
 				engine_.setIsPlaying(true);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
 				std::cout << "[Input] Pause menu closed (ESC key pressed)" << std::endl;
 			}
 		}
