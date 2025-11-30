@@ -81,12 +81,6 @@ namespace Editor
 
 		}
 
-		// Create and append a new scene
-		void createScene()
-		{
-
-		}
-
 		// Delete and erase a scene
 		void deleteScene(std::string sceneName)
 		{
@@ -107,8 +101,13 @@ namespace Editor
 
 		void selectScene(const std::string& filename)
 		{
-			// Load selected scene
-			tree_.load(ASSETS_DIR_PATH "saves/scenes/" + filename);
+			// Check state for current scene
+			if (selectedScene_->getState() != State::Stopped)
+			{
+				// Stop the scene
+				bus_.publish(StopScene{});
+				selectedScene_->stop();
+			}
 
 			// Point to selected scene
 			auto index = std::find_if(scenes_.begin(), scenes_.end(),
@@ -118,6 +117,11 @@ namespace Editor
 			if (index != scenes_.end())
 			{
 				selectedScene_ = index->get();
+				// Check if the previous scene was in play
+				if (wasPlaying)
+				{
+					selectedScene_->play();
+				}
 			}
 			else
 			{
@@ -125,6 +129,8 @@ namespace Editor
 				std::cout << "[Eno_Editor] Selecting scene: " << filename << " unsuccessful, unable to find scene!" << std::endl;
 			}
 
+			// Load selected scene
+			tree_.load(ASSETS_DIR_PATH "saves/scenes/" + filename);
 
 			// Publish event to notify UI that scene was cleared
 			bus_.publish(SceneCleared{});
@@ -191,6 +197,7 @@ namespace Editor
 
 			// Set editor state to playing
 			selectedScene_->play();
+			wasPlaying = true;
 
 			// Publish PlayScene event to notify systems (e.g., audio)
 			bus_.publish(PlayScene{});
@@ -206,12 +213,12 @@ namespace Editor
 			// Publish StopScene event to notify systems (e.g., audio)
 			bus_.publish(StopScene{});
 
-			// Load initial setting of the scene
-			//std::cout << "[Eno_editor] Loading saved scene tree to restore state..." << std::endl;
-			loadLastSavedScene();
-
 			// Set editor state to stop
 			selectedScene_->stop();
+			wasPlaying = false;
+
+			// Load initial setting of the scene
+			loadLastSavedScene();
 
 			// Destroy the game window
 			//bus_.publish(DestroyGameWindow{});
@@ -426,6 +433,7 @@ namespace Editor
 		// Scenes
 		std::vector<std::unique_ptr<EnoScene>> scenes_;
 		EnoScene* selectedScene_;
+		bool wasPlaying = false;
 
 		// Core Host
 		ECS::EntityManager& entMng_;

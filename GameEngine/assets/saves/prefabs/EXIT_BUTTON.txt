@@ -31,7 +31,7 @@
 			"type": "char64"
 		},
 		"IsActive": {
-			"value": "0",
+			"value": "1",
 			"type": "bool"
 		},
 		"SavedFunctionType": {

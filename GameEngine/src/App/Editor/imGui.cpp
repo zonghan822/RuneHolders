@@ -4491,7 +4491,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 			// --- Handle entity deletion by click ---                                        
 
-			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {                                                                                                     
+			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) {                                                                                                     
 
 				Math::eVec2<float> worldPos = Graphics::screenToWorld(
 											{ ImGui::GetMousePos().x, ImGui::GetMousePos().y },

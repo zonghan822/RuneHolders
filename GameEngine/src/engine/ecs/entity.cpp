@@ -151,11 +151,11 @@ namespace ECS
 			}
 
 			// Deduce component found
-			std::cout << "[DEBUG entity.cpp] About to call DeduceCompType with: '" << compName << "'" << std::endl;
+			//std::cout << "[DEBUG entity.cpp] About to call DeduceCompType with: '" << compName << "'" << std::endl;
 			
 			ECSComponents::EnoComponentRegistry::DeduceCompType(compName, [&]<typename T>()
 				{
-					std::cout << "[DEBUG entity.cpp lambda] Lambda called! Adding component to entity..." << std::endl;
+					//std::cout << "[DEBUG entity.cpp lambda] Lambda called! Adding component to entity..." << std::endl;
 					entity.add<T>(entMng);
 					//std::cout << "[DEBUG entity.cpp lambda] Component added successfully" << std::endl;
 

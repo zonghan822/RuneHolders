@@ -80,3 +80,10 @@
 [2025-11-27 18:14:42] string too long
 [2025-11-29 18:39:33] Failed to find the requested sound!
 [2025-11-29 19:33:19] Failed to find the sound Rune-GalaxyBellPad-1
+[2025-11-30 13:35:57] Failed to find this entity in the Entity Map!
+[2025-11-30 13:37:17] Failed to find this entity in the Entity Map!
+[2025-11-30 13:38:29] Failed to find this entity in the Entity Map!
+[2025-11-30 13:39:01] Failed to create a save file for the scene tree!
+[2025-11-30 13:39:21] Failed to find this entity in the Entity Map!
+[2025-11-30 13:40:14] Failed to find this entity in the Entity Map!
+[2025-11-30 13:47:16] Failed to find this entity in the Entity Map!

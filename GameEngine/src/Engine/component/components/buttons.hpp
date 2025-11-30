@@ -86,7 +86,7 @@ namespace ECSComponents {
 		bool onClick(Math::eVec2<float> mousePos, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d, const ECSComponents::CollisionComponent& c)
 		{
 			// Check if button is interactable
-			if (!isActive) return false;
+			//if (!isActive) return false;
 
 			//std::cout << "mouse pos :" << mousePos << std::endl;
 
@@ -278,7 +278,7 @@ namespace ECSComponents {
 		char targetObject[64] = "";
 
 		// If interactable
-		bool isActive = false;
+		bool isActive = true;
 	};
 
 }

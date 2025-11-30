@@ -1404,7 +1404,6 @@ void GameApplication::updateEntities() {
 				auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
 				auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
 				auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
-
 				if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
 				{
 					// Get mouse to screen pos
@@ -1417,6 +1416,8 @@ void GameApplication::updateEntities() {
 						static_cast<float>(getEditorHeight()),
 						getEditorCameraX(),
 						getEditorCameraY());
+
+					std::cout << "is button active " << b.getActive() << std::endl;
 
 					// Game logic calls the function, the function does the check
 					if (b.onClick(mousePos, t, d, c))
