@@ -371,6 +371,13 @@ void GameApplication::setupGameEvents() {
 		if (!event.focused) {
 			// Lost focus - pause game, clear input
 
+			// Don't spawn pause menu if we're in the main menu
+			auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+			std::string sceneName = currentScene.getSceneName();
+			if (sceneName == "MainMenu.txt") {
+				return; // Skip pause menu logic for main menu
+			}
+
 			// Pause the game if not already paused
 			if (!isPaused_) {
 				isPaused_ = true;
@@ -413,6 +420,13 @@ void GameApplication::setupGameEvents() {
 		windowMinimized_ = event.iconified;
 
 		if (event.iconified) {
+
+			// Don't spawn pause menu if we're in the main menu
+			auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+			std::string sceneName = currentScene.getSceneName();
+			if (sceneName == "MainMenu.txt") {
+				return; // Skip pause menu logic for main menu
+			}
 
 			// Window minimized, pause game
 			// Pause the game if not already paused
@@ -2112,8 +2126,11 @@ void GameApplication::hidePlayer() {
 		ECS::Entity& player = playerEntities[0];
 		if (player.has<ECSComponents::TransformComponent>(entityManager)) {
 			auto& transform = player.get<ECSComponents::TransformComponent>(entityManager);
-			// Save current scale
-			savedPlayerScale_ = transform.scale;
+			// Only save current scale if player is not already hidden
+			// This prevents multiple hidePlayer() calls from overwriting the saved scale
+			if (transform.scale.x != 0.0f || transform.scale.y != 0.0f) {
+				savedPlayerScale_ = transform.scale;
+			}
 			// Set scale to 0 to hide
 			transform.scale = { 0.0f, 0.0f };
 		}
