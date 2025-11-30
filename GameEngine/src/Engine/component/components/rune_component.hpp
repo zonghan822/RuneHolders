@@ -1,7 +1,7 @@
 /*============================================================================================
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         rune_component.hpp
-* @author       [Your Name]
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         2025-11-29
 * @brief        Component for rune entities in the rune-based spell system
 *//*========================================================================================*/
