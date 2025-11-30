@@ -2823,16 +2823,53 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	if (ImGui::Button("APPLY IDLE"))
 	{
 		ECS::Entity e{ selectedEntityID };
-		if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) return;
+
+		// Comprehensive validation checks
+		try {
+			if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) {
+				std::cerr << "[APPLY IDLE] Entity missing AnimationControllerComponent" << std::endl;
+				if (!idleHasTexture) ImGui::EndDisabled();
+				return;
+			}
+			if (!e.has<ECSComponents::DrawInfoComponent>(entMng)) {
+				std::cerr << "[APPLY IDLE] Entity missing DrawInfoComponent" << std::endl;
+				if (!idleHasTexture) ImGui::EndDisabled();
+				return;
+			}
+		} catch (const std::exception& ex) {
+			std::cerr << "[APPLY IDLE] Exception during validation: " << ex.what() << std::endl;
+			if (!idleHasTexture) ImGui::EndDisabled();
+			return;
+		} catch (...) {
+			std::cerr << "[APPLY IDLE] Unknown exception during validation" << std::endl;
+			if (!idleHasTexture) ImGui::EndDisabled();
+			return;
+		}
 
 		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
 		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
+
+		// Get or create animation controller
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-		if (!ctrl) return;
+
+		if (!ctrl || animComp.controllerID == 0) {
+			// Controller doesn't exist, create a new one
+			std::cerr << "[APPLY IDLE] Animation controller is null or invalid (ID: " << animComp.controllerID << "), creating new one" << std::endl;
+			animComp.controllerID = engine_.getAnimationRegistry().createController();
+			ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+
+			if (!ctrl) {
+				std::cerr << "[APPLY IDLE] Failed to create animation controller" << std::endl;
+				if (!idleHasTexture) ImGui::EndDisabled();
+				return;
+			}
+			std::cout << "[APPLY IDLE] Created new animation controller with ID: " << animComp.controllerID << std::endl;
+		}
 
 		// Safety check: Ensure texture is valid before proceeding
-		if (!idleTexData.texture)
+		if (!idleTexData.texture || !idleTexData.texture->isValid())
 		{
+			std::cerr << "[APPLY IDLE] Invalid texture data" << std::endl;
 			ImGui::OpenPopup("Error##IdleNoTexture");
 			if (!idleHasTexture) ImGui::EndDisabled();
 			return;
@@ -3021,17 +3058,53 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	if (ImGui::Button("APPLY WALK"))
 	{
 		ECS::Entity e{ selectedEntityID };
-		if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) return;
+
+		// Comprehensive validation checks
+		try {
+			if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) {
+				std::cerr << "[APPLY WALK] Entity missing AnimationControllerComponent" << std::endl;
+				if (!walkHasTexture) ImGui::EndDisabled();
+				return;
+			}
+			if (!e.has<ECSComponents::DrawInfoComponent>(entMng)) {
+				std::cerr << "[APPLY WALK] Entity missing DrawInfoComponent" << std::endl;
+				if (!walkHasTexture) ImGui::EndDisabled();
+				return;
+			}
+		} catch (const std::exception& ex) {
+			std::cerr << "[APPLY WALK] Exception during validation: " << ex.what() << std::endl;
+			if (!walkHasTexture) ImGui::EndDisabled();
+			return;
+		} catch (...) {
+			std::cerr << "[APPLY WALK] Unknown exception during validation" << std::endl;
+			if (!walkHasTexture) ImGui::EndDisabled();
+			return;
+		}
 
 		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
 		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
-		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-		if (!ctrl) return;
 
-		
+		// Get or create animation controller
+		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+
+		if (!ctrl || animComp.controllerID == 0) {
+			// Controller doesn't exist, create a new one
+			std::cerr << "[APPLY WALK] Animation controller is null or invalid (ID: " << animComp.controllerID << "), creating new one" << std::endl;
+			animComp.controllerID = engine_.getAnimationRegistry().createController();
+			ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+
+			if (!ctrl) {
+				std::cerr << "[APPLY WALK] Failed to create animation controller" << std::endl;
+				if (!walkHasTexture) ImGui::EndDisabled();
+				return;
+			}
+			std::cout << "[APPLY WALK] Created new animation controller with ID: " << animComp.controllerID << std::endl;
+		}
+
 		// Safety check: Ensure texture is valid before proceeding
-		if (!walkTexData.texture)
+		if (!walkTexData.texture || !walkTexData.texture->isValid())
 		{
+			std::cerr << "[APPLY WALK] Invalid texture data" << std::endl;
 			ImGui::OpenPopup("Error##WalkNoTexture");
 			if (!walkHasTexture) ImGui::EndDisabled();
 			return;
@@ -3216,16 +3289,53 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	if (ImGui::Button("APPLY ATTACK"))
 	{
 		ECS::Entity e{ selectedEntityID };
-		if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) return;
+
+		// Comprehensive validation checks
+		try {
+			if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) {
+				std::cerr << "[APPLY ATTACK] Entity missing AnimationControllerComponent" << std::endl;
+				if (!attackHasTexture) ImGui::EndDisabled();
+				return;
+			}
+			if (!e.has<ECSComponents::DrawInfoComponent>(entMng)) {
+				std::cerr << "[APPLY ATTACK] Entity missing DrawInfoComponent" << std::endl;
+				if (!attackHasTexture) ImGui::EndDisabled();
+				return;
+			}
+		} catch (const std::exception& ex) {
+			std::cerr << "[APPLY ATTACK] Exception during validation: " << ex.what() << std::endl;
+			if (!attackHasTexture) ImGui::EndDisabled();
+			return;
+		} catch (...) {
+			std::cerr << "[APPLY ATTACK] Unknown exception during validation" << std::endl;
+			if (!attackHasTexture) ImGui::EndDisabled();
+			return;
+		}
 
 		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
 		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
+
+		// Get or create animation controller
 		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-		if (!ctrl) return;
+
+		if (!ctrl || animComp.controllerID == 0) {
+			// Controller doesn't exist, create a new one
+			std::cerr << "[APPLY ATTACK] Animation controller is null or invalid (ID: " << animComp.controllerID << "), creating new one" << std::endl;
+			animComp.controllerID = engine_.getAnimationRegistry().createController();
+			ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+
+			if (!ctrl) {
+				std::cerr << "[APPLY ATTACK] Failed to create animation controller" << std::endl;
+				if (!attackHasTexture) ImGui::EndDisabled();
+				return;
+			}
+			std::cout << "[APPLY ATTACK] Created new animation controller with ID: " << animComp.controllerID << std::endl;
+		}
 
 		// Safety check: Ensure texture is valid before proceeding
-		if (!attackTexData.texture)
+		if (!attackTexData.texture || !attackTexData.texture->isValid())
 		{
+			std::cerr << "[APPLY ATTACK] Invalid texture data" << std::endl;
 			ImGui::OpenPopup("Error##AttackNoTexture");
 			if (!attackHasTexture) ImGui::EndDisabled();
 			return;

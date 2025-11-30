@@ -251,8 +251,12 @@ void GameApplication::setupGameAudio() {
 
 	// Rune hover audio
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
-	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");	
-	
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
+
+	// Spellbook audio
+	audioMng.publishSoundRequest("Spellbook_Open_01");
+	audioMng.publishSoundRequest("Spellbook_Close_01");
+
 	// BGM
 	audioMng.publishSoundRequest("BGM_01_Layer2_loop");
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");
@@ -373,7 +377,7 @@ void GameApplication::playSceneBGM()
 	audioComp.audioMod_.chGroup_[sizeof(audioComp.audioMod_.chGroup_) - 1] = '\0';  // Ensure null termination
 
 	audioComp.audioMod_.loop_ = Audio::EnoAudioModule::LoopMode::Forward;  // Loop the BGM
-	audioComp.volume_ = 30.0;  // Set volume to 30%
+	audioComp.volume_ = 100.0;  // Set volume to 100%
 	audioComp.isAutoplay_ = true;
 	audioComp.isPlaying_ = false;  // Reset playing state
 
@@ -529,6 +533,7 @@ void GameApplication::updateGameLogic() {
 				hidePlayer();
 				spawnSpellbook();
 				engine_.setIsPlaying(false);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Open_01" });
 				std::cout << "[Input] Spellbook opened (F key pressed)" << std::endl;
 			}
 			else {
@@ -538,6 +543,7 @@ void GameApplication::updateGameLogic() {
 				destroySpellbook();
 				showPlayer();
 				engine_.setIsPlaying(true);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
 				std::cout << "[Input] Spellbook closed (F key pressed)" << std::endl;
 			}
 		}
@@ -551,6 +557,7 @@ void GameApplication::updateGameLogic() {
 				destroySpellbook();
 				showPlayer();
 				engine_.setIsPlaying(true);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
 				std::cout << "[Input] Spellbook closed (ESC key pressed)" << std::endl;
 			}
 			else if (!isPaused_) {
@@ -559,6 +566,7 @@ void GameApplication::updateGameLogic() {
 				hidePlayer();
 				spawnPauseMenu();
 				engine_.setIsPlaying(false);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Open_01" });
 				std::cout << "[Input] Pause menu opened (ESC key pressed)" << std::endl;
 			}
 			else {
@@ -567,6 +575,7 @@ void GameApplication::updateGameLogic() {
 				destroyPauseMenu();
 				showPlayer();
 				engine_.setIsPlaying(true);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
 				std::cout << "[Input] Pause menu closed (ESC key pressed)" << std::endl;
 			}
 		}
