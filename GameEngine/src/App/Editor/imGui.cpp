@@ -126,6 +126,14 @@ static bool g_cannotDeleteActiveScene = false;
 // Audio filesystems
 static std::vector<std::string> audioAssets;
 
+// Audio error tracking - using a queue to store all errors
+struct AudioErrorInfo {
+	std::string filename;
+	std::string extension;
+	std::string reason;
+};
+static std::vector<AudioErrorInfo> g_audioErrorQueue;
+
 #pragma endregion
 
 /*============================================================================================
@@ -175,6 +183,25 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	// get engine systems
 	auto& entityManager = engine_.getEntityManager();
 	auto& loader = engine_.getResourceLoader();
+
+	// Subscribe to audio error events early (only once)
+	// This needs to happen before audio tab is opened so we catch errors from initial load
+	static bool audioErrorSubscribed = false;
+	if (!audioErrorSubscribed)
+	{
+		Event::EnoEventBus& bus = engine_.getEventBus();
+		bus.subscribe<Audio::AudioLoadError>([](const Audio::AudioLoadError& event) {
+			// Add error to queue so it persists and can be displayed later
+			g_audioErrorQueue.push_back(AudioErrorInfo{
+				event.filename_,
+				event.extension_,
+				event.errorReason_
+				});
+			std::cout << "[ImGui Audio] Error queued: " << event.filename_ << std::endl;
+			});
+		audioErrorSubscribed = true;
+		std::cout << "[ImGui Audio] Subscribed to audio error events" << std::endl;
+	}
 
 	// BEGIN DOCKSPACE
 	imGuiBeginDockspace();
@@ -294,6 +321,99 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		g_sceneToLoad = "";
 		g_resetEntityCounter = true;  // Reset counter for loaded scene
 		std::cout << "[ImGui] Deferred: Loaded scene " << g_sceneToLoad << std::endl;
+	}
+
+	// Global Audio Load Error Popup Modal (can appear from any tab)
+	// Check if there are errors in the queue and show popup
+	static bool isPopupOpen = false;
+
+	if (!g_audioErrorQueue.empty() && !isPopupOpen)
+	{
+		ImGui::OpenPopup("Audio Format Error##GlobalAudioLoadError");
+		isPopupOpen = true;
+	}
+
+	// Display the error popup modal
+	if (ImGui::BeginPopupModal("Audio Format Error##GlobalAudioLoadError", NULL,
+		ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
+	{
+		if (!g_audioErrorQueue.empty())
+		{
+			const auto& error = g_audioErrorQueue.front();
+
+			// Header with error icon style
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f)); // Red text
+			ImGui::Text("AUDIO FILE ERROR");
+			ImGui::PopStyleColor();
+
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			// Show how many errors remain if multiple
+			if (g_audioErrorQueue.size() > 1)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.7f, 0.0f, 1.0f)); // Orange
+				ImGui::Text("(%zu more error%s in queue)",
+					g_audioErrorQueue.size() - 1,
+					g_audioErrorQueue.size() > 2 ? "s" : "");
+				ImGui::PopStyleColor();
+				ImGui::Spacing();
+			}
+
+			// Error details
+			ImGui::Text("Unable to load or play audio file:");
+			ImGui::Spacing();
+
+			ImGui::Indent(20.0f);
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f)); // Yellow text
+			ImGui::TextWrapped("%s", error.filename.c_str());
+			ImGui::PopStyleColor();
+			ImGui::Unindent(20.0f);
+
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			// Error reason
+			ImGui::Text("Reason:");
+			ImGui::Indent(20.0f);
+			ImGui::TextWrapped("%s", error.reason.c_str());
+			ImGui::Unindent(20.0f);
+
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			// Supported formats
+			ImGui::Text("Supported audio formats:");
+			ImGui::Indent(20.0f);
+			ImGui::BulletText(".wav (recommended)");
+			ImGui::BulletText(".mp3");
+			ImGui::Unindent(20.0f);
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			// Center the OK button
+			float buttonWidth = 120.0f;
+			float windowWidth = ImGui::GetWindowSize().x;
+			ImGui::SetCursorPosX((windowWidth - buttonWidth) * 0.5f);
+
+			if (ImGui::Button("OK", ImVec2(buttonWidth, 0)))
+			{
+				// Remove this error from queue
+				g_audioErrorQueue.erase(g_audioErrorQueue.begin());
+				isPopupOpen = false;
+				ImGui::CloseCurrentPopup();
+			}
+		}
+
+		ImGui::EndPopup();
+	}
+	else
+	{
+		// Popup was closed
+		isPopupOpen = false;
 	}
 
 	ImGui::Render();
@@ -1546,24 +1666,35 @@ static void LoadAudioAssets(Engine::EnoEngine& engine_)
 {
 	audioAssets.clear();
 
-	std::vector<std::string> folders = {
-		engine_.getResourceLoader().getMusicPath().c_str(),
-		engine_.getResourceLoader().getSFXPath().c_str(),
-	};
+	// Get the list of ACTUALLY loaded sounds from the loader
+	// This ensures we only show files that were successfully loaded by FMOD
+	const auto& loadedSounds = engine_.getResourceLoader().getSounds();
 
-	for (const auto& folder : folders)
+	// Add only the successfully loaded sound names to our UI list
+	for (const auto& soundPair : loadedSounds)
 	{
-		if (!std::filesystem::exists(folder))
-			continue;
+		// soundPair.first is the sound name (filename without extension)
+		// We need to find the actual filename with extension
+		std::vector<std::string> folders = {
+			engine_.getResourceLoader().getMusicPath().c_str(),
+			engine_.getResourceLoader().getSFXPath().c_str(),
+		};
 
-		for (const auto& entry : std::filesystem::directory_iterator(folder))
+		for (const auto& folder : folders)
 		{
-			if (!entry.is_regular_file()) continue;
+			if (!std::filesystem::exists(folder))
+				continue;
 
-			std::string ext = entry.path().extension().string();
-			if (ext == ".wav" || ext == ".ogg" || ext == ".mp3")
+			for (const auto& entry : std::filesystem::directory_iterator(folder))
 			{
-				audioAssets.push_back(entry.path().filename().string());
+				if (!entry.is_regular_file()) continue;
+
+				// Check if this file's stem (name without extension) matches the loaded sound
+				if (entry.path().stem().string() == soundPair.first)
+				{
+					audioAssets.push_back(entry.path().filename().string());
+					break; // Found it, move to next sound
+				}
 			}
 		}
 	}
@@ -1574,13 +1705,22 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	Event::EnoEventBus& bus = engine_.getEventBus();
 
+	// Note: Audio error subscription now happens in imGuiDisplay() on first frame
 
 	ImGui::Text("=== AUDIO ASSETS ===");
 
-	// Button to load audio assets exactly once
+	// Button to load/reload audio assets
 	if (ImGui::Button("Load Audio Files"))
 	{
+		// Reload audio files from disk - this will trigger error events for unsupported files
+		auto& audioManager = engine_.getAudioManager();
+		loader.loadSound(audioManager.getSystem(), loader.getSoundExtensions(), loader.getMusicPath());
+		loader.loadSound(audioManager.getSystem(), loader.getSoundExtensions(), loader.getSFXPath());
+
+		// Update the UI list
 		LoadAudioAssets(engine_);
+
+		std::cout << "[ImGui Audio] Reloaded audio files" << std::endl;
 	}
 
 	ImGui::Separator();
@@ -1737,6 +1877,8 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 
 	}
+
+	// Note: Audio error popup is displayed globally in imGuiDisplay()
 
 }
 

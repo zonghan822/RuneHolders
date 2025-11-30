@@ -130,7 +130,15 @@ namespace Audio
 		auto it = sounds_.find(audioComp.audioMod_.name_);
 		if (it == sounds_.end())
 		{
-			throw std::runtime_error("Unknown sound requested");
+			// Instead of throwing, publish an error event and log to console
+			std::cerr << "[Audio Error] Unknown sound requested: " << audioComp.audioMod_.name_ << std::endl;
+			bus_.publish(AudioLoadError{
+				audioComp.audioMod_.name_,
+				"Component audio module",
+				"Unknown",
+				"Sound requested by audio component was not found in loaded sounds."
+				});
+			return;
 		}
 
 		audioComp.audioMod_.sound_ = it->second;
@@ -586,7 +594,15 @@ namespace Audio
 		auto group = channelGroups_.find(event.groupName_);
 		if (group == channelGroups_.end())
 		{
-			throw std::runtime_error("Failed to find the group " + event.groupName_);
+			std::cerr << "[Audio Error] Failed to find the channel group: " << event.groupName_ << std::endl;
+			bus_.publish(AudioLoadError{
+				"N/A",
+				"Channel group: " + event.groupName_,
+				"Unknown",
+				"Channel group '" + event.groupName_ + "' was not found. The channel group may not have been created."
+				});
+			soundPlaying_ ^= 1; // Restore the state since we're not playing
+			return;
 		}
 
 		// Toggle playing state of specified group
@@ -630,7 +646,14 @@ namespace Audio
 		auto sound = sounds_.find(event.soundName_);
 		if (sound == sounds_.end())
 		{
-			throw std::runtime_error("Failed to find the sound " + event.soundName_);
+			std::cerr << "[Audio Error] Failed to find the sound: " << event.soundName_ << std::endl;
+			bus_.publish(AudioLoadError{
+				event.soundName_,
+				"Unknown location",
+				"Unknown",
+				"Sound '" + event.soundName_ + "' was requested but not found in loaded sounds."
+				});
+			return;
 		}
 
 		selectedSound_ = sound->second;
@@ -645,13 +668,27 @@ namespace Audio
 		auto group = channelGroups_.find(event.groupName_);
 		if (group == channelGroups_.end())
 		{
-			throw std::runtime_error("Failed to find the group " + event.groupName_);
+			std::cerr << "[Audio Error] Failed to find the channel group: " << event.groupName_ << std::endl;
+			bus_.publish(AudioLoadError{
+				event.soundName_,
+				"Channel group: " + event.groupName_,
+				"Unknown",
+				"Channel group '" + event.groupName_ + "' was not found. The channel group may not have been created."
+				});
+			return;
 		}
 
 		auto sound = sounds_.find(event.soundName_);
 		if (sound == sounds_.end())
 		{
-			throw std::runtime_error("Failed to find the sound " + event.soundName_);
+			std::cerr << "[Audio Error] Failed to find the sound: " << event.soundName_ << std::endl;
+			bus_.publish(AudioLoadError{
+				event.soundName_,
+				"Unknown location",
+				"Unknown",
+				"Sound '" + event.soundName_ + "' was requested but not found in loaded sounds."
+				});
+			return;
 		}
 
 		FMOD::Channel* channel = playByChannel(sound->second, true);
