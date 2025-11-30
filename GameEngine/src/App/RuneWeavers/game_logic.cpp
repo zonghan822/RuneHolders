@@ -57,15 +57,15 @@ void GameApplication::initialize() {
 	auto& entityMng = engine_.getEntityManager();
 
 
-	int nodeCount = 0;
+	// int nodeCount = 0;  // Unused - commented out to remove warning
 	for (const auto& node : sceneTree.getAllNodes()) {
 
 		if (node->entity_.has<ECSComponents::NameComponent>(entityMng)) {
-			auto& name = node->entity_.get<ECSComponents::NameComponent>(entityMng);
+			// auto& name = node->entity_.get<ECSComponents::NameComponent>(entityMng);  // Unused - commented out
 		}
 
 		if (node->entity_.has<ECSComponents::TransformComponent>(entityMng)) {
-			auto& transform = node->entity_.get<ECSComponents::TransformComponent>(entityMng);
+			// auto& transform = node->entity_.get<ECSComponents::TransformComponent>(entityMng);  // Unused - commented out
 		}
 
 		if (node->entity_.has<ECSComponents::RenderComponent>(entityMng)) {
@@ -354,8 +354,9 @@ void GameApplication::playSceneBGM()
 		audioMng.prepareMod(audioComp);
 		audioMng.play(audioComp);
 	}
-	catch (const std::exception& e)
+	catch (const std::exception&)
 	{
+		// Exception caught and ignored
 	}
 }
 

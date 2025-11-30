@@ -2748,7 +2748,8 @@ void GameApplication::updateMainMenuButtons() {
 				} else if (buttonName == "QuitYesButton") {
 					handleQuitYesButton();
 					return;
-
+				}
+			}
 			// Handle pause menu buttons (only when pause menu is active)
 			if (pauseMenuEntityID_ != 0) {
 				if (buttonName == "ResumeButton") {
@@ -2757,8 +2758,6 @@ void GameApplication::updateMainMenuButtons() {
 				} else if (buttonName == "MainMenuButton") {
 					handleMainMenuButton();
 					return;
-				}
-			}
 				}
 			}
 		}
