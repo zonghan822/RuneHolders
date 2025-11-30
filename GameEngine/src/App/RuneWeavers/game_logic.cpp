@@ -1784,6 +1784,56 @@ void GameApplication::updateCombatSystem(float dt)
 		}
 	}
 
+	// Check if we're in Scene2 and all enemies will be dead after destruction -> return to main menu
+	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+	std::string sceneName = currentScene.getSceneName();
+	bool shouldReturnToMenu = false;
+
+	if (sceneName == "Scene2.txt" && !enemiesToDestroy.empty()) {
+		// Count total enemies (including those about to be destroyed)
+		auto allEnemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::HealthComponent>();
+		// If the number of enemies to destroy equals total enemies, all will be dead
+		if (enemiesToDestroy.size() >= allEnemies.size()) {
+			std::cout << "[Scene2] All enemies defeated! Returning to main menu..." << std::endl;
+			shouldReturnToMenu = true;
+		}
+	}
+
+	// If returning to menu, clear all entity IDs first to prevent crashes
+	if (shouldReturnToMenu) {
+		// Destroy pause menu and spellbook if they exist
+		destroyPauseMenu();
+		if (spellbookEntityID_ != 0) {
+			destroySpellbook();
+		}
+		showPlayer();  // Restore player visibility before scene change
+
+		// Clear all entity IDs to prevent crashes when trying to access them after scene change
+		resumeButtonEntityID_ = 0;
+		mainMenuButtonEntityID_ = 0;
+		pauseMenuEntityID_ = 0;
+		spellbookEntityID_ = 0;
+		controlsDisplayEntityID_ = 0;
+		quitConfirmEntityID_ = 0;
+		playerEntityID_ = 0;
+
+		// Reset game state flags
+		isPaused_ = false;
+		showSpellbook_ = false;
+		playerSpawned_ = false;
+		engine_.setIsPlaying(true);
+
+		// Change scene (this will destroy all entities including enemies and fireballs)
+		engine_.getEnoEditor().selectScene("MainMenu.txt");
+		entitiesDirty_ = true;
+
+		// Recreate main menu buttons after scene load
+		setupMainMenuButtons();
+
+		return; // Exit early - don't try to destroy entities since scene change already did it
+	}
+
+	// Only destroy entities if we're NOT changing scenes
 	// Destroy marked entities after iteration
 	for (uint32_t id : fireballsToDestroy) {
 		entityManager.destroyEntity(id);
