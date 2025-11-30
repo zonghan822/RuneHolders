@@ -149,6 +149,8 @@ namespace Window
 		glfwSetMouseButtonCallback(window_, MouseButtonCallback);
 		glfwSetCursorPosCallback(window_, MousePosCallback);
 		glfwSetScrollCallback(window_, MouseScrollCallback);
+		glfwSetWindowFocusCallback(window_, WindowFocusCallback);
+		glfwSetWindowIconifyCallback(window_, WindowIconifyCallback);
 	}
 
 	void EnoWindow::ErrorCallback(int err, char const* description) {
@@ -181,6 +183,16 @@ namespace Window
 	void EnoWindow::MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 		auto* self = static_cast<EnoWindow*>(glfwGetWindowUserPointer(window));
 		self->bus_.publish(ScrollEvent{ xoffset, yoffset });
+	}
+
+	void EnoWindow::WindowFocusCallback(GLFWwindow* window, int focused) {
+		auto* self = static_cast<EnoWindow*>(glfwGetWindowUserPointer(window));
+		self->bus_.publish(WindowFocusEvent{ focused == GLFW_TRUE });
+	}
+
+	void EnoWindow::WindowIconifyCallback(GLFWwindow* window, int iconified) {
+		auto* self = static_cast<EnoWindow*>(glfwGetWindowUserPointer(window));
+		self->bus_.publish(WindowIconifyEvent{ iconified == GLFW_TRUE });
 	}
 
 	void EnoWindow::setFullscreen(bool fullscreen) {
