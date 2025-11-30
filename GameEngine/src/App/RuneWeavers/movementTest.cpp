@@ -208,7 +208,6 @@ void createTestObject(ECS::EntityManager& ent) {
 	static float speed = 400.f;
 
 	Math::eVec2<float> vel = { cos(45.0f * 3.1415926f / 180.f) * speed, sin(-45.0f * 3.1415926f / 180.f) * speed };
-	std::cout << vel;
 
 	// Now i want to create an entity with 3 different components, transform, drawinfo and name
 	for (int i = 0; i < numCircles; ++i)
@@ -273,8 +272,6 @@ void createTestObject(ECS::EntityManager& ent) {
 	float height = 64.0f;
 	int color = 6; // Brown/Orange for boxes
 
-	std::cout << "[DEBUG] Creating " << numSquares << " pushable box entities...\n";
-
 	// Create entities with physics and box components
 	for (int i = 0; i < numSquares; ++i)
 	{
@@ -311,15 +308,7 @@ void createTestObject(ECS::EntityManager& ent) {
 			ECSComponents::DrawInfoComponent,
 			ECSComponents::NameComponent
 		>(TC, PC, SC, BC, DIC, NC);
-
-		// Debug: Verify components after creation
-		std::cout << "[DEBUG] Box Entity " << i << " (ID: " << box.id() << ") - Created with:\n";
-		std::cout << "  Transform: pos=(" << TC.pos.x << ", " << TC.pos.y << ")\n";
-		std::cout << "  Physics: mass=" << PC.mass << ", drag=" << PC.drag << "\n";
-		std::cout << "  Box: pushable=" << BC.isPushable << ", resistance=" << BC.pushResistance << "\n";
-		std::cout << "  Collision: width=" << width << ", height=" << height << "\n";
 	}
-	std::cout << "[DEBUG] Pushable box entities created successfully.\n";
 }
 
 void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
@@ -420,7 +409,6 @@ void updateTestObject(ECS::EntityManager& ent, const Engine::EnoEngine& eng)
 						otherTransform.pos.x = BeB.x;
 						otherTransform.pos.y = BeB.y;
 
-						std::cout << "bia: " << BeB << std::endl;
 						hadCollision = true;
 
 					}

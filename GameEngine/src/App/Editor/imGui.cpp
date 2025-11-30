@@ -37,6 +37,10 @@ GameApplication* g_game = nullptr;
 uint32_t playerEntityID_ = 0;
 bool playerSpawned_ = false;
 
+// Game viewport tracking (for button click detection)
+ImVec2 lastGameViewportPos(0, 0);
+ImVec2 lastGameViewportSize(0, 0);
+
 // Containers for time display
 std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
@@ -4080,6 +4084,10 @@ void displayGameView() {
 
 			// Position the image with offset (centered with letterboxing)
 			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
+
+			// Store viewport position and size for button click detection
+			lastGameViewportPos = ImVec2(windowPos.x + offset.x, windowPos.y + offset.y);
+			lastGameViewportSize = displaySize;
 
 			// Display the framebuffer texture scaled to fit (READ-ONLY - no interactions)
 			ImGui::Image(
