@@ -231,6 +231,9 @@ namespace Window
 		if (resolutionTable_.empty())
 			resolutionTable_.push_back({ maxW, maxH });
 
+		if (isFullscreen_)
+			resolutionIndex_ = static_cast<int>(resolutionTable_.size()) - 1;
+
 		// Find index matching current window size
 		int w, h;
 		glfwGetWindowSize(window_, &w, &h);
@@ -295,7 +298,14 @@ namespace Window
 		windowedW_ = width;
 		windowedH_ = height;
 
-		glfwGetWindowPos(window_, &windowedX_, &windowedY_);
+		if (isFullscreen_) {
+			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+			windowedX_ = (mode->width - width) / 2;
+			windowedY_ = (mode->height - height) / 2;
+		}
+		else {
+			glfwGetWindowPos(window_, &windowedX_, &windowedY_);
+		}
 		glfwSetWindowMonitor(window_, nullptr, windowedX_, windowedY_, width, height, 0);
 	}
 

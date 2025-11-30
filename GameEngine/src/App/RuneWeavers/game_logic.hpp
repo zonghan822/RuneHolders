@@ -49,8 +49,8 @@ private:
 
     std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
 
-    float worldWidth_;
-    float worldHeight_;
+    float worldWidth_ = 0.f;
+    float worldHeight_ = 0.f;
 
     // Font
     std::shared_ptr<Font::EnoFont> pixelifyFont_;
@@ -67,7 +67,7 @@ private:
     std::unordered_map<std::string, double> systemTimes_;
 
     // Rune System
-    uint32_t runeSystemEntityID_;  // ID of entity holding RuneSystemStateComponent
+    uint32_t runeSystemEntityID_ = 0;  // ID of entity holding RuneSystemStateComponent
     bool runeSystemInitialized_ = false;
 
     // Pause Menu and Spellbook System
