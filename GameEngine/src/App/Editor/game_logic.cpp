@@ -643,6 +643,13 @@ void GameApplication::updateGameLogic() {
 			{
 				auto& audioComp = node->entity_.get<ECSComponents::AudioComponent>(entityManager);
 
+				// Prepare the audio module (load sound pointer if needed)
+				// This is necessary after deserializing from a saved scene
+				if (audioComp.audioMod_.name_[0] != '\0')
+				{
+					engine_.getAudioManager().prepareMod(audioComp);
+				}
+
 				// Auto-start audio if autoplay is enabled
 				// This only happens once when scene starts, not every frame
 				if (audioComp.isAutoplay_)

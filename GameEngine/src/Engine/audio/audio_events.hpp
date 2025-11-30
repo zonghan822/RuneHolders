@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Events here are used to communicate to and fro the audio manager
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once
@@ -64,6 +64,18 @@ namespace Audio
 	 * \brief				Behaves as a tag event
 	*//*========================================================================================*/
 	struct StopBGM {
-		
+
+	};
+
+	/*============================================================================================
+	 * \brief				Event published when an audio file fails to load
+	 * \details				Contains information about the failed file for error reporting
+	*//*========================================================================================*/
+	struct AudioLoadError
+	{
+		std::string filename_;		// Name of the file that failed to load
+		std::string filepath_;		// Full path to the file
+		std::string extension_;		// File extension
+		std::string errorReason_;	// Detailed error message
 	};
 }

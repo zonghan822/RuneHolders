@@ -50,7 +50,7 @@ namespace Editor
 	*//*========================================================================================*/
 	struct EntitySnapshot
 	{
-		uint32_t entityID;
+		uint32_t entityID = UINT32_MAX;
 		std::string name;
 		std::vector<ComponentSnapshot> components;
 

@@ -187,7 +187,14 @@ namespace Resources {
 		// Look for sound requested in the map
 		auto it = sounds_.find(event.sound_);
 		if (it == sounds_.end()) {
-			throw std::runtime_error("Failed to find the requested sound!");
+			// Instead of throwing, publish an error event
+			bus_.publish(Audio::AudioLoadError{
+				event.sound_,
+				"Unknown location",
+				"Unknown",
+				"Sound was requested but not found in loaded sounds. The audio file may have failed to load or doesn't exist."
+				});
+			return;
 		}
 
 		bus_.publish(Audio::LoadSound{ event.sound_, it->second });

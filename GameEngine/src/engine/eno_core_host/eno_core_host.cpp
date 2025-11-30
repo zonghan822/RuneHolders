@@ -809,7 +809,7 @@ namespace Core
 			std::wstring(assemblyPath),
 			std::wstring(typeName),
 			std::wstring(methodName),
-			className, id };
+			className, id, op };
 
 		// Create the actual method delegate
 		RegisterInstanceProxyMethod call{ nullptr };

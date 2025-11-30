@@ -99,7 +99,6 @@ namespace Physics
          *===========================================================================================*/
         void IntegrateVelocity(
             uint32_t entityID,
-            const ECS::EntityLoc& entityLoc,
             ECSComponents::TransformComponent& transform,
             ECSComponents::PhysicsComponent& physics,
             ECSComponents::CollisionComponent& collision,

@@ -182,9 +182,16 @@ namespace Resources
 				if (!entry.is_regular_file())
 					continue;
 
+				std::string fileExtension = entry.path().extension().string();
+
+				// Check if this is an audio-like file but not supported
+				bool isAudioFile = (fileExtension == ".wav" || fileExtension == ".mp3" ||
+					fileExtension == ".ogg" || fileExtension == ".flac" ||
+					fileExtension == ".aac" || fileExtension == ".wma" ||
+					fileExtension == ".m4a" || fileExtension == ".aiff");
+
 				// Find files with the WAV or MP3 extensions
-				if (entry.path().extension().string() == ".wav" ||
-					entry.path().extension().string() == ".mp3")
+				if (fileExtension == ".wav" || fileExtension == ".mp3")
 				{
 					// Retrieve sound from file
 					FMOD::Sound* sound = nullptr;
@@ -201,8 +208,28 @@ namespace Resources
 					}
 					else
 					{
-						throw std::runtime_error("Failed to create a sound from a WAV/MP3 file!");
+						// FMOD failed to load a supported format - publish error event
+						bus_.publish(Audio::AudioLoadError{
+							entry.path().filename().string(),
+							entry.path().string(),
+							fileExtension,
+							"FMOD failed to load the file. The file may be corrupted or in an unsupported codec."
+							});
 					}
+				}
+				else if (isAudioFile)
+				{
+					// Unsupported audio format detected - publish error event
+					bus_.publish(Audio::AudioLoadError{
+						entry.path().filename().string(),
+						entry.path().string(),
+						fileExtension,
+						"File format is not supported. Only .wav and .mp3 files are supported."
+						});
+
+#ifdef _DEBUG
+					std::cout << "Unsupported audio format detected: " << entry.path().filename().string() << std::endl;
+#endif
 				}
 			}
 		}
@@ -227,9 +254,19 @@ namespace Resources
 		* \brief			Store Audio modules
 		* \param[in] path	Directory path for textures.
 		*//*========================================================================================*/
-		void storeAudioMod(std::unique_ptr<Audio::EnoAudioModule> mod) 
+		void storeAudioMod(std::unique_ptr<Audio::EnoAudioModule> mod)
 		{
 			audioMods_.push_back(std::move(mod));
+		}
+
+		/*============================================================================================
+		* \brief			Add a loaded sound to the sound map
+		* \param[in] name	Name/key for the sound (usually filename without extension)
+		* \param[in] sound	Pointer to the FMOD sound object
+		*//*========================================================================================*/
+		void addSound(const std::string& name, FMOD::Sound* sound)
+		{
+			sounds_[name] = sound;
 		}
 
 		/*============================================================================================

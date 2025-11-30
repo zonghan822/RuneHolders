@@ -183,7 +183,7 @@ namespace Editor
 			std::string sceneName = selectedScene_->getSceneName();
 
 			// Save the current state of the scene
-			tree_.save(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName, sceneName);
+			tree_.save(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName);
 
 			// Update last saved scene file
 			std::cout << "[Eno_editor] current scene: " << sceneName  << std::endl;
