@@ -6,7 +6,7 @@
 class FileSystem
 {
 public:
-    static void Initialize(const char* argv0);
+    static void Initialize();
 
     static const std::filesystem::path& GetExecutableDir();
     static const std::filesystem::path& GetAssetsDir();

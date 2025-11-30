@@ -135,7 +135,18 @@ INT_PTR CALLBACK DialogProc(HWND hwnd, UINT msg, WPARAM w, LPARAM)
     return FALSE;
 }
 
+#ifdef _DEBUG
+
 int main()
 {
     return (int)DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_LAUNCHER), NULL, DialogProc);
 }
+
+#else
+
+int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int)
+{
+    return (int)DialogBox(hInst, MAKEINTRESOURCE(IDD_LAUNCHER), NULL, DialogProc);
+}
+
+#endif

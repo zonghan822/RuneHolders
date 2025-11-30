@@ -39,6 +39,15 @@ elseif (MSVC)
     target_compile_options(${APP_NAME} PRIVATE /W4 /WX-)
 endif()
 
+if (MSVC)
+    set_target_properties(${APP_NAME} PROPERTIES
+        LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE"
+        LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:WINDOWS"
+        LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
+        LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS"
+    )
+endif()
+
 add_dependencies(${APP_NAME} ${SCRIPT_NAME}_cs)
 
 # Set common include directories

@@ -1655,7 +1655,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 		// Save scene
 		auto const& assetPath = FileSystem::GetAssetsDir().string();
-		editor_.getSceneTree().save(assetPath + "/saves/scenes/" + sceneName, sceneName);
+		editor_.getSceneTree().save(assetPath + "/saves/scenes/" + sceneName);
 		// Update last saved scene
 		editor_.updateLastSavedScene();
 	}

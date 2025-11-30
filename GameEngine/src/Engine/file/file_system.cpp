@@ -1,12 +1,15 @@
 #include "file_system.hpp"
+#include <windows.h>
 
 std::filesystem::path FileSystem::exeDir_;
 std::filesystem::path FileSystem::assetsDir_;
 std::filesystem::path FileSystem::scriptsDir_;
 
-void FileSystem::Initialize(const char* argv0)
+void FileSystem::Initialize()
 {
-    exeDir_ = std::filesystem::canonical(argv0).parent_path();
+    char buffer[MAX_PATH];
+    GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    exeDir_ = std::filesystem::path(buffer).parent_path();
 
     assetsDir_ = exeDir_ / "assets";
     scriptsDir_ = exeDir_ / "scripts/GameScripts/user_scripts";
