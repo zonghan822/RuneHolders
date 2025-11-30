@@ -448,9 +448,12 @@ namespace Graphics
         );
 
         bus_.subscribe<Window::FramebufferResizeEvent>(
-            [this](const Window::FramebufferResizeEvent& e)
-            {
-                this->setProjectionMatrix(e.width, e.height);
+            [this](const Window::FramebufferResizeEvent& e) {
+                // Update viewport
+                glViewport(0, 0, e.width, e.height);
+
+                // Update projection matrix
+                setupProjectionMatrix(e.width, e.height);
             }
         );
 
@@ -460,7 +463,17 @@ namespace Graphics
         // Set up initial projection matrix
         int width = window.getFramebufferSize().first;
         int height = window.getFramebufferSize().second;
+
+        glViewport(0, 0, width, height);
         setupProjectionMatrix(width, height);
+
+        // Push projection matrix to default shader
+        if (defaultShader_ && defaultShader_->isValid())
+        {
+            defaultShader_->use();
+            defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
+            defaultShader_->unuse();
+        }
 
         initialized_ = true;
 

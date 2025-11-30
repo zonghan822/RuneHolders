@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 file(GLOB_RECURSE ${APP_NAME}_source_files
     ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.[ch]pp
     ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.[ch]
+    ${CMAKE_CURRENT_LIST_DIR}/${APP_NAME}/*.rc
 )
 
 file(GLOB_RECURSE ${APP_NAME}_template_files

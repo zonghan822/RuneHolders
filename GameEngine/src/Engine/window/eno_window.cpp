@@ -22,7 +22,7 @@ namespace Window
 
 	EnoWindow::~EnoWindow() { shutdown(); }
 
-	void EnoWindow::initialize(const std::string& title, int width, int height,
+	void EnoWindow::initialize(const std::string& title, int width, int height, bool fullscreen, bool vsync,
 		int glMajor, int glMinor) {
 		if (!glfwInit()) {
 			throw std::runtime_error("GLFW initialization failed");
@@ -41,7 +41,13 @@ namespace Window
 		glfwWindowHint(GLFW_BLUE_BITS, 8); glfwWindowHint(GLFW_ALPHA_BITS, 8);
 		glfwWindowHint(GLFW_RESIZABLE, GL_FALSE); // window dimensions are static
 
-		window_ = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
+		isFullscreen_ = fullscreen;
+		windowedW_ = width;
+		windowedH_ = height;
+
+		GLFWmonitor* monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
+
+		window_ = glfwCreateWindow(width, height, title.c_str(), monitor, NULL);
 		if (!window_) {
 			glfwTerminate();
 			throw std::runtime_error("GLFW window creation failed");
@@ -50,6 +56,8 @@ namespace Window
 
 		// Make context current
 		glfwMakeContextCurrent(window_);
+
+		buildResolutionTable();
 
 		setupEventCallbacks();
 
@@ -103,7 +111,7 @@ namespace Window
 		}
 
 		// Default swap interval 1 (vsync on)
-		glfwSwapInterval(1);
+		glfwSwapInterval(vsync ? 1 : 0);
 	}
 
 	std::vector<std::string>& EnoWindow::GetDroppedFiles() { return g_droppedFiles; }
@@ -183,23 +191,143 @@ namespace Window
 		self->bus_.publish(ScrollEvent{ xoffset, yoffset });
 	}
 
-	void EnoWindow::setFullscreen(bool fullscreen) {
-		if (!window_) return;
+	void EnoWindow::buildResolutionTable() {
+		resolutionTable_.clear();
 
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
-		if (fullscreen) {
-			// Switch to fullscreen
-			glfwSetWindowMonitor(window_, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
-		} else {
-			// Switch to windowed mode (centered on screen)
-			int windowWidth = 1200;
-			int windowHeight = 800;
-			int xpos = (mode->width - windowWidth) / 2;
-			int ypos = (mode->height - windowHeight) / 2;
-			glfwSetWindowMonitor(window_, nullptr, xpos, ypos, windowWidth, windowHeight, 0);
+		int maxW = mode->width;
+		int maxH = mode->height;
+
+		// Standard resolutions (you can add/remove)
+		std::vector<std::pair<int, int>> commonRes = {
+			{1280, 720},
+			{1366, 768},
+			{1600, 900},
+			{1920, 1080},
+			{2560, 1440},
+			{3840, 2160}
+		};
+
+		// Add only resolutions <= monitor resolution
+		for (auto& r : commonRes)
+			if (r.first <= maxW && r.second <= maxH)
+				resolutionTable_.push_back(r);
+
+		// Ensure at least one resolution
+		if (resolutionTable_.empty())
+			resolutionTable_.push_back({ maxW, maxH });
+
+		// Find index matching current window size
+		int w, h;
+		glfwGetWindowSize(window_, &w, &h);
+
+		for (int i = 0; i < (int)resolutionTable_.size(); i++) {
+			if (resolutionTable_[i].first == w && resolutionTable_[i].second == h) {
+				resolutionIndex_ = i;
+				return;
+			}
+		}
+
+		// fallback
+		resolutionIndex_ = 0;
+	}
+
+	void EnoWindow::toggleFullscreen()
+	{
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+		if (!isFullscreen_) {
+
+			// Save current windowed position + size
+			glfwGetWindowPos(window_, &windowedX_, &windowedY_);
+			glfwGetWindowSize(window_, &windowedW_, &windowedH_);
+
+			// Go fullscreen
+			glfwSetWindowMonitor(window_,
+				monitor,
+				0, 0,
+				mode->width,
+				mode->height,
+				mode->refreshRate);
+
+#ifdef _DEBUG
+			std::cout << "[Window] Entering fullscreen: "
+				<< mode->width << "x" << mode->height << "\n";
+#endif
+
+			isFullscreen_ = true;
+		}
+		else {
+			// Return to windowed mode
+			glfwSetWindowMonitor(window_,
+				nullptr,
+				windowedX_, windowedY_,
+				windowedW_, windowedH_,
+				0);
+
+#ifdef _DEBUG
+			std::cout << "[Window] Exiting fullscreen: "
+				<< windowedW_ << "x" << windowedH_ << "\n";
+#endif
+
+			isFullscreen_ = false;
 		}
 	}
 
+	void EnoWindow::setResolution(int width, int height) {
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+		windowedW_ = width;
+		windowedH_ = height;
+
+		glfwGetWindowPos(window_, &windowedX_, &windowedY_);
+		glfwSetWindowMonitor(window_, nullptr, windowedX_, windowedY_, width, height, 0);
+	}
+
+	void EnoWindow::increaseResolution()
+	{
+		if (resolutionIndex_ + 1 >= (int)resolutionTable_.size())
+		{
+#ifdef _DEBUG
+			std::cout << "[Window] Already at maximum resolution.\n";
+#endif
+			return; // cannot increase further
+		}
+
+		resolutionIndex_++;
+		auto [w, h] = resolutionTable_[resolutionIndex_];
+
+#ifdef _DEBUG
+		std::cout << "[Window] Increasing resolution to: "
+			<< w << "x" << h << "\n";
+#endif
+
+		setResolution(w, h);
+	}
+
+
+	void EnoWindow::decreaseResolution()
+	{
+		if (resolutionIndex_ - 1 < 0)
+		{
+#ifdef _DEBUG
+			std::cout << "[Window] Already at minimum resolution.\n";
+#endif
+			return; // cannot decrease further
+		}
+
+		resolutionIndex_--;
+		auto [w, h] = resolutionTable_[resolutionIndex_];
+
+#ifdef _DEBUG
+		std::cout << "[Window] Decreasing resolution to: "
+			<< w << "x" << h << "\n";
+#endif
+
+		setResolution(w, h);
+	}
 }

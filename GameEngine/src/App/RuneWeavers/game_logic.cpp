@@ -22,9 +22,6 @@ void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
 	engine_.setup();
 
-	// Set RuneWeavers to fullscreen mode (Editor stays windowed)
-	engine_.getWindowManager().setFullscreen(true);
-
 	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 
@@ -513,11 +510,34 @@ void GameApplication::updateGameLogic() {
 	auto& inputMng = engine_.getInputManager();
 	auto& tileMap = engine_.getTileMap();
 	auto& loader = engine_.getResourceLoader();
+	auto& windowMng = engine_.getWindowManager();
 
 	Math::eVec2<float> worldSize = tileMap.getWorldSize();
 	worldWidth_ = worldSize.x, worldHeight_ = worldSize.y;
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 
+	// ========== WINDOW SIZE HANDLING BY SHORTCUT KEY ==========
+	bool ctrl = inputMng.isModifierActive(GLFW_MOD_CONTROL);
+
+	if (ctrl && inputMng.isKeyDown(GLFW_KEY_KP_ADD))       // Numpad +
+		windowMng.increaseResolution();
+
+	if (ctrl && inputMng.isKeyDown(GLFW_KEY_EQUAL))        // + / =
+		windowMng.increaseResolution();
+
+	if (ctrl && inputMng.isKeyDown(GLFW_KEY_KP_SUBTRACT))  // Numpad -
+		windowMng.decreaseResolution();
+
+	if (ctrl && inputMng.isKeyDown(GLFW_KEY_MINUS))        // '-' key
+		windowMng.decreaseResolution();
+	
+	if (ctrl && inputMng.isKeyDown(GLFW_KEY_0))		       //  0
+		windowMng.toggleFullscreen();
+
+	if (ctrl && inputMng.isKeyDown(GLFW_KEY_KP_0))		   //  0
+		windowMng.toggleFullscreen();
+
+	
 	// ========== PAUSE MENU AND SPELLBOOK INPUT HANDLING ==========
 	// Only handle pause/spellbook input when player exists
 	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
