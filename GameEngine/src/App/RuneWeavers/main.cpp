@@ -37,7 +37,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     }
     catch (const std::exception& e) {
-        std::cerr << "Game error: " << e.what() << std::endl;
         CrashLogger::logError(e.what());
         return -1;
     }
