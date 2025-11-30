@@ -61,10 +61,10 @@ namespace Editor
 			loadLastSavedScene();
 
 			// *** TBD when operation isnt needed! ***
-			bus_.subscribe<Editor::TestTree>([&](const Editor::TestTree)
-				{
-					operation();
-				});
+			//bus_.subscribe<Editor::TestTree>([&](const Editor::TestTree)
+			//	{
+			//		operation();
+			//	});
 
 			// Subscribe to delete selected entity event
 			// NOTE: This is just a placeholder - actual deletion happens in GameApplication
@@ -81,13 +81,10 @@ namespace Editor
 
 		}
 
-		// Create and append a new scene
-		void createScene()
-		{
-
-		}
-
-		// Delete and erase a scene
+		/*============================================================================================
+		* \brief		This function deletes the scene from the save folder as well as the scenes_ container
+		* \param[in]	std::string sceneName
+		*//*========================================================================================*/
 		void deleteScene(std::string sceneName)
 		{
 			// Remove from files
@@ -105,6 +102,10 @@ namespace Editor
 			}
 		}
 
+		/*============================================================================================
+		* \brief		This function selects the next scene to load
+		* \param[in]	std::string fileName
+		*//*========================================================================================*/
 		void selectScene(const std::string& filename)
 		{
 			// Load selected scene
@@ -130,6 +131,10 @@ namespace Editor
 			bus_.publish(SceneCleared{});
 		}
 
+		/*============================================================================================
+		* \brief		This function renames the name of the scene file as well as the scene name
+		* \param[in]	std::string newName, std::string oldName
+		*//*========================================================================================*/
 		void renameScene(const std::string& newName, const std::string& oldName)
 		{
 			try
@@ -177,7 +182,9 @@ namespace Editor
 			}
 		}
 
-		// Plays the selected scene
+		/*============================================================================================
+		* \brief		This function sets current scene state to play
+		*//*========================================================================================*/
 		void playScene()
 		{
 			std::string sceneName = selectedScene_->getSceneName();
@@ -200,7 +207,9 @@ namespace Editor
 			//bus_.publish(GameInitialized{});
 		}
 
-		// Stops playing a running scene
+		/*============================================================================================
+		* \brief		This function sets current scene state to stop
+		*//*========================================================================================*/
 		void stopScene()
 		{
 			// Publish StopScene event to notify systems (e.g., audio)
@@ -218,7 +227,9 @@ namespace Editor
 			//bus_.publish(GameStopped{});
 		}
 
-		// Pause a running scene
+		/*============================================================================================
+		* \brief		This function sets current scene state to pause
+		*//*========================================================================================*/
 		void pauseScene()
 		{
 			selectedScene_->pause();
@@ -227,7 +238,10 @@ namespace Editor
 			
 		}
 
-		// Create empty scene
+		/*============================================================================================
+		* \brief		This function creates a new empty scene
+		* \param[in]	const std::string& filePath
+		*//*========================================================================================*/
 		void createEmptyScene(const std::string& filePath)
 		{
 			// Default name

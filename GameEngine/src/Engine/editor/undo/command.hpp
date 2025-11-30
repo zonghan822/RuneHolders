@@ -1,5 +1,8 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         command.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @date         2025-11-29
 * @brief        Base command interface for the undo/redo system using Command Pattern
 *//*========================================================================================*/
 

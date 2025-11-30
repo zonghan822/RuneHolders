@@ -1,5 +1,8 @@
 /*============================================================================================
-* @file         entity_commands.hpp
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         entity_commands.
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @date         2025-11-29
 * @brief        Entity creation/deletion commands for undo/redo
 *//*========================================================================================*/
 
