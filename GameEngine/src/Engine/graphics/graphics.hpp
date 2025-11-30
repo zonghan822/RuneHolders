@@ -244,6 +244,14 @@ namespace Graphics
             float scale,
             const Color& color);
 
+        void drawTextScreen(const std::shared_ptr<Font::EnoFont>& font,
+            const std::string& text,
+            const Math::eVec2<float>& position,
+            float scale,
+            const Color& color,
+            float screenWidth,
+            float screenHeight);
+
         // Camera/projection management
         void setProjectionMatrix(int windowWidth, int windowHeight);
         void setProjectionMatrix(const float* matrix);

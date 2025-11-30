@@ -127,6 +127,7 @@ private:
     void drawPlayerAndIndicator();
 
     void drawShapes();
+    void displayFPS();
 
     // Rune system methods
     void initializeRuneSystem();                    // Initialize rune system entity
@@ -173,4 +174,6 @@ private:
     void handleMainMenuButton();                    // Handle main menu button click
     uint32_t resumeButtonEntityID_ = 0;
     uint32_t mainMenuButtonEntityID_ = 0;
+
+    bool isDisplayFPS_ = false;
 };

@@ -12,6 +12,9 @@
 #include "game_logic.hpp"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <sstream>
+#include <iomanip>
+
 #include "math/math.hpp"
 
 float scaleSize = 1.0f;
@@ -561,7 +564,10 @@ void GameApplication::updateGameLogic() {
 	if (ctrl && inputMng.isKeyDown(GLFW_KEY_KP_0))		   //  0
 		windowMng.toggleFullscreen();
 
-	
+	if (ctrl && inputMng.isKeyDown(GLFW_KEY_9))
+		isDisplayFPS_ = !isDisplayFPS_;
+
+
 	// ========== PAUSE MENU AND SPELLBOOK INPUT HANDLING ==========
 	// Only handle pause/spellbook input when player exists
 	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
@@ -725,6 +731,7 @@ void GameApplication::updateGameLogic() {
 	drawShapes();
 	drawPlayerAndIndicator();
 	graphics_.flush();
+	displayFPS();
 }
 
 void GameApplication::loadEntityTextures() {
@@ -1239,6 +1246,36 @@ void GameApplication::drawShapes() {
 			continue;
 		}
 	}
+}
+
+void GameApplication::displayFPS() {
+	if (!isDisplayFPS_) return;
+
+	auto& graphics = engine_.getGraphicsManager();
+	auto& window = engine_.getWindowManager();
+	
+	std::ostringstream ss;
+	ss << "FPS: " <<  std::fixed << std::setprecision(2) << engine_.getFPS();
+	std::string fpsText = ss.str();
+
+	auto [w, h] = window.getFramebufferSize();
+
+	// Compute top-right position
+	Math::eVec2<float> pos{ 
+		static_cast<float>(w) - 150.f,   // 150px margin from right
+		40.f							 // 40px from top
+	};
+
+	// Draw text
+	graphics.drawTextScreen(
+		timesFont_,
+		fpsText,
+		pos,
+		0.5f,
+		Graphics::Color::White,
+		static_cast<float>(w),
+		static_cast<float>(h)
+	);
 }
 
 void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData) {
