@@ -227,6 +227,10 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Spellbook_Open_01");
 	audioMng.publishSoundRequest("Spellbook_Close_01");
 
+	// Fireball audio
+	audioMng.publishSoundRequest("Fireball-Cast");
+	audioMng.publishSoundRequest("Fireball-Explosion-Small");
+
 	// BGM
 	audioMng.publishSoundRequest("BGM_01_Layer2_loop");
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");
@@ -1685,6 +1689,9 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	// Mark entities as dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
+	// Play fireball spawn sound effect
+	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Cast" });
+
 }
 
 void GameApplication::updateCombatSystem(float dt)
@@ -1761,6 +1768,8 @@ void GameApplication::updateCombatSystem(float dt)
 				float damage = fireballDamage.getTotalDamage();
 				bool died = enemyHealth.takeDamage(damage);
 
+				// Play fireball hit sound effect
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Explosion-Small" });
 
 				if (died) {
 					enemiesToDestroy.insert(enemy.id());
