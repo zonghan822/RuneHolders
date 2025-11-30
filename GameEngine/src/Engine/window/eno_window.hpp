@@ -184,6 +184,20 @@ namespace Window
 		static void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 		/*============================================================================================
+		* \brief	Window focus callback (ALT-TAB, etc.)
+		* \param[in] window		GLFW window pointer
+		* \param[in] focused	GLFW_TRUE if focused, GLFW_FALSE if unfocused
+		*//*========================================================================================*/
+		static void WindowFocusCallback(GLFWwindow* window, int focused);
+
+		/*============================================================================================
+		* \brief	Window iconify callback (minimize/restore)
+		* \param[in] window		GLFW window pointer
+		* \param[in] iconified	GLFW_TRUE if minimized, GLFW_FALSE if restored
+		*//*========================================================================================*/
+		static void WindowIconifyCallback(GLFWwindow* window, int iconified);
+
+		/*============================================================================================
 		* \brief	Sets up all GLFW event callbacks
 		*//*========================================================================================*/
 		void setupEventCallbacks();

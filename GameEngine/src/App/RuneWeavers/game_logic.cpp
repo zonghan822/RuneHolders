@@ -220,7 +220,6 @@ void GameApplication::setupScripting() {
 	engine_.getCoreHost().defineSMD();
 }
 
-
 void GameApplication::setupGameAudio() {
 	// setup audio
 	auto& audioMng = engine_.getAudioManager();
@@ -392,7 +391,82 @@ void GameApplication::playSceneBGM()
 }
 
 void GameApplication::setupGameEvents() {
-	// setup event bus
+	// Subscribe to window focus events (ALT-TAB, etc.)
+	engine_.getEventBus().subscribe<Window::WindowFocusEvent>([this](const Window::WindowFocusEvent& event) {
+
+		windowFocused_ = event.focused;
+
+		if (!event.focused) {
+			// Lost focus - pause game, clear input
+
+			// Pause the game if not already paused
+			if (!isPaused_) {
+				isPaused_ = true;
+				engine_.setIsPlaying(false);
+			}
+
+			// If spellbook is open, close it before opening pause menu
+			if (showSpellbook_) {
+				destroySpellbook();
+				showSpellbook_ = false;
+			}
+
+			// Hide player if not already hidden
+			hidePlayer();
+
+			// Ensure pause menu is displayed (spawn if it doesn't exist)
+			if (pauseMenuEntityID_ == 0) {
+				spawnPauseMenu();
+			}
+
+			// Clear input states to prevent stuck keys
+			engine_.getInputManager().clearAllKeyStates();
+
+			// Destroy any active runes
+			if (runeSystemInitialized_) {
+				ECS::Entity runeSystemEntity(runeSystemEntityID_);
+				auto& entityManager = engine_.getEntityManager();
+				if (runeSystemEntity.has<ECSComponents::RuneSystemStateComponent>(entityManager)) {
+					destroyRunes();
+				}
+			}
+		}
+		else {
+			// Regained focus - stay paused until player presses ESC 
+		}
+	});
+
+	// Subscribe to window iconify events (minimize/restore)
+	engine_.getEventBus().subscribe<Window::WindowIconifyEvent>([this](const Window::WindowIconifyEvent& event) {
+		windowMinimized_ = event.iconified;
+
+		if (event.iconified) {
+
+			// Window minimized, pause game
+			// Pause the game if not already paused
+			if (!isPaused_) {
+				isPaused_ = true;
+				engine_.setIsPlaying(false);
+			}
+
+			// If spellbook is open, close it before opening pause menu
+			if (showSpellbook_) {
+				destroySpellbook();
+				showSpellbook_ = false;
+			}
+
+			// Hide player
+			hidePlayer();
+
+			// Ensure pause menu is displayed (spawn if it doesn't exist)
+			if (pauseMenuEntityID_ == 0) {
+				spawnPauseMenu();
+			}
+		}
+		else {
+			// Window restored - stay paused until player manually resumes
+		}
+	});
 }
 
 void GameApplication::setupGameMath() {
@@ -543,7 +617,7 @@ void GameApplication::updateGameLogic() {
 
 	if (playerExists) {
 		// Handle F key - Toggle Spellbook
-		if (inputMng.isKeyDown(GLFW_KEY_F)) {
+		if (inputMng.isKeyDown(GLFW_KEY_F) && !isPaused_) {
 			if (!showSpellbook_) {
 				// Open spellbook and pause game
 				showSpellbook_ = true;
@@ -1963,6 +2037,12 @@ void GameApplication::destroySpellbook() {
 }
 
 void GameApplication::spawnPauseMenu() {
+	// Don't spawn if pause menu already exists
+	if (pauseMenuEntityID_ != 0) {
+		std::cout << "[PauseMenu] Pause menu already exists (ID: " << pauseMenuEntityID_ << ")" << std::endl;
+		return;
+	}
+
 	auto& entityManager = engine_.getEntityManager();
 	auto& resourceLoader = engine_.getResourceLoader();
 
@@ -2044,4 +2124,3 @@ void GameApplication::showPlayer() {
 		}
 	}
 }
-

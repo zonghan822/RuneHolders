@@ -56,4 +56,20 @@ namespace Window {
         int width;      ///< New framebuffer width
         int height;     ///< New framebuffer height
     };
+
+    /*============================================================================================
+    * \struct   WindowFocusEvent
+    * \brief    Represents window focus change event (ALT-TAB, etc.)
+    *//*========================================================================================*/
+    struct WindowFocusEvent {
+        bool focused;   ///< true if window gained focus, false if lost
+    };
+
+    /*============================================================================================
+    * \struct   WindowIconifyEvent
+    * \brief    Represents window minimize/restore event
+    *//*========================================================================================*/
+    struct WindowIconifyEvent {
+        bool iconified; ///< true if window minimized, false if restored
+    };
 }

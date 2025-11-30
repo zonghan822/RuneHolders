@@ -35,6 +35,10 @@ private:
     std::vector<ECS::Entity> cachedSceneTwoEntities_;
     bool entitiesDirty_ = true;
 
+    // Interrupt handling
+    bool windowFocused_ = true;
+    bool windowMinimized_ = false;
+
     // Texture and anim loading
     std::shared_ptr<Graphics::EnoTexture> playerTexture_;
     std::shared_ptr<Graphics::EnoTexture> backgroundTexture_;
@@ -98,7 +102,6 @@ public:
     // Get fixed virtual resolution
     float getWorldWidth() const { return worldWidth_; }
     float getWorldHeight() const { return worldHeight_; }
-
 
 private:
     // Setup (called during initialize())
