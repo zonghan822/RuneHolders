@@ -291,7 +291,6 @@ namespace Window
 
 	void EnoWindow::setResolution(int width, int height) {
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
 		windowedW_ = width;
 		windowedH_ = height;
