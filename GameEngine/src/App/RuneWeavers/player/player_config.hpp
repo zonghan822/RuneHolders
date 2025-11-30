@@ -74,8 +74,6 @@ namespace Player
             std::ifstream file(filepath);
             if (!file.is_open())
             {
-                std::cerr << "[PlayerConfig] Failed to open config file: " << filepath << std::endl;
-                std::cerr << "[PlayerConfig] Using default values instead." << std::endl;
                 return false;
             }
 
@@ -135,7 +133,6 @@ namespace Player
             }
 
             file.close();
-            std::cout << "[PlayerConfig] Successfully loaded from: " << filepath << std::endl;
             return true;
         }
 
@@ -145,18 +142,6 @@ namespace Player
          *===========================================================================================*/
         void PrintConfig() const
         {
-            std::cout << "=== Player Configuration ===" << std::endl;
-            std::cout << "Movement Force: " << movementForce << std::endl;
-            std::cout << "Friction Coefficient: " << frictionCoefficient << std::endl;
-            std::cout << "Max Speed: " << maxSpeed << std::endl;
-            std::cout << "Mass: " << mass << std::endl;
-            std::cout << "Can Move: " << (canMove ? "true" : "false") << std::endl;
-            std::cout << "Sprite: " << spriteWidth << "x" << spriteHeight << std::endl;
-            std::cout << "Collider: " << colliderWidth << "x" << colliderHeight << std::endl;
-            std::cout << "Dash Duration: " << dashDuration << "s" << std::endl;
-            std::cout << "Dash Distance: " << dashDistance << "px" << std::endl;
-            std::cout << "Dash Cooldown: " << dashCooldown << "s" << std::endl;
-            std::cout << "===========================" << std::endl;
         }
     };
 

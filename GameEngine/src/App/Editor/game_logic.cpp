@@ -35,6 +35,7 @@ void GameApplication::initialize() {
 	setupFont();
 	setupCombatSystem();
 	setupMainMenuButtons();
+	setupSceneTransitions();
 
 	auto& tileMap = engine_.getTileMap();
 
@@ -505,6 +506,7 @@ void GameApplication::updateGameLogic() {
 
 	// Update main menu buttons (works in both play mode and edit mode)
 	updateMainMenuButtons();
+	updateSceneTransitions();
 
 	// ========== PAUSE MENU AND SPELLBOOK INPUT HANDLING ==========
 	// Only handle pause/spellbook input when in play mode AND player exists
@@ -2472,19 +2474,43 @@ void GameApplication::spawnPauseMenu() {
 	draw.texture = pauseMenuTexture;
 
 	// Mark entities dirty to refresh rendering cache
+	// Setup pause menu buttons (Resume and Main Menu)
+	setupPauseMenuButtons();
 	entitiesDirty_ = true;
 
 	std::cout << "[PauseMenu] Pause menu UI spawned at (1024, 1024)" << std::endl;
 }
 
 void GameApplication::destroyPauseMenu() {
+	auto& entityManager = engine_.getEntityManager();
+	auto& entityMap = entityManager.getMap();
+
+	// Destroy pause menu entity (check if it exists first)
 	if (pauseMenuEntityID_ != 0) {
-		auto& entityManager = engine_.getEntityManager();
-		entityManager.destroyEntity(pauseMenuEntityID_);
+		if (entityMap.find(pauseMenuEntityID_) != entityMap.end()) {
+			entityManager.destroyEntity(pauseMenuEntityID_);
+		}
 		pauseMenuEntityID_ = 0;
-		entitiesDirty_ = true;
-		std::cout << "[PauseMenu] Pause menu UI destroyed" << std::endl;
 	}
+
+	// Destroy Resume button (check if it exists first)
+	if (resumeButtonEntityID_ != 0) {
+		if (entityMap.find(resumeButtonEntityID_) != entityMap.end()) {
+			entityManager.destroyEntity(resumeButtonEntityID_);
+		}
+		resumeButtonEntityID_ = 0;
+	}
+
+	// Destroy Main Menu button (check if it exists first)
+	if (mainMenuButtonEntityID_ != 0) {
+		if (entityMap.find(mainMenuButtonEntityID_) != entityMap.end()) {
+			entityManager.destroyEntity(mainMenuButtonEntityID_);
+		}
+		mainMenuButtonEntityID_ = 0;
+	}
+
+	entitiesDirty_ = true;
+	std::cout << "[PauseMenu] Pause menu UI and buttons destroyed" << std::endl;
 }
 
 void GameApplication::hidePlayer() {
@@ -2715,6 +2741,17 @@ void GameApplication::updateMainMenuButtons() {
 				} else if (buttonName == "QuitYesButton") {
 					handleQuitYesButton();
 					return;
+
+			// Handle pause menu buttons (only when pause menu is active)
+			if (pauseMenuEntityID_ != 0) {
+				if (buttonName == "ResumeButton") {
+					handleResumeButton();
+					return;
+				} else if (buttonName == "MainMenuButton") {
+					handleMainMenuButton();
+					return;
+				}
+			}
 				}
 			}
 		}
@@ -2975,4 +3012,224 @@ void GameApplication::handleQuitYesButton() {
 
 	// Request window close to properly shut down the engine
 	engine_.getWindowManager().setShouldClose(true);
+}
+
+// ============================================================================
+// SCENE TRANSITION SYSTEM IMPLEMENTATION (EDITOR)
+// ============================================================================
+
+void GameApplication::setupSceneTransitions() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Create invisible trigger hitbox for Scene1 -> Scene2 transition
+	ECS::Entity sceneTransitionTrigger = entityManager.create();
+	scene1ToScene2TriggerID_ = sceneTransitionTrigger.id();
+
+	sceneTransitionTrigger.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Scene1ToScene2Trigger"));
+	sceneTransitionTrigger.add<ECSComponents::TransformComponent>(entityManager);
+	sceneTransitionTrigger.add<ECSComponents::CollisionComponent>(entityManager);
+
+	auto& transform = sceneTransitionTrigger.get<ECSComponents::TransformComponent>(entityManager);
+	transform.pos = { 1023.0f, 656.0f };
+	transform.scale = { 1.0f, 1.0f };
+
+	auto& collision = sceneTransitionTrigger.get<ECSComponents::CollisionComponent>(entityManager);
+	collision.type = ECSComponents::ColliderType::RECTANGLE;
+	collision.data.rectangle.width = 75.0f;
+	collision.data.rectangle.height = 50.0f;
+	collision.rotation = 0.0f;
+	collision.isTrigger = true;
+	collision.isActive = false;
+
+	std::cout << "[SceneTransition] Scene transition trigger created" << std::endl;
+}
+
+void GameApplication::updateSceneTransitions() {
+	auto& entityManager = engine_.getEntityManager();
+	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+	std::string sceneName = currentScene.getSceneName();
+
+	// Only check in play mode
+	bool isPlayMode = (currentScene.getState() == Editor::State::Playing ||
+	                   currentScene.getState() == Editor::State::NextFrame);
+
+	if (!isPlayMode || sceneName != "Scene1.txt") {
+		if (scene1ToScene2TriggerID_ != 0) {
+			ECS::Entity trigger(scene1ToScene2TriggerID_);
+			if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+				auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+				collision.isActive = false;
+			}
+		}
+		return;
+	}
+
+	// Activate trigger in Scene1 play mode
+	if (scene1ToScene2TriggerID_ != 0) {
+		ECS::Entity trigger(scene1ToScene2TriggerID_);
+		if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+			auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+			collision.isActive = true;
+		}
+	}
+
+	// Check for player
+	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+	if (playerEntities.empty()) return;
+
+	ECS::Entity player = playerEntities[0];
+	if (!player.has<ECSComponents::TransformComponent>(entityManager) ||
+		!player.has<ECSComponents::CollisionComponent>(entityManager)) {
+		return;
+	}
+
+	auto& playerTransform = player.get<ECSComponents::TransformComponent>(entityManager);
+	auto& playerCollision = player.get<ECSComponents::CollisionComponent>(entityManager);
+
+	ECS::Entity trigger(scene1ToScene2TriggerID_);
+	if (!trigger.has<ECSComponents::TransformComponent>(entityManager) ||
+		!trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+		return;
+	}
+
+	auto& triggerTransform = trigger.get<ECSComponents::TransformComponent>(entityManager);
+	auto& triggerCollision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+
+	// AABB collision check
+	float playerLeft = playerTransform.pos.x - (playerCollision.data.rectangle.width * 0.5f);
+	float playerRight = playerTransform.pos.x + (playerCollision.data.rectangle.width * 0.5f);
+	float playerTop = playerTransform.pos.y - (playerCollision.data.rectangle.height * 0.5f);
+	float playerBottom = playerTransform.pos.y + (playerCollision.data.rectangle.height * 0.5f);
+
+	float triggerLeft = triggerTransform.pos.x - (triggerCollision.data.rectangle.width * 0.5f);
+	float triggerRight = triggerTransform.pos.x + (triggerCollision.data.rectangle.width * 0.5f);
+	float triggerTop = triggerTransform.pos.y - (triggerCollision.data.rectangle.height * 0.5f);
+	float triggerBottom = triggerTransform.pos.y + (triggerCollision.data.rectangle.height * 0.5f);
+
+	bool colliding = !(playerRight < triggerLeft || playerLeft > triggerRight ||
+	                   playerBottom < triggerTop || playerTop > triggerBottom);
+
+	if (colliding) {
+		std::cout << "[SceneTransition] Player triggered Scene1->Scene2 transition!" << std::endl;
+		engine_.getEnoEditor().selectScene("Scene2.txt");
+		entitiesDirty_ = true;
+	}
+}
+
+// ============================================================================
+// PAUSE MENU BUTTON SYSTEM IMPLEMENTATION (EDITOR)
+// ============================================================================
+
+void GameApplication::setupPauseMenuButtons() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Resume Button
+	ECS::Entity resumeButton = entityManager.create();
+	resumeButtonEntityID_ = resumeButton.id();
+
+	resumeButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("ResumeButton"));
+	resumeButton.add<ECSComponents::TransformComponent>(entityManager);
+	resumeButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	resumeButton.add<ECSComponents::CollisionComponent>(entityManager);
+	resumeButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& resumeTransform = resumeButton.get<ECSComponents::TransformComponent>(entityManager);
+	resumeTransform.pos = { 716.0f, 965.0f };
+	resumeTransform.scale = { 1.0f, 1.0f };
+	resumeTransform.rot.x = 0.785398f;
+
+	auto& resumeDraw = resumeButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	resumeDraw.width = 100.0f;
+	resumeDraw.height = 100.0f;
+	resumeDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f);
+	strcpy_s(resumeDraw.shape, "Rectangle");
+
+	auto& resumeCollision = resumeButton.get<ECSComponents::CollisionComponent>(entityManager);
+	resumeCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	resumeCollision.data.rectangle.width = 100.0f;
+	resumeCollision.data.rectangle.height = 100.0f;
+	resumeCollision.rotation = 0.785398f;
+	resumeCollision.isTrigger = true;
+
+	auto& resumeBtn = resumeButton.get<ECSComponents::ButtonComponent>(entityManager);
+	resumeBtn.getActive() = true;
+
+	// Main Menu Button
+	ECS::Entity mainMenuButton = entityManager.create();
+	mainMenuButtonEntityID_ = mainMenuButton.id();
+
+	mainMenuButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("MainMenuButton"));
+	mainMenuButton.add<ECSComponents::TransformComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::CollisionComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& menuTransform = mainMenuButton.get<ECSComponents::TransformComponent>(entityManager);
+	menuTransform.pos = { 557.0f, 1141.0f };
+	menuTransform.scale = { 1.0f, 1.0f };
+	menuTransform.rot.x = 0.785398f;
+
+	auto& menuDraw = mainMenuButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	menuDraw.width = 56.0f;
+	menuDraw.height = 56.0f;
+	menuDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f);
+	strcpy_s(menuDraw.shape, "Rectangle");
+
+	auto& menuCollision = mainMenuButton.get<ECSComponents::CollisionComponent>(entityManager);
+	menuCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	menuCollision.data.rectangle.width = 56.0f;
+	menuCollision.data.rectangle.height = 56.0f;
+	menuCollision.rotation = 0.785398f;
+	menuCollision.isTrigger = true;
+
+	auto& menuBtn = mainMenuButton.get<ECSComponents::ButtonComponent>(entityManager);
+	menuBtn.getActive() = true;
+
+	std::cout << "[PauseMenu] Pause menu buttons created" << std::endl;
+}
+
+void GameApplication::handleResumeButton() {
+	std::cout << "[PauseMenu] Resume button pressed" << std::endl;
+
+	isPaused_ = false;
+	destroyPauseMenu();
+	showPlayer();
+	engine_.setIsPlaying(true);
+	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
+}
+
+void GameApplication::handleMainMenuButton() {
+	std::cout << "[PauseMenu] Main Menu button pressed" << std::endl;
+
+	// IMPORTANT: Destroy pause menu and spellbook BEFORE changing scenes
+	// to prevent them from being saved into the scene file
+	destroyPauseMenu();
+	if (spellbookEntityID_ != 0) {
+		destroySpellbook();
+	}
+	showPlayer();  // Restore player visibility before scene change
+
+	// Clear all entity IDs to prevent crashes when trying to access them after scene change
+	resumeButtonEntityID_ = 0;
+	mainMenuButtonEntityID_ = 0;
+	pauseMenuEntityID_ = 0;
+	spellbookEntityID_ = 0;
+	controlsDisplayEntityID_ = 0;
+	quitConfirmEntityID_ = 0;
+	playerEntityID_ = 0;
+
+	// Reset game state flags
+	isPaused_ = false;
+	showSpellbook_ = false;
+	playerSpawned_ = false;
+	engine_.setIsPlaying(true);
+
+	// Change scene (this will destroy all entities including pause menu and buttons)
+	engine_.getEnoEditor().selectScene("MainMenu.txt");
+	entitiesDirty_ = true;
+
+	// Recreate main menu buttons after scene load (they're not saved in the scene file)
+	setupMainMenuButtons();
+
+	std::cout << "[PauseMenu] Returned to MainMenu" << std::endl;
 }

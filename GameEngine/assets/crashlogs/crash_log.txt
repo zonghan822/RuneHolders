@@ -80,3 +80,6 @@
 [2025-11-27 18:14:42] string too long
 [2025-11-29 18:39:33] Failed to find the requested sound!
 [2025-11-29 19:33:19] Failed to find the sound Rune-GalaxyBellPad-1
+[2025-11-30 16:08:10] Failed to find this entity in the Entity Map!
+[2025-11-30 16:08:30] Failed to find this entity in the Entity Map!
+[2025-11-30 16:10:29] Failed to find this entity in the Entity Map!

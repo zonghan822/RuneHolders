@@ -159,4 +159,16 @@ private:
     // UI entities for controls and quit confirm menus
     uint32_t controlsDisplayEntityID_ = 0;
     uint32_t quitConfirmEntityID_ = 0;
+
+    // Scene Transition System
+    void setupSceneTransitions();                   // Setup scene transition triggers
+    void updateSceneTransitions();                  // Check for scene transition collisions
+    uint32_t scene1ToScene2TriggerID_ = 0;         // Scene transition trigger entity ID
+
+    // Pause Menu Button System
+    void setupPauseMenuButtons();                   // Setup pause menu buttons (called when spawning pause menu)
+    void handleResumeButton();                      // Handle resume button click
+    void handleMainMenuButton();                    // Handle main menu button click
+    uint32_t resumeButtonEntityID_ = 0;
+    uint32_t mainMenuButtonEntityID_ = 0;
 };

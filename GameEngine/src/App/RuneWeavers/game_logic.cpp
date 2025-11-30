@@ -25,7 +25,6 @@ void GameApplication::initialize() {
 	// FORCE LOAD MAIN MENU FOR RUNEWEAVERS
 	// This ensures RuneWeavers always starts at the main menu regardless of LastSavedScene.txt
 	engine_.getEnoEditor().selectScene("MainMenu.txt");
-	std::cout << "[RuneWeavers] Forced load MainMenu.txt" << std::endl;
 
 	// Set RuneWeavers to fullscreen mode (Editor stays windowed)
 	engine_.getWindowManager().setFullscreen(true);
@@ -46,6 +45,7 @@ void GameApplication::initialize() {
 	setupCamera();
 	setupCombatSystem();
 	setupMainMenuButtons();
+	setupSceneTransitions();
 
 	auto& tileMap = engine_.getTileMap();
 
@@ -54,62 +54,40 @@ void GameApplication::initialize() {
 	worldWidth_ = worldSize.x;
 	worldHeight_ = worldSize.y;
 
-	std::cout << "Game initialized successfully!" << std::endl;
 
 	// ========== SCENE DEBUG INFO ==========
 	auto& sceneTree = engine_.getEnoEditor().getSceneTree();
 	auto& entityMng = engine_.getEntityManager();
 
-	std::cout << "\n========== LOADED SCENE DEBUG ==========\n";
-	//std::cout << "Scene Name: " << sceneTree.getSceneName() << "\n";
-	std::cout << "Total Scene Nodes: " << sceneTree.getAllNodes().size() << "\n\n";
 
 	int nodeCount = 0;
 	for (const auto& node : sceneTree.getAllNodes()) {
-		std::cout << "Node " << nodeCount++ << ":\n";
-		std::cout << "  - Scene Object ID: " << node->sceneObjectID_ << "\n";
-		std::cout << "  - Entity ID: " << node->entity_.id() << "\n";
-		std::cout << "  - Enabled: " << (node->enabled_ ? "true" : "false") << "\n";
 
 		if (node->entity_.has<ECSComponents::NameComponent>(entityMng)) {
 			auto& name = node->entity_.get<ECSComponents::NameComponent>(entityMng);
-			std::cout << "  - Name: " << name.name << "\n";
 		}
 
 		if (node->entity_.has<ECSComponents::TransformComponent>(entityMng)) {
 			auto& transform = node->entity_.get<ECSComponents::TransformComponent>(entityMng);
-			std::cout << "  - Position: (" << transform.pos.x << ", " << transform.pos.y << ")\n";
 		}
 
 		if (node->entity_.has<ECSComponents::RenderComponent>(entityMng)) {
 			auto& render = node->entity_.get<ECSComponents::RenderComponent>(entityMng);
-			std::cout << "  - Has RenderComponent: YES\n";
-			std::cout << "  - Size: " << render.width << "x" << render.height << "\n";
-			std::cout << "  - Color: (" << render.color.r << ", " << render.color.g
-					  << ", " << render.color.b << ", " << render.color.a << ")\n";
-			std::cout << "  - Shape: " << render.shape << "\n";
 			if (strlen(render.texturePath) > 0) {
-				std::cout << "  - Texture Path: " << render.texturePath << "\n";
 			}
 		} else {
-			std::cout << "  - Has RenderComponent: NO\n";
 		}
 
-		std::cout << "\n";
 	}
 
 	// Check how many entities have DrawInfoComponent
 	auto drawableEntities = entityMng.findEntity<ECSComponents::DrawInfoComponent>();
-	std::cout << "Total entities with DrawInfoComponent: " << drawableEntities.size() << "\n";
-	std::cout << "========================================\n\n";
 
 	// Auto-play BGM when game starts (RuneWeavers is a standalone game, not editor)
-	std::cout << "[GameApplication] Auto-starting BGM for RuneWeavers" << std::endl;
 	playSceneBGM();
 }
 
 void GameApplication::run() {
-	std::cout << "Starting game..." << std::endl;
 
 	// Start the engine with game update callback
 	engine_.run([this]() {
@@ -119,7 +97,6 @@ void GameApplication::run() {
 }
 
 void GameApplication::shutdown() {
-	std::cout << "Terminating game..." << std::endl;
 	engine_.shutDown();
 }
 
@@ -140,10 +117,8 @@ void GameApplication::setupGameSystems() {
 		// Found a player entity
 		playerEntityID_ = playerEntities[0].id();
 		playerSpawned_ = true;
-		std::cout << "[RuneWeavers] Player entity found (ID: " << playerEntityID_ << ")" << std::endl;
 	}
 	else {
-		std::cout << "[RuneWeavers] No player entity found in scene" << std::endl;
 	}
 }
 
@@ -160,7 +135,6 @@ void GameApplication::setupCamera() {
 
 	if (cameraEntities.empty()) {
 		// No camera found, create one
-		std::cout << "[RuneWeavers] No camera found, creating default camera" << std::endl;
 
 		// Create camera component with default viewport
 		ECSComponents::CameraComponent camera;
@@ -171,25 +145,19 @@ void GameApplication::setupCamera() {
 
 		ECSComponents::NameComponent nameComp("Main Camera");
 		ECS::Entity cameraEntity = entityManager.create<ECSComponents::NameComponent, ECSComponents::CameraComponent>(nameComp, camera);
-
-		std::cout << "[RuneWeavers] Camera created at position ("
-				  << camera.position.x << ", " << camera.position.y << ")" << std::endl;
 	} else {
-		std::cout << "[RuneWeavers] Camera found in scene" << std::endl;
 	}
 }
 
 void GameApplication::setupCombatSystem() {
 	auto& entityManager = engine_.getEntityManager();
 
-	std::cout << "[RuneWeavers] Setting up combat system..." << std::endl;
 
 	// Add HealthComponent to player if it exists
 	if (playerSpawned_) {
 		ECS::Entity playerEntity(playerEntityID_);
 		if (!playerEntity.has<ECSComponents::HealthComponent>(entityManager)) {
 			playerEntity.add<ECSComponents::HealthComponent>(entityManager, 100.0f);
-			std::cout << "[CombatSystem] Added HealthComponent to player (100 HP)" << std::endl;
 		}
 	}
 
@@ -199,7 +167,6 @@ void GameApplication::setupCombatSystem() {
 		// Add or reset HealthComponent
 		if (!enemy.has<ECSComponents::HealthComponent>(entityManager)) {
 			enemy.add<ECSComponents::HealthComponent>(entityManager, 50.0f);
-			std::cout << "[CombatSystem] Added HealthComponent to enemy (50 HP)" << std::endl;
 		} else {
 			// Reset health to max if component already exists
 			auto& health = enemy.get<ECSComponents::HealthComponent>(entityManager);
@@ -208,17 +175,14 @@ void GameApplication::setupCombatSystem() {
 			health.isDead = false;
 			health.invulnerable = false;
 			health.invulnerabilityTimer = 0.0f;
-			std::cout << "[CombatSystem] Reset enemy health to 50 HP" << std::endl;
 		}
 
 		// Add DamageComponent if not already present
 		if (!enemy.has<ECSComponents::DamageComponent>(entityManager)) {
 			enemy.add<ECSComponents::DamageComponent>(entityManager, 10.0f);
-			std::cout << "[CombatSystem] Added DamageComponent to enemy (10 damage)" << std::endl;
 		}
 	}
 
-	std::cout << "[RuneWeavers] Combat system setup complete!" << std::endl;
 }
 
 void GameApplication::setupScripting() {
@@ -319,7 +283,6 @@ void GameApplication::playSceneBGM()
 	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
 	std::string sceneName = currentScene.getSceneName();
 
-	std::cout << "[GameApplication] Playing BGM for scene: " << sceneName << std::endl;
 
 	// Determine which BGM to play based on scene name
 	std::string bgmName;
@@ -337,7 +300,6 @@ void GameApplication::playSceneBGM()
 	auto& sounds = audioMng.getSounds();
 	if (sounds.find(bgmName) == sounds.end())
 	{
-		std::cerr << "[GameApplication] Warning: BGM sound '" << bgmName << "' not loaded yet, skipping playback" << std::endl;
 		return;
 	}
 
@@ -365,7 +327,6 @@ void GameApplication::playSceneBGM()
 	if (!foundBGMEntity)
 	{
 		bgmEntity = entityManager.create<ECSComponents::AudioComponent>();
-		std::cout << "[GameApplication] Created new BGM audio entity" << std::endl;
 	}
 
 	// Configure the audio component
@@ -392,11 +353,9 @@ void GameApplication::playSceneBGM()
 	{
 		audioMng.prepareMod(audioComp);
 		audioMng.play(audioComp);
-		std::cout << "[GameApplication] Started playing BGM: " << bgmName << std::endl;
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << "[GameApplication] Failed to play BGM: " << e.what() << std::endl;
 	}
 }
 
@@ -407,11 +366,9 @@ void GameApplication::setupGameEvents() {
 void GameApplication::setupGameMath() {
 
 	// Math lib and maybe collision
-	//std::cout << "Calling math function\n";
 	//Math::eVec2 vec{ 1.1f, 1.2f };
 	//Math::eVec2 vec2{ 1.3f, 2.f };
 	//vec += vec2;
-	//std::cout << "vector : " << vec.x << ", " << vec.y << std::endl;
 
 	Collision::RunBasicCollisionTest();
 
@@ -420,7 +377,6 @@ void GameApplication::setupGameMath() {
 
 	// Load player config
 	playerConfig_.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
-	std::cout << "[GameLogic] Player configg loaded" << std::endl;
 }
 
 void GameApplication::setupAnimations() {
@@ -431,12 +387,10 @@ void GameApplication::setupAnimations() {
 
 	if (!backgroundTexture_ || !backgroundTexture_->isValid())
 	{
-		std::cerr << "Background texture not loaded properly" << std::endl;
 	}
 
 	if (!playerTexture_ || !playerTexture_->isValid())
 	{
-		std::cout << "Warning: Could not load player sprite sheet!" << std::endl;
 		return;
 	}
 
@@ -468,7 +422,6 @@ void GameApplication::setupAnimations() {
 
 	playerAnimController_.setAnimation("idle");
 
-	std::cout << "Player animation setup complete!" << std::endl;
 }
 
 void GameApplication::updateCamera(float deltaTime) {
@@ -540,7 +493,6 @@ void GameApplication::updateGameLogic() {
 				spawnSpellbook();
 				engine_.setIsPlaying(false);
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Open_01" });
-				std::cout << "[Input] Spellbook opened (F key pressed)" << std::endl;
 			}
 			else {
 				// Close spellbook and resume game
@@ -550,7 +502,6 @@ void GameApplication::updateGameLogic() {
 				showPlayer();
 				engine_.setIsPlaying(true);
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
-				std::cout << "[Input] Spellbook closed (F key pressed)" << std::endl;
 			}
 		}
 
@@ -564,7 +515,6 @@ void GameApplication::updateGameLogic() {
 				showPlayer();
 				engine_.setIsPlaying(true);
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
-				std::cout << "[Input] Spellbook closed (ESC key pressed)" << std::endl;
 			}
 			else if (!isPaused_) {
 				// If not paused and not in spellbook, open pause menu
@@ -573,7 +523,6 @@ void GameApplication::updateGameLogic() {
 				spawnPauseMenu();
 				engine_.setIsPlaying(false);
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Open_01" });
-				std::cout << "[Input] Pause menu opened (ESC key pressed)" << std::endl;
 			}
 			else {
 				// If pause menu is open, close it and resume game
@@ -582,13 +531,15 @@ void GameApplication::updateGameLogic() {
 				showPlayer();
 				engine_.setIsPlaying(true);
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
-				std::cout << "[Input] Pause menu closed (ESC key pressed)" << std::endl;
 			}
 		}
 	}
 
 	// Update main menu buttons (outside pause check - buttons work even when paused)
 	updateMainMenuButtons();
+
+	// Update scene transitions (check for player collision with transition triggers)
+	updateSceneTransitions();
 
 	// Only update game systems when not paused
 	if (!isPaused_) {
@@ -725,10 +676,8 @@ void GameApplication::loadEntityTextures() {
 			renderComp.texture = loader.getTexture(textureName);
 
 			if (renderComp.texture && renderComp.texture->isValid()) {
-				std::cout << "[GameLogic] Loaded texture '" << textureName << "' for entity " << entityID << std::endl;
 			}
 			else {
-				std::cerr << "[GameLogic] Failed to load texture '" << textureName << "' from path: " << renderComp.texturePath << std::endl;
 			}
 		}
 	}
@@ -757,7 +706,6 @@ void GameApplication::updateEntities() {
 		cachedDrawableEntities_ = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
 		cachedSceneTwoEntities_ = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
 
-		std::cout << "[DEBUG] Entity cache rebuilt! Found " << cachedDrawableEntities_.size() << " drawable entities\n";
 
 		entitiesDirty_ = false;
 
@@ -784,7 +732,6 @@ void GameApplication::updateEntities() {
 							animComp.looping
 						);
 
-						std::cout << "[GameLogic] Migrated old format animation '" << animName << "' to new format" << std::endl;
 					}
 				}
 
@@ -796,7 +743,6 @@ void GameApplication::updateEntities() {
 						// Controller doesn't exist (registry was cleared), create new one
 						animComp.controllerID = engine_.getAnimationRegistry().createController();
 						ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-						std::cout << "[GameLogic] Created new controller ID: " << animComp.controllerID << std::endl;
 					} else {
 						// Controller exists, clear it before restoring animations
 						ctrl->animations_.clear();
@@ -804,7 +750,6 @@ void GameApplication::updateEntities() {
 						ctrl->currentAnimation_ = nullptr;
 						ctrl->currentTexture_ = nullptr;
 						ctrl->currentAnimationName_.clear();
-						std::cout << "[GameLogic] Reusing existing controller ID: " << animComp.controllerID << std::endl;
 					}
 
 					if (ctrl) {
@@ -842,16 +787,12 @@ void GameApplication::updateEntities() {
 								anim.setLooping(animData.looping);
 								ctrl->addAnimation(animData.name, anim, texture);
 
-								std::cout << "[GameLogic] Restored animation '" << animData.name
-									<< "' (FrameW: " << animData.frameWidth << ", FrameH: " << animData.frameHeight
-									<< ", Rows: " << animData.rows << ", Cols: " << animData.cols << ")" << std::endl;
 							}
 						}
 
 						// Set the current animation if specified
 						if (strlen(animComp.currentAnimationName) > 0) {
 							ctrl->setAnimation(animComp.currentAnimationName);
-							std::cout << "[GameLogic] Set current animation to '" << animComp.currentAnimationName << "'" << std::endl;
 						}
 
 						// Sync the current texture to DrawInfoComponent
@@ -870,7 +811,6 @@ void GameApplication::updateEntities() {
 									}
 								}
 							}
-							std::cout << "[GameLogic] Synced texture to DrawInfoComponent for animation '" << ctrl->currentAnimationName_ << "'" << std::endl;
 						}
 					}
 				}
@@ -1004,7 +944,6 @@ void GameApplication::drawPlayerAndIndicator() {
 						scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 						transform.scale.x = scaleSize;
 						transform.scale.y = scaleSize;
-						std::cout << "Scaling by: " << scaleSize << '\n';
 					}
 
 					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_2)) {
@@ -1012,7 +951,6 @@ void GameApplication::drawPlayerAndIndicator() {
 						scaleSize = std::clamp(scaleSize, 1.0f, 100.0f);
 						transform.scale.x = scaleSize;
 						transform.scale.y = scaleSize;
-						std::cout << "Scaling by: " << scaleSize << '\n';
 					}
 
 					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_3)) {
@@ -1020,14 +958,12 @@ void GameApplication::drawPlayerAndIndicator() {
 
 						auto& playerCollider = playerSystem_->GetCollision(it->second);
 						playerCollider.rotation = rotationRadians;
-						std::cout << "rotation in Radians:" << rotationRadians << '\n';
 					}
 
 					if (engine_.getInputManager().isKeyPressed(GLFW_KEY_4)) {
 						rotationRadians -= static_cast <float>(3.0f * 0.0174533 * 0.01667);
 						auto& playerCollider = playerSystem_->GetCollision(it->second);
 						playerCollider.rotation = rotationRadians;
-						std::cout << "rotation in Radians:" << rotationRadians << '\n';
 					}
 
 					if (playerFacingDirection_ == -1) {
@@ -1085,7 +1021,6 @@ void GameApplication::drawShapes() {
 
 	static bool firstRun = true;
 	if (firstRun) {
-		std::cout << "[DEBUG] drawShapes() called! Total cached entities: " << cachedDrawableEntities_.size() << "\n";
 		firstRun = false;
 	}
 
@@ -1154,7 +1089,6 @@ void GameApplication::drawShapes() {
 							}
 						}
 					}
-					//std::cout << "Middle Values: "    << topLeft.x << " || " << topLeft.y << "\n";
 
 					// Draw textured quad with UV coordinates, rotation and scale
 					graphics.drawTexturedQuadUV(
@@ -1176,13 +1110,9 @@ void GameApplication::drawShapes() {
 					//	renderInfo.color,
 					//	rotation
 					//);
-					//std::cout << "Entity being drawn: " << entity.get<ECSComponents::NameComponent>(entityManager).name << "\n";
-					//std::cout << "Entities UV start X and Y: " << uvStart.x << " " << uvStart.y << "|| UV end X and Y: " << uvEnd.x << " " << uvEnd.y << "\n";
 
-					//std::cout << "Texture Dimensions: "
 					//	<< renderInfo.texture->getWidth() << " x "
 					//	<< renderInfo.texture->getHeight() << std::endl;
-					//std::cout << "Frame Dimensions: "
 					//	<< renderInfo.width << " x "
 					//	<< renderInfo.height << std::endl;
 
@@ -1233,7 +1163,6 @@ void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData)
 	if (!texData.texture) return;
 
 	playerTexture_ = texData.texture;
-	//std::cout << "Applied texture: " << texData.texture->getWidth()
 	//	<< "x" << texData.texture->getHeight()
 	//	<< " | Frame: " << texData.frameWidth << "x" << texData.frameHeight << '\n';
 
@@ -1286,7 +1215,6 @@ void GameApplication::initializeRuneSystem()
 	runeSystemEntityID_ = runeSystemEntity.id();
 
 	runeSystemInitialized_ = true;
-	std::cout << "[RuneSystem] Initialized rune system entity" << std::endl;
 }
 
 void GameApplication::updateRuneSystem()
@@ -1399,7 +1327,6 @@ void GameApplication::updateRuneSystem()
 					runeState.runesActive = false;
 					runeState.isDrawingLine = false;
 
-					std::cout << "[RuneSystem] Runes connected! Spawning fireball" << std::endl;
 				}
 			}
 		}
@@ -1440,7 +1367,6 @@ void GameApplication::updateRuneSystem()
 	for (uint32_t id : fireballsToDestroy) {
 		entityManager.destroyEntity(id);
 		entitiesDirty_ = true;
-		std::cout << "[RuneSystem] Fireball expired and destroyed" << std::endl;
 	}
 }
 
@@ -1498,7 +1424,6 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	// Mark entities as dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
-	std::cout << "[RuneSystem] Spawned runes at mouse position" << std::endl;
 }
 
 void GameApplication::destroyRunes()
@@ -1528,7 +1453,6 @@ void GameApplication::destroyRunes()
 	// Mark entities as dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
-	std::cout << "[RuneSystem] Destroyed runes" << std::endl;
 }
 
 void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
@@ -1557,7 +1481,6 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 				runeState.lineEnd = mouseWorldPos;
 				// Play left rune hover sound
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
-				std::cout << "[RuneSystem] Started drawing line from left rune" << std::endl;
 			}
 		}
 	}
@@ -1762,7 +1685,6 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	// Mark entities as dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
-	std::cout << "[RuneSystem] Spawned fireball at position (" << pos.x << ", " << pos.y << ")" << std::endl;
 }
 
 void GameApplication::updateCombatSystem(float dt)
@@ -1839,11 +1761,8 @@ void GameApplication::updateCombatSystem(float dt)
 				float damage = fireballDamage.getTotalDamage();
 				bool died = enemyHealth.takeDamage(damage);
 
-				std::cout << "[Combat] Fireball hit enemy! Dealt " << damage << " damage. Enemy HP: "
-					<< enemyHealth.currentHealth << "/" << enemyHealth.maxHealth << std::endl;
 
 				if (died) {
-					std::cout << "[Combat] Enemy defeated!" << std::endl;
 					enemiesToDestroy.insert(enemy.id());
 				}
 
@@ -1893,11 +1812,8 @@ void GameApplication::updateCombatSystem(float dt)
 					float damage = enemyDamage.getTotalDamage();
 					bool died = playerHealth.takeDamage(damage);
 
-					std::cout << "[Combat] Enemy hit player! Dealt " << damage << " damage. Player HP: "
-						<< playerHealth.currentHealth << "/" << playerHealth.maxHealth << std::endl;
 
 					if (died) {
-						std::cout << "[Combat] Player defeated!" << std::endl;
 					}
 
 					// Give player temporary invulnerability after being hit
@@ -1919,7 +1835,6 @@ void GameApplication::spawnSpellbook() {
 	auto spellbookTexture = resourceLoader.getTexture("SpellBook-HowToCast_Fireball");
 
 	if (!spellbookTexture || !spellbookTexture->isValid()) {
-		std::cerr << "[Spellbook] Failed to load spellbook texture!" << std::endl;
 		return;
 	}
 
@@ -1949,7 +1864,6 @@ void GameApplication::spawnSpellbook() {
 	// Mark entities dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
-	std::cout << "[Spellbook] Spellbook UI spawned at (1024, 1024)" << std::endl;
 }
 
 void GameApplication::destroySpellbook() {
@@ -1958,7 +1872,6 @@ void GameApplication::destroySpellbook() {
 		entityManager.destroyEntity(spellbookEntityID_);
 		spellbookEntityID_ = 0;
 		entitiesDirty_ = true;
-		std::cout << "[Spellbook] Spellbook UI destroyed" << std::endl;
 	}
 }
 
@@ -1970,7 +1883,6 @@ void GameApplication::spawnPauseMenu() {
 	auto pauseMenuTexture = resourceLoader.getTexture("PauseMenu-Popup");
 
 	if (!pauseMenuTexture || !pauseMenuTexture->isValid()) {
-		std::cerr << "[PauseMenu] Failed to load pause menu texture!" << std::endl;
 		return;
 	}
 
@@ -1997,20 +1909,43 @@ void GameApplication::spawnPauseMenu() {
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = pauseMenuTexture;
 
+	// Setup pause menu buttons (Resume and Main Menu)
+	setupPauseMenuButtons();
+
 	// Mark entities dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
-	std::cout << "[PauseMenu] Pause menu UI spawned at (1024, 1024)" << std::endl;
 }
 
 void GameApplication::destroyPauseMenu() {
+	auto& entityManager = engine_.getEntityManager();
+	auto& entityMap = entityManager.getMap();
+
+	// Destroy pause menu entity (check if it exists first)
 	if (pauseMenuEntityID_ != 0) {
-		auto& entityManager = engine_.getEntityManager();
-		entityManager.destroyEntity(pauseMenuEntityID_);
+		if (entityMap.find(pauseMenuEntityID_) != entityMap.end()) {
+			entityManager.destroyEntity(pauseMenuEntityID_);
+		}
 		pauseMenuEntityID_ = 0;
-		entitiesDirty_ = true;
-		std::cout << "[PauseMenu] Pause menu UI destroyed" << std::endl;
 	}
+
+	// Destroy Resume button (check if it exists first)
+	if (resumeButtonEntityID_ != 0) {
+		if (entityMap.find(resumeButtonEntityID_) != entityMap.end()) {
+			entityManager.destroyEntity(resumeButtonEntityID_);
+		}
+		resumeButtonEntityID_ = 0;
+	}
+
+	// Destroy Main Menu button (check if it exists first)
+	if (mainMenuButtonEntityID_ != 0) {
+		if (entityMap.find(mainMenuButtonEntityID_) != entityMap.end()) {
+			entityManager.destroyEntity(mainMenuButtonEntityID_);
+		}
+		mainMenuButtonEntityID_ = 0;
+	}
+
+	entitiesDirty_ = true;
 }
 
 void GameApplication::hidePlayer() {
@@ -2025,7 +1960,6 @@ void GameApplication::hidePlayer() {
 			savedPlayerScale_ = transform.scale;
 			// Set scale to 0 to hide
 			transform.scale = { 0.0f, 0.0f };
-			std::cout << "[Player] Hidden (scale set to 0)" << std::endl;
 		}
 	}
 }
@@ -2040,7 +1974,6 @@ void GameApplication::showPlayer() {
 			auto& transform = player.get<ECSComponents::TransformComponent>(entityManager);
 			// Restore saved scale
 			transform.scale = savedPlayerScale_;
-			std::cout << "[Player] Shown (scale restored to " << savedPlayerScale_.x << ", " << savedPlayerScale_.y << ")" << std::endl;
 		}
 	}
 }
@@ -2143,7 +2076,6 @@ void GameApplication::setupMainMenuButtons() {
 	// Mark entities dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
-	std::cout << "[MainMenu] Main menu buttons created" << std::endl;
 }
 
 void GameApplication::updateMainMenuButtons() {
@@ -2213,7 +2145,6 @@ void GameApplication::updateMainMenuButtons() {
 
 		// Check if click is within button bounds
 		if (btnComp.onClick(mouseWorldPos, transform, draw, collision)) {
-			std::cout << "[MainMenu] Button clicked: " << buttonName << std::endl;
 
 			// Handle different buttons based on name
 			if (inMainMenu) {
@@ -2245,12 +2176,22 @@ void GameApplication::updateMainMenuButtons() {
 					return;
 				}
 			}
+
+			// Handle pause menu buttons (only when pause menu is active)
+			if (pauseMenuEntityID_ != 0) {
+				if (buttonName == "ResumeButton") {
+					handleResumeButton();
+					return;
+				} else if (buttonName == "MainMenuButton") {
+					handleMainMenuButton();
+					return;
+				}
+			}
 		}
 	}
 }
 
 void GameApplication::handlePlayButton() {
-	std::cout << "[MainMenu] Play button pressed - Loading Scene1" << std::endl;
 	engine_.getEnoEditor().selectScene("Scene1.txt");
 	entitiesDirty_ = true;
 
@@ -2261,18 +2202,15 @@ void GameApplication::handlePlayButton() {
 	if (!playerEntities.empty()) {
 		playerEntityID_ = playerEntities[0].id();
 		playerSpawned_ = true;
-		std::cout << "[MainMenu] Player entity found in Scene1 (ID: " << playerEntityID_ << ")" << std::endl;
 
 		// Re-add health component to player if needed
 		ECS::Entity playerEntity(playerEntityID_);
 		if (!playerEntity.has<ECSComponents::HealthComponent>(entityManager)) {
 			playerEntity.add<ECSComponents::HealthComponent>(entityManager, 100.0f);
-			std::cout << "[MainMenu] Added HealthComponent to player (100 HP)" << std::endl;
 		}
 	} else {
 		playerSpawned_ = false;
 		playerEntityID_ = 0;
-		std::cout << "[MainMenu] Warning: No player entity found in Scene1!" << std::endl;
 	}
 
 	// Re-setup combat system for enemies in new scene
@@ -2294,7 +2232,6 @@ void GameApplication::handlePlayButton() {
 }
 
 void GameApplication::handleControlsButton() {
-	std::cout << "[MainMenu] Controls button pressed - Spawning controls display" << std::endl;
 
 	auto& entityManager = engine_.getEntityManager();
 	auto& resourceLoader = engine_.getResourceLoader();
@@ -2303,7 +2240,6 @@ void GameApplication::handleControlsButton() {
 	auto controlsTexture = resourceLoader.getTexture("MainMenu-ControlsDisplayV2");
 
 	if (!controlsTexture || !controlsTexture->isValid()) {
-		std::cerr << "[MainMenu] Failed to load controls texture!" << std::endl;
 		return;
 	}
 
@@ -2359,7 +2295,6 @@ void GameApplication::handleControlsButton() {
 }
 
 void GameApplication::handleControlsCloseButton() {
-	std::cout << "[MainMenu] Controls close button pressed - Destroying controls display" << std::endl;
 
 	auto& entityManager = engine_.getEntityManager();
 
@@ -2385,7 +2320,6 @@ void GameApplication::handleControlsCloseButton() {
 }
 
 void GameApplication::handleQuitButton() {
-	std::cout << "[MainMenu] Quit button pressed - Spawning quit confirm" << std::endl;
 
 	auto& entityManager = engine_.getEntityManager();
 	auto& resourceLoader = engine_.getResourceLoader();
@@ -2394,7 +2328,6 @@ void GameApplication::handleQuitButton() {
 	auto quitTexture = resourceLoader.getTexture("MainMenu-QuitConfirm");
 
 	if (!quitTexture || !quitTexture->isValid()) {
-		std::cerr << "[MainMenu] Failed to load quit confirm texture!" << std::endl;
 		return;
 	}
 
@@ -2477,7 +2410,6 @@ void GameApplication::handleQuitButton() {
 }
 
 void GameApplication::handleQuitNoButton() {
-	std::cout << "[MainMenu] Quit No button pressed - Closing quit confirm" << std::endl;
 
 	auto& entityManager = engine_.getEntityManager();
 
@@ -2503,9 +2435,237 @@ void GameApplication::handleQuitNoButton() {
 }
 
 void GameApplication::handleQuitYesButton() {
-	std::cout << "[MainMenu] Quit Yes button pressed - Shutting down application" << std::endl;
 
 	// Request window close to properly shut down the engine
 	engine_.getWindowManager().setShouldClose(true);
 }
 
+
+// ============================================================================
+// SCENE TRANSITION SYSTEM IMPLEMENTATION
+// ============================================================================
+
+void GameApplication::setupSceneTransitions() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Create invisible trigger hitbox for Scene1 -> Scene2 transition
+	// Position: (1023, 656), Size: 75x50, Rotation: 0 degrees
+	ECS::Entity sceneTransitionTrigger = entityManager.create();
+	scene1ToScene2TriggerID_ = sceneTransitionTrigger.id();
+
+	sceneTransitionTrigger.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Scene1ToScene2Trigger"));
+	sceneTransitionTrigger.add<ECSComponents::TransformComponent>(entityManager);
+	sceneTransitionTrigger.add<ECSComponents::CollisionComponent>(entityManager);
+
+	auto& transform = sceneTransitionTrigger.get<ECSComponents::TransformComponent>(entityManager);
+	transform.pos = { 1023.0f, 656.0f };
+	transform.scale = { 1.0f, 1.0f };
+
+	auto& collision = sceneTransitionTrigger.get<ECSComponents::CollisionComponent>(entityManager);
+	collision.type = ECSComponents::ColliderType::RECTANGLE;
+	collision.data.rectangle.width = 75.0f;
+	collision.data.rectangle.height = 50.0f;
+	collision.rotation = 0.0f;
+	collision.isTrigger = true;
+	collision.isActive = false; // Start inactive, will activate only in Scene1
+
+}
+
+void GameApplication::updateSceneTransitions() {
+	auto& entityManager = engine_.getEntityManager();
+	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+	std::string sceneName = currentScene.getSceneName();
+
+	// Only check for transitions in Scene1
+	if (sceneName != "Scene1.txt") {
+		// Deactivate trigger if not in Scene1
+		if (scene1ToScene2TriggerID_ != 0) {
+			ECS::Entity trigger(scene1ToScene2TriggerID_);
+			if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+				auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+				collision.isActive = false;
+			}
+		}
+		return;
+	}
+
+	// Activate trigger in Scene1
+	if (scene1ToScene2TriggerID_ != 0) {
+		ECS::Entity trigger(scene1ToScene2TriggerID_);
+		if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+			auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+			collision.isActive = true;
+		}
+	}
+
+	// Check if player exists
+	if (!playerSpawned_ || playerEntityID_ == 0) {
+		return;
+	}
+
+	// Get player entity
+	ECS::Entity player(playerEntityID_);
+	if (!player.has<ECSComponents::TransformComponent>(entityManager) ||
+		!player.has<ECSComponents::CollisionComponent>(entityManager)) {
+		return;
+	}
+
+	// Get player components
+	auto& playerTransform = player.get<ECSComponents::TransformComponent>(entityManager);
+	auto& playerCollision = player.get<ECSComponents::CollisionComponent>(entityManager);
+
+	// Get trigger entity
+	ECS::Entity trigger(scene1ToScene2TriggerID_);
+	if (!trigger.has<ECSComponents::TransformComponent>(entityManager) ||
+		!trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+		return;
+	}
+
+	auto& triggerTransform = trigger.get<ECSComponents::TransformComponent>(entityManager);
+	auto& triggerCollision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+
+	// Simple AABB collision check (rectangle-to-rectangle)
+	float playerLeft = playerTransform.pos.x - (playerCollision.data.rectangle.width * 0.5f);
+	float playerRight = playerTransform.pos.x + (playerCollision.data.rectangle.width * 0.5f);
+	float playerTop = playerTransform.pos.y - (playerCollision.data.rectangle.height * 0.5f);
+	float playerBottom = playerTransform.pos.y + (playerCollision.data.rectangle.height * 0.5f);
+
+	float triggerLeft = triggerTransform.pos.x - (triggerCollision.data.rectangle.width * 0.5f);
+	float triggerRight = triggerTransform.pos.x + (triggerCollision.data.rectangle.width * 0.5f);
+	float triggerTop = triggerTransform.pos.y - (triggerCollision.data.rectangle.height * 0.5f);
+	float triggerBottom = triggerTransform.pos.y + (triggerCollision.data.rectangle.height * 0.5f);
+
+	// Check for overlap
+	bool colliding = !(playerRight < triggerLeft || playerLeft > triggerRight ||
+	                   playerBottom < triggerTop || playerTop > triggerBottom);
+
+	if (colliding) {
+		engine_.getEnoEditor().selectScene("Scene2.txt");
+		entitiesDirty_ = true;
+
+		// Re-scan for player in new scene
+		std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+		if (!playerEntities.empty()) {
+			playerEntityID_ = playerEntities[0].id();
+			playerSpawned_ = true;
+		} else {
+			playerSpawned_ = false;
+			playerEntityID_ = 0;
+		}
+	}
+}
+
+// ============================================================================
+// PAUSE MENU BUTTON SYSTEM IMPLEMENTATION
+// ============================================================================
+
+void GameApplication::setupPauseMenuButtons() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Resume Button at (716, 965) with size (100x100) rotated 45 degrees
+	ECS::Entity resumeButton = entityManager.create();
+	resumeButtonEntityID_ = resumeButton.id();
+
+	resumeButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("ResumeButton"));
+	resumeButton.add<ECSComponents::TransformComponent>(entityManager);
+	resumeButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	resumeButton.add<ECSComponents::CollisionComponent>(entityManager);
+	resumeButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& resumeTransform = resumeButton.get<ECSComponents::TransformComponent>(entityManager);
+	resumeTransform.pos = { 716.0f, 965.0f };
+	resumeTransform.scale = { 1.0f, 1.0f };
+	resumeTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& resumeDraw = resumeButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	resumeDraw.width = 100.0f;
+	resumeDraw.height = 100.0f;
+	resumeDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(resumeDraw.shape, "Rectangle");
+
+	auto& resumeCollision = resumeButton.get<ECSComponents::CollisionComponent>(entityManager);
+	resumeCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	resumeCollision.data.rectangle.width = 100.0f;
+	resumeCollision.data.rectangle.height = 100.0f;
+	resumeCollision.rotation = 0.785398f; // 45 degrees in radians
+	resumeCollision.isTrigger = true;
+
+	auto& resumeBtn = resumeButton.get<ECSComponents::ButtonComponent>(entityManager);
+	resumeBtn.getActive() = true;
+
+	// Main Menu Button at (557, 1141) with size (56x56) rotated 45 degrees
+	ECS::Entity mainMenuButton = entityManager.create();
+	mainMenuButtonEntityID_ = mainMenuButton.id();
+
+	mainMenuButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("MainMenuButton"));
+	mainMenuButton.add<ECSComponents::TransformComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::CollisionComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& menuTransform = mainMenuButton.get<ECSComponents::TransformComponent>(entityManager);
+	menuTransform.pos = { 557.0f, 1141.0f };
+	menuTransform.scale = { 1.0f, 1.0f };
+	menuTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& menuDraw = mainMenuButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	menuDraw.width = 56.0f;
+	menuDraw.height = 56.0f;
+	menuDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(menuDraw.shape, "Rectangle");
+
+	auto& menuCollision = mainMenuButton.get<ECSComponents::CollisionComponent>(entityManager);
+	menuCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	menuCollision.data.rectangle.width = 56.0f;
+	menuCollision.data.rectangle.height = 56.0f;
+	menuCollision.rotation = 0.785398f; // 45 degrees in radians
+	menuCollision.isTrigger = true;
+
+	auto& menuBtn = mainMenuButton.get<ECSComponents::ButtonComponent>(entityManager);
+	menuBtn.getActive() = true;
+
+}
+
+void GameApplication::handleResumeButton() {
+
+	// Close pause menu and resume game
+	isPaused_ = false;
+	destroyPauseMenu();
+	showPlayer();
+	engine_.setIsPlaying(true);
+	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
+}
+
+void GameApplication::handleMainMenuButton() {
+
+	// IMPORTANT: Destroy pause menu and spellbook BEFORE changing scenes
+	// to prevent them from being saved into the scene file
+	destroyPauseMenu();
+	if (spellbookEntityID_ != 0) {
+		destroySpellbook();
+	}
+	showPlayer();  // Restore player visibility before scene change
+
+	// Clear all entity IDs to prevent crashes when trying to access them after scene change
+	resumeButtonEntityID_ = 0;
+	mainMenuButtonEntityID_ = 0;
+	pauseMenuEntityID_ = 0;
+	spellbookEntityID_ = 0;
+	controlsDisplayEntityID_ = 0;
+	quitConfirmEntityID_ = 0;
+	playerEntityID_ = 0;
+
+	// Reset game state flags
+	isPaused_ = false;
+	showSpellbook_ = false;
+	playerSpawned_ = false;
+	engine_.setIsPlaying(true);
+
+	// Change scene (this will destroy all entities including pause menu and buttons)
+	engine_.getEnoEditor().selectScene("MainMenu.txt");
+	entitiesDirty_ = true;
+
+	// Recreate main menu buttons after scene load (they're not saved in the scene file)
+	setupMainMenuButtons();
+
+}
