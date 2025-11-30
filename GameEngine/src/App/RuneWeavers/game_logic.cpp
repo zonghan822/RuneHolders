@@ -408,6 +408,12 @@ void GameApplication::setupGameEvents() {
 				engine_.setIsPlaying(false);
 			}
 
+			// If spellbook is open, close it before opening pause menu
+			if (showSpellbook_) {
+				destroySpellbook();
+				showSpellbook_ = false;
+			}
+
 			// Hide player if not already hidden
 			hidePlayer();
 
@@ -429,28 +435,7 @@ void GameApplication::setupGameEvents() {
 			}
 		}
 		else {
-			// Regained focus - stay paused until player presses ESC
-
-			// Verify the pause menu entity still exists
-			if (pauseMenuEntityID_ != 0) {
-				auto& entityManager = engine_.getEntityManager();
-				try {
-					ECS::Entity pauseMenuEntity(pauseMenuEntityID_);
-					if (pauseMenuEntity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
-						auto& draw = pauseMenuEntity.get<ECSComponents::DrawInfoComponent>(entityManager);
-						auto& transform = pauseMenuEntity.get<ECSComponents::TransformComponent>(entityManager);
-					}
-					else {
-						//std::cout << "[GameApplication] WARNING: Pause menu entity exists but has NO DrawInfoComponent!" << std::endl;
-					}
-				}
-				catch (...) {
-					//std::cout << "[GameApplication] ERROR: Pause menu entity ID exists but entity was destroyed!" << std::endl;
-				}
-			}
-			else {
-				//std::cout << "[GameApplication] WARNING: No pause menu entity ID (pauseMenuEntityID_ == 0)!" << std::endl;
-			}
+			// Regained focus - stay paused until player presses ESC 
 		}
 	});
 
@@ -459,12 +444,18 @@ void GameApplication::setupGameEvents() {
 		windowMinimized_ = event.iconified;
 
 		if (event.iconified) {
-			
+
 			// Window minimized, pause game
 			// Pause the game if not already paused
 			if (!isPaused_) {
 				isPaused_ = true;
 				engine_.setIsPlaying(false);
+			}
+
+			// If spellbook is open, close it before opening pause menu
+			if (showSpellbook_) {
+				destroySpellbook();
+				showSpellbook_ = false;
 			}
 
 			// Hide player
