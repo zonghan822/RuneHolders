@@ -216,7 +216,7 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Fireball-Explosion-Small");    // Add your fireball hit sound file name here
 
 	// Scene BGM audio
-	audioMng.publishSoundRequest("BGM_01_Layer2_loop");  // Main menu BGM
+	audioMng.publishSoundRequest("BGM_01_Layer1_loop");  // Main menu BGM
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");  // General scene ambience
 
 	// setup input to play sound
@@ -277,7 +277,7 @@ void GameApplication::playSceneBGM()
 	std::string bgmName;
 	if (sceneName == "MainMenu.txt")
 	{
-		bgmName = "BGM_01_Layer2_loop";
+		bgmName = "BGM_01_Layer1_loop";
 	}
 	else
 	{

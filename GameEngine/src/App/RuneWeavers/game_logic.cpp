@@ -228,7 +228,7 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Fireball-Explosion-Small");
 
 	// BGM
-	audioMng.publishSoundRequest("BGM_01_Layer2_loop");
+	audioMng.publishSoundRequest("BGM_01_Layer1_loop");
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");
 
 	// setup input to play sound
@@ -288,7 +288,7 @@ void GameApplication::playSceneBGM()
 	std::string bgmName;
 	if (sceneName == "MainMenu.txt")
 	{
-		bgmName = "BGM_01_Layer2_loop";
+		bgmName = "BGM_01_Layer1_loop";
 	}
 	else
 	{
