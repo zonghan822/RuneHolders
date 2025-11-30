@@ -1230,14 +1230,13 @@ namespace Editor
 	// Helper for updating nested layer through children nodes
 	void EnoSceneTree::updateNestedLayer(Node* node, const uint32_t& diff)
 	{
-
 		if (!node) return;
 
 		node->nestedLayer_ -= diff;
 
 		std::for_each(node->children_.begin(), node->children_.end(), [&](Node* child)
 			{
-				updateNestedLayer(node, diff);
+				updateNestedLayer(child, diff);
 			});
 	}
 

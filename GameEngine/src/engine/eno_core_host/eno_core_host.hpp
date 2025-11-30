@@ -120,6 +120,7 @@ namespace Core
 
 			const wchar_t* className_;
 			uint32_t entityID_;
+			uint8_t op_;
 		};
 
 		// For instanced calling
