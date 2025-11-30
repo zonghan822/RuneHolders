@@ -101,8 +101,7 @@ void createPrefabFromEntity(
  *===========================================================================================*/
 ECS::Entity instantiatePrefabFromSnapshot(
     const std::string& prefabName,
-    ECS::EntityManager& entityManager,
-    Editor::EnoSceneTree& sceneTree
+    ECS::EntityManager& entityManager
 );
 
 /*============================================================================================

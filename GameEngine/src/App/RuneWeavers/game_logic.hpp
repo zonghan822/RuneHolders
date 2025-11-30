@@ -123,7 +123,7 @@ private:
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
     void loadEntityTextures();  // Load textures for entities with texture paths
-    void updateCamera(float deltaTime);  // Update camera position and projection
+    void updateCamera();  // Update camera position and projection
 
     void drawPlayerAndIndicator();
 

@@ -183,7 +183,7 @@ namespace Script
 		std::filesystem::path absPath = std::filesystem::absolute(folder / filename);
 
 		// Create the script if it does not exist
-		if (!scriptExists(name, absPath.string()))
+		if (!scriptExists(absPath.string()))
 			createScript(name);
 
 		// Create and return the unique EnoScript
@@ -235,7 +235,7 @@ namespace Script
 	}
 
 	// Check if a script file exists in the specified location
-	bool EnoScriptManager::scriptExists(const std::string& name, const std::string& loc)
+	bool EnoScriptManager::scriptExists(const std::string& loc)
 	{
 		std::filesystem::path p = std::filesystem::absolute(loc);
 

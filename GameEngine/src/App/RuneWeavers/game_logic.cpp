@@ -548,9 +548,8 @@ void GameApplication::setupAnimations() {
 	std::cout << "Player animation setup complete!" << std::endl;
 }
 
-void GameApplication::updateCamera(float deltaTime) {
+void GameApplication::updateCamera() {
 	auto& entityManager = engine_.getEntityManager();
-	auto& inputMng = engine_.getInputManager();
 
 	// Find the active camera
 	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
@@ -595,7 +594,6 @@ void GameApplication::updateGameLogic() {
 	auto& graphics_ = engine_.getGraphicsManager();
 	auto& inputMng = engine_.getInputManager();
 	auto& tileMap = engine_.getTileMap();
-	auto& loader = engine_.getResourceLoader();
 
 	Math::eVec2<float> worldSize = tileMap.getWorldSize();
 	worldWidth_ = worldSize.x, worldHeight_ = worldSize.y;
@@ -698,7 +696,7 @@ void GameApplication::updateGameLogic() {
 	}
 
 	// Update camera system (replaces the old fixed projection)
-	updateCamera(deltaTime);
+	updateCamera();
 
 	// Animation state (must be outside the pause check so currentFrame is accessible later)
 	static float animationTimer = 0.0f;
@@ -981,10 +979,8 @@ void GameApplication::updateEntities() {
 			Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 
 			if (ctrl)
-				ctrl->update(engine_.getDeltaTime());
+				ctrl->update(static_cast<float>(engine_.getDeltaTime()));
 		}
-
-
 	}
 
 	// Check if player is moving and switch animation accordingly

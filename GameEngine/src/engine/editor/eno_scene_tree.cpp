@@ -331,7 +331,7 @@ namespace Editor
 		}
 	}
 
-	void EnoSceneTree::save(const std::string& name, const std::string& sceneName)
+	void EnoSceneTree::save(const std::string& name)
 	{
 		std::string filename{ name };
 		// Append preferred extension for save file format
@@ -818,17 +818,17 @@ namespace Editor
 
 			// Find matching closing bracket for layers array
 			size_t layersArrayEnd = layersArrayStart;
-			int bracketDepth = 1;
-			size_t searchPos = layersArrayStart + 1;
-			while (bracketDepth > 0 && searchPos < tilemapEnd) {
-				if (data[searchPos] == '[') bracketDepth++;
-				else if (data[searchPos] == ']') bracketDepth--;
+			int outerBrktDepth = 1;
+			size_t outerSrchPos = layersArrayStart + 1;
+			while (outerBrktDepth > 0 && outerSrchPos < tilemapEnd) {
+				if (data[outerSrchPos] == '[') outerBrktDepth++;
+				else if (data[outerSrchPos] == ']') outerBrktDepth--;
 
-				if (bracketDepth == 0) {
-					layersArrayEnd = searchPos;
+				if (outerBrktDepth == 0) {
+					layersArrayEnd = outerSrchPos;
 					break;
 				}
-				searchPos++;
+				outerSrchPos++;
 			}
 
 			if (layersArrayEnd == layersArrayStart) {
@@ -864,17 +864,17 @@ namespace Editor
 
 							// Find matching closing bracket for row array (using depth matching)
 							size_t rowEnd = rowStart;
-							int bracketDepth = 1;
-							size_t searchPos = rowStart + 1;
-							while (bracketDepth > 0 && searchPos < data.length()) {
-								if (data[searchPos] == '[') bracketDepth++;
-								else if (data[searchPos] == ']') bracketDepth--;
+							int innerBrktDepth = 1;
+							size_t innerSrchPos = rowStart + 1;
+							while (innerBrktDepth > 0 && innerSrchPos < data.length()) {
+								if (data[innerSrchPos] == '[') innerBrktDepth++;
+								else if (data[innerSrchPos] == ']') innerBrktDepth--;
 
-								if (bracketDepth == 0) {
-									rowEnd = searchPos;
+								if (innerBrktDepth == 0) {
+									rowEnd = innerSrchPos;
 									break;
 								}
-								searchPos++;
+								innerSrchPos++;
 							}
 							if (rowEnd == rowStart) break;
 
@@ -1230,14 +1230,13 @@ namespace Editor
 	// Helper for updating nested layer through children nodes
 	void EnoSceneTree::updateNestedLayer(Node* node, const uint32_t& diff)
 	{
-
 		if (!node) return;
 
 		node->nestedLayer_ -= diff;
 
 		std::for_each(node->children_.begin(), node->children_.end(), [&](Node* child)
 			{
-				updateNestedLayer(node, diff);
+				updateNestedLayer(child, diff);
 			});
 	}
 
@@ -1249,12 +1248,5 @@ namespace Editor
 				getChildrenID(child, cids);
 				cids.push_back(child->sceneObjectID_);
 			});
-	}
-
-	// ====================== Signals ======================
-
-	void EnoSceneTree::signalComponents(Node* node)
-	{
-
 	}
 }

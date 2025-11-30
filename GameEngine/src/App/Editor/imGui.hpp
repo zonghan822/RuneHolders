@@ -223,7 +223,7 @@ void imGuiEndDockspace();
  * \param[in]   ImVec2 mouse
  * \return      std::optional<ECS::Entity>
 *//*========================================================================================*/
-std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, ImVec2 mouse);
+std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, Math::eVec2<float> mouse);
 
 /*============================================================================================
  * \brief       Moves child entities relative to parent movement (deprecated - use applyParentTransformToChildren)

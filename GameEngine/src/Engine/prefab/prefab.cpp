@@ -293,8 +293,7 @@ void createPrefabFromEntity(
 
 ECS::Entity instantiatePrefabFromSnapshot(
     const std::string& prefabName,
-    ECS::EntityManager& entityManager,
-    Editor::EnoSceneTree& sceneTree)
+    ECS::EntityManager& entityManager)
 {
     std::cout << "[Prefab] Instantiating prefab '" << prefabName << "' from snapshot\n";
 
@@ -473,7 +472,7 @@ int updateAllPrefabInstances(
         std::cout << "[Prefab] Updating entity " << instanceID << "\n";
 
         // Store the current transform position to preserve instance-specific placement
-        Math::eVec2<float> preservedPosition;
+        Math::eVec2<float> preservedPosition{};
         bool hasTransform = instanceEntity.has<ECSComponents::TransformComponent>(entityManager);
         if (hasTransform)
         {
