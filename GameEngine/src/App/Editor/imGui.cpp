@@ -658,7 +658,7 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	auto& entityManager = engine.getEntityManager();
 
 	// Use the new snapshot-based prefab system
-	ECS::Entity e = instantiatePrefabFromSnapshot(name, entityManager, sceneTree);
+	ECS::Entity e = instantiatePrefabFromSnapshot(name, entityManager);
 
 	// Override the position to where the user clicked (treat x,y as CENTER)
 	if (e.has<ECSComponents::TransformComponent>(entityManager))
@@ -816,7 +816,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	ImGui::Separator();
 	if (ImGui::Button("Spawn Prefab")) {
 		if (prefabRegistry.count(selectedPrefabName)) {
-			ECS::Entity e = instantiatePrefabFromSnapshot(selectedPrefabName, entityManager, sceneTree);
+			ECS::Entity e = instantiatePrefabFromSnapshot(selectedPrefabName, entityManager);
 
 			// Add entity to scene hierarchy as root node
 			sceneTree.createFromEntity(e, nullptr);
@@ -1021,7 +1021,13 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		if (!availableScripts.empty()) {
 			std::vector<std::string> scriptNames;
 			for (const auto& ws : availableScripts)
-				scriptNames.push_back(std::string(ws.begin(), ws.end()));
+			{
+				int size_needed = WideCharToMultiByte(CP_UTF8, 0, ws.data(), (int)ws.size(), nullptr, 0, nullptr, nullptr);
+				std::string result(size_needed, 0);
+				WideCharToMultiByte(CP_UTF8, 0, ws.data(), (int)ws.size(), &result[0], size_needed, nullptr, nullptr);
+
+				scriptNames.push_back(result);
+			}
 
 			// Convert vector to array for ImGui Combo
 			std::vector<const char*> scriptItems;
@@ -1527,7 +1533,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	{
 		std::string sceneName = editor_.getCurrentScene().getSceneName();
 		// Save scene
-		editor_.getSceneTree().save(ASSETS_DIR_PATH "saves/scenes/" + sceneName, sceneName);
+		editor_.getSceneTree().save(ASSETS_DIR_PATH "saves/scenes/" + sceneName);
 		// Update last saved scene
 		editor_.updateLastSavedScene();
 	}
@@ -1542,7 +1548,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 }
 
-static void LoadAudioAssets(Engine::EnoEngine& engine_)
+void LoadAudioAssets(Engine::EnoEngine& engine_)
 {
 	audioAssets.clear();
 
@@ -1550,7 +1556,7 @@ static void LoadAudioAssets(Engine::EnoEngine& engine_)
 		engine_.getResourceLoader().getMusicPath().c_str(),
 		engine_.getResourceLoader().getSFXPath().c_str(),
 	};
-
+	
 	for (const auto& folder : folders)
 	{
 		if (!std::filesystem::exists(folder))
@@ -3836,7 +3842,7 @@ void displayGameView() {
 }
 
 // Draw gizmos for selected entity
-void drawGizmos(ImDrawList* drawList, ImVec2 screenPos, ImVec2 entityCenter, float gizmoSize, GizmoMode mode) {
+void drawGizmos(ImDrawList* drawList, ImVec2 entityCenter, float gizmoSize, GizmoMode mode) {
 	const float handleSize = 8.0f;
 	const float rotateRadius = gizmoSize * 0.6f;
 
@@ -4421,7 +4427,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				for (auto& e : allEntities) {
 					if (e.id() == selectedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
-						auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 
 						// Convert entity position to screen coordinates          
 						Math::eVec2<float> entityWorldPos = {tc.pos.x, tc.pos.y}; 
@@ -4439,7 +4444,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 						// Draw gizmo based on current mode
 						float gizmoSize = 50.0f;
-						drawGizmos(drawList, windowPos, entityScreenPos, gizmoSize, currentGizmoMode);
+						drawGizmos(drawList, entityScreenPos, gizmoSize, currentGizmoMode);
 						break;
 					}
 				}

@@ -104,7 +104,7 @@ namespace Physics
                 continue;
 
             // Integrate velocity into position (with collision response)
-            IntegrateVelocity(entityID, entityLoc, transform, physics, collision, entityManager, deltaTime);
+            IntegrateVelocity(entityID, transform, physics, collision, entityManager, deltaTime);
         }
     }
 
@@ -174,7 +174,6 @@ namespace Physics
      *===========================================================================================*/
     void PhysicsSystem::IntegrateVelocity(
         uint32_t entityID,
-        const ECS::EntityLoc& entityLoc,
         ECSComponents::TransformComponent& transform,
         ECSComponents::PhysicsComponent& physics,
         ECSComponents::CollisionComponent& collision,

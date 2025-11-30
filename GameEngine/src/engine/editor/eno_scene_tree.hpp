@@ -16,7 +16,7 @@ namespace Editor
 {
 	struct Listener
 	{
-		uint32_t listenerID_;
+		uint32_t listenerID_		{ 0 };
 		std::string component_;
 		std::string signal_;
 	};
@@ -99,7 +99,7 @@ namespace Editor
 		void detachScript();
 
 		// Serialize/Deserialize scene tree data
-		void save(const std::string&, const std::string& sceneName);
+		void save(const std::string&);
 		void load(const std::string&);
 
 		template<typename T>
@@ -117,9 +117,6 @@ namespace Editor
 		void treeView();
 
 		// ====================== Signals ======================
-
-		// Expose components and their respective signals
-		void signalComponents(Node*);
 
 		// Conect a signal from a node to another
 		template <typename Component>
