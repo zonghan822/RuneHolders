@@ -1410,19 +1410,16 @@ void GameApplication::updateEntities() {
 						getEditorCameraY());
 
 					// Game logic calls the function, the function does the check
-					/*if (b.onClick(mousePos, t, d, c))
+					if (b.onClick(mousePos, t, d, c))
 					{
 
 						std::cout << "CLICK!" << std::endl;
 						b.executeSignal(ECSComponents::signalType::onClick, engine_);
-					}*/
-					b.onClick(mousePos, t, d, c);
+					}
+					//b.onClick(mousePos, t, d, c);
 					
 				}
 			}
-
-
-
 			break;
 
 		}
@@ -1559,12 +1556,17 @@ void GameApplication::drawShapes() {
 	for (ECS::Entity& entity : cachedDrawableEntities_) {
 		// Skip if entity was destroyed
 		try {
+			
 			if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
 				// Skip rendering for player entities (they're drawn separately with sprite/animation)
 				if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
 					continue;
 				}
-
+				if (entity.has<ECSComponents::VisibilityComponent>(entityManager))
+				{
+					if (!entity.get<ECSComponents::VisibilityComponent>(entityManager).visible)
+						continue;
+				}
 				// Get position from TransformComponent (spatial data)
 				// Get rendering info from DrawInfoComponent (size, color, etc.)
 				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
@@ -1669,7 +1671,8 @@ void GameApplication::drawShapes() {
 				//	auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
 				//	graphics.drawText(timesFont_, b.getName(), transform.pos, 0.5f, Color::Red);
 				//}
-
+				// Check if entity has visibility component
+				
 			}
 		}
 		catch (...) {

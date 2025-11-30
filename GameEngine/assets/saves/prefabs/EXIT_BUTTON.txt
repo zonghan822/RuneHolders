@@ -26,9 +26,17 @@
 			"value": "NIL",
 			"type": "char32"
 		},
+		"TargetObject": {
+			"value": "",
+			"type": "char64"
+		},
 		"IsActive": {
 			"value": "0",
 			"type": "bool"
+		},
+		"SavedFunctionType": {
+			"value": "1",
+			"type": "int"
 		}
 	},
 	"struct ECSComponents::RenderComponent": {

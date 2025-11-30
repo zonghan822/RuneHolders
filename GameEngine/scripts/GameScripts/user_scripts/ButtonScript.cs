@@ -32,6 +32,11 @@ namespace Eno
         {
 
         }
+	
+		public void _when_node60_onclick()
+        {
+
+        }
 	}
 
 }

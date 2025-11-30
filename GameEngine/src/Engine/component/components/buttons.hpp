@@ -9,9 +9,11 @@
 #include "visibility.hpp"
 #include "collision_component.hpp"
 #include "../../math/math.hpp"
+
+
 #include <string>
 #include <unordered_map>
-//#include "../../event/signals.hpp"
+
 
 // Forward declaration
 namespace Engine
@@ -33,7 +35,8 @@ namespace ECSComponents {
 	// Function type
 	enum functionType
 	{
-		loadScene = 1
+		loadScene = 1,
+		toggleVisibility
 	};
 
 	// Base class template for in game buttons
@@ -60,6 +63,11 @@ namespace ECSComponents {
 			return std::string(targetScene);
 		}
 
+		std::string getTargetObject() const
+		{
+			return std::string(targetObject);
+		}
+
 		void setTargetScene(const std::string& sceneName)
 		{
 			size_t copy_length = std::min(sceneName.length(), (size_t)32 - 1);
@@ -67,11 +75,18 @@ namespace ECSComponents {
 			targetScene[copy_length] = '\0';
 		}
 
+		void setTargetObject(const std::string& objName)
+		{
+			size_t copy_length = std::min(objName.length(), (size_t)63);
+			std::strncpy(targetObject, objName.c_str(), copy_length);
+			targetObject[copy_length] = '\0';
+		}
+
 		// Onclick function
-		void onClick(Math::eVec2<float> mousePos, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d, const ECSComponents::CollisionComponent& c)
+		bool onClick(Math::eVec2<float> mousePos, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d, const ECSComponents::CollisionComponent& c)
 		{
 			// Check if button is interactable
-			if (!isActive) return;
+			if (!isActive) return false;
 
 			//std::cout << "mouse pos :" << mousePos << std::endl;
 
@@ -93,17 +108,18 @@ namespace ECSComponents {
 				if (rotMousePos.x >= -halfW && rotMousePos.x <= halfW &&
 					rotMousePos.y >= -halfH && rotMousePos.y <= halfH)
 				{
-					//return true; // Point is inside
+					// Point is inside
 					// The button is clicked, emit a singal
-					//auto signalIt = signalsMap.find("onClick");
-					//if (signalIt != signalsMap.end())
-					//{
-					//	signalIt->second.emit();
-					//}
+					auto signalIt = signals_.find("onClick");
+					if (signalIt != signals_.end())
+					{
+						signalIt->second.emit();
+					}
+					return true;
 				}
 				else
 				{
-					return;
+					return false;
 				}
 			}
 			else
@@ -115,20 +131,21 @@ namespace ECSComponents {
 					mousePos.y <= (t.pos.y + (d.height * 0.5f)))	// Lower limit
 				{
 					// The button is clicked, emit a singal
-					//auto signalIt = signalsMap.find("onClick");
-					//if (signalIt != signalsMap.end())
-					//{
-					//	signalIt->second.emit();
-					//}
-					//return true;
+					auto signalIt = signals_.find("onClick");
+					if (signalIt != signals_.end())
+					{
+						signalIt->second.emit();
+					}
+					return true;
 
 				}
 				else
 				{
-					return;
+					return false;
 				}
 
 			}
+			return false;
 			
 		}
 
@@ -154,6 +171,16 @@ namespace ECSComponents {
 		{
 			// Add a default signal with onClick type and loadScene function
 			signals.emplace_back(signalType::onClick, functionType::loadScene);
+		}
+
+		int getSavedFunctionType() const
+		{
+			return savedFunctionType;
+		}
+
+		void setSavedFunctionType(int type)
+		{
+			savedFunctionType = type;
 		}
 
 		// Delete signal
@@ -186,7 +213,9 @@ namespace ECSComponents {
 		{
 			l("BtnText", btnText, "char32");
 			l("TargetScene", targetScene, "char32");
+			l("TargetObject", targetObject, "char64");
 			l("IsActive", isActive, "bool");
+			l("SavedFunctionType", savedFunctionType, "int");
 		}
 
 		template <typename Visitor>
@@ -194,7 +223,9 @@ namespace ECSComponents {
 		{
 			l("BtnText", btnText, "char32");
 			l("TargetScene", targetScene, "char32");
+			l("TargetObject", targetObject, "char64");
 			l("IsActive", isActive, "bool");
+			l("SavedFunctionType", savedFunctionType, "int");
 		}
 
 		void rotateRectCorners(
@@ -239,10 +270,13 @@ namespace ECSComponents {
 
 		// Signal types (To be deleted after bridging)
 		std::vector<std::pair<signalType, functionType>> signals;
-	
+		int savedFunctionType = static_cast<int>(functionType::loadScene);
+
 		// Parameter for scene selection (To be deleted after bridging)
 		char targetScene[32] = "NIL";
-		
+		// Parameter for linking to selected object
+		char targetObject[64] = "";
+
 		// If interactable
 		bool isActive = false;
 	};

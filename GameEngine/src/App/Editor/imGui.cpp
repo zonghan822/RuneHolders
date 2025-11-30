@@ -1779,6 +1779,22 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::Checkbox("Entity Visibility", &vi.visible);
 
 	}
+	else
+	{
+		// Allow adding button component
+		ImGui::SeparatorText("Visibility Component");
+		ImGui::TextDisabled("No visibility component attached");
+
+		if (ImGui::Button("Add visibility Component"))
+		{
+			ECSComponents::VisibilityComponent vi;
+
+			entity.add<ECSComponents::VisibilityComponent>(entMng, vi);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+	}
+
 	// Check if this is a player entity
 	bool isPlayer = entity.has<ECSComponents::PlayerComponent>(entMng);
 
@@ -2478,7 +2494,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 					continue;
 
 				ECSComponents::signalType sigType;
-				ECSComponents::functionType funcType = ECSComponents::functionType::loadScene;
+				ECSComponents::functionType funcType = static_cast<ECSComponents::functionType>(button.getSavedFunctionType());
 
 				// Identify signal type
 				if (signalType == "onClick")
@@ -2545,7 +2561,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 			// Function type dropdown
 			// List of function types for combo (for now just 1)
-			const char* functionTypes[] = { "Select..", "Load Scene" };
+			const char* functionTypes[] = { "Select..", "Load Scene" , "Show/Hide Obj"};
 			int currentFunctionType = static_cast<int>(signals[i].second);
 
 			ImGui::SetNextItemWidth(120);
@@ -2553,21 +2569,30 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			{
 				// Update button function type
 				signals[i].second = static_cast<ECSComponents::functionType>(currentFunctionType);
+				button.setSavedFunctionType(currentFunctionType);
 				//std::cout << "[Imgui] function type:" << signals[i].second << std::endl;
 			}
 
 			// Input parameter drop down depending on function type
 			ImGui::SetNextItemWidth(100);
+			int selectedIndex = 0;
+			auto& sceneList = engine_.getEnoEditor().getScenes();
+
+			// Placeholder for string data
+			std::vector<std::string> sceneStrings;
+			// Convert to const char* array
+			std::vector<const char*> sceneNames;
+
 			switch (signals[i].second)
 			{
 			case ECSComponents::functionType::loadScene:
 				// Get list of available scenes
-				auto& sceneList = engine_.getEnoEditor().getScenes();
+				//auto& sceneList = engine_.getEnoEditor().getScenes();
 
-				// Placeholder for string data
-				std::vector<std::string> sceneStrings;
-				// Convert to const char* array
-				std::vector<const char*> sceneNames;
+				//// Placeholder for string data
+				//std::vector<std::string> sceneStrings;
+				//// Convert to const char* array
+				//std::vector<const char*> sceneNames;
 				sceneNames.push_back("Select..");
 				for (const auto& scene : sceneList) {
 					//std::cout << "[Imgui] scene name:" << scene->getSceneName() << std::endl;
@@ -2581,7 +2606,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				}
 
 				// Find current selection
-				int selectedIndex = 0;
+				//int selectedIndex = 0;
 				for (size_t idx = 0; idx < sceneNames.size(); idx++) {
 					if (sceneNames[idx] == button.getTargetScene()) {
 						selectedIndex = static_cast<int>(idx);
@@ -2591,19 +2616,79 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 				ImGui::SetNextItemWidth(200);
 				if (ImGui::Combo("##SceneParam", &selectedIndex, sceneNames.data(), static_cast<int>(sceneNames.size()))) {
-					button.setTargetScene(sceneNames[selectedIndex]);
-					// Connect to itself for now
-					switch (signals[i].first)
+					if (selectedIndex != 0)
 					{
-					case ECSComponents::signalType::onClick:
-						selectedSignalType = "onClick";
+						button.setTargetScene(sceneNames[selectedIndex]);
+						// Connect to itself for now
+						switch (signals[i].first)
+						{
+						case ECSComponents::signalType::onClick:
+							selectedSignalType = "onClick";
+						}
+						//std::cout << "Selected signal type" << selectedSignalType;
+						sceneTree.connect<ECSComponents::ButtonComponent>(sceneTree.getNodeByEntityID(entity.id()), sceneTree.getNodeByEntityID(entity.id()), selectedSignalType);
 					}
-					std::cout << "Selected signal type" << selectedSignalType;
-					sceneTree.connect<ECSComponents::ButtonComponent>(sceneTree.getNodeByEntityID(entity.id()), sceneTree.getNodeByEntityID(entity.id()), selectedSignalType);
 				}
 
 				//std::cout << "[Imgui] Scene list size:" << sceneList.size() << std::endl;
 				break;
+			case ECSComponents::functionType::toggleVisibility:
+				// Get list of nodes in scene
+				auto allNodes = sceneTree.getAllNodes();
+
+				// Prepare vectors for ImGui combo
+				std::vector<std::string> nodeStrings;
+				std::vector<const char*> nodeNames;
+				nodeNames.push_back("Select..");
+
+				for (auto* node : allNodes) {
+					std::string displayName;
+
+					// Check if the entity has a NameComponent
+					if (node->entity_.has<ECSComponents::NameComponent>(entMng)) {
+						auto& nameComp = node->entity_.get<ECSComponents::NameComponent>(entMng);
+						displayName = std::string(nameComp.name);
+					}
+					else {
+						// Display "node: " + node ID if no name component
+						displayName = "node: " + std::to_string(node->sceneObjectID_);
+					}
+
+					nodeStrings.push_back(displayName);
+				}
+
+				// Populate the char vector for imgui usage
+				for (const auto& str : nodeStrings) {
+					nodeNames.push_back(str.c_str());
+				}
+
+				// Find current selection
+				//int selectedIndex = 0;
+				std::string currentTarget = button.getTargetObject();
+				for (size_t idx = 0; idx < nodeNames.size(); idx++) {
+					if (nodeNames[idx] == currentTarget) {
+						selectedIndex = static_cast<int>(idx);
+						break;
+					}
+				}
+
+				ImGui::SetNextItemWidth(200);
+				if (ImGui::Combo("##ObjectParam", &selectedIndex, nodeNames.data(), static_cast<int>(nodeNames.size()))) {
+					// Store the selected node name in targetObject (char[64] in ButtonComponent)
+					if (selectedIndex != 0) 
+					{
+						button.setTargetObject(nodeNames[selectedIndex]);
+						// Connect to other node for now
+						switch (signals[i].first)
+						{
+						case ECSComponents::signalType::onClick:
+							selectedSignalType = "onClick";
+						}
+						//std::cout << "Selected signal type" << selectedSignalType;
+						sceneTree.connect<ECSComponents::ButtonComponent>(sceneTree.getNodeByEntityID(entity.id()), allNodes[selectedIndex], selectedSignalType);
+					}
+				}
+
 			}
 
 			// End group
@@ -2626,14 +2711,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		{
 			// Add new empty signal
 			button.addSignal();
-			// When adding a new signal, attach a script to it
-			Script::EnoScriptManager& scriptMng = engine_.getEnoEditor().getScriptManager();
-			auto script = scriptMng.loadScript(scriptMng.StringToWString("ButtonScript"));
-			std::cout << "[imgui] script path: " << script->path() << std::endl;
-			if (script)
-			{
-				sceneTree.attachScript(sceneTree.getNodeByEntityID(entity.id()), std::move(script));
-			}
+			
 		}
 
 	}
@@ -2654,6 +2732,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				// Make it non-collidable
 				collider.isTrigger = true;
 				entity.add<ECSComponents::CollisionComponent>(entMng, collider);
+			}
+
+			// When adding a new button, attach a script to it
+			Script::EnoScriptManager& scriptMng = engine_.getEnoEditor().getScriptManager();
+			auto script = scriptMng.loadScript(scriptMng.StringToWString("ButtonScript"));
+			std::cout << "[imgui] script path: " << script->path() << std::endl;
+			if (script)
+			{
+				sceneTree.attachScript(sceneTree.getNodeByEntityID(entity.id()), std::move(script));
 			}
 
 			entity.add<ECSComponents::ButtonComponent>(entMng, button);
