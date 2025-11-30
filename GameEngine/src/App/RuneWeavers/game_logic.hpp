@@ -145,4 +145,18 @@ private:
     void destroyPauseMenu();                        // Destroy pause menu UI entity
     void hidePlayer();                              // Hide player by setting scale to 0
     void showPlayer();                              // Show player by restoring scale
+
+    // Main Menu Button System
+    void setupMainMenuButtons();                    // Setup invisible buttons for main menu
+    void updateMainMenuButtons();                   // Update button interactions
+    void handlePlayButton();                        // Handle play button click
+    void handleControlsButton();                    // Handle controls button click
+    void handleQuitButton();                        // Handle quit button click
+    void handleControlsCloseButton();               // Handle controls close button click
+    void handleQuitNoButton();                      // Handle quit no button click
+    void handleQuitYesButton();                     // Handle quit yes button click
+
+    // UI entities for controls and quit confirm menus
+    uint32_t controlsDisplayEntityID_ = 0;
+    uint32_t quitConfirmEntityID_ = 0;
 };
