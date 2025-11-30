@@ -1,3 +1,9 @@
+/*============================================================================================
+* @file         buttons.hpp
+* @author       Caven Koh (caven.koh@digipen.edu)
+* @date         27/11/2025
+* @brief        This file contains the definition of the button component class for in game buttons
+*//*========================================================================================*/
 #pragma once
 
 // Signals
@@ -9,16 +15,17 @@
 #include "visibility.hpp"
 #include "collision_component.hpp"
 #include "../../math/math.hpp"
+#include "../../event/signals.hpp"
+
+// Standard library
 #include <string>
 #include <unordered_map>
-#include "../../event/signals.hpp"
 
 // Forward declaration
 namespace Engine
 {
 	class EnoEngine;
 }
-
 
 namespace ECSComponents {
 
@@ -30,7 +37,7 @@ namespace ECSComponents {
 		onPress
 	};
 
-	// Function type
+	// Types of function that the signal can call
 	enum functionType
 	{
 		loadScene = 1
@@ -49,25 +56,127 @@ namespace ECSComponents {
 			signalsMap["onPressed"] = Events::EnoSignal();
 		}
 
-		// Get name
+		// Signals map
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
+
+		/*============================================================================================
+		* \brief		Get the text of the button
+		* \return		std::string
+		*//*========================================================================================*/
 		std::string getName() const
 		{
 			return std::string(btnText);
 		}
 
+		/*============================================================================================
+		* \brief		Get the name of the scene the button loads
+		* \return		std::string
+		*//*========================================================================================*/
 		std::string getTargetScene() const
 		{
 			return std::string(targetScene);
 		}
 
+		/*============================================================================================
+		* \brief		Sets the name of the scene the button will load
+		* \param[in]	const std::string& sceneName
+		*//*========================================================================================*/
 		void setTargetScene(const std::string& sceneName)
 		{
+			// Reset size of c string
 			size_t copy_length = std::min(sceneName.length(), (size_t)32 - 1);
 			std::strncpy(targetScene, sceneName.c_str(), copy_length);
+			// Add null character
 			targetScene[copy_length] = '\0';
 		}
 
-		// Onclick function
+		/*============================================================================================
+		* \brief		Executes the type of signal that the button contains
+		* \param[in]	signalType signalType, EnoEngine& eng
+		*//*========================================================================================*/
+		void executeSignal(signalType signalType, Engine::EnoEngine& eng);
+
+		/*============================================================================================
+		* \brief		Executes the type of function that the signal contains
+		* \param[in]	functionType funcType, Engine::EnoEngine& eng
+		*//*========================================================================================*/
+		void executeFunction(functionType funcType, Engine::EnoEngine& eng);
+
+		/*============================================================================================
+		* \brief		Returns the number of signal already present in this button
+		* \return		size_t number of signals
+		*//*========================================================================================*/
+		size_t signalsSize() const
+		{
+			return signals.size();
+		}
+
+		/*============================================================================================
+		* \brief		Returns the bool data member whether the button is active
+		* \return		bool reference to if button isActive
+		*//*========================================================================================*/
+		bool& getActive()
+		{
+			return isActive;
+		}
+
+		/*============================================================================================
+		* \brief		Adds a new signal to the back of the signal container
+		* \return		bool reference to if button isActive
+		*//*========================================================================================*/
+		void addSignal()
+		{
+			signals.emplace_back();
+		}
+
+		/*============================================================================================
+		* \brief		Deletes the selected signal from the container using pop_and_swap
+		* \param[in]	size_t index of the signal in container to delete
+		*//*========================================================================================*/
+		void deleteSignal(size_t index)
+		{	
+			//Replace the element to be deleted (at 'index') 
+			//with the element currently at the back.
+			if (index < signals.size()) {
+				
+				//Only do this if the index isn't already the last element.
+				if (index != signals.size() - 1) {
+					signals[index] = std::move(signals.back());
+				}
+				signals.pop_back();
+			}
+		}
+
+		/*============================================================================================
+		* \brief		Returns the signals container
+		* \return		std::vector<std::pair<signalType, functionType>>& to the signal vector
+		*//*========================================================================================*/
+		std::vector<std::pair<signalType, functionType>>& getSignals()
+		{
+			return signals;
+		}
+
+		template <typename Visitor>
+		void reflect(Visitor&& l)
+		{
+			l("BtnText", btnText, "char32");
+			l("TargetScene", targetScene, "char32");
+			l("IsActive", isActive, "bool");
+		}
+
+		template <typename Visitor>
+		void reflect(Visitor&& l) const
+		{
+			l("BtnText", btnText, "char32");
+			l("TargetScene", targetScene, "char32");
+			l("IsActive", isActive, "bool");
+		}
+
+		/*============================================================================================
+		* \brief		Checks if the mouse pos is within the current button clickable area
+		* \param[in]	const Math::eVec2<float>& mousePos, const TransformComponent& t, const DrawInfoComponent& d, const CollisionComponent& c
+		* \return		bool true if clicked in button area, false if outside button area
+		*//*========================================================================================*/
 		bool onClick(Math::eVec2<float> mousePos, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d, const ECSComponents::CollisionComponent& c)
 		{
 			// Check if button is interactable
@@ -119,68 +228,17 @@ namespace ECSComponents {
 				}
 
 			}
-			
+
 		}
 
-		void executeSignal(signalType signalType, Engine::EnoEngine& eng);
-		void executeFunction(functionType funcType, Engine::EnoEngine& eng);
-
-		// Getters
-		size_t signalsSize() const
-		{
-			return signals.size();
-		}
-
-		bool& getActive()
-		{
-			return isActive;
-		}
-
-		// Add signal
-		void addSignal()
-		{
-			signals.emplace_back();
-		}
-
-		// Delete signal
-		void deleteSignal(size_t index)
-		{
-			if (index < signals.size()) {
-				//Replace the element to be deleted (at 'index') 
-				//with the element currently at the back.
-				//Only do this if the index isn't already the last element.
-				if (index != signals.size() - 1) {
-					signals[index] = std::move(signals.back());
-				}
-				signals.pop_back();
-			}
-		}
-
-		// Signals
-		std::unordered_map<std::string, Events::EnoSignal> signals_;
-
-		// Get Signal container
-		std::vector<std::pair<signalType, functionType>>& getSignals()
-		{
-			return signals;
-		}
-
-		template <typename Visitor>
-		void reflect(Visitor&& l)
-		{
-			l("BtnText", btnText, "char32");
-			l("TargetScene", targetScene, "char32");
-			l("IsActive", isActive, "bool");
-		}
-
-		template <typename Visitor>
-		void reflect(Visitor&& l) const
-		{
-			l("BtnText", btnText, "char32");
-			l("TargetScene", targetScene, "char32");
-			l("IsActive", isActive, "bool");
-		}
-
+		/*============================================================================================
+		* \brief		Helper function to help calculate mouse pos inside of a rotated rect
+		* \param[in]	const Math::eVec2<float>& center,
+						float width,
+						float height,
+						float rotation,
+						Math::eVec2<float> corners[4]
+		*//*========================================================================================*/
 		void rotateRectCorners(
 			const Math::eVec2<float>& center,
 			float width,

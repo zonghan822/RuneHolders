@@ -209,12 +209,6 @@ void GameApplication::setupGameAudio() {
 	sound.reverb->sfx = reverb;
 	audioMng.modifyChannelGroup("BGM", sound);
 
-	audioMng.publishSoundRequest("Close_To_The_End");
-	audioMng.publishSoundRequest("Across_The_Horizon");
-	audioMng.publishSoundRequest("Flask");
-	audioMng.publishSoundRequest("Stone_Impact");
-	audioMng.publishSoundRequest("Water_Drip");
-
 	// Rune hover audio
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
@@ -234,26 +228,6 @@ void GameApplication::setupGameAudio() {
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
 
-	// Music Tracks
-	// O to play/stop a music track, P && L for switching soundtracks when music is not playing
-	// Only 1 music track may be placed at a time
-	inputMng.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
-	inputMng.setupKey("Set New Music 1", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
-	inputMng.setupKey("Set New Music 2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
-
-	inputMng.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
-	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 1", "Close_To_The_End");
-	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 2", "Across_The_Horizon");
-
-	// Sound Effects
-	// Intended to be played regardless of any background music playing at the time
-	inputMng.setupKey("Play SFX1", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, 0);
-	inputMng.setupKey("Play SFX2", GLFW_KEY_X, glfwGetKeyScancode(GLFW_KEY_X), GLFW_RELEASE, 0);
-	inputMng.setupKey("Play SFX3", GLFW_KEY_C, glfwGetKeyScancode(GLFW_KEY_C), GLFW_RELEASE, 0);
-
-	inputMng.setupEvent<Audio::PlayInstant>("Play SFX1", "SFX", "Flask");
-	inputMng.setupEvent<Audio::PlayInstant>("Play SFX2", "SFX", "Stone_Impact");
-	inputMng.setupEvent<Audio::PlayInstant>("Play SFX3", "SFX", "Water_Drip");
 
 	// Undo/Redo System
 	// Ctrl+Z for undo

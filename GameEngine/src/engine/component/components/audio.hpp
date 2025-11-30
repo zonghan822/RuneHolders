@@ -1,3 +1,10 @@
+/*============================================================================================
+* @file         audio.hpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @date         30-11-2025
+* @brief        Audio component for serialising and functionality
+*//*========================================================================================*/
+
 #pragma once
 
 

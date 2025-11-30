@@ -1,3 +1,10 @@
+/*============================================================================================
+* @file         eno_core_host.hpp
+* @author       Zhe An Lee (zhean.l@digipen.edu)
+* @date         30-11-2025
+* @brief        Scripting set up and update
+*//*========================================================================================*/
+
 #pragma once
 
 // Engine Component(s)

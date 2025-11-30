@@ -206,14 +206,37 @@ void LoadAudioAssets(Engine::EnoEngine& engine_);
 void displayAudioTab(Engine::EnoEngine& engine_);
 
 
-// docking shi
+/*============================================================================================
+ * \brief       Display game view inside of imgui
+ * \return      void
+*//*========================================================================================*/
 void displayGameView();
+
+/*============================================================================================
+ * \brief       Displays editor view
+ * \param[in]   Engine::EnoEngine& engine_
+ * \param[in]   Editor::EnoSceneTree& sceneTree
+ * \param[in]   Editor::UndoManager& undoManager
+*//*========================================================================================*/
 void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager);
 
+
+/*============================================================================================
+ * \brief       Sets up layout for the imGui
+ * \return      void
+*//*========================================================================================*/
 void imGuiSetupDefaultLayout();
 
+/*============================================================================================
+ * \brief       Begin docking for imgui
+*//*========================================================================================*/
 void imGuiBeginDockspace();
 
+
+/*============================================================================================
+ * \brief       Terminates up layout for the imGui
+ * \return      void
+*//*========================================================================================*/
 void imGuiEndDockspace();
 
 

@@ -1,3 +1,10 @@
+/*============================================================================================
+* @file         ai_manager.hpp
+* @author       Zong Han (zonghan.law@digipen.edu)
+* @date         30-11-2025
+* @brief        Sets up behavior for AI
+*//*========================================================================================*/
+
 #pragma once
 #include <vector>
 #include <string>

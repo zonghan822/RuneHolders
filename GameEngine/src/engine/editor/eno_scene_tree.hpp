@@ -1,3 +1,10 @@
+/*============================================================================================
+* @file         eno_scene_tree.hpp
+* @author       Zhe An (zhean.l@digipen.edu)
+* @date         30-11-2025
+* @brief        Scene tree to keep track of nodes and heirarchiel entity relationships
+*//*========================================================================================*/
+
 #pragma once
 
 // Engine Component(s)
