@@ -373,7 +373,7 @@ void GameApplication::playSceneBGM()
 	audioComp.audioMod_.chGroup_[sizeof(audioComp.audioMod_.chGroup_) - 1] = '\0';  // Ensure null termination
 
 	audioComp.audioMod_.loop_ = Audio::EnoAudioModule::LoopMode::Forward;  // Loop the BGM
-	audioComp.volume_ = 30.0;  // Set volume to 30%
+	audioComp.volume_ = 100.0;  // Set volume to 100%
 	audioComp.isAutoplay_ = true;
 	audioComp.isPlaying_ = false;  // Reset playing state
 
