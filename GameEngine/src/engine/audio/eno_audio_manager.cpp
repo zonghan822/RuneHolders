@@ -157,6 +157,14 @@ namespace Audio
 			return; // Audio already playing, nothing to do
 		}
 
+		// Auto-prepare if sound pointer is null but name is set
+		// This handles cases where audio was deserialized from a save file
+		if (audioComp.audioMod_.sound_ == nullptr && audioComp.audioMod_.name_[0] != '\0')
+		{
+			std::cout << "[Audio] Auto-preparing audio module for: " << audioComp.audioMod_.name_ << std::endl;
+			prepareMod(audioComp);
+		}
+
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
 		FMOD::ChannelGroup* chGroup{ nullptr };
