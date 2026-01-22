@@ -2966,6 +2966,9 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	static std::string attackSelected = "";
 	static std::string activeSlot = ""; // identifies which box you're assigning assets to
 	auto& entMng = engine_.getEntityManager();
+	auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;
+
+
 
 	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -2976,6 +2979,17 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ImGui::End();
 		return;
 	}
+
+	if (entityScript) {
+		//for (const auto& var : entityScript->vars()) {
+		for (const auto& [state, value] : entityScript->vars()) { //Yun Qi: by assuming that everything is a state, i will be able to start work on assigning my animations.
+			
+			
+
+		}
+	}
+
+
 
 	//================================= IDLE ANIMATION ===================================
 	ImGui::Text("IDLE");

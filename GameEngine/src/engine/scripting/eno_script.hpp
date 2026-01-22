@@ -57,7 +57,7 @@ namespace Script
 		Core::EnoCoreHost& coreHost_;
 
 		std::wstring path_;
-		std::unordered_multimap<std::wstring, Field> vars_;		// namespace.class | (varname, value)
+		std::unordered_multimap<std::wstring, Field> vars_;		// namespace.class | (varname, value)  //Yunqi's Note: Store [port]-ed vars here.
 		std::unordered_set<std::wstring> origin_;				// unique namespace.class entries
 
 		// Lambdas for convert raw wchar_t* to native types

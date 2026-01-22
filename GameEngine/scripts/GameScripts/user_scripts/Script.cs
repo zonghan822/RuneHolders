@@ -5,14 +5,21 @@ namespace Eno
 {
     public class PlayerController : ScriptBase
     {
-        [Reveal("The player's display name")]
+        [Port("The player's display name")]
         public string playerName = "Player1";
 
-        [Reveal(0, 200)]
+        [Port(0, 200)]
         public int health = 120;
 
-        [Reveal(50, 300)]
+        [Port(50, 300)]
         public int mana = 70;
+
+        public enum States : int {
+            Walking, Idle, Attacking
+        };
+
+        [Port()]
+        public States state = States.Walking;
 
         public float speed = 5.10f;
 
@@ -95,7 +102,7 @@ namespace Eno
 
     public class ArmController : ScriptBase
     {
-        [Reveal(90, 210)]
+        [Port(90, 210)]
         public double velocity = 100.5;
     }
 }

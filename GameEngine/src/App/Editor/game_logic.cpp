@@ -1819,7 +1819,7 @@ void GameApplication::updateRuneSystem()
 				auto& rightTransform = rightRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
 				auto& rightRune = rightRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
 
-				float distToRightRune = Math::eVec2Distance(mouseWorldPos, rightTransform.pos);
+				float distToRightRune = Math::eVec2Distance(mouseWorldPos, rightTransform.pos); //Rework: this is probably the disconnect for the runes as its looking at worldpos instead of screen pos
 
 				if (distToRightRune <= rightRune.radius) {
 					// Connection successful! Spawn fireball
@@ -1828,7 +1828,7 @@ void GameApplication::updateRuneSystem()
 						(runeState.lineStart.y + rightTransform.pos.y) / 2.0f
 					};
 					spawnFireball(fireballPos);
-					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" }); //Rework: hardcoded audio: transfer to event bus system(?)
 					// Mark runes as connected
 					ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
 					if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
@@ -1868,6 +1868,7 @@ void GameApplication::updateRuneSystem()
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 	std::vector<uint32_t> fireballsToDestroy;
 
+	//Rework: Entity loop might need rework. Also destroying fireball is in update_runesystem.
 	for (const auto& [id, loc] : entityManager.getMap()) {
 		ECS::Entity entity(id);
 		if (entity.has<ECSComponents::FireballComponent>(entityManager)) {
