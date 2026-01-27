@@ -53,6 +53,9 @@ namespace Script
 		void writeMethod(std::string&, const std::string&);
 		std::string classToNest(const std::string&);
 
+		//Yun Qi's dummy set of states. Will use to populate and serialise for the IMGUI later on
+		//std::unordered_map<std::string, std::string> dummystates; //first holds state, second holds texture?
+
 	private:
 		Core::EnoCoreHost& coreHost_;
 

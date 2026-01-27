@@ -2979,7 +2979,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ImGui::End();
 		return;
 	}
-
+#if 0
+	//this will be activated later on when I can read states from a script. First I will try to access and amend anims to a state with a vector
 	if (entityScript) {
 		//for (const auto& var : entityScript->vars()) {
 		for (const auto& [state, value] : entityScript->vars()) { //Yun Qi: by assuming that everything is a state, i will be able to start work on assigning my animations.
@@ -2988,7 +2989,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 		}
 	}
-
+#endif
 
 
 	//================================= IDLE ANIMATION ===================================
