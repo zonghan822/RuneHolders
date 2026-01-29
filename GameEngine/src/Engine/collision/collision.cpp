@@ -1130,6 +1130,74 @@ namespace Collision {
 			);
 	}
 
+	void CollisionSystem::GetColliderBounds(
+		const CollisionComponent& collision,
+		const ECSComponents::TransformComponent& transform,
+		float& halfWidth,
+		float& halfHeight
+	)
+	{
+		// Calculate bounding box based on collider type
+		switch (collision.type)
+		{
+			case ColliderType::CIRCLE:
+			{
+				// Circle: bounding box is a square with side = 2 * radius
+				float scaledRadius = collision.data.circle.radius * transform.scale.x;
+				halfWidth = scaledRadius;
+				halfHeight = scaledRadius;
+				break;
+			}
+			case ColliderType::RECTANGLE:
+			{
+				// Rectangle: use scaled dimensions
+				// For rotated rectangles, we use the AABB that contains the rotated rect
+				float scaledWidth = collision.data.rectangle.width * transform.scale.x;
+				float scaledHeight = collision.data.rectangle.height * transform.scale.y;
+
+				// If rectangle is rotated, compute the AABB of the rotated rectangle 
+				if (std::abs(transform.rot.x) > 0.001f)
+				{
+					float cosAngle = std::abs(std::cos(transform.rot.x));
+					float sinAngle = std::abs(std::sin(transform.rot.x));
+
+					// AABB dimensions of a rotated rectangle
+					halfWidth = (scaledWidth * cosAngle + scaledHeight * sinAngle) * 0.5f;
+					halfHeight = (scaledWidth * sinAngle + scaledHeight * cosAngle) * 0.5f;
+				}
+				else
+				{
+					halfWidth = scaledWidth * 0.5f;
+					halfHeight = scaledHeight * 0.5f;
+				}
+				break;
+			}
+			case ColliderType::LINE:
+			{
+				// Line: Bounding box encompasses both endpoints
+				float minX = std::min(collision.data.line.p1.x, collision.data.line.p2.x);
+				float maxX = std::max(collision.data.line.p1.x, collision.data.line.p2.x);
+				float minY = std::min(collision.data.line.p1.y, collision.data.line.p2.y);
+				float maxY = std::max(collision.data.line.p1.y, collision.data.line.p2.y);
+
+				halfWidth = (maxX - minY) * 0.5f + 1.0f; // Add small padding
+				halfHeight = (maxY - minY) * 0.5f + 1.0f;
+				break;
+			}
+			case ColliderType::POINT:
+			{
+				// Point: use a small bounding box
+				halfWidth = 1.0f;
+				halfHeight = 1.0f;
+				break;
+			}
+			default:
+				halfWidth = 1.0f;
+				halfHeight = 1.0f;
+				break;
+		}
+	}
+
 	// UTILITY FUNCTIONS IMPLEMENTATION
 
 	void RunBasicCollisionTest()
