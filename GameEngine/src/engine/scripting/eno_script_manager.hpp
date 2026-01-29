@@ -22,7 +22,7 @@ namespace Script
 	class EnoScriptManager
 	{
 	private:
-		static constexpr std::string_view scriptPath = SCRIPT_SRC_PATH;
+		std::string scriptPath;
 
 	public:
 		EnoScriptManager(Core::EnoCoreHost&);
@@ -43,7 +43,7 @@ namespace Script
 		std::string prepareScript(const std::string&);
 
 		// Verify that a script exists
-		bool scriptExists(const std::string&, const std::string&);
+		bool scriptExists(const std::string&);
 
 		// All available scripts for user to choose from in Imgui
 		std::vector<std::wstring> getAvailableScripts();

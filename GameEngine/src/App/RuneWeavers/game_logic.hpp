@@ -14,7 +14,6 @@
 #include <iostream>
 #include <memory>
 #include <unordered_map>
-#include "movementTest.hpp"
 #include "player/player_config.hpp"
 #include "player/player.hpp"
 
@@ -36,6 +35,10 @@ private:
     std::vector<ECS::Entity> cachedSceneTwoEntities_;
     bool entitiesDirty_ = true;
 
+    // Interrupt handling
+    bool windowFocused_ = true;
+    bool windowMinimized_ = false;
+
     // Texture and anim loading
     std::shared_ptr<Graphics::EnoTexture> playerTexture_;
     std::shared_ptr<Graphics::EnoTexture> backgroundTexture_;
@@ -46,8 +49,8 @@ private:
 
     std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
 
-    float worldWidth_;
-    float worldHeight_;
+    float worldWidth_ = 0.f;
+    float worldHeight_ = 0.f;
 
     // Font
     std::shared_ptr<Font::EnoFont> pixelifyFont_;
@@ -64,7 +67,7 @@ private:
     std::unordered_map<std::string, double> systemTimes_;
 
     // Rune System
-    uint32_t runeSystemEntityID_;  // ID of entity holding RuneSystemStateComponent
+    uint32_t runeSystemEntityID_ = 0;  // ID of entity holding RuneSystemStateComponent
     bool runeSystemInitialized_ = false;
 
     // Pause Menu and Spellbook System
@@ -100,7 +103,6 @@ public:
     float getWorldWidth() const { return worldWidth_; }
     float getWorldHeight() const { return worldHeight_; }
 
-
 private:
     // Setup (called during initialize())
     void setupPrefabs();        // Prefab instantiation
@@ -120,11 +122,12 @@ private:
     void updateGameLogic();     // Called every frame in game loop
     void updateEntities();      // Update entity logic per frame
     void loadEntityTextures();  // Load textures for entities with texture paths
-    void updateCamera(float deltaTime);  // Update camera position and projection
+    void updateCamera();  // Update camera position and projection
 
     void drawPlayerAndIndicator();
 
     void drawShapes();
+    void displayFPS();
 
     // Rune system methods
     void initializeRuneSystem();                    // Initialize rune system entity
@@ -145,4 +148,32 @@ private:
     void destroyPauseMenu();                        // Destroy pause menu UI entity
     void hidePlayer();                              // Hide player by setting scale to 0
     void showPlayer();                              // Show player by restoring scale
+
+    // Main Menu Button System
+    void setupMainMenuButtons();                    // Setup invisible buttons for main menu
+    void updateMainMenuButtons();                   // Update button interactions
+    void handlePlayButton();                        // Handle play button click
+    void handleControlsButton();                    // Handle controls button click
+    void handleQuitButton();                        // Handle quit button click
+    void handleControlsCloseButton();               // Handle controls close button click
+    void handleQuitNoButton();                      // Handle quit no button click
+    void handleQuitYesButton();                     // Handle quit yes button click
+
+    // UI entities for controls and quit confirm menus
+    uint32_t controlsDisplayEntityID_ = 0;
+    uint32_t quitConfirmEntityID_ = 0;
+
+    // Scene Transition System
+    void setupSceneTransitions();                   // Setup scene transition triggers
+    void updateSceneTransitions();                  // Check for scene transition collisions
+    uint32_t scene1ToScene2TriggerID_ = 0;         // Scene transition trigger entity ID
+
+    // Pause Menu Button System
+    void setupPauseMenuButtons();                   // Setup pause menu buttons (called when spawning pause menu)
+    void handleResumeButton();                      // Handle resume button click
+    void handleMainMenuButton();                    // Handle main menu button click
+    uint32_t resumeButtonEntityID_ = 0;
+    uint32_t mainMenuButtonEntityID_ = 0;
+
+    bool isDisplayFPS_ = false;
 };

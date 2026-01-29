@@ -12,10 +12,6 @@
 
 namespace Config {
 
-	EnoConfigManager::EnoConfigManager() {
-		retrieveSettings();
-	}
-
 	std::pair<int, int> EnoConfigManager::getWindowDim() 
 	{
 		auto it = configMap_.find("Window Width");
@@ -46,6 +42,26 @@ namespace Config {
 		float cell = std::stof(itC->second);
 
 		return { width, height, cell };
+	}
+
+	bool EnoConfigManager::getFullscreen() const
+	{
+		auto it = configMap_.find("Fullscreen");
+		if (it == configMap_.end())
+			throw std::runtime_error("Fullscreen setting not found!");
+
+		std::string val = it->second;
+		return (val == "true" || val == "TRUE" || val == "True");
+	}
+
+	bool EnoConfigManager::getVSync() const
+	{
+		auto it = configMap_.find("VSync");
+		if (it == configMap_.end())
+			throw std::runtime_error("VSync setting not found!");
+
+		std::string val = it->second;
+		return (val == "true" || val == "TRUE" || val == "True");
 	}
 
 	// Read the local Settings file and

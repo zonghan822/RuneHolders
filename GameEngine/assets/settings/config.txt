@@ -1,6 +1,8 @@
 Engine Version: 0.0001a
 Window Width: 1200
 Window Height: 800
+Fullscreen: false
+VSync: true
 Tilemap Width: 64
 Tilemap Height: 64
 Tilemap CellSize: 64

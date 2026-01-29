@@ -34,6 +34,8 @@ void GameApplication::initialize() {
 	setupScripting();
 	setupFont();
 	setupCombatSystem();
+	setupMainMenuButtons();
+	setupSceneTransitions();
 
 	auto& tileMap = engine_.getTileMap();
 
@@ -197,11 +199,6 @@ void GameApplication::setupGameAudio() {
 	sound.reverb->sfx = reverb;
 	audioMng.modifyChannelGroup("BGM", sound);
 
-	audioMng.publishSoundRequest("Close_To_The_End");
-	audioMng.publishSoundRequest("Across_The_Horizon");
-	audioMng.publishSoundRequest("Flask");
-	audioMng.publishSoundRequest("Stone_Impact");
-	audioMng.publishSoundRequest("Water_Drip");
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
 
@@ -214,32 +211,12 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Fireball-Explosion-Small");    // Add your fireball hit sound file name here
 
 	// Scene BGM audio
-	audioMng.publishSoundRequest("BGM_01_Layer2_loop");  // Main menu BGM
+	audioMng.publishSoundRequest("BGM_01_Layer1_loop");  // Main menu BGM
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");  // General scene ambience
 
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
 
-	// Music Tracks
-	// O to play/stop a music track, P && L for switching soundtracks when music is not playing
-	// Only 1 music track may be placed at a time
-	inputMng.setupKey("Play Audio", GLFW_KEY_O, glfwGetKeyScancode(GLFW_KEY_O), GLFW_RELEASE, 0);
-	inputMng.setupKey("Set New Music 1", GLFW_KEY_P, glfwGetKeyScancode(GLFW_KEY_P), GLFW_RELEASE, 0);
-	inputMng.setupKey("Set New Music 2", GLFW_KEY_L, glfwGetKeyScancode(GLFW_KEY_L), GLFW_RELEASE, 0);
-
-	inputMng.setupEvent<Audio::SetAudioState>("Play Audio", "BGM");
-	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 1", "Close_To_The_End");
-	inputMng.setupEvent<Audio::SetNewAudio>("Set New Music 2", "Across_The_Horizon");
-
-	// Sound Effects
-	// Intended to be played regardless of any background music playing at the time
-	inputMng.setupKey("Play SFX1", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, 0);
-	inputMng.setupKey("Play SFX2", GLFW_KEY_X, glfwGetKeyScancode(GLFW_KEY_X), GLFW_RELEASE, 0);
-	inputMng.setupKey("Play SFX3", GLFW_KEY_C, glfwGetKeyScancode(GLFW_KEY_C), GLFW_RELEASE, 0);
-
-	inputMng.setupEvent<Audio::PlayInstant>("Play SFX1", "SFX", "Flask");
-	inputMng.setupEvent<Audio::PlayInstant>("Play SFX2", "SFX", "Stone_Impact");
-	inputMng.setupEvent<Audio::PlayInstant>("Play SFX3", "SFX", "Water_Drip");
 
 	// Undo/Redo System
 	// Ctrl+Z for undo
@@ -275,7 +252,7 @@ void GameApplication::playSceneBGM()
 	std::string bgmName;
 	if (sceneName == "MainMenu.txt")
 	{
-		bgmName = "BGM_01_Layer2_loop";
+		bgmName = "BGM_01_Layer1_loop";
 	}
 	else
 	{
@@ -403,8 +380,8 @@ void GameApplication::setupGameMath() {
 	// No need to initialize them here anymore
 
 	// Load player config
-	playerConfig_.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
-	std::cout << "[GameLogic] Player configg loaded" << std::endl;
+	playerConfig_.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
+	std::cout << "[GameLogic] Player config loaded" << std::endl;
 }
 
 void GameApplication::setupAnimations() {
@@ -501,6 +478,10 @@ void GameApplication::updateGameLogic() {
 	// Check if we're in play mode
 	bool isPlayMode = (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing ||
 	                   engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
+
+	// Update main menu buttons (works in both play mode and edit mode)
+	updateMainMenuButtons();
+	updateSceneTransitions();
 
 	// ========== PAUSE MENU AND SPELLBOOK INPUT HANDLING ==========
 	// Only handle pause/spellbook input when in play mode AND player exists
@@ -642,6 +623,13 @@ void GameApplication::updateGameLogic() {
 			if (in && node->enabled_)
 			{
 				auto& audioComp = node->entity_.get<ECSComponents::AudioComponent>(entityManager);
+
+				// Prepare the audio module (load sound pointer if needed)
+				// This is necessary after deserializing from a saved scene
+				if (audioComp.audioMod_.name_[0] != '\0')
+				{
+					engine_.getAudioManager().prepareMod(audioComp);
+				}
 
 				// Auto-start audio if autoplay is enabled
 				// This only happens once when scene starts, not every frame
@@ -2474,19 +2462,43 @@ void GameApplication::spawnPauseMenu() {
 	draw.texture = pauseMenuTexture;
 
 	// Mark entities dirty to refresh rendering cache
+	// Setup pause menu buttons (Resume and Main Menu)
+	setupPauseMenuButtons();
 	entitiesDirty_ = true;
 
 	std::cout << "[PauseMenu] Pause menu UI spawned at (1024, 1024)" << std::endl;
 }
 
 void GameApplication::destroyPauseMenu() {
+	auto& entityManager = engine_.getEntityManager();
+	auto& entityMap = entityManager.getMap();
+
+	// Destroy pause menu entity (check if it exists first)
 	if (pauseMenuEntityID_ != 0) {
-		auto& entityManager = engine_.getEntityManager();
-		entityManager.destroyEntity(pauseMenuEntityID_);
+		if (entityMap.find(pauseMenuEntityID_) != entityMap.end()) {
+			entityManager.destroyEntity(pauseMenuEntityID_);
+		}
 		pauseMenuEntityID_ = 0;
-		entitiesDirty_ = true;
-		std::cout << "[PauseMenu] Pause menu UI destroyed" << std::endl;
 	}
+
+	// Destroy Resume button (check if it exists first)
+	if (resumeButtonEntityID_ != 0) {
+		if (entityMap.find(resumeButtonEntityID_) != entityMap.end()) {
+			entityManager.destroyEntity(resumeButtonEntityID_);
+		}
+		resumeButtonEntityID_ = 0;
+	}
+
+	// Destroy Main Menu button (check if it exists first)
+	if (mainMenuButtonEntityID_ != 0) {
+		if (entityMap.find(mainMenuButtonEntityID_) != entityMap.end()) {
+			entityManager.destroyEntity(mainMenuButtonEntityID_);
+		}
+		mainMenuButtonEntityID_ = 0;
+	}
+
+	entitiesDirty_ = true;
+	std::cout << "[PauseMenu] Pause menu UI and buttons destroyed" << std::endl;
 }
 
 void GameApplication::hidePlayer() {
@@ -2519,4 +2531,692 @@ void GameApplication::showPlayer() {
 			std::cout << "[Player] Shown (scale restored to " << savedPlayerScale_.x << ", " << savedPlayerScale_.y << ")" << std::endl;
 		}
 	}
+}
+// ============================================================================
+// MAIN MENU BUTTON SYSTEM IMPLEMENTATION (SAME AS RUNEWEAVERS)
+// ============================================================================
+
+void GameApplication::setupMainMenuButtons() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Play Button at (613, 1310) with size (94x94) rotated 45 degrees
+	ECS::Entity playButton = entityManager.create();
+	playButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("PlayButton"));
+	playButton.add<ECSComponents::TransformComponent>(entityManager);
+	playButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	playButton.add<ECSComponents::CollisionComponent>(entityManager);
+	playButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& playTransform = playButton.get<ECSComponents::TransformComponent>(entityManager);
+	playTransform.pos = { 613.0f, 1310.0f };
+	playTransform.scale = { 1.0f, 1.0f };
+	playTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& playDraw = playButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	playDraw.width = 94.0f;
+	playDraw.height = 94.0f;
+	playDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(playDraw.shape, "Rectangle");
+
+	auto& playCollision = playButton.get<ECSComponents::CollisionComponent>(entityManager);
+	playCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	playCollision.data.rectangle.width = 94.0f;
+	playCollision.data.rectangle.height = 94.0f;
+	playCollision.rotation = 0.785398f; // 45 degrees in radians
+	playCollision.isTrigger = true;
+
+	auto& playBtn = playButton.get<ECSComponents::ButtonComponent>(entityManager);
+	playBtn.setTargetScene("Scene1.txt");
+	playBtn.getActive() = true;
+
+	// Controls Button at (363, 1263) with size (79x79) rotated 45 degrees
+	ECS::Entity controlsButton = entityManager.create();
+	controlsButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("ControlsButton"));
+	controlsButton.add<ECSComponents::TransformComponent>(entityManager);
+	controlsButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	controlsButton.add<ECSComponents::CollisionComponent>(entityManager);
+	controlsButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& controlsTransform = controlsButton.get<ECSComponents::TransformComponent>(entityManager);
+	controlsTransform.pos = { 363.0f, 1263.0f };
+	controlsTransform.scale = { 1.0f, 1.0f };
+	controlsTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& controlsDraw = controlsButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	controlsDraw.width = 79.0f;
+	controlsDraw.height = 79.0f;
+	controlsDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(controlsDraw.shape, "Rectangle");
+
+	auto& controlsCollision = controlsButton.get<ECSComponents::CollisionComponent>(entityManager);
+	controlsCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	controlsCollision.data.rectangle.width = 79.0f;
+	controlsCollision.data.rectangle.height = 79.0f;
+	controlsCollision.rotation = 0.785398f; // 45 degrees in radians
+	controlsCollision.isTrigger = true;
+
+	auto& controlsBtn = controlsButton.get<ECSComponents::ButtonComponent>(entityManager);
+	controlsBtn.getActive() = true;
+
+	// Quit Button at (863, 1263) with size (79x79) rotated 45 degrees
+	ECS::Entity quitButton = entityManager.create();
+	quitButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("QuitButton"));
+	quitButton.add<ECSComponents::TransformComponent>(entityManager);
+	quitButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	quitButton.add<ECSComponents::CollisionComponent>(entityManager);
+	quitButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& quitTransform = quitButton.get<ECSComponents::TransformComponent>(entityManager);
+	quitTransform.pos = { 863.0f, 1263.0f };
+	quitTransform.scale = { 1.0f, 1.0f };
+	quitTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& quitDraw = quitButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	quitDraw.width = 79.0f;
+	quitDraw.height = 79.0f;
+	quitDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(quitDraw.shape, "Rectangle");
+
+	auto& quitCollision = quitButton.get<ECSComponents::CollisionComponent>(entityManager);
+	quitCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	quitCollision.data.rectangle.width = 79.0f;
+	quitCollision.data.rectangle.height = 79.0f;
+	quitCollision.rotation = 0.785398f; // 45 degrees in radians
+	quitCollision.isTrigger = true;
+
+	auto& quitBtn = quitButton.get<ECSComponents::ButtonComponent>(entityManager);
+	quitBtn.getActive() = true;
+
+	// Mark entities dirty to refresh rendering cache
+	entitiesDirty_ = true;
+
+	std::cout << "[MainMenu] Main menu buttons created" << std::endl;
+}
+
+void GameApplication::updateMainMenuButtons() {
+	auto& entityManager = engine_.getEntityManager();
+	auto& inputMng = engine_.getInputManager();
+
+	// Get current scene name to check if we're in main menu
+	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+	std::string sceneName = currentScene.getSceneName();
+
+	// Only process main menu buttons if we're in MainMenu scene
+	bool inMainMenu = (sceneName == "MainMenu.txt");
+
+	// For Editor, we need to check if mouse is in game viewport
+	// Get game framebuffer render info from ImGui
+	extern ImVec2 lastGameViewportPos;
+	extern ImVec2 lastGameViewportSize;
+
+	// Get mouse position
+	auto mouseScreenPos = inputMng.getMousePosition();
+
+	// Check if mouse is within game viewport bounds
+	bool mouseInGameView = (mouseScreenPos.first >= lastGameViewportPos.x &&
+	                        mouseScreenPos.first <= (lastGameViewportPos.x + lastGameViewportSize.x) &&
+	                        mouseScreenPos.second >= lastGameViewportPos.y &&
+	                        mouseScreenPos.second <= (lastGameViewportPos.y + lastGameViewportSize.y));
+
+	if (!mouseInGameView) return; // Don't process buttons if mouse is outside game view
+
+	// Convert screen space mouse to viewport-relative coordinates
+	float viewportMouseX = static_cast<float>(mouseScreenPos.first) - lastGameViewportPos.x;
+	float viewportMouseY = static_cast<float>(mouseScreenPos.second) - lastGameViewportPos.y;
+
+	// Normalize to 0-1 range based on viewport size
+	float normalizedX = viewportMouseX / lastGameViewportSize.x;
+	float normalizedY = viewportMouseY / lastGameViewportSize.y;
+
+	// Convert to world space (assuming 1920x1080 game resolution)
+	Math::eVec2<float> mouseWorldPos = {
+		normalizedX * worldWidth_,
+		normalizedY * worldHeight_
+	};
+
+	// Check for mouse click
+	bool mouseClicked = inputMng.isMouseDown(GLFW_MOUSE_BUTTON_LEFT);
+
+	if (!mouseClicked) return;
+
+	// Find all button entities
+	auto buttonEntities = entityManager.findEntity<ECSComponents::ButtonComponent>();
+
+	for (auto& button : buttonEntities) {
+		if (!button.has<ECSComponents::NameComponent>(entityManager) ||
+			!button.has<ECSComponents::TransformComponent>(entityManager) ||
+			!button.has<ECSComponents::DrawInfoComponent>(entityManager) ||
+			!button.has<ECSComponents::CollisionComponent>(entityManager)) {
+			continue;
+		}
+
+		auto& name = button.get<ECSComponents::NameComponent>(entityManager);
+		auto& transform = button.get<ECSComponents::TransformComponent>(entityManager);
+		auto& draw = button.get<ECSComponents::DrawInfoComponent>(entityManager);
+		auto& collision = button.get<ECSComponents::CollisionComponent>(entityManager);
+		auto& btnComp = button.get<ECSComponents::ButtonComponent>(entityManager);
+
+		std::string buttonName(name.name);
+
+		// Check if click is within button bounds
+		if (btnComp.onClick(mouseWorldPos, transform, draw, collision)) {
+			std::cout << "[MainMenu] Button clicked: " << buttonName << std::endl;
+
+			// Handle different buttons based on name
+			if (inMainMenu) {
+				if (buttonName == "PlayButton") {
+					handlePlayButton();
+					return; // Exit after handling to prevent multiple clicks
+				} else if (buttonName == "ControlsButton") {
+					handleControlsButton();
+					return;
+				} else if (buttonName == "QuitButton") {
+					handleQuitButton();
+					return;
+				}
+			}
+
+			// Handle controls close button (only when controls display is active)
+			if (controlsDisplayEntityID_ != 0 && buttonName == "ControlsCloseButton") {
+				handleControlsCloseButton();
+				return;
+			}
+
+			// Handle quit confirm buttons (only when quit confirm is active)
+			if (quitConfirmEntityID_ != 0) {
+				if (buttonName == "QuitNoButton") {
+					handleQuitNoButton();
+				} else if (buttonName == "QuitYesButton") {
+					handleQuitYesButton();
+					return;
+				}
+			}
+			// Handle pause menu buttons (only when pause menu is active)
+			if (pauseMenuEntityID_ != 0) {
+				if (buttonName == "ResumeButton") {
+					handleResumeButton();
+					return;
+				} else if (buttonName == "MainMenuButton") {
+					handleMainMenuButton();
+					return;
+				}
+			}
+		}
+	}
+}
+
+void GameApplication::handlePlayButton() {
+	std::cout << "[MainMenu] Play button pressed - Loading Scene1" << std::endl;
+	engine_.getEnoEditor().selectScene("Scene1.txt");
+	entitiesDirty_ = true;
+
+	// Re-scan for player entity in the new scene
+	auto& entityManager = engine_.getEntityManager();
+	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+
+	if (!playerEntities.empty()) {
+		std::cout << "[MainMenu] Player entity found in Scene1 (ID: " << playerEntities[0].id() << ")" << std::endl;
+
+		// Re-add health component to player if needed
+		ECS::Entity& playerEntity = playerEntities[0];
+		if (!playerEntity.has<ECSComponents::HealthComponent>(entityManager)) {
+			playerEntity.add<ECSComponents::HealthComponent>(entityManager, 100.0f);
+			std::cout << "[MainMenu] Added HealthComponent to player (100 HP)" << std::endl;
+		}
+	} else {
+		std::cout << "[MainMenu] Warning: No player entity found in Scene1!" << std::endl;
+	}
+
+	// Re-setup combat system for enemies in new scene
+	std::vector<ECS::Entity> enemies = entityManager.findEntity<ECSComponents::AIComponent>();
+	for (auto& enemy : enemies) {
+		if (!enemy.has<ECSComponents::HealthComponent>(entityManager)) {
+			enemy.add<ECSComponents::HealthComponent>(entityManager, 50.0f);
+		} else {
+			auto& health = enemy.get<ECSComponents::HealthComponent>(entityManager);
+			health.currentHealth = 50.0f;
+			health.maxHealth = 50.0f;
+			health.isDead = false;
+		}
+
+		if (!enemy.has<ECSComponents::DamageComponent>(entityManager)) {
+			enemy.add<ECSComponents::DamageComponent>(entityManager, 10.0f);
+		}
+	}
+}
+
+void GameApplication::handleControlsButton() {
+	std::cout << "[MainMenu] Controls button pressed - Spawning controls display" << std::endl;
+
+	auto& entityManager = engine_.getEntityManager();
+	auto& resourceLoader = engine_.getResourceLoader();
+
+	// Load controls texture
+	auto controlsTexture = resourceLoader.getTexture("MainMenu-ControlsDisplayV2");
+
+	if (!controlsTexture || !controlsTexture->isValid()) {
+		std::cerr << "[MainMenu] Failed to load controls texture!" << std::endl;
+		return;
+	}
+
+	// Create controls display entity
+	ECS::Entity controlsDisplay = entityManager.create();
+	controlsDisplayEntityID_ = controlsDisplay.id();
+
+	controlsDisplay.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("ControlsDisplay"));
+	controlsDisplay.add<ECSComponents::TransformComponent>(entityManager);
+	controlsDisplay.add<ECSComponents::DrawInfoComponent>(entityManager);
+
+	auto& transform = controlsDisplay.get<ECSComponents::TransformComponent>(entityManager);
+	transform.pos = { 1024.0f, 1024.0f };
+	transform.scale = { 1.0f, 1.0f };
+
+	auto& draw = controlsDisplay.get<ECSComponents::DrawInfoComponent>(entityManager);
+	draw.width = 1920.0f;
+	draw.height = 1080.0f;
+	draw.color = Graphics::Color::White;
+	strcpy_s(draw.shape, "Rectangle");
+	draw.texture = controlsTexture;
+
+	// Create close button at (313, 591) with size (72x72) rotated 45 degrees
+	ECS::Entity closeButton = entityManager.create();
+	closeButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("ControlsCloseButton"));
+	closeButton.add<ECSComponents::TransformComponent>(entityManager);
+	closeButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	closeButton.add<ECSComponents::CollisionComponent>(entityManager);
+	closeButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& closeTransform = closeButton.get<ECSComponents::TransformComponent>(entityManager);
+	closeTransform.pos = { 313.0f, 591.0f };
+	closeTransform.scale = { 1.0f, 1.0f };
+	closeTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& closeDraw = closeButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	closeDraw.width = 72.0f;
+	closeDraw.height = 72.0f;
+	closeDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(closeDraw.shape, "Rectangle");
+
+	auto& closeCollision = closeButton.get<ECSComponents::CollisionComponent>(entityManager);
+	closeCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	closeCollision.data.rectangle.width = 72.0f;
+	closeCollision.data.rectangle.height = 72.0f;
+	closeCollision.rotation = 0.785398f; // 45 degrees in radians
+	closeCollision.isTrigger = true;
+
+	auto& closeBtn = closeButton.get<ECSComponents::ButtonComponent>(entityManager);
+	closeBtn.getActive() = true;
+
+	entitiesDirty_ = true;
+}
+
+void GameApplication::handleControlsCloseButton() {
+	std::cout << "[MainMenu] Controls close button pressed - Destroying controls display" << std::endl;
+
+	auto& entityManager = engine_.getEntityManager();
+
+	// Destroy controls display entity
+	if (controlsDisplayEntityID_ != 0) {
+		entityManager.destroyEntity(controlsDisplayEntityID_);
+		controlsDisplayEntityID_ = 0;
+	}
+
+	// Destroy close button (find by name)
+	auto buttons = entityManager.findEntity<ECSComponents::ButtonComponent>();
+	for (auto& button : buttons) {
+		if (button.has<ECSComponents::NameComponent>(entityManager)) {
+			auto& name = button.get<ECSComponents::NameComponent>(entityManager);
+			if (std::string(name.name) == "ControlsCloseButton") {
+				entityManager.destroyEntity(button.id());
+				break;
+			}
+		}
+	}
+
+	entitiesDirty_ = true;
+}
+
+void GameApplication::handleQuitButton() {
+	std::cout << "[MainMenu] Quit button pressed - Spawning quit confirm" << std::endl;
+
+	auto& entityManager = engine_.getEntityManager();
+	auto& resourceLoader = engine_.getResourceLoader();
+
+	// Load quit confirm texture
+	auto quitTexture = resourceLoader.getTexture("MainMenu-QuitConfirm");
+
+	if (!quitTexture || !quitTexture->isValid()) {
+		std::cerr << "[MainMenu] Failed to load quit confirm texture!" << std::endl;
+		return;
+	}
+
+	// Create quit confirm entity
+	ECS::Entity quitConfirm = entityManager.create();
+	quitConfirmEntityID_ = quitConfirm.id();
+
+	quitConfirm.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("QuitConfirm"));
+	quitConfirm.add<ECSComponents::TransformComponent>(entityManager);
+	quitConfirm.add<ECSComponents::DrawInfoComponent>(entityManager);
+
+	auto& transform = quitConfirm.get<ECSComponents::TransformComponent>(entityManager);
+	transform.pos = { 1024.0f, 1024.0f };
+	transform.scale = { 1.0f, 1.0f };
+
+	auto& draw = quitConfirm.get<ECSComponents::DrawInfoComponent>(entityManager);
+	draw.width = 1920.0f;
+	draw.height = 1080.0f;
+	draw.color = Graphics::Color::White;
+	strcpy_s(draw.shape, "Rectangle");
+	draw.texture = quitTexture;
+
+	// Create No button at (869, 1126) with size (74x74)
+	ECS::Entity noButton = entityManager.create();
+	noButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("QuitNoButton"));
+	noButton.add<ECSComponents::TransformComponent>(entityManager);
+	noButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	noButton.add<ECSComponents::CollisionComponent>(entityManager);
+	noButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& noTransform = noButton.get<ECSComponents::TransformComponent>(entityManager);
+	noTransform.pos = { 869.0f, 1126.0f };
+	noTransform.scale = { 1.0f, 1.0f };
+
+	auto& noDraw = noButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	noDraw.width = 74.0f;
+	noDraw.height = 74.0f;
+	noDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(noDraw.shape, "Rectangle");
+
+	auto& noCollision = noButton.get<ECSComponents::CollisionComponent>(entityManager);
+	noCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	noCollision.data.rectangle.width = 74.0f;
+	noCollision.data.rectangle.height = 74.0f;
+	noCollision.isTrigger = true;
+
+	auto& noBtn = noButton.get<ECSComponents::ButtonComponent>(entityManager);
+	noBtn.getActive() = true;
+
+	// Create Yes button at (1177, 1126) with size (74x74) rotated 35 degrees
+	ECS::Entity yesButton = entityManager.create();
+	yesButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("QuitYesButton"));
+	yesButton.add<ECSComponents::TransformComponent>(entityManager);
+	yesButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	yesButton.add<ECSComponents::CollisionComponent>(entityManager);
+	yesButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& yesTransform = yesButton.get<ECSComponents::TransformComponent>(entityManager);
+	yesTransform.pos = { 1177.0f, 1126.0f };
+	yesTransform.scale = { 1.0f, 1.0f };
+	yesTransform.rot.x = 0.610865f; // 35 degrees in radians
+
+	auto& yesDraw = yesButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	yesDraw.width = 74.0f;
+	yesDraw.height = 74.0f;
+	yesDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(yesDraw.shape, "Rectangle");
+
+	auto& yesCollision = yesButton.get<ECSComponents::CollisionComponent>(entityManager);
+	yesCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	yesCollision.data.rectangle.width = 74.0f;
+	yesCollision.data.rectangle.height = 74.0f;
+	yesCollision.rotation = 0.610865f; // 35 degrees in radians
+	yesCollision.isTrigger = true;
+
+	auto& yesBtn = yesButton.get<ECSComponents::ButtonComponent>(entityManager);
+	yesBtn.getActive() = true;
+
+	entitiesDirty_ = true;
+}
+
+void GameApplication::handleQuitNoButton() {
+	std::cout << "[MainMenu] Quit No button pressed - Closing quit confirm" << std::endl;
+
+	auto& entityManager = engine_.getEntityManager();
+
+	// Destroy quit confirm entity
+	if (quitConfirmEntityID_ != 0) {
+		entityManager.destroyEntity(quitConfirmEntityID_);
+		quitConfirmEntityID_ = 0;
+	}
+
+	// Destroy No and Yes buttons (find by name)
+	auto buttons = entityManager.findEntity<ECSComponents::ButtonComponent>();
+	for (auto& button : buttons) {
+		if (button.has<ECSComponents::NameComponent>(entityManager)) {
+			auto& name = button.get<ECSComponents::NameComponent>(entityManager);
+			std::string buttonName(name.name);
+			if (buttonName == "QuitNoButton" || buttonName == "QuitYesButton") {
+				entityManager.destroyEntity(button.id());
+			}
+		}
+	}
+
+	entitiesDirty_ = true;
+}
+
+void GameApplication::handleQuitYesButton() {
+	std::cout << "[MainMenu] Quit Yes button pressed - Shutting down application" << std::endl;
+
+	// Request window close to properly shut down the engine
+	engine_.getWindowManager().setShouldClose(true);
+}
+
+// ============================================================================
+// SCENE TRANSITION SYSTEM IMPLEMENTATION (EDITOR)
+// ============================================================================
+
+void GameApplication::setupSceneTransitions() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Create invisible trigger hitbox for Scene1 -> Scene2 transition
+	ECS::Entity sceneTransitionTrigger = entityManager.create();
+	scene1ToScene2TriggerID_ = sceneTransitionTrigger.id();
+
+	sceneTransitionTrigger.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Scene1ToScene2Trigger"));
+	sceneTransitionTrigger.add<ECSComponents::TransformComponent>(entityManager);
+	sceneTransitionTrigger.add<ECSComponents::CollisionComponent>(entityManager);
+
+	auto& transform = sceneTransitionTrigger.get<ECSComponents::TransformComponent>(entityManager);
+	transform.pos = { 1023.0f, 656.0f };
+	transform.scale = { 1.0f, 1.0f };
+
+	auto& collision = sceneTransitionTrigger.get<ECSComponents::CollisionComponent>(entityManager);
+	collision.type = ECSComponents::ColliderType::RECTANGLE;
+	collision.data.rectangle.width = 75.0f;
+	collision.data.rectangle.height = 50.0f;
+	collision.rotation = 0.0f;
+	collision.isTrigger = true;
+	collision.isActive = false;
+
+	std::cout << "[SceneTransition] Scene transition trigger created" << std::endl;
+}
+
+void GameApplication::updateSceneTransitions() {
+	auto& entityManager = engine_.getEntityManager();
+	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+	std::string sceneName = currentScene.getSceneName();
+
+	// Only check in play mode
+	bool isPlayMode = (currentScene.getState() == Editor::State::Playing ||
+	                   currentScene.getState() == Editor::State::NextFrame);
+
+	if (!isPlayMode || sceneName != "Scene1.txt") {
+		if (scene1ToScene2TriggerID_ != 0) {
+			ECS::Entity trigger(scene1ToScene2TriggerID_);
+			if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+				auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+				collision.isActive = false;
+			}
+		}
+		return;
+	}
+
+	// Activate trigger in Scene1 play mode
+	if (scene1ToScene2TriggerID_ != 0) {
+		ECS::Entity trigger(scene1ToScene2TriggerID_);
+		if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+			auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+			collision.isActive = true;
+		}
+	}
+
+	// Check for player
+	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+	if (playerEntities.empty()) return;
+
+	ECS::Entity player = playerEntities[0];
+	if (!player.has<ECSComponents::TransformComponent>(entityManager) ||
+		!player.has<ECSComponents::CollisionComponent>(entityManager)) {
+		return;
+	}
+
+	auto& playerTransform = player.get<ECSComponents::TransformComponent>(entityManager);
+	auto& playerCollision = player.get<ECSComponents::CollisionComponent>(entityManager);
+
+	ECS::Entity trigger(scene1ToScene2TriggerID_);
+	if (!trigger.has<ECSComponents::TransformComponent>(entityManager) ||
+		!trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+		return;
+	}
+
+	auto& triggerTransform = trigger.get<ECSComponents::TransformComponent>(entityManager);
+	auto& triggerCollision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+
+	// AABB collision check
+	float playerLeft = playerTransform.pos.x - (playerCollision.data.rectangle.width * 0.5f);
+	float playerRight = playerTransform.pos.x + (playerCollision.data.rectangle.width * 0.5f);
+	float playerTop = playerTransform.pos.y - (playerCollision.data.rectangle.height * 0.5f);
+	float playerBottom = playerTransform.pos.y + (playerCollision.data.rectangle.height * 0.5f);
+
+	float triggerLeft = triggerTransform.pos.x - (triggerCollision.data.rectangle.width * 0.5f);
+	float triggerRight = triggerTransform.pos.x + (triggerCollision.data.rectangle.width * 0.5f);
+	float triggerTop = triggerTransform.pos.y - (triggerCollision.data.rectangle.height * 0.5f);
+	float triggerBottom = triggerTransform.pos.y + (triggerCollision.data.rectangle.height * 0.5f);
+
+	bool colliding = !(playerRight < triggerLeft || playerLeft > triggerRight ||
+	                   playerBottom < triggerTop || playerTop > triggerBottom);
+
+	if (colliding) {
+		std::cout << "[SceneTransition] Player triggered Scene1->Scene2 transition!" << std::endl;
+		engine_.getEnoEditor().selectScene("Scene2.txt");
+		entitiesDirty_ = true;
+	}
+}
+
+// ============================================================================
+// PAUSE MENU BUTTON SYSTEM IMPLEMENTATION (EDITOR)
+// ============================================================================
+
+void GameApplication::setupPauseMenuButtons() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Resume Button
+	ECS::Entity resumeButton = entityManager.create();
+	resumeButtonEntityID_ = resumeButton.id();
+
+	resumeButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("ResumeButton"));
+	resumeButton.add<ECSComponents::TransformComponent>(entityManager);
+	resumeButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	resumeButton.add<ECSComponents::CollisionComponent>(entityManager);
+	resumeButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& resumeTransform = resumeButton.get<ECSComponents::TransformComponent>(entityManager);
+	resumeTransform.pos = { 716.0f, 965.0f };
+	resumeTransform.scale = { 1.0f, 1.0f };
+	resumeTransform.rot.x = 0.785398f;
+
+	auto& resumeDraw = resumeButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	resumeDraw.width = 100.0f;
+	resumeDraw.height = 100.0f;
+	resumeDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f);
+	strcpy_s(resumeDraw.shape, "Rectangle");
+
+	auto& resumeCollision = resumeButton.get<ECSComponents::CollisionComponent>(entityManager);
+	resumeCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	resumeCollision.data.rectangle.width = 100.0f;
+	resumeCollision.data.rectangle.height = 100.0f;
+	resumeCollision.rotation = 0.785398f;
+	resumeCollision.isTrigger = true;
+
+	auto& resumeBtn = resumeButton.get<ECSComponents::ButtonComponent>(entityManager);
+	resumeBtn.getActive() = true;
+
+	// Main Menu Button
+	ECS::Entity mainMenuButton = entityManager.create();
+	mainMenuButtonEntityID_ = mainMenuButton.id();
+
+	mainMenuButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("MainMenuButton"));
+	mainMenuButton.add<ECSComponents::TransformComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::CollisionComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& menuTransform = mainMenuButton.get<ECSComponents::TransformComponent>(entityManager);
+	menuTransform.pos = { 557.0f, 1141.0f };
+	menuTransform.scale = { 1.0f, 1.0f };
+	menuTransform.rot.x = 0.785398f;
+
+	auto& menuDraw = mainMenuButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	menuDraw.width = 56.0f;
+	menuDraw.height = 56.0f;
+	menuDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f);
+	strcpy_s(menuDraw.shape, "Rectangle");
+
+	auto& menuCollision = mainMenuButton.get<ECSComponents::CollisionComponent>(entityManager);
+	menuCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	menuCollision.data.rectangle.width = 56.0f;
+	menuCollision.data.rectangle.height = 56.0f;
+	menuCollision.rotation = 0.785398f;
+	menuCollision.isTrigger = true;
+
+	auto& menuBtn = mainMenuButton.get<ECSComponents::ButtonComponent>(entityManager);
+	menuBtn.getActive() = true;
+
+	std::cout << "[PauseMenu] Pause menu buttons created" << std::endl;
+}
+
+void GameApplication::handleResumeButton() {
+	std::cout << "[PauseMenu] Resume button pressed" << std::endl;
+
+	isPaused_ = false;
+	destroyPauseMenu();
+	showPlayer();
+	engine_.setIsPlaying(true);
+	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
+}
+
+void GameApplication::handleMainMenuButton() {
+	std::cout << "[PauseMenu] Main Menu button pressed" << std::endl;
+
+	// IMPORTANT: Destroy pause menu and spellbook BEFORE changing scenes
+	// to prevent them from being saved into the scene file
+	destroyPauseMenu();
+	if (spellbookEntityID_ != 0) {
+		destroySpellbook();
+	}
+	showPlayer();  // Restore player visibility before scene change
+
+	// Clear all entity IDs to prevent crashes when trying to access them after scene change
+	resumeButtonEntityID_ = 0;
+	mainMenuButtonEntityID_ = 0;
+	pauseMenuEntityID_ = 0;
+	spellbookEntityID_ = 0;
+	controlsDisplayEntityID_ = 0;
+	quitConfirmEntityID_ = 0;
+	playerEntityID_ = 0;
+
+	// Reset game state flags
+	isPaused_ = false;
+	showSpellbook_ = false;
+	playerSpawned_ = false;
+	engine_.setIsPlaying(true);
+
+	// Change scene (this will destroy all entities including pause menu and buttons)
+	engine_.getEnoEditor().selectScene("MainMenu.txt");
+	entitiesDirty_ = true;
+
+	// Recreate main menu buttons after scene load (they're not saved in the scene file)
+	setupMainMenuButtons();
+
+	std::cout << "[PauseMenu] Returned to MainMenu" << std::endl;
 }

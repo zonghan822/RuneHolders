@@ -448,9 +448,12 @@ namespace Graphics
         );
 
         bus_.subscribe<Window::FramebufferResizeEvent>(
-            [this](const Window::FramebufferResizeEvent& e)
-            {
-                this->setProjectionMatrix(e.width, e.height);
+            [this](const Window::FramebufferResizeEvent& e) {
+                // Update viewport
+                glViewport(0, 0, e.width, e.height);
+
+                // Update projection matrix
+                setupProjectionMatrix(e.width, e.height);
             }
         );
 
@@ -460,7 +463,17 @@ namespace Graphics
         // Set up initial projection matrix
         int width = window.getFramebufferSize().first;
         int height = window.getFramebufferSize().second;
+
+        glViewport(0, 0, width, height);
         setupProjectionMatrix(width, height);
+
+        // Push projection matrix to default shader
+        if (defaultShader_ && defaultShader_->isValid())
+        {
+            defaultShader_->use();
+            defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
+            defaultShader_->unuse();
+        }
 
         initialized_ = true;
 
@@ -840,11 +853,12 @@ namespace Graphics
 
         EnoShader* shdr = getShader("text");
 
-        if (!shdr->isValid()) {
+        if (!shdr || !shdr->isValid()) {
             throw std::runtime_error("Text shader not loaded properly");
         }
 
         shdr->use();
+        // Uses whatever projectionMatrix_ is currently set (world / camera)
         shdr->setMatrix4("u_projection", projectionMatrix_.data());
 
         auto atlas = font->getAtlasTexture();
@@ -858,45 +872,145 @@ namespace Graphics
             try {
                 const Font::Character& ch = font->getChar(c);
 
-                Math::eVec2<float> charPos(
-                    xCursor + ch.bearing.x * scale,
-                    yCursor - ch.size.y * scale
-                );
+                // Horizontal: still respect bearing.x
+                float xPos = xCursor + ch.bearing.x * scale;
+
+                // Vertical: treat position.y as the TOP of glyph box in our
+                // top-left origin system. This avoids "flying off the screen".
+                float yPos = yCursor - ch.size.y * scale;
+
+                Math::eVec2<float> charPos(xPos, yPos);
                 Math::eVec2<float> charSize(ch.size.x * scale, ch.size.y * scale);
 
-                std::vector<Vertex> vertices;
+                // Quad corners
+                Math::eVec2<float> topLeft = charPos;
+                Math::eVec2<float> topRight = { charPos.x + charSize.x, charPos.y };
+                Math::eVec2<float> bottomRight = { charPos.x + charSize.x, charPos.y + charSize.y };
+                Math::eVec2<float> bottomLeft = { charPos.x,               charPos.y + charSize.y };
 
-                // Calculate center for rotation
-                Math::eVec2<float> center = { charPos.x + charSize.x * 0.5f, charPos.y + charSize.y * 0.5f };
+                // UV coordinates (assuming font atlas is bottom-left origin now)
+                Math::eVec2<float> uvTopLeft = { ch.uvStart.x, ch.uvStart.y };
+                Math::eVec2<float> uvTopRight = { ch.uvEnd.x,   ch.uvStart.y };
+                Math::eVec2<float> uvBottomRight = { ch.uvEnd.x,   ch.uvEnd.y };
+                Math::eVec2<float> uvBottomLeft = { ch.uvStart.x, ch.uvEnd.y };
+
+                std::vector<Vertex> vertices;
+                vertices.reserve(6);
+
+                vertices.emplace_back(topLeft, color, uvTopLeft, 0.f);
+                vertices.emplace_back(topRight, color, uvTopRight, 0.f);
+                vertices.emplace_back(bottomLeft, color, uvBottomLeft, 0.f);
+
+                vertices.emplace_back(topRight, color, uvTopRight, 0.f);
+                vertices.emplace_back(bottomRight, color, uvBottomRight, 0.f);
+                vertices.emplace_back(bottomLeft, color, uvBottomLeft, 0.f);
+
+                vertexBuffer_->uploadData(vertices);
+                vertexBuffer_->draw(GL_TRIANGLES);
+
+                // Advance cursor (FreeType advance is in 1/64 pixels)
+                xCursor += (ch.advance >> 6) * scale;
+            }
+            catch (const std::out_of_range&) {
+                // Character wasn’t in the atlas, skip it
+                continue;
+            }
+        }
+
+        atlas->unbind();
+        shdr->unuse();
+    }
+
+    void EnoGraphicsManager::drawTextScreen(const std::shared_ptr<Font::EnoFont>& font,
+        const std::string& text,
+        const Math::eVec2<float>& position,
+        float scale,
+        const Color& color,
+        float screenWidth,
+        float screenHeight)
+    {
+        if (!font || !font->getAtlasTexture() || !font->getAtlasTexture()->isValid()) {
+            throw std::runtime_error("Invalid font atlas");
+        }
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        EnoShader* shdr = getShader("text");
+        if (!shdr || !shdr->isValid()) {
+            throw std::runtime_error("Text shader not loaded properly");
+        }
+
+        // Build a dedicated screen-space projection:
+        // (0,0)   -> top-left
+        // (screenWidth, screenHeight) -> bottom-right
+        std::array<float, 16> uiProj{};
+        float left = 0.0f;
+        float right = screenWidth;
+        float bottom = screenHeight;
+        float top = 0.0f;
+        float near = -1.0f;
+        float far = 1.0f;
+
+        uiProj.fill(0.0f);
+        uiProj[0] = 2.0f / (right - left);
+        uiProj[5] = 2.0f / (top - bottom);
+        uiProj[10] = -2.0f / (far - near);
+        uiProj[12] = -(right + left) / (right - left);
+        uiProj[13] = -(top + bottom) / (top - bottom);
+        uiProj[15] = 1.0f;
+
+        shdr->use();
+        shdr->setMatrix4("u_projection", uiProj.data());
+
+        auto atlas = font->getAtlasTexture();
+        atlas->bind(0);
+        shdr->setInt("u_text", 0);
+
+        float xCursor = position.x;
+        float yCursor = position.y;
+
+        for (char c : text) {
+            try {
+                const Font::Character& ch = font->getChar(c);
+
+                float xPos = xCursor + ch.bearing.x * scale;
+                float yPos = yCursor - ch.size.y * scale;
+
+                Math::eVec2<float> charPos(xPos, yPos);
+                Math::eVec2<float> charSize(ch.size.x * scale, ch.size.y * scale);
 
                 Math::eVec2<float> topLeft = charPos;
                 Math::eVec2<float> topRight = { charPos.x + charSize.x, charPos.y };
                 Math::eVec2<float> bottomRight = { charPos.x + charSize.x, charPos.y + charSize.y };
-                Math::eVec2<float> bottomLeft = { charPos.x, charPos.y + charSize.y };
+                Math::eVec2<float> bottomLeft = { charPos.x,               charPos.y + charSize.y };
 
-                // UV coordinates
                 Math::eVec2<float> uvTopLeft = { ch.uvStart.x, ch.uvStart.y };
-                Math::eVec2<float> uvTopRight = { ch.uvEnd.x, ch.uvStart.y };
-                Math::eVec2<float> uvBottomRight = { ch.uvEnd.x, ch.uvEnd.y };
+                Math::eVec2<float> uvTopRight = { ch.uvEnd.x,   ch.uvStart.y };
+                Math::eVec2<float> uvBottomRight = { ch.uvEnd.x,   ch.uvEnd.y };
                 Math::eVec2<float> uvBottomLeft = { ch.uvStart.x, ch.uvEnd.y };
 
-                vertices.push_back(Vertex(topLeft, color, uvTopLeft, 0.f));
-                vertices.push_back(Vertex(topRight, color, uvTopRight, 0.f));
-                vertices.push_back(Vertex(bottomLeft, color, uvBottomLeft, 0.f));
+                std::vector<Vertex> vertices;
+                vertices.reserve(6);
 
-                vertices.push_back(Vertex(topRight, color, uvTopRight, 0.f));
-                vertices.push_back(Vertex(bottomRight, color, uvBottomRight, 0.f));
-                vertices.push_back(Vertex(bottomLeft, color, uvBottomLeft, 0.f));
+                vertices.emplace_back(topLeft, color, uvTopLeft, 0.f);
+                vertices.emplace_back(topRight, color, uvTopRight, 0.f);
+                vertices.emplace_back(bottomLeft, color, uvBottomLeft, 0.f);
 
-                vertexBuffer_->uploadData(std::move(vertices));
+                vertices.emplace_back(topRight, color, uvTopRight, 0.f);
+                vertices.emplace_back(bottomRight, color, uvBottomRight, 0.f);
+                vertices.emplace_back(bottomLeft, color, uvBottomLeft, 0.f);
+
+                vertexBuffer_->uploadData(vertices);
                 vertexBuffer_->draw(GL_TRIANGLES);
 
-                xCursor += (ch.advance >> 6) * scale; // Advance in 1/64 pixels
+                xCursor += (ch.advance >> 6) * scale;
             }
             catch (const std::out_of_range&) {
                 continue;
             }
         }
+
         atlas->unbind();
         shdr->unuse();
     }

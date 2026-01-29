@@ -19,6 +19,7 @@
 
 // lib
 #include "../math/math.hpp"
+#include "../file/file_system.hpp"
 
 #define ENGINE_VER_SIZE 8
 
@@ -29,29 +30,26 @@ namespace Config
 	class EnoConfigManager 
 	{
 	private:
-		std::string cfgFileName_ = ASSETS_DIR_PATH "settings/config.txt";
+		std::string cfgFileName_ = FileSystem::GetAssetsDir().string() + "/settings/config.txt";
 
 		/*============================================================================================
 		 * \brief				Map for storing setting strings
 		*//*========================================================================================*/
 		std::unordered_map<std::string, std::string> configMap_ =
 		{
-			{ "Engine Version", "0"},
-			{ "Window Width",	"0"},
-			{ "Window Height",	"0"},
-			{ "Tilemap Width",    "0"},
-			{ "Tilemap Height",   "0"},
-			{ "Tilemap CellSize", "0"},
+			{ "Engine Version",   "0"},
+			{ "Window Width",	    "0"},
+			{ "Window Height",	    "0"},
+			{ "Fullscreen",        "false"},
+			{ "VSync",             "true"},
+			{ "Tilemap Width",     "0"},
+			{ "Tilemap Height",    "0"},
+			{ "Tilemap CellSize",  "0"},
 		};
 
 		static constexpr uint8_t COLON_OFFSET = 2;
 
 	public:
-
-		/*============================================================================================
-		 * \brief				Eno Config Constructor
-		*//*========================================================================================*/
-		EnoConfigManager();
 
 		/*============================================================================================
 		 * \brief				Finds the read window dimensions and casts them to int before
@@ -61,6 +59,10 @@ namespace Config
 		std::pair<int, int> getWindowDim();
 
 		std::tuple<int, int, float> getTilemapConfig();
+
+		bool getFullscreen() const;
+
+		bool getVSync() const;
 
 		/*============================================================================================
 		 * \brief				Read the local Settings file and store configurations

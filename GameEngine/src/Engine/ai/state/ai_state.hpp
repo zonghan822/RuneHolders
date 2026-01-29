@@ -42,7 +42,7 @@ namespace AI {
         void onUpdate(ECS::Entity& e, ECS::EntityManager& m, float dt) override;
         void onExit(ECS::Entity& e, ECS::EntityManager& m) override;
     private:
-        float windupTimer_;
+        float windupTimer_ = 0.f;
     };
 
     class AttackState : public AIState {
@@ -51,7 +51,7 @@ namespace AI {
         void onUpdate(ECS::Entity& e, ECS::EntityManager& m, float dt) override;
         void onExit(ECS::Entity& e, ECS::EntityManager& m) override;
     private:
-        float attackTimer_;
+        float attackTimer_ = 0.f;
     };
 
     class HurtState : public AIState {
@@ -60,7 +60,7 @@ namespace AI {
         void onUpdate(ECS::Entity& e, ECS::EntityManager& m, float dt) override;
         void onExit(ECS::Entity& e, ECS::EntityManager& m) override;
     private:
-        float hurtTimer_;
+        float hurtTimer_ = 0.f;
     };
 
     class DeathState : public AIState {

@@ -18,7 +18,12 @@ namespace Engine
 {
 	void EnoEngine::setup()
 	{
-		window_.initialize("RuneHolders", configMng_.getWindowDim().first, configMng_.getWindowDim().second);
+		configMng_.retrieveSettings();
+		auto [w, h] = configMng_.getWindowDim();
+		bool fullscreen = configMng_.getFullscreen();
+		bool vsync = configMng_.getVSync();
+
+		window_.initialize("RuneHolders", w, h, fullscreen, vsync);
 
 		auto [tmW, tmH, tmCell] = configMng_.getTilemapConfig();
 		tilemapSystem_ = std::make_unique<Map::TileMapSystem>(bus_, tmW, tmH, tmCell);

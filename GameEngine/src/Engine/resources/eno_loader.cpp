@@ -18,20 +18,29 @@
 namespace Resources {
 
 	EnoLoader::EnoLoader(Event::EnoEventBus& bus) : bus_{ bus } {
+
+		// Build runtime paths
+		const auto& base = FileSystem::GetAssetsDir();
+
+		musicPath_ = (base / "sound/music").string();
+		sfxPath_ = (base / "sound/sfx").string();
+		imagePath_ = (base / "art").string();
+		shaderPath_ = (base / "shaders").string();
+		fontPath_ = (base / "fonts").string();
+
+		// Subscribe audio events
 		bus_.subscribe<Audio::RequestSound>([&](const Audio::RequestSound& event) {
-			onSoundRequest(event); }
-		);
+			onSoundRequest(event);
+			});
 	}
 
 	// Sound getters
 	const std::string& EnoLoader::getMusicPath() const {
-		static const std::string path{ musicPath_.data(), musicPath_.size() };
-		return path;
+		return musicPath_;
 	}
 
 	const std::string& EnoLoader::getSFXPath() const {
-		static const std::string path{ sfxPath_.data(), sfxPath_.size() };
-		return path;
+		return sfxPath_;
 	}
 
 	std::array<std::string_view, 2> EnoLoader::getSoundExtensions() const { 
@@ -40,8 +49,7 @@ namespace Resources {
 
 	// Texture getters
 	const std::string& EnoLoader::getImagePath() const {
-		static const std::string path{ imagePath_.data(), imagePath_.size() };
-		return path;
+		return imagePath_;
 	}
 
 	std::shared_ptr<Graphics::EnoTexture> EnoLoader::getTexture(const std::string& name) {
@@ -65,8 +73,7 @@ namespace Resources {
 
 	// Shader getters
 	const std::string& EnoLoader::getShaderPath() const {
-		static const std::string path{ shaderPath_.data(), shaderPath_.size() };
-		return path;
+		return shaderPath_;
 	}
 
 	const std::string& EnoLoader::getVertShader(const std::string& name) const { 
@@ -83,8 +90,7 @@ namespace Resources {
 	}
 
 	const std::string& EnoLoader::getFontPath() const {
-		static const std::string path{ fontPath_.data(), fontPath_.size() };
-		return path;
+		return fontPath_;
 	}
 
 	// Load Images (png | jpg)
@@ -181,7 +187,14 @@ namespace Resources {
 		// Look for sound requested in the map
 		auto it = sounds_.find(event.sound_);
 		if (it == sounds_.end()) {
-			throw std::runtime_error("Failed to find the requested sound!");
+			// Instead of throwing, publish an error event
+			bus_.publish(Audio::AudioLoadError{
+				event.sound_,
+				"Unknown location",
+				"Unknown",
+				"Sound was requested but not found in loaded sounds. The audio file may have failed to load or doesn't exist."
+				});
+			return;
 		}
 
 		bus_.publish(Audio::LoadSound{ event.sound_, it->second });

@@ -1,3 +1,9 @@
+/*============================================================================================
+* @file         buttons.cpp
+* @author       Caven Koh (caven.koh@digipen.edu)
+* @date         27/11/2025
+* @brief        This file defines the execution of the signals
+*//*========================================================================================*/
 #include "buttons.hpp"
 #include "../../engine/eno_engine.hpp"
 

@@ -11,9 +11,17 @@ void EnableMemoryLeakChecking(int breakAlloc = -1)
     if (breakAlloc != -1) _CrtSetBreakAlloc(breakAlloc);
 }
 
+#ifdef _DEBUG
 int main() {
+#else
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+#endif
     try {
+#ifdef _DEBUG
         EnableMemoryLeakChecking();
+#endif
+
+        FileSystem::Initialize();
 
         // Create game instance
         GameApplication game;
@@ -36,7 +44,5 @@ int main() {
     catch (...) {
         CrashLogger::logError("Unknown Error");
     }
-
-    
     return 0;
 }

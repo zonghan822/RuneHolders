@@ -53,8 +53,10 @@ even when distributed without a global installation.
 Two scripts are provided to simplify project management:
 
 - run.bat  
-  * Cleans and recompiles the project if the executable is not found.  
-  * Then runs the application.  
+  * Detects missing builds
+  * Automatically regenerates the solution
+  * Builds all projects (Engine, Editor, Launcher, and game)
+  * Runs the Editor 
 
 - clean.bat  
   * Deletes build artifacts and temporary files, resetting the project 
@@ -89,7 +91,7 @@ The solution is named **RuneHolders**. It contains two main projects:
 
 1. **Engine**
    - Location: `src/Engine/`
-   - Type: Static Library (`Engine.lib`)
+   - Type: Static Library (`Engine_static.lib`) and Shared Library (`Engine_shared.dll`)
    - Purpose: Core game engine functionality.
    - Contains: window manager, graphics manager, event bus, physics system, 
      AI manager with A* pathfinding, audio integration (FMOD),
@@ -103,7 +105,8 @@ The solution is named **RuneHolders**. It contains two main projects:
      * **FreeType** – font loading
      * **stb_image** – texture/image loading
      * **.NET SDK** – for managed script integration (via `nethost` and `hostfxr`)
-   - Output: `Engine.lib` in `build/projects/Engine/`
+   - Output: `Engine_static.lib` and `Engine_shared.dll` in `build/projects/Engine/`
+   - The `Engine_shared.dll` will be copied to the App build directory
 
 2. **Editor**
    - Location: `src/App/Editor/`
@@ -111,6 +114,22 @@ The solution is named **RuneHolders**. It contains two main projects:
    - Purpose: Application layer linking against `Engine.lib`.
    - Includes game logic and ImGui integration.
    - Output: Executable in `build/projects/App/Editor/`
+
+3. **RuneWeavers**
+   - Location: `src/App/RuneWeavers/`
+   - Type: Executable (`RuneWeavers.exe`)
+   - Purpose: The actual game that serialize the save file from editor.
+   - Includes all the game logic (one game loop only).
+   - Output: Executable in `build/projects/App/RuneWeavers/`
+
+
+4. **RuneLauncher**
+   - Location: `src/App/RuneLauncher/`
+   - Type: Executable (`RuneLauncher.exe`)
+   - Purpose: Launcher for the game (RuneWeavers.exe)
+   - UI for the game settings before game start (Resolution, vsync).
+   - Output: Executable in `build/projects/App/RuneLauncher/`
+
 
 3. **GameScripts (C#)**
    - Location: `scripts/GameScripts/`
@@ -137,42 +156,81 @@ Both projects support standard Visual Studio configurations:
 - **Debug**
   - Debug symbols enabled (`/Od`).
   - Defines: `_DEBUG`, `DEBUG`.
+  - /SUBSYSTEM:CONSOLE
+  - Shows terminal window
+  - Uses int main()
 
 - **Release**
   - Optimizations enabled (`/O2`).
   - Defines: `NDEBUG`.
-
-- **RelWithDebInfo**
-  - Optimized with debug info (good for profiling).
-
-- **MinSizeRel**
-  - Optimized for smallest binary size.
+  - /SUBSYSTEM:WINDOWS
+  - No console window
+  - Uses WinMain()
 
 FMOD DLLs and .NET runtime dependencies are copied automatically
 based on the configuration.
 
 ----------------------------------------------------------
-7. Assets
+7. Assets & Scripts
 ----------------------------------------------------------
 - Assets (textures, shaders, sounds, fonts, scripts) are stored under:
   `assets/`
-- During build, assets are copied into:
-  `build/assets/`
-- Engine defines a constant path `ASSETS_DIR_PATH` via CMake to locate assets
-  relative to source.
-- C# scripts are built into `build/scripts/` and loaded at runtime
+- During build, assets and scripts are copied into:
+  `build/projects/Apps/$<Config>/`
+- C# scripts are built into `build/projects/Apps/$<Config>/` and loaded at runtime
   through the .NET runtime host.
 
 ----------------------------------------------------------
-8. Additional Notes
+8. Config System
 ----------------------------------------------------------
-- Ensure `DOTNET_ROOT` is properly set by the engine before running.
-  The path is automatically defined as:
-    X:/RuneHolders/GameEngine/build/lib/dotnet
+The engine reads settings from: assets/settings/config.txt
+
+Example file:
+
+Window Width: 1920
+Window Height: 1080
+Fullscreen: false
+VSync: true
+Tilemap Width: 64
+Tilemap Height: 64
+Tilemap CellSize: 64
+
+The Launcher writes these values before starting the game.
+
+----------------------------------------------------------
+9. Runtime Resolution Control
+----------------------------------------------------------
+Inside the game:
+
+CTRL + '=' or CTRL + '+'
+→ Increase resolution
+
+CTRL + '-'
+→ Decrease resolution
+
+CTRL + 0
+→ Toggle fullscreen
+
+
+----------------------------------------------------------
+10. Installer (Inno Setup)
+----------------------------------------------------------
+The installer:
+
+- Installs game default to:
+  C:\Program Files\RuneWeavers\
+
+- Creates uninstall entry + shortcuts
+
+
+----------------------------------------------------------
+11. Additional Notes
+----------------------------------------------------------
 - The engine embeds .NET via `nethost.h` and `hostfxr.h`, loaded dynamically.
 - For local SDK builds, no global .NET installation is required.
 - If you wish to rebuild scripts manually:
   > dotnet build scripts/GameScripts/GameScripts.csproj -c Release
+
 
 ==========================================================
 End of Project Guide

@@ -1,5 +1,8 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         entity_snapshot.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @date         2025-11-29
 * @brief        Entity snapshot for serialization in undo/redo system
 *//*========================================================================================*/
 
@@ -50,7 +53,7 @@ namespace Editor
 	*//*========================================================================================*/
 	struct EntitySnapshot
 	{
-		uint32_t entityID;
+		uint32_t entityID = UINT32_MAX;
 		std::string name;
 		std::vector<ComponentSnapshot> components;
 

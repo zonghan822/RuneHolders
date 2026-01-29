@@ -37,6 +37,10 @@ GameApplication* g_game = nullptr;
 uint32_t playerEntityID_ = 0;
 bool playerSpawned_ = false;
 
+// Game viewport tracking (for button click detection)
+ImVec2 lastGameViewportPos(0, 0);
+ImVec2 lastGameViewportSize(0, 0);
+
 // Containers for time display
 std::unordered_map<std::string, double> systemTimes_; //actual system time
 std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
@@ -126,6 +130,14 @@ static bool g_cannotDeleteActiveScene = false;
 // Audio filesystems
 static std::vector<std::string> audioAssets;
 
+// Audio error tracking - using a queue to store all errors
+struct AudioErrorInfo {
+	std::string filename;
+	std::string extension;
+	std::string reason;
+};
+static std::vector<AudioErrorInfo> g_audioErrorQueue;
+
 #pragma endregion
 
 /*============================================================================================
@@ -176,6 +188,25 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	auto& entityManager = engine_.getEntityManager();
 	auto& loader = engine_.getResourceLoader();
 
+	// Subscribe to audio error events early (only once)
+	// This needs to happen before audio tab is opened so we catch errors from initial load
+	static bool audioErrorSubscribed = false;
+	if (!audioErrorSubscribed)
+	{
+		Event::EnoEventBus& bus = engine_.getEventBus();
+		bus.subscribe<Audio::AudioLoadError>([](const Audio::AudioLoadError& event) {
+			// Add error to queue so it persists and can be displayed later
+			g_audioErrorQueue.push_back(AudioErrorInfo{
+				event.filename_,
+				event.extension_,
+				event.errorReason_
+				});
+			std::cout << "[ImGui Audio] Error queued: " << event.filename_ << std::endl;
+			});
+		audioErrorSubscribed = true;
+		std::cout << "[ImGui Audio] Subscribed to audio error events" << std::endl;
+	}
+
 	// BEGIN DOCKSPACE
 	imGuiBeginDockspace();
 
@@ -190,7 +221,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	static Player::PlayerConfig playerConfig;
 	static bool configLoaded = false;
 	if (!configLoaded) {
-		configLoaded = playerConfig.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
+		configLoaded = playerConfig.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
 		if (configLoaded) {
 			std::cout << "[ImGui] Player config loaded successfully" << std::endl;
 		}
@@ -279,7 +310,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	if (g_pendingNewScene)
 	{
 		clearSelectedEntity();
-		engine_.getEnoEditor().createEmptyScene(ASSETS_DIR_PATH "saves/scenes/");
+		engine_.getEnoEditor().createEmptyScene(FileSystem::GetAssetsDir().string() + "/saves/scenes/");
 		g_game->markEntitiesDirty();  // Force entity cache refresh
 		g_pendingNewScene = false;
 		g_resetEntityCounter = true;  // Reset counter for new scene
@@ -294,6 +325,99 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		g_sceneToLoad = "";
 		g_resetEntityCounter = true;  // Reset counter for loaded scene
 		std::cout << "[ImGui] Deferred: Loaded scene " << g_sceneToLoad << std::endl;
+	}
+
+	// Global Audio Load Error Popup Modal (can appear from any tab)
+	// Check if there are errors in the queue and show popup
+	static bool isPopupOpen = false;
+
+	if (!g_audioErrorQueue.empty() && !isPopupOpen)
+	{
+		ImGui::OpenPopup("Audio Format Error##GlobalAudioLoadError");
+		isPopupOpen = true;
+	}
+
+	// Display the error popup modal
+	if (ImGui::BeginPopupModal("Audio Format Error##GlobalAudioLoadError", NULL,
+		ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
+	{
+		if (!g_audioErrorQueue.empty())
+		{
+			const auto& error = g_audioErrorQueue.front();
+
+			// Header with error icon style
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f)); // Red text
+			ImGui::Text("AUDIO FILE ERROR");
+			ImGui::PopStyleColor();
+
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			// Show how many errors remain if multiple
+			if (g_audioErrorQueue.size() > 1)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.7f, 0.0f, 1.0f)); // Orange
+				ImGui::Text("(%zu more error%s in queue)",
+					g_audioErrorQueue.size() - 1,
+					g_audioErrorQueue.size() > 2 ? "s" : "");
+				ImGui::PopStyleColor();
+				ImGui::Spacing();
+			}
+
+			// Error details
+			ImGui::Text("Unable to load or play audio file:");
+			ImGui::Spacing();
+
+			ImGui::Indent(20.0f);
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f)); // Yellow text
+			ImGui::TextWrapped("%s", error.filename.c_str());
+			ImGui::PopStyleColor();
+			ImGui::Unindent(20.0f);
+
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			// Error reason
+			ImGui::Text("Reason:");
+			ImGui::Indent(20.0f);
+			ImGui::TextWrapped("%s", error.reason.c_str());
+			ImGui::Unindent(20.0f);
+
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			// Supported formats
+			ImGui::Text("Supported audio formats:");
+			ImGui::Indent(20.0f);
+			ImGui::BulletText(".wav (recommended)");
+			ImGui::BulletText(".mp3");
+			ImGui::Unindent(20.0f);
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			// Center the OK button
+			float buttonWidth = 120.0f;
+			float windowWidth = ImGui::GetWindowSize().x;
+			ImGui::SetCursorPosX((windowWidth - buttonWidth) * 0.5f);
+
+			if (ImGui::Button("OK", ImVec2(buttonWidth, 0)))
+			{
+				// Remove this error from queue
+				g_audioErrorQueue.erase(g_audioErrorQueue.begin());
+				isPopupOpen = false;
+				ImGui::CloseCurrentPopup();
+			}
+		}
+
+		ImGui::EndPopup();
+	}
+	else
+	{
+		// Popup was closed
+		isPopupOpen = false;
 	}
 
 	ImGui::Render();
@@ -658,7 +782,7 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	auto& entityManager = engine.getEntityManager();
 
 	// Use the new snapshot-based prefab system
-	ECS::Entity e = instantiatePrefabFromSnapshot(name, entityManager, sceneTree);
+	ECS::Entity e = instantiatePrefabFromSnapshot(name, entityManager);
 
 	// Override the position to where the user clicked (treat x,y as CENTER)
 	if (e.has<ECSComponents::TransformComponent>(entityManager))
@@ -765,7 +889,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	// Load performs a "read all file in directory" now
 	if (ImGui::Button("Load Existing Prefab")) {
 		try {
-			for (auto& entry : std::filesystem::directory_iterator(ASSETS_DIR_PATH"saves/prefabs/")) {
+			for (auto& entry : std::filesystem::directory_iterator(FileSystem::GetAssetsDir().string() + "/saves/prefabs/")) {
 				if (entry.path().extension() == ".txt") {
 					try {
 						PrefabData loaded = loadPrefab(entry.path().string());
@@ -816,7 +940,7 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	ImGui::Separator();
 	if (ImGui::Button("Spawn Prefab")) {
 		if (prefabRegistry.count(selectedPrefabName)) {
-			ECS::Entity e = instantiatePrefabFromSnapshot(selectedPrefabName, entityManager, sceneTree);
+			ECS::Entity e = instantiatePrefabFromSnapshot(selectedPrefabName, entityManager);
 
 			// Add entity to scene hierarchy as root node
 			sceneTree.createFromEntity(e, nullptr);
@@ -918,7 +1042,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 			// Load player configuration from file
 			Player::PlayerConfig playerConfig;
-			playerConfig.LoadFromFile(APP_SRC_PATH "player/player_config.txt");
+			playerConfig.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
 
 			// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
 			// Create transform with default position at center of screen
@@ -1020,9 +1144,15 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 		if (!availableScripts.empty()) {
 			std::vector<std::string> scriptNames;
-			for (const auto& ws : availableScripts) 
-				scriptNames.push_back(std::string(ws.begin(), ws.end()));
-				
+			for (const auto& ws : availableScripts)
+			{
+				int size_needed = WideCharToMultiByte(CP_UTF8, 0, ws.data(), (int)ws.size(), nullptr, 0, nullptr, nullptr);
+				std::string result(size_needed, 0);
+				WideCharToMultiByte(CP_UTF8, 0, ws.data(), (int)ws.size(), &result[0], size_needed, nullptr, nullptr);
+
+				scriptNames.push_back(result);
+			}
+
 			// Convert vector to array for ImGui Combo
 			std::vector<const char*> scriptItems;
 			for (auto& name : scriptNames)
@@ -1526,8 +1656,10 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	if (ImGui::Button("Save scene"))
 	{
 		std::string sceneName = editor_.getCurrentScene().getSceneName();
+
 		// Save scene
-		editor_.getSceneTree().save(ASSETS_DIR_PATH "saves/scenes/" + sceneName, sceneName);
+		auto const& assetPath = FileSystem::GetAssetsDir().string();
+		editor_.getSceneTree().save(assetPath + "/saves/scenes/" + sceneName);
 		// Update last saved scene
 		editor_.updateLastSavedScene();
 	}
@@ -1542,28 +1674,39 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 }
 
-static void LoadAudioAssets(Engine::EnoEngine& engine_)
+void LoadAudioAssets(Engine::EnoEngine& engine_)
 {
 	audioAssets.clear();
 
-	std::vector<std::string> folders = {
-		engine_.getResourceLoader().getMusicPath().c_str(),
-		engine_.getResourceLoader().getSFXPath().c_str(),
-	};
+	// Get the list of ACTUALLY loaded sounds from the loader
+	// This ensures we only show files that were successfully loaded by FMOD
+	const auto& loadedSounds = engine_.getResourceLoader().getSounds();
 
-	for (const auto& folder : folders)
+	// Add only the successfully loaded sound names to our UI list
+	for (const auto& soundPair : loadedSounds)
 	{
-		if (!std::filesystem::exists(folder))
-			continue;
+		// soundPair.first is the sound name (filename without extension)
+		// We need to find the actual filename with extension
+		std::vector<std::string> folders = {
+			engine_.getResourceLoader().getMusicPath().c_str(),
+			engine_.getResourceLoader().getSFXPath().c_str(),
+		};
 
-		for (const auto& entry : std::filesystem::directory_iterator(folder))
+		for (const auto& folder : folders)
 		{
-			if (!entry.is_regular_file()) continue;
+			if (!std::filesystem::exists(folder))
+				continue;
 
-			std::string ext = entry.path().extension().string();
-			if (ext == ".wav" || ext == ".ogg" || ext == ".mp3")
+			for (const auto& entry : std::filesystem::directory_iterator(folder))
 			{
-				audioAssets.push_back(entry.path().filename().string());
+				if (!entry.is_regular_file()) continue;
+
+				// Check if this file's stem (name without extension) matches the loaded sound
+				if (entry.path().stem().string() == soundPair.first)
+				{
+					audioAssets.push_back(entry.path().filename().string());
+					break; // Found it, move to next sound
+				}
 			}
 		}
 	}
@@ -1574,17 +1717,138 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	Event::EnoEventBus& bus = engine_.getEventBus();
 
+	// Note: Audio error subscription now happens in imGuiDisplay() on first frame
 
 	ImGui::Text("=== AUDIO ASSETS ===");
 
-	// Button to load audio assets exactly once
+	// Drag-drop hint
+	ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Drag & drop .wav or .mp3 files here to import!");
+
+	// Import destination selector
+	static int importDestination = 1; // 0=Music, 1=SFX
+	ImGui::Text("Import to:");
+	ImGui::SameLine();
+	ImGui::RadioButton("Music", &importDestination, 0);
+	ImGui::SameLine();
+	ImGui::RadioButton("SFX", &importDestination, 1);
+
+	// Button to load/reload audio assets
 	if (ImGui::Button("Load Audio Files"))
 	{
+		// Reload audio files from disk - this will trigger error events for unsupported files
+		auto& audioManager = engine_.getAudioManager();
+		loader.loadSound(audioManager.getSystem(), loader.getSoundExtensions(), loader.getMusicPath());
+		loader.loadSound(audioManager.getSystem(), loader.getSoundExtensions(), loader.getSFXPath());
+
+		// Update the UI list
 		LoadAudioAssets(engine_);
+
+		std::cout << "[ImGui Audio] Reloaded audio files" << std::endl;
 	}
 
 	ImGui::Separator();
 
+	// --- Handle dropped audio files ---
+	auto& g_droppedFiles = Window::EnoWindow::GetDroppedFiles();
+	if (!g_droppedFiles.empty()) {
+		auto& audioManager = engine_.getAudioManager();
+
+		for (auto& path : g_droppedFiles) {
+			std::filesystem::path filePath(path);
+			auto ext = filePath.extension().string();
+
+			// Check if this is an audio file
+			if (ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac" ||
+				ext == ".aac" || ext == ".wma" || ext == ".m4a" || ext == ".aiff") {
+
+				std::cout << "[Audio Drop] Processing dropped file: " << filePath.filename().string() << std::endl;
+
+				// Determine destination folder based on user selection
+				std::string destFolder = (importDestination == 0) ? loader.getMusicPath() : loader.getSFXPath();
+				std::string folderName = (importDestination == 0) ? "Music" : "SFX";
+				std::string filename = filePath.filename().string();
+				std::filesystem::path destPath = std::filesystem::path(destFolder) / filename;
+
+				try {
+					// Create directory if it doesn't exist
+					std::filesystem::create_directories(destFolder);
+
+					// Check if we need to copy the file
+					bool needsCopy = !std::filesystem::exists(destPath);
+					if (!needsCopy) {
+						auto sourceAbsolute = std::filesystem::absolute(filePath);
+						auto destAbsolute = std::filesystem::absolute(destPath);
+						needsCopy = (sourceAbsolute != destAbsolute);
+					}
+
+					if (needsCopy) {
+						std::filesystem::copy_file(filePath, destPath,
+							std::filesystem::copy_options::overwrite_existing);
+						std::cout << "[Audio Drop] Copied " << filename << " to " << folderName << " folder" << std::endl;
+					} else {
+						std::cout << "[Audio Drop] File " << filename << " already exists in " << folderName << " folder" << std::endl;
+					}
+
+					// Now try to load the audio file with FMOD
+					// This will trigger error events if the format is unsupported
+					FMOD::Sound* sound = nullptr;
+					FMOD_RESULT result = audioManager.getSystem()->createSound(
+						destPath.string().c_str(), FMOD_DEFAULT, nullptr, &sound);
+
+					if (result == FMOD_OK && (ext == ".wav" || ext == ".mp3")) {
+						// Successfully loaded - store it in loader and notify audio manager via event
+						std::string soundName = filePath.stem().string();
+
+						// Store in loader (used by UI and serialization)
+						loader.addSound(soundName, sound);
+
+						// Publish LoadSound event so audio manager receives it too
+						bus.publish(Audio::LoadSound{ soundName, sound });
+
+						std::cout << "[Audio Drop] Successfully loaded: " << filename << " as '" << soundName << "'" << std::endl;
+
+						// Refresh the UI list
+						LoadAudioAssets(engine_);
+					} else {
+						// Failed to load or unsupported format
+						if (ext == ".wav" || ext == ".mp3") {
+							// Supported format but FMOD failed
+							bus.publish(Audio::AudioLoadError{
+								filename,
+								destPath.string(),
+								ext,
+								"FMOD failed to load the file. The file may be corrupted or in an unsupported codec."
+								});
+						} else {
+							// Unsupported format
+							bus.publish(Audio::AudioLoadError{
+								filename,
+								destPath.string(),
+								ext,
+								"File format is not supported. Only .wav and .mp3 files are supported."
+								});
+						}
+
+						// Clean up the FMOD sound if it was partially created
+						if (sound) {
+							sound->release();
+						}
+
+						std::cout << "[Audio Drop] Failed to load: " << filename << " (unsupported or corrupted)" << std::endl;
+					}
+
+				} catch (const std::exception& e) {
+					std::cerr << "[Audio Drop] Error processing file: " << e.what() << std::endl;
+					bus.publish(Audio::AudioLoadError{
+						filename,
+						path,
+						ext,
+						std::string("File operation failed: ") + e.what()
+						});
+				}
+			}
+		}
+	}
 
 	static int selectedAsset = -1;
 	static std::string selectedName{};
@@ -1737,6 +2001,8 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 
 	}
+
+	// Note: Audio error popup is displayed globally in imGuiDisplay()
 
 }
 
@@ -3725,7 +3991,7 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 
 			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
 				// Construct destination path in assets folder
-				std::string assetsImagePath = std::string(ASSETS_DIR_PATH) + "art/";
+				std::string assetsImagePath = FileSystem::GetAssetsDir().string() + "/art/";
 				std::string filename = filePath.filename().string();
 				std::filesystem::path destPath = std::filesystem::path(assetsImagePath) / filename;
 
@@ -3959,6 +4225,10 @@ void displayGameView() {
 			// Position the image with offset (centered with letterboxing)
 			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
 
+			// Store viewport position and size for button click detection
+			lastGameViewportPos = ImVec2(windowPos.x + offset.x, windowPos.y + offset.y);
+			lastGameViewportSize = displaySize;
+
 			// Display the framebuffer texture scaled to fit (READ-ONLY - no interactions)
 			ImGui::Image(
 				(void*)(intptr_t)fb->getTextureID(),
@@ -3974,7 +4244,7 @@ void displayGameView() {
 }
 
 // Draw gizmos for selected entity
-void drawGizmos(ImDrawList* drawList, ImVec2 screenPos, ImVec2 entityCenter, float gizmoSize, GizmoMode mode) {
+void drawGizmos(ImDrawList* drawList, ImVec2 entityCenter, float gizmoSize, GizmoMode mode) {
 	const float handleSize = 8.0f;
 	const float rotateRadius = gizmoSize * 0.6f;
 
@@ -4273,7 +4543,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
 					{
 						// Construct destination path in assets folder
-						std::string assetsImagePath = std::string(ASSETS_DIR_PATH) + "art/";
+						std::string assetsImagePath = FileSystem::GetAssetsDir().string() + "/art/";
 						std::string filename = filePath.filename().string();
 						std::string textureName = filePath.stem().string();
 						std::filesystem::path destPath = std::filesystem::path(assetsImagePath) / filename;
@@ -4559,7 +4829,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				for (auto& e : allEntities) {
 					if (e.id() == selectedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
-						auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 
 						// Convert entity position to screen coordinates          
 						Math::eVec2<float> entityWorldPos = {tc.pos.x, tc.pos.y}; 
@@ -4577,7 +4846,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 						// Draw gizmo based on current mode
 						float gizmoSize = 50.0f;
-						drawGizmos(drawList, windowPos, entityScreenPos, gizmoSize, currentGizmoMode);
+						drawGizmos(drawList, entityScreenPos, gizmoSize, currentGizmoMode);
 						break;
 					}
 				}

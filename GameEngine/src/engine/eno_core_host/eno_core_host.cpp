@@ -1,9 +1,14 @@
 #include "eno_core_host.hpp"
+#include "../file/file_system.hpp"
 
 namespace Core
 {
-	EnoCoreHost::EnoCoreHost(Event::EnoEventBus& bus) : bus_{ bus }
+	EnoCoreHost::EnoCoreHost(Event::EnoEventBus& bus) : 
+		bus_{ bus }
 	{
+		asmDllPath = FileSystem::GetExecutableDir() / "GameScripts.dll";
+		runtConfigJson = FileSystem::GetExecutableDir() / "GameScripts.runtimeconfig.json";
+
 		init();
 
 		getHFHandles();
@@ -129,7 +134,7 @@ namespace Core
 		// 
 		// Prepares runtime environment for hostfxr to interface
 		// and load the .NET runtime (CoreCLR)
-		int returnCode = initfp_(runtConfigJson, nullptr, &hfHandle_);
+		int returnCode = initfp_(runtConfigJson.wstring().c_str(), nullptr, &hfHandle_);
 
 		// If returnCode != 0,
 		// runtime context was not initialized properly
@@ -320,9 +325,10 @@ namespace Core
 		callScript<ScriptingDelegateInfo>(
 			L"Eno.ScriptSetup, GameScripts",
 			L"Initialize",
-			reloadDelegate_, 
-			WSCRIPT_SRC_PATH,
-			WSCRIPT_BIN_PATH);
+			reloadDelegate_,
+			(FileSystem::GetScriptsDir().wstring() + L'/').c_str(),
+			(FileSystem::GetExecutableDir().wstring() + L'/').c_str()
+		);
 	}
 
 	// Hot reload
@@ -330,10 +336,11 @@ namespace Core
 	{
 		callScript<ScriptingDelegateInfo>(
 			L"Eno.ScriptSetup, GameScripts",
-			L"Reload", 
+			L"Reload",
 			reloadDelegate_,
-			WSCRIPT_SRC_PATH,
-			WSCRIPT_BIN_PATH);
+			(FileSystem::GetScriptsDir().wstring() + L'/').c_str(),
+			(FileSystem::GetExecutableDir().wstring() + L'/').c_str()
+		);
 	}		
 
 
@@ -802,7 +809,7 @@ namespace Core
 			std::wstring(assemblyPath),
 			std::wstring(typeName),
 			std::wstring(methodName),
-			className, id };
+			className, id, op };
 
 		// Create the actual method delegate
 		RegisterInstanceProxyMethod call{ nullptr };

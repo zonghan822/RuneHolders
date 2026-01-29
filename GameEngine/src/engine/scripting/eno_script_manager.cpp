@@ -1,9 +1,10 @@
 #include "eno_script_manager.hpp"
+#include "../file/file_system.hpp"
 
 namespace Script
 {
 	EnoScriptManager::EnoScriptManager(Core::EnoCoreHost& core) :
-		coreHost_{ core }
+		coreHost_{ core }, scriptPath{ FileSystem::GetScriptsDir().string() }
 	{}
 
 	// Select a script from a file dialog and 
@@ -109,7 +110,7 @@ namespace Script
 	{
 		std::vector<std::wstring> result;
 
-		for (auto& entry : std::filesystem::directory_iterator(SCRIPT_SRC_PATH)) {
+		for (auto& entry : std::filesystem::directory_iterator(FileSystem::GetScriptsDir())) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
 
@@ -142,7 +143,7 @@ namespace Script
 		std::wcout << L"[DEBUG] loadScript() called for: " << className << std::endl;
 		// Construct and return your script object as usual
 
-		std::filesystem::path path = WSCRIPT_SRC_PATH;
+		std::filesystem::path path = FileSystem::GetScriptsDir();
 		path /= className + L".cs";
 		return std::make_unique<EnoScript>(coreHost_, className, path.wstring());
 	}
@@ -200,7 +201,7 @@ namespace Script
 		std::filesystem::path absPath = std::filesystem::absolute(folder / filename);
 
 		// Create the script if it does not exist
-		if (!scriptExists(name, absPath.string()))
+		if (!scriptExists(absPath.string()))
 			createScript(name);
 
 		// Create and return the unique EnoScript
@@ -252,7 +253,7 @@ namespace Script
 	}
 
 	// Check if a script file exists in the specified location
-	bool EnoScriptManager::scriptExists(const std::string& name, const std::string& loc)
+	bool EnoScriptManager::scriptExists(const std::string& loc)
 	{
 		std::filesystem::path p = std::filesystem::absolute(loc);
 

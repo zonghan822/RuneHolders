@@ -1,0 +1,20 @@
+#include "resource.h"
+#include <windows.h>
+
+IDD_LAUNCHER DIALOGEX 0, 0, 240, 180
+STYLE DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "RuneWeavers Launcher"
+FONT 9, "Segoe UI"
+BEGIN
+    LTEXT "Resolution:", -1, 10, 15, 80, 12
+    COMBOBOX IDC_RESOLUTION, 10, 30, 120, 60, CBS_DROPDOWNLIST | WS_VSCROLL
+
+    CONTROL "Fullscreen", IDC_FULLSCREEN, "Button",
+            BS_AUTOCHECKBOX | WS_TABSTOP, 10, 60, 80, 12
+
+    CONTROL "VSync", IDC_VSYNC, "Button",
+            BS_AUTOCHECKBOX | WS_TABSTOP, 10, 80, 80, 12
+
+    DEFPUSHBUTTON "Play", IDPLAY, 150, 140, 70, 22
+    PUSHBUTTON "Exit", IDCANCEL, 70, 140, 70, 22
+END

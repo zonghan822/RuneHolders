@@ -47,6 +47,18 @@ namespace Input {
 		scrollY_ = 0.0;
 	}
 
+	void EnoInputManager::clearAllKeyStates() {
+		// Clear all key pressed states
+		for (auto& pair : keyStates_) {
+			pair.second = false;
+		}
+
+		// Clear mouse button states
+		for (auto& pair : mouseButtonStates_) {
+			pair.second = false;
+		}
+	}
+
 	void EnoInputManager::setupKey(const std::string& inputName, int key, int scancode, int action, int mods)
 	{
 		inputMap_.insert(inputName, KeyBinding{ key, scancode, action, mods });

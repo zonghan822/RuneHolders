@@ -7,11 +7,12 @@
 *//*========================================================================================*/
 
 #include "crashlogger.hpp"
+#include "../file/file_system.hpp"
 #include <iostream>
 #include <ctime>
 
 void CrashLogger::logError(const std::string& message) {
-    std::string logPath = ASSETS_DIR_PATH + std::string("crashlogs/crash_log.txt");
+    std::string logPath = FileSystem::GetAssetsDir().string() + "/crashlogs/crash_log.txt";
     std::ofstream log(logPath.c_str(), std::ios::app);
 
     if (!log) {

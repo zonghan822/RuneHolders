@@ -59,7 +59,7 @@ namespace Window
 		* \param[in] glMinor	OpenGL minor version (default: 5)
 		* \throws	std::runtime_error if GLFW initialization or window creation fails
 		*//*========================================================================================*/
-		void initialize(const std::string& title, int width, int height,
+		void initialize(const std::string& title, int width, int height, bool fullscreen, bool vsync,
 						int glMajor = 4, int glMinor = 5);
 
 		/*============================================================================================
@@ -119,7 +119,13 @@ namespace Window
 		* \brief	Toggles fullscreen mode
 		* \param[in] fullscreen	true to enable fullscreen, false for windowed
 		*//*========================================================================================*/
-		void setFullscreen(bool fullscreen);
+		void toggleFullscreen();
+
+		void setResolution(int width, int height);
+
+		void increaseResolution();
+
+		void decreaseResolution();
 
 		//(YunQi)
 		static std::vector<std::string>& GetDroppedFiles();
@@ -178,13 +184,33 @@ namespace Window
 		static void MouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 		/*============================================================================================
+		* \brief	Window focus callback (ALT-TAB, etc.)
+		* \param[in] window		GLFW window pointer
+		* \param[in] focused	GLFW_TRUE if focused, GLFW_FALSE if unfocused
+		*//*========================================================================================*/
+		static void WindowFocusCallback(GLFWwindow* window, int focused);
+
+		/*============================================================================================
+		* \brief	Window iconify callback (minimize/restore)
+		* \param[in] window		GLFW window pointer
+		* \param[in] iconified	GLFW_TRUE if minimized, GLFW_FALSE if restored
+		*//*========================================================================================*/
+		static void WindowIconifyCallback(GLFWwindow* window, int iconified);
+
+		/*============================================================================================
 		* \brief	Sets up all GLFW event callbacks
 		*//*========================================================================================*/
 		void setupEventCallbacks();
 
+		void buildResolutionTable();
 
 	private:
 		GLFWwindow* window_ = nullptr;
 		Event::EnoEventBus& bus_;
+		std::vector<std::pair<int, int>> resolutionTable_;
+		int resolutionIndex_ = 0;
+		bool isFullscreen_ = false;
+		int windowedX_ = 0, windowedY_ = 0;
+		int windowedW_ = 1280, windowedH_ = 720;
 	};
 }
