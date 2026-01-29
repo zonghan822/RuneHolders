@@ -70,10 +70,7 @@ float pScaleY = 1.0f;
 // Keeping track of animations
 static std::vector<AnimationPreset> presets;
 static int selectedPresetIndex = 0; // for ImGui dropdown
-static Graphics::TextureData idleTexData;
-static Graphics::TextureData walkTexData;
-static Graphics::TextureData attackTexData;
-
+static Graphics::TextureData selectedTexData;
 
 // Time
 static float shown_fps = 0.0f;
@@ -3787,15 +3784,20 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 #endif
 
 
-std::vector<std::string> states { "WALKING", "ATTACKING", "IDLE"};
-
+//Demo states, Find a way to bridge to C# side so that it takes states from entity instead.
+std::vector<std::string> states { "Death", "Idle", "Attack", "Walk"};
 void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	const auto& textures = loader.getAllTextures();
-	static std::string idleSelected = "";
+	static std::string selected = "";  //currently selected
 	auto& entMng = engine_.getEntityManager();
-	auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;  //i think this is used because we have to find the behaviors of the script? idk. 
+	auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;  //This can be useful later on to find the behaviors/entity states available
+
+	//Dynamically allow player to choose the state that they want to edit.
+	static int selectedStateIdx = 0;
+	selectedStateIdx = std::clamp(selectedStateIdx, 0, (int)states.size() - 1);
+	const std::string& selectedState = states[selectedStateIdx];
 
 
 	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
@@ -3807,35 +3809,39 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ImGui::End();
 		return;
 	}
-#if 0
-	//this will be activated later on when I can read states from a script. First I will try to access and amend anims to a state with a vector
-	if (entityScript) {
-		//for (const auto& var : entityScript->vars()) {
-		for (const auto& [state, value] : entityScript->vars()) { //Yun Qi: by assuming that everything is a state, i will be able to start work on assigning my animations.
 
 
-
+	// New UI: pick which state this "slot" applies to
+	ImGui::Text("State");
+	if (ImGui::BeginCombo("##StateSelect", selectedState.c_str()))
+	{
+		for (int i = 0; i < (int)states.size(); ++i)
+		{
+			bool isSelected = (i == selectedStateIdx);
+			if (ImGui::Selectable(states[i].c_str(), isSelected))
+				selectedStateIdx = i;
+			if (isSelected) ImGui::SetItemDefaultFocus();
 		}
+		ImGui::EndCombo();
 	}
-#endif
 
 
-	//================================= IDLE ANIMATION ===================================
-	ImGui::Text("IDLE");
 
+	//================================= SELECTED STATE ANIMATION CONTROLLER ===================================
+	ImGui::Text("%s", selectedState.c_str());
 
-	static Graphics::TextureData idleTextureData;
-	static int idleMode = 1;              // 0 = rows/cols, 1 = pixel size
-	static int idleRows = 1;
-	static int idleCols = 1;
-	static int idleFrameW = 96;
-	static int idleFrameH = 96;
+	static Graphics::TextureData selectedTextureData;
+	static int selectedMode = 1;              // 0 = rows/cols, 1 = pixel size
+	static int selectedRows = 1;
+	static int selectedCols = 1;
+	static int selectedFrameW = 96;
+	static int selectedFrameH = 96;
 
 
 	// LEFT SIDE PREVIEW
-	if (!idleSelected.empty())
+	if (!selected.empty())
 	{
-		auto it = textures.find(idleSelected);
+		auto it = textures.find(selected);
 		if (it != textures.end())
 		{
 			auto tex = it->second;   // shared_ptr<EnoTexture>
@@ -3850,7 +3856,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 	else
 	{
-		ImGui::Button("##IdlePreview", ImVec2(180, 150));
+		ImGui::Button("##SelectedPreview", ImVec2(180, 150));
 	}
 
 	//Drag and Drop target
@@ -3858,62 +3864,62 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	{
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
 		{
-			idleSelected = (const char*)payload->Data;
+			selected = (const char*)payload->Data;
 
-			auto it = textures.find(idleSelected);
+			auto it = textures.find(selected);
 			if (it != textures.end())
 			{
-				idleTexData.texture = it->second; // shared_ptr<EnoTexture>
+				selectedTexData.texture = it->second; // shared_ptr<EnoTexture>
 			}
 		}
 		ImGui::EndDragDropTarget();
 	}
 
-	ImGui::Text("Assigned: %s", idleSelected.empty() ? "(none)" : idleSelected.c_str());
+	ImGui::Text("Assigned: %s", selected.empty() ? "(none)" : selected.c_str());
 
 
 	// RIGHT SIDE SETTINGS
-	if (!idleSelected.empty())
+	if (!selected.empty())
 	{
 		ImGui::Separator();
 		ImGui::Text("Animation Settings");
 
 		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
-		ImGui::Combo("Input Mode##Idle", &idleMode, modes, IM_ARRAYSIZE(modes));
+		ImGui::Combo("Input Mode##Idle", &selectedMode, modes, IM_ARRAYSIZE(modes));
 
-		auto it = textures.find(idleSelected);
+		auto it = textures.find(selected);
 		if (it != textures.end())
 		{
 			auto tex = it->second;
 
 
-			if (idleMode == 0)
+			if (selectedMode == 0)
 			{
 				// ROWS / COLUMNS MODE
-				ImGui::InputInt("Rows##Idle", &idleRows);
-				ImGui::InputInt("Columns##Idle", &idleCols);
+				ImGui::InputInt("Rows##selected", &selectedRows);
+				ImGui::InputInt("Columns##selected", &selectedCols);
 
-				idleRows = std::max(1, idleRows);
-				idleCols = std::max(1, idleCols);
+				selectedRows = std::max(1, selectedRows);
+				selectedCols = std::max(1, selectedCols);
 
-				ImGui::Text("Frame Size: %d × %d", idleFrameW, idleFrameH);
+				ImGui::Text("Frame Size: %d × %d", selectedFrameW, selectedFrameH);
 			}
-			else if (idleMode == 1)
+			else if (selectedMode == 1)
 			{
 				// PIXEL MODE
-				ImGui::InputInt("Frame Width##Idle", &idleFrameW);
-				ImGui::InputInt("Frame Height##Idle", &idleFrameH);
+				ImGui::InputInt("Frame Width##selected", &selectedFrameW);
+				ImGui::InputInt("Frame Height##selected", &selectedFrameH);
 
-				idleFrameW = std::max(1, idleFrameW);
-				idleFrameH = std::max(1, idleFrameH);
+				selectedFrameW = std::max(1, selectedFrameW);
+				selectedFrameH = std::max(1, selectedFrameH);
 
-				ImGui::Text("Grid: %d rows × %d cols", idleRows, idleCols);
+				ImGui::Text("Grid: %d rows × %d cols", selectedRows, selectedCols);
 			}
 
-			idleTexData.frameWidth = idleFrameW;
-			idleTexData.frameHeight = idleFrameH;
-			idleTexData.rows = idleRows;
-			idleTexData.cols = idleCols;
+			selectedTexData.frameWidth = selectedFrameW;
+			selectedTexData.frameHeight = selectedFrameH;
+			selectedTexData.rows = selectedRows;
+			selectedTexData.cols = selectedCols;
 		}
 	}
 
@@ -3921,13 +3927,13 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 	// ================== APPLY BUTTON FOR IDLE ANIMATION ==================
 	// Button is disabled if no texture is selected
-	bool idleHasTexture = idleTexData.texture != nullptr && !idleSelected.empty();
-	if (!idleHasTexture)
+	bool selectedHasTexture = selectedTexData.texture != nullptr && !selected.empty();
+	if (!selectedHasTexture)
 	{
 		ImGui::BeginDisabled();
 	}
 
-	if (ImGui::Button("APPLY IDLE"))
+	if (ImGui::Button("APPLY Selected State"))
 	{
 		ECS::Entity e{ selectedEntityID };
 
@@ -3935,23 +3941,23 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		try {
 			if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) {
 				std::cerr << "[APPLY IDLE] Entity missing AnimationControllerComponent" << std::endl;
-				if (!idleHasTexture) ImGui::EndDisabled();
+				if (!selectedHasTexture) ImGui::EndDisabled();
 				return;
 			}
 			if (!e.has<ECSComponents::DrawInfoComponent>(entMng)) {
 				std::cerr << "[APPLY IDLE] Entity missing DrawInfoComponent" << std::endl;
-				if (!idleHasTexture) ImGui::EndDisabled();
+				if (!selectedHasTexture) ImGui::EndDisabled();
 				return;
 			}
 		}
 		catch (const std::exception& ex) {
 			std::cerr << "[APPLY IDLE] Exception during validation: " << ex.what() << std::endl;
-			if (!idleHasTexture) ImGui::EndDisabled();
+			if (!selectedHasTexture) ImGui::EndDisabled();
 			return;
 		}
 		catch (...) {
 			std::cerr << "[APPLY IDLE] Unknown exception during validation" << std::endl;
-			if (!idleHasTexture) ImGui::EndDisabled();
+			if (!selectedHasTexture) ImGui::EndDisabled();
 			return;
 		}
 
@@ -3969,85 +3975,73 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 			if (!ctrl) {
 				std::cerr << "[APPLY IDLE] Failed to create animation controller" << std::endl;
-				if (!idleHasTexture) ImGui::EndDisabled();
+				if (!selectedHasTexture) ImGui::EndDisabled();
 				return;
 			}
 			std::cout << "[APPLY IDLE] Created new animation controller with ID: " << animComp.controllerID << std::endl;
 		}
 
 		// Safety check: Ensure texture is valid before proceeding
-		if (!idleTexData.texture || !idleTexData.texture->isValid())
+		if (!selectedTexData.texture || !selectedTexData.texture->isValid())
 		{
 			std::cerr << "[APPLY IDLE] Invalid texture data" << std::endl;
-			ImGui::OpenPopup("Error##IdleNoTexture");
-			if (!idleHasTexture) ImGui::EndDisabled();
+			ImGui::OpenPopup("Error##selectedNoTexture");
+			if (!selectedHasTexture) ImGui::EndDisabled();
 			return;
 		}
 
-		//drawComp.texture = idleTexData.texture;
-		//drawComp.color = Graphics::Color::White;
-		drawComp.setTexture(idleTexData.texture, idleSelected);
+		//drawComp.texture = selectedTexData.texture;
+		drawComp.setTexture(selectedTexData.texture, selected);
 		drawComp.color = Graphics::Color::White;
-
-
-		//std::strncpy(drawComp.texturePath, ctrl->currentAnimation_->.c_str(), sizeof(drawComp.texturePath) - 1);
-		//drawComp.texturePath[sizeof(drawComp.texturePath) - 1] = '\0';
-
 		drawComp.texID = 0;
 
 		//checkpoint
-		if (idleMode == 0)   // rows/cols mode
+		if (selectedMode == 0)   // rows/cols mode
 		{
-			idleTexData.rows = std::max(1, idleRows);
-			idleTexData.cols = std::max(1, idleCols);
-			idleTexData.computeFrameSize();
+			selectedTexData.rows = std::max(1, selectedRows);
+			selectedTexData.cols = std::max(1, selectedCols);
+			selectedTexData.computeFrameSize();
 		}
 		else                 // pixel mode
 		{
-			idleTexData.rows = idleTexData.texture->getHeight() / std::max(1, idleFrameH);
-			idleTexData.cols = idleTexData.texture->getWidth() / std::max(1, idleFrameW);
-			idleTexData.frameWidth = idleFrameW;
-			idleTexData.frameHeight = idleFrameH;
+			selectedTexData.rows = selectedTexData.texture->getHeight() / std::max(1, selectedFrameH);
+			selectedTexData.cols = selectedTexData.texture->getWidth() / std::max(1, selectedFrameW);
+			selectedTexData.frameWidth = selectedFrameW;
+			selectedTexData.frameHeight = selectedFrameH;
 		}
 
 
 		// Create animation with explicit frame calculation
-		Animation::EnoAnimation idleAnim = Animation::createSpriteSheetAnimation(
-			idleTexData.frameWidth,
-			idleTexData.frameHeight,
-			idleTexData.texture->getWidth(),
-			idleTexData.texture->getHeight(),
+		Animation::EnoAnimation selectedAnim = Animation::createSpriteSheetAnimation(
+			selectedTexData.frameWidth,
+			selectedTexData.frameHeight,
+			selectedTexData.texture->getWidth(),
+			selectedTexData.texture->getHeight(),
 			0,                                  // start frame
-			idleTexData.rows * idleTexData.cols,// total frames
+			selectedTexData.rows * selectedTexData.cols,// total frames
 			0.1f                                // duration per frame
 		);
 
-		// Optional: Print out frame UV coordinates for debugging
-			//const auto& frame = idleAnim.getCurrentFrame();
-			//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
-			//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
-
-
-
-		idleAnim.setLooping(true);
-		ctrl->addAnimation("Idle", idleAnim, idleTexData.texture); // Pass the texture
-		ctrl->setAnimation("Idle");
+		selectedAnim.setLooping(true);
+		ctrl->addAnimation(selectedState, selectedAnim, selectedTexData.texture); // Pass the texture
+		ctrl->setAnimation(selectedState);
 
 		// Save animation configuration to component for serialization
-		std::strncpy(animComp.currentAnimationName, "Idle", sizeof(animComp.currentAnimationName) - 1);
-		animComp.setAnimationData(
-			"Idle",
-			idleSelected.c_str(),
-			idleTexData.frameWidth,
-			idleTexData.frameHeight,
-			idleTexData.rows,
-			idleTexData.cols,
+		std::strncpy(animComp.currentAnimationName, selectedState.c_str(), sizeof(animComp.currentAnimationName) - 1); 
+
+		animComp.setAnimationData(																		
+			selectedState.c_str(),
+			selected.c_str(),
+			selectedTexData.frameWidth,
+			selectedTexData.frameHeight,
+			selectedTexData.rows,
+			selectedTexData.cols,
 			0.1f,
 			true
 		);
 	}
 
-	if (!idleHasTexture)
+	if (!selectedHasTexture)
 	{
 		ImGui::EndDisabled();
 		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -4056,8 +4050,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		}
 	}
 
-	// Error popup for missing texture
-	if (ImGui::BeginPopupModal("Error##IdleNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	// Error popup for missing texture: Error message that pops up without crashing the engine
+	if (ImGui::BeginPopupModal("Error##selectedNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		ImGui::Text("Error: No texture selected!");
 		ImGui::Text("Please drag and drop a texture onto the preview box first.");
@@ -4066,81 +4060,45 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	ImGui::Separator();
-	ImGui::Text("Quick Animation Test");
+	ImGui::Text("Animation Test");
 
-	ECS::Entity e{ selectedEntityID };
-	if (e.has<ECSComponents::AnimationControllerComponent>(entMng))
+	if (entity.has<ECSComponents::AnimationControllerComponent>(entMng))
 	{
-		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
+		auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entMng);
 		Animation::AnimationController* ctrl =
 			engine_.getAnimationRegistry().get(animComp.controllerID);
 
 		if (ctrl)
 		{
-			if (ImGui::Button("Play IDLE"))
+			for (const std::string& state : states)
 			{
-				if (ctrl->animations_.count("Idle"))
+				std::string label = "Play " + state;
+
+				if (ImGui::Button(label.c_str()))
 				{
-					ctrl->setAnimation("Idle");
-					// Also update the texture when switching animations
-					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
+					if (ctrl->animations_.count(state))
 					{
-						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
-						auto tex = ctrl->getCurrentTexture();
-						if (tex) {
-							drawComp.texture = tex;
+						ctrl->setAnimation(state);
+
+						// Also update the texture when switching animations
+						if (entity.has<ECSComponents::DrawInfoComponent>(entMng))
+						{
+							auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entMng);
+							if (auto tex = ctrl->getCurrentTexture())
+							{
+								drawComp.texture = tex;
+							}
 						}
 					}
-				}
-				else
-					std::cout << "[ImGui] Idle animation not found!\n";
-			}
-
-			ImGui::SameLine();
-
-			if (ImGui::Button("Play WALK"))
-			{
-				if (ctrl->animations_.count("Walk"))
-				{
-					ctrl->setAnimation("Walk");
-					// Also update the texture when switching animations
-					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
+					else
 					{
-						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
-						auto tex = ctrl->getCurrentTexture();
-						if (tex) {
-							drawComp.texture = tex;
-						}
+						std::cout << "[ImGui] " << state << " animation not found!\n";
 					}
 				}
-				else
-					std::cout << "[ImGui] Walk animation not found!\n";
+
 			}
 
-			ImGui::SameLine();
-
-			if (ImGui::Button("Play ATTACK"))
-			{
-				if (ctrl->animations_.count("Attack"))
-				{
-					ctrl->setAnimation("Attack");
-					// Also update the texture when switching animations
-					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
-					{
-						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
-						auto tex = ctrl->getCurrentTexture();
-						if (tex) {
-							drawComp.texture = tex;
-						}
-					}
-				}
-				else
-					std::cout << "[ImGui] Attack animation not found!\n";
-			}
-		}
-		else
-		{
-			ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), "Invalid Animation Controller!");
+			ImGui::NewLine(); // clean line break after loop
 		}
 	}
 	else
