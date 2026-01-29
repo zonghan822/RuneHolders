@@ -11,6 +11,17 @@
 
 namespace Math
 {
+	template <Arithmetic T>
+	constexpr T maxValue(const T& a, const T& b)
+	{
+		return (a < b) ? b : a;
+	}
+
+	template <Arithmetic T>
+	constexpr T minValue(const T& a, const T& b)
+	{
+		return (a > b) ? b : a;
+	}
 
 	// ----------------------------- 2D Vectors -------------------------------
 	// ------------------------------- Addition -------------------------------
