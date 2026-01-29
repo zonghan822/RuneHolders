@@ -741,31 +741,91 @@ namespace Collision {
 
 	void CollisionSystem::Update(ECS::EntityManager& entityManager)
 	{
-		// Step1: find all entities that can participate in collision detection
-		// Must have both transform and collision components
+		// ==== BROAD PHASE =====
+		// Use spatial hashing to reduce the number of collision cehcks
+
+		// Clear the spatial hash from the previous frame
+		spatialHash_.Clear();
+
+		// Find all collidable entities and insert them into the spatial hash
 		auto& entityMap = entityManager.getMap();
 		std::vector<std::pair<uint32_t, ECS::EntityLoc*>> collidableEntities;
 
-		// Iterate through all entities in the world
 		for (auto& [entityID, entityLoc] : entityMap)
 		{
 			// Check if this entity has the required components for collision
 			if (HasRequiredComponents(entityLoc))
 			{
 				collidableEntities.emplace_back(entityID, &entityLoc);
+
+				// Get components for spatial hash insertion
+				auto& transform = GetTransformComponent(entityLoc);
+				auto& collision = GetCollisionComponent(entityLoc);
+
+				// Skip inactive colliders
+				if (!collision.isActive)
+					continue;
+
+				// Calculate world position of the collider
+				Math::eVec2<float> worldPos = {
+					transform.pos.x + collision.offset.x,
+					transform.pos.y + collision.offset.y
+				};
+
+				// Get bounding box dimensions for this collider
+				float halfWidth, halfHeight;
+				GetColliderBounds(collision, transform, halfWidth, halfHeight);
+
+				// Inset into spatial hash
+				spatialHash_.Insert(entityID, worldPos, halfWidth, halfHeight);
 			}
 		}
 
-		// Step 2: check collision between all pairs of collidable entities
-		for (size_t i = 0; i < collidableEntities.size(); ++i) {
-			for (size_t j = i + 1; j < collidableEntities.size(); ++j) {
-				// Check collision between entity i and entity j
-				CheckEntityCollision(collidableEntities[i].first,
-					*collidableEntities[i].second,
-					collidableEntities[j].first,
-					*collidableEntities[j].second);
-			}
+		// ==== NARROW PHASE ====
+		// Only check collision pairs identified by the spatial hash
+
+		// Get potential collision pairs from spatial hash
+		auto potentialPairs = spatialHash_.GetPotentialPairs();
+
+		// Perform collision checks ONLY on potential pairs
+		for (const auto& [entityA_ID, entityB_ID] : potentialPairs)
+		{
+			// Find the entity locations
+			auto itA = entityMap.find(entityA_ID);
+			auto itB = entityMap.find(entityB_ID);
+
+			// Safety check: make sure both entities still exist
+			if (itA == entityMap.end() || itB == entityMap.end()) continue;
+
+			// Do narrow phase collision check
+			CheckEntityCollision(entityA_ID, itA->second, entityB_ID, itB->second);
 		}
+		
+		//// Step1: find all entities that can participate in collision detection
+		//// Must have both transform and collision components
+		//auto& entityMap = entityManager.getMap();
+		//std::vector<std::pair<uint32_t, ECS::EntityLoc*>> collidableEntities;
+
+		//// Iterate through all entities in the world
+		//for (auto& [entityID, entityLoc] : entityMap)
+		//{
+		//	// Check if this entity has the required components for collision
+		//	if (HasRequiredComponents(entityLoc))
+		//	{
+		//		collidableEntities.emplace_back(entityID, &entityLoc);
+		//	}
+		//}
+
+		//// Step 2: check collision between all pairs of collidable entities
+		//for (size_t i = 0; i < collidableEntities.size(); ++i) {
+		//	for (size_t j = i + 1; j < collidableEntities.size(); ++j) {
+		//		// Check collision between entity i and entity j
+		//		CheckEntityCollision(collidableEntities[i].first,
+		//			*collidableEntities[i].second,
+		//			collidableEntities[j].first,
+		//			*collidableEntities[j].second);
+		//	}
+		//}
 	}
 
 	void CollisionSystem::AddCollisionCallback(std::function<void(const CollisionEvent&)> callback)
