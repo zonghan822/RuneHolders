@@ -26,6 +26,14 @@ namespace Collision
 	/*============================================================================================
 	* Clear - Call at the start of each frame
 	*//*========================================================================================*/
+	void SpatialHash::Clear() 
+	{
+		buckets_.clear();
+	}
+
+	/*============================================================================================
+	* Insert - Add an entity to all cells it overlaps
+	*//*========================================================================================*/
 	void SpatialHash::Insert(uint32_t entityID,
 		const Math::eVec2<float>& position,
 		float halfWidth,
