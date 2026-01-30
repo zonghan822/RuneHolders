@@ -31,9 +31,23 @@ namespace ECSComponents
         RIGHT   // Right rune relative to mouse
     };
 
+    /*============================================================================================
+    * \brief    Represents the 6 different rune colors in the spell system
+    *//*========================================================================================*/
+    enum class RuneColor
+    {
+        RED,    // Fire-based attacks
+        BLUE,   // Ice/Water-based attacks
+        GREEN,  // Nature/Poison-based attacks
+        YELLOW, // Lightning-based attacks 
+        PURPLE, // Dark/Void-based attacks
+        ORANGE
+    };
+
     struct RuneComponent
     {
         RuneType type;              // Which side rune this is
+        RuneColor color;            // The color/element of this rune
         bool isHovered;             // Is mouse currently over this rune
         bool isConnected;           // Has this rune been connected to its pair
         float radius;               // Collision radius for hover detection
@@ -43,14 +57,16 @@ namespace ECSComponents
 
         RuneComponent()
             : type(RuneType::LEFT)
+            , color(RuneColor::RED)
             , isHovered(false)
             , isConnected(false)
             , radius(20.0f)
         {
         }
 
-        RuneComponent(RuneType runeType, float runeRadius = 20.0f)
+        RuneComponent(RuneType runeType, RuneColor runeColor = RuneColor::RED, float runeRadius = 20.0f)
             : type(runeType)
+            , color(runeColor)
             , isHovered(false)
             , isConnected(false)
             , radius(runeRadius)
@@ -62,18 +78,23 @@ namespace ECSComponents
         void reflect(Visitor&& l)
         {
             int typeInt = static_cast<int>(type);
+            int colorInt = static_cast<int>(color);
             l("type", typeInt, "int");
+            l("color", colorInt, "int");
             l("isHovered", isHovered, "bool");
             l("isConnected", isConnected, "bool");
             l("radius", radius, "float");
             type = static_cast<RuneType>(typeInt);
+            color = static_cast<RuneColor>(colorInt);
         }
 
         template <typename Visitor>
         void reflect(Visitor&& l) const
         {
             int typeInt = static_cast<int>(type);
+            int colorInt = static_cast<int>(color);
             l("type", typeInt, "int");
+            l("color", colorInt, "int");
             l("isHovered", isHovered, "bool");
             l("isConnected", isConnected, "bool");
             l("radius", radius, "float");
@@ -83,6 +104,7 @@ namespace ECSComponents
         {
             os << "RuneComponent: "
                << "type=" << static_cast<int>(rc.type)
+               << ", color=" << static_cast<int>(rc.color)
                << ", isHovered=" << rc.isHovered
                << ", isConnected=" << rc.isConnected
                << ", radius=" << rc.radius;
@@ -133,6 +155,75 @@ namespace ECSComponents
             os << "FireballComponent: "
                << "lifetime=" << fc.lifetime
                << ", elapsedTime=" << fc.elapsedTime;
+            return os;
+        }
+    };
+
+    /*============================================================================================
+    * \brief    Component for spell projectiles - links spell color to damage type
+    *//*========================================================================================*/
+    struct SpellComponent
+    {
+        RuneColor spellColor;   // The color/element of this spell
+        float baseDamage;       // Base damage amount
+        float speed;            // Projectile speed
+        float lifetime;         // Time before spell disappears
+        float elapsedTime;      // Time since spawn
+
+        // Signals
+        std::unordered_map<std::string, Events::EnoSignal> siganls_;
+
+        SpellComponent()
+            : spellColor(RuneColor::RED)
+            , baseDamage(25.0f)
+            , speed(400.0f)
+            , lifetime(5.0f)
+            , elapsedTime(0.0f)
+        {
+        }
+
+        SpellComponent(RuneColor color, float damage = 25.0f, float spd = 400.0f, float life = 5.0f)
+            : spellColor(color)
+            , baseDamage(damage)
+            , speed(spd)
+            , lifetime(life)
+            , elapsedTime(0.0f)
+        {
+        }
+
+        // Serialization support
+        template <typename Visitor>
+        void reflect(Visitor&& l)
+        {
+            int colorInt = static_cast<int>(spellColor);
+            l("spellColor", colorInt, "int");
+            l("baseDamage", baseDamage, "float");
+            l("speed", speed, "float");
+            l("lifetime", lifetime, "float");
+            l("elapsedTime", elapsedTime, "float");
+            spellColor = static_cast<RuneColor>(colorInt);
+        }
+        
+        template <typename Visitor>
+        void reflect(Visitor&& l) const
+        {
+            int colorInt = static_cast<int>(spellColor);
+            l("spellColor", colorInt, "int");
+            l("baseDamage", baseDamage, "float");
+            l("speed", speed, "float");
+            l("lifetime", lifetime, "float");
+            l("elapsedTime", elapsedTime, "float");
+
+        }
+
+        friend std::ostream& operator<<(std::ostream& os, const SpellComponent& sc)
+        {
+            os << "SpellComponent: "
+                << "color=" << static_cast<int>(sc.spellColor)
+                << ", baseDamage=" << sc.baseDamage
+                << ", speed=" << sc.speed
+                << ", lifetime=" << sc.lifetime
+                << ", elapsedTime=" << sc.elapsedTime;
             return os;
         }
     };
