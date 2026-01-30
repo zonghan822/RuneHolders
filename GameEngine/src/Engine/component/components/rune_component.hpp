@@ -247,6 +247,10 @@ namespace ECSComponents
 
         float runeSpawnOffset;          // Distance from mouse to spawn runes
 
+        // Rune Selection System
+        RuneColor selectedRuneColor;    // Currently selected rune color
+        int selectedRuneIndex;          // Index 0-5 for the 6 runes
+
         // Signals
         std::unordered_map<std::string, Events::EnoSignal> signals_;
 
@@ -260,13 +264,40 @@ namespace ECSComponents
             , leftRuneEntityID(UINT32_MAX)
             , rightRuneEntityID(UINT32_MAX)
             , runeSpawnOffset(100.0f)  // Increased from 50.0f for wider separation
+            , selectedRuneColor(RuneColor::RED)
+            , selectedRuneIndex(0)
         {
+        }
+
+        // Select rune by index (0-5)
+        void selectRuneByIndex(int index)
+        {
+            if (index < 0) index = 0;
+            if (index > 5) index = 5;
+
+            selectedRuneIndex = index;
+            selectedRuneColor = static_cast<RuneColor>(index);
+        }
+
+        // Cycle to next rune
+        void selectNextRune()
+        {
+            selectedRuneIndex = (selectedRuneIndex + 1) % 6;
+            selectedRuneColor = static_cast<RuneColor>(selectedRuneIndex);
+        }
+
+        // Cycle to previous rne
+        void selectPreviousRune()
+        {
+            selectedRuneIndex = (selectedRuneIndex + 5) % 6;    // +5 is same as -1 mod 6
+            selectedRuneColor = static_cast<RuneColor>(selectedRuneIndex);
         }
 
         // Serialization support
         template <typename Visitor>
         void reflect(Visitor&& l)
         {
+            int colorInt = static_cast<int>(selectedRuneColor);
             l("isLeftClickHeld", isLeftClickHeld, "bool");
             l("runesActive", runesActive, "bool");
             l("isDrawingLine", isDrawingLine, "bool");
@@ -278,11 +309,15 @@ namespace ECSComponents
             l("leftRuneEntityID", leftRuneEntityID, "uint32_t");
             l("rightRuneEntityID", rightRuneEntityID, "uint32_t");
             l("runeSpawnOffset", runeSpawnOffset, "float");
+            l("selectedRuneColor", colorInt, "int");
+            l("selectedRuneIndex", selectedRuneIndex, "int");
+            selectedRuneColor = static_cast<RuneColor>(colorInt);
         }
 
         template <typename Visitor>
         void reflect(Visitor&& l) const
         {
+            int colorInt = static_cast<int>(selectedRuneColor);
             l("isLeftClickHeld", isLeftClickHeld, "bool");
             l("runesActive", runesActive, "bool");
             l("isDrawingLine", isDrawingLine, "bool");
@@ -294,14 +329,17 @@ namespace ECSComponents
             l("leftRuneEntityID", leftRuneEntityID, "uint32_t");
             l("rightRuneEntityID", rightRuneEntityID, "uint32_t");
             l("runeSpawnOffset", runeSpawnOffset, "float");
+            l("selectedRuneColor", colorInt, "int");
+            l("selectedRuneIndex", selectedRuneIndex, "int");
         }
 
         friend std::ostream& operator<<(std::ostream& os, const RuneSystemStateComponent& rs)
         {
             os << "RuneSystemState: "
-               << "leftClickHeld=" << rs.isLeftClickHeld
-               << ", runesActive=" << rs.runesActive
-               << ", isDrawingLine=" << rs.isDrawingLine;
+                << "leftClickHeld=" << rs.isLeftClickHeld
+                << ", runesActive=" << rs.runesActive
+                << ", isDrawingLine=" << rs.isDrawingLine
+                << ", selectedRunes=" << rs.selectedRuneIndex;
             return os;
         }
     };
