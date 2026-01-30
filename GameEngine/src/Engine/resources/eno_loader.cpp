@@ -71,6 +71,12 @@ namespace Resources {
 		return sounds_;
 	}
 
+	//Yun Qi added this for removal of sounds.
+    std::unordered_map<std::string, FMOD::Sound*>& EnoLoader::getSoundsMap()
+	{
+		return sounds_;
+	}
+
 	// Shader getters
 	const std::string& EnoLoader::getShaderPath() const {
 		return shaderPath_;

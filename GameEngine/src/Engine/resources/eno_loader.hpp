@@ -129,6 +129,13 @@ namespace Resources
 		const std::unordered_map<std::string, FMOD::Sound*>& getSounds() const;
 
 		/*============================================================================================
+		* \author   Yun Qi
+		* \brief	Retrieve all sounds/audio. Specially made for Deletion purposes
+		* \return	Map of all audio.
+		*//*========================================================================================*/
+		std::unordered_map<std::string, FMOD::Sound*>& getSoundsMap();
+
+		/*============================================================================================
 		* \brief	Get the shader directory path.
 		* \return	String reference to the shader path.
 		*//*========================================================================================*/

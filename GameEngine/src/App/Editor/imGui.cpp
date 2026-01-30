@@ -1851,6 +1851,10 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	static std::string selectedName{};
 	static FMOD::Sound* selectedSound = nullptr;
 
+	// M4 requirement: Deletion of audio asset files
+	static std::filesystem::path selectedFullPath{};
+	static std::string selectedFilenameWithExt{};
+
 	// ============== FILE LIST ==============
 	ImGui::BeginChild("AudioAssetList", ImVec2(0, 150), true);
 
@@ -1867,8 +1871,16 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 				selectedAsset = i;
 
 				selectedName = audioAssets[i];
-
 				selectedName = selectedName.substr(0, selectedName.find_last_of('.'));
+				
+
+				// YunQi M4 addition for deletion of audio files
+				selectedFilenameWithExt = audioAssets[i]; // this has extension, e.g. "laser.wav" operator/ does an append for path and extension
+				std::filesystem::path musicPath            = std::filesystem::path(loader.getMusicPath()) / selectedFilenameWithExt;
+				std::filesystem::path sfxPath              = std::filesystem::path(loader.getSFXPath()) / selectedFilenameWithExt;
+				if (std::filesystem::exists(musicPath))      selectedFullPath = musicPath;
+				else if (std::filesystem::exists(sfxPath))   selectedFullPath = sfxPath;
+				else                                         selectedFullPath.clear();
 
 				std::cout << "[Audio] User selected: " << selectedName << "\n";
 
@@ -1896,33 +1908,26 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	ImGui::Separator();
 
 	// ====== Waveform Viewer (Mock) ======
-	ImGui::Text("Waveform Preview");
-	ImGui::BeginChild("WaveformViewer", ImVec2(0, 200), true);
-
-	ImDrawList* draw = ImGui::GetWindowDrawList();
-	ImVec2 pos = ImGui::GetCursorScreenPos();
-	ImVec2 size = ImGui::GetContentRegionAvail();
-
-	float midY = pos.y + size.y * 0.5f;
-	float step = size.x / 60.0f;
-
-	// mock waveform
-	for (int i = 0; i < 60; i++)
-	{
-		float h = (sinf(i * 0.3f) * 0.5f + 0.5f) * (size.y * 0.9f);
-		draw->AddLine(
-			ImVec2(pos.x + i * step, midY - h * 0.5f),
-			ImVec2(pos.x + i * step, midY + h * 0.5f),
-			IM_COL32(100, 200, 255, 255), 2.0f
-		);
-	}
-
-	ImGui::EndChild();
-
-
-
-	ImGui::Separator();
-	ImGui::Spacing();
+	//ImGui::Text("Waveform Preview");
+	//ImGui::BeginChild("WaveformViewer", ImVec2(0, 200), true);
+	//ImDrawList* draw = ImGui::GetWindowDrawList();
+	//ImVec2 pos = ImGui::GetCursorScreenPos();
+	//ImVec2 size = ImGui::GetContentRegionAvail();
+	//float midY = pos.y + size.y * 0.5f;
+	//float step = size.x / 60.0f;
+	//// mock waveform
+	//for (int i = 0; i < 60; i++)
+	//{
+	//	float h = (sinf(i * 0.3f) * 0.5f + 0.5f) * (size.y * 0.9f);
+	//	draw->AddLine(
+	//		ImVec2(pos.x + i * step, midY - h * 0.5f),
+	//		ImVec2(pos.x + i * step, midY + h * 0.5f),
+	//		IM_COL32(100, 200, 255, 255), 2.0f
+	//	);
+	//}
+	//ImGui::EndChild();
+	//ImGui::Separator();
+	//ImGui::Spacing();
 
 	ImGui::Text("=== Test Playback ===");
 
@@ -1996,10 +2001,98 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			}
 		}
 
+		//Current state of audio deletion takes out the audio file from the build folder only.
+		ImGui::Text("-----------DELETION OF AUDIO FILES-------------");
 
+		if (ImGui::Button("Delete selected audio file"))
+		{
+			ImGui::OpenPopup("ConfirmDeleteAudio");
+		}
+
+		if (ImGui::BeginPopupModal("ConfirmDeleteAudio", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::TextWrapped("Delete this file?\n\n%s", selectedFilenameWithExt.c_str());
+			ImGui::Spacing();
+
+			if (ImGui::Button("Delete", ImVec2(120, 0)))
+			{
+				// Stop playback that might be using this sound
+				//bus.publish(Audio::StopBGM{});
+
+				// Release FMOD sound before deleting file (important on Windows)
+				FMOD::Sound* soundToDelete = selectedSound;
+				if (soundToDelete)
+				{
+					soundToDelete->release();
+					selectedSound = nullptr;
+				}
+
+				{
+					auto& sounds = loader.getSoundsMap();
+					auto it = sounds.find(selectedName);
+					if (it != sounds.end())
+						sounds.erase(it);
+				}
+
+				// Delete the file from disk
+				bool deleted = false;
+				std::string deleteErr;
+
+				try
+				{
+					if (!selectedFullPath.empty() && std::filesystem::exists(selectedFullPath))
+					{
+						deleted = std::filesystem::remove(selectedFullPath);
+					}
+					else
+					{
+						deleteErr = "File not found on disk.";
+					}
+				}
+				catch (const std::exception& e)
+				{
+					deleteErr = e.what();
+				}
+
+				if (!deleted && deleteErr.empty())
+					deleteErr = "Delete failed (file may still be in use, or permissions blocked it).";
+
+				if (!deleteErr.empty())
+				{
+					bus.publish(Audio::AudioLoadError{
+						selectedFilenameWithExt,
+						selectedFullPath.string(),
+						selectedFullPath.extension().string(),
+						std::string("Delete failed: ") + deleteErr
+						});
+				}
+				else
+				{
+					std::cout << "[Audio] Deleted file: " << selectedFullPath << "\n";
+				}
+
+				// Refresh UI list
+				LoadAudioAssets(engine_);
+
+				// Clear selection so UI doesn’t reference deleted item
+				selectedAsset = -1;
+				selectedName.clear();
+				selectedFilenameWithExt.clear();
+				selectedFullPath.clear();
+
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
 	}
-
-	// Note: Audio error popup is displayed globally in imGuiDisplay()
 
 }
 
