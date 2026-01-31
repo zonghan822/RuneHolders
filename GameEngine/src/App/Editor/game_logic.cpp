@@ -1905,7 +1905,7 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	leftRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("LeftRune"));
 	leftRune.add<ECSComponents::TransformComponent>(entityManager);
 	leftRune.add<ECSComponents::DrawInfoComponent>(entityManager);
-	leftRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::LEFT, 30.0f));
+	leftRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::LEFT, runeState.selectedRuneColor, 30.0f));
 
 	auto& leftTransform = leftRune.get<ECSComponents::TransformComponent>(entityManager);
 	leftTransform.pos = { mouseWorldPos.x - runeState.runeSpawnOffset, mouseWorldPos.y };
@@ -1923,7 +1923,7 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	rightRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("RightRune"));
 	rightRune.add<ECSComponents::TransformComponent>(entityManager);
 	rightRune.add<ECSComponents::DrawInfoComponent>(entityManager);
-	rightRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::RIGHT, 30.0f));
+	rightRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::RIGHT, runeState.selectedRuneColor, 30.0f));
 
 	auto& rightTransform = rightRune.get<ECSComponents::TransformComponent>(entityManager);
 	rightTransform.pos = { mouseWorldPos.x + runeState.runeSpawnOffset, mouseWorldPos.y };

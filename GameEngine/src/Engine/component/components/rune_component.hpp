@@ -44,6 +44,61 @@ namespace ECSComponents
         ORANGE
     };
 
+    /*============================================================================================
+    * \brief    Helper struct for rune asset names and properties
+    *//*========================================================================================*/
+    struct RuneAssets
+    {
+        // Get texture name for a rune color (left rune)
+        // TODO: Replace with actual texture names when Sabrina/Jeremy provides them
+        static const char* getLeftRuneTexture(RuneColor color)
+        {
+            (void)color;    // Unused for now
+            return "Left_Rune"; // Use exisiting texture for all colors
+        }
+
+        // Get texture name for a rune color (right rune)
+        // TODO: Replace with actual texture names when Sabrina/Jeremy provides them
+        static const char* getRightRuneTexture(RuneColor color)
+        {
+            (void)color;    // Unused for now
+            return "Right_Rune";    // Use existing texture for all colors
+        }
+
+        // Get spell/projectle texture name for a rune color
+        // TODO: Replace with actual texture names when available
+        static const char* getSpellTexture(RuneColor color)
+        {
+            (void)color;    // Unused for now
+            return "Fireball";      // Use existing texture for all colors
+        }
+
+        // Get display name for a rune color
+        static const char* getColorName(RuneColor color)
+        {
+            switch (color)
+            {
+                case RuneColor::RED:        return "Fire";
+                case RuneColor::BLUE:       return "Ice";
+                case RuneColor::GREEN:      return "Poison";
+                case RuneColor::YELLOW:     return "Lightning";
+                case RuneColor::PURPLE:     return "Void";
+                case RuneColor::ORANGE:     return "Earth";
+                default:                    return "Unknown";
+
+
+            }
+        }
+
+        // Get sound effect name for casting a spell
+        // TODO: Replace with actual sound names when available
+        static const char* getCastSound(RuneColor color)
+        {
+            (void)color;    // Unused for now
+            return "Fireball-Cast"; // Use existing sound for all colors
+        }
+    };
+
     struct RuneComponent
     {
         RuneType type;              // Which side rune this is
