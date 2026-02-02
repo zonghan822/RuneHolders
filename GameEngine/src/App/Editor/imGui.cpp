@@ -1853,6 +1853,7 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 	// M4 requirement: Deletion of audio asset files
 	static std::filesystem::path selectedFullPath{};
+	static std::filesystem::path selectedFullRootPath{};
 	static std::string selectedFilenameWithExt{};
 
 	// ============== FILE LIST ==============
@@ -1876,11 +1877,16 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 				// YunQi M4 addition for deletion of audio files
 				selectedFilenameWithExt = audioAssets[i]; // this has extension, e.g. "laser.wav" operator/ does an append for path and extension
-				std::filesystem::path musicPath            = std::filesystem::path(loader.getMusicPath()) / selectedFilenameWithExt;
-				std::filesystem::path sfxPath              = std::filesystem::path(loader.getSFXPath()) / selectedFilenameWithExt;
-				if (std::filesystem::exists(musicPath))      selectedFullPath = musicPath;
-				else if (std::filesystem::exists(sfxPath))   selectedFullPath = sfxPath;
-				else                                         selectedFullPath.clear();
+				std::filesystem::path musicPath					 =  std::filesystem::path(loader.getMusicPath()) / selectedFilenameWithExt;
+				std::filesystem::path sfxPath					 =  std::filesystem::path(loader.getSFXPath()) / selectedFilenameWithExt;
+				std::filesystem::path rootMusicPath				 =  std::filesystem::path(loader.getRootMusicPath()) / selectedFilenameWithExt;
+				std::filesystem::path rootSfxPath				 =  std::filesystem::path(loader.getRootSFXPath()) / selectedFilenameWithExt;
+				if (std::filesystem::exists(musicPath))			    selectedFullPath = musicPath;
+				else if (std::filesystem::exists(sfxPath))		    selectedFullPath = sfxPath;
+				else											    selectedFullPath.clear();
+				if (std::filesystem::exists(rootMusicPath))         selectedFullPath = musicPath;
+				else if (std::filesystem::exists(rootSfxPath))		selectedFullPath = sfxPath;
+				else												selectedFullPath.clear();
 
 				std::cout << "[Audio] User selected: " << selectedName << "\n";
 
@@ -2036,10 +2042,13 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 				// Delete the file from disk
 				bool deleted = false;
+				bool deletedRoot = false;
 				std::string deleteErr;
 
 				try
 				{
+					std::cout << "[Audio Delete] Root  path: " << (selectedFullRootPath.empty() ? "(empty)" : selectedFullRootPath.string()) << "\n";
+					
 					if (!selectedFullPath.empty() && std::filesystem::exists(selectedFullPath))
 					{
 						deleted = std::filesystem::remove(selectedFullPath);
@@ -2048,6 +2057,24 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 					{
 						deleteErr = "File not found on disk.";
 					}
+
+					// Root delete
+					if (!selectedFullRootPath.empty() && std::filesystem::exists(selectedFullRootPath))
+					{
+						deletedRoot = std::filesystem::remove(selectedFullRootPath);
+						std::cout << "[Audio Delete] Root delete result: " << deletedRoot << "\n";
+					}
+					else
+					{
+						std::cout << "[Audio Delete] Root file missing.\n";
+					}
+
+					// If neither deleted anything
+					if (!deleted && !deletedRoot)
+					{
+						deleteErr = "File not found in build or root folders (or delete returned false).";
+					}
+
 				}
 				catch (const std::exception& e)
 				{
@@ -2079,7 +2106,7 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 				selectedName.clear();
 				selectedFilenameWithExt.clear();
 				selectedFullPath.clear();
-
+				selectedFullRootPath.clear();
 				ImGui::CloseCurrentPopup();
 			}
 

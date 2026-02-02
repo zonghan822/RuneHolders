@@ -21,12 +21,16 @@ namespace Resources {
 
 		// Build runtime paths
 		const auto& base = FileSystem::GetAssetsDir();
+		const auto& root = FileSystem::GetRootDir();
 
-		musicPath_ = (base / "sound/music").string();
-		sfxPath_ = (base / "sound/sfx").string();
-		imagePath_ = (base / "art").string();
-		shaderPath_ = (base / "shaders").string();
-		fontPath_ = (base / "fonts").string();
+
+		musicPath_     = (base / "sound/music").string();
+		sfxPath_       = (base / "sound/sfx").string();
+		imagePath_     = (base / "art").string();
+		shaderPath_    = (base / "shaders").string();
+		fontPath_      = (base / "fonts").string();
+		rootMusicPath_ = (root / "sound/music").string();
+		rootSfxPath_   = (root / "sound/sfx").string();
 
 		// Subscribe audio events
 		bus_.subscribe<Audio::RequestSound>([&](const Audio::RequestSound& event) {
@@ -41,6 +45,14 @@ namespace Resources {
 
 	const std::string& EnoLoader::getSFXPath() const {
 		return sfxPath_;
+	}
+
+	const std::string& EnoLoader::getRootMusicPath() const {
+		return rootMusicPath_;
+	}
+
+	const std::string& EnoLoader::getRootSFXPath() const {
+		return rootSfxPath_;
 	}
 
 	std::array<std::string_view, 2> EnoLoader::getSoundExtensions() const { 

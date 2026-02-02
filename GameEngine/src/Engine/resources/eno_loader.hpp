@@ -56,6 +56,8 @@ namespace Resources
 		// Sounds
 		std::string musicPath_;
 		std::string sfxPath_;
+		std::string rootMusicPath_;
+		std::string rootSfxPath_;
 		static constexpr std::array<std::string_view, 2> soundExtensions_ = { ".wav", ".mp3" };
 		std::unordered_map<std::string, FMOD::Sound*> sounds_;
 		std::vector<std::unique_ptr<Audio::EnoAudioModule>> audioMods_;
@@ -95,6 +97,18 @@ namespace Resources
 		* \return	String reference to the SFX path.
 		*//*========================================================================================*/
 		const std::string& getSFXPath() const;
+
+		/*============================================================================================
+		* \brief	Get the music directory path.
+		* \return	String reference to the music path.
+		*//*========================================================================================*/
+		const std::string& getRootMusicPath() const;
+
+		/*============================================================================================
+		* \brief	Get the sound effects (SFX) directory path.
+		* \return	String reference to the SFX path.
+		*//*========================================================================================*/
+		const std::string& getRootSFXPath() const;
 
 		/*============================================================================================
 		* \brief	Get supported sound extensions.
