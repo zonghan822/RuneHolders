@@ -193,13 +193,15 @@ private:
     void drawShapes();
 
     // Rune system methods
-    void initializeRuneSystem();                    // Initialize rune system entity
-    void updateRuneSystem();                        // Update rune system logic each frame
-    void spawnRunes(const Math::eVec2<float>& mouseWorldPos);   // Spawn left and right runes
-    void destroyRunes();                            // Destroy spawned runes
+    void initializeRuneSystem();                                    // Initialize rune system entity
+    void updateRuneSystem();                                        // Update rune system logic each frame
+    void spawnRunes(const Math::eVec2<float>& mouseWorldPos);       // Spawn left and right runes
+    void destroyRunes();                                            // Destroy spawned runes
     void updateRuneHover(const Math::eVec2<float>& mouseWorldPos);  // Check if mouse hovers over runes
-    void drawRuneConnectionLine();                  // Draw line connecting runes
-    void spawnFireball(const Math::eVec2<float>& pos);  // Spawn fireball when runes connect
+    void drawRuneConnectionLine();                                  // Draw line connecting runes
+    void spawnFireball(const Math::eVec2<float>& pos);              // Spawn fireball when runes connect
+    void spawnFloatingText(const Math::eVec2<float>& pos, const char* text);  // Spawn floating text message
+    void updateFloatingTexts(float deltaTime);                      // Update floating text positions and alpha
 
     // Combat system methods
     void updateCombatSystem(float deltaTime);       // Handle damage dealing and health updates

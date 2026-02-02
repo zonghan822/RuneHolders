@@ -25,23 +25,24 @@ namespace ECSComponents
     /*============================================================================================
     * \brief    Represents a rune entity that can be spawned and connected
     *//*========================================================================================*/
-    enum class RuneType
-    {
-        LEFT,   // Left rune relative to mouse
-        RIGHT   // Right rune relative to mouse
-    };
+    //enum class RuneType
+    //{
+    //    LEFT,   // Left rune relative to mouse
+    //    RIGHT   // Right rune relative to mouse
+    //};
+
+    constexpr int RUNE_COUNT = 6;
 
     /*============================================================================================
-    * \brief    Represents the 6 different rune colors in the spell system
+    * \brief    Represents the 3 different rune colors in the spell system
     *//*========================================================================================*/
+    constexpr int RUNE_COLOR_COUNT = 3;
+
     enum class RuneColor
     {
         RED,    // Fire-based attacks
         BLUE,   // Ice/Water-based attacks
-        GREEN,  // Nature/Poison-based attacks
-        YELLOW, // Lightning-based attacks 
-        PURPLE, // Dark/Void-based attacks
-        ORANGE
+        GREEN   // Nature/Poison-based attacks
     };
 
     /*============================================================================================
@@ -81,12 +82,7 @@ namespace ECSComponents
                 case RuneColor::RED:        return "Fire";
                 case RuneColor::BLUE:       return "Ice";
                 case RuneColor::GREEN:      return "Poison";
-                case RuneColor::YELLOW:     return "Lightning";
-                case RuneColor::PURPLE:     return "Void";
-                case RuneColor::ORANGE:     return "Earth";
                 default:                    return "Unknown";
-
-
             }
         }
 
@@ -101,7 +97,8 @@ namespace ECSComponents
 
     struct RuneComponent
     {
-        RuneType type;              // Which side rune this is
+        // RuneType type;              // Which side rune this is
+        int runeIndex;              // The color/element of this rune
         RuneColor color;            // The color/element of this rune
         bool isHovered;             // Is mouse currently over this rune
         bool isConnected;           // Has this rune been connected to its pair
@@ -111,7 +108,7 @@ namespace ECSComponents
         std::unordered_map<std::string, Events::EnoSignal> signals_;
 
         RuneComponent()
-            : type(RuneType::LEFT)
+            : runeIndex(0)
             , color(RuneColor::RED)
             , isHovered(false)
             , isConnected(false)
@@ -119,8 +116,8 @@ namespace ECSComponents
         {
         }
 
-        RuneComponent(RuneType runeType, RuneColor runeColor = RuneColor::RED, float runeRadius = 20.0f)
-            : type(runeType)
+        RuneComponent(int index, RuneColor runeColor, float runeRadius = 20.0f)
+            : runeIndex(index)
             , color(runeColor)
             , isHovered(false)
             , isConnected(false)
@@ -132,23 +129,20 @@ namespace ECSComponents
         template <typename Visitor>
         void reflect(Visitor&& l)
         {
-            int typeInt = static_cast<int>(type);
             int colorInt = static_cast<int>(color);
-            l("type", typeInt, "int");
+            l("runeIndex", runeIndex, "int");
             l("color", colorInt, "int");
             l("isHovered", isHovered, "bool");
             l("isConnected", isConnected, "bool");
             l("radius", radius, "float");
-            type = static_cast<RuneType>(typeInt);
             color = static_cast<RuneColor>(colorInt);
         }
 
         template <typename Visitor>
         void reflect(Visitor&& l) const
         {
-            int typeInt = static_cast<int>(type);
             int colorInt = static_cast<int>(color);
-            l("type", typeInt, "int");
+            l("runeIndex", runeIndex, "int");
             l("color", colorInt, "int");
             l("isHovered", isHovered, "bool");
             l("isConnected", isConnected, "bool");
@@ -158,7 +152,7 @@ namespace ECSComponents
         friend std::ostream& operator<<(std::ostream& os, const RuneComponent& rc)
         {
             os << "RuneComponent: "
-               << "type=" << static_cast<int>(rc.type)
+               << "index=" << rc.runeIndex
                << ", color=" << static_cast<int>(rc.color)
                << ", isHovered=" << rc.isHovered
                << ", isConnected=" << rc.isConnected
@@ -284,6 +278,75 @@ namespace ECSComponents
     };
 
     /*============================================================================================
+    * \brief    Component for floating text that rises and fades (e.g., "Invalid" message)
+    *//*========================================================================================*/
+    struct FloatingTextComponent
+    {
+        char text[64];              // The text to display
+        float lifetime;             // Total time before disappearing
+        float elapsedTime;          // Time since spawn
+        float riseSpeed;            // How fast the text rises (pixels per second)
+        float initialAlpha;         // Starting alpha value
+
+        // Signals
+        std::unordered_map<std::string, Events::EnoSignal> signals_;
+
+        FloatingTextComponent()
+            : lifetime(1.5f)
+            , elapsedTime(0.0f)
+            , riseSpeed(50.0f)
+            , initialAlpha(1.0f)
+        {
+            strcpy(text, "");
+        }
+
+        FloatingTextComponent(const char* msg, float life = 1.5f, float speed = 50.0f)
+            : lifetime(life)
+            , elapsedTime(0.0f)
+            , riseSpeed(speed)
+            , initialAlpha(1.0f)
+        {
+            strncpy(text, msg, 63);
+            text[63] = '\0';
+        }
+
+        // Get current alpha based on elapsed time (fades out)
+        float getCurrentAlpha() const
+        {
+            float progress = elapsedTime / lifetime;
+            return initialAlpha * (1.0f - progress);
+        }
+
+        // Serialization support
+        template <typename Visitor>
+        void reflect(Visitor&& l)
+        {
+            l("lifetime", lifetime, "float");
+            l("elapsedTime", elapsedTime, "float");
+            l("riseSpeed", riseSpeed, "float");
+            l("initialAlpha", initialAlpha, "float");
+        }
+
+        template <typename Visitor>
+        void reflect(Visitor&& l) const
+        {
+            l("lifetime", lifetime, "float");
+            l("elapsedTime", elapsedTime, "float");
+            l("riseSpeed", riseSpeed, "float");
+            l("initialAlpha", initialAlpha, "float");
+        }
+
+        friend std::ostream& operator<<(std::ostream& os, const FloatingTextComponent& ft)
+        {
+            os << "FloatingTextComponent: "
+               << "text=" << ft.text
+               << ", lifetime=" << ft.lifetime
+               << ", elapsedTime=" << ft.elapsedTime;
+            return os;
+        }
+    };
+
+    /*============================================================================================
     * \brief    Component to track the state of the rune spawning system
     *           Attach this to a dedicated manager entity or the player
     *//*========================================================================================*/
@@ -297,14 +360,23 @@ namespace ECSComponents
         Math::eVec2<float> lineStart;   // Starting position of line (when hovering left rune)
         Math::eVec2<float> lineEnd;     // End position of line (follows mouse)
 
-        uint32_t leftRuneEntityID;      // ID of spawned left rune
-        uint32_t rightRuneEntityID;     // ID of spawned right rune
+        // Track all 6 runes
+        uint32_t runeEntityIDs[RUNE_COUNT]; // IDs of all spawned runes
 
-        float runeSpawnOffset;          // Distance from mouse to spawn runes
+        // Connection tracking
+        int firstConnectedRuneIndex;        // Index of firt rune in connection (-1 if none)
+        int secondConnectedRuneIndex;       // Index of second rune in connection (-1 if none)
 
-        // Rune Selection System
-        RuneColor selectedRuneColor;    // Currently selected rune color
-        int selectedRuneIndex;          // Index 0-5 for the 6 runes
+        float runeCircleRadius;             // Radius of the rune circle pattern
+
+        // uint32_t leftRuneEntityID;      // ID of spawned left rune
+        // uint32_t rightRuneEntityID;     // ID of spawned right rune
+
+        //float runeSpawnOffset;          // Distance from mouse to spawn runes
+
+        //// Rune Selection System
+        //RuneColor selectedRuneColor;    // Currently selected rune color
+        //int selectedRuneIndex;          // Index 0-5 for the 6 runes
 
         // Signals
         std::unordered_map<std::string, Events::EnoSignal> signals_;
@@ -316,43 +388,28 @@ namespace ECSComponents
             , fireballSpawned(false)
             , lineStart(0.0f, 0.0f)
             , lineEnd(0.0f, 0.0f)
-            , leftRuneEntityID(UINT32_MAX)
-            , rightRuneEntityID(UINT32_MAX)
-            , runeSpawnOffset(100.0f)  // Increased from 50.0f for wider separation
-            , selectedRuneColor(RuneColor::RED)
-            , selectedRuneIndex(0)
+            , firstConnectedRuneIndex(-1)
+            , secondConnectedRuneIndex(-1)
+            , runeCircleRadius(100.0f)
         {
+            for (int i = 0; i < RUNE_COUNT; ++i) {
+                runeEntityIDs[i] = UINT32_MAX;
+            }
         }
 
-        // Select rune by index (0-5)
-        void selectRuneByIndex(int index)
+        // Reset connection state
+        void resetConnection()
         {
-            if (index < 0) index = 0;
-            if (index > 5) index = 5;
-
-            selectedRuneIndex = index;
-            selectedRuneColor = static_cast<RuneColor>(index);
-        }
-
-        // Cycle to next rune
-        void selectNextRune()
-        {
-            selectedRuneIndex = (selectedRuneIndex + 1) % 6;
-            selectedRuneColor = static_cast<RuneColor>(selectedRuneIndex);
-        }
-
-        // Cycle to previous rne
-        void selectPreviousRune()
-        {
-            selectedRuneIndex = (selectedRuneIndex + 5) % 6;    // +5 is same as -1 mod 6
-            selectedRuneColor = static_cast<RuneColor>(selectedRuneIndex);
+            firstConnectedRuneIndex = -1;
+            secondConnectedRuneIndex = -1;
+            isDrawingLine = false;
+            fireballSpawned = false;
         }
 
         // Serialization support
         template <typename Visitor>
         void reflect(Visitor&& l)
         {
-            int colorInt = static_cast<int>(selectedRuneColor);
             l("isLeftClickHeld", isLeftClickHeld, "bool");
             l("runesActive", runesActive, "bool");
             l("isDrawingLine", isDrawingLine, "bool");
@@ -361,18 +418,18 @@ namespace ECSComponents
             l("lineStartY", lineStart.y, "float");
             l("lineEndX", lineEnd.x, "float");
             l("lineEndY", lineEnd.y, "float");
-            l("leftRuneEntityID", leftRuneEntityID, "uint32_t");
-            l("rightRuneEntityID", rightRuneEntityID, "uint32_t");
-            l("runeSpawnOffset", runeSpawnOffset, "float");
-            l("selectedRuneColor", colorInt, "int");
-            l("selectedRuneIndex", selectedRuneIndex, "int");
-            selectedRuneColor = static_cast<RuneColor>(colorInt);
+            l("runeCircleRadius", runeCircleRadius, "float");
+            l("firstConnectedRuneIndex", firstConnectedRuneIndex, "int");
+            l("secondConnectedRuneIndex", secondConnectedRuneIndex, "int");
+            for (int i = 0; i < RUNE_COUNT; ++i) {
+                std::string key = "runeEntityID_" + std::to_string(i);
+                l(key.c_str(), runeEntityIDs[i], "uint32_t");
+            }
         }
 
         template <typename Visitor>
         void reflect(Visitor&& l) const
         {
-            int colorInt = static_cast<int>(selectedRuneColor);
             l("isLeftClickHeld", isLeftClickHeld, "bool");
             l("runesActive", runesActive, "bool");
             l("isDrawingLine", isDrawingLine, "bool");
@@ -381,11 +438,13 @@ namespace ECSComponents
             l("lineStartY", lineStart.y, "float");
             l("lineEndX", lineEnd.x, "float");
             l("lineEndY", lineEnd.y, "float");
-            l("leftRuneEntityID", leftRuneEntityID, "uint32_t");
-            l("rightRuneEntityID", rightRuneEntityID, "uint32_t");
-            l("runeSpawnOffset", runeSpawnOffset, "float");
-            l("selectedRuneColor", colorInt, "int");
-            l("selectedRuneIndex", selectedRuneIndex, "int");
+            l("runeCircleRadius", runeCircleRadius, "float");
+            l("firstConnectedRuneIndex", firstConnectedRuneIndex, "int");
+            l("secondConnectedRuneIndex", secondConnectedRuneIndex, "int");
+            for (int i = 0; i < RUNE_COUNT; ++i) {
+                std::string key = "runeEntityID_" + std::to_string(i);
+                l(key.c_str(), runeEntityIDs[i], "uint32_t");
+            }
         }
 
         friend std::ostream& operator<<(std::ostream& os, const RuneSystemStateComponent& rs)
@@ -394,7 +453,8 @@ namespace ECSComponents
                 << "leftClickHeld=" << rs.isLeftClickHeld
                 << ", runesActive=" << rs.runesActive
                 << ", isDrawingLine=" << rs.isDrawingLine
-                << ", selectedRunes=" << rs.selectedRuneIndex;
+                << ", firstConnected=" << rs.firstConnectedRuneIndex
+                << ", secondConnected=" << rs.secondConnectedRuneIndex;
             return os;
         }
     };

@@ -555,6 +555,9 @@ void GameApplication::updateGameLogic() {
 
 		// Update combat system (damage dealing and health)
 		updateCombatSystem(deltaTime);
+
+		// Update floating texts (rise and fade)
+		updateFloatingTexts(deltaTime);
 	}
 
 	// Update engine playing state based on editor state (but override if paused)
@@ -1806,48 +1809,6 @@ void GameApplication::updateRuneSystem()
 	// UPDATE RUNES while left click is held
 	if (leftClickHeld && runeState.runesActive) {
 		updateRuneHover(mouseWorldPos);
-
-		// Update line drawing
-		if (runeState.isDrawingLine && !runeState.fireballSpawned) {
-			runeState.lineEnd = mouseWorldPos;
-
-			// Check if line connects to right rune
-			ECS::Entity rightRuneEntity(runeState.rightRuneEntityID);
-			if (rightRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
-			    rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-
-				auto& rightTransform = rightRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
-				auto& rightRune = rightRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
-
-				float distToRightRune = Math::eVec2Distance(mouseWorldPos, rightTransform.pos);
-
-				if (distToRightRune <= rightRune.radius) {
-					// Connection successful! Spawn fireball
-					Math::eVec2<float> fireballPos = {
-						(runeState.lineStart.x + rightTransform.pos.x) / 2.0f,
-						(runeState.lineStart.y + rightTransform.pos.y) / 2.0f
-					};
-					spawnFireball(fireballPos);
-					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
-					// Mark runes as connected
-					ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
-					if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-						leftRuneEntity.get<ECSComponents::RuneComponent>(entityManager).isConnected = true;
-					}
-					rightRune.isConnected = true;
-
-					// Set flag to prevent multiple fireballs
-					runeState.fireballSpawned = true;
-
-					// Destroy runes immediately after successful connection
-					destroyRunes();
-					runeState.runesActive = false;
-					runeState.isDrawingLine = false;
-
-					std::cout << "[RuneSystem] Runes connected! Spawning fireball" << std::endl;
-				}
-			}
-		}
 	}
 
 	// DESTROY RUNES when left click is released
@@ -1889,61 +1850,126 @@ void GameApplication::updateRuneSystem()
 	}
 }
 
+//void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
+//{
+//	auto& entityManager = engine_.getEntityManager();
+//	ECS::Entity runeSystemEntity(runeSystemEntityID_);
+//	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+//
+//	// Load textures if not already loaded
+//	auto& resourceLoader = engine_.getResourceLoader();
+//	auto leftRuneTexture = resourceLoader.getTexture("Left_Rune");
+//	auto rightRuneTexture = resourceLoader.getTexture("Right_Rune");
+//
+//	// Spawn LEFT rune
+//	ECS::Entity leftRune = entityManager.create();
+//	leftRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("LeftRune"));
+//	leftRune.add<ECSComponents::TransformComponent>(entityManager);
+//	leftRune.add<ECSComponents::DrawInfoComponent>(entityManager);
+//	leftRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::LEFT, runeState.selectedRuneColor, 30.0f));
+//
+//	auto& leftTransform = leftRune.get<ECSComponents::TransformComponent>(entityManager);
+//	leftTransform.pos = { mouseWorldPos.x - runeState.runeSpawnOffset, mouseWorldPos.y };
+//	leftTransform.scale = { 1.0f, 1.0f };
+//
+//	auto& leftDraw = leftRune.get<ECSComponents::DrawInfoComponent>(entityManager);
+//	leftDraw.width = 60.0f;
+//	leftDraw.height = 60.0f;
+//	leftDraw.color = Graphics::Color::White;
+//	strcpy_s(leftDraw.shape, "Rectangle");
+//	leftDraw.texture = leftRuneTexture;
+//
+//	// Spawn RIGHT rune
+//	ECS::Entity rightRune = entityManager.create();
+//	rightRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("RightRune"));
+//	rightRune.add<ECSComponents::TransformComponent>(entityManager);
+//	rightRune.add<ECSComponents::DrawInfoComponent>(entityManager);
+//	rightRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::RIGHT, runeState.selectedRuneColor, 30.0f));
+//
+//	auto& rightTransform = rightRune.get<ECSComponents::TransformComponent>(entityManager);
+//	rightTransform.pos = { mouseWorldPos.x + runeState.runeSpawnOffset, mouseWorldPos.y };
+//	rightTransform.scale = { 1.0f, 1.0f };
+//
+//	auto& rightDraw = rightRune.get<ECSComponents::DrawInfoComponent>(entityManager);
+//	rightDraw.width = 60.0f;
+//	rightDraw.height = 60.0f;
+//	rightDraw.color = Graphics::Color::White;
+//	strcpy_s(rightDraw.shape, "Rectangle");
+//	rightDraw.texture = rightRuneTexture;
+//
+//	// Store entity IDs
+//	runeState.leftRuneEntityID = leftRune.id();
+//	runeState.rightRuneEntityID = rightRune.id();
+//
+//	// Mark entities as dirty to refresh rendering cache
+//	entitiesDirty_ = true;
+//
+//	std::cout << "[RuneSystem] Spawned runes at mouse position" << std::endl;
+//}
+
 void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 {
 	auto& entityManager = engine_.getEntityManager();
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	// Load textures if not already loaded
 	auto& resourceLoader = engine_.getResourceLoader();
-	auto leftRuneTexture = resourceLoader.getTexture("Left_Rune");
-	auto rightRuneTexture = resourceLoader.getTexture("Right_Rune");
 
-	// Spawn LEFT rune
-	ECS::Entity leftRune = entityManager.create();
-	leftRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("LeftRune"));
-	leftRune.add<ECSComponents::TransformComponent>(entityManager);
-	leftRune.add<ECSComponents::DrawInfoComponent>(entityManager);
-	leftRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::LEFT, runeState.selectedRuneColor, 30.0f));
+	// Spawn 6 runes in a circle pattern
+	constexpr float PI = 3.14159265359f;
 
-	auto& leftTransform = leftRune.get<ECSComponents::TransformComponent>(entityManager);
-	leftTransform.pos = { mouseWorldPos.x - runeState.runeSpawnOffset, mouseWorldPos.y };
-	leftTransform.scale = { 1.0f, 1.0f };
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i) {
+		// Calculate pos on circle (starting from top, going clockwise)
+		float angle = (i * 360.0f / ECSComponents::RUNE_COUNT - 90.0f) * (PI / 180.0f);
+		float x = mouseWorldPos.x + runeState.runeCircleRadius * std::cos(angle);
+		float y = mouseWorldPos.y + runeState.runeCircleRadius * std::sin(angle);
 
-	auto& leftDraw = leftRune.get<ECSComponents::DrawInfoComponent>(entityManager);
-	leftDraw.width = 60.0f;
-	leftDraw.height = 60.0f;
-	leftDraw.color = Graphics::Color::White;
-	strcpy_s(leftDraw.shape, "Rectangle");
-	leftDraw.texture = leftRuneTexture;
+		// Assign colors so opposite runes share the same color (3 colors, 2 of each)
+		// Runes 0,3 = RED, Runes 1,4 = BLUE, Runes 2,5 = GREEN
+		ECSComponents::RuneColor color = static_cast<ECSComponents::RuneColor>(i % ECSComponents::RUNE_COLOR_COUNT);
 
-	// Spawn RIGHT rune
-	ECS::Entity rightRune = entityManager.create();
-	rightRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("RightRune"));
-	rightRune.add<ECSComponents::TransformComponent>(entityManager);
-	rightRune.add<ECSComponents::DrawInfoComponent>(entityManager);
-	rightRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::RIGHT, runeState.selectedRuneColor, 30.0f));
+		// Create rune entity
+		ECS::Entity rune = entityManager.create();
 
-	auto& rightTransform = rightRune.get<ECSComponents::TransformComponent>(entityManager);
-	rightTransform.pos = { mouseWorldPos.x + runeState.runeSpawnOffset, mouseWorldPos.y };
-	rightTransform.scale = { 1.0f, 1.0f };
+		std::string runeName = "Rune_" + std::string(ECSComponents::RuneAssets::getColorName(color));
+		rune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(runeName.c_str()));
+		rune.add<ECSComponents::TransformComponent>(entityManager);
+		rune.add<ECSComponents::DrawInfoComponent>(entityManager);
+		rune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(i, color, 30.0f));
 
-	auto& rightDraw = rightRune.get<ECSComponents::DrawInfoComponent>(entityManager);
-	rightDraw.width = 60.0f;
-	rightDraw.height = 60.0f;
-	rightDraw.color = Graphics::Color::White;
-	strcpy_s(rightDraw.shape, "Rectangle");
-	rightDraw.texture = rightRuneTexture;
+		auto& transform = rune.get<ECSComponents::TransformComponent>(entityManager);
+		transform.pos = { x, y };
+		transform.scale = { 1.0f, 1.0f };
 
-	// Store entity IDs
-	runeState.leftRuneEntityID = leftRune.id();
-	runeState.rightRuneEntityID = rightRune.id();
+		auto& draw = rune.get<ECSComponents::DrawInfoComponent>(entityManager);
+		draw.width = 60.0f;
+		draw.height = 60.0f;
 
-	// Mark entities as dirty to refresh rendering cache
+		// Set color tint based on rune color
+		switch (color)
+		{
+		case ECSComponents::RuneColor::RED:
+			draw.color = { 1.0f, 0.3f, 0.3f, 1.0f };  // Red tint
+			break;
+		case ECSComponents::RuneColor::BLUE:
+			draw.color = { 0.3f, 0.5f, 1.0f, 1.0f };  // Blue tint
+			break;
+		case ECSComponents::RuneColor::GREEN:
+			draw.color = { 0.3f, 1.0f, 0.3f, 1.0f };  // Green tint
+			break;
+		}
+
+		strcpy_s(draw.shape, "Rectangle");
+		draw.texture = resourceLoader.getTexture("Left_Rune");  // Use same texture, color differentiates
+
+		// Store entity ID
+		runeState.runeEntityIDs[i] = rune.id();
+	}
+
+	// Reset connection state
+	runeState.resetConnection();
+
 	entitiesDirty_ = true;
-
-	std::cout << "[RuneSystem] Spawned runes at mouse position" << std::endl;
 }
 
 void GameApplication::destroyRunes()
@@ -1952,24 +1978,21 @@ void GameApplication::destroyRunes()
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	// Destroy left rune if it exists
-	if (runeState.leftRuneEntityID != UINT32_MAX) {
-		ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
-		if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-			entityManager.destroyEntity(runeState.leftRuneEntityID);
+	// Destory all 6 runes
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i) {
+		if (runeState.runeEntityIDs[i] != UINT32_MAX)
+		{
+			ECS::Entity runeEntity(runeState.runeEntityIDs[i]);
+			if (runeEntity.has<ECSComponents::RuneComponent>(entityManager))
+			{
+				entityManager.destroyEntity(runeState.runeEntityIDs[i]);
+			}
+			runeState.resetConnection();
+			entitiesDirty_ = true;
 		}
-		runeState.leftRuneEntityID = UINT32_MAX;
 	}
 
-	// Destroy right rune if it exists
-	if (runeState.rightRuneEntityID != UINT32_MAX) {
-		ECS::Entity rightRuneEntity(runeState.rightRuneEntityID);
-		if (rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-			entityManager.destroyEntity(runeState.rightRuneEntityID);
-		}
-		runeState.rightRuneEntityID = UINT32_MAX;
-	}
-
+	runeState.resetConnection();
 	// Mark entities as dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
@@ -1982,41 +2005,90 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	// Check if mouse hovers over left rune
-	if (runeState.leftRuneEntityID != UINT32_MAX) {
-		ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
-		if (leftRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
-		    leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
+	// Check hover for all runes
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i)
+	{
+		if (runeState.runeEntityIDs[i] == UINT32_MAX) continue;
 
-			auto& leftTransform = leftRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
-			auto& leftRune = leftRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
+		ECS::Entity runeEntity(runeState.runeEntityIDs[i]);
+		if (!runeEntity.has<ECSComponents::TransformComponent>(entityManager) ||
+			!runeEntity.has<ECSComponents::RuneComponent>(entityManager))
+			continue;
 
-			float distToLeftRune = Math::eVec2Distance(mouseWorldPos, leftTransform.pos);
-			bool wasHovered = leftRune.isHovered;
-			leftRune.isHovered = (distToLeftRune <= leftRune.radius);
+		auto& transform = runeEntity.get<ECSComponents::TransformComponent>(entityManager);
+		auto& rune = runeEntity.get<ECSComponents::RuneComponent>(entityManager);
 
-			// Start drawing line when hovering over left rune
-			if (leftRune.isHovered && !wasHovered) {
+		float dist = Math::eVec2Distance(mouseWorldPos, transform.pos);
+		bool wasHovered = rune.isHovered;
+		rune.isHovered = (dist <= rune.radius);
+
+		// First rune hover - start drawing line
+		if (rune.isHovered && !wasHovered && !rune.isConnected)
+		{
+			if (runeState.firstConnectedRuneIndex == -1)
+			{
+				// Start connection from this rune
+				runeState.firstConnectedRuneIndex = i;
 				runeState.isDrawingLine = true;
-				runeState.lineStart = leftTransform.pos;
+				runeState.lineStart = transform.pos;
 				runeState.lineEnd = mouseWorldPos;
-				std::cout << "[RuneSystem] Started drawing line from left rune" << std::endl;
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+				std::cout << "[RuneSystem] Started drawing line from rune " << i << std::endl;
+			}
+			else if (runeState.firstConnectedRuneIndex != i && !runeState.fireballSpawned)
+			{
+				// Complete connection to second rune
+				runeState.secondConnectedRuneIndex = i;
+
+				// Mark both runes as connected
+				ECS::Entity firstRuneEntity(runeState.runeEntityIDs[runeState.firstConnectedRuneIndex]);
+				auto& firstRune = firstRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
+				firstRune.isConnected = true;
+				rune.isConnected = true;
+
+				// Get colors of both runes
+				ECSComponents::RuneColor color1 = firstRune.color;
+				ECSComponents::RuneColor color2 = rune.color;
+
+				// Calculate midpoint for spell/text spawn
+				auto& firstTransform = firstRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
+				Math::eVec2<float> spawnPos = {
+					(firstTransform.pos.x + transform.pos.x) / 2.0f,
+					(firstTransform.pos.y + transform.pos.y) / 2.0f
+				};
+
+				// Check if colors match
+				if (color1 == color2)
+				{
+					// Same color - spawn spell!
+					spawnFireball(spawnPos);
+					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+					std::cout << "[RuneSystem] Runes " << runeState.firstConnectedRuneIndex
+					          << " and " << i << " connected (same color)! Spawning fireball" << std::endl;
+				}
+				else
+				{
+					// Different colors - invalid connection, spawn floating text
+					spawnFloatingText(spawnPos, "Invalid");
+					std::cout << "[RuneSystem] Runes " << runeState.firstConnectedRuneIndex
+					          << " and " << i << " connected (different colors) - Invalid!" << std::endl;
+				}
+
+				runeState.fireballSpawned = true;
+
+				// Destroy runes after connection attempt
+				destroyRunes();
+				runeState.runesActive = false;
+				runeState.isDrawingLine = false;
+				return;  // Exit immediately - runes are destroyed, don't continue loop
 			}
 		}
 	}
 
-	// Update right rune hover state
-	if (runeState.rightRuneEntityID != UINT32_MAX) {
-		ECS::Entity rightRuneEntity(runeState.rightRuneEntityID);
-		if (rightRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
-		    rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-
-			auto& rightTransform = rightRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
-			auto& rightRune = rightRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
-
-			float distToRightRune = Math::eVec2Distance(mouseWorldPos, rightTransform.pos);
-			rightRune.isHovered = (distToRightRune <= rightRune.radius);
-		}
+	// Update line end position while drawing
+	if (runeState.isDrawingLine && !runeState.fireballSpawned)
+	{
+		runeState.lineEnd = mouseWorldPos;
 	}
 }
 
@@ -2213,6 +2285,78 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Cast" });
 
 	std::cout << "[RuneSystem] Spawned fireball at position (" << pos.x << ", " << pos.y << ")" << std::endl;
+}
+
+void GameApplication::spawnFloatingText(const Math::eVec2<float>& pos, const char* text)
+{
+	auto& entityManager = engine_.getEntityManager();
+
+	// Create floating text entity
+	ECS::Entity floatingText = entityManager.create();
+	floatingText.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("FloatingText"));
+	floatingText.add<ECSComponents::TransformComponent>(entityManager);
+	floatingText.add<ECSComponents::FloatingTextComponent>(entityManager, ECSComponents::FloatingTextComponent(text, 1.5f, 50.0f));
+
+	auto& transform = floatingText.get<ECSComponents::TransformComponent>(entityManager);
+	transform.pos = pos;
+	transform.scale = { 1.0f, 1.0f };
+
+	entitiesDirty_ = true;
+
+	std::cout << "[RuneSystem] Spawned floating text: " << text << std::endl;
+}
+
+void GameApplication::updateFloatingTexts(float deltaTime)
+{
+	auto& entityManager = engine_.getEntityManager();
+	auto& graphics = engine_.getGraphicsManager();
+	std::vector<uint32_t> textsToDestroy;
+
+	for (const auto& [id, loc] : entityManager.getMap()) {
+		ECS::Entity entity(id);
+		if (entity.has<ECSComponents::FloatingTextComponent>(entityManager) &&
+		    entity.has<ECSComponents::TransformComponent>(entityManager)) {
+
+			auto& floatText = entity.get<ECSComponents::FloatingTextComponent>(entityManager);
+			auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+
+			// Update elapsed time
+			floatText.elapsedTime += deltaTime;
+
+			// Move text upward
+			transform.pos.y -= floatText.riseSpeed * deltaTime;
+
+			// Check if expired
+			if (floatText.elapsedTime >= floatText.lifetime) {
+				textsToDestroy.push_back(id);
+			}
+			else {
+				// Render the floating text
+				float alpha = floatText.getCurrentAlpha();
+
+				// Convert world position to screen position
+				Math::eVec2<float> screenPos = {
+					transform.pos.x - editorCameraX_,
+					transform.pos.y - editorCameraY_
+				};
+
+				// Draw text with fading alpha
+				graphics.drawText(
+					pixelifyFont_,
+					std::string(floatText.text),
+					screenPos,
+					1.0f,  // scale
+					Graphics::Color(1.0f, 0.3f, 0.3f, alpha)  // Red color with fading alpha
+				);
+			}
+		}
+	}
+
+	// Destroy expired floating texts
+	for (uint32_t id : textsToDestroy) {
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
 }
 
 void GameApplication::updateCombatSystem(float dt)
