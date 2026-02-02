@@ -889,6 +889,8 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	// Load performs a "read all file in directory" now
 	if (ImGui::Button("Load Existing Prefab")) {
 		try {
+			// Clear old entries so deleted files don't persist
+			prefabRegistry.clear();  
 			for (auto& entry : std::filesystem::directory_iterator(FileSystem::GetAssetsDir().string() + "/saves/prefabs/")) {
 				if (entry.path().extension() == ".txt") {
 					try {

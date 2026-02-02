@@ -156,6 +156,21 @@ namespace ECSComponents {
 			}
 		}
 
+		int getSavedFunctionType() const
+		{
+			return savedFunctionType;
+		}
+
+		void setSavedFunctionType(int type)
+		{
+			savedFunctionType = type;
+		}
+
+		std::string getTargetObject() const
+		{
+			return std::string(targetObject);
+		}
+
 		/*============================================================================================
 		* \brief		Returns the signals container
 		* \return		std::vector<std::pair<signalType, functionType>>& to the signal vector
@@ -163,6 +178,11 @@ namespace ECSComponents {
 		std::vector<std::pair<signalType, functionType>>& getSignals()
 		{
 			return signals;
+		}
+
+		std::unordered_map<std::string, Events::EnoSignal>& getSignalMap()
+		{
+			return signals_;
 		}
 
 		template <typename Visitor>
@@ -213,11 +233,12 @@ namespace ECSComponents {
 				{
 					// Point is inside
 					// The button is clicked, emit a singal
-					auto signalIt = signals_.find("onClick");
+					std::cout << "[Button] CLICK!" << std::endl;
+					/*auto signalIt = signals_.find("onClick");
 					if (signalIt != signals_.end())
 					{
 						signalIt->second.emit();
-					}
+					}*/
 					return true;
 				}
 				else
@@ -234,11 +255,12 @@ namespace ECSComponents {
 					mousePos.y <= (t.pos.y + (d.height * 0.5f)))	// Lower limit
 				{
 					// The button is clicked, emit a singal
-					auto signalIt = signals_.find("onClick");
+					std::cout << "[Button] CLICK!" << std::endl;
+					/*auto signalIt = signals_.find("onClick");
 					if (signalIt != signals_.end())
 					{
 						signalIt->second.emit();
-					}
+					}*/
 					return true;
 
 				}

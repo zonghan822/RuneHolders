@@ -157,7 +157,7 @@ namespace ECSComponents
 		void reflect(Visitor&& l) const
 		{
 			l("Width", width, "float");
-			l("height", height, "float");
+			l("Height", height, "float");
 			l("Shape", shape, "char32");
 			l("Color", color, "Color(RGBA)");
 

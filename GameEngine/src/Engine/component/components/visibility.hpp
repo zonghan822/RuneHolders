@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration/definition file for the visibility component
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once
@@ -52,7 +52,7 @@ namespace ECSComponents
 		template <typename Visitor>
 		void reflect(Visitor&& l) const
 		{
-			l("Z Index", z_index, "uint32");
+			l("Z Index", z_index, "uint32_t");
 			l("Visible", visible, "bool");
 		}
 	};
