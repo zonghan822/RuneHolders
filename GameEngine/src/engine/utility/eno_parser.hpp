@@ -214,7 +214,7 @@ namespace Parser
 		// File path types
 		if (ttype == "texchar240")
 		{
-			return std::make_shared<Graphics::EnoTexture>();
+			return tvalue;
 		}
 
 		throw std::runtime_error("Unknown type { " + ttype + " } has been set in the save file!");
