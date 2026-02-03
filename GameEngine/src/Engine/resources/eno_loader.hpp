@@ -150,6 +150,13 @@ namespace Resources
 		std::unordered_map<std::string, FMOD::Sound*>& getSoundsMap();
 
 		/*============================================================================================
+		* \author   Yun Qi
+		* \brief	Retrieve all textures. Specially made for Deletion purposes
+		* \return	Map of all textures.
+		*//*========================================================================================*/
+		std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>& getTexturesMap();
+
+		/*============================================================================================
 		* \brief	Get the shader directory path.
 		* \return	String reference to the shader path.
 		*//*========================================================================================*/

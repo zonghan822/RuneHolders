@@ -89,6 +89,12 @@ namespace Resources {
 		return sounds_;
 	}
 
+	//Yun Qi added this for removal of textures.
+	std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>& EnoLoader::getTexturesMap()
+	{
+		return textures_;
+	}
+
 	// Shader getters
 	const std::string& EnoLoader::getShaderPath() const {
 		return shaderPath_;

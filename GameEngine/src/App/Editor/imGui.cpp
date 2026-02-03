@@ -4425,6 +4425,110 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 
 	ImGui::Separator();
 
+	// --- Texture Deletion ---
+	ImGui::Text("-----------DELETION OF TEXTURE FILES-------------");
+
+	if (ImGui::Button("Delete selected texture"))
+	{
+		if (!selectedTexture.empty())
+		{
+			ImGui::OpenPopup("ConfirmDeleteTexture");
+		}
+	}
+
+	if (ImGui::BeginPopupModal("ConfirmDeleteTexture", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::TextWrapped("Delete this texture?\n\n%s", selectedTexture.c_str());
+		ImGui::Spacing();
+
+		if (ImGui::Button("Delete", ImVec2(120, 0)))
+		{
+			// Get the texture to find its file path
+			auto& texturesMap = loader.getTexturesMap();
+			auto it = texturesMap.find(selectedTexture);
+
+			if (it != texturesMap.end())
+			{
+				// Reset the shared_ptr (set texture pointer to null)
+				it->second.reset();
+
+				// Remove from the textures map
+				texturesMap.erase(it);
+			}
+
+			// Delete the file from disk (both build and root folders)
+			bool deleted = false;
+			bool deletedRoot = false;
+			std::string deleteErr;
+
+			try
+			{
+				// Build folder path
+				std::filesystem::path buildPath = std::filesystem::path(loader.getImagePath()) / (selectedTexture + ".png");
+				std::filesystem::path buildPathJpg = std::filesystem::path(loader.getImagePath()) / (selectedTexture + ".jpg");
+
+				// Root folder path
+				std::filesystem::path rootPath = FileSystem::GetRootDir() / "assets/art" / (selectedTexture + ".png");
+				std::filesystem::path rootPathJpg = FileSystem::GetRootDir() / "assets/art" / (selectedTexture + ".jpg");
+
+				// Delete from BUILD folder (try PNG first, then JPG)
+				if (std::filesystem::exists(buildPath))
+				{
+					deleted = std::filesystem::remove(buildPath);
+				}
+				else if (std::filesystem::exists(buildPathJpg))
+				{
+					deleted = std::filesystem::remove(buildPathJpg);
+				}
+
+				// Delete from ROOT folder (try PNG first, then JPG)
+				if (std::filesystem::exists(rootPath))
+				{
+					deletedRoot = std::filesystem::remove(rootPath);
+				}
+				else if (std::filesystem::exists(rootPathJpg))
+				{
+					deletedRoot = std::filesystem::remove(rootPathJpg);
+				}
+
+				if (!deleted && !deletedRoot)
+				{
+					deleteErr = "File not found in build or root folders.";
+				}
+			}
+			catch (const std::exception& e)
+			{
+				deleteErr = e.what();
+			}
+
+			if (!deleteErr.empty())
+			{
+				std::cerr << "[Texture Delete] Error: " << deleteErr << std::endl;
+			}
+			else
+			{
+				std::cout << "[Texture Delete] Deleted texture: " << selectedTexture << std::endl;
+			}
+
+			// Clear selection
+			selectedTexture.clear();
+			textureData.texture.reset();
+
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel", ImVec2(120, 0)))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	ImGui::Separator();
+
 	//YunQi Bookmark  (i believe this below section will have to be moved to Asset Prefabs)
 	// If texture selected
 	if (!selectedTexture.empty()) {
