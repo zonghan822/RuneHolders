@@ -160,7 +160,7 @@ namespace Window
 		glfwSetWindowFocusCallback(window_, WindowFocusCallback);
 		glfwSetWindowIconifyCallback(window_, WindowIconifyCallback);
 	}
-
+	
 	void EnoWindow::ErrorCallback(int err, char const* description) {
 		(void)err;
 		std::string msg = "GLFW error: ";
@@ -257,7 +257,6 @@ namespace Window
 		if (!isFullscreen_) {
 
 			// Save current windowed position + size
-			glfwGetWindowPos(window_, &windowedX_, &windowedY_);
 			glfwGetWindowSize(window_, &windowedW_, &windowedH_);
 
 			// Go fullscreen
@@ -274,21 +273,22 @@ namespace Window
 #endif
 
 			isFullscreen_ = true;
+			resolutionIndex_ = static_cast<int>(resolutionTable_.size()) - 1;
 		}
 		else {
 			// Return to windowed mode
-			glfwSetWindowMonitor(window_,
-				nullptr,
-				windowedX_, windowedY_,
-				windowedW_, windowedH_,
-				0);
-
+			setResolution(windowedW_, windowedH_);
 #ifdef _DEBUG
 			std::cout << "[Window] Exiting fullscreen: "
 				<< windowedW_ << "x" << windowedH_ << "\n";
 #endif
-
 			isFullscreen_ = false;
+			for (int i = 0; i < (int)resolutionTable_.size(); i++) {
+				if (resolutionTable_[i].first == windowedW_ && resolutionTable_[i].second == windowedH_) {
+					resolutionIndex_ = i;
+					break;
+				}
+			}
 		}
 	}
 
@@ -298,14 +298,10 @@ namespace Window
 		windowedW_ = width;
 		windowedH_ = height;
 
-		if (isFullscreen_) {
-			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-			windowedX_ = (mode->width - width) / 2;
-			windowedY_ = (mode->height - height) / 2;
-		}
-		else {
-			glfwGetWindowPos(window_, &windowedX_, &windowedY_);
-		}
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		windowedX_ = (mode->width - width) / 2;
+		windowedY_ = (mode->height - height) / 2;
+
 		glfwSetWindowMonitor(window_, nullptr, windowedX_, windowedY_, width, height, 0);
 	}
 
@@ -350,5 +346,7 @@ namespace Window
 #endif
 
 		setResolution(w, h);
+
+		if (isFullscreen_) isFullscreen_ = false;
 	}
 }
