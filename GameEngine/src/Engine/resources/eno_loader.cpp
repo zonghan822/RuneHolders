@@ -29,8 +29,8 @@ namespace Resources {
 		imagePath_     = (base / "art").string();
 		shaderPath_    = (base / "shaders").string();
 		fontPath_      = (base / "fonts").string();
-		rootMusicPath_ = (root / "sound/music").string();
-		rootSfxPath_   = (root / "sound/sfx").string();
+		rootMusicPath_ = (root / "assets/sound/music").string();
+		rootSfxPath_   = (root / "assets/sound/sfx").string();
 
 		// Subscribe audio events
 		bus_.subscribe<Audio::RequestSound>([&](const Audio::RequestSound& event) {

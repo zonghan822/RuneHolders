@@ -1011,6 +1011,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 			{
 				// Display inspector for all entities (including root nodes)
 				displayEntityInspector(engine_, e, undoManager, sceneTree);
+				//assetPresetsTab(engine_, e);
 				assetPresetsTab(engine_, e);
 				entityFound = true;
 				break;
@@ -1877,16 +1878,32 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 				// YunQi M4 addition for deletion of audio files
 				selectedFilenameWithExt = audioAssets[i]; // this has extension, e.g. "laser.wav" operator/ does an append for path and extension
+
+				std::cout << "[Audio Selection] File: " << selectedFilenameWithExt << "\n";
+				std::cout << "[Audio Selection] Build Music Path: " << loader.getMusicPath() << "\n";
+				std::cout << "[Audio Selection] Build SFX Path: " << loader.getSFXPath() << "\n";
+				std::cout << "[Audio Selection] Root Music Path: " << loader.getRootMusicPath() << "\n";
+				std::cout << "[Audio Selection] Root SFX Path: " << loader.getRootSFXPath() << "\n";
+
 				std::filesystem::path musicPath					 =  std::filesystem::path(loader.getMusicPath()) / selectedFilenameWithExt;
 				std::filesystem::path sfxPath					 =  std::filesystem::path(loader.getSFXPath()) / selectedFilenameWithExt;
 				std::filesystem::path rootMusicPath				 =  std::filesystem::path(loader.getRootMusicPath()) / selectedFilenameWithExt;
 				std::filesystem::path rootSfxPath				 =  std::filesystem::path(loader.getRootSFXPath()) / selectedFilenameWithExt;
+
+				std::cout << "[Audio Selection] Checking build music: " << musicPath << " (exists: " << std::filesystem::exists(musicPath) << ")\n";
+				std::cout << "[Audio Selection] Checking build sfx: " << sfxPath << " (exists: " << std::filesystem::exists(sfxPath) << ")\n";
+				std::cout << "[Audio Selection] Checking root music: " << rootMusicPath << " (exists: " << std::filesystem::exists(rootMusicPath) << ")\n";
+				std::cout << "[Audio Selection] Checking root sfx: " << rootSfxPath << " (exists: " << std::filesystem::exists(rootSfxPath) << ")\n";
+
 				if (std::filesystem::exists(musicPath))			    selectedFullPath = musicPath;
 				else if (std::filesystem::exists(sfxPath))		    selectedFullPath = sfxPath;
 				else											    selectedFullPath.clear();
-				if (std::filesystem::exists(rootMusicPath))         selectedFullPath = musicPath;
-				else if (std::filesystem::exists(rootSfxPath))		selectedFullPath = sfxPath;
-				else												selectedFullPath.clear();
+				if (std::filesystem::exists(rootMusicPath))         selectedFullRootPath = rootMusicPath;
+				else if (std::filesystem::exists(rootSfxPath))		selectedFullRootPath = rootSfxPath;
+				else												selectedFullRootPath.clear();
+
+				std::cout << "[Audio Selection] Selected BUILD path: " << (selectedFullPath.empty() ? "(empty)" : selectedFullPath.string()) << "\n";
+				std::cout << "[Audio Selection] Selected ROOT path: " << (selectedFullRootPath.empty() ? "(empty)" : selectedFullRootPath.string()) << "\n";
 
 				std::cout << "[Audio] User selected: " << selectedName << "\n";
 
@@ -2047,26 +2064,34 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 				try
 				{
-					std::cout << "[Audio Delete] Root  path: " << (selectedFullRootPath.empty() ? "(empty)" : selectedFullRootPath.string()) << "\n";
-					
+					//std::cout << "\n=== AUDIO FILE DELETION ATTEMPT ===\n";
+					//std::cout << "[Audio Delete] File to delete: " << selectedFilenameWithExt << "\n";
+					//std::cout << "[Audio Delete] BUILD path: " << (selectedFullPath.empty() ? "(empty)" : selectedFullPath.string()) << "\n";
+					//std::cout << "[Audio Delete] ROOT path: " << (selectedFullRootPath.empty() ? "(empty)" : selectedFullRootPath.string()) << "\n";
+
+					// Delete from BUILD folder
 					if (!selectedFullPath.empty() && std::filesystem::exists(selectedFullPath))
 					{
+						//std::cout << "[Audio Delete] Attempting to delete from BUILD folder...\n";
 						deleted = std::filesystem::remove(selectedFullPath);
+						//std::cout << "[Audio Delete] BUILD delete result: " << (deleted ? "SUCCESS" : "FAILED") << "\n";
 					}
 					else
 					{
-						deleteErr = "File not found on disk.";
+						//std::cout << "[Audio Delete] BUILD file not found or path empty.\n";
+						deleteErr = "File not found in build folder.";
 					}
 
-					// Root delete
+					// Delete from ROOT folder
 					if (!selectedFullRootPath.empty() && std::filesystem::exists(selectedFullRootPath))
 					{
+						//std::cout << "[Audio Delete] Attempting to delete from ROOT folder...\n";
 						deletedRoot = std::filesystem::remove(selectedFullRootPath);
-						std::cout << "[Audio Delete] Root delete result: " << deletedRoot << "\n";
+						//std::cout << "[Audio Delete] ROOT delete result: " << (deletedRoot ? "SUCCESS" : "FAILED") << "\n";
 					}
 					else
 					{
-						std::cout << "[Audio Delete] Root file missing.\n";
+						//std::cout << "[Audio Delete] ROOT file not found or path empty.\n";
 					}
 
 					// If neither deleted anything
@@ -2095,7 +2120,7 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 				}
 				else
 				{
-					std::cout << "[Audio] Deleted file: " << selectedFullPath << "\n";
+					//std::cout << "[Audio] Deleted file: " << selectedFullPath << "\n";
 				}
 
 				// Refresh UI list
@@ -3905,9 +3930,26 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 
 //Demo states, Find a way to bridge to C# side so that it takes states from entity instead.
-std::vector<std::string> states { "Death", "Idle", "Attack", "Walk"};
 void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
-
+//void assetPresetsTab(Engine::EnoEngine& engine_, Node* node) {
+	/*ECS::Entity& entity = node->entity_;*/
+	Node* entNode = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id());
+	std::vector<std::string> states { "Death", "Idle", "Attack", "Walk"};
+	std::string stateName{};
+	//std::vector<std::string> stateEntries{};
+	
+#if 0 //this will happen after merging. States to be integrated with the game. Keep an eye to have Node instead of entity as param if possible. 
+	// Store exported enum
+	for (auto const& [first, second] : node.script_->vars()) {
+		stateName = Conversion::wideToUtf8(first);
+		
+		if (!second.enumEntries.empty())
+		{
+			//stateEntries.push_back(Conversion::wideToUtf8(enumEntries.name_));
+			states.push_back(Conversion::wideToUtf8(enumEntries.name_));
+		}
+	}
+#endif
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	const auto& textures = loader.getAllTextures();
 	static std::string selected = "";  //currently selected

@@ -11,7 +11,10 @@ void FileSystem::Initialize()
     char buffer[MAX_PATH];
     GetModuleFileNameA(NULL, buffer, MAX_PATH);
     exeDir_ = std::filesystem::path(buffer).parent_path();
-    rootDir_ = std::filesystem::path(buffer).root_path();
+
+    // Navigate up from build/projects/App/Debug to GameEngine root (4 levels up)
+    rootDir_ = exeDir_.parent_path().parent_path().parent_path().parent_path();
+    //rootDir_ = std::filesystem::path(buffer).root_path();
 
     assetsDir_ = exeDir_ / "assets";
     scriptsDir_ = exeDir_ / "scripts/GameScripts/user_scripts";
