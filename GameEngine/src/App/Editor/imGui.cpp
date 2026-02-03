@@ -301,7 +301,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	// Tilemap Editor
 	g_game->getMapEditor().displayMenu();
 	g_game->getMapEditor().displayTilesetMenu(loader);
-	
+
 	// END DOCKSPACE
 	imGuiEndDockspace();
 
@@ -1132,7 +1132,11 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		entityCounterInitialized = true;
 	}
 
-	ImGui::Checkbox("Attach Script to New Entity", &attachScript);
+	// This needs refactoring
+	std::unique_ptr<Script::EnoScript> script;
+	if (ImGui::Button("NEW ATTACH SCRIPT")) {
+	    script = scriptMng.selectScript();
+	}
 
 	// Here i prepare the list for showcase of the scripts
 	if (attachScript) {
@@ -1193,7 +1197,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		newEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 		newEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
 		newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
-		
+
 
 
 		// Add collision component for physics interactions
@@ -1222,8 +1226,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		newEntity.add<ECSComponents::PhysicsComponent>(entityManager,
 			physicsComp);
 
-		
-		
+
+
 		newEntity.add<ECSComponents::BoxComponent>(entityManager, ECSComponents::BoxComponent());
 
 
@@ -1243,16 +1247,23 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		);
 		undoManager.executeCommand(std::move(createCmd));
 
+
+
+
 		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created\n";
-		if (attachScript && selectedScriptIndex >= 0) {
-			std::wstring selectedScript = availableScripts[selectedScriptIndex];
-			std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-			auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
-			if (script)
-				sceneTree.attachScript(createdNode, std::move(script));
-			else
-				std::cerr << "No script is attached!" << std::endl;
-		}
+		//if (attachScript && selectedScriptIndex >= 0) {
+		//	std::wstring selectedScript = availableScripts[selectedScriptIndex];
+		//	std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
+		//	auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+		//	if (script)
+		//		sceneTree.attachScript(createdNode, std::move(script));
+		//	else
+		//		std::cerr << "No script is attached!" << std::endl;
+		//}
+		if (script) sceneTree.attachScript(createdNode, std::move(script));
+
+
+
 		if (g_game) g_game->markEntitiesDirty();
 	}
 
@@ -1270,7 +1281,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				// Create transform with default position at center of screen
 				float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
 				float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
-				
+
 				// Create transform with default position at center of screen
 				ECSComponents::TransformComponent transform{
 					{nodePosX, nodePosY},  // Center position
@@ -1290,8 +1301,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				childEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
 				childEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
 				childEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
-				
-				
+
+
 				// Add collision component for physics interactions
 				ECSComponents::CollisionComponent childCollisionComp;
 				childCollisionComp.isActive = true;
@@ -1475,7 +1486,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 			//	g_game->markEntitiesDirty();
 			//}
 			sceneNames.clear();
-		} 
+		}
 
 		// Repopulate the scene list
 		for (auto& scene : sceneList)
@@ -1493,7 +1504,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 	// Display active scene name
 	ImGui::Text(currScene.c_str());
-	
+
 	ImGui::Separator();
 
 	// Display scene names
@@ -1568,7 +1579,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 					// Refresh scene name
 					g_refreshSceneList = true;
-					
+
 				}
 
 			}
@@ -1785,7 +1796,8 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 						std::filesystem::copy_file(filePath, destPath,
 							std::filesystem::copy_options::overwrite_existing);
 						std::cout << "[Audio Drop] Copied " << filename << " to " << folderName << " folder" << std::endl;
-					} else {
+					}
+					else {
 						std::cout << "[Audio Drop] File " << filename << " already exists in " << folderName << " folder" << std::endl;
 					}
 
@@ -1809,7 +1821,8 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 						// Refresh the UI list
 						LoadAudioAssets(engine_);
-					} else {
+					}
+					else {
 						// Failed to load or unsupported format
 						if (ext == ".wav" || ext == ".mp3") {
 							// Supported format but FMOD failed
@@ -1819,7 +1832,8 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 								ext,
 								"FMOD failed to load the file. The file may be corrupted or in an unsupported codec."
 								});
-						} else {
+						}
+						else {
 							// Unsupported format
 							bus.publish(Audio::AudioLoadError{
 								filename,
@@ -1837,7 +1851,8 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 						std::cout << "[Audio Drop] Failed to load: " << filename << " (unsupported or corrupted)" << std::endl;
 					}
 
-				} catch (const std::exception& e) {
+				}
+				catch (const std::exception& e) {
 					std::cerr << "[Audio Drop] Error processing file: " << e.what() << std::endl;
 					bus.publish(Audio::AudioLoadError{
 						filename,
@@ -2075,7 +2090,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// Scale removed - doesn't do anything currently
 	}
 
-	
+
 
 	// --- DrawInfoComponent ---
 	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
@@ -2199,7 +2214,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 					// Changed to Rectangle - auto-calculate rectangle collider
 					collision.type = ECSComponents::ColliderType::RECTANGLE;
 					collision.data.rectangle.width = draw.width;
-					collision.data.rectangle.height = draw.height; 
+					collision.data.rectangle.height = draw.height;
 				}
 			}
 			if (g_game) g_game->markEntitiesDirty();
@@ -2342,7 +2357,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetTooltip("Trigger detects collisions but doesn't block movement.\nRequires 'Is Active' to be checked.");
 		}
-		
+
 	}
 	else {
 		// Allow adding a collider if the entity doesn't have one
@@ -2356,7 +2371,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				if (!entity.has<ECSComponents::CollisionComponent>(entMng)) {
 					std::cout << "attempting to add collision component\n";
 					entity.add<ECSComponents::CollisionComponent>(entMng, collision);
-				
+
 				}
 			}
 			else {
@@ -2390,7 +2405,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 	}
 #endif
-	
+
 	// --- AIComponent ---
 	if (entity.has<ECSComponents::AIComponent>(entMng)) {
 		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
@@ -2735,7 +2750,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		int signalToDelete = -1;
 		size_t signalCount = button.signalsSize();
 
-		for (size_t i = 0; i < signalCount; i++) 
+		for (size_t i = 0; i < signalCount; i++)
 		{
 			ImGui::PushID(static_cast<int>(i));  // Unique ID for each signal
 
@@ -2852,13 +2867,13 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 
 	}
-	else 
+	else
 	{
 		// Allow adding button component
 		ImGui::SeparatorText("Button Component");
 		ImGui::TextDisabled("No button component attached");
 
-		if (ImGui::Button("Add Button Component")) 
+		if (ImGui::Button("Add Button Component"))
 		{
 			ECSComponents::ButtonComponent button;
 
@@ -3042,7 +3057,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		if (it != textures.end())
 		{
 			auto tex = it->second;
-			
+
 
 			if (idleMode == 0)
 			{
@@ -3100,11 +3115,13 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 				if (!idleHasTexture) ImGui::EndDisabled();
 				return;
 			}
-		} catch (const std::exception& ex) {
+		}
+		catch (const std::exception& ex) {
 			std::cerr << "[APPLY IDLE] Exception during validation: " << ex.what() << std::endl;
 			if (!idleHasTexture) ImGui::EndDisabled();
 			return;
-		} catch (...) {
+		}
+		catch (...) {
 			std::cerr << "[APPLY IDLE] Unknown exception during validation" << std::endl;
 			if (!idleHasTexture) ImGui::EndDisabled();
 			return;
@@ -3160,7 +3177,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		else                 // pixel mode
 		{
 			idleTexData.rows = idleTexData.texture->getHeight() / std::max(1, idleFrameH);
-			idleTexData.cols = idleTexData.texture->getWidth()  / std::max(1, idleFrameW);
+			idleTexData.cols = idleTexData.texture->getWidth() / std::max(1, idleFrameW);
 			idleTexData.frameWidth = idleFrameW;
 			idleTexData.frameHeight = idleFrameH;
 		}
@@ -3335,11 +3352,13 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 				if (!walkHasTexture) ImGui::EndDisabled();
 				return;
 			}
-		} catch (const std::exception& ex) {
+		}
+		catch (const std::exception& ex) {
 			std::cerr << "[APPLY WALK] Exception during validation: " << ex.what() << std::endl;
 			if (!walkHasTexture) ImGui::EndDisabled();
 			return;
-		} catch (...) {
+		}
+		catch (...) {
 			std::cerr << "[APPLY WALK] Unknown exception during validation" << std::endl;
 			if (!walkHasTexture) ImGui::EndDisabled();
 			return;
@@ -3391,7 +3410,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		else                 // pixel mode
 		{
 			walkTexData.rows = walkTexData.texture->getHeight() / std::max(1, walkFrameH);
-			walkTexData.cols = walkTexData.texture->getWidth() / std::max(1,  walkFrameW);
+			walkTexData.cols = walkTexData.texture->getWidth() / std::max(1, walkFrameW);
 			walkTexData.frameWidth = walkFrameW;
 			walkTexData.frameHeight = walkFrameH;
 		}
@@ -3483,7 +3502,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	{
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
 		{
-			
+
 			attackSelected = (const char*)payload->Data;
 
 			auto it = textures.find(attackSelected);
@@ -3491,7 +3510,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			{
 				attackTexData.texture = it->second; // shared_ptr<EnoTexture>
 			}
-			
+
 		}
 		ImGui::EndDragDropTarget();
 	}
@@ -3566,11 +3585,13 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 				if (!attackHasTexture) ImGui::EndDisabled();
 				return;
 			}
-		} catch (const std::exception& ex) {
+		}
+		catch (const std::exception& ex) {
 			std::cerr << "[APPLY ATTACK] Exception during validation: " << ex.what() << std::endl;
 			if (!attackHasTexture) ImGui::EndDisabled();
 			return;
-		} catch (...) {
+		}
+		catch (...) {
 			std::cerr << "[APPLY ATTACK] Unknown exception during validation" << std::endl;
 			if (!attackHasTexture) ImGui::EndDisabled();
 			return;
@@ -3874,7 +3895,8 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 					if (needsCopy) {
 						std::filesystem::copy_file(filePath, destPath, std::filesystem::copy_options::overwrite_existing);
 						std::cout << "[Asset Import] Copied " << filename << " to assets folder\n";
-					} else {
+					}
+					else {
 						std::cout << "[Asset Import] File " << filename << " already exists in assets folder\n";
 					}
 
@@ -4237,7 +4259,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 		isPlaying = !isPlaying;
 		if (isPlaying) {
 			sceneEditor.playScene();
-		} else {
+		}
+		else {
 			sceneEditor.stopScene();
 			// Immediately invalidate entity cache after stopping scene
 			if (g_game) g_game->markEntitiesDirty();
@@ -4313,7 +4336,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 		ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f),
 			"Editor View - WASD: Move | Mouse Wheel/+/-: Zoom (%.2fx)",
 			g_game->getEditorZoom());
-	} else {
+	}
+	else {
 		ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Editor View - Use WASD to move camera");
 	}
 	ImGui::Separator();
@@ -4367,7 +4391,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			// Capture the editor view min/max coordinates and store them in GameApplication
 			ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
 			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
-			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
+			g_game->setEditorViewRect({ imGuiImageMin.x, imGuiImageMin.y }, { imGuiImageMax.x, imGuiImageMax.y });
 
 			// ========== MOUSE WHEEL ZOOM ==========
 			if (ImGui::IsItemHovered()) {
@@ -4435,7 +4459,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 								if (texture->loadFromFile(destPath.string())) {
 									loader.addTexture(textureName, texture);
 									std::cout << "[Asset Import] Loaded texture: " << textureName << std::endl;
-								} else {
+								}
+								else {
 									std::cerr << "[Asset Import] Failed to load texture from: " << destPath << std::endl;
 									continue;
 								}
@@ -4513,7 +4538,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							undoManager.executeCommand(std::move(createCmd));
 
 							std::cout << "[Drag-Drop] Created entity '" << textureName
-									  << "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
+								<< "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
 
 							if (g_game) g_game->markEntitiesDirty();
 						}
@@ -4611,7 +4636,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						undoManager.executeCommand(std::move(createCmd));
 
 						std::cout << "[Drag-Drop] Created entity '" << textureName
-								  << "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
+							<< "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
 
 						if (g_game) g_game->markEntitiesDirty();
 					}
@@ -4623,16 +4648,16 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 			// --- Handle entity deletion by click ---                                        
 
-			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {                                                                                                     
+			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
 
 				Math::eVec2<float> worldPos = Graphics::screenToWorld(
-											{ ImGui::GetMousePos().x, ImGui::GetMousePos().y },
-											g_game->getEditorViewMin(),
-											g_game->getEditorViewMax(),
-											editorWidth,
-											editorHeight,
-											g_game->getEditorCameraX(),
-											g_game->getEditorCameraY());
+					{ ImGui::GetMousePos().x, ImGui::GetMousePos().y },
+					g_game->getEditorViewMin(),
+					g_game->getEditorViewMax(),
+					editorWidth,
+					editorHeight,
+					g_game->getEditorCameraX(),
+					g_game->getEditorCameraY());
 
 				auto clicked = getEntityUnderMouse(engine_, worldPos);
 				if (clicked.has_value()) {
@@ -4666,16 +4691,16 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 			// --- Handle prefab placement ---                                                
 
-			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {                                                                                         
+			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {
 
 				Math::eVec2<float> worldPos = Graphics::screenToWorld(
-											{ ImGui::GetMousePos().x, ImGui::GetMousePos().y },
-											g_game->getEditorViewMin(),
-											g_game->getEditorViewMax(),
-											editorWidth,
-											editorHeight,
-											g_game->getEditorCameraX(),
-											g_game->getEditorCameraY());
+					{ ImGui::GetMousePos().x, ImGui::GetMousePos().y },
+					g_game->getEditorViewMin(),
+					g_game->getEditorViewMax(),
+					editorWidth,
+					editorHeight,
+					g_game->getEditorCameraX(),
+					g_game->getEditorCameraY());
 
 				// Spawn prefab at clicked position
 				spawnPrefabAt(worldPos.x, worldPos.y, g_selectedPrefabForPlacement, engine_, sceneTree, undoManager);
@@ -4693,15 +4718,15 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
 
 						// Convert entity position to screen coordinates          
-						Math::eVec2<float> entityWorldPos = {tc.pos.x, tc.pos.y}; 
+						Math::eVec2<float> entityWorldPos = { tc.pos.x, tc.pos.y };
 						Math::eVec2<float> screenPos = Graphics::worldToScreen(
-														entityWorldPos,
-														g_game->getEditorViewMin(),
-														g_game->getEditorViewMax(),
-														editorWidth,
-														editorHeight,
-														g_game->getEditorCameraX(),
-														g_game->getEditorCameraY());
+							entityWorldPos,
+							g_game->getEditorViewMin(),
+							g_game->getEditorViewMax(),
+							editorWidth,
+							editorHeight,
+							g_game->getEditorCameraX(),
+							g_game->getEditorCameraY());
 
 						// Convert to ImVec2 for easier logic comparison
 						ImVec2 entityScreenPos = { screenPos.x, screenPos.y };
@@ -4796,21 +4821,21 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			}
 
 			// Begin gizmo interaction                                                    
-			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&        
-				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && !isRotating && !isScaling 
-				&& sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) 
-			{             
-				                                                                                                       
-				ImVec2 mouseScreenPos = ImGui::GetMousePos();                             
-				Math::eVec2<float> worldPos = 
+			if (!g_waitingForEntityDeletion && g_selectedPrefabForPlacement.empty() &&
+				ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && !isDragging && !isRotating && !isScaling
+				&& sceneEditor.getCurrentScene().getState() == Editor::State::Stopped)
+			{
+
+				ImVec2 mouseScreenPos = ImGui::GetMousePos();
+				Math::eVec2<float> worldPos =
 					Graphics::screenToWorld(
-					{ mouseScreenPos.x, mouseScreenPos.y },
-					g_game->getEditorViewMin(),
-					g_game->getEditorViewMax(),
-					editorWidth,
-					editorHeight,
-					g_game->getEditorCameraX(),
-					g_game->getEditorCameraY());
+						{ mouseScreenPos.x, mouseScreenPos.y },
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY());
 
 				// Check if we have a selected entity
 				if (selectedEntityID != UINT32_MAX) {
@@ -4818,7 +4843,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					for (auto& e : allEntities) {
 						if (e.id() == selectedEntityID) {
 							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
-							Math::eVec2<float> currentEntityWorldPos = {tc.pos.x, tc.pos.y};
+							Math::eVec2<float> currentEntityWorldPos = { tc.pos.x, tc.pos.y };
 							Math::eVec2<float> screenPos = Graphics::worldToScreen(
 								currentEntityWorldPos,
 								g_game->getEditorViewMin(),
@@ -4827,7 +4852,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 								editorHeight,
 								g_game->getEditorCameraX(),
 								g_game->getEditorCameraY());
-							ImVec2 entityScreenPos = {screenPos.x,screenPos.y};
+							ImVec2 entityScreenPos = { screenPos.x,screenPos.y };
 
 							int handleType = 0;
 							float gizmoSize = 50.0f;
@@ -4851,17 +4876,17 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									pendingTransformCommand->captureOldState(affectedEntityIDs);
 								}
 
-								if (currentGizmoMode == GIZMO_ROTATE) {   
+								if (currentGizmoMode == GIZMO_ROTATE) {
 
 									// Start rotation (handleType 3 for rotation)                                                                                               
-									isRotating = true;                
-									draggedEntityID = selectedEntityID;                                                                                                         
-									activeTransformAxis = 3;          
-									initialAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);                                          
-									initialRotation = tc.rot.x;       
+									isRotating = true;
+									draggedEntityID = selectedEntityID;
+									activeTransformAxis = 3;
+									initialAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
+									initialRotation = tc.rot.x;
 									rotationBeforeDrag = tc.rot;  // Store for undo
 
-									std::cout << "Started rotating entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";                
+									std::cout << "Started rotating entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
 
 								}
 								else if (currentGizmoMode == GIZMO_SCALE) {
@@ -4912,7 +4937,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						}
 					}
 				}
-				
+
 				// If not clicking gizmo, check if clicking on entity
 				if (!isDragging && !isRotating && !isScaling) {
 					auto clicked = getEntityUnderMouse(engine_, worldPos);
@@ -4992,7 +5017,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									g_game->getEditorCameraY()
 								);
 
-							ImVec2 entityScreenPos = {eEntityScreenPos.x, eEntityScreenPos.y};
+							ImVec2 entityScreenPos = { eEntityScreenPos.x, eEntityScreenPos.y };
 							float currentAngle = atan2f(mouseScreenPos.y - entityScreenPos.y, mouseScreenPos.x - entityScreenPos.x);
 							float newRotation = initialRotation + (currentAngle - initialAngle);
 							float deltaAngle = newRotation - tc.rot.x;
@@ -5011,7 +5036,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 							if (activeTransformAxis == 3) {
 								// Uniform scaling using diagonal handle
-								Math::eVec2<float> entityWorldPosForScaling = {tc.pos.x, tc.pos.y};
+								Math::eVec2<float> entityWorldPosForScaling = { tc.pos.x, tc.pos.y };
 								Math::eVec2<float> entityScreenPosForScaling = {
 									Graphics::worldToScreen(
 									entityWorldPosForScaling,
@@ -5023,10 +5048,10 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									g_game->getEditorCameraY()) };
 
 								float initialDist = sqrtf((scaleStartPos.x - entityScreenPosForScaling.x) * (scaleStartPos.x - entityScreenPosForScaling.x)
-														+ (scaleStartPos.y - entityScreenPosForScaling.y) * (scaleStartPos.y - entityScreenPosForScaling.y));
+									+ (scaleStartPos.y - entityScreenPosForScaling.y) * (scaleStartPos.y - entityScreenPosForScaling.y));
 
 								float currentDist = sqrtf((mouseScreenPos.x - entityScreenPosForScaling.x) * (mouseScreenPos.x - entityScreenPosForScaling.x)
-														+ (mouseScreenPos.y - entityScreenPosForScaling.y) * (mouseScreenPos.y - entityScreenPosForScaling.y));
+									+ (mouseScreenPos.y - entityScreenPosForScaling.y) * (mouseScreenPos.y - entityScreenPosForScaling.y));
 
 								float scaleFactor = currentDist / std::max(initialDist, 1.0f);
 
@@ -5070,7 +5095,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 									// For player, keep DrawInfo at base size (48x48)
 									dc.width = 48.0f;
 									dc.height = 48.0f;
-								} else {
+								}
+								else {
 									// For non-player entities, scale DrawInfo
 									dc.width = dc.width * scaleFactorX;
 									dc.height = dc.height * scaleFactorY;
@@ -5084,11 +5110,13 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 										// For player, keep collision at base size (48x48)
 										collision.data.rectangle.width = 48.0f;
 										collision.data.rectangle.height = 48.0f;
-									} else {
+									}
+									else {
 										// For non-player entities, update collision from DrawInfo
 										if (collision.type == ECSComponents::ColliderType::CIRCLE) {
 											collision.data.circle.radius = dc.width * 0.5f;
-										} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
+										}
+										else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
 											collision.data.rectangle.width = dc.width;
 											collision.data.rectangle.height = dc.height;
 										}

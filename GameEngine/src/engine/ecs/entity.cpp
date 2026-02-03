@@ -93,7 +93,7 @@ namespace ECS
 
 		// Find and identify component structs
 		size_t pos = data.find('[', start);
-		
+
 		entity = entMng.create();
 		// Parsing entity data blocks
 		while (pos != std::string::npos && pos < end)
@@ -130,7 +130,7 @@ namespace ECS
 				};
 
 			// Parse and map fields of a component
-			std::unordered_map<std::string, ECSComponents::DataField> dataMap;
+			std::unordered_map<std::string, Parser::DataField> dataMap;
 			size_t fieldPos{};
 			while (fieldPos < compData.size())
 			{
@@ -145,91 +145,101 @@ namespace ECS
 				// Field value
 				std::string fvalue = findResult('{', '}', fieldPos);
 				if (fvalue == "NPOS") break;
-				
+
 				// Map
-				dataMap[fname] = deduceValue(fvalue, ftype);
+				dataMap[fname] = Parser::deduceValue(fvalue, ftype);
 			}
 
 			// Deduce component found
 			ECSComponents::EnoComponentRegistry::DeduceCompType(compName, [&]<typename T>()
+			{
+				entity.add<T>(entMng);
+
+				// Packaging the data
+				T component{};
+				for (const auto& [fname, fvalue] : dataMap)
 				{
-					entity.add<T>(entMng);
+					// Modify each component mapped
+					//
+					// Every component will have a reflect function defined!
+					// Use the reflect function in each component to print
+					// 
+					// (further reflect-related documentation can be found in components with
+					// reflect defined e.g the visibility component in visibility.hpp)
+					component.reflect([&](const std::string& name, auto& value, auto type)
+						{
+							if (name != fname) return;
 
-					// Packaging the data
-					T component{};
-					for (const auto& [fname, fvalue] : dataMap)
-					{
-						// Modify each component mapped
-						//
-						// Every component will have a reflect function defined!
-						// Use the reflect function in each component to print
-						// 
-						// (further reflect-related documentation can be found in components with
-						// reflect defined e.g the visibility component in visibility.hpp)
-						component.reflect([&](const std::string& name, auto& value, auto type)
+							using ValueType = std::remove_reference_t<decltype(value)>;
+
+							// Char types are true pain, must make exception...
+							// Check if value is a char array
+							if constexpr (std::is_array_v<ValueType> && std::is_same_v<std::remove_extent_t<ValueType>, char>)
 							{
-								if (name != fname) return;
-								(void)type;	//intentional to silence warning
-								using ValueType = std::remove_reference_t<decltype(value)>;
+								// Variant must hold a string type
+								std::visit([&](auto&& val) {
+									using T = std::decay_t<decltype(val)>;
 
-								// Char types are true pain, must make exception...
-								// Check if value is a char array
-								if constexpr (std::is_array_v<ValueType> && std::is_same_v<std::remove_extent_t<ValueType>, char>)
-								{
-									// Variant must hold a string type
-									std::visit([&](auto&& val) {
-										using T = std::decay_t<decltype(val)>;
+									if constexpr (std::is_same_v<T, std::string>)
+									{
+										std::strncpy(value, val.c_str(), sizeof(value));
+										value[sizeof(value) - 1] = '\0';
+									}
+									else if constexpr (std::is_same_v<T, const char*>)
+									{
+										std::strncpy(value, val, sizeof(value));
+										value[sizeof(value) - 1] = '\0';
+									}
+									else
+									{
+										// empty by design
+										// silently skip non-string variant values
+									}
+									}, fvalue);
+							}
+							else
+							{
+								// normal assignment for other types (particularly arithmetic types)
+								std::visit([&](auto&& val) {
+									using V = std::decay_t<decltype(val)>;
+									using F = std::decay_t<decltype(value)>;
 
-										if constexpr (std::is_same_v<T, std::string>)
-										{
-											std::strncpy(value, val.c_str(), sizeof(value));
-											value[sizeof(value) - 1] = '\0';
-										}
-										else if constexpr (std::is_same_v<T, const char*>)
-										{
-											std::strncpy(value, val, sizeof(value));
-											value[sizeof(value) - 1] = '\0';
-										}
-										else
-										{
-											// empty by design
-											// silently skip non-string variant values
-										}
-										}, fvalue);
-								}
-								else
-								{
-									// normal assignment for other types (particularly arithmetic types)
-									std::visit([&](auto&& val) {
-										using V = std::decay_t<decltype(val)>;
-										using F = std::decay_t<decltype(value)>;
+									if constexpr (std::is_same_v<F, V>)
+									{
+										value = val;
+									}
+									else if constexpr (std::is_arithmetic_v<F> && std::is_arithmetic_v<V>)
+									{
+										value = static_cast<F>(val);
+									}
+									else
+									{
+										std::cerr << "Skipping assignment: variant type " << typeid(V).name()
+											<< " does not match field type " << typeid(F).name() << "\n";
+									}
+									}, fvalue);
+							}
+						});
 
-										if constexpr (std::is_same_v<F, V>)
-										{
-											value = val;
-										}
-										else if constexpr (std::is_arithmetic_v<F> && std::is_arithmetic_v<V>)
-										{
-											value = static_cast<F>(val);
-										}
-										else
-										{
-											std::cerr << "Skipping assignment: variant type " << typeid(V).name()
-												<< " does not match field type " << typeid(F).name() << "\n";
-										}
-										}, fvalue);
-								}
-							});
-
-						entity.set<T>(entMng, component);
-					}
-				});
+					entity.set<T>(entMng, component);
+				}
+			});
 
 			pos = data.find('[', compEnd + 1);
 			if (pos == std::string::npos)
 				break;
 		}
 
+		// Ensuring that entity id will be incremented safely
+		uint32_t highestID{};
+		for (auto& [entityID, _] : entityMap_)
+		{
+			highestID = Math::maxValue(highestID, entityID);
+		}
+		id = highestID + 1;
+
+
+		// ~ Rendering Exclusive ~
 		// After loading all components, load textures if needed
 		if (entity.has<ECSComponents::RenderComponent>(entMng))
 		{
@@ -320,6 +330,10 @@ namespace ECS
 		out.write(Config::engine_version,
 			sizeof(Config::engine_version));
 
+		// Number of archetypes to write
+		uint32_t archetypeCount = static_cast<uint32_t>(archetypeMng_.getArchetypes().size());
+		out.write(reinterpret_cast<const char*>(&archetypeCount), sizeof(archetypeCount));
+
 		for (auto& [archetypeKey, upArchetype] : archetypeMng_.getArchetypes())
 		{
 			Archetype& archetype = *upArchetype;
@@ -346,15 +360,32 @@ namespace ECS
 				Chunk& chunk = *pChunk;
 
 				// Write the number of entities currently residing in the chunk
-				uint32_t entityCount = static_cast<uint32_t>(chunk.current);
-				out.write(reinterpret_cast<const char*>(&entityCount), sizeof(entityCount));
+				uint32_t entityCount = static_cast<uint32_t>(chunk.current_);
+				out.write(
+					reinterpret_cast<const char*>(&entityCount),
+					sizeof(entityCount));
+
+				// Write the entity ID mapping
+				out.write(
+					reinterpret_cast<const char*>(chunk.entities_),
+					sizeof(uint32_t) * entityCount);
 
 				// Write in each component data by making use
 				// of the continguous nature of each component
 				for (size_t i = 0; i < typeCount; i++)
 				{
+#ifdef ARENA_ENABLED
+					size_t stride = archetype.typeSizes_[i];
+					size_t bytes = stride * static_cast<size_t>(entityCount);
+
+					if (!bytes) continue;
+
+					const std::byte* src = chunk.data_[i];
+					out.write(reinterpret_cast<const char*>(src), bytes);
+#else
 					size_t componentSize = archetype.typeSizes_[i] * entityCount;
-					out.write(reinterpret_cast<const char*>(chunk.pComponent[i]), componentSize);
+					out.write(reinterpret_cast<const char*>(chunk.pComponent_[i]), componentSize);
+#endif
 				}
 			}
 		}
@@ -385,8 +416,12 @@ namespace ECS
 			throw std::runtime_error("Opened file is not an ECS data file for the EnoEngine!");
 		}
 
+		// Read number of archetypes
+		uint32_t archetypeCount{};
+		in.read(reinterpret_cast<char*>(&archetypeCount), sizeof(archetypeCount));
+
 		// Handled per archetype
-		while (in.peek() != EOF)
+		for (uint32_t a = 0; a < archetypeCount; ++a)
 		{
 			// Read for type count
 			uint32_t typeCount{};
@@ -413,12 +448,54 @@ namespace ECS
 				sizes.push_back(ECSComponents::EnoComponentRegistry::GetComponentSize(typeIdx));
 			}
 
-			Archetype* archetype = archetypeMng_.getOrCreateArch(types, sizes);
+			Archetype* archetype = archetypeMng_.getOrCreateArch(arena_, types, sizes);
 
 			// Read for chunk count
 			uint32_t chunkCount{};
 			in.read(reinterpret_cast<char*>(&chunkCount), sizeof(chunkCount));
 
+#ifdef ARENA_ENABLED
+			for (uint32_t c = 0; c < chunkCount; ++c)
+			{
+				// Read in entity count for each chunk
+				uint32_t entityCount{};
+				in.read(reinterpret_cast<char*>(&entityCount), sizeof(entityCount));
+
+				Chunk* chunk = archetype->createChunk(arena_, entityCount, types, sizes);
+				size_t chunkIndex = archetype->chunks_.size() - 1;
+
+				// Read entity IDs
+				in.read(
+					reinterpret_cast<char*>(chunk->entities_),
+					sizeof(uint32_t) * entityCount
+				);
+
+				// Read component data into allocated arrays
+				size_t componentCount = archetype->types_.size();
+				for (size_t i = 0; i < componentCount; i++)
+				{
+					in.read(
+						reinterpret_cast<char*>(chunk->data_[i]),
+						sizes[i] * entityCount
+					);
+				}
+
+				// Entity map housekeeping
+				for (size_t e = 0; e < entityCount; e++)
+				{
+					uint32_t entityID = chunk->entities_[e];
+					entityMap_[entityID] = EntityLoc{ archetype, chunkIndex, e };
+				}
+			}
+
+			// Ensuring that entity id will be incremented safely
+			uint32_t highestID{};
+			for (auto& [entityID, _] : entityMap_)
+			{
+				highestID = Math::maxValue(highestID, entityID);
+			}
+			id = highestID + 1;
+#else
 			for (uint32_t c = 0; c < chunkCount; ++c)
 			{
 				// Read in entity count for each chunk
@@ -426,7 +503,7 @@ namespace ECS
 				in.read(reinterpret_cast<char*>(&entityCount), sizeof(entityCount));
 
 				// Allocate a chunk to hold the entities
-				archetype->createChunk(entityCount, types, sizes);
+				//archetype->createChunk(arena_, entityCount, sizes);
 				Chunk& chunk = *archetype->chunks_.back();
 				size_t chunkIndex = archetype->chunks_.size() - 1;
 
@@ -434,7 +511,7 @@ namespace ECS
 				for (size_t d = 0; d < typeCount; d++)
 				{
 					size_t bytes = sizes[d] * entityCount;
-					in.read(reinterpret_cast<char*>(chunk.pComponent[d]), bytes);
+					in.read(reinterpret_cast<char*>(chunk.pComponent_[d]), bytes);
 				}
 
 				// Entity map housekeeping
@@ -444,216 +521,9 @@ namespace ECS
 					entityMap_[entityID] = EntityLoc{ archetype, chunkIndex, e };
 				}
 
-				chunk.current = entityCount;
+				chunk.current_ = entityCount;
 			}
+#endif
 		}
-	}
-
-	// Helper for creating a DataField that was specified in the save file
-	ECSComponents::DataField EntityManager::deduceValue(const std::string& value, const std::string& type)
-	{
-		auto trim = [](const std::string& str) -> std::string
-			{
-				size_t start = str.find_first_not_of(" \t\n\r");
-				if (start == std::string::npos) return "";
-
-				size_t end = str.find_last_not_of(" \t\n\r");
-				return str.substr(start, end - start + 1);
-			};
-
-		std::string tvalue= trim(value);
-		std::string ttype = trim(type);
-
-		// Convert to lowercase for consistency
-		std::transform(std::begin(ttype), std::end(ttype), std::begin(ttype), ::tolower);
-
-		// int
-		if (ttype == "int")
-			return std::stoi(tvalue);
-
-		// uint32_t
-		if (ttype == "uint32_t")
-			return static_cast<uint32_t>(std::stoul(tvalue));
-
-		// float
-		if (ttype == "float")
-			return std::stof(tvalue);
-
-		// double
-		if (ttype == "double")
-			return std::stod(tvalue);
-
-		// bool
-		if (ttype == "bool")
-		{
-			if (tvalue == "true" || tvalue == "1") return true;
-			if (tvalue == "false" || tvalue == "0") return false;
-
-			throw std::runtime_error("Unknown string set as bool value in save!");
-		}
-
-		// char[32]
-		if (ttype == "char32")
-		{
-			return tvalue;
-		}
-
-		// char[256]
-		if (ttype == "char256")
-		{
-			return tvalue;
-		}
-
-		// char[64]
-		if (ttype == "char64")
-		{
-			return tvalue;
-		}
-
-		// ---------------- Enums ----------------
-		
-		// Color
-		if (ttype == "color")
-		{
-			const std::unordered_map<std::string, Color> colorMap =
-			{
-				{ "Green", Color::Green },
-				{ "Red", Color::Red }
-			};
-
-			auto it = colorMap.find(tvalue);
-			if (it != colorMap.end())
-			{
-				return it->second;
-			}
-		}
-
-		// Collider Type
-		if (ttype == "collidertype")
-		{
-			const std::unordered_map<std::string, ECSComponents::ColliderType> colliderMap =
-			{
-				{ "Circle",			ECSComponents::ColliderType::CIRCLE },
-				{ "Line",			ECSComponents::ColliderType::LINE },
-				{ "Point",			ECSComponents::ColliderType::POINT },
-				{ "Rectangle",		ECSComponents::ColliderType::RECTANGLE },
-			};
-
-			auto it = colliderMap.find(tvalue);
-			if (it != colliderMap.end())
-			{
-				return it->second;
-			}
-		}
-
-		// ------------- Custom Math -------------
-		// eVec2<float>
-		if (ttype == "evec2(float)")
-		{
-			// First value
-			float fv{}, sv{};
-			size_t vstart = tvalue.find_first_of(':');
-			size_t vend{};
-			if (vstart != std::string::npos)
-			{
-				++vstart;
-				
-				// skip whitespaces to value
-				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
-
-				vend = tvalue.find_first_of('|', vstart);
-				if (vend != std::string::npos)
-				{
-					fv = std::stof(tvalue.substr(vstart, vend - vstart));
-				}
-			}
-
-			// Second value
-			vstart = tvalue.find(':', vstart);
-			if (vstart != std::string::npos)
-			{
-				++vstart;
-
-				// skip whitespaces to value
-				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
-
-				vend = tvalue.find_first_of('|', vend + 1);
-				if (vend != std::string::npos)
-				{
-					sv = std::stof(tvalue.substr(vstart, vend - vstart));
-				}
-				else if (vend == std::string::npos)
-				{
-					sv = std::stof(tvalue.substr(vstart));
-				}
-			}
-
-			return Math::eVec2{ fv, sv };
-		}
-
-		// Graphics::Color (RGBA struct)
-		if (ttype == "color(rgba)")
-		{
-			float r{}, g{}, b{}, a{};
-			size_t vstart{}, vend{};
-
-			// Parse r value
-			vstart = tvalue.find_first_of(':');
-			if (vstart != std::string::npos)
-			{
-				++vstart;
-				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
-				vend = tvalue.find_first_of('|', vstart);
-				if (vend != std::string::npos)
-					r = std::stof(tvalue.substr(vstart, vend - vstart));
-			}
-
-			// Parse g value
-			vstart = tvalue.find(':', vend);
-			if (vstart != std::string::npos)
-			{
-				++vstart;
-				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
-				vend = tvalue.find_first_of('|', vstart);
-				if (vend != std::string::npos)
-					g = std::stof(tvalue.substr(vstart, vend - vstart));
-			}
-
-			// Parse b value
-			vstart = tvalue.find(':', vend);
-			if (vstart != std::string::npos)
-			{
-				++vstart;
-				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
-				vend = tvalue.find_first_of('|', vstart);
-				if (vend != std::string::npos)
-					b = std::stof(tvalue.substr(vstart, vend - vstart));
-			}
-
-			// Parse a value
-			vstart = tvalue.find(':', vend);
-			if (vstart != std::string::npos)
-			{
-				++vstart;
-				while (vstart < tvalue.size() && isspace(tvalue[vstart])) ++vstart;
-				vend = tvalue.find_first_of('|', vstart);
-				if (vend != std::string::npos)
-					a = std::stof(tvalue.substr(vstart, vend - vstart));
-				else
-					a = std::stof(tvalue.substr(vstart));
-			}
-
-			return Graphics::Color{ r, g, b, a };
-		}
-
-		// File path types (texchar240 is for texture paths, not the texture itself)
-		if (ttype == "texchar240")
-		{
-			// Just return the path string - texture will be loaded later
-			// in the post-load phase (see loadJson where we check for texturePath)
-			return tvalue;
-		}
-
-		throw std::runtime_error("Unknown type { " + ttype + " } has been set in the save file!");
 	}
 }
