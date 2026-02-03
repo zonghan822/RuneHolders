@@ -1,11 +1,9 @@
 #pragma once
 
-//stds
 #include <string>
 #include <variant>
 
-
-namespace Parser
+namespace ECSComponents
 {
 	// Not for storage, used for
 	// text-based save file deserialization

@@ -23,7 +23,7 @@ namespace Script
 		// Get all script variables
 		int count{};
 		void* names = (coreHost_.cname())(path.c_str(), &count);
-
+		
 		// Map script variables
 		wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
 		for (size_t i = 0; i < count; i++)
@@ -157,8 +157,7 @@ namespace Script
 	// Free all fields allocated memory with IntPtr from C#
 	void EnoScript::cleanup(PortedField* data)
 	{
-		if (data) 
-		{
+		if (data) {
 			if (data->name_) CoTaskMemFree((LPVOID)data->name_);
 			if (data->type_) CoTaskMemFree((LPVOID)data->type_);
 			if (data->value_) CoTaskMemFree((LPVOID)data->value_);
@@ -187,33 +186,9 @@ namespace Script
 	// Create a Field out of a PortedField
 	Field EnoScript::mimicField(const PortedField& pField)
 	{
-		Field f		{ pField.name_, pField.type_, deduceType(pField.type_, pField.value_),
+		return Field{ pField.name_, pField.type_, deduceType(pField.type_, pField.value_),
 					  pField.min_, pField.max_, pField.hasRange_,
 					  pField.origin_ };
-
-		if (pField.enum_)
-		{
-			PortedEnum* e = pField.enum_;
-			for (int i = 0; i < e->count_; ++i)
-			{
-				EnumEntry entry;
-				entry.name_ = e->names_[i];
-				f.enumEntries_.push_back(std::move(entry));
-			}
-
-			std::wcout << "Enum: " << pField.value_ << std::endl;
-
-			std::wcout << "Enum entries: " << std::endl;
-			for (auto& ee : f.enumEntries_)
-			{
-				std::wcout << ee.name_ << ' ';
-			}
-			std::wcout << std::endl;
-		}
-
-
-
-		return f;
 	}
 
 	// Deduce value type of field

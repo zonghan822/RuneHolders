@@ -12,7 +12,7 @@ void FileSystem::Initialize()
     exeDir_ = std::filesystem::path(buffer).parent_path();
 
     assetsDir_ = exeDir_ / "assets";
-    scriptsDir_ = exeDir_ / "scripts\\GameScripts\\user_scripts";
+    scriptsDir_ = exeDir_ / "scripts/GameScripts/user_scripts";
 }
 
 const std::filesystem::path& FileSystem::GetExecutableDir()

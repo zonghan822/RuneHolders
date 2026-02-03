@@ -8,9 +8,6 @@
 *               realistic pushing interactions between physics-enabled entities.
 *===========================================================================================*/
 
-// Utility
-#include "../utility/eno_mem_helper.hpp"
-
 #include "physics_system.hpp"
 #include "physics_events.hpp"
 #include <cmath>
@@ -389,8 +386,8 @@ namespace Physics
         float halfHeight = rectHeight * 0.5f;
 
         // Clamp circle center to rectangle bounds
-        float closestX = Math::maxValue(rectPos.x - halfWidth, Math::minValue(circlePos.x, rectPos.x + halfWidth));
-        float closestY = Math::maxValue(rectPos.y - halfHeight, Math::minValue(circlePos.y, rectPos.y + halfHeight));
+        float closestX = std::max(rectPos.x - halfWidth, std::min(circlePos.x, rectPos.x + halfWidth));
+        float closestY = std::max(rectPos.y - halfHeight, std::min(circlePos.y, rectPos.y + halfHeight));
 
         // Calculate distance from circle center to closest point
         float dx = circlePos.x - closestX;
@@ -626,8 +623,8 @@ namespace Physics
         float halfHeight = rectHeight * 0.5f;
 
         // Clamp circle center to rectangle bounds
-        float closestX = Math::maxValue(rectPos.x - halfWidth, Math::minValue(circlePos.x, rectPos.x + halfWidth));
-        float closestY = Math::maxValue(rectPos.y - halfHeight, Math::minValue(circlePos.y, rectPos.y + halfHeight));
+        float closestX = std::max(rectPos.x - halfWidth, std::min(circlePos.x, rectPos.x + halfWidth));
+        float closestY = std::max(rectPos.y - halfHeight, std::min(circlePos.y, rectPos.y + halfHeight));
 
         // Calculate vector from closest point to circle center
         Math::eVec2<float> distance = {

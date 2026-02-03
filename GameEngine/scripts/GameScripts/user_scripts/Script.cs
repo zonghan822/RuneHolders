@@ -19,17 +19,6 @@ namespace Eno
         private static InputAction? ia1;
         private static InputAction? ia2;
 
-        public enum Rarity
-        {
-            common,
-            rare,
-            epic,
-            legendary
-        }
-
-        [Reveal()]
-        public Rarity r = Rarity.common;
-
         public void Begin()
         {
             Console.WriteLine($"ID on script.cs: {this.ID}");

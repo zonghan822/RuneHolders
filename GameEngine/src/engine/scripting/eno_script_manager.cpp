@@ -144,11 +144,7 @@ namespace Script
 		// Construct and return your script object as usual
 
 		std::filesystem::path path = FileSystem::GetScriptsDir();
-		std::wcout << "Path before: " << path << std::endl;
-
 		path /= className + L".cs";
-		std::wcout << "Path after: " << path << std::endl;
-
 		return std::make_unique<EnoScript>(coreHost_, className, path.wstring());
 	}
 

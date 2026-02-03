@@ -25,12 +25,6 @@ namespace Math
 	template <typename Type>
 	concept Arithmetic = std::is_arithmetic_v<Type>;
 
-	template <Arithmetic T>
-	constexpr T maxValue(const T& a, const T& b);
-
-	template <Arithmetic T>
-	constexpr T minValue(const T& a, const T& b);
-
 	template <Arithmetic Type>
 	struct eVec2
 	{
