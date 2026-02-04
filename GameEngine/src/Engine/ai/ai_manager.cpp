@@ -85,7 +85,7 @@ namespace AI {
 
                         // Try to set the animation matching the mapped name
                         if (ctrl->animations_.count(animationName)) {
-                            ctrl->setAnimation(animationName);
+                            ctrl->setAnimation(animationName);  // YunQi: This changes the state anims correctly right now.
 
                             // Also update the entity's texture to match the animation
                             if (entity.has<ECSComponents::DrawInfoComponent>(entMng_)) {

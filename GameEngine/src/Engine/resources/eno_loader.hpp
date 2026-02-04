@@ -56,6 +56,8 @@ namespace Resources
 		// Sounds
 		std::string musicPath_;
 		std::string sfxPath_;
+		std::string rootMusicPath_;
+		std::string rootSfxPath_;
 		static constexpr std::array<std::string_view, 2> soundExtensions_ = { ".wav", ".mp3" };
 		std::unordered_map<std::string, FMOD::Sound*> sounds_;
 		std::vector<std::unique_ptr<Audio::EnoAudioModule>> audioMods_;
@@ -97,6 +99,18 @@ namespace Resources
 		const std::string& getSFXPath() const;
 
 		/*============================================================================================
+		* \brief	Get the music directory path.
+		* \return	String reference to the music path.
+		*//*========================================================================================*/
+		const std::string& getRootMusicPath() const;
+
+		/*============================================================================================
+		* \brief	Get the sound effects (SFX) directory path.
+		* \return	String reference to the SFX path.
+		*//*========================================================================================*/
+		const std::string& getRootSFXPath() const;
+
+		/*============================================================================================
 		* \brief	Get supported sound extensions.
 		* \return	Array of supported extensions (.wav, .mp3).
 		*//*========================================================================================*/
@@ -127,6 +141,20 @@ namespace Resources
 		* \return	Map of all audio.
 		*//*========================================================================================*/
 		const std::unordered_map<std::string, FMOD::Sound*>& getSounds() const;
+
+		/*============================================================================================
+		* \author   Yun Qi
+		* \brief	Retrieve all sounds/audio. Specially made for Deletion purposes
+		* \return	Map of all audio.
+		*//*========================================================================================*/
+		std::unordered_map<std::string, FMOD::Sound*>& getSoundsMap();
+
+		/*============================================================================================
+		* \author   Yun Qi
+		* \brief	Retrieve all textures. Specially made for Deletion purposes
+		* \return	Map of all textures.
+		*//*========================================================================================*/
+		std::unordered_map<std::string, std::shared_ptr<Graphics::EnoTexture>>& getTexturesMap();
 
 		/*============================================================================================
 		* \brief	Get the shader directory path.

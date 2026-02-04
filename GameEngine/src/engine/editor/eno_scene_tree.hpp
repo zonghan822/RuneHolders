@@ -140,6 +140,7 @@ namespace Editor
 				std::pair<std::string, std::string> funcClassPair = listener->script_->signalWrite(emitName, signalName);
 
 				// Record listeners on the emitter for serialization process
+				// Note: listenerID_ stores sceneObjectID_ for serialization purposes
 				emitter->listeners_.push_back(
 					Listener{
 						listener->sceneObjectID_,

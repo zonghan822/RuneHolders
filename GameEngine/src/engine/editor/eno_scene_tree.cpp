@@ -292,8 +292,10 @@ namespace Editor
 
 			// Script attached will receive node metadata
 			// Retrieve each unique class stored for the script
+			// FIX: Use entity_.id() instead of sceneObjectID_ so bridge functions work correctly
 			for (const auto& org : node->script_->origin())
 			{
+				//coreHost_.setMetaData(org, node->entity_.id(), true);
 				coreHost_.setMetaData(org, node->sceneObjectID_, true);
 			}
 		}
@@ -308,8 +310,10 @@ namespace Editor
 
 			// Script attached will receive node metadata
 			// Retrieve each unique class stored for the script
+			// FIX: Use entity_.id() instead of sceneObjectID_ so bridge functions work correctly
 			for (const auto& org : selectedNode_->script_->origin())
 			{
+				//coreHost_.setMetaData(org, selectedNode_->entity_.id(), true);
 				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_, true);
 			}
 		}
@@ -322,6 +326,7 @@ namespace Editor
 		{
 			for (const auto& org : node->script_->origin())
 			{
+				//coreHost_.setMetaData(org, node->entity_.id(), false);
 				coreHost_.setMetaData(org, node->sceneObjectID_, false);
 			}
 		}
@@ -334,6 +339,7 @@ namespace Editor
 		{
 			for (const auto& org : selectedNode_->script_->origin())
 			{
+				//coreHost_.setMetaData(org, selectedNode_->entity_.id(), false);
 				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_, false);
 			}
 		}

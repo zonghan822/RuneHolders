@@ -70,10 +70,7 @@ float pScaleY = 1.0f;
 // Keeping track of animations
 static std::vector<AnimationPreset> presets;
 static int selectedPresetIndex = 0; // for ImGui dropdown
-static Graphics::TextureData idleTexData;
-static Graphics::TextureData walkTexData;
-static Graphics::TextureData attackTexData;
-
+static Graphics::TextureData selectedTexData;
 
 // Time
 static float shown_fps = 0.0f;
@@ -1016,6 +1013,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 			{
 				// Display inspector for all entities (including root nodes)
 				displayEntityInspector(engine_, e, undoManager, sceneTree);
+				//assetPresetsTab(engine_, e);
 				assetPresetsTab(engine_, e);
 				entityFound = true;
 				break;
@@ -1856,6 +1854,11 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	static std::string selectedName{};
 	static FMOD::Sound* selectedSound = nullptr;
 
+	// M4 requirement: Deletion of audio asset files
+	static std::filesystem::path selectedFullPath{};
+	static std::filesystem::path selectedFullRootPath{};
+	static std::string selectedFilenameWithExt{};
+
 	// ============== FILE LIST ==============
 	ImGui::BeginChild("AudioAssetList", ImVec2(0, 150), true);
 
@@ -1872,8 +1875,37 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 				selectedAsset = i;
 
 				selectedName = audioAssets[i];
-
 				selectedName = selectedName.substr(0, selectedName.find_last_of('.'));
+				
+
+				// YunQi M4 addition for deletion of audio files
+				selectedFilenameWithExt = audioAssets[i]; // this has extension, e.g. "laser.wav" operator/ does an append for path and extension
+
+				std::cout << "[Audio Selection] File: " << selectedFilenameWithExt << "\n";
+				std::cout << "[Audio Selection] Build Music Path: " << loader.getMusicPath() << "\n";
+				std::cout << "[Audio Selection] Build SFX Path: " << loader.getSFXPath() << "\n";
+				std::cout << "[Audio Selection] Root Music Path: " << loader.getRootMusicPath() << "\n";
+				std::cout << "[Audio Selection] Root SFX Path: " << loader.getRootSFXPath() << "\n";
+
+				std::filesystem::path musicPath					 =  std::filesystem::path(loader.getMusicPath()) / selectedFilenameWithExt;
+				std::filesystem::path sfxPath					 =  std::filesystem::path(loader.getSFXPath()) / selectedFilenameWithExt;
+				std::filesystem::path rootMusicPath				 =  std::filesystem::path(loader.getRootMusicPath()) / selectedFilenameWithExt;
+				std::filesystem::path rootSfxPath				 =  std::filesystem::path(loader.getRootSFXPath()) / selectedFilenameWithExt;
+
+				std::cout << "[Audio Selection] Checking build music: " << musicPath << " (exists: " << std::filesystem::exists(musicPath) << ")\n";
+				std::cout << "[Audio Selection] Checking build sfx: " << sfxPath << " (exists: " << std::filesystem::exists(sfxPath) << ")\n";
+				std::cout << "[Audio Selection] Checking root music: " << rootMusicPath << " (exists: " << std::filesystem::exists(rootMusicPath) << ")\n";
+				std::cout << "[Audio Selection] Checking root sfx: " << rootSfxPath << " (exists: " << std::filesystem::exists(rootSfxPath) << ")\n";
+
+				if (std::filesystem::exists(musicPath))			    selectedFullPath = musicPath;
+				else if (std::filesystem::exists(sfxPath))		    selectedFullPath = sfxPath;
+				else											    selectedFullPath.clear();
+				if (std::filesystem::exists(rootMusicPath))         selectedFullRootPath = rootMusicPath;
+				else if (std::filesystem::exists(rootSfxPath))		selectedFullRootPath = rootSfxPath;
+				else												selectedFullRootPath.clear();
+
+				std::cout << "[Audio Selection] Selected BUILD path: " << (selectedFullPath.empty() ? "(empty)" : selectedFullPath.string()) << "\n";
+				std::cout << "[Audio Selection] Selected ROOT path: " << (selectedFullRootPath.empty() ? "(empty)" : selectedFullRootPath.string()) << "\n";
 
 				std::cout << "[Audio] User selected: " << selectedName << "\n";
 
@@ -1901,33 +1933,26 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	ImGui::Separator();
 
 	// ====== Waveform Viewer (Mock) ======
-	ImGui::Text("Waveform Preview");
-	ImGui::BeginChild("WaveformViewer", ImVec2(0, 200), true);
-
-	ImDrawList* draw = ImGui::GetWindowDrawList();
-	ImVec2 pos = ImGui::GetCursorScreenPos();
-	ImVec2 size = ImGui::GetContentRegionAvail();
-
-	float midY = pos.y + size.y * 0.5f;
-	float step = size.x / 60.0f;
-
-	// mock waveform
-	for (int i = 0; i < 60; i++)
-	{
-		float h = (sinf(i * 0.3f) * 0.5f + 0.5f) * (size.y * 0.9f);
-		draw->AddLine(
-			ImVec2(pos.x + i * step, midY - h * 0.5f),
-			ImVec2(pos.x + i * step, midY + h * 0.5f),
-			IM_COL32(100, 200, 255, 255), 2.0f
-		);
-	}
-
-	ImGui::EndChild();
-
-
-
-	ImGui::Separator();
-	ImGui::Spacing();
+	//ImGui::Text("Waveform Preview");
+	//ImGui::BeginChild("WaveformViewer", ImVec2(0, 200), true);
+	//ImDrawList* draw = ImGui::GetWindowDrawList();
+	//ImVec2 pos = ImGui::GetCursorScreenPos();
+	//ImVec2 size = ImGui::GetContentRegionAvail();
+	//float midY = pos.y + size.y * 0.5f;
+	//float step = size.x / 60.0f;
+	//// mock waveform
+	//for (int i = 0; i < 60; i++)
+	//{
+	//	float h = (sinf(i * 0.3f) * 0.5f + 0.5f) * (size.y * 0.9f);
+	//	draw->AddLine(
+	//		ImVec2(pos.x + i * step, midY - h * 0.5f),
+	//		ImVec2(pos.x + i * step, midY + h * 0.5f),
+	//		IM_COL32(100, 200, 255, 255), 2.0f
+	//	);
+	//}
+	//ImGui::EndChild();
+	//ImGui::Separator();
+	//ImGui::Spacing();
 
 	ImGui::Text("=== Test Playback ===");
 
@@ -2001,10 +2026,127 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			}
 		}
 
+		//Current state of audio deletion takes out the audio file from the build folder only.
+		ImGui::Text("-----------DELETION OF AUDIO FILES-------------");
 
+		if (ImGui::Button("Delete selected audio file"))
+		{
+			ImGui::OpenPopup("ConfirmDeleteAudio");
+		}
+
+		if (ImGui::BeginPopupModal("ConfirmDeleteAudio", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::TextWrapped("Delete this file?\n\n%s", selectedFilenameWithExt.c_str());
+			ImGui::Spacing();
+
+			if (ImGui::Button("Delete", ImVec2(120, 0)))
+			{
+				// Stop playback that might be using this sound
+				//bus.publish(Audio::StopBGM{});
+
+				// Release FMOD sound before deleting file (important on Windows)
+				FMOD::Sound* soundToDelete = selectedSound;
+				if (soundToDelete)
+				{
+					soundToDelete->release();
+					selectedSound = nullptr;
+				}
+
+				{
+					auto& sounds = loader.getSoundsMap();
+					auto it = sounds.find(selectedName);
+					if (it != sounds.end())
+						sounds.erase(it);
+				}
+
+				// Delete the file from disk
+				bool deleted = false;
+				bool deletedRoot = false;
+				std::string deleteErr;
+
+				try
+				{
+					//std::cout << "\n=== AUDIO FILE DELETION ATTEMPT ===\n";
+					//std::cout << "[Audio Delete] File to delete: " << selectedFilenameWithExt << "\n";
+					//std::cout << "[Audio Delete] BUILD path: " << (selectedFullPath.empty() ? "(empty)" : selectedFullPath.string()) << "\n";
+					//std::cout << "[Audio Delete] ROOT path: " << (selectedFullRootPath.empty() ? "(empty)" : selectedFullRootPath.string()) << "\n";
+
+					// Delete from BUILD folder
+					if (!selectedFullPath.empty() && std::filesystem::exists(selectedFullPath))
+					{
+						//std::cout << "[Audio Delete] Attempting to delete from BUILD folder...\n";
+						deleted = std::filesystem::remove(selectedFullPath);
+						//std::cout << "[Audio Delete] BUILD delete result: " << (deleted ? "SUCCESS" : "FAILED") << "\n";
+					}
+					else
+					{
+						//std::cout << "[Audio Delete] BUILD file not found or path empty.\n";
+						deleteErr = "File not found in build folder.";
+					}
+
+					// Delete from ROOT folder
+					if (!selectedFullRootPath.empty() && std::filesystem::exists(selectedFullRootPath))
+					{
+						//std::cout << "[Audio Delete] Attempting to delete from ROOT folder...\n";
+						deletedRoot = std::filesystem::remove(selectedFullRootPath);
+						//std::cout << "[Audio Delete] ROOT delete result: " << (deletedRoot ? "SUCCESS" : "FAILED") << "\n";
+					}
+					else
+					{
+						//std::cout << "[Audio Delete] ROOT file not found or path empty.\n";
+					}
+
+					// If neither deleted anything
+					if (!deleted && !deletedRoot)
+					{
+						deleteErr = "File not found in build or root folders (or delete returned false).";
+					}
+
+				}
+				catch (const std::exception& e)
+				{
+					deleteErr = e.what();
+				}
+
+				if (!deleted && deleteErr.empty())
+					deleteErr = "Delete failed (file may still be in use, or permissions blocked it).";
+
+				if (!deleteErr.empty())
+				{
+					bus.publish(Audio::AudioLoadError{
+						selectedFilenameWithExt,
+						selectedFullPath.string(),
+						selectedFullPath.extension().string(),
+						std::string("Delete failed: ") + deleteErr
+						});
+				}
+				else
+				{
+					//std::cout << "[Audio] Deleted file: " << selectedFullPath << "\n";
+				}
+
+				// Refresh UI list
+				LoadAudioAssets(engine_);
+
+				// Clear selection so UI doesn’t reference deleted item
+				selectedAsset = -1;
+				selectedName.clear();
+				selectedFilenameWithExt.clear();
+				selectedFullPath.clear();
+				selectedFullRootPath.clear();
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel", ImVec2(120, 0)))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
 	}
-
-	// Note: Audio error popup is displayed globally in imGuiDisplay()
 
 }
 
@@ -3238,6 +3380,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	ImGui::End();
 }
 
+#if 0
 void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
@@ -3247,6 +3390,9 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	static std::string attackSelected = "";
 	static std::string activeSlot = ""; // identifies which box you're assigning assets to
 	auto& entMng = engine_.getEntityManager();
+	auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;
+
+
 
 	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -3257,6 +3403,18 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		ImGui::End();
 		return;
 	}
+#if 0
+	//this will be activated later on when I can read states from a script. First I will try to access and amend anims to a state with a vector
+	if (entityScript) {
+		//for (const auto& var : entityScript->vars()) {
+		for (const auto& [state, value] : entityScript->vars()) { //Yun Qi: by assuming that everything is a state, i will be able to start work on assigning my animations.
+			
+			
+
+		}
+	}
+#endif
+
 
 	//================================= IDLE ANIMATION ===================================
 	ImGui::Text("IDLE");
@@ -4049,6 +4207,352 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 	ImGui::End();
 }
+#endif
+
+
+//Demo states, Find a way to bridge to C# side so that it takes states from entity instead.
+void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
+//void assetPresetsTab(Engine::EnoEngine& engine_, Node* node) {
+	/*ECS::Entity& entity = node->entity_;*/
+	Node* entNode = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id());
+	std::vector<std::string> states { "Death", "Idle", "Attack", "Walk"};
+	std::string stateName{};
+	//std::vector<std::string> stateEntries{};
+	
+#if 0 //this will happen after merging. States to be integrated with the game. Keep an eye to have Node instead of entity as param if possible. 
+	// Store exported enum
+	for (auto const& [first, second] : node.script_->vars()) {
+		stateName = Conversion::wideToUtf8(first);
+		
+		if (!second.enumEntries.empty())
+		{
+			//stateEntries.push_back(Conversion::wideToUtf8(enumEntries.name_));
+			states.push_back(Conversion::wideToUtf8(enumEntries.name_));
+		}
+	}
+#endif
+	Resources::EnoLoader& loader = engine_.getResourceLoader();
+	const auto& textures = loader.getAllTextures();
+	static std::string selected = "";  //currently selected
+	auto& entMng = engine_.getEntityManager();
+	auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;  //This can be useful later on to find the behaviors/entity states available
+
+	//Dynamically allow player to choose the state that they want to edit.
+	static int selectedStateIdx = 0;
+	selectedStateIdx = std::clamp(selectedStateIdx, 0, (int)states.size() - 1);
+	const std::string& selectedState = states[selectedStateIdx];
+
+
+	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+	// Check if the selected entity has an AnimationControllerComponent
+	if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng))
+	{
+		ImGui::TextWrapped("The currently selected entity does not have an Animation Controller component.");
+		ImGui::End();
+		return;
+	}
+
+
+	// New UI: pick which state this "slot" applies to
+	ImGui::Text("State");
+	if (ImGui::BeginCombo("##StateSelect", selectedState.c_str()))
+	{
+		for (int i = 0; i < (int)states.size(); ++i)
+		{
+			bool isSelected = (i == selectedStateIdx);
+			if (ImGui::Selectable(states[i].c_str(), isSelected))
+				selectedStateIdx = i;
+			if (isSelected) ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
+
+
+
+	//================================= SELECTED STATE ANIMATION CONTROLLER ===================================
+	ImGui::Text("%s", selectedState.c_str());
+
+	static Graphics::TextureData selectedTextureData;
+	static int selectedMode = 1;              // 0 = rows/cols, 1 = pixel size
+	static int selectedRows = 1;
+	static int selectedCols = 1;
+	static int selectedFrameW = 96;
+	static int selectedFrameH = 96;
+
+
+	// LEFT SIDE PREVIEW
+	if (!selected.empty())
+	{
+		auto it = textures.find(selected);
+		if (it != textures.end())
+		{
+			auto tex = it->second;   // shared_ptr<EnoTexture>
+			ImTextureID texID = (ImTextureID)(intptr_t)tex->getID();
+
+			ImGui::Image(texID, ImVec2(180, 150));
+		}
+		else
+		{
+			ImGui::Button("Missing Texture", ImVec2(180, 150));
+		}
+	}
+	else
+	{
+		ImGui::Button("##SelectedPreview", ImVec2(180, 150));
+	}
+
+	//Drag and Drop target
+	if (ImGui::BeginDragDropTarget())
+	{
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
+		{
+			selected = (const char*)payload->Data;
+
+			auto it = textures.find(selected);
+			if (it != textures.end())
+			{
+				selectedTexData.texture = it->second; // shared_ptr<EnoTexture>
+			}
+		}
+		ImGui::EndDragDropTarget();
+	}
+
+	ImGui::Text("Assigned: %s", selected.empty() ? "(none)" : selected.c_str());
+
+
+	// RIGHT SIDE SETTINGS
+	if (!selected.empty())
+	{
+		ImGui::Separator();
+		ImGui::Text("Animation Settings");
+
+		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
+		ImGui::Combo("Input Mode##Idle", &selectedMode, modes, IM_ARRAYSIZE(modes));
+
+		auto it = textures.find(selected);
+		if (it != textures.end())
+		{
+			auto tex = it->second;
+
+
+			if (selectedMode == 0)
+			{
+				// ROWS / COLUMNS MODE
+				ImGui::InputInt("Rows##selected", &selectedRows);
+				ImGui::InputInt("Columns##selected", &selectedCols);
+
+				selectedRows = std::max(1, selectedRows);
+				selectedCols = std::max(1, selectedCols);
+
+				ImGui::Text("Frame Size: %d × %d", selectedFrameW, selectedFrameH);
+			}
+			else if (selectedMode == 1)
+			{
+				// PIXEL MODE
+				ImGui::InputInt("Frame Width##selected", &selectedFrameW);
+				ImGui::InputInt("Frame Height##selected", &selectedFrameH);
+
+				selectedFrameW = std::max(1, selectedFrameW);
+				selectedFrameH = std::max(1, selectedFrameH);
+
+				ImGui::Text("Grid: %d rows × %d cols", selectedRows, selectedCols);
+			}
+
+			selectedTexData.frameWidth = selectedFrameW;
+			selectedTexData.frameHeight = selectedFrameH;
+			selectedTexData.rows = selectedRows;
+			selectedTexData.cols = selectedCols;
+		}
+	}
+
+	ImGui::Spacing();
+
+	// ================== APPLY BUTTON FOR IDLE ANIMATION ==================
+	// Button is disabled if no texture is selected
+	bool selectedHasTexture = selectedTexData.texture != nullptr && !selected.empty();
+	if (!selectedHasTexture)
+	{
+		ImGui::BeginDisabled();
+	}
+
+	if (ImGui::Button("APPLY Selected State"))
+	{
+		ECS::Entity e{ selectedEntityID };
+
+		// Comprehensive validation checks
+		try {
+			if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) {
+				std::cerr << "[APPLY IDLE] Entity missing AnimationControllerComponent" << std::endl;
+				if (!selectedHasTexture) ImGui::EndDisabled();
+				return;
+			}
+			if (!e.has<ECSComponents::DrawInfoComponent>(entMng)) {
+				std::cerr << "[APPLY IDLE] Entity missing DrawInfoComponent" << std::endl;
+				if (!selectedHasTexture) ImGui::EndDisabled();
+				return;
+			}
+		}
+		catch (const std::exception& ex) {
+			std::cerr << "[APPLY IDLE] Exception during validation: " << ex.what() << std::endl;
+			if (!selectedHasTexture) ImGui::EndDisabled();
+			return;
+		}
+		catch (...) {
+			std::cerr << "[APPLY IDLE] Unknown exception during validation" << std::endl;
+			if (!selectedHasTexture) ImGui::EndDisabled();
+			return;
+		}
+
+		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
+		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
+
+		// Get or create animation controller
+		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+
+		if (!ctrl || animComp.controllerID == 0) {
+			// Controller doesn't exist, create a new one
+			std::cerr << "[APPLY IDLE] Animation controller is null or invalid (ID: " << animComp.controllerID << "), creating new one" << std::endl;
+			animComp.controllerID = engine_.getAnimationRegistry().createController();
+			ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+
+			if (!ctrl) {
+				std::cerr << "[APPLY IDLE] Failed to create animation controller" << std::endl;
+				if (!selectedHasTexture) ImGui::EndDisabled();
+				return;
+			}
+			std::cout << "[APPLY IDLE] Created new animation controller with ID: " << animComp.controllerID << std::endl;
+		}
+
+		// Safety check: Ensure texture is valid before proceeding
+		if (!selectedTexData.texture || !selectedTexData.texture->isValid())
+		{
+			std::cerr << "[APPLY IDLE] Invalid texture data" << std::endl;
+			ImGui::OpenPopup("Error##selectedNoTexture");
+			if (!selectedHasTexture) ImGui::EndDisabled();
+			return;
+		}
+
+		//drawComp.texture = selectedTexData.texture;
+		drawComp.setTexture(selectedTexData.texture, selected);
+		drawComp.color = Graphics::Color::White;
+		drawComp.texID = 0;
+
+		//checkpoint
+		if (selectedMode == 0)   // rows/cols mode
+		{
+			selectedTexData.rows = std::max(1, selectedRows);
+			selectedTexData.cols = std::max(1, selectedCols);
+			selectedTexData.computeFrameSize();
+		}
+		else                 // pixel mode
+		{
+			selectedTexData.rows = selectedTexData.texture->getHeight() / std::max(1, selectedFrameH);
+			selectedTexData.cols = selectedTexData.texture->getWidth() / std::max(1, selectedFrameW);
+			selectedTexData.frameWidth = selectedFrameW;
+			selectedTexData.frameHeight = selectedFrameH;
+		}
+
+
+		// Create animation with explicit frame calculation
+		Animation::EnoAnimation selectedAnim = Animation::createSpriteSheetAnimation(
+			selectedTexData.frameWidth,
+			selectedTexData.frameHeight,
+			selectedTexData.texture->getWidth(),
+			selectedTexData.texture->getHeight(),
+			0,                                  // start frame
+			selectedTexData.rows * selectedTexData.cols,// total frames
+			0.1f                                // duration per frame
+		);
+
+		selectedAnim.setLooping(true);
+		ctrl->addAnimation(selectedState, selectedAnim, selectedTexData.texture); // Pass the texture
+		ctrl->setAnimation(selectedState);
+
+		// Save animation configuration to component for serialization
+		std::strncpy(animComp.currentAnimationName, selectedState.c_str(), sizeof(animComp.currentAnimationName) - 1); 
+
+		animComp.setAnimationData(																		
+			selectedState.c_str(),
+			selected.c_str(),
+			selectedTexData.frameWidth,
+			selectedTexData.frameHeight,
+			selectedTexData.rows,
+			selectedTexData.cols,
+			0.1f,
+			true
+		);
+	}
+
+	if (!selectedHasTexture)
+	{
+		ImGui::EndDisabled();
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("Please select a texture first");
+		}
+	}
+
+	// Error popup for missing texture: Error message that pops up without crashing the engine
+	if (ImGui::BeginPopupModal("Error##selectedNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Error: No texture selected!");
+		ImGui::Text("Please drag and drop a texture onto the preview box first.");
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
+	}
+
+	ImGui::Separator();
+	ImGui::Text("Animation Test");
+
+	if (entity.has<ECSComponents::AnimationControllerComponent>(entMng))
+	{
+		auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entMng);
+		Animation::AnimationController* ctrl =
+			engine_.getAnimationRegistry().get(animComp.controllerID);
+
+		if (ctrl)
+		{
+			for (const std::string& state : states)
+			{
+				std::string label = "Play " + state;
+
+				if (ImGui::Button(label.c_str()))
+				{
+					if (ctrl->animations_.count(state))
+					{
+						ctrl->setAnimation(state);
+
+						// Also update the texture when switching animations
+						if (entity.has<ECSComponents::DrawInfoComponent>(entMng))
+						{
+							auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entMng);
+							if (auto tex = ctrl->getCurrentTexture())
+							{
+								drawComp.texture = tex;
+							}
+						}
+					}
+					else
+					{
+						std::cout << "[ImGui] " << state << " animation not found!\n";
+					}
+				}
+
+			}
+
+			ImGui::NewLine(); // clean line break after loop
+		}
+	}
+	else
+	{
+		ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
+			"This entity has no AnimationController component!");
+	}
+
+
+	ImGui::End();
+}
 
 void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
 {
@@ -4198,6 +4702,110 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 
 		ImGui::Spacing();
 		ImGui::Separator();
+	}
+
+	ImGui::Separator();
+
+	// --- Texture Deletion ---
+	ImGui::Text("-----------DELETION OF TEXTURE FILES-------------");
+
+	if (ImGui::Button("Delete selected texture"))
+	{
+		if (!selectedTexture.empty())
+		{
+			ImGui::OpenPopup("ConfirmDeleteTexture");
+		}
+	}
+
+	if (ImGui::BeginPopupModal("ConfirmDeleteTexture", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::TextWrapped("Delete this texture?\n\n%s", selectedTexture.c_str());
+		ImGui::Spacing();
+
+		if (ImGui::Button("Delete", ImVec2(120, 0)))
+		{
+			// Get the texture to find its file path
+			auto& texturesMap = loader.getTexturesMap();
+			auto it = texturesMap.find(selectedTexture);
+
+			if (it != texturesMap.end())
+			{
+				// Reset the shared_ptr (set texture pointer to null)
+				it->second.reset();
+
+				// Remove from the textures map
+				texturesMap.erase(it);
+			}
+
+			// Delete the file from disk (both build and root folders)
+			bool deleted = false;
+			bool deletedRoot = false;
+			std::string deleteErr;
+
+			try
+			{
+				// Build folder path
+				std::filesystem::path buildPath = std::filesystem::path(loader.getImagePath()) / (selectedTexture + ".png");
+				std::filesystem::path buildPathJpg = std::filesystem::path(loader.getImagePath()) / (selectedTexture + ".jpg");
+
+				// Root folder path
+				std::filesystem::path rootPath = FileSystem::GetRootDir() / "assets/art" / (selectedTexture + ".png");
+				std::filesystem::path rootPathJpg = FileSystem::GetRootDir() / "assets/art" / (selectedTexture + ".jpg");
+
+				// Delete from BUILD folder (try PNG first, then JPG)
+				if (std::filesystem::exists(buildPath))
+				{
+					deleted = std::filesystem::remove(buildPath);
+				}
+				else if (std::filesystem::exists(buildPathJpg))
+				{
+					deleted = std::filesystem::remove(buildPathJpg);
+				}
+
+				// Delete from ROOT folder (try PNG first, then JPG)
+				if (std::filesystem::exists(rootPath))
+				{
+					deletedRoot = std::filesystem::remove(rootPath);
+				}
+				else if (std::filesystem::exists(rootPathJpg))
+				{
+					deletedRoot = std::filesystem::remove(rootPathJpg);
+				}
+
+				if (!deleted && !deletedRoot)
+				{
+					deleteErr = "File not found in build or root folders.";
+				}
+			}
+			catch (const std::exception& e)
+			{
+				deleteErr = e.what();
+			}
+
+			if (!deleteErr.empty())
+			{
+				std::cerr << "[Texture Delete] Error: " << deleteErr << std::endl;
+			}
+			else
+			{
+				std::cout << "[Texture Delete] Deleted texture: " << selectedTexture << std::endl;
+			}
+
+			// Clear selection
+			selectedTexture.clear();
+			textureData.texture.reset();
+
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel", ImVec2(120, 0)))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
 	}
 
 	ImGui::Separator();

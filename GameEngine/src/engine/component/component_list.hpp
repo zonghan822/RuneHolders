@@ -31,6 +31,10 @@
 	X(FireballComponent) \
 	X(HealthComponent) \
 	X(DamageComponent) \
+	X(VulnerabilityComponent) \
+	X(RuptureMarkComponent) \
+	X(FloatingTextComponent) \
+	X(ParticleEmitterComponent) \
 
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
