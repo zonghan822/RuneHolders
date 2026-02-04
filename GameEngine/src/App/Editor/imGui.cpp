@@ -2112,11 +2112,25 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (displayLayer < 0) displayLayer = 0;
 
 		// Dropdown for layer selection (## hides the label since we have our own header)
-		ImGui::SetNextItemWidth(-1);  // Full width
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 30.0f);  // Leave room for checkbox
 		if (ImGui::Combo("##ZIndexLayer", &displayLayer, layerNames.data(), static_cast<int>(layerNames.size())))
 		{
 			vi.setZIndex(static_cast<uint32_t>(displayLayer));
 			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		// Layer visibility checkbox (toggles visibility of the currently selected layer)
+		ImGui::SameLine();
+		bool layerVisible = ECSComponents::isLayerVisible(displayLayer);
+		if (ImGui::Checkbox("##LayerVisible", &layerVisible))
+		{
+			ECSComponents::setLayerVisible(displayLayer, layerVisible);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+		// Display discription text
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetTooltip("Toggle visibility for layer %d", displayLayer);
 		}
 
 		// Check if entity is currently on the top layer (for layer management)
