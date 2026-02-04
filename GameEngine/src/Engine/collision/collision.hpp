@@ -15,6 +15,7 @@
 #include "../component/components/physics_component.hpp"
 #include "../ecs/entity.hpp"
 #include "../event/event_bus.hpp"
+#include "spatial_hash.hpp"
 
 // Standard library includes
 #include <iostream>
@@ -489,6 +490,9 @@ namespace Collision
 		// Event bus for publishing collision events
 		Event::EnoEventBus& eventBus_;
 		
+		// Spatial has for broad phase collision detection
+		SpatialHash spatialHash_;
+
 		// Event bus for publishing collision events
 		std::vector<std::function<void(const CollisionEvent&)>> collisionCallbacks_; 
 
@@ -538,6 +542,21 @@ namespace Collision
 		* \return      CollisionComponent& - Reference to the entity's collision component
 		*//*========================================================================================*/		
 		CollisionComponent& GetCollisionComponent(const ECS::EntityLoc& entityLoc);
+
+		/*============================================================================================
+		* \brief       Get the bounding box half-extents for an entity's collider
+		* \param[in]   CollisionComponent cont& collision - The collision component
+		* \param[in]   ECSComponents::TransformComponent const&
+		* \param[out]   
+		* \param[out]   
+		* \return      
+		*//*========================================================================================*/
+		void GetColliderBounds(
+			const CollisionComponent& collision,
+			const ECSComponents::TransformComponent& transform,
+			float& halfWidth,
+			float& halfHeight
+		);
 	};
 
 	// UTILITY FUNCTIONS

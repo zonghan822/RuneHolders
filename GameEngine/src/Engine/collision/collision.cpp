@@ -741,31 +741,91 @@ namespace Collision {
 
 	void CollisionSystem::Update(ECS::EntityManager& entityManager)
 	{
-		// Step1: find all entities that can participate in collision detection
-		// Must have both transform and collision components
+		// ==== BROAD PHASE =====
+		// Use spatial hashing to reduce the number of collision cehcks
+
+		// Clear the spatial hash from the previous frame
+		spatialHash_.Clear();
+
+		// Find all collidable entities and insert them into the spatial hash
 		auto& entityMap = entityManager.getMap();
 		std::vector<std::pair<uint32_t, ECS::EntityLoc*>> collidableEntities;
 
-		// Iterate through all entities in the world
 		for (auto& [entityID, entityLoc] : entityMap)
 		{
 			// Check if this entity has the required components for collision
 			if (HasRequiredComponents(entityLoc))
 			{
 				collidableEntities.emplace_back(entityID, &entityLoc);
+
+				// Get components for spatial hash insertion
+				auto& transform = GetTransformComponent(entityLoc);
+				auto& collision = GetCollisionComponent(entityLoc);
+
+				// Skip inactive colliders
+				if (!collision.isActive)
+					continue;
+
+				// Calculate world position of the collider
+				Math::eVec2<float> worldPos = {
+					transform.pos.x + collision.offset.x,
+					transform.pos.y + collision.offset.y
+				};
+
+				// Get bounding box dimensions for this collider
+				float halfWidth, halfHeight;
+				GetColliderBounds(collision, transform, halfWidth, halfHeight);
+
+				// Inset into spatial hash
+				spatialHash_.Insert(entityID, worldPos, halfWidth, halfHeight);
 			}
 		}
 
-		// Step 2: check collision between all pairs of collidable entities
-		for (size_t i = 0; i < collidableEntities.size(); ++i) {
-			for (size_t j = i + 1; j < collidableEntities.size(); ++j) {
-				// Check collision between entity i and entity j
-				CheckEntityCollision(collidableEntities[i].first,
-					*collidableEntities[i].second,
-					collidableEntities[j].first,
-					*collidableEntities[j].second);
-			}
+		// ==== NARROW PHASE ====
+		// Only check collision pairs identified by the spatial hash
+
+		// Get potential collision pairs from spatial hash
+		auto potentialPairs = spatialHash_.GetPotentialPairs();
+
+		// Perform collision checks ONLY on potential pairs
+		for (const auto& [entityA_ID, entityB_ID] : potentialPairs)
+		{
+			// Find the entity locations
+			auto itA = entityMap.find(entityA_ID);
+			auto itB = entityMap.find(entityB_ID);
+
+			// Safety check: make sure both entities still exist
+			if (itA == entityMap.end() || itB == entityMap.end()) continue;
+
+			// Do narrow phase collision check
+			CheckEntityCollision(entityA_ID, itA->second, entityB_ID, itB->second);
 		}
+		
+		//// Step1: find all entities that can participate in collision detection
+		//// Must have both transform and collision components
+		//auto& entityMap = entityManager.getMap();
+		//std::vector<std::pair<uint32_t, ECS::EntityLoc*>> collidableEntities;
+
+		//// Iterate through all entities in the world
+		//for (auto& [entityID, entityLoc] : entityMap)
+		//{
+		//	// Check if this entity has the required components for collision
+		//	if (HasRequiredComponents(entityLoc))
+		//	{
+		//		collidableEntities.emplace_back(entityID, &entityLoc);
+		//	}
+		//}
+
+		//// Step 2: check collision between all pairs of collidable entities
+		//for (size_t i = 0; i < collidableEntities.size(); ++i) {
+		//	for (size_t j = i + 1; j < collidableEntities.size(); ++j) {
+		//		// Check collision between entity i and entity j
+		//		CheckEntityCollision(collidableEntities[i].first,
+		//			*collidableEntities[i].second,
+		//			collidableEntities[j].first,
+		//			*collidableEntities[j].second);
+		//	}
+		//}
 	}
 
 	void CollisionSystem::AddCollisionCallback(std::function<void(const CollisionEvent&)> callback)
@@ -1068,6 +1128,74 @@ namespace Collision {
 			entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::CollisionComponent>(
 				collisionIndex, entityLoc.entityIndexInChunk)
 			);
+	}
+
+	void CollisionSystem::GetColliderBounds(
+		const CollisionComponent& collision,
+		const ECSComponents::TransformComponent& transform,
+		float& halfWidth,
+		float& halfHeight
+	)
+	{
+		// Calculate bounding box based on collider type
+		switch (collision.type)
+		{
+			case ColliderType::CIRCLE:
+			{
+				// Circle: bounding box is a square with side = 2 * radius
+				float scaledRadius = collision.data.circle.radius * transform.scale.x;
+				halfWidth = scaledRadius;
+				halfHeight = scaledRadius;
+				break;
+			}
+			case ColliderType::RECTANGLE:
+			{
+				// Rectangle: use scaled dimensions
+				// For rotated rectangles, we use the AABB that contains the rotated rect
+				float scaledWidth = collision.data.rectangle.width * transform.scale.x;
+				float scaledHeight = collision.data.rectangle.height * transform.scale.y;
+
+				// If rectangle is rotated, compute the AABB of the rotated rectangle 
+				if (std::abs(transform.rot.x) > 0.001f)
+				{
+					float cosAngle = std::abs(std::cos(transform.rot.x));
+					float sinAngle = std::abs(std::sin(transform.rot.x));
+
+					// AABB dimensions of a rotated rectangle
+					halfWidth = (scaledWidth * cosAngle + scaledHeight * sinAngle) * 0.5f;
+					halfHeight = (scaledWidth * sinAngle + scaledHeight * cosAngle) * 0.5f;
+				}
+				else
+				{
+					halfWidth = scaledWidth * 0.5f;
+					halfHeight = scaledHeight * 0.5f;
+				}
+				break;
+			}
+			case ColliderType::LINE:
+			{
+				// Line: Bounding box encompasses both endpoints
+				float minX = std::min(collision.data.line.p1.x, collision.data.line.p2.x);
+				float maxX = std::max(collision.data.line.p1.x, collision.data.line.p2.x);
+				float minY = std::min(collision.data.line.p1.y, collision.data.line.p2.y);
+				float maxY = std::max(collision.data.line.p1.y, collision.data.line.p2.y);
+
+				halfWidth = (maxX - minY) * 0.5f + 1.0f; // Add small padding
+				halfHeight = (maxY - minY) * 0.5f + 1.0f;
+				break;
+			}
+			case ColliderType::POINT:
+			{
+				// Point: use a small bounding box
+				halfWidth = 1.0f;
+				halfHeight = 1.0f;
+				break;
+			}
+			default:
+				halfWidth = 1.0f;
+				halfHeight = 1.0f;
+				break;
+		}
 	}
 
 	// UTILITY FUNCTIONS IMPLEMENTATION
