@@ -8,6 +8,7 @@
 #pragma once
 
 #include "../../event/signals.hpp"
+#include "rune_component.hpp"  // For RuneColor
 #include <iostream>
 #include <unordered_map>
 #include <string>

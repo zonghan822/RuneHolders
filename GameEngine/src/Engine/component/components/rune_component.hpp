@@ -34,15 +34,13 @@ namespace ECSComponents
     constexpr int RUNE_COUNT = 6;
 
     /*============================================================================================
-    * \brief    Represents the 3 different rune colors in the spell system
+    * \brief    Legacy color enum for combat system compatibility
     *//*========================================================================================*/
-    constexpr int RUNE_COLOR_COUNT = 3;
-
     enum class RuneColor
     {
-        RED,    // Fire-based attacks
-        BLUE,   // Ice/Water-based attacks
-        GREEN   // Nature/Poison-based attacks
+        RED,
+        BLUE,
+        GREEN
     };
 
     /*============================================================================================
@@ -50,113 +48,86 @@ namespace ECSComponents
     *//*========================================================================================*/
     struct RuneAssets
     {
-        // Get texture name for a rune color (left rune)
-        // TODO: Replace with actual texture names when Sabrina/Jeremy provides them
-        static const char* getLeftRuneTexture(RuneColor color)
-        {
-            (void)color;    // Unused for now
-            return "Left_Rune"; // Use exisiting texture for all colors
-        }
+        // Rune spritesheet: Runes_White_Sheet_Large.png
+        static constexpr int RUNE_FRAME_WIDTH = 56;
+        static constexpr int RUNE_FRAME_HEIGHT = 56;
+        static constexpr int RUNE_SHEET_COLUMNS = 6;
 
-        // Get texture name for a rune color (right rune)
-        // TODO: Replace with actual texture names when Sabrina/Jeremy provides them
-        static const char* getRightRuneTexture(RuneColor color)
-        {
-            (void)color;    // Unused for now
-            return "Right_Rune";    // Use existing texture for all colors
-        }
+        // Maps position index (0-5 clockwise from top-left) to tune number (1-6)
+        static constexpr int positionToRuneNumber[6] = { 6, 1, 2, 3, 4, 5 };
 
-        // Get spell/projectle texture name for a rune color
-        // TODO: Replace with actual texture names when available
-        static const char* getSpellTexture(RuneColor color)
+        static void getRuneUV(int runeNumber, Math::eVec2<float>& uvStart, Math::eVec2<float>& uvEnd)
         {
-            (void)color;    // Unused for now
-            return "Fireball";      // Use existing texture for all colors
-        }
-
-        // Get display name for a rune color
-        static const char* getColorName(RuneColor color)
-        {
-            switch (color)
-            {
-                case RuneColor::RED:        return "Fire";
-                case RuneColor::BLUE:       return "Ice";
-                case RuneColor::GREEN:      return "Poison";
-                default:                    return "Unknown";
-            }
-        }
-
-        // Get sound effect name for casting a spell
-        // TODO: Replace with actual sound names when available
-        static const char* getCastSound(RuneColor color)
-        {
-            (void)color;    // Unused for now
-            return "Fireball-Cast"; // Use existing sound for all colors
+            int column = runeNumber - 1;  // Rune 1 = column 0, etc.
+            float uMin = column / 6.0f;
+            float uMax = (column + 1) / 6.0f;
+            uvStart = { uMin, 0.0f };
+            uvEnd = { uMax, 1.0f };
         }
     };
 
     struct RuneComponent
     {
-        // RuneType type;              // Which side rune this is
-        int runeIndex;              // The color/element of this rune
-        RuneColor color;            // The color/element of this rune
+        int runeNumber;             // Rune number 1-6 (matches spritesheet column + 1)
+        int positionIndex;          // Position in circle (0-5, clockwise from top-left)
         bool isHovered;             // Is mouse currently over this rune
         bool isConnected;           // Has this rune been connected to its pair
+        bool isBanned;              // Is this rune banned (by crystal fly promixity)
         float radius;               // Collision radius for hover detection
 
         // Signals
         std::unordered_map<std::string, Events::EnoSignal> signals_;
 
         RuneComponent()
-            : runeIndex(0)
-            , color(RuneColor::RED)
+            : runeNumber(1)
+            , positionIndex(0)
             , isHovered(false)
             , isConnected(false)
+            , isBanned(false)
             , radius(20.0f)
         {
         }
 
-        RuneComponent(int index, RuneColor runeColor, float runeRadius = 20.0f)
-            : runeIndex(index)
-            , color(runeColor)
+        RuneComponent(int posIdx, int runeNum, float runeRadius = 20.0f)
+            : runeNumber(runeNum)
+            , positionIndex(posIdx)
             , isHovered(false)
             , isConnected(false)
+            , isBanned(false)
             , radius(runeRadius)
         {
-        }
-
+        }        
+        
         // Serialization support
         template <typename Visitor>
         void reflect(Visitor&& l)
         {
-            int colorInt = static_cast<int>(color);
-            l("runeIndex", runeIndex, "int");
-            l("color", colorInt, "int");
+            l("runeNumber", runeNumber, "int");
+            l("positionIndex", positionIndex, "int");
             l("isHovered", isHovered, "bool");
             l("isConnected", isConnected, "bool");
+            l("isBanned", isBanned, "bool");
             l("radius", radius, "float");
-            color = static_cast<RuneColor>(colorInt);
         }
 
         template <typename Visitor>
         void reflect(Visitor&& l) const
         {
-            int colorInt = static_cast<int>(color);
-            l("runeIndex", runeIndex, "int");
-            l("color", colorInt, "int");
+            l("runeNumber", runeNumber, "int");
+            l("positionIndex", positionIndex, "int");
             l("isHovered", isHovered, "bool");
             l("isConnected", isConnected, "bool");
+            l("isBanned", isBanned, "bool");
             l("radius", radius, "float");
         }
 
         friend std::ostream& operator<<(std::ostream& os, const RuneComponent& rc)
         {
-            os << "RuneComponent: "
-               << "index=" << rc.runeIndex
-               << ", color=" << static_cast<int>(rc.color)
+            os << "RuneComponent: runeNumber= " << rc.runeNumber
+               << ", positionIndex=" << rc.positionIndex
                << ", isHovered=" << rc.isHovered
                << ", isConnected=" << rc.isConnected
-               << ", radius=" << rc.radius;
+               << ", isBanned" << rc.isBanned;
             return os;
         }
     };
@@ -209,70 +180,119 @@ namespace ECSComponents
     };
 
     /*============================================================================================
-    * \brief    Component for spell projectiles - links spell color to damage type
+    * \brief    Spell types that can be cast
     *//*========================================================================================*/
-    struct SpellComponent
+    enum class SpellType
     {
-        RuneColor spellColor;   // The color/element of this spell
-        float baseDamage;       // Base damage amount
-        float speed;            // Projectile speed
-        float lifetime;         // Time before spell disappears
-        float elapsedTime;      // Time since spawn
+        NONE,
+        ICE,    // Blue spell: 3-2-5-4, damages snail
+        FIRE,   // Red spell: 6-1-5-2, damages crystal fly
+        LIGHT   // Yellow spell: 4-1-3-6, damages bat
+    };
+
+    /*============================================================================================
+    * \brief    Animation states for RuptureMark spells
+    *//*========================================================================================*/
+    enum class RuptureMarkState
+    {
+        SPAWNING,       // Initial spawn animation
+        IDLE,           // Waiting for enemy to trigger
+        WINDUP,         // Enemy triggered, charging up
+        EXPLODING,      // Dealing damage
+        FINISHED        // Ready to be destroyed
+    };
+
+    /*============================================================================================
+    * \brief    Component for RuptureMark trap-style spells
+    *//*========================================================================================*/
+    struct RuptureMarkComponent
+    {
+        SpellType spellType;    
+        RuptureMarkState state;     // Current animation state
+        float stateTimer;           // Time in current state
+        float detectionRadius;      // Radius to detect enemies
+        float damage;               // Damage dealt on explosion
+        uint32_t triggeredByEntityID;   // ID of enemy that triggered this mark
+
+        // Animation timing
+        float spawnDuration;
+        float windupDuration;
+        float explosionDuration;
 
         // Signals
-        std::unordered_map<std::string, Events::EnoSignal> siganls_;
+        std::unordered_map<std::string, Events::EnoSignal> signals_;
 
-        SpellComponent()
-            : spellColor(RuneColor::RED)
-            , baseDamage(25.0f)
-            , speed(400.0f)
-            , lifetime(5.0f)
-            , elapsedTime(0.0f)
+        RuptureMarkComponent()
+            : spellType(SpellType::ICE)
+            , state(RuptureMarkState::SPAWNING)
+            , stateTimer(0.0f)
+            , detectionRadius(50.0f)
+            , damage(50.0f)
+            , triggeredByEntityID(UINT32_MAX)
+            , spawnDuration(0.8f)
+            , windupDuration(0.5f)
+            , explosionDuration(0.4f)
         {
         }
 
-        SpellComponent(RuneColor color, float damage = 25.0f, float spd = 400.0f, float life = 5.0f)
-            : spellColor(color)
-            , baseDamage(damage)
-            , speed(spd)
-            , lifetime(life)
-            , elapsedTime(0.0f)
+        RuptureMarkComponent(SpellType type, float dmg = 50.0f, float radius = 50.0f)
+            : spellType(type)
+            , state(RuptureMarkState::SPAWNING)
+            , stateTimer(0.0f)
+            , detectionRadius(radius)
+            , damage(dmg)
+            , triggeredByEntityID(UINT32_MAX)
+            , spawnDuration(0.8f)
+            , windupDuration(0.5f)
+            , explosionDuration(0.4f)
         {
+        }
+
+        // Get the enemy type name this spell can damage
+        const char* getTargetEnemyName() const
+        {
+            switch (spellType)
+            {
+            case SpellType::ICE:   return "Snail";
+            case SpellType::FIRE:  return "CrystalFly";
+            case SpellType::LIGHT: return "Bat";
+            default:               return "";
+            }
         }
 
         // Serialization support
         template <typename Visitor>
         void reflect(Visitor&& l)
         {
-            int colorInt = static_cast<int>(spellColor);
-            l("spellColor", colorInt, "int");
-            l("baseDamage", baseDamage, "float");
-            l("speed", speed, "float");
-            l("lifetime", lifetime, "float");
-            l("elapsedTime", elapsedTime, "float");
-            spellColor = static_cast<RuneColor>(colorInt);
+            int typeInt = static_cast<int>(spellType);
+            int stateInt = static_cast<int>(state);
+            l("spellType", typeInt, "int");
+            l("state", stateInt, "int");
+            l("stateTimer", stateTimer, "float");
+            l("detectionRadius", detectionRadius, "float");
+            l("damage", damage, "float");
+            spellType = static_cast<SpellType>(typeInt);
+            state = static_cast<RuptureMarkState>(stateInt);
         }
-        
+
         template <typename Visitor>
         void reflect(Visitor&& l) const
         {
-            int colorInt = static_cast<int>(spellColor);
-            l("spellColor", colorInt, "int");
-            l("baseDamage", baseDamage, "float");
-            l("speed", speed, "float");
-            l("lifetime", lifetime, "float");
-            l("elapsedTime", elapsedTime, "float");
-
+            int typeInt = static_cast<int>(spellType);
+            int stateInt = static_cast<int>(state);
+            l("spellType", typeInt, "int");
+            l("state", stateInt, "int");
+            l("stateTimer", stateTimer, "float");
+            l("detectionRadius", detectionRadius, "float");
+            l("damage", damage, "float");
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const SpellComponent& sc)
+        friend std::ostream& operator<<(std::ostream& os, const RuptureMarkComponent& rm)
         {
-            os << "SpellComponent: "
-                << "color=" << static_cast<int>(sc.spellColor)
-                << ", baseDamage=" << sc.baseDamage
-                << ", speed=" << sc.speed
-                << ", lifetime=" << sc.lifetime
-                << ", elapsedTime=" << sc.elapsedTime;
+            os << "RuptureMarkComponent: "
+                << "spellType=" << static_cast<int>(rm.spellType)
+                << ", state=" << static_cast<int>(rm.state)
+                << ", damage=" << rm.damage;
             return os;
         }
     };
@@ -352,31 +372,26 @@ namespace ECSComponents
     *//*========================================================================================*/
     struct RuneSystemStateComponent
     {
+        static constexpr int SPELL_SEQUENCE_LENGTH = 4;
+
         bool isLeftClickHeld;           // Is left mouse button held down
         bool runesActive;               // Are runes currently spawned
         bool isDrawingLine;             // Is player drawing a connection line
-        bool fireballSpawned;           // Has fireball been spawned this cycle
-
-        Math::eVec2<float> lineStart;   // Starting position of line (when hovering left rune)
-        Math::eVec2<float> lineEnd;     // End position of line (follows mouse)
+        bool spellCasted;               // Has a spell been cast this cycle
 
         // Track all 6 runes
         uint32_t runeEntityIDs[RUNE_COUNT]; // IDs of all spawned runes
 
-        // Connection tracking
-        int firstConnectedRuneIndex;        // Index of firt rune in connection (-1 if none)
-        int secondConnectedRuneIndex;       // Index of second rune in connection (-1 if none)
+        // Connection sequence tracking (stores rune NUMBERS 1-6, not indices)
+        int connectedRuneSequence[SPELL_SEQUENCE_LENGTH];
+        int connectionCount;            // How many runes connected so far (0-4)
 
-        float runeCircleRadius;             // Radius of the rune circle pattern
+        // Line drawing - store positions of connected runes for multi-segment line
+        Math::eVec2<float> connectedPositions[SPELL_SEQUENCE_LENGTH];
+        Math::eVec2<float> lineEnd;     // Current mouse position (end of line)
 
-        // uint32_t leftRuneEntityID;      // ID of spawned left rune
-        // uint32_t rightRuneEntityID;     // ID of spawned right rune
-
-        //float runeSpawnOffset;          // Distance from mouse to spawn runes
-
-        //// Rune Selection System
-        //RuneColor selectedRuneColor;    // Currently selected rune color
-        //int selectedRuneIndex;          // Index 0-5 for the 6 runes
+        float runeCircleRadius;         // Radius of the rune circle pattern
+        Math::eVec2<float> circleCenter; // Center of the rune circle (for spell spawn)
 
         // Signals
         std::unordered_map<std::string, Events::EnoSignal> signals_;
@@ -385,25 +400,73 @@ namespace ECSComponents
             : isLeftClickHeld(false)
             , runesActive(false)
             , isDrawingLine(false)
-            , fireballSpawned(false)
-            , lineStart(0.0f, 0.0f)
+            , spellCasted(false)
+            , connectionCount(0)
             , lineEnd(0.0f, 0.0f)
-            , firstConnectedRuneIndex(-1)
-            , secondConnectedRuneIndex(-1)
             , runeCircleRadius(100.0f)
+            , circleCenter(0.0f, 0.0f)
         {
             for (int i = 0; i < RUNE_COUNT; ++i) {
                 runeEntityIDs[i] = UINT32_MAX;
+            }
+            for (int i = 0; i < SPELL_SEQUENCE_LENGTH; ++i) {
+                connectedRuneSequence[i] = -1;
+                connectedPositions[i] = {0.0f, 0.0f};
             }
         }
 
         // Reset connection state
         void resetConnection()
         {
-            firstConnectedRuneIndex = -1;
-            secondConnectedRuneIndex = -1;
+            connectionCount = 0;
             isDrawingLine = false;
-            fireballSpawned = false;
+            spellCasted = false;
+            for (int i = 0; i < SPELL_SEQUENCE_LENGTH; ++i) {
+                connectedRuneSequence[i] = -1;
+                connectedPositions[i] = {0.0f, 0.0f};
+            }
+        }
+
+        // Add a rune to the connection sequence
+        bool addRuneToSequence(int runeNumber, const Math::eVec2<float>& position)
+        {
+            if (connectionCount >= SPELL_SEQUENCE_LENGTH) return false;
+
+            // Check if this rune is already in the sequence
+            for (int i = 0; i < connectionCount; ++i) {
+                if (connectedRuneSequence[i] == runeNumber) return false;
+            }
+
+            connectedRuneSequence[connectionCount] = runeNumber;
+            connectedPositions[connectionCount] = position;
+            connectionCount++;
+            return true;
+        }
+
+        // Check if current sequence matches a spell pattern
+        SpellType checkSpellPattern() const
+        {
+            if (connectionCount != SPELL_SEQUENCE_LENGTH) return SpellType::NONE;
+
+            // Spell patterns (rune numbers 1-6)
+            constexpr int ICE_PATTERN[4] = {3, 2, 5, 4};
+            constexpr int FIRE_PATTERN[4] = {6, 1, 5, 2};
+            constexpr int LIGHT_PATTERN[4] = {4, 1, 3, 6};
+
+            bool matchesIce = true;
+            bool matchesFire = true;
+            bool matchesLight = true;
+
+            for (int i = 0; i < SPELL_SEQUENCE_LENGTH; ++i) {
+                if (connectedRuneSequence[i] != ICE_PATTERN[i]) matchesIce = false;
+                if (connectedRuneSequence[i] != FIRE_PATTERN[i]) matchesFire = false;
+                if (connectedRuneSequence[i] != LIGHT_PATTERN[i]) matchesLight = false;
+            }
+
+            if (matchesIce) return SpellType::ICE;
+            if (matchesFire) return SpellType::FIRE;
+            if (matchesLight) return SpellType::LIGHT;
+            return SpellType::NONE;
         }
 
         // Serialization support
@@ -413,18 +476,8 @@ namespace ECSComponents
             l("isLeftClickHeld", isLeftClickHeld, "bool");
             l("runesActive", runesActive, "bool");
             l("isDrawingLine", isDrawingLine, "bool");
-            l("fireballSpawned", fireballSpawned, "bool");
-            l("lineStartX", lineStart.x, "float");
-            l("lineStartY", lineStart.y, "float");
-            l("lineEndX", lineEnd.x, "float");
-            l("lineEndY", lineEnd.y, "float");
+            l("spellCasted", spellCasted, "bool");
             l("runeCircleRadius", runeCircleRadius, "float");
-            l("firstConnectedRuneIndex", firstConnectedRuneIndex, "int");
-            l("secondConnectedRuneIndex", secondConnectedRuneIndex, "int");
-            for (int i = 0; i < RUNE_COUNT; ++i) {
-                std::string key = "runeEntityID_" + std::to_string(i);
-                l(key.c_str(), runeEntityIDs[i], "uint32_t");
-            }
         }
 
         template <typename Visitor>
@@ -433,18 +486,8 @@ namespace ECSComponents
             l("isLeftClickHeld", isLeftClickHeld, "bool");
             l("runesActive", runesActive, "bool");
             l("isDrawingLine", isDrawingLine, "bool");
-            l("fireballSpawned", fireballSpawned, "bool");
-            l("lineStartX", lineStart.x, "float");
-            l("lineStartY", lineStart.y, "float");
-            l("lineEndX", lineEnd.x, "float");
-            l("lineEndY", lineEnd.y, "float");
+            l("spellCasted", spellCasted, "bool");
             l("runeCircleRadius", runeCircleRadius, "float");
-            l("firstConnectedRuneIndex", firstConnectedRuneIndex, "int");
-            l("secondConnectedRuneIndex", secondConnectedRuneIndex, "int");
-            for (int i = 0; i < RUNE_COUNT; ++i) {
-                std::string key = "runeEntityID_" + std::to_string(i);
-                l(key.c_str(), runeEntityIDs[i], "uint32_t");
-            }
         }
 
         friend std::ostream& operator<<(std::ostream& os, const RuneSystemStateComponent& rs)
@@ -453,8 +496,7 @@ namespace ECSComponents
                 << "leftClickHeld=" << rs.isLeftClickHeld
                 << ", runesActive=" << rs.runesActive
                 << ", isDrawingLine=" << rs.isDrawingLine
-                << ", firstConnected=" << rs.firstConnectedRuneIndex
-                << ", secondConnected=" << rs.secondConnectedRuneIndex;
+                << ", connectionCount=" << rs.connectionCount;
             return os;
         }
     };
