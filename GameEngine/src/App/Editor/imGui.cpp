@@ -2043,9 +2043,136 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	{
 		auto& vi = entity.get<ECSComponents::VisibilityComponent>(entMng);
 
+		ImGui::SeparatorText("Visibility Component");
+
 		// Toggle checkbox for visibility
 		ImGui::Checkbox("Entity Visibility", &vi.visible);
 
+		// Header with +/- buttons to adjust entity's layer
+		ImGui::Text("Z Index Layer");
+		ImGui::SameLine();
+
+		int currentLayer = static_cast<int>(vi.getZIndex());
+
+		// Plus button to increase entity's layer
+		if (currentLayer < ECSComponents::availableLayers - 1)
+		{
+			if (ImGui::Button("+"))
+			{
+				vi.setZIndex(static_cast<uint32_t>(currentLayer + 1));
+				if (g_game) g_game->markEntitiesDirty();
+			}
+		}
+		else
+		{
+			// Disable button if it is at top layer
+			ImGui::BeginDisabled();
+			ImGui::Button("+");
+			ImGui::EndDisabled();
+		}
+
+		ImGui::SameLine();
+
+		// Minus button to decrease entity's layer
+		if (currentLayer > 0)
+		{
+			if (ImGui::Button("-"))
+			{
+				vi.setZIndex(static_cast<uint32_t>(currentLayer - 1));
+				if (g_game) g_game->markEntitiesDirty();
+			}
+		}
+		else
+		{
+			// Disable button if it is at bottom layer
+			ImGui::BeginDisabled();
+			ImGui::Button("-");
+			ImGui::EndDisabled();
+		}
+
+		// Build layer names dynamically based on available layers
+		std::vector<std::string> layerStrings;
+		for (int i = 0; i < ECSComponents::availableLayers; ++i)
+		{
+			std::string label = std::to_string(i);
+			if (i == 0) label += " (Background)";
+			else if (i == 3) label += " (Default)";
+			else if (i == ECSComponents::availableLayers - 1 && i > 3) label += " (Top)";
+			layerStrings.push_back(label);
+		}
+
+		// Convert to const char* array for ImGui
+		std::vector<const char*> layerNames;
+		for (const auto& str : layerStrings)
+			layerNames.push_back(str.c_str());
+
+		// Clamp to valid range for display
+		int displayLayer = currentLayer;
+		if (displayLayer >= ECSComponents::availableLayers) displayLayer = ECSComponents::availableLayers - 1;
+		if (displayLayer < 0) displayLayer = 0;
+
+		// Dropdown for layer selection (## hides the label since we have our own header)
+		ImGui::SetNextItemWidth(-1);  // Full width
+		if (ImGui::Combo("##ZIndexLayer", &displayLayer, layerNames.data(), static_cast<int>(layerNames.size())))
+		{
+			vi.setZIndex(static_cast<uint32_t>(displayLayer));
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		// Check if entity is currently on the top layer (for layer management)
+		int currentTopLayer = ECSComponents::availableLayers - 1;
+		bool isOnTopLayer = (currentLayer == currentTopLayer);
+
+		// Add New Layer button
+		if (ECSComponents::availableLayers < ECSComponents::MAX_LAYERS)
+		{
+			if (ImGui::Button("Add New Layer"))
+			{
+				// If entity is on top layer, move it to the new top
+				if (isOnTopLayer)
+				{
+					vi.setZIndex(static_cast<uint32_t>(ECSComponents::availableLayers));
+					if (g_game) g_game->markEntitiesDirty();
+				}
+				ECSComponents::availableLayers++;
+			}
+		}
+		else
+		{	// Disable if number of layers reached max
+			ImGui::BeginDisabled();
+			ImGui::Button("Add New Layer");
+			ImGui::EndDisabled();
+		}
+
+		ImGui::SameLine();
+
+		// Remove Top Layer button
+		if (ECSComponents::availableLayers > 1)
+		{
+			if (ImGui::Button("Remove Top Layer"))
+			{
+				ECSComponents::availableLayers--;
+				// If entity was on or above the new top layer, clamp it to new top
+				if (currentLayer >= ECSComponents::availableLayers)
+				{
+					vi.setZIndex(static_cast<uint32_t>(ECSComponents::availableLayers - 1));
+					if (g_game) g_game->markEntitiesDirty();
+				}
+			}
+		}
+		else
+		{
+			// Disable if number of layers reached minimum
+			ImGui::BeginDisabled();
+			ImGui::Button("Remove Top Layer");
+			ImGui::EndDisabled();
+		}
+
+		ImGui::SameLine();
+		ImGui::TextDisabled("(%d/%d)", ECSComponents::availableLayers, ECSComponents::MAX_LAYERS);
+
+		// Keyboard shortcuts hint
+		ImGui::TextDisabled("Use '[' and ']' to change layer");
 	}
 	else
 	{
@@ -4425,6 +4552,33 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 		}
 		if (ImGui::IsKeyPressed(ImGuiKey_Minus) || ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract)) {
 			g_game->adjustEditorZoom(-0.1f);  // Zoom out
+		}
+	}
+
+	// Keyboard shortcuts for layer change ([ and ] keys)
+	if (selectedEntityID != UINT32_MAX) {
+		auto& entityManager = engine_.getEntityManager();
+		for (auto& e : entityManager.findEntity<>()) {
+			if (e.id() == selectedEntityID && e.has<ECSComponents::VisibilityComponent>(entityManager)) {
+				auto& vi = e.get<ECSComponents::VisibilityComponent>(entityManager);
+				int currentLayer = static_cast<int>(vi.getZIndex());
+
+				// '[' key decreases layer
+				if (ImGui::IsKeyPressed(ImGuiKey_LeftBracket)) {
+					if (currentLayer > 0) {
+						vi.setZIndex(static_cast<uint32_t>(currentLayer - 1));
+						if (g_game) g_game->markEntitiesDirty();
+					}
+				}
+				// ']' key increases layer
+				if (ImGui::IsKeyPressed(ImGuiKey_RightBracket)) {
+					if (currentLayer < ECSComponents::availableLayers - 1) {
+						vi.setZIndex(static_cast<uint32_t>(currentLayer + 1));
+						if (g_game) g_game->markEntitiesDirty();
+					}
+				}
+				break;
+			}
 		}
 	}
 

@@ -14,7 +14,6 @@
 #include "imGui.hpp"
 #include "math/math.hpp"
 
-
 void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
 	engine_.setup();
@@ -836,13 +835,18 @@ void GameApplication::updateGameLogic() {
 			}
 		}
 
-		// Draw all entities (with camera offset - convert world space to screen space)
-		for (ECS::Entity& entity : cachedDrawableEntities_) {
-			try {
-				if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
-					if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
-						continue; // Skip player, drawn separately
-					}
+		// Collect and sort cached entities by layer
+		ECSComponents::collectObjectsByLayer(engine_, cachedDrawableEntities_);
+
+		// Draw all entities by layer order (lowest z_index first = background)
+		for (auto& [layer, entities] : ECSComponents::sortedObjectLayers) {
+			for (ECS::Entity* entityPtr : entities) {
+				ECS::Entity& entity = *entityPtr;
+				try {
+					if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+						if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
+							continue; // Skip player, drawn separately
+						}
 
 					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
@@ -961,10 +965,11 @@ void GameApplication::updateGameLogic() {
 						//}
 					}
 				}
-			}
-			catch (...) {
-				entitiesDirty_ = true;
-				continue;
+				}
+				catch (...) {
+					entitiesDirty_ = true;
+					continue;
+				}
 			}
 		}
 

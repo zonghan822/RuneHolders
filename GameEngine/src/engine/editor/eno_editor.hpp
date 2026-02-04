@@ -37,9 +37,9 @@ namespace Editor
 			// Get all available scenes
 			// Check that the file is a .txt file
 			try {
-				for (const auto& fileEntry : std::filesystem::directory_iterator(FileSystem::GetAssetsDir() / "saves/scenes"))
+				for (const auto& fileEntry : std::filesystem::directory_iterator(FileSystem::GetAssetsDir().string() +  "/saves/scenes"))
 				{
-					if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (FileSystem::GetAssetsDir() / "saves/scenes/LastSavedScene.txt"))
+					if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().filename().string() != "LastSavedScene.txt")
 					{
 						// Add file to scenes_
 						std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
@@ -417,7 +417,11 @@ namespace Editor
 		*//*========================================================================================*/
 		void updateLastSavedScene()
 		{
-			std::ofstream lastSceneSave{ FileSystem::GetAssetsDir().string() + "/saves/scenes/LastSavedScene.txt" };
+			std::string path = FileSystem::GetAssetsDir().string() + "/saves/scenes/LastSavedScene.txt";
+			std::cout << "[DEBUG] Saving LastSavedScene.txt to: " << path << std::endl;
+			std::cout << "[DEBUG] Scene name: " << selectedScene_->getSceneName() << std::endl;
+
+			std::ofstream lastSceneSave{ path };
 			if (!lastSceneSave)
 			{
 				throw std::runtime_error("[Eno_Editor] Failed to save current active scene name!");

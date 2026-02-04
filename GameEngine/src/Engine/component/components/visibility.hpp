@@ -15,22 +15,49 @@
 //stds
 #include <iostream>
 #include <string>
+#include <vector>
+#include <map>
+
+// Forward declarations
+namespace Engine
+{
+	class EnoEngine;
+}
+
+namespace ECS
+{
+	class Entity;
+	class EntityManager;
+}
+
+namespace Editor
+{
+	struct Node;
+	class EnoSceneTree;
+}
 
 namespace ECSComponents
 {
+	// Maximum number of layers allowed
+	inline constexpr int MAX_LAYERS = 20;
+
+	// Current number of available layers (starts with 4: 0, 1, 2, 3)
+	inline int availableLayers = 4;
+
 	/*============================================================================================
 	 * \brief       Definition of the visibility component
 	*//*========================================================================================*/
 	struct VisibilityComponent
 	{
-		// Rendering order
+	public:
+		// Rendering layer (default is 3)
 		uint32_t z_index = 3;
 
 		// Visibility
-		bool visible = false;
+		bool visible = true;
 
 		// Signals
-		std::unordered_map<std::string, Events::EnoSignal> signals_;
+		std::unordered_map<std::string, Events::EnoSignal> signals_; 
 
 		// For serialization purposes
 		// Generalized way of using reflection to access and iterate
@@ -55,7 +82,33 @@ namespace ECSComponents
 			l("Z Index", z_index, "uint32_t");
 			l("Visible", visible, "bool");
 		}
+
+		// Getter for z_index
+		uint32_t getZIndex() const { return z_index; }
+
+		// Setter for z_index
+		void setZIndex(uint32_t index) { z_index = index; }
 	};
+
+	// Static storage for sorted layers (inline for single definition across translation units)
+	inline std::map<int, std::vector<ECS::Entity*>> sortedObjectLayers;
+
+	/*============================================================================================
+	 * \brief				Recursive helper to collect entity and its children by layer
+	 * \param[in]			node - pointer to the scene tree node
+	 * \param[in]			entityMng - reference to EntityManager
+	 * \param[in]			layers - reference to the layer map to populate
+	*//*========================================================================================*/
+	void collectChildrenRecursive(Editor::Node* node,
+	                              ECS::EntityManager& entityMng,
+	                              std::map<int, std::vector<ECS::Entity*>>& layers);
+
+	/*============================================================================================
+	 * \brief				Collect all objects in the scene and sort them in layers based on z_index
+	 * \param[in]			eng - reference to EnoEngine
+	 * \param[in]			cachedEntities - reference to vector of cached drawable entities
+	*//*========================================================================================*/
+	void collectObjectsByLayer(Engine::EnoEngine& eng, std::vector<ECS::Entity>& cachedEntities);
 
 	/*============================================================================================
 	 * \brief				Equality operator overload for the visibility component

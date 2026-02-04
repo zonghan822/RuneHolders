@@ -2,6 +2,7 @@
 
 #include "../math/math.hpp"
 #include "../ai/state/ai_events.hpp"
+#include "../component/components/visibility.hpp"
 
 namespace Editor
 {
@@ -35,12 +36,13 @@ namespace Editor
 		node->entity_ = entMng_.create<
 			ECSComponents::CollisionComponent, ECSComponents::RenderComponent,
 			ECSComponents::PhysicsComponent, ECSComponents::PlayerComponent,
-			ECSComponents::TransformComponent>(
+			ECSComponents::TransformComponent, ECSComponents::VisibilityComponent>(
 				ECSComponents::CollisionComponent{ 10.f, 10.f, Math::eVec2{5.f, 5.f}, true },
 				ECSComponents::RenderComponent{ 20.f, 20.f, "Trapezoid", 0},
 				ECSComponents::PhysicsComponent{ 1.f },
 				ECSComponents::PlayerComponent{  },
-				ECSComponents::TransformComponent{ Math::eVec2{7.f, 7.f }, Math::eVec2{9.f, 9.f }, Math::eVec2{11.f, 11.f } }
+				ECSComponents::TransformComponent{ Math::eVec2{7.f, 7.f }, Math::eVec2{9.f, 9.f }, Math::eVec2{11.f, 11.f } },
+				ECSComponents::VisibilityComponent{}
 				);
 
 		node->parent_ = parent;
@@ -69,6 +71,12 @@ namespace Editor
 		node->parent_ = parent;
 		node->enabled_ = true;
 		node->script_ = nullptr;
+
+		// Add VisibilityComponent by default if entity doesn't have one
+		if (!entity.has<ECSComponents::VisibilityComponent>(entMng_))
+		{
+			entity.add<ECSComponents::VisibilityComponent>(entMng_, ECSComponents::VisibilityComponent{});
+		}
 
 		Node* unode = node.get();
 		tree_[node->sceneObjectID_] = std::move(node);
