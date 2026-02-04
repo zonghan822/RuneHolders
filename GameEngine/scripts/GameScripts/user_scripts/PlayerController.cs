@@ -5,30 +5,26 @@ namespace Eno
 {
     public class PlayerController : ScriptBase
     {
-        [Reveal("The player's display name")]
+        [Port("The player's display name")]
         public string playerName = "Player1";
 
-        [Reveal(0, 200)]
+        [Port(0, 200)]
         public int health = 120;
 
-        [Reveal(50, 300)]
+        [Port(50, 300)]
         public int mana = 70;
+
+        public enum States : int {
+            Walking, Idle, Attacking
+        };
+
+        [Port()]
+        public States state = States.Walking;
 
         public float speed = 5.10f;
 
         private static InputAction? ia1;
         private static InputAction? ia2;
-
-        public enum Rarity
-        {
-            common,
-            rare,
-            epic,
-            legendary
-        }
-
-        [Reveal()]
-        public Rarity r = Rarity.common;
 
         public void Begin()
         {
@@ -55,6 +51,8 @@ namespace Eno
 
         public void Update()
         {
+            Console.WriteLine("Calling update!");
+
             // Triggers when releasing A
             if (Input.IsKeyReleased(KeyCode.A))
             {
@@ -78,7 +76,6 @@ namespace Eno
             if (Input.IsKeyPressed(KeyCode.V))
             {
                 Console.WriteLine("Pressed V, volume should be modified on entity 1 now!");
-                //ModifyVolume(5);
             }
         }
 
@@ -99,18 +96,7 @@ namespace Eno
     
 		public void _when_node1_started()
         {
-            
-        }
 
-		public void _when_node3_started()
-        {
-            Console.WriteLine("3 Node1 has started with audio playing! enemycon.cs");
         }
     }
-
-    // public class ArmController : ScriptBase
-    // {
-    //     [Reveal(90, 210)]
-    //     public double velocity = 100.5;
-    // }
 }

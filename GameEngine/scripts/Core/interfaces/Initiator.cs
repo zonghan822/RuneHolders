@@ -24,7 +24,7 @@ namespace Eno
             // Hot Reloading
             // Compile main DLL to a temporary dll
             HRManager!.CompileToTemp(usPath, dllPath);
-            
+           
             // Load temporary dll
             HRManager!.Init(dllPath);
             HRManager!.LoadTemp();

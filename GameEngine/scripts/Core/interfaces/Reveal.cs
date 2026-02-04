@@ -8,20 +8,20 @@ namespace Eno
     // Source: https://learn.microsoft.com/en-us/dotnet/api/system.attribute?view=net-9.0
     //         https://learn.microsoft.com/en-us/dotnet/csharp/advanced-topics/reflection-and-attributes/
     [AttributeUsage(AttributeTargets.Field)]
-    public class RevealAttribute : Attribute
+    public class PortAttribute : Attribute
     {
         // Properties to reveal to the engine
         // Getters / Setters
         public string Description { get; set; } = string.Empty;
-        public float Min { get; set; } = 0f;
-        public float Max { get; set; } = 0f;
+        public float Min { get; set; }
+        public float Max { get; set; }
         public bool HasRange { get; set; } = false;
 
         // Constructors
-        public RevealAttribute() {}
+        public PortAttribute() {}
 
         // Min Max constructor
-        public RevealAttribute(float min, float max)
+        public PortAttribute(float min, float max)
         {
             Min = min;
             Max = max;
@@ -29,7 +29,7 @@ namespace Eno
         }
 
         // Description constructor
-        public RevealAttribute(string desc)
+        public PortAttribute(string desc)
         {
             Description = desc;
         }
@@ -63,17 +63,5 @@ namespace Eno
         // Origin (Namespace.Class)
         public IntPtr Origin;
 
-        // Enum metadata
-        public IntPtr EnumData;
-    }
-
-    // For enums
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct EnumFieldData
-    {
-        public int Count;       // Number of enum entries
-        public IntPtr Names;
-        public IntPtr Values;
-        public int ValueSize;   // An enum may represent a byte, int, or other arithemetic types
     }
 }

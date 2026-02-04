@@ -90,26 +90,48 @@ namespace Eno
 
     public static class Input
     {
+        // // [Engine-Level] Used to receive raw input from engine end
+        // [UnmanagedCallersOnly]
+        // private static void InputBoarding(int key, int scancode, int action, int mods)
+        // {
+        //     // // Account for keys not mapped
+        //     // if (!keys.ContainsKey((KeyCode)key))
+        //     // {
+        //     //     Console.WriteLine($"{ key } is currently not supported!");
+        //     //     return;
+        //     // }
+
+        //     // var state = keys[(InputKey)key];
+
+        //     // // When input is received, save the state
+        //     // if (action == (int)InputAction.Press)
+        //     // {
+        //     //     state.isHeld = true;
+        //     //     state.pressedThisFrame = true;
+        //     // }
+        //     // else if (action == (int)InputAction.Release)
+        //     // {
+        //     //     state.isHeld = false;
+        //     //     state.releasedThisFrame = true;
+        //     // }
+
+        //     // keys[(InputKey)key] = state;
+
+        //     // Console.WriteLine($"InputBoarding: Key={(InputKey)key}, Action={(InputAction)action}, Held={state.isHeld}, PressedThisFrame={state.pressedThisFrame}, ReleasedThisFrame={state.releasedThisFrame}");
+        // }
+
         // ============= Imported functions =============
-        public static bool IsKeyReleased(KeyCode key)
-        {
-            return Bridge.IsKeyReleased(key);
-        }
+        [DllImport("EnoEngine.exe")]
+        public static extern bool IsKeyReleased(KeyCode key);
 
-        public static bool IsKeyPressed(KeyCode key)
-        {
-            return Bridge.IsKeyPressed(key);
-        }
+        [DllImport("EnoEngine.exe")]
+        public static extern bool IsKeyPressed(KeyCode key);
 
-        public static bool IsKeyHeld(KeyCode key)
-        {
-            return Bridge.IsKeyHeld(key);
-        }
+        [DllImport("EnoEngine.exe")]
+        public static extern bool IsKeyHeld(KeyCode key);
 
-        public static int ModsApplied()
-        {
-            return Bridge.ModsApplied();
-        }
+        [DllImport("EnoEngine.exe")]
+        public static extern int ModsApplied();
     }
 
     // For custom inputs
