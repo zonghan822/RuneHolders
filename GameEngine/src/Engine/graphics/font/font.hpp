@@ -21,6 +21,8 @@
 #include <string>
 #include <memory>
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 // Engine components
 #include "../../math/math.hpp"
@@ -112,6 +114,20 @@ namespace Font {
         * \return   Shared pointer to the EnoFont. Returns nullptr if not found.
         *//*========================================================================================*/
         std::shared_ptr<EnoFont> getFont(const std::string& name);
+
+        /*============================================================================================
+        * \brief   Retrieve names of all loaded fonts.
+        * \return  Sorted vector of font name strings.
+        *//*========================================================================================*/
+        std::vector<std::string> getFontNames() const {
+            std::vector<std::string> names;
+            names.reserve(fonts_.size());
+            for (const auto& [name, font] : fonts_) {
+                names.emplace_back(name);
+            }
+            std::sort(names.begin(), names.end());
+            return names;
+        }
 
     private:
         FT_Library ft_;

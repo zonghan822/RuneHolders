@@ -39,6 +39,16 @@ namespace ECSComponents
 
 		char name[32] = "DefaultName";
 
+		// Getter 
+		const char* getName() const { return name; }
+
+		// Setter
+		void setName(const char* n)
+		{
+			strncpy_s(name, n, sizeof(name) - 1);
+			name[sizeof(name) - 1] = '\0';
+		}
+
 		// For serialization purposes
 		// Generalized way of using reflection to access and iterate
 		// over fields!

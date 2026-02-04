@@ -34,12 +34,31 @@ namespace ECSComponents {
 		}
 	}
 
+	// Walk up the scene tree from the given entity; return false if any ancestor is invisible.
+	bool isAncestorVisible(uint32_t entityID, Editor::EnoSceneTree& tree, ECS::EntityManager& entityMng)
+	{
+		Editor::Node* node = tree.getNodeByEntityID(entityID);
+		if (!node) return true;
+
+		Editor::Node* current = node->parent_;
+		while (current) {
+			if (current->entity_.has<VisibilityComponent>(entityMng)) {
+				if (!current->entity_.get<VisibilityComponent>(entityMng).visible) {
+					return false;
+				}
+			}
+			current = current->parent_;
+		}
+		return true;
+	}
+
 	void collectObjectsByLayer(Engine::EnoEngine& eng, std::vector<ECS::Entity>& cachedEntities)
 	{
 		// Reset the map
 		sortedObjectLayers.clear();
 
-		auto& entityMng = eng.getEntityManager();
+		auto& entityMng  = eng.getEntityManager();
+		auto& sceneTree  = eng.getEnoEditor().getSceneTree();
 
 		// Sort cached entities by their z_index
 		for (auto& entity : cachedEntities) {
@@ -49,6 +68,9 @@ namespace ECSComponents {
 
 				// Skip invisible entities
 				if (!vis.visible) continue;
+
+				// Skip if any ancestor in the scene tree is invisible
+				if (!isAncestorVisible(entity.id(), sceneTree, entityMng)) continue;
 
 				// Get the layer of the current object
 				int zIndex = static_cast<int>(vis.z_index);

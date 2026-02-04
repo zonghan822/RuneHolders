@@ -13,6 +13,7 @@
 *//*========================================================================================*/
 
 #include "eno_input.hpp"
+#include <imgui.h>
 
 namespace Input {
 
@@ -137,14 +138,23 @@ namespace Input {
 	// Handle key inputs
 	void EnoInputManager::handleKey(int key, int scancode, int action, int mods)
 	{
+		modsState_ = mods;
+
+		// When ImGui is consuming text input (e.g. an InputText is active),
+		// only process releases so keys do not get stuck; skip all other input.
+		//if (ImGui::GetIO().WantTextInput) {
+		//	if (GLFW_RELEASE == action) {
+		//		keyStates_[key] = false;
+		//	}
+		//	return;
+		//}
+
 		if (GLFW_PRESS == action) {
 			keyStates_[key] = true;
 		}
 		else if (GLFW_RELEASE == action) {
 			keyStates_[key] = false;
 		}
-
-		modsState_ = mods;
 
 		auto name = inputMap_.findr(KeyBinding{ key, scancode, action, mods });
 		if (name.has_value())

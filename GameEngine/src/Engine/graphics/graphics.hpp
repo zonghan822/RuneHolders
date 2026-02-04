@@ -214,6 +214,12 @@ namespace Graphics
                 flushBatch(currentBatchPrimitiveType_);
             }
         }
+        void rebindDefaultShader() {
+            if (defaultShader_ && defaultShader_->isValid()) {
+                defaultShader_->use();
+                defaultShader_->setMatrix4("u_projection", projectionMatrix_.data());
+            }
+        }
 
         // Immediate mode drawing functions
         void drawPoint(const Math::eVec2<float>& position, const Color& color = Color::White, float size = 1.0f);

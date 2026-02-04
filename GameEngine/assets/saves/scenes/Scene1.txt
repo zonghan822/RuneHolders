@@ -11,6 +11,12 @@
 				"Name": <char32> { Entity 2 }
 			}
 
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
 			[struct ECSComponents::TransformComponent]
 			{
 				"Position": <eVec2(float)> { x : 772.175 | y : 1023.97 }
@@ -89,6 +95,12 @@
 			[struct ECSComponents::NameComponent]
 			{
 				"Name": <char32> { Player }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
@@ -184,6 +196,12 @@
 			[struct ECSComponents::NameComponent]
 			{
 				"Name": <char32> { Entity 3 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
@@ -346,6 +364,12 @@
 				"Name": <char32> { Entity 5 }
 			}
 
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
 			[struct ECSComponents::TransformComponent]
 			{
 				"Position": <eVec2(float)> { x : 891.44 | y : 700.187 }
@@ -424,6 +448,12 @@
 			[struct ECSComponents::NameComponent]
 			{
 				"Name": <char32> { Entity 6 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
@@ -506,6 +536,12 @@
 				"Name": <char32> { Room01_Doors }
 			}
 
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
 			[struct ECSComponents::TransformComponent]
 			{
 				"Position": <eVec2(float)> { x : 1024 | y : 1024 }
@@ -560,6 +596,12 @@
 			[struct ECSComponents::NameComponent]
 			{
 				"Name": <char32> { Entity 17 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
@@ -650,6 +692,12 @@
 				"Name": <char32> { Entity 18 }
 			}
 
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
 			[struct ECSComponents::TransformComponent]
 			{
 				"Position": <eVec2(float)> { x : 866.834 | y : 765.344 }
@@ -736,6 +784,12 @@
 			[struct ECSComponents::NameComponent]
 			{
 				"Name": <char32> { Entity 19 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
@@ -826,6 +880,12 @@
 				"Name": <char32> { Entity 20 }
 			}
 
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
 			[struct ECSComponents::TransformComponent]
 			{
 				"Position": <eVec2(float)> { x : 1236.18 | y : 732.579 }
@@ -912,6 +972,12 @@
 			[struct ECSComponents::NameComponent]
 			{
 				"Name": <char32> { Entity 21 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
@@ -1002,6 +1068,12 @@
 				"Name": <char32> { Entity 22 }
 			}
 
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
 			[struct ECSComponents::TransformComponent]
 			{
 				"Position": <eVec2(float)> { x : 931.821 | y : 666.711 }
@@ -1090,6 +1162,12 @@
 				"Name": <char32> { Entity 23 }
 			}
 
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
 			[struct ECSComponents::TransformComponent]
 			{
 				"Position": <eVec2(float)> { x : 1116.64 | y : 667.842 }
@@ -1167,54 +1245,6 @@
 		"Enabled": { true }
 	}
 
-	[UI-Spellbook-Icon-F]
-	{
-		"ID": { 40 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { UI-Spellbook-Icon-F }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 1770 | y : 1400 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 257 }
-				"Height": <float> { 257 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { UI-Spellbook-Icon-F }
-				"TexID": <int> { 0 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-	}
-
 	[Node58]
 	{
 		"ID": { 58 }
@@ -1228,7 +1258,7 @@
 
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -1322,7 +1352,7 @@
 
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -1344,6 +1374,17 @@
 				"TexID": <int> { 0 }
 			}
 
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 1 }
+				"Is Active": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 200 }
+				"Height": <float> { 200 }
+			}
+
 			[struct ECSComponents::AnimationControllerComponent]
 			{
 				"Frame Width": <int> { 0 }
@@ -1358,6 +1399,224 @@
 		}
 		"Script": { }
 		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[UI-DialogueBox]
+	{
+		"ID": { 60 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { DialogueBox }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 5 }
+				"Visible": <bool> { 0 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1020 | y : 1320 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1.11278 | y : 1.11278 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1102.52 }
+				"Height": <float> { 320.481 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-DialogueBox }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { 61, 62 }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Node61]
+	{
+		"ID": { 61 }
+		"Layer": { 1 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { body text }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 4 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 501.148 | y : 1350.65 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 0 }
+				"Height": <float> { 0 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 0 | b : 0 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 2 }
+				"Drag": <float> { 8 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::BoxComponent]
+			{
+				"isPushable": <bool> { 1 }
+				"pushResistance": <float> { 0.2 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::TextComponent]
+			{
+				"Text": <char256> { A SCROLL WITH MAGICAL SPELLS! }
+				"FontName": <char64> { Philosopher-Bold }
+				"FontSize": <float> { 1 }
+			}
+		}
+		"Script": { }
+		"Parent": { 60 }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Node62]
+	{
+		"ID": { 62 }
+		"Layer": { 1 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { name text }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 499.33 | y : 1213.52 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 0 }
+				"Height": <float> { 0 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 0 | b : 0 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 2 }
+				"Drag": <float> { 8 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::BoxComponent]
+			{
+				"isPushable": <bool> { 1 }
+				"pushResistance": <float> { 0.2 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::TextComponent]
+			{
+				"Text": <char256> { Cassia }
+				"FontName": <char64> { Philosopher-Bold }
+				"FontSize": <float> { 1 }
+			}
+		}
+		"Script": { }
+		"Parent": { 60 }
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }
