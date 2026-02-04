@@ -43,6 +43,8 @@ void GameApplication::initialize() {
 	mapEditor_ = std::make_unique<MapEditor>(tileMap);
 	Math::eVec2<float> worldSize = tileMap.getWorldSize();
 
+	stateMachineEditor_ = std::make_unique<Editor::StateMachineEditor>(engine_.getEnoEditor());
+
 	worldWidth_ = worldSize.x;
 	worldHeight_ = worldSize.y;
 

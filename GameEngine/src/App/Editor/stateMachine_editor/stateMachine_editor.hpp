@@ -270,6 +270,8 @@ namespace Editor {
             try {
                 auto script = scriptManager_.createAndOpenScript(scriptName);
 
+                std::cout << "successfully created script..." << std::endl;
+
                 if (script) {
                     sceneTree_.attachScript(node, std::move(script));
 

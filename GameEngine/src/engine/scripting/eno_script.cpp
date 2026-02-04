@@ -22,6 +22,7 @@ namespace Script
 
 		// Get all script variables
 		int count{};
+		//std::wcout << path.c_str() << std::endl;
 		void* names = (coreHost_.cname())(path.c_str(), &count);
 		
 		// Map script variables

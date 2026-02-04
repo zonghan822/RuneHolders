@@ -2427,8 +2427,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 	}
 
-	Editor::EnoEditor& editor = engine_.getEnoEditor();
-	Editor::StateMachineEditor smEditor(editor);
+	auto& smEditor = g_game->getStateMachineEditor();
 	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
 		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
 		ImGui::SeparatorText("State Machine");
