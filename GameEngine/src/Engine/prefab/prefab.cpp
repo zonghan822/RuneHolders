@@ -39,6 +39,8 @@ void savePrefab(const PrefabData& prefab) {
     file << prefab.hasCollider << "\n";
 
     std::cout << prefab.name;
+    file.close();
+    FileSystem::SyncToSource(filename);
 }
 
 PrefabData loadPrefab(const std::string& filename) {
@@ -310,6 +312,7 @@ void createPrefabFromEntity(
 
     std::cout << "[Prefab] Saved prefab '" << prefabName << "' to " << filename << "\n";
     std::cout << "[Prefab] Captured " << snapshot.components.size() << " components\n";
+    FileSystem::SyncToSource(filename);
 }
 
 ECS::Entity instantiatePrefabFromSnapshot(

@@ -561,6 +561,8 @@ namespace Editor
 		appendIndent(save, 1);
 		save << "]\n";
 		save << "}\n";
+	save.close();
+	FileSystem::SyncToSource(filename);
 	}
 
 	// Deserialize data
