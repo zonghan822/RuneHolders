@@ -942,12 +942,12 @@ void GameApplication::updateEntities() {
 		// Switch animation based on movement
 		if (isMoving) {
 			if (playerAnimController_.getCurrentAnimationName() != "walk") {
-				playerAnimController_.setAnimation("walk");
+				//playerAnimController_.setAnimation("walk");
 			}
 		}
 		else {
 			if (playerAnimController_.getCurrentAnimationName() != "idle") {
-				playerAnimController_.setAnimation("idle");
+				//playerAnimController_.setAnimation("idle");
 			}
 		}
 		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
@@ -972,8 +972,9 @@ void GameApplication::updateEntities() {
 			{
 				for (const auto& org : node->script_->origin())
 				{
-					std::wcout << "origin of call: " << org << std::endl;
+					std::wcout << "origin of call: " << org << " for entity " << node->entity_.id() << std::endl;
 					coreHost.begin(org, node->sceneObjectID_);
+					//coreHost.begin(org, node->entity_.id());  // FIX: Use entity_.id() instead of sceneObjectID_
 				}
 			}
 		}
@@ -988,6 +989,7 @@ void GameApplication::updateEntities() {
 			for (const auto& org : node->script_->origin())
 			{
 				coreHost.update(org, node->sceneObjectID_);
+				// coreHost.update(org, node->entity_.id());  // FIX: Use entity_.id() instead of sceneObjectID_
 			}
 		}
 	}

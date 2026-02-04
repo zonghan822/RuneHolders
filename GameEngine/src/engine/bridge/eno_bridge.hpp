@@ -21,6 +21,12 @@ namespace Bridge {
         ENGINE_API bool __stdcall IsKeyHeld(int key);
         ENGINE_API bool __stdcall IsKeyReleased(int key);
         ENGINE_API int  __stdcall ModsApplied();
+
+        // ================= Animation =================
+        ENGINE_API bool __stdcall SetEntityAnimation(uint32_t entityID, const wchar_t* animationName);
+
+        // ================= AI =================
+        ENGINE_API const wchar_t* __stdcall GetEntityAIState(uint32_t entityID);
     }
 }
 
