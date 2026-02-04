@@ -2267,6 +2267,7 @@ void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSCompone
 
 	// Determine spritesheets based on spell type
 	const char* spawnSheetName = "";
+	const char* windupSheetName = "";
 	const char* explosionSheetName = "";
 
 	switch (spellType)
