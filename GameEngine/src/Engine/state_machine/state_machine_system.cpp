@@ -26,9 +26,9 @@ namespace FSM {
             // Get the state machine for this entity
             StateMachine& stateMachine = getOrCreateStateMachine(node->sceneObjectID_);
 
-            // Update the state machine
+            // Update the state machine (pass sceneObjectID_ for script instance lookup)
             std::wstring& className = node->script_->name_;
-            stateMachine.update(node->entity_, entityManager, className);
+            stateMachine.update(node->entity_, entityManager, className, node->sceneObjectID_);
         }
     }
 
@@ -55,12 +55,12 @@ namespace FSM {
             if (!targetNode->script_) continue;
             if (!targetNode->entity_.has<ECSComponents::StateMachineComponent>(entityManager)) continue;
 
-            // Get state machine and change state
+            // Get state machine and change state (pass sceneObjectID_ for script instance lookup)
             StateMachine& stateMachine = getOrCreateStateMachine(nodeID);
             std::wstring& className = targetNode->script_->name_;
 
             stateMachine.changeState(newState.c_str(), targetNode->entity_,
-                entityManager, className);
+                entityManager, className, targetNode->sceneObjectID_);
         }
 
         // Clear pending changes

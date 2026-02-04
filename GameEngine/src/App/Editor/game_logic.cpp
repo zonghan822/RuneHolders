@@ -2614,17 +2614,17 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 						{
 							auto& ai = enemyEntity.get<ECSComponents::AIComponent>(entityManager);
 							ai.health = static_cast<int>(health.currentHealth);
+						}
 
-							// Trigger hurt state if not dead
-							if (!died)
-							{
-								strcpy_s(ai.nextState, "Hurt");
-							}
-							else
-							{
-								strcpy_s(ai.nextState, "Death");
-								enemiesToDestroy.push_back(mark.triggeredByEntityID);
-							}
+						// Trigger state change through StateMachineSystem
+						if (!died)
+						{
+							engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "Hurt");
+						}
+						else
+						{
+							engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "Death");
+							enemiesToDestroy.push_back(mark.triggeredByEntityID);
 						}
 					}
 					// Fallback to AIComponent if no HealthComponent

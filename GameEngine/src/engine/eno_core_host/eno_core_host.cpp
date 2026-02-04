@@ -54,11 +54,6 @@ namespace Core
 				callScriptMethod(event.className, event.methodName, event.entityID);
 			}
 		);
-		
-		HRSetup();
-		defineSMD();
-		defineBegin();
-		defineUpdate();
 	}
 
 	EnoCoreHost::~EnoCoreHost()

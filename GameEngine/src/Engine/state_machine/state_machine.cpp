@@ -5,8 +5,8 @@
 namespace FSM {
 
     void StateMachine::changeState(const char* newState, ECS::Entity& entity,
-        ECS::EntityManager& entMng, std::wstring& className) {
-        
+        ECS::EntityManager& entMng, std::wstring& className, uint32_t scriptID) {
+
         // Get the component from the entity
         if (!entity.has<ECSComponents::StateMachineComponent>(entMng)) {
             return; // No state machine component
@@ -26,7 +26,7 @@ namespace FSM {
 
             if (currentStateInfo && currentStateInfo->onExitMethod[0] != '\0') {
                 entMng.getEventBus().publish(Core::ScriptEvent{
-                    entity.id(),
+                    scriptID,  // Use sceneObjectID_ for script instance lookup
                     className,
                     currentStateInfo->onExitMethod
                     });
@@ -41,7 +41,7 @@ namespace FSM {
             // Call enter method
             if (next->onEnterMethod[0] != '\0') {
                 entMng.getEventBus().publish(Core::ScriptEvent{
-                    entity.id(),
+                    scriptID,  // Use sceneObjectID_ for script instance lookup
                     className,
                     next->onEnterMethod
                     });
@@ -50,7 +50,7 @@ namespace FSM {
     }
 
     void StateMachine::update(ECS::Entity& entity, ECS::EntityManager& entMng,
-        std::wstring& className) {
+        std::wstring& className, uint32_t scriptID) {
         // Get the component from the entity
         if (!entity.has<ECSComponents::StateMachineComponent>(entMng)) {
             return; // No state machine component
@@ -64,7 +64,7 @@ namespace FSM {
 
             if (currentStateInfo && currentStateInfo->onUpdateMethod[0] != '\0') {
                 entMng.getEventBus().publish(Core::ScriptEvent{
-                    entity.id(),
+                    scriptID,  // Use sceneObjectID_ for script instance lookup
                     className,
                     currentStateInfo->onUpdateMethod
                     });

@@ -272,9 +272,13 @@ namespace ECSComponents
 
 				// Component Data block start && end
 				start = content.find("{", end);
-				nextComp = content.find("struct ECSComponents::", start);
-				if (nextComp == std::string::npos)
-					nextComp = content.size();
+				// MSVC returns "struct" or "class" depending on type
+				size_t nextStruct = content.find("struct ECSComponents::", start);
+				size_t nextClass = content.find("class ECSComponents::", start);
+				nextComp = std::min(
+					nextStruct != std::string::npos ? nextStruct : content.size(),
+					nextClass != std::string::npos ? nextClass : content.size()
+				);
 
 				std::unordered_map<std::string, DataField> dataMap;
 				// Consume component data line
