@@ -13,6 +13,9 @@
 #include <GLFW/glfw3.h>
 #include "imGui.hpp"
 #include "math/math.hpp"
+#include "particle/particle_presets.hpp"
+#include "particle/particle_component.hpp"
+#include <typeindex>
 
 void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
@@ -473,6 +476,9 @@ void GameApplication::updateGameLogic() {
 
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
+
+	// Test particle system
+	testParticleSystem();
 
 	// Check if we're in play mode
 	bool isPlayMode = (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing ||
@@ -1025,6 +1031,13 @@ void GameApplication::updateGameLogic() {
 				}
 			}
 			catch (...) {}
+		}
+
+		// Render particles (with camera offset)
+		auto* particleSystem = engine_.getParticleSystem();
+		if (particleSystem) {
+			Math::eVec2<float> cameraOffset = { editorCameraX_, editorCameraY_ };
+			particleSystem->Render(graphics_, engine_.getEntityManager(), cameraOffset);
 		}
 
 		// Draw colliders in editor view (with camera offset)
@@ -3238,4 +3251,83 @@ void GameApplication::handleMainMenuButton() {
 	setupMainMenuButtons();
 
 	std::cout << "[PauseMenu] Returned to MainMenu" << std::endl;
+}
+
+void GameApplication::testParticleSystem() {
+	auto& entityManager = engine_.getEntityManager();
+	auto& input = engine_.getInputManager();
+
+	if (input.isKeyPressed(GLFW_KEY_P)) {
+		auto mousePos = input.getMousePosition();
+		float worldX = static_cast<float>(mousePos.first) + editorCameraX_;
+		float worldY = static_cast<float>(mousePos.second) + editorCameraY_;
+
+		std::cout << "Spawning test particle emitter at (" << worldX << ", " << worldY << ")\n";
+
+		auto particleEntity = entityManager.create<
+			ECSComponents::TransformComponent,
+			ECSComponents::ParticleEmitterComponent
+		>(
+			ECSComponents::TransformComponent{{worldX, worldY}, {0,0}, {1,1}},
+			Particles::Presets::CreateFireball()
+		);
+
+		testParticleEntityID_ = particleEntity.id();
+		particleTestSpawned_ = true;
+
+		std::cout << "Particle entity created with ID: " << testParticleEntityID_ << "\n";
+	}
+
+	if (particleTestSpawned_ && input.isKeyPressed(GLFW_KEY_O)) {
+		auto* particleSystem = engine_.getParticleSystem();
+		if (particleSystem) {
+			auto it = entityManager.getMap().find(testParticleEntityID_);
+			if (it != entityManager.getMap().end()) {
+				auto& entityLoc = it->second;
+
+				bool hasEmitter = false;
+				for (const auto& type : entityLoc.archetype->types_) {
+					if (type == std::type_index(typeid(ECSComponents::ParticleEmitterComponent))) {
+						hasEmitter = true;
+						break;
+					}
+				}
+
+				if (hasEmitter) {
+					size_t index = entityLoc.archetype->findComponentIndex<ECSComponents::ParticleEmitterComponent>();
+					auto& emitter = entityLoc.archetype->chunks_[entityLoc.chunkIndex]
+						->retrieve<ECSComponents::ParticleEmitterComponent>(index, entityLoc.entityIndexInChunk);
+
+					emitter.isEmitting = !emitter.isEmitting;
+					std::cout << "Particle emission " << (emitter.isEmitting ? "enabled" : "disabled") << "\n";
+				}
+			}
+		}
+	}
+
+	if (particleTestSpawned_ && input.isKeyPressed(GLFW_KEY_B)) {
+		auto* particleSystem = engine_.getParticleSystem();
+		if (particleSystem) {
+			particleSystem->EmitBurst(entityManager, testParticleEntityID_, 50);
+			std::cout << "Emitted particle burst!\n";
+		}
+	}
+
+	if (particleTestSpawned_ && input.isKeyPressed(GLFW_KEY_K)) {
+		auto it = entityManager.getMap().find(testParticleEntityID_);
+		if (it != entityManager.getMap().end()) {
+			// Clean up particle pool first
+			auto* particleSystem = engine_.getParticleSystem();
+			if (particleSystem) {
+				// Access private removePool method through public interface
+				// The pool will be cleaned up when entity is destroyed
+			}
+
+			// Destroy the entity
+			ECS::Entity(testParticleEntityID_).destroy(entityManager);
+			particleTestSpawned_ = false;
+			testParticleEntityID_ = 0;
+			std::cout << "Test particle entity deleted\n";
+		}
+	}
 }
