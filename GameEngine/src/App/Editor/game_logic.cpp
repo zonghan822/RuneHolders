@@ -2340,7 +2340,8 @@ void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSCompone
 	ruptureMark.add<ECSComponents::TransformComponent>(entityManager);
 	ruptureMark.add<ECSComponents::DrawInfoComponent>(entityManager);
 	ruptureMark.add<ECSComponents::AnimationControllerComponent>(entityManager);
-	ruptureMark.add<ECSComponents::RuptureMarkComponent>(entityManager, ECSComponents::RuptureMarkComponent(spellType, 20.0f, 200.0f));
+	ruptureMark.add<ECSComponents::RuptureMarkComponent>(entityManager, ECSComponents::RuptureMarkComponent(spellType, 20.0f, 180.0f));
+
 
 	auto& transform = ruptureMark.get<ECSComponents::TransformComponent>(entityManager);
 	transform.pos = pos;
