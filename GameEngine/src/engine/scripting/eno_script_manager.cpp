@@ -168,9 +168,12 @@ namespace Script
 		// with the class name
 		file << prepareScript(name);
 
+		// Very very important....waste 2 hours fixing this
+		file.close();
+
 		// Create and return the unique EnoScript
 		std::wstring wname{ name.begin(), name.end() };
-		auto script = std::make_unique<EnoScript>(coreHost_, wname, absPath.wstring());
+		auto script = std::make_unique<EnoScript>(coreHost_, wname, absPath.make_preferred().wstring());
 
 		return script;
 	}
@@ -193,7 +196,7 @@ namespace Script
 		std::wcout << "name: " << wname << std::endl <<
 			"path: " << absPath.wstring() << std::endl;
 
-		auto script = std::make_unique<EnoScript>(coreHost_, wname, absPath.wstring());
+		auto script = std::make_unique<EnoScript>(coreHost_, wname, absPath.make_preferred().wstring());
 		
 		openScript(absPath.string());
 

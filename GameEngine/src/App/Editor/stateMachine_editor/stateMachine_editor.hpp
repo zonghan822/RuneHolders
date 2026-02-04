@@ -45,6 +45,7 @@ namespace Editor {
         char newScriptName_[64] = "";
         std::string warningBuf_ = "";
         bool showScriptDialog_ = false;
+        bool showAttachDialog = false;
 
         // Render script attachment UI
         void renderScriptSection(Editor::Node* node) {
@@ -91,6 +92,8 @@ namespace Editor {
             if (showScriptDialog_) {
                 renderScriptCreationDialog(node);
             }
+
+            
         }
 
         // Render list of states
