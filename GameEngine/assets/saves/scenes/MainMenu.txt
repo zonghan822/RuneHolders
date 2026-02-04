@@ -232,10 +232,10 @@
 				"Current Animation": <char64> {  }
 			}
 		}
-		"Script": { C:/SIT/Y2T1 FALL 2025/GAM/csd2401f25_team_runeholders/GameEngine/scripts/GameScripts/user_scripts/ButtonScript.cs }
+		"Script": { }
 		"Parent": { }
 		"Children": { }
-		"Listeners": { - 57, struct ECSComponents::ButtonComponent, onClick ` }
+		"Listeners": { }
 		"Enabled": { true }
 	}
 
