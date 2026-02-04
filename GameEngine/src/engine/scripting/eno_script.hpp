@@ -24,6 +24,12 @@
 
 namespace Script
 {
+	struct ScriptEvent {
+		uint32_t entityID;
+		const char* methodName;
+
+	};
+
 	class EnoScript
 	{
 	public:

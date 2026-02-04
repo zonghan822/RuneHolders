@@ -32,6 +32,7 @@
 #include "../ai/ai_manager.hpp"
 #include "../physics/physics_system.hpp"
 #include "../tilemap/tilemap.hpp"
+#include "../state_machine/state_machine_system.hpp"
 
 
 // stds
@@ -157,7 +158,7 @@ namespace Engine
 		* \brief		Gets the AI Manager for AI operations (State Manager)
 		* \return		Reference to the AIManager instance
 		*//*========================================================================================*/
-		AI::AIManager& getAIManager() { return *aiMng_; }
+		FSM::StateMachineSystem& getStateMachineSys() { return *stateMachineSys_; }
 
 		/*============================================================================================
 		* \brief		Gets the time elapsed since the last frame
@@ -231,7 +232,7 @@ namespace Engine
 		Input::EnoInputManager inputMng_{ bus_ };
 		Graphics::EnoGraphicsManager graphicsMng_{ bus_ };
 		Audio::EnoAudioManager audioMng_{ bus_ };
-		std::unique_ptr<AI::AIManager> aiMng_;
+		std::unique_ptr<FSM::StateMachineSystem> stateMachineSys_;
 		std::unique_ptr<Physics::PhysicsSystem> physicsSys_;
 		std::unique_ptr<Collision::CollisionSystem> collisionSys_;
 

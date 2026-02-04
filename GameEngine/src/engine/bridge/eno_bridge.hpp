@@ -21,6 +21,9 @@ namespace Bridge {
         ENGINE_API bool __stdcall IsKeyHeld(int key);
         ENGINE_API bool __stdcall IsKeyReleased(int key);
         ENGINE_API int  __stdcall ModsApplied();
+
+        // ============= State Change ==============
+        ENGINE_API void ChangeState(const wchar_t* stateName, uint32_t entityID);
     }
 }
 

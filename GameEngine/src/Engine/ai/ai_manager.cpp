@@ -1,9 +1,11 @@
 #include "ai_manager.hpp"
+#include "ai_events.hpp"
+#include "../component/components/state_machine_component.hpp"
 
 namespace AI {
 
-    AIManager::AIManager(Event::EnoEventBus& bus, PathfindingSystem& pathfinder, ECS::EntityManager& entMng, Animation::AnimationControllerRegistry& animRegistry)
-        : bus_(bus), pathfinder_(pathfinder), entMng_{entMng}, animRegistry_(animRegistry)
+    AIManager::AIManager(Event::EnoEventBus& bus, PathfindingSystem& pathfinder, ECS::EntityManager& entMng)
+        : bus_(bus), pathfinder_(pathfinder), entMng_{entMng}
     { 
         // Auto-register when AIComponent added
         bus_.subscribe<ECS::ComponentAdded>(
@@ -45,96 +47,16 @@ namespace AI {
                 }
             }
         );
-
-        bus_.subscribe<Physics::CollideEvent>(
-            [&](const Physics::CollideEvent& ev) {
-                if (!handleCollisionForAI(ev.entityA_ID, ev.entityB_ID))
-                    handleCollisionForAI(ev.entityB_ID, ev.entityA_ID);
-            }
-        );
-    }
-
-    void AIManager::update(float dt) {
-        // Iterate every entity with AIComponent
-        auto entities = entMng_.findEntity<ECSComponents::AIComponent>();
-
-        for (auto& entity : entities) {
-            auto& ai = entity.get<ECSComponents::AIComponent>(entMng_);
-            auto& machine = getStateMachine(entity);
-
-            if (std::strcmp(ai.nextState, ai.currentState) != 0) {
-                strcpy(ai.currentState, ai.nextState);
-                machine.changeState(ai.nextState, entity, entMng_);
-
-                // Automatically switch animation when AI state changes
-                if (entity.has<ECSComponents::AnimationControllerComponent>(entMng_)) {
-                    auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entMng_);
-                    Animation::AnimationController* ctrl = animRegistry_.get(animComp.controllerID);
-
-                    if (ctrl) {
-                        // Map AI state names to animation names
-                        // This allows editor to use intuitive names like "Walk" while engine uses "Chase"
-                        std::string animationName = ai.currentState;
-                        if (strcmp(ai.currentState, "Chase") == 0) {
-                            animationName = "Walk";  // Chase state uses Walk animation
-                        }
-                        else if (strcmp(ai.currentState, "Windup") == 0) {
-                            animationName = "Attack";  // Windup state uses Attack animation
-                        }
-                        // Others map 1:1: Idle->Idle, Attack->Attack, Hurt->Hurt, Death->Death
-
-                        // Try to set the animation matching the mapped name
-                        if (ctrl->animations_.count(animationName)) {
-                            ctrl->setAnimation(animationName);
-
-                            // Also update the entity's texture to match the animation
-                            if (entity.has<ECSComponents::DrawInfoComponent>(entMng_)) {
-                                auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entMng_);
-                                auto tex = ctrl->getCurrentTexture();
-                                if (tex) {
-                                    drawComp.texture = tex;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            machine.update(entity, entMng_, dt);
-        }
     }
 
     void AIManager::registerEntity(uint32_t id) {
-
-        // Create StateMachine if not exists
-        if (!stateMachines_.contains(id)) {
-            auto sm = std::make_unique<StateMachine>();
-
-            sm->addState("Idle", std::make_unique<IdleState>());
-            sm->addState("Chase", std::make_unique<ChaseState>());
-            sm->addState("Windup", std::make_unique<WindupState>());
-            sm->addState("Attack", std::make_unique<AttackState>());
-            sm->addState("Hurt", std::make_unique<HurtState>());
-            sm->addState("Death", std::make_unique<DeathState>());
-
-            stateMachines_[id] = std::move(sm);
-
-            ECS::Entity aiEntity(id);
-            auto& ai = aiEntity.get<ECSComponents::AIComponent>(entMng_);
-            strcpy(ai.nextState, "Idle");
-        }
-        
         // Create PathAgent if not exists
         if (!pathAgents_.contains(id))
             pathAgents_[id] = std::make_unique<AIPathAgent>(pathfinder_);
     }
 
     void AIManager::unregisterEntity(uint32_t id) {
-        stateMachines_.erase(id);
         pathAgents_.erase(id);
-    }
-
-    StateMachine& AIManager::getStateMachine(ECS::Entity& entity) {
-        return *stateMachines_.at(entity.id());
     }
 
     AIPathAgent& AIManager::getPathAgent(ECS::Entity& entity) {
@@ -142,38 +64,6 @@ namespace AI {
     }
 
     void AIManager::clearAll() {
-        stateMachines_.clear();
         pathAgents_.clear();
-    }
-
-    bool AIManager::handleCollisionForAI(uint32_t aiEntityID, uint32_t otherID) {
-        // Must have AIComponent
-        ECS::Entity aiEntity(aiEntityID);
-        if (!aiEntity.has<ECSComponents::AIComponent>(entMng_))
-            return false;
-
-        // Check if the other entity is the player
-        ECS::Entity other(otherID);
-        if (!other.has<ECSComponents::PlayerComponent>(entMng_))
-            return false;
-
-        // Get AI component
-        auto& ai = aiEntity.get<ECSComponents::AIComponent>(entMng_);
-
-        // Ignore if already winding or attacking
-        if (strcmp(ai.currentState, "Windup") == 0 ||
-            strcmp(ai.currentState, "Attack") == 0)
-        {
-            return true;
-        }
-
-        // Don't trigger attack if AI is dead
-        if (strcmp(ai.currentState, "Death") == 0)
-            return true;
-
-        // Switch to Windup
-        strcpy(ai.nextState, "Windup");
-
-        return true;
     }
 }

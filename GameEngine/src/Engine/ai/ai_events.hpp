@@ -1,5 +1,5 @@
 #pragma once
-#include "../../math/math.hpp"
+#include "../math/math.hpp"
 #include <cstdint>
 
 namespace AI {
@@ -14,10 +14,5 @@ namespace AI {
         Math::eVec2<float> goal;
         bool allowDiagonal;
         Math::eVec2<float>& next;
-    };
-
-    struct ScriptEvent {
-        uint32_t entityID;
-        const char* methodName;
     };
 }

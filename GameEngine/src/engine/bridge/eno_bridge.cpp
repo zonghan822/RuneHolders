@@ -53,5 +53,19 @@ namespace Bridge
             auto input = gEngine->getInputManager();
             return input.currentMods();
         }
+
+        ENGINE_API void ChangeState(const wchar_t* stateName, uint32_t entityID) 
+        {
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return;
+            }
+
+            std::wstring wState(stateName);
+            std::string state(wState.begin(), wState.end());
+
+            // Request state change through the system
+            gEngine->getStateMachineSys().requestStateChange(entityID, state);
+        }
     }
 }

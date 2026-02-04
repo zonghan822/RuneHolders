@@ -32,7 +32,7 @@ namespace Engine
 		// Systems init
 		inputMng_.initialize();
 		physicsSys_ = std::make_unique<Physics::PhysicsSystem>(bus_);
-		aiMng_ = std::make_unique<AI::AIManager>(bus_, *pathfinder_, entityMng_, animRegistry);
+		stateMachineSys_ = std::make_unique<FSM::StateMachineSystem>();
 		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
 		graphicsMng_.initialize(window_);
 		audioMng_.init();
@@ -61,8 +61,11 @@ namespace Engine
 				physicsSys_->Update(entityMng_, deltaTime);
 			}
 
-			// Update AI State
-			if (isPlaying_) aiMng_->update(deltaTime);
+			// Update all state machines
+			if (isPlaying_) stateMachineSys_->update(editor_->getSceneTree(), entityMng_, deltaTime);
+
+			// Process any state change requests from scripts
+			if (isPlaying_) stateMachineSys_->processStateChanges(editor_->getSceneTree(), entityMng_);
 
 			// Update collision system (collision detection and response)
 			// Only update collision when the game is playing (not paused/stopped)

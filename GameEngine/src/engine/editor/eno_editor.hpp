@@ -436,6 +436,10 @@ namespace Editor
 			return undoManager_;
 		}
 
+		ECS::EntityManager& getEntityManager() {
+			return entMng_;
+		}
+
 	private:
 		// Scenes
 		std::vector<std::unique_ptr<EnoScene>> scenes_;

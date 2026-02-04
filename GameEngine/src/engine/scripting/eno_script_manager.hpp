@@ -51,10 +51,16 @@ namespace Script
 		// Addition to selectScript so that it only loads
 		std::unique_ptr<EnoScript> loadScript(const std::wstring& className);
 
-		// YunQi's desperate attempt to make something work
-		//void beginAllScripts(Editor::EnoSceneTree& tree);
-		//void updateAllScripts(Editor::EnoSceneTree& tree);
+        static std::string getScriptsDirectory();
 
+        // Helper to check if a script has state machine methods
+        static bool hasStateMachineMethods(const std::string& scriptPath);
+
+        // Get all states defined in a script
+		static std::vector<std::string> extractStatesFromScript(const std::string& scriptPath);
+
+        // Validate that a script has all required methods for a state
+		static bool validateStateMethods(const std::string& scriptPath, const std::string& stateName);
 
 	private:
 		Core::EnoCoreHost& coreHost_;

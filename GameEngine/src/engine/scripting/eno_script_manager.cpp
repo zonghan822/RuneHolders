@@ -248,4 +248,86 @@ namespace Script
 	{
 		return (str.find(extension) == std::string::npos) ? str + extension : str;
 	}
+
+	std::string EnoScriptManager::getScriptsDirectory() {
+		return FileSystem::GetScriptsDir().string();
+	}
+
+	// Helper to check if a script has state machine methods
+	bool EnoScriptManager::hasStateMachineMethods(const std::string& scriptPath) {
+		std::ifstream file(scriptPath);
+		if (!file) return false;
+
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		std::string content = buffer.str();
+
+		// Check for pattern: *_enter(), *_update(), *_exit()
+		return (content.find("_enter()") != std::string::npos &&
+			content.find("_update()") != std::string::npos &&
+			content.find("_exit()") != std::string::npos);
+	}
+
+	// Get all states defined in a script
+	std::vector<std::string> EnoScriptManager::extractStatesFromScript(const std::string& scriptPath) {
+		std::vector<std::string> states;
+		std::ifstream file(scriptPath);
+
+		if (!file) return states;
+
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		std::string content = buffer.str();
+
+		// Find all *_enter() methods
+		size_t pos = 0;
+		std::string pattern = "_enter()";
+
+		while ((pos = content.find(pattern, pos)) != std::string::npos) {
+			// Walk backwards to find the method name
+			size_t methodStart = pos;
+			while (methodStart > 0 &&
+				(std::isalnum(content[methodStart - 1]) ||
+					content[methodStart - 1] == '_')) {
+				--methodStart;
+			}
+
+			std::string methodName = content.substr(methodStart, pos - methodStart);
+
+			// Remove the trailing part to get state name
+			if (methodName.length() > 0) {
+				// State name is everything before "_enter"
+				size_t underscorePos = methodName.rfind('_');
+				if (underscorePos != std::string::npos) {
+					std::string stateName = methodName.substr(0, underscorePos);
+					states.push_back(stateName);
+				}
+			}
+
+			pos += pattern.length();
+		}
+
+		return states;
+	}
+
+	// Validate that a script has all required methods for a state
+	bool EnoScriptManager::validateStateMethods(const std::string& scriptPath,
+		const std::string& stateName) {
+		std::ifstream file(scriptPath);
+		if (!file) return false;
+
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		std::string content = buffer.str();
+
+		std::string lowerState = stateName;
+		std::transform(lowerState.begin(), lowerState.end(),
+			lowerState.begin(), ::tolower);
+
+		bool hasEnter = content.find(lowerState + "_enter()") != std::string::npos;
+		bool hasUpdate = content.find(lowerState + "_update()") != std::string::npos;
+		bool hasExit = content.find(lowerState + "_exit()") != std::string::npos;
+
+		return hasEnter && hasUpdate && hasExit;
+	}
 }
