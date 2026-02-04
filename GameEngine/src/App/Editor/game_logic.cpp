@@ -11,6 +11,7 @@
 
 #include "game_logic.hpp"
 #include <GLFW/glfw3.h>
+#include <algorithm>
 #include "imGui.hpp"
 #include "math/math.hpp"
 
@@ -2264,18 +2265,26 @@ void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSCompone
 	auto& entityManager = engine_.getEntityManager();
 	auto& resourceLoader = engine_.getResourceLoader();
 
-	// Determine spritesheet based on spell type
+	// Determine spritesheets based on spell type
 	const char* spawnSheetName = "";
+	const char* explosionSheetName = "";
+
 	switch (spellType)
 	{
 	case ECSComponents::SpellType::ICE:
 		spawnSheetName = "RuptureMark-Ice-Spawn-Sheet";
+		windupSheetName = "RuptureMark-Ice-Windup-Sheet";
+		explosionSheetName = "RuptureMark-Ice-Explosion-Sheet";
 		break;
 	case ECSComponents::SpellType::FIRE:
 		spawnSheetName = "RuptureMark-Fire-Spawn-Sheet";
+		windupSheetName = "RuptureMark-Fire-Windup-Sheet";
+		explosionSheetName = "RuptureMark-Fire-Explosion-Sheet";
 		break;
 	case ECSComponents::SpellType::LIGHT:
 		spawnSheetName = "RuptureMark-Light-Spawn-Sheet";
+		windupSheetName = "RuptureMark-Light-Windup-Sheet";
+		explosionSheetName = "RuptureMark-Light-Explosion-Sheet";
 		break;
 	default:
 		return;
@@ -2302,8 +2311,10 @@ void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSCompone
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = texture;
 
-	// Setup spawn animation (1024x128 sheet = 8 frames of 128x128)
+	// Setup all 3 animations
 	auto& animComp = ruptureMark.get<ECSComponents::AnimationControllerComponent>(entityManager);
+
+	// Spawn animation (1024x128 sheet = 8 frames of 128x128)
 	animComp.setAnimationData(
 		"spawn",
 		spawnSheetName,
@@ -2312,6 +2323,27 @@ void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSCompone
 		0.1f,      // frame duration
 		false      // not looping
 	);
+
+	// Windup animation (640x128 sheet = 5 frames of 128x128)
+	animComp.setAnimationData(
+		"windup",
+		windupSheetName,
+		128, 128,  // frame size
+		1, 5,      // 1 row, 5 columns
+		0.1f,      // frame duration
+		false      // not looping
+	);
+
+	// Explosion animation (512x128 sheet = 4 frames of 128x128)
+	animComp.setAnimationData(
+		"explosion",
+		explosionSheetName,
+		128, 128,  // frame size
+		1, 4,      // 1 row, 4 columns
+		0.1f,      // frame duration
+		false      // not looping
+	);
+
 	strcpy_s(animComp.currentAnimationName, "spawn");
 
 	entitiesDirty_ = true;
@@ -2322,6 +2354,8 @@ void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSCompone
 void GameApplication::updateRuptureMarks(float deltaTime)
 {
 	auto& entityManager = engine_.getEntityManager();
+	auto& animRegistry = engine_.getAnimationRegistry();
+	auto& resourceLoader = engine_.getResourceLoader();
 	std::vector<uint32_t> marksToDestroy;
 
 	for (const auto& [id, loc] : entityManager.getMap())
@@ -2357,14 +2391,29 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 			{
 				ECS::Entity enemyEntity(enemyId);
 				if (!enemyEntity.has<ECSComponents::AIComponent>(entityManager) ||
-					!enemyEntity.has<ECSComponents::TransformComponent>(entityManager) ||
-					!enemyEntity.has<ECSComponents::NameComponent>(entityManager))
+					!enemyEntity.has<ECSComponents::TransformComponent>(entityManager))
 					continue;
 
-				auto& enemyName = enemyEntity.get<ECSComponents::NameComponent>(entityManager);
+				// Check if this is the target enemy type by name OR texture path
+				bool isTargetEnemy = false;
 
-				// Check if this is the target enemy type
-				if (strstr(enemyName.name, targetEnemy) == nullptr)
+				// Check entity name
+				if (enemyEntity.has<ECSComponents::NameComponent>(entityManager))
+				{
+					auto& enemyName = enemyEntity.get<ECSComponents::NameComponent>(entityManager);
+					if (strstr(enemyName.name, targetEnemy) != nullptr)
+						isTargetEnemy = true;
+				}
+
+				// Also check texture path (e.g., "Enemy-Slug-Idle-Sheet" contains "Slug")
+				if (!isTargetEnemy && enemyEntity.has<ECSComponents::DrawInfoComponent>(entityManager))
+				{
+					auto& enemyDraw = enemyEntity.get<ECSComponents::DrawInfoComponent>(entityManager);
+					if (strstr(enemyDraw.texturePath, targetEnemy) != nullptr)
+						isTargetEnemy = true;
+				}
+
+				if (!isTargetEnemy)
 					continue;
 
 				auto& enemyTransform = enemyEntity.get<ECSComponents::TransformComponent>(entityManager);
@@ -2372,11 +2421,45 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 
 				if (dist <= mark.detectionRadius)
 				{
-					// Enemy triggered the mark!
+					// Enemy triggered the mark! Switch to windup animation
 					mark.state = ECSComponents::RuptureMarkState::WINDUP;
 					mark.stateTimer = 0.0f;
 					mark.triggeredByEntityID = enemyId;
-					std::cout << "[RuptureMark] Triggered by " << enemyName.name << "! Entering WINDUP" << std::endl;
+
+					// Switch to windup animation
+					if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager) &&
+						entity.has<ECSComponents::DrawInfoComponent>(entityManager))
+					{
+						auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+						auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
+
+						strcpy_s(animComp.currentAnimationName, "windup");
+
+						// Get the windup texture and update draw component
+						for (int i = 0; i < animComp.animationCount; ++i)
+						{
+							if (strcmp(animComp.animations[i].name, "windup") == 0)
+							{
+								auto windupTex = resourceLoader.getTexture(animComp.animations[i].texturePath);
+								if (windupTex)
+								{
+									drawComp.texture = windupTex;
+									strncpy_s(drawComp.texturePath, animComp.animations[i].texturePath, sizeof(drawComp.texturePath) - 1);
+								}
+
+								// Reset the animation controller if exists
+								auto* ctrl = animRegistry.get(animComp.controllerID);
+								if (ctrl)
+								{
+									ctrl->setAnimation("windup");
+								}
+								break;
+							}
+						}
+						entitiesDirty_ = true;
+					}
+
+					std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
 					break;
 				}
 			}
@@ -2389,6 +2472,39 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 			{
 				mark.state = ECSComponents::RuptureMarkState::EXPLODING;
 				mark.stateTimer = 0.0f;
+
+				// Switch to explosion animation
+				if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager) &&
+					entity.has<ECSComponents::DrawInfoComponent>(entityManager))
+				{
+					auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+					auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
+
+					strcpy_s(animComp.currentAnimationName, "explosion");
+
+					// Get the explosion texture and update draw component
+					for (int i = 0; i < animComp.animationCount; ++i)
+					{
+						if (strcmp(animComp.animations[i].name, "explosion") == 0)
+						{
+							auto explosionTex = resourceLoader.getTexture(animComp.animations[i].texturePath);
+							if (explosionTex)
+							{
+								drawComp.texture = explosionTex;
+								strncpy_s(drawComp.texturePath, animComp.animations[i].texturePath, sizeof(drawComp.texturePath) - 1);
+							}
+
+							// Reset the animation controller if exists
+							auto* ctrl = animRegistry.get(animComp.controllerID);
+							if (ctrl)
+							{
+								ctrl->setAnimation("explosion");
+							}
+							break;
+						}
+					}
+					entitiesDirty_ = true;
+				}
 
 				// Deal damage to the triggering enemy
 				if (mark.triggeredByEntityID != UINT32_MAX)

@@ -249,11 +249,12 @@ namespace ECSComponents
         }
 
         // Get the enemy type name this spell can damage
+        // Returns name to match in entity name OR texture path (e.g., "Slug" matches "Enemy-Slug-Idle-Sheet")
         const char* getTargetEnemyName() const
         {
             switch (spellType)
             {
-            case SpellType::ICE:   return "Snail";
+            case SpellType::ICE:   return "Slug";      // Matches "Enemy-Slug-*" textures
             case SpellType::FIRE:  return "CrystalFly";
             case SpellType::LIGHT: return "Bat";
             default:               return "";
