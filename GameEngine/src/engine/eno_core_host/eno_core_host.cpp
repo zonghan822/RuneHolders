@@ -46,6 +46,11 @@ namespace Core
 			if (result2)
 				cnameHandle_ = result2.value();
 		}
+
+		HRSetup();
+		defineSMD();
+		defineBegin();
+		defineUpdate();
 	}
 
 	EnoCoreHost::~EnoCoreHost()
@@ -603,7 +608,9 @@ namespace Core
 	void EnoCoreHost::setMetaData(const std::wstring& org, uint32_t entityID, uint8_t operation)
 	{
 		if (rpm_)
+		{
 			rpm_(org.c_str(), entityID, operation);
+		}
 	}
 
 // Handling state when frame has ended on the engine side

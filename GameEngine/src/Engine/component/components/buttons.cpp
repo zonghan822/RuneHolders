@@ -31,6 +31,37 @@ namespace ECSComponents {
 			// Load scene
 			eng.getEnoEditor().selectScene(targetScene);
 			break;
+		case functionType::toggleVisibility:
+			auto& sceneTree = eng.getEnoEditor().getSceneTree();
+			auto& entMng = eng.getEntityManager();
+			auto allNodes = sceneTree.getAllNodes();
+
+			// Find the target node by matching the name stored in targetObject
+			for (auto* node : allNodes) {
+				std::string nodeName;
+
+				// Get the display name
+				if (node->entity_.has<ECSComponents::NameComponent>(entMng)) {
+					auto& nameComp = node->entity_.get<ECSComponents::NameComponent>(entMng);
+					nodeName = std::string(nameComp.name);
+				}
+				else {
+					// Display "node: " + node ID if no name component
+					nodeName = "node: " + std::to_string(node->sceneObjectID_);
+				}
+
+				// Check if this is the target node
+				if (nodeName == std::string(targetObject)) {
+					// Check if the entity has a VisibilityComponent
+					if (node->entity_.has<ECSComponents::VisibilityComponent>(entMng)) {
+						auto& visComp = node->entity_.get<ECSComponents::VisibilityComponent>(entMng);
+						visComp.visible = !visComp.visible;  // Flip the visibility
+						break;  // Found and toggled, exit loop
+					}
+					break;  // Found the node but no visibility component
+				}
+			}
+			break;
 		}
 		default:
 			break;

@@ -886,6 +886,8 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	// Load performs a "read all file in directory" now
 	if (ImGui::Button("Load Existing Prefab")) {
 		try {
+			// Clear old entries so deleted files don't persist
+			prefabRegistry.clear();  
 			for (auto& entry : std::filesystem::directory_iterator(FileSystem::GetAssetsDir().string() + "/saves/prefabs/")) {
 				if (entry.path().extension() == ".txt") {
 					try {
@@ -2183,10 +2185,153 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	{
 		auto& vi = entity.get<ECSComponents::VisibilityComponent>(entMng);
 
+		ImGui::SeparatorText("Visibility Component");
+
 		// Toggle checkbox for visibility
 		ImGui::Checkbox("Entity Visibility", &vi.visible);
 
+		// Header with +/- buttons to adjust entity's layer
+		ImGui::Text("Z Index Layer");
+		ImGui::SameLine();
+
+		int currentLayer = static_cast<int>(vi.getZIndex());
+
+		// Plus button to increase entity's layer
+		if (currentLayer < ECSComponents::availableLayers - 1)
+		{
+			if (ImGui::Button("+"))
+			{
+				vi.setZIndex(static_cast<uint32_t>(currentLayer + 1));
+				if (g_game) g_game->markEntitiesDirty();
+			}
+		}
+		else
+		{
+			// Disable button if it is at top layer
+			ImGui::BeginDisabled();
+			ImGui::Button("+");
+			ImGui::EndDisabled();
+		}
+
+		ImGui::SameLine();
+
+		// Minus button to decrease entity's layer
+		if (currentLayer > 0)
+		{
+			if (ImGui::Button("-"))
+			{
+				vi.setZIndex(static_cast<uint32_t>(currentLayer - 1));
+				if (g_game) g_game->markEntitiesDirty();
+			}
+		}
+		else
+		{
+			// Disable button if it is at bottom layer
+			ImGui::BeginDisabled();
+			ImGui::Button("-");
+			ImGui::EndDisabled();
+		}
+
+		// Build layer names dynamically based on available layers
+		std::vector<std::string> layerStrings;
+		for (int i = 0; i < ECSComponents::availableLayers; ++i)
+		{
+			std::string label = std::to_string(i);
+			if (i == 0) label += " (Background)";
+			else if (i == 3) label += " (Default)";
+			else if (i == ECSComponents::availableLayers - 1 && i > 3) label += " (Top)";
+			layerStrings.push_back(label);
+		}
+
+		// Convert to const char* array for ImGui
+		std::vector<const char*> layerNames;
+		for (const auto& str : layerStrings)
+			layerNames.push_back(str.c_str());
+
+		// Clamp to valid range for display
+		int displayLayer = currentLayer;
+		if (displayLayer >= ECSComponents::availableLayers) displayLayer = ECSComponents::availableLayers - 1;
+		if (displayLayer < 0) displayLayer = 0;
+
+		// Dropdown for layer selection (## hides the label since we have our own header)
+		ImGui::SetNextItemWidth(-1);  // Full width
+		if (ImGui::Combo("##ZIndexLayer", &displayLayer, layerNames.data(), static_cast<int>(layerNames.size())))
+		{
+			vi.setZIndex(static_cast<uint32_t>(displayLayer));
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		// Check if entity is currently on the top layer (for layer management)
+		int currentTopLayer = ECSComponents::availableLayers - 1;
+		bool isOnTopLayer = (currentLayer == currentTopLayer);
+
+		// Add New Layer button
+		if (ECSComponents::availableLayers < ECSComponents::MAX_LAYERS)
+		{
+			if (ImGui::Button("Add New Layer"))
+			{
+				// If entity is on top layer, move it to the new top
+				if (isOnTopLayer)
+				{
+					vi.setZIndex(static_cast<uint32_t>(ECSComponents::availableLayers));
+					if (g_game) g_game->markEntitiesDirty();
+				}
+				ECSComponents::availableLayers++;
+			}
+		}
+		else
+		{	// Disable if number of layers reached max
+			ImGui::BeginDisabled();
+			ImGui::Button("Add New Layer");
+			ImGui::EndDisabled();
+		}
+
+		ImGui::SameLine();
+
+		// Remove Top Layer button
+		if (ECSComponents::availableLayers > 1)
+		{
+			if (ImGui::Button("Remove Top Layer"))
+			{
+				ECSComponents::availableLayers--;
+				// If entity was on or above the new top layer, clamp it to new top
+				if (currentLayer >= ECSComponents::availableLayers)
+				{
+					vi.setZIndex(static_cast<uint32_t>(ECSComponents::availableLayers - 1));
+					if (g_game) g_game->markEntitiesDirty();
+				}
+			}
+		}
+		else
+		{
+			// Disable if number of layers reached minimum
+			ImGui::BeginDisabled();
+			ImGui::Button("Remove Top Layer");
+			ImGui::EndDisabled();
+		}
+
+		ImGui::SameLine();
+		ImGui::TextDisabled("(%d/%d)", ECSComponents::availableLayers, ECSComponents::MAX_LAYERS);
+
+		// Keyboard shortcuts hint
+		ImGui::TextDisabled("Use '[' and ']' to change layer");
 	}
+	else
+	{
+		// Allow adding button component
+		ImGui::SeparatorText("Visibility Component");
+		ImGui::TextDisabled("No visibility component attached");
+
+		if (ImGui::Button("Add visibility Component"))
+		{
+			ECSComponents::VisibilityComponent vi;
+
+			entity.add<ECSComponents::VisibilityComponent>(entMng, vi);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+	}
+
 	// Check if this is a player entity
 	bool isPlayer = entity.has<ECSComponents::PlayerComponent>(entMng);
 
@@ -2873,11 +3018,44 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::Checkbox("Is Active##button", &button.getActive());
 
 		auto& signals = button.getSignals();
+		auto& signalMap = button.getSignalMap();
+
+		// Initialize signals vector from signals_ map if empty but callbacks exist
+		// This handles persistence when the component is loaded from save
+		if (signals.empty() && !signalMap.empty())
+		{
+			for (const auto& [signalType, signalObj] : signalMap)
+			{
+				// Only add signals that have callbacks registered (persisted signals)
+				if (!signalObj.hasCallbacks())
+					continue;
+
+				ECSComponents::signalType sigType;
+				ECSComponents::functionType funcType = static_cast<ECSComponents::functionType>(button.getSavedFunctionType());
+
+				// Identify signal type
+				if (signalType == "onClick")
+				{
+					sigType = ECSComponents::signalType::onClick;
+				}
+				else if (signalType == "onHover")
+				{
+					sigType = ECSComponents::signalType::onHover;
+				}
+				else if (signalType == "onPressed")
+				{
+					sigType = ECSComponents::signalType::onPress;
+				}
+
+				signals.push_back(std::pair<ECSComponents::signalType, ECSComponents::functionType>(sigType, funcType));
+			}
+		}
+
 		// Track signals to delete
 		int signalToDelete = -1;
-		size_t signalCount = button.signalsSize();
 
-		for (size_t i = 0; i < signalCount; i++) 
+		// Display all signals from the vector
+		for (size_t i = 0; i < signals.size(); i++) 
 		{
 			ImGui::PushID(static_cast<int>(i));  // Unique ID for each signal
 
@@ -2902,13 +3080,16 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 			// Signal type dropdown
 			// List of signal types for combo
-			const char* signalTypes[] = { "Select..", "On Click", "On Hover", "On Press" };
-			int currentSignalType = static_cast<int>(signals[i].first);
+			const char* signalTypes[] = { "Select..", "onClick", "onHover", "onPress" };
 
+			int currentSignalType = static_cast<int>(signals[i].first);
+			std::string selectedSignalType;
+			
 			ImGui::SetNextItemWidth(100);
 			if (ImGui::Combo("##SignalType", &currentSignalType, signalTypes, IM_ARRAYSIZE(signalTypes)))
 			{
 				// Update button signal type
+				//selectedSignalType = currentSignalType;
 				signals[i].first = static_cast<ECSComponents::signalType>(currentSignalType);
 				//std::cout << "[Imgui] signal type:" << signals[i].first << std::endl;
 			}
@@ -2917,7 +3098,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 			// Function type dropdown
 			// List of function types for combo (for now just 1)
-			const char* functionTypes[] = { "Select..", "Load Scene" };
+			const char* functionTypes[] = { "Select..", "Load Scene" , "Show/Hide Obj"};
 			int currentFunctionType = static_cast<int>(signals[i].second);
 
 			ImGui::SetNextItemWidth(120);
@@ -2925,21 +3106,30 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			{
 				// Update button function type
 				signals[i].second = static_cast<ECSComponents::functionType>(currentFunctionType);
+				button.setSavedFunctionType(currentFunctionType);
 				//std::cout << "[Imgui] function type:" << signals[i].second << std::endl;
 			}
 
 			// Input parameter drop down depending on function type
 			ImGui::SetNextItemWidth(100);
+			int selectedIndex = 0;
+			auto& sceneList = engine_.getEnoEditor().getScenes();
+
+			// Placeholder for string data
+			std::vector<std::string> sceneStrings;
+			// Convert to const char* array
+			std::vector<const char*> sceneNames;
+
 			switch (signals[i].second)
 			{
 			case ECSComponents::functionType::loadScene:
 				// Get list of available scenes
-				auto& sceneList = engine_.getEnoEditor().getScenes();
+				//auto& sceneList = engine_.getEnoEditor().getScenes();
 
-				// Placeholder for string data
-				std::vector<std::string> sceneStrings;
-				// Convert to const char* array
-				std::vector<const char*> sceneNames;
+				//// Placeholder for string data
+				//std::vector<std::string> sceneStrings;
+				//// Convert to const char* array
+				//std::vector<const char*> sceneNames;
 				sceneNames.push_back("Select..");
 				for (const auto& scene : sceneList) {
 					//std::cout << "[Imgui] scene name:" << scene->getSceneName() << std::endl;
@@ -2953,7 +3143,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				}
 
 				// Find current selection
-				int selectedIndex = 0;
+				//int selectedIndex = 0;
 				for (size_t idx = 0; idx < sceneNames.size(); idx++) {
 					if (sceneNames[idx] == button.getTargetScene()) {
 						selectedIndex = static_cast<int>(idx);
@@ -2963,12 +3153,79 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 				ImGui::SetNextItemWidth(200);
 				if (ImGui::Combo("##SceneParam", &selectedIndex, sceneNames.data(), static_cast<int>(sceneNames.size()))) {
-					button.setTargetScene(sceneNames[selectedIndex]);
-					// Connect to itself for now
+					if (selectedIndex != 0)
+					{
+						button.setTargetScene(sceneNames[selectedIndex]);
+						// Connect to itself for now
+						switch (signals[i].first)
+						{
+						case ECSComponents::signalType::onClick:
+							selectedSignalType = "onClick";
+						}
+						//std::cout << "Selected signal type" << selectedSignalType;
+						sceneTree.connect<ECSComponents::ButtonComponent>(sceneTree.getNodeByEntityID(entity.id()), sceneTree.getNodeByEntityID(entity.id()), selectedSignalType);
+					}
 				}
 
 				//std::cout << "[Imgui] Scene list size:" << sceneList.size() << std::endl;
 				break;
+			case ECSComponents::functionType::toggleVisibility:
+				// Get list of nodes in scene
+				auto allNodes = sceneTree.getAllNodes();
+
+				// Prepare vectors for ImGui combo
+				std::vector<std::string> nodeStrings;
+				std::vector<const char*> nodeNames;
+				nodeNames.push_back("Select..");
+
+				for (auto* node : allNodes) {
+					std::string displayName;
+
+					// Check if the entity has a NameComponent
+					if (node->entity_.has<ECSComponents::NameComponent>(entMng)) {
+						auto& nameComp = node->entity_.get<ECSComponents::NameComponent>(entMng);
+						displayName = std::string(nameComp.name);
+					}
+					else {
+						// Display "node: " + node ID if no name component
+						displayName = "node: " + std::to_string(node->sceneObjectID_);
+					}
+
+					nodeStrings.push_back(displayName);
+				}
+
+				// Populate the char vector for imgui usage
+				for (const auto& str : nodeStrings) {
+					nodeNames.push_back(str.c_str());
+				}
+
+				// Find current selection
+				//int selectedIndex = 0;
+				std::string currentTarget = button.getTargetObject();
+				for (size_t idx = 0; idx < nodeNames.size(); idx++) {
+					if (nodeNames[idx] == currentTarget) {
+						selectedIndex = static_cast<int>(idx);
+						break;
+					}
+				}
+
+				ImGui::SetNextItemWidth(200);
+				if (ImGui::Combo("##ObjectParam", &selectedIndex, nodeNames.data(), static_cast<int>(nodeNames.size()))) {
+					// Store the selected node name in targetObject (char[64] in ButtonComponent)
+					if (selectedIndex != 0) 
+					{
+						button.setTargetObject(nodeNames[selectedIndex]);
+						// Connect to other node for now
+						switch (signals[i].first)
+						{
+						case ECSComponents::signalType::onClick:
+							selectedSignalType = "onClick";
+						}
+						//std::cout << "Selected signal type" << selectedSignalType;
+						sceneTree.connect<ECSComponents::ButtonComponent>(sceneTree.getNodeByEntityID(entity.id()), allNodes[selectedIndex], selectedSignalType);
+					}
+				}
+
 			}
 
 			// End group
@@ -2991,6 +3248,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		{
 			// Add new empty signal
 			button.addSignal();
+			
 		}
 
 	}
@@ -3011,6 +3269,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				// Make it non-collidable
 				collider.isTrigger = true;
 				entity.add<ECSComponents::CollisionComponent>(entMng, collider);
+			}
+
+			// When adding a new button, attach a script to it
+			Script::EnoScriptManager& scriptMng = engine_.getEnoEditor().getScriptManager();
+			auto script = scriptMng.loadScript(scriptMng.StringToWString("ButtonScript"));
+			std::cout << "[imgui] script path: " << script->path() << std::endl;
+			if (script)
+			{
+				sceneTree.attachScript(sceneTree.getNodeByEntityID(entity.id()), std::move(script));
 			}
 
 			entity.add<ECSComponents::ButtonComponent>(entMng, button);
@@ -4896,6 +5163,33 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 		}
 	}
 
+	// Keyboard shortcuts for layer change ([ and ] keys)
+	if (selectedEntityID != UINT32_MAX) {
+		auto& entityManager = engine_.getEntityManager();
+		for (auto& e : entityManager.findEntity<>()) {
+			if (e.id() == selectedEntityID && e.has<ECSComponents::VisibilityComponent>(entityManager)) {
+				auto& vi = e.get<ECSComponents::VisibilityComponent>(entityManager);
+				int currentLayer = static_cast<int>(vi.getZIndex());
+
+				// '[' key decreases layer
+				if (ImGui::IsKeyPressed(ImGuiKey_LeftBracket)) {
+					if (currentLayer > 0) {
+						vi.setZIndex(static_cast<uint32_t>(currentLayer - 1));
+						if (g_game) g_game->markEntitiesDirty();
+					}
+				}
+				// ']' key increases layer
+				if (ImGui::IsKeyPressed(ImGuiKey_RightBracket)) {
+					if (currentLayer < ECSComponents::availableLayers - 1) {
+						vi.setZIndex(static_cast<uint32_t>(currentLayer + 1));
+						if (g_game) g_game->markEntitiesDirty();
+					}
+				}
+				break;
+			}
+		}
+	}
+
 	ImGui::SameLine();
 	ImGui::Text("|");
 	ImGui::SameLine();
@@ -5231,7 +5525,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 			// --- Handle entity deletion by click ---                                        
 
-			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {                                                                                                     
+			if (g_waitingForEntityDeletion && ImGui::IsItemHovered() && ImGui::IsMouseClicked(0) && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) {                                                                                                     
 
 				Math::eVec2<float> worldPos = Graphics::screenToWorld(
 											{ ImGui::GetMousePos().x, ImGui::GetMousePos().y },

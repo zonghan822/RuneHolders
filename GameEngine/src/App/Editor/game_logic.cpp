@@ -14,7 +14,6 @@
 #include "imGui.hpp"
 #include "math/math.hpp"
 
-
 void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
 	engine_.setup();
@@ -836,13 +835,18 @@ void GameApplication::updateGameLogic() {
 			}
 		}
 
-		// Draw all entities (with camera offset - convert world space to screen space)
-		for (ECS::Entity& entity : cachedDrawableEntities_) {
-			try {
-				if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
-					if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
-						continue; // Skip player, drawn separately
-					}
+		// Collect and sort cached entities by layer
+		ECSComponents::collectObjectsByLayer(engine_, cachedDrawableEntities_);
+
+		// Draw all entities by layer order (lowest z_index first = background)
+		for (auto& [layer, entities] : ECSComponents::sortedObjectLayers) {
+			for (ECS::Entity* entityPtr : entities) {
+				ECS::Entity& entity = *entityPtr;
+				try {
+					if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+						if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
+							continue; // Skip player, drawn separately
+						}
 
 					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
@@ -961,10 +965,11 @@ void GameApplication::updateGameLogic() {
 						//}
 					}
 				}
-			}
-			catch (...) {
-				entitiesDirty_ = true;
-				continue;
+				}
+				catch (...) {
+					entitiesDirty_ = true;
+					continue;
+				}
 			}
 		}
 
@@ -1394,7 +1399,6 @@ void GameApplication::updateEntities() {
 				auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
 				auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
 				auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
-
 				if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
 				{
 					// Get mouse to screen pos
@@ -1408,18 +1412,30 @@ void GameApplication::updateEntities() {
 						getEditorCameraX(),
 						getEditorCameraY());
 
+					std::cout << "is button active " << b.getActive() << std::endl;
+
+					// Game logic calls the function, the function does the check
 					if (b.onClick(mousePos, t, d, c))
 					{
 
-						std::cout << "CLICK!" << std::endl;
-						b.executeSignal(ECSComponents::signalType::onClick, engine_);
+						//std::cout << "CLICK!" << std::endl;
+						//b.executeSignal(ECSComponents::signalType::onClick, engine_);
+						// Emit signal
+						/*auto signalIt = b.getSignalMap().find("started");
+						if (signalIt != b.getSignalMap().end())
+						{
+							signalIt->second.emit();
+						}*/
+						auto signalIt = b.signals_.find("onClick");
+						if (signalIt != b.signals_.end())
+						{
+							signalIt->second.emit();
+						}
 					}
+					//b.onClick(mousePos, t, d, c);
 					
 				}
 			}
-
-
-
 			break;
 
 		}
@@ -1556,12 +1572,17 @@ void GameApplication::drawShapes() {
 	for (ECS::Entity& entity : cachedDrawableEntities_) {
 		// Skip if entity was destroyed
 		try {
+			
 			if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
 				// Skip rendering for player entities (they're drawn separately with sprite/animation)
 				if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
 					continue;
 				}
-
+				if (entity.has<ECSComponents::VisibilityComponent>(entityManager))
+				{
+					if (!entity.get<ECSComponents::VisibilityComponent>(entityManager).visible)
+						continue;
+				}
 				// Get position from TransformComponent (spatial data)
 				// Get rendering info from DrawInfoComponent (size, color, etc.)
 				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
@@ -1666,7 +1687,8 @@ void GameApplication::drawShapes() {
 				//	auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
 				//	graphics.drawText(timesFont_, b.getName(), transform.pos, 0.5f, Color::Red);
 				//}
-
+				// Check if entity has visibility component
+				
 			}
 		}
 		catch (...) {
