@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <array>
 
 // Forward declarations
 namespace Engine
@@ -57,16 +58,16 @@ namespace ECSComponents
 		bool visible = true;
 
 		// Signals
-		std::unordered_map<std::string, Events::EnoSignal> signals_; 
+		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
 		// For serialization purposes
 		// Generalized way of using reflection to access and iterate
 		// over fields!
-		// 
+		//
 		// The idea is to (in a function call) create a lambda that will be a "visitor",
 		// and extract all information as parameters of that lambda. Each call over a
 		// field of the component is used to extract metadata on 1 field [name, value, type]
-		// 
+		//
 		// Source: https://stackoverflow.com/questions/41453/how-can-i-add-reflection-to-a-c-application
 		// Additional learning: https://refactoring.guru/design-patterns/visitor
 		template <typename Visitor>
@@ -133,4 +134,34 @@ namespace ECSComponents
 			"Visible: " << std::boolalpha << i.visible;
 		return os;
 	}
+
+	// Global layer visibility state - true = visible, false = hidden
+	inline std::array<bool, MAX_LAYERS> layerVisibility = []() { // Predefine an array of a fixed size: MAX_LAYERS
+		std::array<bool, MAX_LAYERS> arr;
+		arr.fill(true);  // All layers visible by default
+		return arr;
+	}();
+
+	/*============================================================================================
+	 * \brief				Check if a layer is globally visible
+	 * \param[in]			layer - the layer index to check
+	 * \return				true if the layer is visible, false otherwise
+	*//*========================================================================================*/
+	inline bool isLayerVisible(int layer)
+	{
+		return layerVisibility[layer];
+	}
+
+	/*============================================================================================
+	 * \brief				Set the visibility of a layer
+	 * \param[in]			layer - the layer index to modify
+	 * \param[in]			visible - whether the layer should be visible
+	*//*========================================================================================*/
+	inline void setLayerVisible(int layer, bool visible)
+	{
+		if (layer >= 0 && layer < MAX_LAYERS) {
+			layerVisibility[layer] = visible;
+		}
+	}
+
 }

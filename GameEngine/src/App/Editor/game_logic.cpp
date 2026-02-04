@@ -1447,28 +1447,32 @@ void GameApplication::updateEntities() {
 						getEditorCameraX(),
 						getEditorCameraY());
 
-					std::cout << "is button active " << b.getActive() << std::endl;
+					//std::cout << "is button active " << b.getActive() << std::endl;
 
-					// Game logic calls the function, the function does the check
-					if (b.onClick(mousePos, t, d, c))
+					// Check if button is active
+					if (b.getActive())
 					{
+						// Check if mouse pos in clickable area
+						if (b.onClick(mousePos, t, d, c))
+						{
 
-						//std::cout << "CLICK!" << std::endl;
-						//b.executeSignal(ECSComponents::signalType::onClick, engine_);
-						// Emit signal
-						/*auto signalIt = b.getSignalMap().find("started");
-						if (signalIt != b.getSignalMap().end())
-						{
-							signalIt->second.emit();
-						}*/
-						auto signalIt = b.signals_.find("onClick");
-						if (signalIt != b.signals_.end())
-						{
-							signalIt->second.emit();
+							//std::cout << "CLICK!" << std::endl;
+							//b.executeSignal(ECSComponents::signalType::onClick, engine_);
+							// Emit signal
+							/*auto signalIt = b.getSignalMap().find("started");
+							if (signalIt != b.getSignalMap().end())
+							{
+								signalIt->second.emit();
+							}*/
+
+							// Emit signal
+							auto signalIt = b.signals_.find("onClick");
+							if (signalIt != b.signals_.end())
+							{
+								signalIt->second.emit();
+							}
 						}
 					}
-					//b.onClick(mousePos, t, d, c);
-					
 				}
 			}
 			break;

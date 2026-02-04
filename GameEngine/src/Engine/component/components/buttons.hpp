@@ -232,13 +232,9 @@ namespace ECSComponents {
 					rotMousePos.y >= -halfH && rotMousePos.y <= halfH)
 				{
 					// Point is inside
-					// The button is clicked, emit a singal
+					// The button is clicked
 					std::cout << "[Button] CLICK!" << std::endl;
-					/*auto signalIt = signals_.find("onClick");
-					if (signalIt != signals_.end())
-					{
-						signalIt->second.emit();
-					}*/
+
 					return true;
 				}
 				else
@@ -254,13 +250,8 @@ namespace ECSComponents {
 					mousePos.y >= (t.pos.y - (d.height * 0.5f)) &&	// Upper limit
 					mousePos.y <= (t.pos.y + (d.height * 0.5f)))	// Lower limit
 				{
-					// The button is clicked, emit a singal
+					// The button is clicked
 					std::cout << "[Button] CLICK!" << std::endl;
-					/*auto signalIt = signals_.find("onClick");
-					if (signalIt != signals_.end())
-					{
-						signalIt->second.emit();
-					}*/
 					return true;
 
 				}

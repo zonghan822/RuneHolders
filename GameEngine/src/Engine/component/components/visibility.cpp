@@ -19,7 +19,12 @@ namespace ECSComponents {
 			// Skip invisible entities
 			if (!vis.visible) return;
 
+			// Get the layer of the current object
 			int zIndex = static_cast<int>(vis.z_index);
+
+			// Skip if this layer is globally disabled
+			if (!isLayerVisible(zIndex)) return;
+
 			layers[zIndex].push_back(&node->entity_);
 		}
 
@@ -45,12 +50,20 @@ namespace ECSComponents {
 				// Skip invisible entities
 				if (!vis.visible) continue;
 
+				// Get the layer of the current object
 				int zIndex = static_cast<int>(vis.z_index);
+
+				// Skip if this layer is globally disabled
+				if (!isLayerVisible(zIndex)) continue;
+
 				sortedObjectLayers[zIndex].push_back(&entity);
 			}
 			else {
 				// Entities without VisibilityComponent go to default layer 3
-				sortedObjectLayers[3].push_back(&entity);
+				// Only add if default layer is visible
+				if (isLayerVisible(3)) {
+					sortedObjectLayers[3].push_back(&entity);
+				}
 			}
 		}
 	}
