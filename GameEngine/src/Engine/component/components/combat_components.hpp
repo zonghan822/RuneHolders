@@ -222,7 +222,7 @@ namespace ECSComponents
             strcpy_s(damageType, "physical");
         }
 
-        DamageComponent(float damage, RuneColor color, bool destoryOnHit = false)
+        DamageComponent(float damage, RuneColor color, bool destroyOnHit = false)
             : damageAmount(damage)
             , damageMultiplier(1.0f)
             , destroyOnHit(destroyOnHit)
