@@ -1202,7 +1202,7 @@ void GameApplication::updateEntities() {
 						// Controller doesn't exist (registry was cleared), create new one
 						animComp.controllerID = engine_.getAnimationRegistry().createController();
 						ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-						std::cout << "[GameLogic] Created new controller ID: " << animComp.controllerID << std::endl;
+						//std::cout << "[GameLogic] Created new controller ID: " << animComp.controllerID << std::endl;
 					} else {
 						// Controller exists, clear it before restoring animations
 						ctrl->animations_.clear();
@@ -1210,7 +1210,7 @@ void GameApplication::updateEntities() {
 						ctrl->currentAnimation_ = nullptr;
 						ctrl->currentTexture_ = nullptr;
 						ctrl->currentAnimationName_.clear();
-						std::cout << "[GameLogic] Reusing existing controller ID: " << animComp.controllerID << std::endl;
+						//std::cout << "[GameLogic] Reusing existing controller ID: " << animComp.controllerID << std::endl;
 					}
 
 					if (ctrl) {
@@ -1248,9 +1248,6 @@ void GameApplication::updateEntities() {
 								anim.setLooping(animData.looping);
 								ctrl->addAnimation(animData.name, anim, texture);
 
-								std::cout << "[GameLogic] Restored animation '" << animData.name
-									<< "' (FrameW: " << animData.frameWidth << ", FrameH: " << animData.frameHeight
-									<< ", Rows: " << animData.rows << ", Cols: " << animData.cols << ")" << std::endl;
 							}
 						}
 
@@ -2005,15 +2002,15 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 						switch (spellType) {
 							case ECSComponents::SpellType::ICE:
 								std::cout << "ICE (3-2-5-4)" << std::endl;
-								// TODO: spawnRuptureMark(runeState.circleCenter, spellType);
+								spawnRuptureMark(runeState.circleCenter, spellType);
 								break;
 							case ECSComponents::SpellType::FIRE:
 								std::cout << "FIRE (6-1-5-2)" << std::endl;
-								// TODO: spawnRuptureMark(runeState.circleCenter, spellType);
+								spawnRuptureMark(runeState.circleCenter, spellType);
 								break;
 							case ECSComponents::SpellType::LIGHT:
 								std::cout << "LIGHT (4-1-3-6)" << std::endl;
-								// TODO: spawnRuptureMark(runeState.circleCenter, spellType);
+								spawnRuptureMark(runeState.circleCenter, spellType);
 								break;
 							default:
 								break;
