@@ -62,11 +62,10 @@ namespace ECS
 	class EntityManager
 	{
 	private:
+		Memory::EnoECSArena& arena_;
+
 		ArchetypeManager archetypeMng_;
-
 		std::unordered_map<uint32_t, EntityLoc> entityMap_;
-
-		Memory::EnoECSArena arena_;
 
 		std::vector<uint32_t> destroyedEntityIDs_;									// For the purpose of reusing ids
 
@@ -74,8 +73,9 @@ namespace ECS
 
 	public:
 
-		EntityManager(Event::EnoEventBus& bus)
+		EntityManager(Memory::EnoECSArena& arena, Event::EnoEventBus& bus)
 			: 
+			arena_{ arena },
 			bus_{ bus }
 		{}
 
@@ -546,7 +546,6 @@ namespace ECS
 			if (openChunkIndex == -1)
 			{
 				archetype->createChunk(
-					arena_,
 					archetype->entityCount_,
 					archetype->types_,
 					archetype->typeSizes_);
@@ -576,47 +575,40 @@ namespace ECS
 		*//*========================================================================================*/
 		void cleanup(Archetype* archetype, const size_t& srcChnkIdx)
 		{
-#ifdef ARENA_ENABLED
-
-			// Chunk cleanup
-			// Destroy all component for the empty chunk (invokes component destructors)
 			Chunk* chunk = archetype->chunks_[srcChnkIdx];
 			if (chunk->current_ == 0)
 			{
+				// Destroy components if needed (defensive, might be redundant)
 				chunk->destroyComponents(archetype->types_);
 
-				// Swap last chunk into this slot
-				size_t removedIdx = srcChnkIdx;
+				// Remove chunk from archetype
 				size_t lastIdx = archetype->chunks_.size() - 1;
-
-				// Remap entity chunk indices
-				if (removedIdx != lastIdx)
+				if (srcChnkIdx != lastIdx)
 				{
 					Chunk* lastChunk = archetype->chunks_[lastIdx];
-					archetype->chunks_[removedIdx] = lastChunk;
+					archetype->chunks_[srcChnkIdx] = lastChunk;
 
 					for (size_t i = 0; i < lastChunk->current_; ++i)
 					{
 						uint32_t entID = lastChunk->entities_[i];
-						entityMap_[entID].chunkIndex = removedIdx;
+						entityMap_[entID].chunkIndex = srcChnkIdx;
 						entityMap_[entID].entityIndexInChunk = i;
 					}
 				}
-
-				// Remove last chunk
 				archetype->chunks_.pop_back();
 
-				// Destroy archetype if no entities embody this archetype
-				if (archetype->chunks_.empty())
-					archetypeMng_.cleanup(archetype);
-			}
-			else
-			{
-				// The chunk still has entities, do not remove it
-				// Optional: assert to catch logic errors
-				assert(chunk->current_ > 0 && "Cleanup called on non-empty chunk, chunk will not be destroyed.");
-			}
+				// Free memory for the chunk
+#ifdef ARENA_ENABLED
+				chunk->~Chunk();
+				archetype->chunkSlab_.free(chunk);
+#else
+				delete chunk;
 #endif
+
+				// Clean archetype if empty
+				if (archetype->chunks_.empty())
+					archetypeMng_.cleanup(archetype); // still just removes from map
+			}
 		}
 
 		/*============================================================================================

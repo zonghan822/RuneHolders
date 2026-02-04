@@ -461,7 +461,7 @@ namespace ECS
 				uint32_t entityCount{};
 				in.read(reinterpret_cast<char*>(&entityCount), sizeof(entityCount));
 
-				Chunk* chunk = archetype->createChunk(arena_, entityCount, types, sizes);
+				Chunk* chunk = archetype->createChunk(entityCount, types, sizes);
 				size_t chunkIndex = archetype->chunks_.size() - 1;
 
 				// Read entity IDs

@@ -14,35 +14,20 @@
 #include "chunk.hpp"
 #include "../component/component_registry.hpp"
 
+// Arena | Slab
+#include "../memory/eno_ecs_arena.hpp"
+#include "../memory/eno_slab_allocator.hpp"
+
 // stds
 #include <unordered_map>
 
 
 namespace ECS
 {
-	//// Chunk destructor implementation (defined here to avoid circular dependency)
-	//inline Chunk::~Chunk()
-	//{
-	//	// Call destructors for all active entities' components
-	//	// This is critical for components with resources like shared_ptr
-	//	for (size_t entityIdx = 0; entityIdx < current; ++entityIdx)
-	//	{
-	//		for (size_t compIdx = 0; compIdx < componentTypes.size(); ++compIdx)
-	//		{
-	//			char* componentPtr = search(compIdx, entityIdx);
-
-	//			// Call the appropriate destructor based on component type
-	//			ECSComponents::EnoComponentRegistry::DeduceCompType(componentTypes[compIdx],
-	//				[componentPtr]<typename T>() {
-	//					reinterpret_cast<T*>(componentPtr)->~T();
-	//				});
-	//		}
-	//	}
-	//}
-
-	/*============================================================================================
-		* \brief       Defined by a collection of components created at any point in time
-	*//*========================================================================================*/
+	///
+	/// Defined by a collection of components
+	/// created at any point in time
+	///
 	struct Archetype
 	{
 		std::vector<Chunk*> chunks_;									// Chunks storing the component data for the archetype
@@ -50,73 +35,103 @@ namespace ECS
 		std::vector<size_t> typeSizes_;									// Size of each component stored
 		std::unordered_map<uint32_t, size_t> typeIdxMap_;				// Maps a local ID to each type within the archetype
 
-		const uint32_t entityCount_{ 50 };								// Number of entities stored in a chunk
+#ifdef ARENA_ENABLED
+		Memory::EnoECSArena& arena_;
+		Memory::EnoSlabAllocator chunkSlab_;
+#endif
 
-		/*============================================================================================
-			* \brief			Constructor for an archetype
-			* \param[in]		Component types used to construct the chunk
-			* \param[in]		Component sizes determine the size of the chunk
-		*//*========================================================================================*/
+		const uint32_t entityCount_{ 5 };								// Number of entities stored in a chunk
+
 		Archetype(
 			Memory::EnoECSArena& arena,
-			std::vector<std::type_index> t,
-			std::vector<size_t> sizes)
-			: types_(std::move(t)), typeSizes_(std::move(sizes))
+			std::vector<std::type_index> types,
+			std::vector<size_t> sizes,
+			size_t initialChunkCount = 4)
+			:
+			types_(std::move(types)),
+			typeSizes_(std::move(sizes)),
+			arena_{ arena }
 		{
-			uint32_t localIndex{};
+			uint32_t idx{};
 			for (const auto& type : types_)
 			{
 				uint32_t registryID = ECSComponents::EnoComponentRegistry::ComponentMap()[type].id_;
-				typeIdxMap_[registryID] = localIndex;
-				++localIndex;
+				typeIdxMap_[registryID] = idx;
+				++idx;
 			}
 
-			createChunk(arena, entityCount_, types_, typeSizes_);
+#ifdef ARENA_ENABLED
+			// Allocate mem for chunks
+			size_t slabSize = sizeof(Chunk) * initialChunkCount;
+			void* slabMem = arena.alloc(slabSize, alignof(Chunk));
+
+			// Slab allocator init
+			chunkSlab_.init(slabMem, sizeof(Chunk), initialChunkCount);
+#endif
+
+			// Instantiate a new chunk
+			createChunk(entityCount_, types_, typeSizes_);
 		}
 
-		/*============================================================================================
-			* \brief			Finds the index of a component within an archetype
-			* \return			Component index
-		*//*========================================================================================*/
+		~Archetype()
+		{
+#ifdef ARENA_ENABLED
+			for (auto* chunk : chunks_)
+			{
+				std::cout << "Chunk: " << chunk << ", current_: " << chunk->current_
+					<< ", data_[0]: " << chunk->data_[0] << std::endl;
+
+				// Free memory from the slab and
+				// invoke the destructors of the chunk
+				chunk->~Chunk();
+				chunkSlab_.free(chunk);
+			}
+#else
+			for (auto* chunk : chunks_)
+			{
+				chunk->destroyComponents(types_);
+				delete chunk;
+			}
+#endif
+			chunks_.clear();
+		}
+
 		template <typename Type>
 		size_t findComponentIndex()
 		{
 			auto it = std::find(types_.begin(), types_.end(), std::type_index(typeid(Type)));
-			if (it == types_.end()) 
-			{
-				throw std::runtime_error(
-					std::string(typeid(Type).name()) + " component was not able to be found"
-				);
-			}
-
+			assert(it != types_.end());
 			return std::distance(types_.begin(), it);
 		}
 
-		/*============================================================================================
-			* \brief			Instantiates a new chunk for a particular archetype
-			* \param[in]		Number of entities to store in chunk
-			* \param[in]		Types to be stored
-			* \param[in]		Size of each type to be stored
-		*//*========================================================================================*/
-		Chunk* createChunk(
-			Memory::EnoECSArena& arena,
-			const uint32_t& entityCount,
-			const std::vector<std::type_index>& types,
-			const std::vector<size_t>& typeSizes)
+		// Instantiate a new chunk
+		Chunk* createChunk(uint32_t entCount, const std::vector<std::type_index>& types, const std::vector<size_t>& sizes)
 		{
-			// Construct the chunk in an arena space
-			void* mem = arena.allocate(sizeof(Chunk), alignof(Chunk));
-			Chunk* chunk = new (mem) Chunk(arena, entityCount, types, typeSizes);
+#ifdef ARENA_ENABLED
+			void* mem = chunkSlab_.alloc();
+			if (!mem)
+			{
+				assert(false && "Chunk slab out of memory!");
+				return nullptr;
+			}
 
+			Chunk* chunk = new (mem) Chunk(arena_, entCount, types, sizes);
 			chunks_.push_back(chunk);
-
 			return chunk;
+#endif
+
+			//#ifdef ARENA_ENABLED
+			//			// Construct the chunk in an arena space
+			//			void* mem = arena.alloc(sizeof(Chunk), alignof(Chunk));
+			//			Chunk* chunk = new (mem) Chunk(arena, entityCount, types, typeSizes);
+			//
+			//			chunks_.push_back(chunk);
+			// 
+			// 			return chunk;
+			//#endif
 		}
 	};
 
-	/*============================================================================================
-		* \brief				Custom key for archetype manager
-	*//*========================================================================================*/
 	struct ArchetypeKey
 	{
 		std::vector<std::type_index> types;
@@ -126,9 +141,6 @@ namespace ECS
 		}
 	};
 
-	/*============================================================================================
-		* \brief				Custom hash for archetype manager
-	*//*========================================================================================*/
 	struct ArchetypeKeyHash
 	{
 		std::size_t operator()(const ArchetypeKey& key) const
@@ -143,9 +155,6 @@ namespace ECS
 		}
 	};
 
-	/*============================================================================================
-		* \brief				Maps out all created archetypes
-	*//*========================================================================================*/
 	class ArchetypeManager
 	{
 	public:
@@ -180,23 +189,13 @@ namespace ECS
 			return pArche;
 		}
 
-		/*============================================================================================
-			* \brief			archetypeMap_ getter
-		*//*========================================================================================*/
+		// Get archetype manager map
 		std::unordered_map<ArchetypeKey, std::unique_ptr<Archetype>, ArchetypeKeyHash>& getArchetypes()
 		{
 			return archetypeMap_;
 		}
 
-		/*============================================================================================
-			* \brief			Transfer data between 2 archetypes
-			* \param[in]		Source archetype
-			* \param[in]		Destination archetype
-			* \param[in]		Source entity chunk index
-			* \param[in]		Destination entity chunk index
-			* \param[in]		Source chunk index
-			* \param[in]		Destination chunk index
-		*//*========================================================================================*/
+		// Transfer data between 2 archetypes
 		void transferData(
 			const Archetype& src, const Archetype& dst,						// Archetypes
 			const size_t& srcECIdx, const size_t& dstECIdx,					// Entity index in chunk
@@ -227,26 +226,33 @@ namespace ECS
 
 				std::memcpy(pDst, pSrc, size);
 			}
-		}
 
-		/*============================================================================================
-			* \brief			Deletes an archetype off the archetypeMap_
-		*//*========================================================================================*/
-		void cleanup(Archetype* archetype)
-		{
-			ArchetypeKey key{ archetype->types_ };
-
-			auto it = archetypeMap_.find(key);
-
-			if (it != archetypeMap_.end())
+			// Components in the src which do not 
+			// exist in the dst are to be destroyed
+			// since they cannot be transferred
+			for (size_t i = 0; i < src.types_.size(); i++)
 			{
-				archetypeMap_.erase(it);
+				const auto& type = src.types_[i];
+				uint32_t registryID = ECSComponents::EnoComponentRegistry::ComponentMap()[type].id_;
+
+				// Same as before, check that the comopnent exists in dst
+				if (dst.typeIdxMap_.find(registryID) != dst.typeIdxMap_.end())
+					continue;
+
+				// Retrieve component data
+				size_t size = srcChunk->componentSizes_[i];
+				std::byte* pComp = srcChunk->data_[i] + srcECIdx * size;
+
+				// Invoke the leftover component's destructor
+				ECSComponents::EnoComponentRegistry::DeduceCompType(type, [&]<typename T>()
+				{
+					T* component = reinterpret_cast<T*>(pComp);
+					component->~T();
+				});
 			}
 		}
 
-		/*============================================================================================
-			* \brief			View the archetype map
-		*//*========================================================================================*/
+		// View Archetype map
 		void viewMap()
 		{
 			for (const auto& [key, archPtr] : archetypeMap_)
@@ -259,6 +265,16 @@ namespace ECS
 					std::cout << type.name() << std::endl;
 				}
 			}
+		}
+
+		// Remove an existing archetype
+		void cleanup(Archetype* archetype)
+		{
+			ArchetypeKey key{ archetype->types_ };
+
+			auto it = archetypeMap_.find(key);
+			if (it != archetypeMap_.end())
+				archetypeMap_.erase(it);
 		}
 
 	private:

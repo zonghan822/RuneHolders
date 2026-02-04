@@ -8,12 +8,13 @@
 
 // stds
 #include <vector>
+#include <assert.h>
 
 
 namespace Memory
 {
 	// Used for systems with objects of low lifetimes (e.g. AI)
-	class EnoFrameArena : public EnoMemoryArena
+	class EnoFrameArena : public IAlignedAlloc
 	{
 	private:
 		std::byte* base_{ nullptr };		// Base address of the arena
@@ -49,7 +50,7 @@ namespace Memory
 			offset_ = 0;
 		}
 
-		void* allocate(size_t size, size_t alignment)
+		void* alloc(size_t size, size_t alignment)
 		{
 			assert((alignment & (alignment - 1)) == 0 && "Alignment must be a power of 2");
 
