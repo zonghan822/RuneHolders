@@ -1337,12 +1337,12 @@ void GameApplication::updateEntities() {
 		// Switch animation based on movement
 		if (isMoving) {
 			if (playerAnimController_.getCurrentAnimationName() != "walk") {
-				//playerAnimController_.setAnimation("walk");
+				playerAnimController_.setAnimation("walk");
 			}
 		}
 		else {
 			if (playerAnimController_.getCurrentAnimationName() != "idle") {
-				//playerAnimController_.setAnimation("idle");
+				playerAnimController_.setAnimation("idle");
 			}
 		}
 		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
@@ -2340,7 +2340,7 @@ void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSCompone
 	ruptureMark.add<ECSComponents::TransformComponent>(entityManager);
 	ruptureMark.add<ECSComponents::DrawInfoComponent>(entityManager);
 	ruptureMark.add<ECSComponents::AnimationControllerComponent>(entityManager);
-	ruptureMark.add<ECSComponents::RuptureMarkComponent>(entityManager, ECSComponents::RuptureMarkComponent(spellType, 50.0f, 60.0f));
+	ruptureMark.add<ECSComponents::RuptureMarkComponent>(entityManager, ECSComponents::RuptureMarkComponent(spellType, 20.0f, 200.0f));
 
 	auto& transform = ruptureMark.get<ECSComponents::TransformComponent>(entityManager);
 	transform.pos = pos;
@@ -2399,6 +2399,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 	auto& animRegistry = engine_.getAnimationRegistry();
 	auto& resourceLoader = engine_.getResourceLoader();
 	std::vector<uint32_t> marksToDestroy;
+	std::vector<uint32_t> enemiesToDestroy;
 
 	// Debug: Count how many RuptureMarks exist
 	static float countTimer = 0.0f;
@@ -2615,6 +2616,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 							else
 							{
 								strcpy_s(ai.nextState, "Death");
+								enemiesToDestroy.push_back(mark.triggeredByEntityID);
 							}
 						}
 					}
@@ -2651,6 +2653,14 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 	// Destroy finished marks
 	for (uint32_t id : marksToDestroy)
 	{
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
+
+	// Destroy dead enemies
+	for (uint32_t id : enemiesToDestroy)
+	{
+		std::cout << "[RuptureMark] Destroying dead enemy (ID: " << id << ")" << std::endl;
 		entityManager.destroyEntity(id);
 		entitiesDirty_ = true;
 	}
