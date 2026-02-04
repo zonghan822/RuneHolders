@@ -143,13 +143,13 @@ namespace Eno
             // Creates an instance of the type of field
             var instance = Activator.CreateInstance(type);
 
-            // Iterate over public and non-public fields to reveal
+            // Iterate over public and non-public fields to port
             foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                // Check if field has [Reveal] attribute
-                // Only fields annotated with [Reveal] will be added
-                var reveal = field.GetCustomAttribute<RevealAttribute>();
-                if (reveal == null)
+                // Check if field has [port] attribute
+                // Only fields annotated with [port] will be added
+                var port = field.GetCustomAttribute<PortAttribute>();
+                if (port == null)
                     continue;
 
                 var data = new FieldInfoData
@@ -162,9 +162,9 @@ namespace Eno
                     Type = Marshal.StringToCoTaskMemUni(field.FieldType.Name),
                     Value = Marshal.StringToCoTaskMemUni(field.GetValue(instance)?.ToString() ?? "null"),
                     Origin = Marshal.StringToCoTaskMemUni(field.DeclaringType?.FullName ?? "Unknown"),
-                    Min = reveal.Min,
-                    Max = reveal.Max,
-                    HasRange = reveal.HasRange
+                    Min = port.Min,
+                    Max = port.Max,
+                    HasRange = port.HasRange
                 };
 
                 result.Add(data);

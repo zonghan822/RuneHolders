@@ -245,19 +245,25 @@ namespace ECSComponents
             switch (type)
             {
             case ColliderType::CIRCLE:
-                l("Type", type, "ColliderType::Circle");
+                l("Type", type, "ColliderType");
+                l("Radius", data.circle.radius, "float");
                 break;
 
             case ColliderType::LINE:
-                l("Type", type, "ColliderType::Line");
+                l("Type", type, "ColliderType");
+                l("p1", data.line.p1, "eVec2(float)");
+                l("p2", data.line.p2, "eVec2(float)");
+                l("pNormal", data.line.pNormal, "eVec2(float)");
                 break;
 
             case ColliderType::POINT:
-                l("Type", type, "ColliderType::Point");
+                l("Type", type, "ColliderType");
                 break;
 
             case ColliderType::RECTANGLE:
-                l("Type", type, "ColliderType::Rectangle");
+                l("Type", type, "ColliderType");
+                l("Width", data.rectangle.width, "float");
+                l("Height", data.rectangle.height, "float");
                 break;
 
             default:

@@ -70,7 +70,7 @@ namespace Script
 						if (path.extension() == L".cs")
 						{
 							script = std::make_unique<EnoScript>(coreHost_, fileName, filePath);
-
+							std::cout << "[scriptmng] path : " << script->path() << std::endl;
 							// Cleanup
 							CoTaskMemFree(filePath);
 							CoTaskMemFree(fileName);
@@ -146,6 +146,23 @@ namespace Script
 		std::filesystem::path path = FileSystem::GetScriptsDir();
 		path /= className + L".cs";
 		return std::make_unique<EnoScript>(coreHost_, className, path.wstring());
+	}
+
+	std::wstring EnoScriptManager::StringToWString(const std::string& str)
+	{
+		if (str.empty())
+			return L"";
+
+		// 1. Calculate the required buffer size
+		int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), nullptr, 0);
+
+		// 2. Create the wstring buffer
+		std::wstring wstrTo(size_needed, 0);
+
+		// 3. Perform the conversion
+		MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), &wstrTo[0], size_needed);
+
+		return wstrTo;
 	}
 
 	// Create a CS script in the user_scripts folder
@@ -248,4 +265,6 @@ namespace Script
 	{
 		return (str.find(extension) == std::string::npos) ? str + extension : str;
 	}
+
+	
 }

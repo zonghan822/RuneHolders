@@ -34,17 +34,7 @@ enum Color {
 	Red = 1
 };
 
-//inline std::ostream& operator<<(std::ostream& os, const Color& c)
-//{
-//	switch (c)
-//	{
-//	case Green: return os << "Green";
-//	case Red:	return os << "Red";
-//	default:    return os << static_cast<int>(c);
-//	}
-//}
-
-//supposed to be in edit but i'll put here for now -yunqi
+// Used for deletion of Entities
 enum Filters {
 	Last = 0,
 	Select = 1,
@@ -157,7 +147,7 @@ namespace ECSComponents
 		void reflect(Visitor&& l) const
 		{
 			l("Width", width, "float");
-			l("height", height, "float");
+			l("Height", height, "float");
 			l("Shape", shape, "char32");
 			l("Color", color, "Color(RGBA)");
 

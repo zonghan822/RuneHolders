@@ -53,11 +53,14 @@ namespace Script
 		void writeMethod(std::string&, const std::string&);
 		std::string classToNest(const std::string&);
 
+		//Yun Qi's dummy set of states. Will use to populate and serialise for the IMGUI later on
+		//std::unordered_map<std::string, std::string> dummystates; //first holds state, second holds texture?
+
 	private:
 		Core::EnoCoreHost& coreHost_;
 
 		std::wstring path_;
-		std::unordered_multimap<std::wstring, Field> vars_;		// namespace.class | (varname, value)
+		std::unordered_multimap<std::wstring, Field> vars_;		// namespace.class | (varname, value)  //Yunqi's Note: Store [port]-ed vars here.
 		std::unordered_set<std::wstring> origin_;				// unique namespace.class entries
 
 		// Lambdas for convert raw wchar_t* to native types

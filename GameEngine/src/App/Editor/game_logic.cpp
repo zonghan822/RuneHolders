@@ -14,7 +14,9 @@
 #include <algorithm>
 #include "imGui.hpp"
 #include "math/math.hpp"
-
+#include "particle/particle_presets.hpp"
+#include "particle/particle_component.hpp"
+#include <typeindex>
 
 void GameApplication::initialize() {
 	// Setup engine systems first (this now includes game systems)
@@ -476,6 +478,9 @@ void GameApplication::updateGameLogic() {
 	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 
+	// Test particle system
+	testParticleSystem();
+
 	// Check if we're in play mode
 	bool isPlayMode = (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing ||
 	                   engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
@@ -840,13 +845,18 @@ void GameApplication::updateGameLogic() {
 			}
 		}
 
-		// Draw all entities (with camera offset - convert world space to screen space)
-		for (ECS::Entity& entity : cachedDrawableEntities_) {
-			try {
-				if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
-					if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
-						continue; // Skip player, drawn separately
-					}
+		// Collect and sort cached entities by layer
+		ECSComponents::collectObjectsByLayer(engine_, cachedDrawableEntities_);
+
+		// Draw all entities by layer order (lowest z_index first = background)
+		for (auto& [layer, entities] : ECSComponents::sortedObjectLayers) {
+			for (ECS::Entity* entityPtr : entities) {
+				ECS::Entity& entity = *entityPtr;
+				try {
+					if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+						if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
+							continue; // Skip player, drawn separately
+						}
 
 					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
@@ -983,10 +993,11 @@ void GameApplication::updateGameLogic() {
 						//}
 					}
 				}
-			}
-			catch (...) {
-				entitiesDirty_ = true;
-				continue;
+				}
+				catch (...) {
+					entitiesDirty_ = true;
+					continue;
+				}
 			}
 		}
 
@@ -1042,6 +1053,13 @@ void GameApplication::updateGameLogic() {
 				}
 			}
 			catch (...) {}
+		}
+
+		// Render particles (with camera offset)
+		auto* particleSystem = engine_.getParticleSystem();
+		if (particleSystem) {
+			Math::eVec2<float> cameraOffset = { editorCameraX_, editorCameraY_ };
+			particleSystem->Render(graphics_, engine_.getEntityManager(), cameraOffset);
 		}
 
 		// Draw colliders in editor view (with camera offset)
@@ -1316,12 +1334,12 @@ void GameApplication::updateEntities() {
 		// Switch animation based on movement
 		if (isMoving) {
 			if (playerAnimController_.getCurrentAnimationName() != "walk") {
-				playerAnimController_.setAnimation("walk");
+				//playerAnimController_.setAnimation("walk");
 			}
 		}
 		else {
 			if (playerAnimController_.getCurrentAnimationName() != "idle") {
-				playerAnimController_.setAnimation("idle");
+				//playerAnimController_.setAnimation("idle");
 			}
 		}
 		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
@@ -1359,7 +1377,8 @@ void GameApplication::updateEntities() {
 					{
 						for (const auto& org : node->script_->origin())
 						{
-							std::wcout << "origin of call: " << org << std::endl;
+							std::wcout << "origin of call: " << org << " for entity " << node->entity_.id() << std::endl;
+							//coreHost.begin(org, node->entity_.id());  
 							coreHost.begin(org, node->sceneObjectID_);
 						}
 					}
@@ -1396,6 +1415,7 @@ void GameApplication::updateEntities() {
 				{
 					for (const auto& org : node->script_->origin())
 					{
+						//coreHost.update(org, node->entity_.id());  
 						coreHost.update(org, node->sceneObjectID_);
 					}
 				}
@@ -1411,7 +1431,6 @@ void GameApplication::updateEntities() {
 				auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
 				auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
 				auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
-
 				if (inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
 				{
 					// Get mouse to screen pos
@@ -1425,18 +1444,30 @@ void GameApplication::updateEntities() {
 						getEditorCameraX(),
 						getEditorCameraY());
 
+					std::cout << "is button active " << b.getActive() << std::endl;
+
+					// Game logic calls the function, the function does the check
 					if (b.onClick(mousePos, t, d, c))
 					{
 
-						std::cout << "CLICK!" << std::endl;
-						b.executeSignal(ECSComponents::signalType::onClick, engine_);
+						//std::cout << "CLICK!" << std::endl;
+						//b.executeSignal(ECSComponents::signalType::onClick, engine_);
+						// Emit signal
+						/*auto signalIt = b.getSignalMap().find("started");
+						if (signalIt != b.getSignalMap().end())
+						{
+							signalIt->second.emit();
+						}*/
+						auto signalIt = b.signals_.find("onClick");
+						if (signalIt != b.signals_.end())
+						{
+							signalIt->second.emit();
+						}
 					}
+					//b.onClick(mousePos, t, d, c);
 					
 				}
 			}
-
-
-
 			break;
 
 		}
@@ -1573,12 +1604,17 @@ void GameApplication::drawShapes() {
 	for (ECS::Entity& entity : cachedDrawableEntities_) {
 		// Skip if entity was destroyed
 		try {
+			
 			if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
 				// Skip rendering for player entities (they're drawn separately with sprite/animation)
 				if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
 					continue;
 				}
-
+				if (entity.has<ECSComponents::VisibilityComponent>(entityManager))
+				{
+					if (!entity.get<ECSComponents::VisibilityComponent>(entityManager).visible)
+						continue;
+				}
 				// Get position from TransformComponent (spatial data)
 				// Get rendering info from DrawInfoComponent (size, color, etc.)
 				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
@@ -1683,7 +1719,8 @@ void GameApplication::drawShapes() {
 				//	auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
 				//	graphics.drawText(timesFont_, b.getName(), transform.pos, 0.5f, Color::Red);
 				//}
-
+				// Check if entity has visibility component
+				
 			}
 		}
 		catch (...) {
@@ -1843,6 +1880,7 @@ void GameApplication::updateRuneSystem()
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 	std::vector<uint32_t> fireballsToDestroy;
 
+	//Rework: Entity loop might need rework. Also destroying fireball is in update_runesystem.
 	for (const auto& [id, loc] : entityManager.getMap()) {
 		ECS::Entity entity(id);
 		if (entity.has<ECSComponents::FireballComponent>(entityManager)) {
@@ -3618,4 +3656,83 @@ void GameApplication::handleMainMenuButton() {
 	setupMainMenuButtons();
 
 	std::cout << "[PauseMenu] Returned to MainMenu" << std::endl;
+}
+
+void GameApplication::testParticleSystem() {
+	auto& entityManager = engine_.getEntityManager();
+	auto& input = engine_.getInputManager();
+
+	if (input.isKeyPressed(GLFW_KEY_P)) {
+		auto mousePos = input.getMousePosition();
+		float worldX = static_cast<float>(mousePos.first) + editorCameraX_;
+		float worldY = static_cast<float>(mousePos.second) + editorCameraY_;
+
+		std::cout << "Spawning test particle emitter at (" << worldX << ", " << worldY << ")\n";
+
+		auto particleEntity = entityManager.create<
+			ECSComponents::TransformComponent,
+			ECSComponents::ParticleEmitterComponent
+		>(
+			ECSComponents::TransformComponent{{worldX, worldY}, {0,0}, {1,1}},
+			Particles::Presets::CreateFireball()
+		);
+
+		testParticleEntityID_ = particleEntity.id();
+		particleTestSpawned_ = true;
+
+		std::cout << "Particle entity created with ID: " << testParticleEntityID_ << "\n";
+	}
+
+	if (particleTestSpawned_ && input.isKeyPressed(GLFW_KEY_O)) {
+		auto* particleSystem = engine_.getParticleSystem();
+		if (particleSystem) {
+			auto it = entityManager.getMap().find(testParticleEntityID_);
+			if (it != entityManager.getMap().end()) {
+				auto& entityLoc = it->second;
+
+				bool hasEmitter = false;
+				for (const auto& type : entityLoc.archetype->types_) {
+					if (type == std::type_index(typeid(ECSComponents::ParticleEmitterComponent))) {
+						hasEmitter = true;
+						break;
+					}
+				}
+
+				if (hasEmitter) {
+					size_t index = entityLoc.archetype->findComponentIndex<ECSComponents::ParticleEmitterComponent>();
+					auto& emitter = entityLoc.archetype->chunks_[entityLoc.chunkIndex]
+						->retrieve<ECSComponents::ParticleEmitterComponent>(index, entityLoc.entityIndexInChunk);
+
+					emitter.isEmitting = !emitter.isEmitting;
+					std::cout << "Particle emission " << (emitter.isEmitting ? "enabled" : "disabled") << "\n";
+				}
+			}
+		}
+	}
+
+	if (particleTestSpawned_ && input.isKeyPressed(GLFW_KEY_B)) {
+		auto* particleSystem = engine_.getParticleSystem();
+		if (particleSystem) {
+			particleSystem->EmitBurst(entityManager, testParticleEntityID_, 50);
+			std::cout << "Emitted particle burst!\n";
+		}
+	}
+
+	if (particleTestSpawned_ && input.isKeyPressed(GLFW_KEY_K)) {
+		auto it = entityManager.getMap().find(testParticleEntityID_);
+		if (it != entityManager.getMap().end()) {
+			// Clean up particle pool first
+			auto* particleSystem = engine_.getParticleSystem();
+			if (particleSystem) {
+				// Access private removePool method through public interface
+				// The pool will be cleaned up when entity is destroyed
+			}
+
+			// Destroy the entity
+			ECS::Entity(testParticleEntityID_).destroy(entityManager);
+			particleTestSpawned_ = false;
+			testParticleEntityID_ = 0;
+			std::cout << "Test particle entity deleted\n";
+		}
+	}
 }

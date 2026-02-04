@@ -11,6 +11,7 @@
 #include "../engine/eno_engine.hpp"
 #include "../editor/eno_scene_tree.hpp"
 #include <filesystem>
+#include <sstream>
 
 std::unordered_map<std::string, PrefabData> prefabRegistry;
 std::unordered_map<uint32_t, std::string> prefabInstanceMap;
@@ -19,7 +20,7 @@ std::unordered_map<std::string, std::set<uint32_t>> prefabToInstancesMap;
 
 
 void savePrefab(const PrefabData& prefab) {
-    std::string prefabDir = "../../../assets/saves/prefabs/";
+    std::string prefabDir = FileSystem::GetAssetsDir().string() + "/saves/prefabs/";
 
     // Create directory if it doesn't exist
     std::filesystem::create_directories(prefabDir);
@@ -36,7 +37,6 @@ void savePrefab(const PrefabData& prefab) {
     file << prefab.width << " " << prefab.height << "\n";
     file << prefab.color << " " << prefab.shape << "\n";
     file << prefab.hasCollider << "\n";
-
 
     std::cout << prefab.name;
 }
@@ -70,37 +70,43 @@ PrefabData loadPrefab(const std::string& filename) {
     firstLine = firstLine.substr(start, end - start + 1);
 
     if (firstLine == "{") {
-        // New JSON format - try to parse the prefab name
-        std::string line;
-        bool foundName = false;
+        // New JSON format - read the entire file to get all data
+        file.seekg(0);
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        std::string fileContent = buffer.str();
 
-        while (std::getline(file, line)) {
-            size_t namePos = line.find("\"PrefabName\"");
-            if (namePos != std::string::npos) {
-                // Extract the name from: "PrefabName": "NAME",
-                size_t startQuote = line.find("\"", namePos + 13); // Skip past "PrefabName"
-                size_t endQuote = line.find("\"", startQuote + 1);
-                if (startQuote != std::string::npos && endQuote != std::string::npos) {
-                    prefab.name = line.substr(startQuote + 1, endQuote - startQuote - 1);
-                    foundName = true;
-                    break;
-                }
+        // Parse prefab name from the header section
+        bool foundName = false;
+        size_t namePos = fileContent.find("\"PrefabName\"");
+        if (namePos != std::string::npos) {
+            size_t startQuote = fileContent.find("\"", namePos + 13);
+            size_t endQuote = fileContent.find("\"", startQuote + 1);
+            if (startQuote != std::string::npos && endQuote != std::string::npos) {
+                prefab.name = fileContent.substr(startQuote + 1, endQuote - startQuote - 1);
+                foundName = true;
             }
         }
 
         // If PrefabName not found in JSON, extract from filename
         if (!foundName) {
-            // Extract name from path: "/path/to/PREFABNAME.txt" -> "PREFABNAME"
             size_t lastSlash = filename.find_last_of("/\\");
             size_t lastDot = filename.find_last_of(".");
             if (lastSlash != std::string::npos && lastDot != std::string::npos && lastDot > lastSlash) {
                 prefab.name = filename.substr(lastSlash + 1, lastDot - lastSlash - 1);
-                std::cout << "[Prefab] Loaded JSON prefab from filename: " << prefab.name << "\n";
             } else {
                 throw std::runtime_error("Could not parse prefab name from JSON file or filename!");
             }
+        }
+
+        // Look for "Entity Data" section and store it for later instantiation
+        size_t entityDataPos = fileContent.find("\"Entity Data\"");
+        if (entityDataPos != std::string::npos) {
+            // Store everything from "Entity Data" onwards
+            prefab.entityJsonData = fileContent.substr(entityDataPos);
+            std::cout << "[Prefab] Loaded JSON prefab with entity data: " << prefab.name << "\n";
         } else {
-            std::cout << "[Prefab] Loaded JSON prefab: " << prefab.name << "\n";
+            std::cout << "[Prefab] Loaded JSON prefab (no entity data): " << prefab.name << "\n";
         }
 
         return prefab;
@@ -249,8 +255,8 @@ void createPrefabFromEntity(
         }
     }
 
-    // Save to file using entity manager's JSON serialization
-    std::string prefabDir = "../../../assets/saves/prefabs/";
+    // Save to file using proper component serialization
+    std::string prefabDir = FileSystem::GetAssetsDir().string() + "/saves/prefabs/";
 
     // Create directory if it doesn't exist
     std::filesystem::create_directories(prefabDir);
@@ -263,28 +269,43 @@ void createPrefabFromEntity(
         throw std::runtime_error("[Prefab] Failed to open file for writing: " + filename);
     }
 
-    // Use the entity manager's JSON serialization
-    // We'll need to create a temporary entity manager context to use saveJson
-    // For now, let's use a simpler format
+    // Write prefab header
     file << "{\n";
     file << "\t\"PrefabName\": \"" << prefabName << "\",\n";
-    file << "\t\"ComponentCount\": " << snapshot.components.size() << ",\n";
-    file << "\t\"Components\": [\n";
+    file << "\t\"ComponentCount\": " << snapshot.components.size() << "\n";
+    file << "}\n\n";
 
-    // We'll use the component reflection system
-    // For now, save component type names
-    for (size_t i = 0; i < snapshot.components.size(); ++i)
+    // Write entity data in the same format as EntityManager::saveJson()
+    file << "\"Entity Data\"\n";
+    file << "{\n";
+
+    bool firstComponent = true;
+    for (const auto& compSnapshot : snapshot.components)
     {
-        const auto& comp = snapshot.components[i];
-        file << "\t\t\"" << comp.type.name() << "\"";
-        if (i < snapshot.components.size() - 1)
-            file << ",";
-        file << "\n";
+        if (!firstComponent)
+            file << "\n";
+        firstComponent = false;
+
+        // Use DeduceCompType to get the actual component type and serialize using reflect()
+        ECSComponents::EnoComponentRegistry::DeduceCompType(compSnapshot.type, [&]<typename T>()
+        {
+            const T& component = compSnapshot.get<T>();
+
+            // Write component header
+            file << "\t[" << compSnapshot.type.name() << "]\n";
+            file << "\t{\n";
+
+            // Use reflect to write all fields
+            component.reflect([&](const std::string& name, const auto& value, const std::string& type)
+            {
+                file << "\t\t\"" << name << "\": <" << type << "> { " << value << " }\n";
+            });
+
+            file << "\t}\n";
+        });
     }
 
-    file << "\t]\n";
     file << "}\n";
-
     file.close();
 
     std::cout << "[Prefab] Saved prefab '" << prefabName << "' to " << filename << "\n";
@@ -370,6 +391,60 @@ ECS::Entity instantiatePrefabFromSnapshot(
         registerPrefabInstance(newEntity.id(), prefabName);
 
         std::cout << "[Prefab] Created entity " << newEntity.id() << " from prefab '" << prefabName << "'\n";
+        return newEntity;
+    }
+    else if (!prefab.entityJsonData.empty())
+    {
+        // Use persisted JSON data (loaded from disk)
+        std::cout << "[Prefab] Using persisted JSON data for instantiation\n";
+
+        // Helper function to find matching brace
+        auto findMatchingBrace = [](const std::string& data, const size_t& openBrace) -> size_t
+        {
+            int depth = 1;
+            for (size_t i = openBrace + 1; i < data.size(); ++i)
+            {
+                if (data[i] == '{') depth++;
+                else if (data[i] == '}') depth--;
+                if (depth == 0) return i + 1;
+            }
+            return std::string::npos;
+        };
+
+        // Create entity using loadJson
+        ECS::Entity newEntity;
+        entityManager.loadJson(
+            entityManager,
+            prefab.entityJsonData,
+            newEntity,
+            0,
+            prefab.entityJsonData.size(),
+            findMatchingBrace
+        );
+
+        // Add PrefabInstanceComponent to track which prefab this came from
+        if (!newEntity.has<ECSComponents::PrefabInstanceComponent>(entityManager))
+        {
+            newEntity.add<ECSComponents::PrefabInstanceComponent>(entityManager, prefabName.c_str());
+        }
+
+        // Ensure the entity has a NameComponent with a unique name
+        std::string uniqueName = prefabName + " #" + std::to_string(newEntity.id());
+        if (newEntity.has<ECSComponents::NameComponent>(entityManager))
+        {
+            auto& nameComp = newEntity.get<ECSComponents::NameComponent>(entityManager);
+            std::strncpy(nameComp.name, uniqueName.c_str(), sizeof(nameComp.name) - 1);
+            nameComp.name[sizeof(nameComp.name) - 1] = '\0';
+        }
+        else
+        {
+            newEntity.add<ECSComponents::NameComponent>(entityManager, uniqueName.c_str());
+        }
+
+        // Register this entity as an instance of the prefab
+        registerPrefabInstance(newEntity.id(), prefabName);
+
+        std::cout << "[Prefab] Created entity " << newEntity.id() << " from prefab JSON data '" << prefabName << "'\n";
         return newEntity;
     }
     else

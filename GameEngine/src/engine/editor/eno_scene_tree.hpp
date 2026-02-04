@@ -13,11 +13,12 @@
 #include "../scripting/eno_script.hpp"
 #include "../eno_core_host/eno_core_host.hpp"
 #include "../tilemap/tilemap.hpp"
-
+#include "../component/components/buttons.hpp"
 
 // stds
 #include <sstream>
 #include <set>
+#include <type_traits>
 
 namespace Editor
 {
@@ -139,6 +140,7 @@ namespace Editor
 				std::pair<std::string, std::string> funcClassPair = listener->script_->signalWrite(emitName, signalName);
 
 				// Record listeners on the emitter for serialization process
+				// Note: listenerID_ stores sceneObjectID_ for serialization purposes
 				emitter->listeners_.push_back(
 					Listener{
 						listener->sceneObjectID_,
@@ -146,11 +148,25 @@ namespace Editor
 						signalName });
 
 				// Connect the listener to the emitter
-				component.signals_[signalName].connect(
-					[this, funcClassPair, listenerID = listener->sceneObjectID_](const std::vector<std::any>& params)
-					{
-						coreHost_.signalEmitted(listenerID, funcClassPair.first, funcClassPair.second);
-					});
+				// For ButtonComponent: use signalName directly (e.g., "onClick")
+				// For other components: use generated function name (e.g., "_when_node59_onclick")
+				if constexpr (std::is_same_v<Component, ECSComponents::ButtonComponent>)
+				{
+					std::string className = funcClassPair.second;
+					component.signals_[signalName].connect(
+						[this, signalName, className, listenerID = listener->sceneObjectID_](const std::vector<std::any>& params)
+						{
+							coreHost_.signalEmitted(listenerID, signalName, className);
+						});
+				}
+				else
+				{
+					component.signals_[signalName].connect(
+						[this, funcClassPair, listenerID = listener->sceneObjectID_](const std::vector<std::any>& params)
+						{
+							coreHost_.signalEmitted(listenerID, funcClassPair.first, funcClassPair.second);
+						});
+				}
 			}
 		}
 

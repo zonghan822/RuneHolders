@@ -8,7 +8,7 @@ namespace Eno
     // Source: https://learn.microsoft.com/en-us/dotnet/api/system.attribute?view=net-9.0
     //         https://learn.microsoft.com/en-us/dotnet/csharp/advanced-topics/reflection-and-attributes/
     [AttributeUsage(AttributeTargets.Field)]
-    public class RevealAttribute : Attribute
+    public class PortAttribute : Attribute
     {
         // Properties to reveal to the engine
         // Getters / Setters
@@ -18,10 +18,10 @@ namespace Eno
         public bool HasRange { get; set; } = false;
 
         // Constructors
-        public RevealAttribute() {}
+        public PortAttribute() {}
 
         // Min Max constructor
-        public RevealAttribute(float min, float max)
+        public PortAttribute(float min, float max)
         {
             Min = min;
             Max = max;
@@ -29,7 +29,7 @@ namespace Eno
         }
 
         // Description constructor
-        public RevealAttribute(string desc)
+        public PortAttribute(string desc)
         {
             Description = desc;
         }
