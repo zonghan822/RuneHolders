@@ -73,7 +73,7 @@ namespace Profiler
 		void report(uint64_t end)
 		{
 			std::cout
-				<< "--- Timer " << name_ << "---" << std::endl
+				<< "--- Timer " << name_ << " ---" << std::endl
 				<< "Time taken: " << end - start_ << unit << std::endl;
 		}
 

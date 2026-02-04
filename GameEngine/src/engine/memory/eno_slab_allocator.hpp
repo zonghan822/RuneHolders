@@ -8,32 +8,34 @@
 
 namespace Memory
 {
+	// Fixed size blocks of memory, 
+	// primarily used in representing the ecs chunks 
 	class EnoSlabAllocator
 	{
 	private:
-		struct FreeBlock
+		struct Slot
 		{
-			FreeBlock* next_;
+			Slot* next_;
 		};
 
 		std::byte* mem_;
 
-		size_t blockSize_;
-		size_t blockCount_;
+		size_t slotSize_;
+		size_t slotCount_;
 
-		FreeBlock* freeList_;
+		Slot* freeList_;
 
 	public:
 		EnoSlabAllocator() = default;
-		
-		EnoSlabAllocator(void* mem, size_t blockSize, size_t blockCount)
+
+		EnoSlabAllocator(void* mem, size_t slotSize, size_t slotCount)
 			:
-			mem_ { reinterpret_cast<std::byte*>(mem) },
-			blockSize_{ blockSize },
-			blockCount_{ blockCount },
+			mem_{ reinterpret_cast<std::byte*>(mem) },
+			slotSize_{ slotSize },
+			slotCount_{ slotCount },
 			freeList_{ nullptr }
 		{
-			init(mem, blockSize, blockCount);
+			init(mem, slotSize, slotCount);
 		}
 
 		~EnoSlabAllocator()
@@ -41,36 +43,98 @@ namespace Memory
 			mem_ = nullptr;
 		}
 
-		void init(void* mem, size_t blockSize, size_t blockCount)
+		void init(void* mem, size_t slotSize, size_t slotCount)
 		{
 			mem_ = reinterpret_cast<std::byte*>(mem);
-			blockSize_ = blockSize;
-			blockCount_ = blockCount;
+			slotSize_ = slotSize;
+			slotCount_ = slotCount;
 			freeList_ = nullptr;
 
-			for (size_t i = 0; i < blockCount_; ++i)
+			for (size_t i = 0; i < slotCount_; ++i)
 			{
-				FreeBlock* block = reinterpret_cast<FreeBlock*>(mem_ + i * blockSize_);
+				Slot* block = reinterpret_cast<Slot*>(mem_ + i * slotSize_);
 				block->next_ = freeList_;
 				freeList_ = block;
 			}
 		}
 
+		// Once this slab has been allocated,
+		// create a new slab and link them
 		void* alloc()
 		{
-			if (!freeList_) 
+			if (!freeList_)
 				return nullptr;
 
-			FreeBlock* block = freeList_;
+			Slot* block = freeList_;
 			freeList_ = freeList_->next_;
 			return block;
 		}
 
 		void free(void* ptr)
 		{
-			FreeBlock* block = reinterpret_cast<FreeBlock*>(ptr);
+			Slot* block = reinterpret_cast<Slot*>(ptr);
 			block->next_ = freeList_;
 			freeList_ = block;
+		}
+
+		// Counts the number of slots in freeList_
+		size_t freeSlotCount() const
+		{
+			size_t count{};
+
+			// Iterate through the freeList_ with
+			// a separate pointer to count the number of slots
+			Slot* ptr = freeList_;
+			while (ptr)
+			{
+				++count;
+				ptr = ptr->next_;
+			}
+
+			return count;
+		}
+
+		// ----------------- Statistical Functions -----------------
+
+		size_t usedSlots() const { return slotCount_ - freeSlotCount(); }
+		size_t freeSlots() const { return freeSlotCount(); }
+
+		// Returns the level of internal fragmentation
+		size_t fragBytes() const															// fragmentation by byte count
+		{
+			return freeSlots() * slotSize_;
+		}
+
+		size_t fragPer() const																// fragmentation by percentage
+		{
+			return static_cast<float>(fragBytes()) / (slotSize_ * slotCount_) * 100.f;
+		}
+
+		// Complete stat overview
+		void stats()
+		{
+			std::cout << std::hex << std::setfill('.')
+
+				// Header
+				<< "--------------------------------------------" << std::endl
+				<< "~ Slab Stats ~" << std::endl << std::endl
+
+				// Slots
+				<< std::dec
+
+				<< "Slot Size:" << std::setw(31) << slotSize_ << std::endl
+				<< "Total Slots:" << std::setw(27) << freeSlotCount() << std::endl
+				<< "Used Slots:" << std::setw(28) << usedSlots() << std::endl
+				<< "Free Slots:" << std::setw(28) << freeSlots() << std::endl
+
+				// Fragmentation
+				<< "Internal Fragmentation: " << std::setw(17) << fragBytes() << std::endl
+				<< "Internal Fragmentation(%): " << std::setw(13) << fragPer() << std::endl
+
+				<< "--------------------------------------------" << std::endl << std::endl;
+
+			// Reset fill
+			std::cout << std::setfill(' ');
 		}
 	};
 }
