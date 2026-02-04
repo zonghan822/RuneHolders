@@ -730,6 +730,14 @@ void GameApplication::updateGameLogic() {
 	// Draw all entities
 	drawShapes();
 	drawPlayerAndIndicator();
+
+	// Render particles (with camera offset)
+	auto* particleSystem = engine_.getParticleSystem();
+	if (particleSystem) {
+		Math::eVec2<float> cameraOffset = { cameraX_, cameraY_ };
+		particleSystem->Render(graphics_, engine_.getEntityManager(), cameraOffset);
+	}
+
 	graphics_.flush();
 	displayFPS();
 }

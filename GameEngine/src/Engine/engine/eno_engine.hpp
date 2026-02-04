@@ -32,6 +32,7 @@
 #include "../ai/ai_manager.hpp"
 #include "../physics/physics_system.hpp"
 #include "../tilemap/tilemap.hpp"
+#include "../particle/particle_system.hpp"
 
 
 // stds
@@ -188,6 +189,12 @@ namespace Engine
 		AI::PathfindingSystem& getPathfinder() { return *pathfinder_; }
 
 		/*============================================================================================
+		* \brief		Gets the Particle System for particle effects
+		* \return		Pointer to ParticleSystem instance (may be null if not initialized)
+		*//*========================================================================================*/
+		Particles::ParticleSystem* getParticleSystem() { return particleSys_.get(); }
+
+		/*============================================================================================
 		* \brief		Sets whether the game is in playing mode (affects player input processing)
 		* \param[in]	isPlaying - True if game is playing, false if in editor mode
 		*//*========================================================================================*/
@@ -234,6 +241,7 @@ namespace Engine
 		std::unique_ptr<AI::AIManager> aiMng_;
 		std::unique_ptr<Physics::PhysicsSystem> physicsSys_;
 		std::unique_ptr<Collision::CollisionSystem> collisionSys_;
+		std::unique_ptr<Particles::ParticleSystem> particleSys_;
 
 		// Game state
 		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)

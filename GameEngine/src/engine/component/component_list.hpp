@@ -31,6 +31,7 @@
 	X(FireballComponent) \
 	X(HealthComponent) \
 	X(DamageComponent) \
+	X(ParticleEmitterComponent) \
 
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 

@@ -97,6 +97,10 @@ private:
     uint32_t runeSystemEntityID_;  // ID of entity holding RuneSystemStateComponent
     bool runeSystemInitialized_ = false;
 
+    // Particle Test
+    uint32_t testParticleEntityID_ = 0;
+    bool particleTestSpawned_ = false;
+
     // Pause Menu and Spellbook System
     bool isPaused_ = false;
     bool showSpellbook_ = false;
@@ -187,6 +191,7 @@ private:
     void updateEntities();      // Update entity logic per frame
     void updateImGui();         // Update code for imGui
     void loadEntityTextures();  // Load textures for entities with texture paths
+    void testParticleSystem();  // Particle system test controls
 
     void drawPlayerAndIndicator();
 
