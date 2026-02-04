@@ -1,6 +1,5 @@
 #include "ai_manager.hpp"
 #include "ai_events.hpp"
-#include "../component/components/state_machine_component.hpp"
 
 namespace AI {
 

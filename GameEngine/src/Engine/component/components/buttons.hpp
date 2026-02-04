@@ -40,7 +40,8 @@ namespace ECSComponents {
 	// Types of function that the signal can call
 	enum functionType
 	{
-		loadScene = 1
+		loadScene = 1,
+		toggleVisibility
 	};
 
 	// Base class template for in game buttons
@@ -51,9 +52,9 @@ namespace ECSComponents {
 		// Default constructor
 		ButtonComponent()
 		{
-			signalsMap["onClick"] = Events::EnoSignal();
-			signalsMap["onHover"] = Events::EnoSignal();
-			signalsMap["onPressed"] = Events::EnoSignal();
+			signals_["onClick"] = Events::EnoSignal();
+			signals_["onHover"] = Events::EnoSignal();
+			signals_["onPressed"] = Events::EnoSignal();
 		}
 
 		// Signals map
@@ -90,6 +91,14 @@ namespace ECSComponents {
 			targetScene[copy_length] = '\0';
 		}
 
+		void setTargetObject(const std::string& objName)
+		{
+			size_t copy_length = std::min(objName.length(), (size_t)63);
+			std::strncpy(targetObject, objName.c_str(), copy_length);
+			targetObject[copy_length] = '\0';
+		}
+
+		// Onclick function
 		/*============================================================================================
 		* \brief		Executes the type of signal that the button contains
 		* \param[in]	signalType signalType, EnoEngine& eng
@@ -147,6 +156,21 @@ namespace ECSComponents {
 			}
 		}
 
+		int getSavedFunctionType() const
+		{
+			return savedFunctionType;
+		}
+
+		void setSavedFunctionType(int type)
+		{
+			savedFunctionType = type;
+		}
+
+		std::string getTargetObject() const
+		{
+			return std::string(targetObject);
+		}
+
 		/*============================================================================================
 		* \brief		Returns the signals container
 		* \return		std::vector<std::pair<signalType, functionType>>& to the signal vector
@@ -154,6 +178,11 @@ namespace ECSComponents {
 		std::vector<std::pair<signalType, functionType>>& getSignals()
 		{
 			return signals;
+		}
+
+		std::unordered_map<std::string, Events::EnoSignal>& getSignalMap()
+		{
+			return signals_;
 		}
 
 		template <typename Visitor>
@@ -180,7 +209,7 @@ namespace ECSComponents {
 		bool onClick(Math::eVec2<float> mousePos, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d, const ECSComponents::CollisionComponent& c)
 		{
 			// Check if button is interactable
-			if (!isActive) return false;
+			//if (!isActive) return false;
 
 			//std::cout << "mouse pos :" << mousePos << std::endl;
 
@@ -202,7 +231,11 @@ namespace ECSComponents {
 				if (rotMousePos.x >= -halfW && rotMousePos.x <= halfW &&
 					rotMousePos.y >= -halfH && rotMousePos.y <= halfH)
 				{
-					return true; // Point is inside
+					// Point is inside
+					// The button is clicked
+					std::cout << "[Button] CLICK!" << std::endl;
+
+					return true;
 				}
 				else
 				{
@@ -217,10 +250,10 @@ namespace ECSComponents {
 					mousePos.y >= (t.pos.y - (d.height * 0.5f)) &&	// Upper limit
 					mousePos.y <= (t.pos.y + (d.height * 0.5f)))	// Lower limit
 				{
-					// Emit signal
-
-					// Button is clicked
+					// The button is clicked
+					std::cout << "[Button] CLICK!" << std::endl;
 					return true;
+
 				}
 				else
 				{
@@ -228,7 +261,6 @@ namespace ECSComponents {
 				}
 
 			}
-
 		}
 
 		/*============================================================================================
@@ -281,14 +313,15 @@ namespace ECSComponents {
 
 		// Signal types (To be deleted after bridging)
 		std::vector<std::pair<signalType, functionType>> signals;
-		
-		std::unordered_map<std::string, Events::EnoSignal> signalsMap;
+		int savedFunctionType = static_cast<int>(functionType::loadScene);
 
 		// Parameter for scene selection (To be deleted after bridging)
 		char targetScene[32] = "NIL";
-		
+		// Parameter for linking to selected object
+		char targetObject[64] = "";
+
 		// If interactable
-		bool isActive = false;
+		bool isActive = true;
 	};
 
 }

@@ -24,6 +24,12 @@ namespace Bridge {
 
         // ============= State Change ==============
         ENGINE_API void __stdcall ChangeState(const wchar_t* stateName, uint32_t entityID);
+        
+        // ================= Animation =================
+        ENGINE_API bool __stdcall SetEntityAnimation(uint32_t entityID, const wchar_t* animationName);
+
+        // ================= AI =================
+        ENGINE_API const wchar_t* __stdcall GetEntityAIState(uint32_t entityID);
     }
 }
 

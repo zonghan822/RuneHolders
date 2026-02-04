@@ -37,9 +37,9 @@ namespace Editor
 			// Get all available scenes
 			// Check that the file is a .txt file
 			try {
-				for (const auto& fileEntry : std::filesystem::directory_iterator(FileSystem::GetAssetsDir() / "saves/scenes"))
+				for (const auto& fileEntry : std::filesystem::directory_iterator(FileSystem::GetAssetsDir().string() +  "/saves/scenes"))
 				{
-					if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().string() != (FileSystem::GetAssetsDir() / "saves/scenes/LastSavedScene.txt"))
+					if (fileEntry.is_regular_file() && fileEntry.path().extension() == ".txt" && fileEntry.path().filename().string() != "LastSavedScene.txt")
 					{
 						// Add file to scenes_
 						std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
@@ -70,7 +70,7 @@ namespace Editor
 			// NOTE: This is just a placeholder - actual deletion happens in GameApplication
 			// because entities are stored in GameApplication's sceneTree_
 			bus_.subscribe<Editor::DeleteSelectedEntity>([&](const Editor::DeleteSelectedEntity)
-				{
+				{	
 					// Event will be handled by GameApplication's subscriber
 				});
 		}
@@ -87,9 +87,10 @@ namespace Editor
 		*//*========================================================================================*/
 		void deleteScene(std::string sceneName)
 		{
-			// Remove from files
-			std::filesystem::remove(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName);
-			//std::cout << "[Eno_Editor] Scene deleted: " << sceneName << std::endl;
+			// Remove from build and source
+			std::string path = FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName;
+			std::filesystem::remove(path);
+			FileSystem::RemoveFromSource(path);
 
 			// Find scene index in scenes_ list
 			auto index = std::find_if(scenes_.begin(), scenes_.end(),
@@ -108,8 +109,13 @@ namespace Editor
 		*//*========================================================================================*/
 		void selectScene(const std::string& filename)
 		{
-			// Load selected scene
-			tree_.load(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + filename);
+			// Check state for current scene
+			if (selectedScene_->getState() != State::Stopped)
+			{
+				// Stop the scene
+				bus_.publish(StopScene{});
+				selectedScene_->stop();
+			}
 
 			// Point to selected scene
 			auto index = std::find_if(scenes_.begin(), scenes_.end(),
@@ -119,6 +125,11 @@ namespace Editor
 			if (index != scenes_.end())
 			{
 				selectedScene_ = index->get();
+				// Check if the previous scene was in play
+				if (wasPlaying)
+				{
+					selectedScene_->play();
+				}
 			}
 			else
 			{
@@ -126,6 +137,9 @@ namespace Editor
 				std::cout << "[Eno_Editor] Selecting scene: " << filename << " unsuccessful, unable to find scene!" << std::endl;
 			}
 
+			// Load selected scene
+			//tree_.load(ASSETS_DIR_PATH "saves/scenes/" + filename);
+			tree_.load(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + filename);
 
 			// Publish event to notify UI that scene was cleared
 			bus_.publish(SceneCleared{});
@@ -198,6 +212,7 @@ namespace Editor
 
 			// Set editor state to playing
 			selectedScene_->play();
+			wasPlaying = true;
 
 			// Publish PlayScene event to notify systems (e.g., audio)
 			bus_.publish(PlayScene{});
@@ -215,12 +230,12 @@ namespace Editor
 			// Publish StopScene event to notify systems (e.g., audio)
 			bus_.publish(StopScene{});
 
-			// Load initial setting of the scene
-			//std::cout << "[Eno_editor] Loading saved scene tree to restore state..." << std::endl;
-			loadLastSavedScene();
-
 			// Set editor state to stop
 			selectedScene_->stop();
+			wasPlaying = false;
+
+			// Load initial setting of the scene
+			loadLastSavedScene();
 
 			// Destroy the game window
 			//bus_.publish(DestroyGameWindow{});
@@ -319,6 +334,7 @@ namespace Editor
 			}
 			newFile << "{\n\n}";
 			newFile.close();
+			FileSystem::SyncToSource(fullPath);
 
 			// Load file first (this sets currentScene)
 			tree_.load(fullPath);
@@ -403,13 +419,18 @@ namespace Editor
 		*//*========================================================================================*/
 		void updateLastSavedScene()
 		{
-			std::ofstream lastSceneSave{ FileSystem::GetAssetsDir().string() + "/saves/scenes/LastSavedScene.txt" };
+			std::string path = FileSystem::GetAssetsDir().string() + "/saves/scenes/LastSavedScene.txt";
+			std::cout << "[DEBUG] Saving LastSavedScene.txt to: " << path << std::endl;
+			std::cout << "[DEBUG] Scene name: " << selectedScene_->getSceneName() << std::endl;
+
+			std::ofstream lastSceneSave{ path };
 			if (!lastSceneSave)
 			{
 				throw std::runtime_error("[Eno_Editor] Failed to save current active scene name!");
 			}
 			lastSceneSave << selectedScene_->getSceneName();
 			lastSceneSave.close();
+			FileSystem::SyncToSource(path);
 		}
 
 		EnoSceneTree& getSceneTree()
@@ -444,6 +465,7 @@ namespace Editor
 		// Scenes
 		std::vector<std::unique_ptr<EnoScene>> scenes_;
 		EnoScene* selectedScene_;
+		bool wasPlaying = false;
 
 		// Core Host
 		ECS::EntityManager& entMng_;

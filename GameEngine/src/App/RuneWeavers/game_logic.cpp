@@ -730,6 +730,19 @@ void GameApplication::updateGameLogic() {
 	// Draw all entities
 	drawShapes();
 	drawPlayerAndIndicator();
+
+	// Render particles (with camera offset)
+	auto* particleSystem = engine_.getParticleSystem();
+	if (particleSystem) {
+		Math::eVec2<float> cameraOffset = { 0.0f, 0.0f };
+		auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+		if (!cameraEntities.empty()) {
+			auto& cam = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
+			cameraOffset = { cam.position.x - cam.viewportWidth * 0.5f, cam.position.y - cam.viewportHeight * 0.5f };
+		}
+		particleSystem->Render(graphics_, engine_.getEntityManager(), cameraOffset);
+	}
+
 	graphics_.flush();
 	displayFPS();
 }
@@ -942,12 +955,12 @@ void GameApplication::updateEntities() {
 		// Switch animation based on movement
 		if (isMoving) {
 			if (playerAnimController_.getCurrentAnimationName() != "walk") {
-				playerAnimController_.setAnimation("walk");
+				//playerAnimController_.setAnimation("walk");
 			}
 		}
 		else {
 			if (playerAnimController_.getCurrentAnimationName() != "idle") {
-				playerAnimController_.setAnimation("idle");
+				//playerAnimController_.setAnimation("idle");
 			}
 		}
 		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
@@ -972,8 +985,9 @@ void GameApplication::updateEntities() {
 			{
 				for (const auto& org : node->script_->origin())
 				{
-					std::wcout << "origin of call: " << org << std::endl;
+					std::wcout << "origin of call: " << org << " for entity " << node->entity_.id() << std::endl;
 					coreHost.begin(org, node->sceneObjectID_);
+					//coreHost.begin(org, node->entity_.id());  // FIX: Use entity_.id() instead of sceneObjectID_
 				}
 			}
 		}
@@ -988,6 +1002,7 @@ void GameApplication::updateEntities() {
 			for (const auto& org : node->script_->origin())
 			{
 				coreHost.update(org, node->sceneObjectID_);
+				// coreHost.update(org, node->entity_.id());  // FIX: Use entity_.id() instead of sceneObjectID_
 			}
 		}
 	}
@@ -1113,137 +1128,144 @@ void GameApplication::drawShapes() {
 		firstRun = false;
 	}
 
-	// USE CACHED ENTITIES with validation
-	for (ECS::Entity& entity : cachedDrawableEntities_) {
-		// Skip if entity was destroyed
-		try {
-			if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
-				// Skip rendering for player entities (they're drawn separately with sprite/animation)
-				if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
-					continue;
-				}
+	// Collect and sort cached entities by layer
+	ECSComponents::collectObjectsByLayer(engine_, cachedDrawableEntities_);
 
-				// Get position from TransformComponent (spatial data)
-				// Get rendering info from DrawInfoComponent (size, color, etc.)
-				auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
-				auto& renderInfo = entity.get<drawInfo>(entityManager);
-
-
-				// Apply scale to width and height
-				float scaledWidth = renderInfo.width * transform.scale.x;
-				float scaledHeight = renderInfo.height * transform.scale.y;
-
-				// Get rotation from transform component
-				float rotation = transform.rot.x;
-
-				// Check if entity has a texture (sprite)
-				if (renderInfo.texture && renderInfo.texture->isValid())
+	// Draw all entities by layer order (lowest z_index first = background)
+	for (auto& [layer, entities] : ECSComponents::sortedObjectLayers) 
+	{
+		for (ECS::Entity* entityPtr : entities) 
+		{
+			ECS::Entity& entity = *entityPtr;
+			try {
+				if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) 
 				{
+					if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
+						continue; // Skip player, drawn separately
+					}
 
-					Math::eVec2<float> topLeft = {
-						transform.pos.x - (scaledWidth * 0.5f),
-						transform.pos.y - (scaledHeight * 0.5f)
-					};
-
-					// Default UVs (full texture)
-					Math::eVec2<float> uvStart{ 0.0f, 0.0f };
-					Math::eVec2<float> uvEnd{ 1.0f, 1.0f };
+					// Get position from TransformComponent (spatial data)
+					// Get rendering info from DrawInfoComponent (size, color, etc.)
+					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+					auto& renderInfo = entity.get<drawInfo>(entityManager);
 
 
-					if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+					// Apply scale to width and height
+					float scaledWidth = renderInfo.width * transform.scale.x;
+					float scaledHeight = renderInfo.height * transform.scale.y;
+
+					// Get rotation from transform component
+					float rotation = transform.rot.x;
+
+					// Check if entity has a texture (sprite)
+					if (renderInfo.texture && renderInfo.texture->isValid())
 					{
-						auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
-						Animation::AnimationController* ctrl =
-							engine_.getAnimationRegistry().get(animComp.controllerID);
 
-						if (ctrl)
+						Math::eVec2<float> topLeft = {
+							transform.pos.x - (scaledWidth * 0.5f),
+							transform.pos.y - (scaledHeight * 0.5f)
+						};
+
+						// Default UVs (full texture)
+						Math::eVec2<float> uvStart{ 0.0f, 0.0f };
+						Math::eVec2<float> uvEnd{ 1.0f, 1.0f };
+
+
+						if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
 						{
-							const auto& frame = ctrl->getCurrentFrame();
-							uvStart = frame.uvStart;
-							uvEnd = frame.uvEnd;
+							auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+							Animation::AnimationController* ctrl =
+								engine_.getAnimationRegistry().get(animComp.controllerID);
 
-							// Check if entity is a fireball and flip it horizontally
-							if (entity.has<ECSComponents::FireballComponent>(entityManager)) {
-								std::swap(uvStart.x, uvEnd.x);
-							}
+							if (ctrl)
+							{
+								const auto& frame = ctrl->getCurrentFrame();
+								uvStart = frame.uvStart;
+								uvEnd = frame.uvEnd;
 
-							// Check if entity is an enemy with AI and flip based on movement direction
-							if (entity.has<ECSComponents::AIComponent>(entityManager) &&
-								entity.has<ECSComponents::PhysicsComponent>(entityManager)) {
-								auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
-								// Flip sprite if moving right (positive x velocity)
-								if (physics.velocity.x > 0.1f) {
+								// Check if entity is a fireball and flip it horizontally
+								if (entity.has<ECSComponents::FireballComponent>(entityManager)) {
 									std::swap(uvStart.x, uvEnd.x);
+								}
+
+								// Check if entity is an enemy with AI and flip based on movement direction
+								if (entity.has<ECSComponents::AIComponent>(entityManager) &&
+									entity.has<ECSComponents::PhysicsComponent>(entityManager)) {
+									auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
+									// Flip sprite if moving right (positive x velocity)
+									if (physics.velocity.x > 0.1f) {
+										std::swap(uvStart.x, uvEnd.x);
+									}
 								}
 							}
 						}
+
+						// Draw textured quad with UV coordinates, rotation and scale
+						graphics.drawTexturedQuadUV(
+							topLeft,
+							Math::eVec2<float>{scaledWidth, scaledHeight},
+							renderInfo.texture,
+							uvStart,
+							uvEnd,
+							renderInfo.color,
+							rotation
+						);
+						//IT IS SOMEHOW IGNORING THE FACT THAT I HAVE A DRAW UV OF 0.25??
+						//graphics.drawTexturedQuadUV(
+						//	topLeft,
+						//	Math::eVec2<float>{scaledWidth, scaledHeight},
+						//	renderInfo.texture,
+						//	{ 0,0 },
+						//	{ 0, 0.25 },
+						//	renderInfo.color,
+						//	rotation
+						//);
+
+						//	<< renderInfo.texture->getWidth() << " x "
+						//	<< renderInfo.texture->getHeight() << std::endl;
+						//	<< renderInfo.width << " x "
+						//	<< renderInfo.height << std::endl;
+
 					}
+					// Check shape type and draw accordingly
+					else if (strcmp(renderInfo.shape, "Circle") == 0) {
+						// Draw circle at center position with scale applied to radius
+						float scaledRadius = (scaledWidth * 0.5f);
+						graphics.drawCircle(
+							transform.pos,
+							scaledRadius,
+							renderInfo.color,
+							true,
+							32
+						);
+					}
+					else {
+						// Draw rectangle with rotation and scale applied
+						float topLeftX = transform.pos.x - (scaledWidth * 0.5f);
+						float topLeftY = transform.pos.y - (scaledHeight * 0.5f);
 
-					// Draw textured quad with UV coordinates, rotation and scale
-					graphics.drawTexturedQuadUV(
-						topLeft,
-						Math::eVec2<float>{scaledWidth, scaledHeight},
-						renderInfo.texture,
-						uvStart,
-						uvEnd,
-						renderInfo.color,
-						rotation
-					);
-					//IT IS SOMEHOW IGNORING THE FACT THAT I HAVE A DRAW UV OF 0.25??
-					//graphics.drawTexturedQuadUV(
-					//	topLeft,
-					//	Math::eVec2<float>{scaledWidth, scaledHeight},
-					//	renderInfo.texture,
-					//	{ 0,0 },
-					//	{ 0, 0.25 },
-					//	renderInfo.color,
-					//	rotation
-					//);
-
-					//	<< renderInfo.texture->getWidth() << " x "
-					//	<< renderInfo.texture->getHeight() << std::endl;
-					//	<< renderInfo.width << " x "
-					//	<< renderInfo.height << std::endl;
+						graphics.drawRect(
+							Math::eVec2<float>{topLeftX, topLeftY},
+							Math::eVec2<float>{scaledWidth, scaledHeight},
+							renderInfo.color,
+							true,
+							rotation
+						);
+					}
+					//// Draw text for button component
+					//if (entity.has<ECSComponents::ButtonComponent>(entityManager))
+					//{
+					//	auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
+					//	graphics.drawText(timesFont_, b.getName(), transform.pos, 0.5f, Color::Red);
+					//}
 
 				}
-				// Check shape type and draw accordingly
-				else if (strcmp(renderInfo.shape, "Circle") == 0) {
-					// Draw circle at center position with scale applied to radius
-					float scaledRadius = (scaledWidth * 0.5f);
-					graphics.drawCircle(
-						transform.pos,
-						scaledRadius,
-						renderInfo.color,
-						true,
-						32
-					);
-				}
-				else {
-					// Draw rectangle with rotation and scale applied
-					float topLeftX = transform.pos.x - (scaledWidth * 0.5f);
-					float topLeftY = transform.pos.y - (scaledHeight * 0.5f);
-
-					graphics.drawRect(
-						Math::eVec2<float>{topLeftX, topLeftY},
-						Math::eVec2<float>{scaledWidth, scaledHeight},
-						renderInfo.color,
-						true,
-						rotation
-					);
-				}
-				//// Draw text for button component
-				//if (entity.has<ECSComponents::ButtonComponent>(entityManager))
-				//{
-				//	auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
-				//	graphics.drawText(timesFont_, b.getName(), transform.pos, 0.5f, Color::Red);
-				//}
-
 			}
-		}
-		catch (...) {
-			// Entity was destroyed, rebuild cache next frame
-			entitiesDirty_ = true;
-			continue;
+			catch (...) {
+				// Entity was destroyed, rebuild cache next frame
+				entitiesDirty_ = true;
+				continue;
+			}
 		}
 	}
 }
@@ -1402,7 +1424,7 @@ void GameApplication::updateRuneSystem()
 		spawnRunes(mouseWorldPos);
 		runeState.runesActive = true;
 		runeState.isLeftClickHeld = true;
-		runeState.fireballSpawned = false;  // Reset flag for new rune spawn
+		runeState.spellCasted = false;  // Reset flag for new rune spawn
 	}
 
 	// UPDATE RUNES while left click is held
@@ -1410,11 +1432,11 @@ void GameApplication::updateRuneSystem()
 		updateRuneHover(mouseWorldPos);
 
 		// Update line drawing
-		if (runeState.isDrawingLine && !runeState.fireballSpawned) {
+		if (runeState.isDrawingLine && !runeState.spellCasted) {
 			runeState.lineEnd = mouseWorldPos;
 
 			// Check if line connects to right rune
-			ECS::Entity rightRuneEntity(runeState.rightRuneEntityID);
+			ECS::Entity rightRuneEntity(runeState.runeEntityIDs[1]);
 			if (rightRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
 			    rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
 
@@ -1426,20 +1448,20 @@ void GameApplication::updateRuneSystem()
 				if (distToRightRune <= rightRune.radius) {
 					// Connection successful! Spawn fireball
 					Math::eVec2<float> fireballPos = {
-						(runeState.lineStart.x + rightTransform.pos.x) / 2.0f,
-						(runeState.lineStart.y + rightTransform.pos.y) / 2.0f
+						(runeState.connectedPositions[0].x + rightTransform.pos.x) / 2.0f,
+						(runeState.connectedPositions[0].y + rightTransform.pos.y) / 2.0f
 					};
 					spawnFireball(fireballPos);
 
 					// Mark runes as connected
-					ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
+					ECS::Entity leftRuneEntity(runeState.runeEntityIDs[0]);
 					if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
 						leftRuneEntity.get<ECSComponents::RuneComponent>(entityManager).isConnected = true;
 					}
 					rightRune.isConnected = true;
 
 					// Set flag to prevent multiple fireballs
-					runeState.fireballSpawned = true;
+					runeState.spellCasted = true;
 
 					// Destroy runes immediately after successful connection
 					destroyRunes();
@@ -1457,7 +1479,7 @@ void GameApplication::updateRuneSystem()
 		runeState.runesActive = false;
 		runeState.isLeftClickHeld = false;
 		runeState.isDrawingLine = false;
-		runeState.fireballSpawned = false;  // Reset for next cycle
+		runeState.spellCasted = false;  // Reset for next cycle
 	}
 
 	// Draw connection line if active
@@ -1505,10 +1527,10 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	leftRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("LeftRune"));
 	leftRune.add<ECSComponents::TransformComponent>(entityManager);
 	leftRune.add<ECSComponents::DrawInfoComponent>(entityManager);
-	leftRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::LEFT, 30.0f));
+	leftRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(0, 1, 30.0f));
 
 	auto& leftTransform = leftRune.get<ECSComponents::TransformComponent>(entityManager);
-	leftTransform.pos = { mouseWorldPos.x - runeState.runeSpawnOffset, mouseWorldPos.y };
+	leftTransform.pos = { mouseWorldPos.x - runeState.runeCircleRadius, mouseWorldPos.y };
 	leftTransform.scale = { 1.0f, 1.0f };
 
 	auto& leftDraw = leftRune.get<ECSComponents::DrawInfoComponent>(entityManager);
@@ -1523,10 +1545,10 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	rightRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("RightRune"));
 	rightRune.add<ECSComponents::TransformComponent>(entityManager);
 	rightRune.add<ECSComponents::DrawInfoComponent>(entityManager);
-	rightRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(ECSComponents::RuneType::RIGHT, 30.0f));
+	rightRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(1, 2, 30.0f));
 
 	auto& rightTransform = rightRune.get<ECSComponents::TransformComponent>(entityManager);
-	rightTransform.pos = { mouseWorldPos.x + runeState.runeSpawnOffset, mouseWorldPos.y };
+	rightTransform.pos = { mouseWorldPos.x + runeState.runeCircleRadius, mouseWorldPos.y };
 	rightTransform.scale = { 1.0f, 1.0f };
 
 	auto& rightDraw = rightRune.get<ECSComponents::DrawInfoComponent>(entityManager);
@@ -1537,8 +1559,8 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	rightDraw.texture = rightRuneTexture;
 
 	// Store entity IDs
-	runeState.leftRuneEntityID = leftRune.id();
-	runeState.rightRuneEntityID = rightRune.id();
+	runeState.runeEntityIDs[0] = leftRune.id();
+	runeState.runeEntityIDs[1] = rightRune.id();
 
 	// Mark entities as dirty to refresh rendering cache
 	entitiesDirty_ = true;
@@ -1552,21 +1574,21 @@ void GameApplication::destroyRunes()
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
 	// Destroy left rune if it exists
-	if (runeState.leftRuneEntityID != UINT32_MAX) {
-		ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
+	if (runeState.runeEntityIDs[0] != UINT32_MAX) {
+		ECS::Entity leftRuneEntity(runeState.runeEntityIDs[0]);
 		if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-			entityManager.destroyEntity(runeState.leftRuneEntityID);
+			entityManager.destroyEntity(runeState.runeEntityIDs[0]);
 		}
-		runeState.leftRuneEntityID = UINT32_MAX;
+		runeState.runeEntityIDs[0] = UINT32_MAX;
 	}
 
 	// Destroy right rune if it exists
-	if (runeState.rightRuneEntityID != UINT32_MAX) {
-		ECS::Entity rightRuneEntity(runeState.rightRuneEntityID);
+	if (runeState.runeEntityIDs[1] != UINT32_MAX) {
+		ECS::Entity rightRuneEntity(runeState.runeEntityIDs[1]);
 		if (rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-			entityManager.destroyEntity(runeState.rightRuneEntityID);
+			entityManager.destroyEntity(runeState.runeEntityIDs[1]);
 		}
-		runeState.rightRuneEntityID = UINT32_MAX;
+		runeState.runeEntityIDs[1] = UINT32_MAX;
 	}
 
 	// Mark entities as dirty to refresh rendering cache
@@ -1581,8 +1603,8 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
 	// Check if mouse hovers over left rune
-	if (runeState.leftRuneEntityID != UINT32_MAX) {
-		ECS::Entity leftRuneEntity(runeState.leftRuneEntityID);
+	if (runeState.runeEntityIDs[0] != UINT32_MAX) {
+		ECS::Entity leftRuneEntity(runeState.runeEntityIDs[0]);
 		if (leftRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
 		    leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
 
@@ -1596,7 +1618,7 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 			// Start drawing line when hovering over left rune
 			if (leftRune.isHovered && !wasHovered) {
 				runeState.isDrawingLine = true;
-				runeState.lineStart = leftTransform.pos;
+				runeState.connectedPositions[0] = leftTransform.pos;
 				runeState.lineEnd = mouseWorldPos;
 				// Play left rune hover sound
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
@@ -1605,8 +1627,8 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 	}
 
 	// Update right rune hover state
-	if (runeState.rightRuneEntityID != UINT32_MAX) {
-		ECS::Entity rightRuneEntity(runeState.rightRuneEntityID);
+	if (runeState.runeEntityIDs[1] != UINT32_MAX) {
+		ECS::Entity rightRuneEntity(runeState.runeEntityIDs[1]);
 		if (rightRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
 		    rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
 
@@ -1633,7 +1655,7 @@ void GameApplication::drawRuneConnectionLine()
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
 	// In RuneWeavers, positions are already in screen space
-	Math::eVec2<float> screenStart = runeState.lineStart;
+	Math::eVec2<float> screenStart = runeState.connectedPositions[0];
 	Math::eVec2<float> screenEnd = runeState.lineEnd;
 
 	// Draw line using graphics system

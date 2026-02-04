@@ -34,6 +34,7 @@ namespace Engine
 		physicsSys_ = std::make_unique<Physics::PhysicsSystem>(bus_);
 		stateMachineSys_ = std::make_unique<FSM::StateMachineSystem>();
 		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
+		particleSys_ = std::make_unique<Particles::ParticleSystem>(bus_);
 		graphicsMng_.initialize(window_);
 		audioMng_.init();
 
@@ -71,6 +72,12 @@ namespace Engine
 			// Only update collision when the game is playing (not paused/stopped)
 			if (collisionSys_ && isPlaying_) {
 				collisionSys_->Update(entityMng_);
+			}
+
+			// Update particle system (emission and physics)
+			// Only update particles when the game is playing (not paused/stopped)
+			if (particleSys_ && isPlaying_) {
+				particleSys_->Update(entityMng_, deltaTime);
 			}
 
 			// Begin graphics frame

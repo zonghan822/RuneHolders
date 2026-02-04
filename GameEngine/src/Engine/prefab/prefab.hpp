@@ -39,7 +39,8 @@ struct PrefabData {
     bool hasCollider;  // legacy
 
     // New component-based data
-    Editor::EntitySnapshot entityData;  // Full entity snapshot with all components
+    Editor::EntitySnapshot entityData;  // Full entity snapshot with all components (in-memory only)
+    std::string entityJsonData;         // Serialized entity data to load from disk
 
     PrefabData() : name{ "Empty" }, x{ 250.0f }, y{ 250.0f }, width{ 30.f }, height{ 30.f }, color{ 0 }, shape{ 1 }, hasCollider{ 0 } {}  // shape: 0=Circle, 1=Rectangle
 

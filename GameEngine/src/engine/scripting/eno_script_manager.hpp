@@ -61,6 +61,10 @@ namespace Script
 
         // Validate that a script has all required methods for a state
 		static bool validateStateMethods(const std::string& scriptPath, const std::string& stateName);
+		
+		// Helper function to convert std::string to wstring from script management
+		std::wstring StringToWString(const std::string& str);
+
 
 	private:
 		Core::EnoCoreHost& coreHost_;

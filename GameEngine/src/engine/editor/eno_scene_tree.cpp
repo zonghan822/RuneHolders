@@ -1,6 +1,8 @@
 #include "eno_scene_tree.hpp"
 
 #include "../math/math.hpp"
+#include "../ai/state/ai_events.hpp"
+#include "../component/components/visibility.hpp"
 
 namespace Editor
 {
@@ -34,12 +36,13 @@ namespace Editor
 		node->entity_ = entMng_.create<
 			ECSComponents::CollisionComponent, ECSComponents::RenderComponent,
 			ECSComponents::PhysicsComponent, ECSComponents::PlayerComponent,
-			ECSComponents::TransformComponent>(
+			ECSComponents::TransformComponent, ECSComponents::VisibilityComponent>(
 				ECSComponents::CollisionComponent{ 10.f, 10.f, Math::eVec2{5.f, 5.f}, true },
 				ECSComponents::RenderComponent{ 20.f, 20.f, "Trapezoid", 0},
 				ECSComponents::PhysicsComponent{ 1.f },
 				ECSComponents::PlayerComponent{  },
-				ECSComponents::TransformComponent{ Math::eVec2{7.f, 7.f }, Math::eVec2{9.f, 9.f }, Math::eVec2{11.f, 11.f } }
+				ECSComponents::TransformComponent{ Math::eVec2{7.f, 7.f }, Math::eVec2{9.f, 9.f }, Math::eVec2{11.f, 11.f } },
+				ECSComponents::VisibilityComponent{}
 				);
 
 		node->parent_ = parent;
@@ -68,6 +71,12 @@ namespace Editor
 		node->parent_ = parent;
 		node->enabled_ = true;
 		node->script_ = nullptr;
+
+		// Add VisibilityComponent by default if entity doesn't have one
+		if (!entity.has<ECSComponents::VisibilityComponent>(entMng_))
+		{
+			entity.add<ECSComponents::VisibilityComponent>(entMng_, ECSComponents::VisibilityComponent{});
+		}
 
 		Node* unode = node.get();
 		tree_[node->sceneObjectID_] = std::move(node);
@@ -283,8 +292,10 @@ namespace Editor
 
 			// Script attached will receive node metadata
 			// Retrieve each unique class stored for the script
+			// FIX: Use entity_.id() instead of sceneObjectID_ so bridge functions work correctly
 			for (const auto& org : node->script_->origin())
 			{
+				//coreHost_.setMetaData(org, node->entity_.id(), true);
 				coreHost_.setMetaData(org, node->sceneObjectID_, true);
 			}
 		}
@@ -299,8 +310,10 @@ namespace Editor
 
 			// Script attached will receive node metadata
 			// Retrieve each unique class stored for the script
+			// FIX: Use entity_.id() instead of sceneObjectID_ so bridge functions work correctly
 			for (const auto& org : selectedNode_->script_->origin())
 			{
+				//coreHost_.setMetaData(org, selectedNode_->entity_.id(), true);
 				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_, true);
 			}
 		}
@@ -313,6 +326,7 @@ namespace Editor
 		{
 			for (const auto& org : node->script_->origin())
 			{
+				//coreHost_.setMetaData(org, node->entity_.id(), false);
 				coreHost_.setMetaData(org, node->sceneObjectID_, false);
 			}
 		}
@@ -325,6 +339,7 @@ namespace Editor
 		{
 			for (const auto& org : selectedNode_->script_->origin())
 			{
+				//coreHost_.setMetaData(org, selectedNode_->entity_.id(), false);
 				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_, false);
 			}
 		}
@@ -457,7 +472,7 @@ namespace Editor
 				save << "\"Listeners\": { ";
 				for (const auto& listener : it->second->listeners_)
 				{
-					save << "[ " << listener << " ]";
+					save << "- " << listener << " `";
 					if (ltnCount < it->second->listeners_.size() - 1)
 						save << ", ";
 					++ltnCount;
@@ -546,6 +561,8 @@ namespace Editor
 		appendIndent(save, 1);
 		save << "]\n";
 		save << "}\n";
+	save.close();
+	FileSystem::SyncToSource(filename);
 	}
 
 	// Deserialize data
@@ -655,7 +672,9 @@ namespace Editor
 				std::wstring wfname = { fname.begin(), fname.end() };
 				std::wstring wpath = { scriptPath.value().begin(), scriptPath.value().end() };
 
-				node->script_ = std::make_unique<Script::EnoScript>(coreHost_, wfname, wpath);
+				auto script = std::make_unique<Script::EnoScript>(coreHost_, wfname, wpath);
+				attachScript(node.get(), std::move(script));
+				//node->script_ = std::make_unique<Script::EnoScript>(coreHost_, wfname, wpath);
 			}
 
 			// Parent
@@ -683,7 +702,13 @@ namespace Editor
 			// Listeners
 			auto ltnVec = extractListeners(data, "Listeners", nodeStart, nodeEnd);
 			if (ltnVec.has_value())
+			{			
 				listeners.push_back({ node->sceneObjectID_, std::move(ltnVec.value()) });
+			}
+			else
+			{
+				std::cout << "[EnoSceneTree] No listeners found for node " << node->sceneObjectID_ << std::endl;
+			}
 
 			// Enabled
 			any = extract<bool>(data, "Enabled", nodeStart, nodeEnd);
@@ -996,21 +1021,32 @@ namespace Editor
 		std::vector<Listener> ltnVec{};
 
 		size_t paramPos = data.find(param, start);
+
 		if (paramPos != std::string::npos && paramPos < end)
 		{
+
 			size_t paramStrt = data.find_first_of('{', paramPos);
 			size_t paramEnd = data.find_first_of('}', paramStrt);
 
 			std::string listeners = data.substr(paramStrt + 1, paramEnd - paramStrt - 1);
 
 			size_t pos{};
+			int listenerCount = 0;
 			while (pos < listeners.size())
 			{
-				size_t ltnStrt = listeners.find_first_of('[', pos);
-				if (ltnStrt == std::string::npos) break;
 
-				size_t ltnEnd = listeners.find_first_of(']', ltnStrt);
-				if (ltnEnd == std::string::npos) break;
+				size_t ltnStrt = listeners.find_first_of('-', pos);
+				if (ltnStrt == std::string::npos)
+				{
+					break;
+				}
+
+				size_t ltnEnd = listeners.find_first_of('`', ltnStrt);
+				if (ltnEnd == std::string::npos)
+				{
+					break;
+				}
+
 
 				std::string str = trim(listeners.substr(ltnStrt + 1, ltnEnd - ltnStrt - 1));
 
@@ -1021,12 +1057,19 @@ namespace Editor
 				std::getline(iss, compStr, ',');
 				std::getline(iss, sigStr, ',');
 
+
 				Listener l;
 				l.listenerID_ = static_cast<uint32_t>(std::stoul(trim(idStr)));
-				l.component_ = stripPrefix(trim(compStr));
+
+				std::string trimmedComp = trim(compStr);
+
+				l.component_ = stripPrefix(trimmedComp);
+
 				l.signal_ = trim(sigStr);
 
+
 				ltnVec.push_back(l);
+				listenerCount++;
 
 				pos = ltnEnd + 1;
 			}
@@ -1075,16 +1118,21 @@ namespace Editor
 	// Helper for assigning listeners when deserializing save file
 	void EnoSceneTree::setListeners(std::vector<std::pair<uint32_t, std::vector<Listener>>>& nodeLtnPair)
 	{
+
 		for (const auto& [node, listener] : nodeLtnPair)
 		{
+
 			auto it = tree_.find(node);
 			if (it != tree_.end())
 			{
+
 				std::for_each(listener.begin(), listener.end(), [&](const Listener& lid)
 					{
+
 						auto it2 = tree_.find(lid.listenerID_);
 						if (it2 != tree_.end())
 						{
+
 							ECSComponents::EnoComponentRegistry::DeduceCompType(lid.component_, [&]<typename Component>()
 							{
 								connect<Component>(it->second.get(), it2->second.get(), lid.signal_);
@@ -1093,6 +1141,10 @@ namespace Editor
 						else
 							std::cerr << "Listener in deserialization transit does not exist!" << std::endl;
 					});
+			}
+			else
+			{
+				std::cerr << "[EnoSceneTree] Node " << node << " not found in tree!" << std::endl;
 			}
 		}
 	}
