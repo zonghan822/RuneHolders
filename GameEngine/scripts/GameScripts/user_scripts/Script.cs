@@ -19,6 +19,17 @@ namespace Eno
         private static InputAction? ia1;
         private static InputAction? ia2;
 
+        public enum Rarity
+        {
+            common,
+            rare,
+            epic,
+            legendary
+        }
+
+        [Reveal()]
+        public Rarity r = Rarity.common;
+
         public void Begin()
         {
             Console.WriteLine($"ID on script.cs: {this.ID}");
@@ -44,8 +55,6 @@ namespace Eno
 
         public void Update()
         {
-            Console.WriteLine("Calling update!");
-
             // Triggers when releasing A
             if (Input.IsKeyReleased(KeyCode.A))
             {
@@ -69,6 +78,7 @@ namespace Eno
             if (Input.IsKeyPressed(KeyCode.V))
             {
                 Console.WriteLine("Pressed V, volume should be modified on entity 1 now!");
+                //ModifyVolume(5);
             }
         }
 
@@ -89,13 +99,18 @@ namespace Eno
     
 		public void _when_node1_started()
         {
+            
+        }
 
+		public void _when_node3_started()
+        {
+            Console.WriteLine("3 Node1 has started with audio playing! enemycon.cs");
         }
     }
 
-    public class ArmController : ScriptBase
-    {
-        [Reveal(90, 210)]
-        public double velocity = 100.5;
-    }
+    // public class ArmController : ScriptBase
+    // {
+    //     [Reveal(90, 210)]
+    //     public double velocity = 100.5;
+    // }
 }

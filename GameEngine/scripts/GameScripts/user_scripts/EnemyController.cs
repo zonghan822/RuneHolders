@@ -7,18 +7,25 @@ namespace Eno
     {
         public void Begin()
         {
-            Console.WriteLine("Enemy controller Begin invoked!");
+
 		}
 
         public void Update()
         {
-            Console.WriteLine("Enemy controller Update invoked!");
 		}
 	
 		public void _when_node1_started()
         {
-            Console.WriteLine("Node1 has started with audio playing!");
+            Console.WriteLine("1 Node1 has started with audio playing! script.cs");
+        }
+
+		public void _when_node3_started()
+        {
+            Console.WriteLine("3 Node1 has started with audio playing! script.cs");
         }
 	}
 
+    // public class EnemyArm : ScriptBase
+    // {
+    // }
 }

@@ -13,7 +13,8 @@ namespace Eno
 
         // Script instances
         // Stores a dictionary of classes under each node id
-        private Dictionary<uint, Dictionary<string, ScriptBase>> scriptInstances = new();
+        // private Dictionary<uint, Dictionary<string, ScriptBase>> scriptInstances = new();
+        private Dictionary<uint, List<ScriptBase>> scriptInstances = new();
 
         // Setting the assembly for the proxy
         public ScriptProxy(Assembly assembly) => SetAssembly(assembly);
@@ -35,34 +36,40 @@ namespace Eno
         {
             if (!typeCache.TryGetValue(className, out var type))
             {
-                Console.WriteLine($"Class '{className}' cannot be found!");
+                Console.WriteLine($"Class '{className}' not found!");
                 return;
             }
-                
-            // Create new instance of ScriptBase and
-            // insert it into the container
-            ScriptBase instance = (ScriptBase)Activator.CreateInstance(type)!;
 
-            if (!scriptInstances.TryGetValue(entityID, out var innerDict))
+            // Create new instance of the script class
+            ScriptBase instance;
+            try 
             {
-                innerDict = new Dictionary<string, ScriptBase>();
-                scriptInstances[entityID] = innerDict;
+                instance = (ScriptBase)Activator.CreateInstance(type)!;
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine($"Failed to create a new instance of '{className}' : {e.Message}");
+                return;
             }
 
+            // Assign entity ID to script instance
             instance.ID = entityID;
-            innerDict[className] = instance;
+
+            if (!scriptInstances.TryGetValue(entityID, out var list))
+            {
+                list = new List<ScriptBase>();
+                scriptInstances[entityID] = list;
+            }
+
+            list.Add(instance);
         }
 
         // Removing script instance
-        public void DeregisterScriptInstance(string className, uint entityID)
+        public void DeregisterScriptInstance(uint entityID)
         {
-            if (scriptInstances.TryGetValue(entityID, out var innerDict))
+            if (scriptInstances.TryGetValue(entityID, out var list))
             {
-                innerDict.Remove(className);
-
-                // Remove the entity entry if it has no more scripts
-                if (innerDict.Count == 0)
-                    scriptInstances.Remove(entityID);
+                scriptInstances.Remove(entityID);
             }
         }
 
@@ -91,25 +98,48 @@ namespace Eno
         }
 
         // For per-instance calling
-        public void Call(string className, string methodName, uint entityID)
+        public void Call(string methodName, uint entityID)
         {
             // Get the value of the class name, where the call/method resides
-            if (!scriptInstances.TryGetValue(entityID, out var innerDict) ||
-                !innerDict.TryGetValue(className, out var script))
+            if (!scriptInstances.TryGetValue(entityID, out var list))
             {
-                Console.WriteLine($"[ScriptProxy] Entity ID '{entityID}' or Class '{className}' not found in assembly.");
+                Console.WriteLine($"[ScriptProxy] Entity ID '{entityID}' not found in assembly.");
                 return;
             }
 
             // Specify method to be called
-            var method = script.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
-            if (method == null)
+            foreach (var script in list)
             {
-                Console.WriteLine($"[ScriptProxy] Method '{methodName}' not found in class '{className}'.");
-                return;
+                var method = script.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
+                if (method == null)
+                {
+                    Console.WriteLine($"[ScriptProxy] Method '{methodName}' not found in class '{script.GetType().Name}'.");
+                    return;
+                }
+
+                method.Invoke(script, null);
+            }
+        }
+
+        public void PrintScriptInstances()
+        {
+            Console.WriteLine("===== Script Instances =====");
+
+            foreach (var kvp in scriptInstances)
+            {
+                uint entityID = kvp.Key;
+                List<ScriptBase> scripts = kvp.Value;
+
+                Console.WriteLine($"Entity ID: {entityID}, Script Count: {scripts.Count}");
+
+                foreach (var script in scripts)
+                {
+                    // Print the runtime class name
+                    Console.WriteLine($"  - Script Class: {script.GetType().Name}, ID: {script.ID}");
+                }
             }
 
-            method.Invoke(script, null);
+            Console.WriteLine("============================");
         }
     }
 }

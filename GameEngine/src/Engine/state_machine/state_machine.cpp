@@ -1,10 +1,11 @@
 #include "state_machine.hpp"
 #include "../event/event_bus.hpp"
+#include "../eno_core_host/script_event.hpp"
 
 namespace FSM {
 
     void StateMachine::changeState(const char* newState, ECS::Entity& entity,
-        ECS::EntityManager& entMng, const char* entityScriptPath) {
+        ECS::EntityManager& entMng, std::wstring& className) {
         
         // Get the component from the entity
         if (!entity.has<ECSComponents::StateMachineComponent>(entMng)) {
@@ -24,9 +25,9 @@ namespace FSM {
             const ECSComponents::StateInfo* currentStateInfo = sm.getState(sm.currentState);
 
             if (currentStateInfo && currentStateInfo->onExitMethod[0] != '\0') {
-                entMng.getEventBus().publish(ScriptEvent{
+                entMng.getEventBus().publish(Core::ScriptEvent{
                     entity.id(),
-                    entityScriptPath,
+                    className,
                     currentStateInfo->onExitMethod
                     });
             }
@@ -39,9 +40,9 @@ namespace FSM {
 
             // Call enter method
             if (next->onEnterMethod[0] != '\0') {
-                entMng.getEventBus().publish(ScriptEvent{
+                entMng.getEventBus().publish(Core::ScriptEvent{
                     entity.id(),
-                    entityScriptPath,
+                    className,
                     next->onEnterMethod
                     });
             }
@@ -49,7 +50,7 @@ namespace FSM {
     }
 
     void StateMachine::update(ECS::Entity& entity, ECS::EntityManager& entMng,
-        const char* entityScriptPath, float dt) {
+        std::wstring& className) {
         // Get the component from the entity
         if (!entity.has<ECSComponents::StateMachineComponent>(entMng)) {
             return; // No state machine component
@@ -62,11 +63,10 @@ namespace FSM {
             const ECSComponents::StateInfo* currentStateInfo = smComp.getState(smComp.currentState);
 
             if (currentStateInfo && currentStateInfo->onUpdateMethod[0] != '\0') {
-                entMng.getEventBus().publish(ScriptEvent{
+                entMng.getEventBus().publish(Core::ScriptEvent{
                     entity.id(),
-                    entityScriptPath,
-                    currentStateInfo->onUpdateMethod,
-                    dt
+                    className,
+                    currentStateInfo->onUpdateMethod
                     });
             }
         }

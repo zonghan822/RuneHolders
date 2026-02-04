@@ -23,7 +23,7 @@ namespace Bridge {
         ENGINE_API int  __stdcall ModsApplied();
 
         // ============= State Change ==============
-        ENGINE_API void ChangeState(const wchar_t* stateName, uint32_t entityID);
+        ENGINE_API void __stdcall ChangeState(const wchar_t* stateName, uint32_t entityID);
     }
 }
 

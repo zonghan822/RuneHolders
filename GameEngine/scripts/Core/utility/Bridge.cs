@@ -5,16 +5,16 @@ namespace Eno
 {
     public static class Bridge
     {
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine.dll")]
         public static extern bool IsKeyReleased(KeyCode key);
 
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine.dll")]
         public static extern bool IsKeyPressed(KeyCode key);
 
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine.dll")]
         public static extern bool IsKeyHeld(KeyCode key);
 
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine.dll")]
         public static extern int ModsApplied();
     }
 }

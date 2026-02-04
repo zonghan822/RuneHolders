@@ -1,7 +1,6 @@
 #include "eno_scene_tree.hpp"
 
 #include "../math/math.hpp"
-#include "../ai/state/ai_events.hpp"
 
 namespace Editor
 {

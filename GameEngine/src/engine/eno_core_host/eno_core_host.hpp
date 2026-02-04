@@ -204,6 +204,8 @@ namespace Core
 		RegisterInstanceProxyMethod proxyCall(const wchar_t*, uint32_t, uint8_t);
 		InstancedProxyMethod proxyCall(const wchar_t*, const wchar_t*, uint32_t);
 
+		void callScriptMethod(const std::wstring& className, const std::string& methodName, uint32_t entityID);
+
 		// Define and call any method within the assembly via proxy (a method in C#)
 		ProxyMethod defineProxyDelegate(
 			const char_t*, const char_t*, void*,

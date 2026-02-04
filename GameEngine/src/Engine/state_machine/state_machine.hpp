@@ -8,11 +8,9 @@ namespace FSM {
 
     class StateMachine {
     public:
-        void changeState(const char* name, ECS::Entity& entity, ECS::EntityManager& entMng,
-            const char* entityScriptPath);
+        void changeState(const char* name, ECS::Entity& entity, ECS::EntityManager& entMng, std::wstring& className);
 
-        void update(ECS::Entity& entity, ECS::EntityManager& entMng,
-            const char* entityScriptPath, float dt);
+        void update(ECS::Entity& entity, ECS::EntityManager& entMng, std::wstring& className);
     };
 
 }

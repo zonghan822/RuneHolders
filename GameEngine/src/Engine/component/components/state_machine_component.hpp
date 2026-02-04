@@ -90,6 +90,9 @@ namespace ECSComponents
             return nullptr;
         }
 
+        // Signals
+        std::unordered_map<std::string, Events::EnoSignal> signals_;
+
         template <typename Visitor>
         void reflect(Visitor&& v)
         {

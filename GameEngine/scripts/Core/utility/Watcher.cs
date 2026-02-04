@@ -29,7 +29,7 @@ namespace Eno
 
             watcher = new FileSystemWatcher(scriptsPath, "*.cs")
             {
-                NotifyFilter =    NotifyFilters.LastWrite        // When the file is modified(e.g saved)
+                NotifyFilter =    NotifyFilters.LastWrite       // When the file is modified (e.g saved)
                                 | NotifyFilters.FileName,       // When file is renamed/created/deleted
                 IncludeSubdirectories = true,                   // Include subfolders too
                 EnableRaisingEvents = true                      // Start watcher

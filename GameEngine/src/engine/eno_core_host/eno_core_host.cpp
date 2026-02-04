@@ -1,5 +1,6 @@
 #include "eno_core_host.hpp"
 #include "../file/file_system.hpp"
+#include "script_event.hpp"
 
 namespace Core
 {
@@ -46,6 +47,13 @@ namespace Core
 			if (result2)
 				cnameHandle_ = result2.value();
 		}
+
+		bus_.subscribe<ScriptEvent>(
+			[this](const ScriptEvent& event) {
+				// Call the method using the proxy system
+				callScriptMethod(event.className, event.methodName, event.entityID);
+			}
+		);
 	}
 
 	EnoCoreHost::~EnoCoreHost()
@@ -383,6 +391,35 @@ namespace Core
 		else
 		{
 			std::wcerr << L"[WARN] Could not load delegate for " << fullTypeWithAsm << L" (" << method << L")\n";
+		}
+	}
+
+	// Call a script method using the proxy system
+	void EnoCoreHost::callScriptMethod(const std::wstring& className,
+		const std::string& methodName,
+		uint32_t entityID) {
+		// Convert method name to wide string
+		std::wstring wMethodName(methodName.begin(), methodName.end());
+
+		// Use the instanced proxy call to invoke the method on the specific entity
+		// This calls the C# method on the script instance associated with this entity
+		auto proxyMethod = proxyCall(
+			className.c_str(),
+			wMethodName.c_str(),
+			entityID
+		);
+
+		std::wstring nmsp{ L"Eno" };
+		std::wstring cls{ className.begin(), className.end() };
+		std::wstring signature = nmsp + L"." + cls;
+
+		if (proxyMethod) {
+			// Call the method
+			proxyMethod(signature.c_str(), wMethodName.c_str(), entityID);
+		}
+		else {
+			std::cerr << "[ScriptEventHandler] Failed to get proxy method for: "
+				<< methodName << " on entity " << entityID << std::endl;
 		}
 	}
 

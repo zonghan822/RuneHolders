@@ -13,8 +13,8 @@ namespace Eno
         // Properties to reveal to the engine
         // Getters / Setters
         public string Description { get; set; } = string.Empty;
-        public float Min { get; set; }
-        public float Max { get; set; }
+        public float Min { get; set; } = 0f;
+        public float Max { get; set; } = 0f;
         public bool HasRange { get; set; } = false;
 
         // Constructors
@@ -63,5 +63,17 @@ namespace Eno
         // Origin (Namespace.Class)
         public IntPtr Origin;
 
+        // Enum metadata
+        public IntPtr EnumData;
+    }
+
+    // For enums
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct EnumFieldData
+    {
+        public int Count;       // Number of enum entries
+        public IntPtr Names;
+        public IntPtr Values;
+        public int ValueSize;   // An enum may represent a byte, int, or other arithemetic types
     }
 }

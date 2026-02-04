@@ -11,7 +11,7 @@ namespace Eno
 {
     public static class ScriptSetup
     {
-        [UnmanagedCallersOnly(EntryPoint = "Initialize")]
+        [UnmanagedCallersOnly(EntryPoint = "Init")]
         public static void Initialize(IntPtr pUSPath, IntPtr pDLLPath)
         {
             // Conversion to managed string
@@ -121,12 +121,56 @@ namespace Eno
             // Copy each struct into new block of memory
             for (int i = 0; i < *count; i++)
             {
-                IntPtr structPtr = arrayPtr + (i * size);
-                Marshal.StructureToPtr(fields[i], structPtr, false);
+                var field = fields[i];
+
+                // Allocate unmanaged memory for strings
+                field.Name = AllocString(Marshal.PtrToStringUni(field.Name) ?? "");
+                field.Type = AllocString(Marshal.PtrToStringUni(field.Type) ?? "");
+                field.Value = AllocString(Marshal.PtrToStringUni(field.Value) ?? "");
+                field.Origin = AllocString(Marshal.PtrToStringUni(field.Origin) ?? "");
+
+                // Handle enums
+                if (field.EnumData != IntPtr.Zero)
+                {
+                    var enumField = (EnumFieldData)Marshal.PtrToStructure(field.EnumData, typeof(EnumFieldData))!;
+                    int enumCount = enumField.Count;
+
+                    // Allocate memory for enum names
+                    IntPtr namesPtr = Marshal.AllocCoTaskMem(IntPtr.Size * enumCount);
+                    for (int j = 0; j < enumCount; j++)
+                    {
+                        string enumName = Marshal.PtrToStringUni(Marshal.ReadIntPtr(enumField.Names, j * IntPtr.Size)) ?? "";
+                        Marshal.WriteIntPtr(namesPtr, j * IntPtr.Size, AllocString(enumName));
+                    }
+                    enumField.Names = namesPtr;
+
+                    // Allocate memory for enum values
+                    IntPtr valuesPtr = Marshal.AllocCoTaskMem(sizeof(int) * enumCount);
+                    for (int j = 0; j < enumCount; j++)
+                    {
+                        int value = Marshal.ReadInt32(enumField.Values, j * sizeof(int));
+                        Marshal.WriteInt32(valuesPtr, j * sizeof(int), value);
+                    }
+                    enumField.Values = valuesPtr;
+
+                    // Allocate memory for the EnumFieldData struct itself
+                    IntPtr enumDataPtr = Marshal.AllocCoTaskMem(Marshal.SizeOf<EnumFieldData>());
+                    Marshal.StructureToPtr(enumField, enumDataPtr, false);
+                    field.EnumData = enumDataPtr;
+                }
+
+                // Copy FieldInfoData into the unmanaged array
+                IntPtr structPtr = arrayPtr + i * size;
+                Marshal.StructureToPtr(field, structPtr, false);
             }
 
-            // Cast to a FieldInfoData pointer for the C++ side
             return (FieldInfoData*)arrayPtr;
+        }
+
+        private static IntPtr AllocString(string str)
+        {
+            if (str == null) return IntPtr.Zero;
+            return Marshal.StringToCoTaskMemUni(str);
         }
 
         // Create field data based on number of fields
@@ -136,8 +180,7 @@ namespace Eno
             // Determine type of field
             var type = Type.GetType($"Eno.{scriptName}");
             var result = new List<FieldInfoData>();
-
-            if (type == null)
+            if (type == null) 
                 return result;
 
             // Creates an instance of the type of field
@@ -166,6 +209,60 @@ namespace Eno
                     Max = reveal.Max,
                     HasRange = reveal.HasRange
                 };
+                
+                // Enum handling
+                if (field.FieldType.IsEnum)
+                {
+                    var names = Enum.GetNames(field.FieldType);
+                    var values = Enum.GetValues(field.FieldType);
+
+                    var enumField = new EnumFieldData
+                    {
+                        Count = names.Length,
+                        Names = IntPtr.Zero,
+                        Values = IntPtr.Zero,
+                        ValueSize = 0
+                    };
+
+                    IntPtr namesPtr = Marshal.AllocCoTaskMem(IntPtr.Size * names.Length);
+                    for (int i = 0; i < names.Length; ++i)
+                    {
+                        Marshal.WriteIntPtr(namesPtr, i * IntPtr.Size, Marshal.StringToCoTaskMemUni(names[i]));
+                    }
+                    enumField.Names = namesPtr;
+
+                    IntPtr valuesPtr = Marshal.AllocCoTaskMem(sizeof(int) * values.Length);
+                    Type underlyingType = Enum.GetUnderlyingType(field.FieldType);
+                    int valueSize = underlyingType switch
+                    {
+                        Type t when t == typeof(byte) => 1,
+                        Type t when t == typeof(short) => 2,
+                        Type t when t == typeof(int) => 4,
+                        Type t when t == typeof(long) => 8,
+                        _ => throw new Exception("Unsupported enum type")
+                    };
+
+                    for (int j = 0; j < values.Length; j++)
+                    {
+                        object val = values.GetValue(j)!;
+                        switch (valueSize)
+                        {
+                            case 1: Marshal.WriteByte(valuesPtr, j, (byte)val); break;
+                            case 2: Marshal.WriteInt16(valuesPtr, j * 2, (short)val); break;
+                            case 4: Marshal.WriteInt32(valuesPtr, j * 4, (int)val); break;
+                            case 8: Marshal.WriteInt64(valuesPtr, j * 8, (long)val); break;
+                        }
+                    }
+                    enumField.Values = valuesPtr;
+
+                    IntPtr enumDataPtr = Marshal.AllocCoTaskMem(Marshal.SizeOf<EnumFieldData>());
+                    Marshal.StructureToPtr(enumField, enumDataPtr, false);
+                    data.EnumData = enumDataPtr;
+                }
+                else
+                {
+                    data.EnumData = IntPtr.Zero;
+                }
 
                 result.Add(data);
             }

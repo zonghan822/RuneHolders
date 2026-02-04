@@ -2437,6 +2437,8 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		smEditor.renderStateMachineUI(node, smc);
 	}
 	else {
+		ImGui::SeparatorText("State Machine");
+
 		// Allow adding state machine component if the entity doesn't have one
 		if (ImGui::Button("Add State Machine")) {
 			// Add a default state machine component

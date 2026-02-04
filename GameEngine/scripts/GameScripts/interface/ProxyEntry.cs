@@ -26,30 +26,29 @@ namespace Eno
 
         // Native-callable entry point for registering script instances
         [UnmanagedCallersOnly(EntryPoint = "CallInstancedMethod")]
-        public static void CallInstancedMethod(IntPtr classNamePtr, IntPtr methodNamePtr, uint entityID)
+        public static void CallInstancedMethod(IntPtr methodNamePtr, uint entityID)
         {
             if (proxy == null) return;
 
-            string className = Marshal.PtrToStringUni(classNamePtr)!;
             string methodName = Marshal.PtrToStringUni(methodNamePtr)!;
 
             // Delegates the call into hot-reloaded assembly
-            proxy.Call(className, methodName, entityID);
+            proxy.Call(methodName, entityID);
         }
 
         // Native-callable entry point for registering script instances
-        [UnmanagedCallersOnly(EntryPoint = "RegisterInstances")]
+        [UnmanagedCallersOnly(EntryPoint = "RegisterMethod")]
         public static void InstanceRegistration(IntPtr classNamePtr, uint entityID, byte operation)
         {
             if (proxy == null) return;
 
             bool op = operation != 0;
             string className = Marshal.PtrToStringUni(classNamePtr)!;
-            
+
             if (op)
                 proxy.RegisterScriptInstance(className, entityID);
             else
-                proxy.DeregisterScriptInstance(className, entityID);
+                proxy.DeregisterScriptInstance(entityID);
         }
     }
 }

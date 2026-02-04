@@ -27,8 +27,8 @@ namespace FSM {
             StateMachine& stateMachine = getOrCreateStateMachine(node->sceneObjectID_);
 
             // Update the state machine
-            std::string scriptPath = node->script_->path();
-            stateMachine.update(node->entity_, entityManager, scriptPath.c_str(), deltaTime);
+            std::wstring& className = node->script_->name_;
+            stateMachine.update(node->entity_, entityManager, className);
         }
     }
 
@@ -57,10 +57,10 @@ namespace FSM {
 
             // Get state machine and change state
             StateMachine& stateMachine = getOrCreateStateMachine(nodeID);
-            std::string scriptPath = targetNode->script_->path();
+            std::wstring& className = targetNode->script_->name_;
 
             stateMachine.changeState(newState.c_str(), targetNode->entity_,
-                entityManager, scriptPath.c_str());
+                entityManager, className);
         }
 
         // Clear pending changes

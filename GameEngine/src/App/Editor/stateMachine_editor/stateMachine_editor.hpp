@@ -43,6 +43,7 @@ namespace Editor {
         ECS::EntityManager& entMng_;
         char newStateName_[64] = "";
         char newScriptName_[64] = "";
+        std::string warningBuf_ = "";
         bool showScriptDialog_ = false;
 
         // Render script attachment UI
@@ -165,22 +166,29 @@ namespace Editor {
             ImGui::InputText("State Name", newStateName_, sizeof(newStateName_));
 
             if (ImGui::Button("Add State")) {
-                if (strlen(newStateName_) > 0) {
+                if (!newStateName_ || newStateName_[0] == '\0') {
+                    warningBuf_ = "Empty name not allowed!";
+                }
+                else {
                     addState(node, smComp, newStateName_);
                     newStateName_[0] = '\0';
                 }
             }
 
-            ImGui::SameLine();
+            if (!warningBuf_.empty())
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf_.c_str());
             ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Methods will be auto-generated");
         }
 
         // Add a new state
         void addState(Editor::Node* node, ECSComponents::StateMachineComponent& smComp, const char* stateName) {
+            // to debug
+            std::cout << "Add state..." << std::endl;
             if (smComp.addState(stateName)) {
                 // Auto-generate methods in script if script is attached
                 if (node->script_) {
                     std::string scriptPath = node->script_->path();
+                    std::cout << "Script path: " << scriptPath << std::endl;
                     Script::StateMachineScriptGenerator::generateStateMethods(scriptPath, stateName);
                 }
 
