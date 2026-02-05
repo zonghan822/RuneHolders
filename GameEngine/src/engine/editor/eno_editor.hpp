@@ -141,6 +141,9 @@ namespace Editor
 			//tree_.load(ASSETS_DIR_PATH "saves/scenes/" + filename);
 			tree_.load(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + filename);
 
+			// Re-register scripts after scene load (in case scripting system is already initialized)
+			tree_.registerAllScripts();
+
 			// Publish event to notify UI that scene was cleared
 			bus_.publish(SceneCleared{});
 		}
@@ -338,6 +341,7 @@ namespace Editor
 
 			// Load file first (this sets currentScene)
 			tree_.load(fullPath);
+			tree_.registerAllScripts();
 
 			// Create and append a new scene
 			std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
@@ -390,6 +394,7 @@ namespace Editor
 					if (std::filesystem::exists(fullScenePath))
 					{
 						tree_.load(fullScenePath);
+						tree_.registerAllScripts();
 
 						// Find scene index in scenes_ list
 						auto index = std::find_if(scenes_.begin(), scenes_.end(), [&](const std::unique_ptr<EnoScene>& scene) {return savefile == scene->getSceneName(); });

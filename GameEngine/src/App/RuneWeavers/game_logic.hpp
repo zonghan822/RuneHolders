@@ -141,6 +141,9 @@ private:
     // Combat system methods
     void updateCombatSystem(float deltaTime);       // Handle damage dealing and health updates
 
+    // AI system methods
+    void updateEnemyAI(float deltaTime);            // Update enemy AI movement and pathfinding
+
     // Pause Menu and Spellbook methods
     void spawnSpellbook();                          // Spawn spellbook UI entity
     void destroySpellbook();                        // Destroy spellbook UI entity

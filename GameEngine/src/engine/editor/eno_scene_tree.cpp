@@ -344,6 +344,22 @@ namespace Editor
 		}
 	}
 
+	// Re-register all scripts with the scripting system
+	// This is needed because scenes may load before the scripting system is initialized
+	void EnoSceneTree::registerAllScripts()
+	{
+		for (auto& [id, node] : tree_)
+		{
+			if (node->script_)
+			{
+				for (const auto& org : node->script_->origin())
+				{
+					coreHost_.setMetaData(org, node->sceneObjectID_, true);
+				}
+			}
+		}
+	}
+
 	void EnoSceneTree::save(const std::string& name)
 	{
 		std::string filename{ name };

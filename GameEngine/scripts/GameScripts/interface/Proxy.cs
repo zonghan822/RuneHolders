@@ -38,7 +38,7 @@ namespace Eno
                 Console.WriteLine($"Class '{className}' cannot be found!");
                 return;
             }
-                
+
             // Create new instance of ScriptBase and
             // insert it into the container
             ScriptBase instance = (ScriptBase)Activator.CreateInstance(type)!;

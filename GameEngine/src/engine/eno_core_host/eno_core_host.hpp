@@ -265,14 +265,14 @@ namespace Core
 		hostfxr_get_runtime_delegate_fn delegatefp_ = nullptr;		// Handle for retrieving a runtime delegate
 		hostfxr_close_fn closefp_ = nullptr;							// Handle for closing an initialized host context
 
-		hostfxr_handle hfHandle_;							 // For interfacing CoreCLR through hostfxr
-		void* stateDelegate_;                                // Delegate for calling methods responsible for different game/engine states (e.g begin, update)
-		void* scriptDelegate_;                               // Delegate for retrieving script fields
-		void* proxyDelegate_;                                // Delegate for retrieving script fields
-		void* inputDelegate_;                                // Delegate for communnicating input to C# end
-		void* cnameDelegate_;                                // Delegate for getting class names
-		void* reloadDelegate_;                               // Delegate for handling backend affairs such as script recompilation and reloading							// Delegate for handling backend affairs such as script recompilation and reloading
-		void* writeDelegate_;								 // Delegate for writing signal methods using roslyn
+		hostfxr_handle hfHandle_{ nullptr };				 // For interfacing CoreCLR through hostfxr
+		void* stateDelegate_{ nullptr };                     // Delegate for calling methods responsible for different game/engine states (e.g begin, update)
+		void* scriptDelegate_{ nullptr };                    // Delegate for retrieving script fields
+		void* proxyDelegate_{ nullptr };                     // Delegate for retrieving script fields
+		void* inputDelegate_{ nullptr };                     // Delegate for communnicating input to C# end
+		void* cnameDelegate_{ nullptr };                     // Delegate for getting class names
+		void* reloadDelegate_{ nullptr };                    // Delegate for handling backend affairs such as script recompilation and reloading
+		void* writeDelegate_{ nullptr };					 // Delegate for writing signal methods using roslyn
 
 		GetScriptFieldsMethod fieldsHandle_ = nullptr;
 		GetFileClassNamesMethod cnameHandle_ = nullptr;
@@ -303,12 +303,12 @@ namespace Core
 		// Calling a delegate with input parameters
 		void callDelegate(KeyDelegateInfo&);
 
-		InstancedProxyMethod begin_;
-		InstancedProxyMethod update_;
-		ProxyMethod synchronize_;
-		InstancedProxyMethod signal_;
+		InstancedProxyMethod begin_{ nullptr };
+		InstancedProxyMethod update_{ nullptr };
+		ProxyMethod synchronize_{ nullptr };
+		InstancedProxyMethod signal_{ nullptr };
 
-		RegisterInstanceProxyMethod rpm_;
+		RegisterInstanceProxyMethod rpm_{ nullptr };
 		uint32_t* lastID{ nullptr };
 	};
 }

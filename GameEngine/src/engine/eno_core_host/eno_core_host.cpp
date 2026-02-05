@@ -409,13 +409,11 @@ namespace Core
 			entityID
 		);
 
-		std::wstring nmsp{ L"Eno" };
-		std::wstring cls{ className.begin(), className.end() };
-		std::wstring signature = nmsp + L"." + cls;
-
+		// className is already the full qualified name (e.g., "Eno.PlayerController, GameScripts")
+		// Use it directly without adding "Eno." prefix
 		if (proxyMethod) {
 			// Call the method
-			proxyMethod(signature.c_str(), wMethodName.c_str(), entityID);
+			proxyMethod(className.c_str(), wMethodName.c_str(), entityID);
 		}
 		else {
 			std::cerr << "[ScriptEventHandler] Failed to get proxy method for: "

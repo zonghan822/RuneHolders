@@ -27,7 +27,11 @@ namespace FSM {
             StateMachine& stateMachine = getOrCreateStateMachine(node->sceneObjectID_);
 
             // Update the state machine (pass sceneObjectID_ for script instance lookup)
-            std::wstring& className = node->script_->name_;
+            // Use the full qualified class name from origin() to match how scripts are registered
+            auto& origins = node->script_->origin();
+            if (origins.empty()) continue;
+
+            std::wstring className = *origins.begin();  // Get first origin class name
             stateMachine.update(node->entity_, entityManager, className, node->sceneObjectID_);
         }
     }
@@ -57,7 +61,12 @@ namespace FSM {
 
             // Get state machine and change state (pass sceneObjectID_ for script instance lookup)
             StateMachine& stateMachine = getOrCreateStateMachine(nodeID);
-            std::wstring& className = targetNode->script_->name_;
+
+            // Use the full qualified class name from origin() to match how scripts are registered
+            auto& origins = targetNode->script_->origin();
+            if (origins.empty()) continue;
+
+            std::wstring className = *origins.begin();  // Get first origin class name
 
             stateMachine.changeState(newState.c_str(), targetNode->entity_,
                 entityManager, className, targetNode->sceneObjectID_);

@@ -45,7 +45,7 @@ namespace Eno
 
             bool op = operation != 0;
             string className = Marshal.PtrToStringUni(classNamePtr)!;
-            
+
             if (op)
                 proxy.RegisterScriptInstance(className, entityID);
             else
