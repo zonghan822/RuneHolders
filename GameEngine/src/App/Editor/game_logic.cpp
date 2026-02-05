@@ -1510,6 +1510,10 @@ void GameApplication::updateEntities() {
 			if (playAfterStop)
 			{
 				coreHost.hotReload();
+				// Re-register all scripts after hot reload to create fresh instances
+				// with the newly loaded assembly's types. Without this, the first play
+				// would use stale instances from the previous assembly.
+				engine_.getEnoEditor().getSceneTree().registerAllScripts();
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
 			}
