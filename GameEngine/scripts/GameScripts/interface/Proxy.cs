@@ -23,6 +23,10 @@ namespace Eno
         {
             currentAssembly = assembly;
             typeCache.Clear();
+            // Clear old script instances to prevent stale references to types
+            // from the previous assembly. Scripts will be re-registered by
+            // registerAllScripts() from the C++ side after hot reload.
+            scriptInstances.Clear();
 
             foreach (var t in assembly.GetTypes())
             {

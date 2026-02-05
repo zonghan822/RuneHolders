@@ -29,21 +29,6 @@ namespace Engine
 
 namespace ECSComponents {
 
-	// Button signal types
-	enum signalType
-	{
-		onClick = 1,
-		onHover,
-		onPress
-	};
-
-	// Types of function that the signal can call
-	enum functionType
-	{
-		loadScene = 1,
-		toggleVisibility
-	};
-
 	// Base class template for in game buttons
 	struct ButtonComponent
 	{
@@ -61,63 +46,32 @@ namespace ECSComponents {
 		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
 		/*============================================================================================
-		* \brief		Get the text of the button
+		* \brief		Get the text of selected signal type
 		* \return		std::string
 		*//*========================================================================================*/
-		std::string getName() const
+		std::string getSignalType() const
 		{
-			return std::string(btnText);
+			return std::string(selectedSignalType);
 		}
 
 		/*============================================================================================
-		* \brief		Get the name of the scene the button loads
+		* \brief		Get the text of selected signal type
 		* \return		std::string
 		*//*========================================================================================*/
-		std::string getTargetScene() const
+		char* getSignalType()
 		{
-			return std::string(targetScene);
+			return selectedSignalType;
 		}
 
 		/*============================================================================================
-		* \brief		Sets the name of the scene the button will load
-		* \param[in]	const std::string& sceneName
+		* \brief		Set the text of selected signal type
+		* \return		std::string
 		*//*========================================================================================*/
-		void setTargetScene(const std::string& sceneName)
+		void setSignalType(const std::string& signalName)
 		{
-			// Reset size of c string
-			size_t copy_length = std::min(sceneName.length(), (size_t)32 - 1);
-			std::strncpy(targetScene, sceneName.c_str(), copy_length);
-			// Add null character
-			targetScene[copy_length] = '\0';
-		}
-
-		void setTargetObject(const std::string& objName)
-		{
-			size_t copy_length = std::min(objName.length(), (size_t)63);
-			std::strncpy(targetObject, objName.c_str(), copy_length);
-			targetObject[copy_length] = '\0';
-		}
-
-		// Onclick function
-		/*============================================================================================
-		* \brief		Executes the type of signal that the button contains
-		* \param[in]	signalType signalType, EnoEngine& eng
-		*//*========================================================================================*/
-		void executeSignal(signalType signalType, Engine::EnoEngine& eng);
-
-		/*============================================================================================
-		* \brief		Executes the type of function that the signal contains
-		* \param[in]	functionType funcType, Engine::EnoEngine& eng
-		*//*========================================================================================*/
-		void executeFunction(functionType funcType, Engine::EnoEngine& eng);
-
-		/*============================================================================================
-		* \brief		Returns the number of signal already present in this button
-		* \return		size_t number of signals
-		*//*========================================================================================*/
-		size_t signalsSize() const
-		{
-			return signals.size();
+			size_t copy_length = std::min(signalName.length(), (size_t)63);
+			std::strncpy(selectedSignalType, signalName.c_str(), copy_length);
+			selectedSignalType[copy_length] = '\0';
 		}
 
 		/*============================================================================================
@@ -129,55 +83,16 @@ namespace ECSComponents {
 			return isActive;
 		}
 
-		/*============================================================================================
-		* \brief		Adds a new signal to the back of the signal container
-		* \return		bool reference to if button isActive
-		*//*========================================================================================*/
-		void addSignal()
+		void setTargetObject(const std::string& objName)
 		{
-			signals.emplace_back();
-		}
-
-		/*============================================================================================
-		* \brief		Deletes the selected signal from the container using pop_and_swap
-		* \param[in]	size_t index of the signal in container to delete
-		*//*========================================================================================*/
-		void deleteSignal(size_t index)
-		{	
-			//Replace the element to be deleted (at 'index') 
-			//with the element currently at the back.
-			if (index < signals.size()) {
-				
-				//Only do this if the index isn't already the last element.
-				if (index != signals.size() - 1) {
-					signals[index] = std::move(signals.back());
-				}
-				signals.pop_back();
-			}
-		}
-
-		int getSavedFunctionType() const
-		{
-			return savedFunctionType;
-		}
-
-		void setSavedFunctionType(int type)
-		{
-			savedFunctionType = type;
+			size_t copy_length = std::min(objName.length(), (size_t)63);
+			std::strncpy(targetObject, objName.c_str(), copy_length);
+			targetObject[copy_length] = '\0';
 		}
 
 		std::string getTargetObject() const
 		{
 			return std::string(targetObject);
-		}
-
-		/*============================================================================================
-		* \brief		Returns the signals container
-		* \return		std::vector<std::pair<signalType, functionType>>& to the signal vector
-		*//*========================================================================================*/
-		std::vector<std::pair<signalType, functionType>>& getSignals()
-		{
-			return signals;
 		}
 
 		std::unordered_map<std::string, Events::EnoSignal>& getSignalMap()
@@ -188,17 +103,17 @@ namespace ECSComponents {
 		template <typename Visitor>
 		void reflect(Visitor&& l)
 		{
-			l("BtnText", btnText, "char32");
-			l("TargetScene", targetScene, "char32");
 			l("IsActive", isActive, "bool");
+			l("TargetObject", targetObject, "char64");
+			l("SelectedSignal", selectedSignalType, "char32");
 		}
 
 		template <typename Visitor>
 		void reflect(Visitor&& l) const
 		{
-			l("BtnText", btnText, "char32");
-			l("TargetScene", targetScene, "char32");
 			l("IsActive", isActive, "bool");
+			l("TargetObject", targetObject, "char64");
+			l("SelectedSignal", selectedSignalType, "char32");
 		}
 
 		/*============================================================================================
@@ -244,7 +159,7 @@ namespace ECSComponents {
 			}
 			else
 			{
-				// Check if mousePos is within button 
+				// Check if mousePos is within button
 				if (mousePos.x >= (t.pos.x - (d.width * 0.5f)) &&	// Left limit
 					mousePos.x <= (t.pos.x + (d.width * 0.5f)) &&	// Right limit
 					mousePos.y >= (t.pos.y - (d.height * 0.5f)) &&	// Upper limit
@@ -308,17 +223,12 @@ namespace ECSComponents {
 
 
 	private:
-		// Button name
-		char btnText[32] = "Button";
 
-		// Signal types (To be deleted after bridging)
-		std::vector<std::pair<signalType, functionType>> signals;
-		int savedFunctionType = static_cast<int>(functionType::loadScene);
-
-		// Parameter for scene selection (To be deleted after bridging)
-		char targetScene[32] = "NIL";
-		// Parameter for linking to selected object
+		// Parameter for linking to selected object (listener node name)
 		char targetObject[64] = "";
+
+		// Selected signal type for UI state
+		char selectedSignalType[16] = "";
 
 		// If interactable
 		bool isActive = true;

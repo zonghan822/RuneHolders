@@ -58,7 +58,7 @@ private:
     static constexpr int EDITOR_HEIGHT = 360;   // Base height for zoomed view
     float editorCameraX_ = 0.0f;  // Camera offset X
     float editorCameraY_ = 0.0f;  // Camera offset Y
-    float editorCameraSpeed_ = 300.0f;  // Camera movement speed
+    float editorCameraSpeed_ = 600.0f;  // Camera movement speed
     float editorZoomLevel_ = 1.0f;  // Zoom level (1.0 = normal, >1.0 = zoomed in, <1.0 = zoomed out)
 
     // Track last framebuffer size to avoid recreating every frame

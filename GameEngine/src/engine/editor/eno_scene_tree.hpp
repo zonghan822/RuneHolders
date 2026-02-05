@@ -79,6 +79,9 @@ namespace Editor
 		// Get a node by entity ID
 		Node* getNodeByEntityID(uint32_t entityID);
 
+		// Get a node by scene object ID
+		Node* getNodeBySceneObjectID(uint32_t sceneObjID);
+
 		// Nest a node
 		void nest(Node*);
 		void nest(Node*, Node*);
@@ -150,26 +153,12 @@ namespace Editor
 						std::string{ typeid(Component).name() },
 						signalName });
 
-				// Connect the listener to the emitter
-				// For ButtonComponent: use signalName directly (e.g., "onClick")
-				// For other components: use generated function name (e.g., "_when_node59_onclick")
-				if constexpr (std::is_same_v<Component, ECSComponents::ButtonComponent>)
-				{
-					std::string className = funcClassPair.second;
-					component.signals_[signalName].connect(
-						[this, signalName, className, listenerID = listener->sceneObjectID_](const std::vector<std::any>& params)
-						{
-							coreHost_.signalEmitted(listenerID, signalName, className);
-						});
-				}
-				else
-				{
-					component.signals_[signalName].connect(
-						[this, funcClassPair, listenerID = listener->sceneObjectID_](const std::vector<std::any>& params)
-						{
-							coreHost_.signalEmitted(listenerID, funcClassPair.first, funcClassPair.second);
-						});
-				}
+				// Connect the listener to the emitter using the generated method name
+				component.signals_[signalName].connect(
+					[this, funcClassPair, listenerID = listener->sceneObjectID_](const std::vector<std::any>& params)
+					{
+						coreHost_.signalEmitted(listenerID, funcClassPair.first, funcClassPair.second);
+					});
 			}
 		}
 

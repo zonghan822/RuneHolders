@@ -236,6 +236,12 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("BGM_01_Layer1_loop");  // Main menu BGM
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");  // General scene ambience
 
+	// Typing sounds for dialogue
+	for (int i = 1; i <= 21; ++i) {
+		std::string soundName = "Typing_" + std::string(i < 10 ? "0" : "") + std::to_string(i);
+		audioMng.publishSoundRequest(soundName);
+	}
+
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
 
@@ -612,6 +618,12 @@ void GameApplication::updateGameLogic() {
 			// Add next letter, reset timer
 			dialogueCurrentText_ += dialogueTargetText_[dialogueCurrentText_.size()];
 			dialogueTypeTimer_ -= DIALOGUE_TYPE_SPEED;
+			//Play audio here for keyclicks here: Yun Qi
+			int typingSoundValue = static_cast<int>(randomFloat(1, 22)); // 1-21 inclusive
+			std::string number = (typingSoundValue < 10 ? "0" : "") + std::to_string(typingSoundValue);
+			std::string typeSound = "Typing_" + number;
+			engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", typeSound });
+
 		}
 		auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
 		if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager)) {
@@ -846,9 +858,9 @@ void GameApplication::updateGameLogic() {
 		int editorFbSizeX = getEditorWidth();
 		int editorFbSizeY = getEditorHeight();
 
-		// Clamp camera to world bounds (accounting for zoom)
-		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, worldWidth_ - static_cast<float>(editorFbSizeX));
-		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, worldHeight_ - static_cast<float>(editorFbSizeY));
+		//// Clamp camera to world bounds (accounting for zoom)
+		//editorCameraX_ = std::clamp(editorCameraX_, 0.0f, worldWidth_ - static_cast<float>(editorFbSizeX));
+		//editorCameraY_ = std::clamp(editorCameraY_, 0.0f, worldHeight_ - static_cast<float>(editorFbSizeY));
 
 		// Only resize framebuffer when size changes (expensive operation)
 		if (editorFbSizeX != lastEditorFbWidth_ || editorFbSizeY != lastEditorFbHeight_) {
@@ -1498,6 +1510,10 @@ void GameApplication::updateEntities() {
 			if (playAfterStop)
 			{
 				coreHost.hotReload();
+				// Re-register all scripts after hot reload to create fresh instances
+				// with the newly loaded assembly's types. Without this, the first play
+				// would use stale instances from the previous assembly.
+				engine_.getEnoEditor().getSceneTree().registerAllScripts();
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
 			}
@@ -1506,7 +1522,7 @@ void GameApplication::updateEntities() {
 			{
 				for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
 				{
-					if (node->script_)
+					if (node->script_ && !node->entity_.has<ECSComponents::ButtonComponent>(engine_.getEntityManager()))
 					{
 						for (const auto& org : node->script_->origin())
 						{
@@ -1543,7 +1559,7 @@ void GameApplication::updateEntities() {
 			//for (const auto& node : sceneTree_->getAllNodes())
 			for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
 			{
-				if (node->script_)
+				if (node->script_ && !node->entity_.has<ECSComponents::ButtonComponent>(engine_.getEntityManager()))
 				{
 					for (const auto& org : node->script_->origin())
 					{
@@ -3382,7 +3398,7 @@ void GameApplication::setupMainMenuButtons() {
 	playCollision.isTrigger = true;
 
 	auto& playBtn = playButton.get<ECSComponents::ButtonComponent>(entityManager);
-	playBtn.setTargetScene("Scene1.txt");
+	//playBtn.setTargetScene("Scene1.txt");
 	playBtn.getActive() = true;
 
 	// Controls Button at (363, 1263) with size (79x79) rotated 45 degrees
