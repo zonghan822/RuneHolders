@@ -258,7 +258,7 @@ namespace Core
 		HMODULE hfLib_;
 
 		// Event bus
-		Event::EnoEventBus bus_;
+		Event::EnoEventBus &bus_;
 
 		// Handles
 		hostfxr_initialize_for_runtime_config_fn initfp_ = nullptr;	// Handle for initialization of hosting components
