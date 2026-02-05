@@ -97,6 +97,13 @@ namespace Editor
 		return nullptr;
 	}
 
+	// Get a node by scene object ID
+	Node* EnoSceneTree::getNodeBySceneObjectID(uint32_t sceneObjID)
+	{
+		auto it = tree_.find(sceneObjID);
+		return it != tree_.end() ? it->second.get() : nullptr;
+	}
+
 	// Nest a node
 	void EnoSceneTree::nest(Node* node)
 	{

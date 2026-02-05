@@ -31,5 +31,9 @@ namespace Eno
                 return "";
             return Marshal.PtrToStringUni(ptr) ?? "";
         }
+
+        // for loading of scene, charset unicode = wchar_t* and stdcall = __stdcall
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
+        public static extern void LoadScene(string sceneName);
     }
 }
