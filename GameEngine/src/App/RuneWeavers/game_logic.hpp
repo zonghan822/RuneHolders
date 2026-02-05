@@ -72,7 +72,9 @@ private:
     std::shared_ptr<Graphics::EnoTexture> runeTexture_;  // Cached rune spritesheet texture
 
     std::shared_ptr<Graphics::EnoTexture> runeTextureGrey_;     // Grey Small Sheet
-    std::shared_ptr<Graphics::EnoTexture> runeTextureGreen_;    // Green Large Sheet        
+    std::shared_ptr<Graphics::EnoTexture> runeTextureGreen_;    // Green Large Sheet
+    std::shared_ptr<Graphics::EnoTexture> runeTextureRed_;      // Red Small Sheet (invalid state)
+    std::shared_ptr<Graphics::EnoTexture> runeLineTexture_;     // Line connection texture        
 
     // Pause Menu and Spellbook System
     bool isPaused_ = false;

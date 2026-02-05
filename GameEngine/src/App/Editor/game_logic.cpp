@@ -2204,14 +2204,14 @@ void GameApplication::updateRuneVisualStates()
 		switch (rune.visualState)
 		{
 		case ECSComponents::RuneVisualState::UNAVAILABLE:
-			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> UNAVAILABLE (grey)" << std::endl;
+			//std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> UNAVAILABLE (grey)" << std::endl;
 			draw.texture = runeTextureGrey_;
 			draw.width = 40.0f;   // Small size
 			draw.height = 40.0f;
 			break;
 
 		case ECSComponents::RuneVisualState::SELECTED:
-			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> SELECTED (green)" << std::endl;
+			//std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> SELECTED (green)" << std::endl;
 			draw.texture = runeTextureGreen_;
 			draw.width = 56.0f;   // Large size
 			draw.height = 56.0f;
@@ -2219,7 +2219,7 @@ void GameApplication::updateRuneVisualStates()
 
 		case ECSComponents::RuneVisualState::AVAILABLE_START:
 		case ECSComponents::RuneVisualState::NEXT_VALID:
-			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> AVAILABLE (white)" << std::endl;
+			//std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> AVAILABLE (white)" << std::endl;
 			draw.texture = runeTexture_;  // White Large
 			draw.width = 56.0f;
 			draw.height = 56.0f;
@@ -2227,8 +2227,8 @@ void GameApplication::updateRuneVisualStates()
 		}
 
 		// Debug: verify texture was applied
-		std::cout << "[DEBUG] Rune " << rune.runeNumber << " texture after apply: "
-		          << (draw.texture && draw.texture->isValid() ? "VALID" : "NULL/INVALID") << std::endl;
+		//std::cout << "[DEBUG] Rune " << rune.runeNumber << " texture after apply: "
+		         // << (draw.texture && draw.texture->isValid() ? "VALID" : "NULL/INVALID") << std::endl;
 	}
 }
 

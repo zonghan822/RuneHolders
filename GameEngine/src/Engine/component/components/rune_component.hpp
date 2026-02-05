@@ -38,7 +38,16 @@ namespace ECSComponents
         UNAVAILABLE,        // Grey Small
         AVAILABLE_START,    // White Large - valid starting rune
         SELECTED,           // Green Large
-        NEXT_VALID          // White Large - next valid in sequence
+        NEXT_VALID,         // White Large - next valid in sequence
+        INVALID             // Red Small - invalid selection feedback
+    };
+
+    // Line color states for connection lines between runes
+    enum class LineColorState
+    {
+        SELECTING,          // Yellow - while drawing
+        SUCCESS,            // Green - valid spell complete
+        INVALID             // Red - invalid combo
     };
 
     /*============================================================================================
@@ -385,11 +394,23 @@ namespace ECSComponents
     struct RuneSystemStateComponent
     {
         static constexpr int SPELL_SEQUENCE_LENGTH = 4;
+        static constexpr float INVALID_STATE_DURATION = 1.0f;   // Duration of red flash
+        static constexpr float SUCCESS_STATE_DURATION = 0.5f;   // Duration of green flash
 
         bool isLeftClickHeld;           // Is left mouse button held down
         bool runesActive;               // Are runes currently spawned
         bool isDrawingLine;             // Is player drawing a connection line
         bool spellCasted;               // Has a spell been cast this cycle
+
+        // Invalid state tracking
+        bool isInvalidState;            // Are we in the invalid (red flash) state?
+        float invalidStateTimer;        // Timer for invalid state duration
+
+        // Success state tracking
+        bool isSuccessState;            // Are we in the success (green flash) state?
+        float successStateTimer;        // Timer for success state duration
+
+        LineColorState lineColorState;  // Current color state for connection lines
 
         // Track all 6 runes
         uint32_t runeEntityIDs[RUNE_COUNT]; // IDs of all spawned runes
@@ -413,6 +434,11 @@ namespace ECSComponents
             , runesActive(false)
             , isDrawingLine(false)
             , spellCasted(false)
+            , isInvalidState(false)
+            , invalidStateTimer(0.0f)
+            , isSuccessState(false)
+            , successStateTimer(0.0f)
+            , lineColorState(LineColorState::SELECTING)
             , connectionCount(0)
             , lineEnd(0.0f, 0.0f)
             , runeCircleRadius(100.0f)
@@ -433,10 +459,22 @@ namespace ECSComponents
             connectionCount = 0;
             isDrawingLine = false;
             spellCasted = false;
+            isInvalidState = false;
+            invalidStateTimer = 0.0f;
+            isSuccessState = false;
+            successStateTimer = 0.0f;
+            lineColorState = LineColorState::SELECTING;
             for (int i = 0; i < SPELL_SEQUENCE_LENGTH; ++i) {
                 connectedRuneSequence[i] = -1;
                 connectedPositions[i] = {0.0f, 0.0f};
             }
+        }
+
+        // Check if a rune number is a valid next selection
+        bool isValidNextRune(int runeNumber) const
+        {
+            int validMask = getValidNextRunes();
+            return (validMask & (1 << runeNumber)) != 0;
         }
 
         // Add a rune to the connection sequence
@@ -497,7 +535,7 @@ namespace ECSComponents
             {
                 validMask |= (1 << 3);  // Rune 3 (Ice start)
                 validMask |= (1 << 4);  // Rune 4 (Light start)
-                validMask |= (1 >> 6);  // Rune 6 (Fire start)
+                validMask |= (1 << 6);  // Rune 6 (Fire start)
                 return validMask;
             }
 

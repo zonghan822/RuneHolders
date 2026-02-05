@@ -756,6 +756,17 @@ void GameApplication::updateGameLogic() {
 		particleSystem->Render(graphics_, engine_.getEntityManager(), cameraOffset);
 	}
 
+	// Draw rune connection lines ON TOP of everything else
+	if (runeSystemInitialized_) {
+		ECS::Entity runeSystemEntity(runeSystemEntityID_);
+		if (runeSystemEntity.has<ECSComponents::RuneSystemStateComponent>(entityManager)) {
+			auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+			if (runeState.isDrawingLine) {
+				drawRuneConnectionLine();
+			}
+		}
+	}
+
 	graphics_.flush();
 	displayFPS();
 }
@@ -1401,9 +1412,25 @@ void GameApplication::initializeRuneSystem()
 	runeTexture_ = resourceLoader.getTexture("Runes_White_Sheet_Large");
 	runeTextureGrey_ = resourceLoader.getTexture("Runes_Grey_Sheet_Small");
 	runeTextureGreen_ = resourceLoader.getTexture("Runes_Green_Sheet_Large");
+	runeTextureRed_ = resourceLoader.getTexture("Runes_Red_Sheet_Small");
 
 	if (!runeTexture_ || !runeTexture_->isValid()) {
-		std::cerr << "[RuneSystem] WARNING: Failed to pre-load rune texture!" << std::endl;
+		std::cerr << "[RuneSystem] WARNING: Failed to pre-load white rune texture!" << std::endl;
+	}
+	if (!runeTextureGrey_ || !runeTextureGrey_->isValid()) {
+		std::cerr << "[RuneSystem] WARNING: Failed to pre-load grey rune texture!" << std::endl;
+	}
+	if (!runeTextureGreen_ || !runeTextureGreen_->isValid()) {
+		std::cerr << "[RuneSystem] WARNING: Failed to pre-load green rune texture!" << std::endl;
+	}
+	if (!runeTextureRed_ || !runeTextureRed_->isValid()) {
+		std::cerr << "[RuneSystem] WARNING: Failed to pre-load red rune texture!" << std::endl;
+	}
+
+	// Load line texture
+	runeLineTexture_ = resourceLoader.getTexture("Runes-LineRender");
+	if (!runeLineTexture_ || !runeLineTexture_->isValid()) {
+		std::cerr << "[RuneSystem] WARNING: Failed to pre-load line texture!" << std::endl;
 	}
 
 	// Create all 6 runes once (pooled) - position off-screen
@@ -1481,6 +1508,56 @@ void GameApplication::updateRuneSystem()
 
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
+	// Handle invalid state timer
+	if (runeState.isInvalidState)
+	{
+		float deltaTime = static_cast<float>(engine_.getDeltaTime());
+		runeState.invalidStateTimer += deltaTime;
+
+		std::cout << "[RuneSystem] In invalid state, timer: " << runeState.invalidStateTimer << std::endl;
+
+		// Keep updating visual states to ensure red textures are applied
+		updateRuneVisualStates();
+
+		// After duration, reset runes
+		if (runeState.invalidStateTimer >= ECSComponents::RuneSystemStateComponent::INVALID_STATE_DURATION)
+		{
+			std::cout << "[RuneSystem] Invalid state timer expired, destroying runes" << std::endl;
+			destroyRunes();
+			runeState.runesActive = false;
+			runeState.isLeftClickHeld = false;
+			runeState.isDrawingLine = false;
+			// resetConnection() is called in destroyRunes(), which resets isInvalidState
+		}
+
+		// Lines will be drawn at end of render pipeline
+		// While in invalid state, don't process normal input
+		return;
+	}
+
+	// Handle success state timer (green flash after valid spell)
+	if (runeState.isSuccessState)
+	{
+		float deltaTime = static_cast<float>(engine_.getDeltaTime());
+		runeState.successStateTimer += deltaTime;
+
+		std::cout << "[RuneSystem] In success state, timer: " << runeState.successStateTimer << std::endl;
+
+		// Lines will be drawn at end of render pipeline
+		// After duration, destroy runes
+		if (runeState.successStateTimer >= ECSComponents::RuneSystemStateComponent::SUCCESS_STATE_DURATION)
+		{
+			std::cout << "[RuneSystem] Success state timer expired, destroying runes" << std::endl;
+			destroyRunes();
+			runeState.runesActive = false;
+			runeState.isLeftClickHeld = false;
+			runeState.isDrawingLine = false;
+		}
+
+		// While in success state, don't process normal input
+		return;
+	}
+
 	// Get camera position for world space conversion
 	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
 	float cameraX = 0.0f;
@@ -1543,10 +1620,7 @@ void GameApplication::updateRuneSystem()
 		runeState.isDrawingLine = false;
 	}
 
-	// Draw connection line if active
-	if (runeState.isDrawingLine) {
-		drawRuneConnectionLine();
-	}
+	// Lines are now drawn at the end of the render pipeline in updateGameLogic()
 
 	// Update fireballs - check lifetime and destroy expired ones
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
@@ -1591,8 +1665,13 @@ void GameApplication::updateRuneVisualStates()
 		auto& rune = runeEntity.get<ECSComponents::RuneComponent>(entityManager);
 		auto& draw = runeEntity.get<ECSComponents::DrawInfoComponent>(entityManager);
 
-		// Determine visual state
-		if (rune.isConnected)
+		// If in invalid state, ALL runes show red
+		if (runeState.isInvalidState)
+		{
+			rune.visualState = ECSComponents::RuneVisualState::INVALID;
+		}
+		// Otherwise determine visual state normally
+		else if (rune.isConnected)
 		{
 			rune.visualState = ECSComponents::RuneVisualState::SELECTED;
 		}
@@ -1631,6 +1710,14 @@ void GameApplication::updateRuneVisualStates()
 			draw.texture = runeTexture_;  // White Large
 			draw.width = 56.0f;
 			draw.height = 56.0f;
+			break;
+
+		case ECSComponents::RuneVisualState::INVALID:
+			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> INVALID (red), runeTextureRed_ is "
+			          << (runeTextureRed_ && runeTextureRed_->isValid() ? "VALID" : "NULL/INVALID") << std::endl;
+			draw.texture = runeTextureRed_;
+			draw.width = 40.0f;   // Small size
+			draw.height = 40.0f;
 			break;
 		}
 
@@ -1748,8 +1835,45 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 		rune.isHovered = (dist <= rune.radius);
 
 		// Rune hover - add to sequence if not already connected and not banned
-		if (rune.isHovered && !wasHovered && !rune.isConnected && !rune.isBanned && !runeState.spellCasted)
+		// Also check visual state - only allow selecting AVAILABLE_START or NEXT_VALID runes
+		bool isSelectable = (rune.visualState == ECSComponents::RuneVisualState::AVAILABLE_START ||
+		                     rune.visualState == ECSComponents::RuneVisualState::NEXT_VALID);
+		if (rune.isHovered && !wasHovered && !rune.isConnected && !rune.isBanned && !runeState.spellCasted && !runeState.isInvalidState
+			&& isSelectable)
 		{
+			// Debug: Check validity
+			int validMask = runeState.getValidNextRunes();
+			bool isValid = runeState.isValidNextRune(rune.runeNumber);
+			std::cout << "[RuneSystem] Hover rune " << rune.runeNumber
+			          << ", connectionCount=" << runeState.connectionCount
+			          << ", validMask=0x" << std::hex << validMask << std::dec
+			          << ", isValid=" << (isValid ? "true" : "false") << std::endl;
+
+			// Check if this rune is a valid next choice
+			if (!isValid)
+			{
+				// Invalid selection! Only trigger if we have at least 1 rune connected
+				if (runeState.connectionCount > 0)
+				{
+					std::cout << "[RuneSystem] INVALID selection: Rune " << rune.runeNumber
+					          << " is not valid after sequence of " << runeState.connectionCount << " runes" << std::endl;
+
+					// Enter invalid state
+					runeState.isInvalidState = true;
+					runeState.invalidStateTimer = 0.0f;
+					runeState.lineColorState = ECSComponents::LineColorState::INVALID;
+
+					// Play invalid sound
+					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });  // TODO: use a different sound for invalid
+
+					// Update visuals to show all red
+					updateRuneVisualStates();
+					return;  // Stop processing hover
+				}
+				// If no runes connected yet, just ignore the invalid selection
+				continue;
+			}
+
 			// Try to add this rune to the sequence
 			if (runeState.addRuneToSequence(rune.runeNumber, transform.pos))
 			{
@@ -1770,7 +1894,11 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 
 					if (spellType != ECSComponents::SpellType::NONE)
 					{
-						// Valid spell!
+						// Valid spell! Enter success state with green lines
+						runeState.lineColorState = ECSComponents::LineColorState::SUCCESS;
+						runeState.isSuccessState = true;
+						runeState.successStateTimer = 0.0f;
+
 						std::cout << "[RuneSystem] Valid spell cast: ";
 						switch (spellType) {
 							case ECSComponents::SpellType::ICE:
@@ -1792,7 +1920,11 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 					}
 					else
 					{
-						// Invalid sequence
+						// Invalid 4-rune sequence - enter invalid state with red lines
+						runeState.lineColorState = ECSComponents::LineColorState::INVALID;
+						runeState.isInvalidState = true;
+						runeState.invalidStateTimer = 0.0f;
+
 						std::cout << "[RuneSystem] Invalid spell sequence: "
 						          << runeState.connectedRuneSequence[0] << "-"
 						          << runeState.connectedRuneSequence[1] << "-"
@@ -1801,11 +1933,7 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 					}
 
 					runeState.spellCasted = true;
-
-					// Destroy runes after spell attempt
-					destroyRunes();
-					runeState.runesActive = false;
-					runeState.isDrawingLine = false;
+					// Don't destroy immediately - let the success/invalid state timer handle it
 					return;
 				}
 			}
@@ -1825,6 +1953,29 @@ void GameApplication::drawRuneConnectionLine()
 	auto& graphics = engine_.getGraphicsManager();
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+
+	// Determine line color based on state
+	Graphics::Color lineColor;
+	switch (runeState.lineColorState)
+	{
+	case ECSComponents::LineColorState::SELECTING:
+		lineColor = Graphics::Color(1.0f, 1.0f, 0.0f, 0.9f);  // Yellow
+		break;
+	case ECSComponents::LineColorState::SUCCESS:
+		lineColor = Graphics::Color(0.0f, 1.0f, 0.0f, 0.9f);  // Green
+		break;
+	case ECSComponents::LineColorState::INVALID:
+		lineColor = Graphics::Color(1.0f, 0.0f, 0.0f, 0.9f);  // Red
+		break;
+	default:
+		lineColor = Graphics::Color(1.0f, 1.0f, 0.0f, 0.9f);  // Default yellow
+		break;
+	}
+
+	constexpr float LINE_WIDTH = 8.0f;  // Line thickness in pixels
+
+	std::cout << "[DEBUG] drawRuneConnectionLine called, connectionCount=" << runeState.connectionCount
+	          << ", lineEnd=(" << runeState.lineEnd.x << "," << runeState.lineEnd.y << ")" << std::endl;
 
 	// Draw lines between connected runes (multi-segment line)
 	for (int i = 0; i < runeState.connectionCount; ++i)
@@ -1857,13 +2008,44 @@ void GameApplication::drawRuneConnectionLine()
 				screenStart.y + direction.y / 2.0f
 			};
 
-			graphics.drawRect(
-				midpoint,
-				Math::eVec2<float>{length, 3.0f},  // 3 pixels wide
-				Graphics::Color(1.0f, 1.0f, 0.0f, 0.8f),  // Yellow with transparency
-				true,
-				angle
-			);
+			// drawTexturedQuad expects top-left corner, not center
+			// Calculate top-left position so the rectangle is centered at midpoint
+			Math::eVec2<float> topLeft = {
+				midpoint.x - length / 2.0f,
+				midpoint.y - LINE_WIDTH / 2.0f
+			};
+
+			std::cout << "[DEBUG] Drawing line segment " << i << ": from (" << screenStart.x << "," << screenStart.y
+			          << ") to (" << screenEnd.x << "," << screenEnd.y << "), length=" << length
+			          << ", topLeft=(" << topLeft.x << "," << topLeft.y << ")" << std::endl;
+
+			// TEMP: Force fallback rect to test if drawing works at all
+			// TODO: Re-enable texture once rect is confirmed working
+			bool useTexture = false;  // Set to true to use texture, false to test with rect
+
+			if (useTexture && runeLineTexture_ && runeLineTexture_->isValid())
+			{
+				std::cout << "[DEBUG] Using textured line" << std::endl;
+				graphics.drawTexturedQuad(
+					topLeft,
+					Math::eVec2<float>{length, LINE_WIDTH},
+					runeLineTexture_,
+					lineColor,
+					angle
+				);
+			}
+			else
+			{
+				std::cout << "[DEBUG] Using fallback rect" << std::endl;
+				// Fallback to colored rectangle
+				graphics.drawRect(
+					topLeft,
+					Math::eVec2<float>{length, LINE_WIDTH},
+					lineColor,
+					true,
+					angle
+				);
+			}
 		}
 	}
 }
