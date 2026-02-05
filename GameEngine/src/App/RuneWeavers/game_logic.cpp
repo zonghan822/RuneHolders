@@ -1423,11 +1423,17 @@ void GameApplication::initializeRuneSystem()
 		rune.add<ECSComponents::TransformComponent>(entityManager);
 		rune.add<ECSComponents::DrawInfoComponent>(entityManager);
 		rune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(i, runeNumber, 30.0f));
+		rune.add<ECSComponents::VisibilityComponent>(entityManager);
 
 		// Configure transform - position off-screen initially
 		auto& transform = rune.get<ECSComponents::TransformComponent>(entityManager);
 		transform.pos = { OFF_SCREEN_POS, OFF_SCREEN_POS };
 		transform.scale = { 1.0f, 1.0f };
+
+		// Configure visibility - high z_index to draw on top of everything
+		auto& visibility = rune.get<ECSComponents::VisibilityComponent>(entityManager);
+		visibility.z_index = 15;  // High value within MAX_LAYERS (20) = drawn on top
+		visibility.visible = true;
 
 		// Configure draw info
 		auto& draw = rune.get<ECSComponents::DrawInfoComponent>(entityManager);
