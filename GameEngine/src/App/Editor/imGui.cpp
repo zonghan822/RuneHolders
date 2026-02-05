@@ -4301,31 +4301,25 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 #endif
 
 
-//Demo states, Find a way to bridge to C# side so that it takes states from entity instead.
+// Read states from entity's StateMachineComponent
 void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
-//void assetPresetsTab(Engine::EnoEngine& engine_, Node* node) {
-	/*ECS::Entity& entity = node->entity_;*/
 	Node* entNode = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id());
-	std::vector<std::string> states { "Death", "Idle", "Attack", "Walk"};
-	std::string stateName{};
-	//std::vector<std::string> stateEntries{};
-	
-#if 0 //this will happen after merging. States to be integrated with the game. Keep an eye to have Node instead of entity as param if possible. 
-	// Store exported enum
-	for (auto const& [first, second] : node.script_->vars()) {
-		stateName = Conversion::wideToUtf8(first);
-		
-		if (!second.enumEntries.empty())
-		{
-			//stateEntries.push_back(Conversion::wideToUtf8(enumEntries.name_));
-			states.push_back(Conversion::wideToUtf8(enumEntries.name_));
+	auto& entMng = engine_.getEntityManager();
+
+	// Read states from StateMachineComponent if available
+	std::vector<std::string> states{ "Idle", "Walk", "Attack", "Death" };
+	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
+		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
+		for (int i = 0; i < smc.numStates; ++i) {
+			if (smc.states[i].name[0] != '\0') {
+				states.push_back(smc.states[i].name);
+			}
 		}
 	}
-#endif
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	const auto& textures = loader.getAllTextures();
 	static std::string selected = "";  //currently selected
-	auto& entMng = engine_.getEntityManager();
+	//auto& entMng = engine_.getEntityManager();
 	auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;  //This can be useful later on to find the behaviors/entity states available
 
 	//Dynamically allow player to choose the state that they want to edit.
