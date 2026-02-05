@@ -102,6 +102,9 @@ private:
     // Rune System
     uint32_t runeSystemEntityID_;  // ID of entity holding RuneSystemStateComponent
     bool runeSystemInitialized_ = false;
+    std::shared_ptr<Graphics::EnoTexture> runeTexture_;       // White Large sheet
+    std::shared_ptr<Graphics::EnoTexture> runeTextureGrey_;   // Grey Small sheet
+    std::shared_ptr<Graphics::EnoTexture> runeTextureGreen_;  // Green Large sheet
 
     // Particle Test
     uint32_t testParticleEntityID_ = 0;
@@ -222,6 +225,7 @@ private:
     void spawnRunes(const Math::eVec2<float>& mouseWorldPos);       // Spawn left and right runes
     void destroyRunes();                                            // Destroy spawned runes
     void updateRuneHover(const Math::eVec2<float>& mouseWorldPos);  // Check if mouse hovers over runes
+    void updateRuneVisualStates();                                  // Update rune visuals based on selection
     void drawRuneConnectionLine();                                  // Draw line connecting runes
     void spawnFireball(const Math::eVec2<float>& pos);              // Spawn fireball when runes connect
     void spawnFloatingText(const Math::eVec2<float>& pos, const char* text);  // Spawn floating text message

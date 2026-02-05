@@ -2084,6 +2084,72 @@ void GameApplication::updateRuneSystem()
 	}
 }
 
+void GameApplication::updateRuneVisualStates()
+{
+	auto& entityManager = engine_.getEntityManager();
+	ECS::Entity runeSystemEntity(runeSystemEntityID_);
+	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+
+	int validNextRunes = runeState.getValidNextRunes();
+
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i)
+	{
+		if (runeState.runeEntityIDs[i] == UINT32_MAX) continue;
+
+		ECS::Entity runeEntity(runeState.runeEntityIDs[i]);
+		if (!runeEntity.has<ECSComponents::RuneComponent>(entityManager) || !runeEntity.has<ECSComponents::DrawInfoComponent>(entityManager)) continue;
+
+		auto& rune = runeEntity.get<ECSComponents::RuneComponent>(entityManager);
+		auto& draw = runeEntity.get<ECSComponents::DrawInfoComponent>(entityManager);
+
+		// Determine visual state
+		if (rune.isConnected)
+		{
+			rune.visualState = ECSComponents::RuneVisualState::SELECTED;
+		}
+		else if (validNextRunes & (1 << rune.runeNumber))
+		{
+			if (runeState.connectionCount == 0)
+				rune.visualState = ECSComponents::RuneVisualState::AVAILABLE_START;
+			else
+				rune.visualState = ECSComponents::RuneVisualState::NEXT_VALID;
+		}
+		else
+		{
+			rune.visualState = ECSComponents::RuneVisualState::UNAVAILABLE;
+		}
+
+		// Apply texture and size based on visual state
+		switch (rune.visualState)
+		{
+		case ECSComponents::RuneVisualState::UNAVAILABLE:
+			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> UNAVAILABLE (grey)" << std::endl;
+			draw.texture = runeTextureGrey_;
+			draw.width = 40.0f;   // Small size
+			draw.height = 40.0f;
+			break;
+
+		case ECSComponents::RuneVisualState::SELECTED:
+			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> SELECTED (green)" << std::endl;
+			draw.texture = runeTextureGreen_;
+			draw.width = 56.0f;   // Large size
+			draw.height = 56.0f;
+			break;
+
+		case ECSComponents::RuneVisualState::AVAILABLE_START:
+		case ECSComponents::RuneVisualState::NEXT_VALID:
+			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> AVAILABLE (white)" << std::endl;
+			draw.texture = runeTexture_;  // White Large
+			draw.width = 56.0f;
+			draw.height = 56.0f;
+			break;
+		}
+
+		// Debug: verify texture was applied
+		std::cout << "[DEBUG] Rune " << rune.runeNumber << " texture after apply: "
+		          << (draw.texture && draw.texture->isValid() ? "VALID" : "NULL/INVALID") << std::endl;
+	}
+}
 
 void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 {
@@ -2091,13 +2157,31 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
+	// Load all rune textures independently
 	auto& resourceLoader = engine_.getResourceLoader();
 
-	// Load the rune spritesheet
-	auto runeTexture = resourceLoader.getTexture("Runes_White_Sheet_Large");
+	if (!runeTexture_ || !runeTexture_->isValid()) {
+		runeTexture_ = resourceLoader.getTexture("Runes_White_Sheet_Large");
+	}
+	if (!runeTextureGrey_ || !runeTextureGrey_->isValid()) {
+		runeTextureGrey_ = resourceLoader.getTexture("Runes_Grey_Sheet_Small");
+	}
+	if (!runeTextureGreen_ || !runeTextureGreen_->isValid()) {
+		runeTextureGreen_ = resourceLoader.getTexture("Runes_Green_Sheet_Large");
+	}
+
+	// Debug: Check texture loading status
+	std::cout << "[DEBUG] runeTexture_ (white): " << (runeTexture_ && runeTexture_->isValid() ? "VALID" : "NULL/INVALID") << std::endl;
+	std::cout << "[DEBUG] runeTextureGrey_: " << (runeTextureGrey_ && runeTextureGrey_->isValid() ? "VALID" : "NULL/INVALID") << std::endl;
+	std::cout << "[DEBUG] runeTextureGreen_: " << (runeTextureGreen_ && runeTextureGreen_->isValid() ? "VALID" : "NULL/INVALID") << std::endl;
+
+	if (!runeTexture_ || !runeTexture_->isValid()) {
+		std::cerr << "[RuneSystem] ERROR: Failed to load rune texture!" << std::endl;
+		return;
+	}
 
 	constexpr float PI = 3.14159265359f;
-	
+
 	// Rune numbers at each position (0=TL, 1=TR, 2=MR, 3=BR, 4=BL, 5=ML)
 	const int runeNumbers[6] = { 6, 1, 2, 3, 4, 5 };
 
@@ -2105,7 +2189,7 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	runeState.circleCenter = mouseWorldPos;
 
 	// Spawn 6 runes in a circle pattern
-	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i) 
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i)
 	{
 		// Calculate angles
 		float angle = (-120.0f + i * 60.0f) * (PI / 180.0f);
@@ -2133,7 +2217,7 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 		draw.height = 56.0f;
 		draw.color = Graphics::Color::White;
 		strcpy_s(draw.shape, "Rectangle");
-		draw.texture = runeTexture;
+		draw.texture = runeTexture_;
 
 		// Store entity ID
 		runeState.runeEntityIDs[i] = rune.id();
@@ -2142,6 +2226,9 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 
 	// Reset connection state
 	runeState.resetConnection();
+
+	// Set initial visual states (starting runes highlighted)
+	updateRuneVisualStates();
 
 	entitiesDirty_ = true;
 }
@@ -2204,6 +2291,9 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 			{
 				rune.isConnected = true;
 				runeState.isDrawingLine = true;
+
+				// Update visual states to show next valid runes
+				updateRuneVisualStates();
 
 				// Play sound
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
