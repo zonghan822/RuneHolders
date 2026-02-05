@@ -535,7 +535,6 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 			// Remove from scene hierarchy and destroy children
 			Node* node = sceneTree.getNodeByEntityID(a.id());
 			if (node) {
-				engine_.getStateMachineSys().removeStateMachine(node->sceneObjectID_);
 				destroyChildrenRecursive(node, entityManager);
 				sceneTree.kill(node);
 			}
@@ -1076,7 +1075,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				// Remove from scene hierarchy and destroy children
 				Editor::Node* node = sceneTree.getNodeByEntityID(playerEntityID_);
 				if (node) {
-					engine_.getStateMachineSys().removeStateMachine(node->sceneObjectID_);
 					destroyChildrenRecursive(node, engine_.getEntityManager());
 					sceneTree.kill(node);
 				}
@@ -1379,9 +1377,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 			// First, destroy all child entities recursively
 			destroyChildrenRecursive(node, em);
-
-			// Clean up state machine
-			engine_.getStateMachineSys().removeStateMachine(node->sceneObjectID_);
 
 			// Then kill the scene tree nodes (removes from tree structure)
 			sceneTree.kill(node);
@@ -2786,6 +2781,23 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::Button("Add State Machine")) {
 			// Add a default state machine component
 			entity.add<ECSComponents::StateMachineComponent>(entMng);
+
+			// Add existing state in script
+			Node* node = sceneTree.getNodeByEntityID(entity.id());
+			if (node->script_) {
+				std::string scriptPath = node->script_->path();
+				auto scriptStates = Script::StateMachineScriptGenerator::extractStatesFromScript(scriptPath);
+				auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entMng);
+				for (const auto& state : scriptStates) {
+					smComp.addState(state.c_str());
+
+					// Set as current state if it's the first state
+					if (smComp.numStates == 1) {
+						strncpy(smComp.currentState, state.c_str(), sizeof(smComp.currentState) - 1);
+						smComp.currentState[sizeof(smComp.currentState) - 1] = '\0';
+					}
+				}
+			}
 		}
 	}
 

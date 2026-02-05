@@ -28,11 +28,12 @@ namespace Engine
 		auto [tmW, tmH, tmCell] = configMng_.getTilemapConfig();
 		tilemapSystem_ = std::make_unique<Map::TileMapSystem>(bus_, tmW, tmH, tmCell);
 		pathfinder_ = std::make_unique<AI::PathfindingSystem>(bus_, *tilemapSystem_);
+		aiMng_ = std::make_unique<AI::AIManager>(bus_, *pathfinder_, entityMng_);
 
 		// Systems init
 		inputMng_.initialize();
 		physicsSys_ = std::make_unique<Physics::PhysicsSystem>(bus_);
-		stateMachineSys_ = std::make_unique<FSM::StateMachineSystem>();
+		stateMachineSys_ = std::make_unique<FSM::StateMachineSystem>(bus_);
 		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
 		particleSys_ = std::make_unique<Particles::ParticleSystem>(bus_);
 		graphicsMng_.initialize(window_);
@@ -63,10 +64,7 @@ namespace Engine
 			}
 
 			// Update all state machines
-			if (isPlaying_) stateMachineSys_->update(editor_->getSceneTree(), entityMng_, deltaTime);
-
-			// Process any state change requests from scripts
-			if (isPlaying_) stateMachineSys_->processStateChanges(editor_->getSceneTree(), entityMng_);
+			if (isPlaying_) stateMachineSys_->update(editor_->getSceneTree(), entityMng_);
 
 			// Update collision system (collision detection and response)
 			// Only update collision when the game is playing (not paused/stopped)

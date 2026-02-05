@@ -2,84 +2,74 @@
 
 namespace FSM {
 
+    StateMachineSystem::StateMachineSystem(Event::EnoEventBus& bus) : bus_(bus)
+    {
+        // Auto-register when StateMachineComponent added
+        bus_.subscribe<ECS::ComponentAdded>(
+            [this](const ECS::ComponentAdded& ev) {
+                if (ev.type == typeid(ECSComponents::StateMachineComponent))
+                    this->createStateMachine(ev.entityID);
+            }
+        );
+
+        // Auto-unregister when StateMachineComponent removed
+        bus_.subscribe<ECS::ComponentRemoved>(
+            [this](const ECS::ComponentRemoved& ev) {
+                if (ev.type == typeid(ECSComponents::StateMachineComponent))
+                    this->removeStateMachine(ev.entityID);
+            }
+        );
+
+        // Auto-clean when entity destroyed
+        bus_.subscribe<ECS::EntityDestroyed>(
+            [this](const ECS::EntityDestroyed& ev) {
+                this->removeStateMachine(ev.entityID);
+            }
+        );
+    }
+
     // Update all entities with state machine components
-    void StateMachineSystem::update(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, float deltaTime) {
-        // Get all nodes from scene tree
-        auto nodes = sceneTree.getAllNodes();
-
-        for (auto* node : nodes) {
-            // Skip disabled nodes
-            if (!node->enabled_) continue;
-
-            // Skip nodes without scripts
+    void StateMachineSystem::update(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager) {
+        // Process pending state changes first
+        for (auto& [entityID, newState] : pendingStateChanges_) {
+            Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
+            if (!node) continue;
             if (!node->script_) continue;
-
-            // Skip entities without state machine component
             if (!node->entity_.has<ECSComponents::StateMachineComponent>(entityManager)) continue;
 
-            // Get the state machine component
-            auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entityManager);
+            auto it = stateMachines_.find(entityID);
+            if (it == stateMachines_.end()) continue;
 
-            // Skip if no states defined or current state is "None"
-            if (smComp.numStates == 0 || strcmp(smComp.currentState, "None") == 0) continue;
-
-            // Get the state machine for this entity
-            StateMachine& stateMachine = getOrCreateStateMachine(node->sceneObjectID_);
-
-            // Update the state machine (pass sceneObjectID_ for script instance lookup)
-            // Use the full qualified class name from origin() to match how scripts are registered
             auto& origins = node->script_->origin();
             if (origins.empty()) continue;
 
-            std::wstring className = *origins.begin();  // Get first origin class name
+            std::wstring className = *origins.begin();
+            it->second.changeState(newState.c_str(), node->entity_, entityManager, className, node->sceneObjectID_);
+        }
+        pendingStateChanges_.clear();
+
+        // Update all active state machines
+        for (auto& [entityID, stateMachine] : stateMachines_) {
+            Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
+            if (!node) continue;
+            if (!node->enabled_) continue;
+            if (!node->script_) continue;
+            if (!node->entity_.has<ECSComponents::StateMachineComponent>(entityManager)) continue;
+
+            auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entityManager);
+            if (smComp.numStates == 0 || strcmp(smComp.currentState, "None") == 0) continue;
+
+            auto& origins = node->script_->origin();
+            if (origins.empty()) continue;
+
+            std::wstring className = *origins.begin();
             stateMachine.update(node->entity_, entityManager, className, node->sceneObjectID_);
         }
     }
 
     // Request a state change for an entity
-    void StateMachineSystem::requestStateChange(uint32_t nodeID, const std::string& newState) {
-        pendingStateChanges_[nodeID] = newState;
-    }
-
-    // Process pending state changes
-    void StateMachineSystem::processStateChanges(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager) {
-        for (auto& [nodeID, newState] : pendingStateChanges_) {
-            // Find the node
-            auto nodes = sceneTree.getAllNodes();
-            Editor::Node* targetNode = nullptr;
-
-            for (auto* node : nodes) {
-                if (node->sceneObjectID_ == nodeID) {
-                    targetNode = node;
-                    break;
-                }
-            }
-
-            if (!targetNode) continue;
-            if (!targetNode->script_) continue;
-            if (!targetNode->entity_.has<ECSComponents::StateMachineComponent>(entityManager)) continue;
-
-            // Get state machine and change state (pass sceneObjectID_ for script instance lookup)
-            StateMachine& stateMachine = getOrCreateStateMachine(nodeID);
-
-            // Use the full qualified class name from origin() to match how scripts are registered
-            auto& origins = targetNode->script_->origin();
-            if (origins.empty()) continue;
-
-            std::wstring className = *origins.begin();  // Get first origin class name
-
-            stateMachine.changeState(newState.c_str(), targetNode->entity_,
-                entityManager, className, targetNode->sceneObjectID_);
-        }
-
-        // Clear pending changes
-        pendingStateChanges_.clear();
-    }
-
-    // Clean up state machine when entity is destroyed
-    void StateMachineSystem::removeStateMachine(uint32_t nodeID) {
-        stateMachines_.erase(nodeID);
-        pendingStateChanges_.erase(nodeID);
+    void StateMachineSystem::requestStateChange(uint32_t entityID, const std::string& newState) {
+        pendingStateChanges_[entityID] = newState;
     }
 
     // Clear all state machines (e.g., when loading new scene)
@@ -88,14 +78,16 @@ namespace FSM {
         pendingStateChanges_.clear();
     }
 
-
-    // Get or create a state machine for an entity
-    StateMachine& StateMachineSystem::getOrCreateStateMachine(uint32_t nodeID) {
-        auto it = stateMachines_.find(nodeID);
-        if (it == stateMachines_.end()) {
-            stateMachines_[nodeID] = StateMachine();
+    // Create a state machine for an entity
+    void StateMachineSystem::createStateMachine(uint32_t entityID) {
+        if (!stateMachines_.contains(entityID)) {
+            stateMachines_[entityID] = StateMachine();
         }
-        return stateMachines_[nodeID];
     }
 
+    // Clean up state machine when entity is destroyed
+    void StateMachineSystem::removeStateMachine(uint32_t entityID) {
+        stateMachines_.erase(entityID);
+        pendingStateChanges_.erase(entityID);
+    }
 }

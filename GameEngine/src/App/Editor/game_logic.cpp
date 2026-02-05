@@ -2111,8 +2111,6 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 
 	// Load the rune spritesheet
 	auto runeTexture = resourceLoader.getTexture("Runes_White_Sheet_Large");
-
-	constexpr float PI = 3.14159265359f;
 	
 	// Rune numbers at each position (0=TL, 1=TR, 2=MR, 3=BR, 4=BL, 5=ML)
 	const int runeNumbers[6] = { 6, 1, 2, 3, 4, 5 };
