@@ -231,6 +231,12 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("BGM_01_Layer1_loop");  // Main menu BGM
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");  // General scene ambience
 
+	// Typing sounds for dialogue
+	for (int i = 1; i <= 21; ++i) {
+		std::string soundName = "Typing_" + std::string(i < 10 ? "0" : "") + std::to_string(i);
+		audioMng.publishSoundRequest(soundName);
+	}
+
 	// setup input to play sound
 	auto& inputMng = engine_.getInputManager();
 
@@ -608,8 +614,9 @@ void GameApplication::updateGameLogic() {
 			dialogueCurrentText_ += dialogueTargetText_[dialogueCurrentText_.size()];
 			dialogueTypeTimer_ -= DIALOGUE_TYPE_SPEED;
 			//Play audio here for keyclicks here: Yun Qi
-			int typingSoundValue = randomFloat(1, 21);
-			std::string typeSound = "Typing_" + std::to_string(typingSoundValue) + ".wav";
+			int typingSoundValue = static_cast<int>(randomFloat(1, 22)); // 1-21 inclusive
+			std::string number = (typingSoundValue < 10 ? "0" : "") + std::to_string(typingSoundValue);
+			std::string typeSound = "Typing_" + number;
 			engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", typeSound });
 
 		}
