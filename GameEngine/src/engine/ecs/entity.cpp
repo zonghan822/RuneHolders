@@ -103,16 +103,11 @@ namespace ECS
 			if (compEnd == std::string::npos) break;
 			std::string compName = data.substr(pos + 1, compEnd - pos - 1);
 
-			// Strip namespace prefix (MSVC returns "struct" or "class" depending on type)
-			const std::string structPrefix = "struct ECSComponents::";
-			const std::string classPrefix = "class ECSComponents::";
-			if (compName.rfind(structPrefix, 0) == 0)
+			// *can be revisited for further improvement
+			const std::string prefix = "struct ECSComponents::";
+			if (compName.rfind(prefix, 0) == 0)
 			{
-				compName = compName.substr(structPrefix.size());
-			}
-			else if (compName.rfind(classPrefix, 0) == 0)
-			{
-				compName = compName.substr(classPrefix.size());
+				compName = compName.substr(prefix.size());
 			}
 
 			// Component Data scope
@@ -150,97 +145,98 @@ namespace ECS
 				// Field value
 				std::string fvalue = findResult('{', '}', fieldPos);
 				if (fvalue == "NPOS") break;
-				
+
 				// Map
 				dataMap[fname] = Parser::deduceValue(fvalue, ftype);
 			}
 
 			// Deduce component found
-			//std::cout << "[DEBUG entity.cpp] About to call DeduceCompType with: '" << compName << "'" << std::endl;
-			
 			ECSComponents::EnoComponentRegistry::DeduceCompType(compName, [&]<typename T>()
+			{
+				entity.add<T>(entMng);
+
+				// Packaging the data
+				T component{};
+				for (const auto& [fname, fvalue] : dataMap)
 				{
-					//std::cout << "[DEBUG entity.cpp lambda] Lambda called! Adding component to entity..." << std::endl;
-					entity.add<T>(entMng);
-					//std::cout << "[DEBUG entity.cpp lambda] Component added successfully" << std::endl;
+					// Modify each component mapped
+					//
+					// Every component will have a reflect function defined!
+					// Use the reflect function in each component to print
+					// 
+					// (further reflect-related documentation can be found in components with
+					// reflect defined e.g the visibility component in visibility.hpp)
+					component.reflect([&](const std::string& name, auto& value, auto type)
+						{
+							if (name != fname) return;
 
-					// Packaging the data
-					T component{};
-					//std::cout << "[DEBUG entity.cpp lambda] Created component instance, loading data..." << std::endl;
-					for (const auto& [fname, fvalue] : dataMap)
-					{
-						// Modify each component mapped
-						//
-						// Every component will have a reflect function defined!
-						// Use the reflect function in each component to print
-						// 
-						// (further reflect-related documentation can be found in components with
-						// reflect defined e.g the visibility component in visibility.hpp)
-						component.reflect([&](const std::string& name, auto& value, auto type)
+							using ValueType = std::remove_reference_t<decltype(value)>;
+
+							// Char types are true pain, must make exception...
+							// Check if value is a char array
+							if constexpr (std::is_array_v<ValueType> && std::is_same_v<std::remove_extent_t<ValueType>, char>)
 							{
-								if (name != fname) return;
-								(void)type;	//intentional to silence warning
-								using ValueType = std::remove_reference_t<decltype(value)>;
+								// Variant must hold a string type
+								std::visit([&](auto&& val) {
+									using T = std::decay_t<decltype(val)>;
 
-								// Char types are true pain, must make exception...
-								// Check if value is a char array
-								if constexpr (std::is_array_v<ValueType> && std::is_same_v<std::remove_extent_t<ValueType>, char>)
-								{
-									// Variant must hold a string type
-									std::visit([&](auto&& val) {
-										using T = std::decay_t<decltype(val)>;
+									if constexpr (std::is_same_v<T, std::string>)
+									{
+										std::strncpy(value, val.c_str(), sizeof(value));
+										value[sizeof(value) - 1] = '\0';
+									}
+									else if constexpr (std::is_same_v<T, const char*>)
+									{
+										std::strncpy(value, val, sizeof(value));
+										value[sizeof(value) - 1] = '\0';
+									}
+									else
+									{
+										// empty by design
+										// silently skip non-string variant values
+									}
+									}, fvalue);
+							}
+							else
+							{
+								// normal assignment for other types (particularly arithmetic types)
+								std::visit([&](auto&& val) {
+									using V = std::decay_t<decltype(val)>;
+									using F = std::decay_t<decltype(value)>;
 
-										if constexpr (std::is_same_v<T, std::string>)
-										{
-											std::strncpy(value, val.c_str(), sizeof(value));
-											value[sizeof(value) - 1] = '\0';
-										}
-										else if constexpr (std::is_same_v<T, const char*>)
-										{
-											std::strncpy(value, val, sizeof(value));
-											value[sizeof(value) - 1] = '\0';
-										}
-										else
-										{
-											// empty by design
-											// silently skip non-string variant values
-										}
-										}, fvalue);
-								}
-								else
-								{
-									// normal assignment for other types (particularly arithmetic types)
-									std::visit([&](auto&& val) {
-										using V = std::decay_t<decltype(val)>;
-										using F = std::decay_t<decltype(value)>;
+									if constexpr (std::is_same_v<F, V>)
+									{
+										value = val;
+									}
+									else if constexpr (std::is_arithmetic_v<F> && std::is_arithmetic_v<V>)
+									{
+										value = static_cast<F>(val);
+									}
+									else
+									{
+										std::cerr << "Skipping assignment: variant type " << typeid(V).name()
+											<< " does not match field type " << typeid(F).name() << "\n";
+									}
+									}, fvalue);
+							}
+						});
 
-										if constexpr (std::is_same_v<F, V>)
-										{
-											value = val;
-										}
-										else if constexpr (std::is_arithmetic_v<F> && std::is_arithmetic_v<V>)
-										{
-											value = static_cast<F>(val);
-										}
-										else
-										{
-											std::cerr << "Skipping assignment: variant type " << typeid(V).name()
-												<< " does not match field type " << typeid(F).name() << "\n";
-										}
-										}, fvalue);
-								}
-							});
+					entity.set<T>(entMng, component);
+				}
+			});
 
-						entity.set<T>(entMng, component);
-					}
-				});
-
-			// Search for next component AFTER the current component's data block
-			// (not after compEnd, which would incorrectly match '[' in field names like "State[0].name")
-			pos = data.find('[', compScopeEnd);
+			pos = data.find('[', compEnd + 1);
 			if (pos == std::string::npos)
 				break;
 		}
+
+		// Ensuring that entity id will be incremented safely
+		uint32_t highestID{};
+		for (auto& [entityID, _] : entityMap_)
+		{
+			highestID = Math::maxValue(highestID, entityID);
+		}
+		id = highestID + 1;
 
 		// After loading all components, load textures if needed
 		if (entity.has<ECSComponents::RenderComponent>(entMng))
