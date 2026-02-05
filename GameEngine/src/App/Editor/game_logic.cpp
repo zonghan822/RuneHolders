@@ -605,6 +605,11 @@ void GameApplication::updateGameLogic() {
 			// Add next letter, reset timer
 			dialogueCurrentText_ += dialogueTargetText_[dialogueCurrentText_.size()];
 			dialogueTypeTimer_ -= DIALOGUE_TYPE_SPEED;
+			//Play audio here for keyclicks here: Yun Qi
+			int typingSoundValue = randomFloat(1, 21);
+			std::string typeSound = "Typing_" + std::to_string(typingSoundValue) + ".wav";
+			engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", typeSound });
+
 		}
 		auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
 		if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager)) {
