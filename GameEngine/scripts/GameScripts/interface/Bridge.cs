@@ -5,16 +5,16 @@ namespace Eno
 {
     public static class Bridge
     {
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("Engine_shared.dll")]
         public static extern bool IsKeyReleased(KeyCode key);
 
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("Engine_shared.dll")]
         public static extern bool IsKeyPressed(KeyCode key);
 
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("Engine_shared.dll")]
         public static extern bool IsKeyHeld(KeyCode key);
 
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("Engine_shared.dll")]
         public static extern int ModsApplied();
 
         [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
