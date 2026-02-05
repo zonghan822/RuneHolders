@@ -33,6 +33,14 @@ namespace ECSComponents
 
     constexpr int RUNE_COUNT = 6;
 
+    enum class RuneVisualState
+    {
+        UNAVAILABLE,        // Grey Small
+        AVAILABLE_START,    // White Large - valid starting rune
+        SELECTED,           // Green Large
+        NEXT_VALID          // White Large - next valid in sequence
+    };
+
     /*============================================================================================
     * \brief    Legacy color enum for combat system compatibility
     *//*========================================================================================*/
@@ -68,12 +76,13 @@ namespace ECSComponents
 
     struct RuneComponent
     {
-        int runeNumber;             // Rune number 1-6 (matches spritesheet column + 1)
-        int positionIndex;          // Position in circle (0-5, clockwise from top-left)
-        bool isHovered;             // Is mouse currently over this rune
-        bool isConnected;           // Has this rune been connected to its pair
-        bool isBanned;              // Is this rune banned (by crystal fly promixity)
-        float radius;               // Collision radius for hover detection
+        int runeNumber;              // Rune number 1-6 (matches spritesheet column + 1)
+        int positionIndex;           // Position in circle (0-5, clockwise from top-left)
+        bool isHovered;              // Is mouse currently over this rune
+        bool isConnected;            // Has this rune been connected to its pair
+        bool isBanned;               // Is this rune banned (by crystal fly promixity)
+        float radius;                // Collision radius for hover detection
+        RuneVisualState visualState; // Current visual state for guidance
 
         // Signals
         std::unordered_map<std::string, Events::EnoSignal> signals_;
@@ -85,6 +94,7 @@ namespace ECSComponents
             , isConnected(false)
             , isBanned(false)
             , radius(20.0f)
+            , visualState(RuneVisualState::UNAVAILABLE)
         {
         }
 
@@ -95,6 +105,7 @@ namespace ECSComponents
             , isConnected(false)
             , isBanned(false)
             , radius(runeRadius)
+            , visualState(RuneVisualState::UNAVAILABLE)
         {
         }        
         
@@ -468,6 +479,46 @@ namespace ECSComponents
             if (matchesFire) return SpellType::FIRE;
             if (matchesLight) return SpellType::LIGHT;
             return SpellType::NONE;
+        }
+
+        // Get valid next runes based on current sequence
+        // Returns bitmask where bit N = rune N is valid
+        int getValidNextRunes() const
+        {
+            // Spell patterns
+            constexpr int ICE_PATTERN[4] = { 3, 2, 5, 4 };
+            constexpr int FIRE_PATTERN[4] = { 6, 1, 5, 2 };
+            constexpr int LIGHT_PATTERN[4] = { 4, 1, 3, 6 };
+
+            int validMask = 0;
+
+            // If no runes selected, return starting runes (3, 4 ,6)
+            if (connectionCount == 0)
+            {
+                validMask |= (1 << 3);  // Rune 3 (Ice start)
+                validMask |= (1 << 4);  // Rune 4 (Light start)
+                validMask |= (1 >> 6);  // Rune 6 (Fire start)
+                return validMask;
+            }
+
+            // Check which patterns still match
+            bool iceValid = true, fireValid = true, lightValid = true;
+            for (int i = 0; i < connectionCount; ++i)
+            {
+                if (connectedRuneSequence[i] != ICE_PATTERN[i]) iceValid = false;
+                if (connectedRuneSequence[i] != FIRE_PATTERN[i]) fireValid = false;
+                if (connectedRuneSequence[i] != LIGHT_PATTERN[i]) lightValid = false;
+            }
+
+            // Add next rune from each still-valid pattern
+            if (connectionCount < 4)
+            {
+                if (iceValid) validMask |= (1 << ICE_PATTERN[connectionCount]);
+                if (fireValid) validMask |= (1 << FIRE_PATTERN[connectionCount]);
+                if (lightValid) validMask |= (1 << LIGHT_PATTERN[connectionCount]);
+            }
+
+            return validMask;
         }
 
         // Serialization support

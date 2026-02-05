@@ -2592,8 +2592,8 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 			if (e.has<ECSComponents::RuptureMarkComponent>(entityManager))
 				ruptureCount++;
 		}
-		if (ruptureCount > 0)
-			std::cout << "[RuptureMark DEBUG] Total RuptureMarks in scene: " << ruptureCount << std::endl;
+		//if (ruptureCount > 0)
+			//std::cout << "[RuptureMark DEBUG] Total RuptureMarks in scene: " << ruptureCount << std::endl;
 	}
 
 	for (const auto& [id, loc] : entityManager.getMap())
@@ -2616,7 +2616,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 			{
 				mark.state = ECSComponents::RuptureMarkState::IDLE;
 				mark.stateTimer = 0.0f;
-				std::cout << "[RuptureMark] Entered IDLE state" << std::endl;
+				//std::cout << "[RuptureMark] Entered IDLE state" << std::endl;
 			}
 			break;
 		}
@@ -2632,8 +2632,8 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 			bool shouldLog = debugTimer >= 1.0f;
 			if (shouldLog) {
 				debugTimer = 0.0f;
-				std::cout << "[RuptureMark DEBUG] Looking for target: '" << targetEnemy << "'" << std::endl;
-				std::cout << "[RuptureMark DEBUG] Mark position: (" << transform.pos.x << ", " << transform.pos.y << "), radius: " << mark.detectionRadius << std::endl;
+				//std::cout << "[RuptureMark DEBUG] Looking for target: '" << targetEnemy << "'" << std::endl;
+				//std::cout << "[RuptureMark DEBUG] Mark position: (" << transform.pos.x << ", " << transform.pos.y << "), radius: " << mark.detectionRadius << std::endl;
 			}
 
 			for (const auto& [enemyId, enemyLoc] : entityManager.getMap())
@@ -2674,10 +2674,10 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 				float dist = Math::eVec2Distance(transform.pos, enemyTransform.pos);
 
 				if (shouldLog) {
-					std::cout << "[RuptureMark DEBUG] Found AI entity - Name: '" << debugName
-							  << "', Texture: '" << debugTexture
-							  << "', IsTarget: " << (isTargetEnemy ? "YES" : "NO")
-							  << ", Distance: " << dist << std::endl;
+					//std::cout << "[RuptureMark DEBUG] Found AI entity - Name: '" << debugName
+					//		  << "', Texture: '" << debugTexture
+					//		  << "', IsTarget: " << (isTargetEnemy ? "YES" : "NO")
+					//		  << ", Distance: " << dist << std::endl;
 				}
 
 				if (!isTargetEnemy)
