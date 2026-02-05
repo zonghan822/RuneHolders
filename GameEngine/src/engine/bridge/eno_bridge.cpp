@@ -15,6 +15,10 @@ namespace Bridge
                 std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
                 return;
             }
+
+            // DLL has its own copy of FileSystem statics (separate from the EXE's).
+            // Initialize them here so inlined paths like selectScene resolve correctly.
+            FileSystem::Initialize();
         }
 
         ENGINE_API bool __stdcall IsKeyPressed(int key)
@@ -149,6 +153,19 @@ namespace Bridge
             aiStateBuffer[len < 63 ? len : 63] = L'\0';
 
             return aiStateBuffer;
+        }
+
+        ENGINE_API void __stdcall LoadScene(const wchar_t* sceneName)
+        {
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return;
+            }
+
+            std::wstring wName(sceneName);
+            std::string name(wName.begin(), wName.end());
+
+            gEngine->getEnoEditor().selectScene(name);
         }
     }
 }

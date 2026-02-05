@@ -1506,7 +1506,7 @@ void GameApplication::updateEntities() {
 			{
 				for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
 				{
-					if (node->script_)
+					if (node->script_ && !node->entity_.has<ECSComponents::ButtonComponent>(engine_.getEntityManager()))
 					{
 						for (const auto& org : node->script_->origin())
 						{
@@ -1543,7 +1543,7 @@ void GameApplication::updateEntities() {
 			//for (const auto& node : sceneTree_->getAllNodes())
 			for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
 			{
-				if (node->script_)
+				if (node->script_ && !node->entity_.has<ECSComponents::ButtonComponent>(engine_.getEntityManager()))
 				{
 					for (const auto& org : node->script_->origin())
 					{
@@ -3263,7 +3263,7 @@ void GameApplication::setupMainMenuButtons() {
 	playCollision.isTrigger = true;
 
 	auto& playBtn = playButton.get<ECSComponents::ButtonComponent>(entityManager);
-	playBtn.setTargetScene("Scene1.txt");
+	//playBtn.setTargetScene("Scene1.txt");
 	playBtn.getActive() = true;
 
 	// Controls Button at (363, 1263) with size (79x79) rotated 45 degrees
