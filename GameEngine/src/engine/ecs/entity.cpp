@@ -431,48 +431,6 @@ namespace ECS
 			uint32_t chunkCount{};
 			in.read(reinterpret_cast<char*>(&chunkCount), sizeof(chunkCount));
 
-#ifdef ARENA_ENABLED
-			for (uint32_t c = 0; c < chunkCount; ++c)
-			{
-				// Read in entity count for each chunk
-				uint32_t entityCount{};
-				in.read(reinterpret_cast<char*>(&entityCount), sizeof(entityCount));
-
-				Chunk* chunk = archetype->createChunk(entityCount, types, sizes);
-				size_t chunkIndex = archetype->chunks_.size() - 1;
-
-				// Read entity IDs
-				in.read(
-					reinterpret_cast<char*>(chunk->entities_),
-					sizeof(uint32_t) * entityCount
-				);
-
-				// Read component data into allocated arrays
-				size_t componentCount = archetype->types_.size();
-				for (size_t i = 0; i < componentCount; i++)
-				{
-					in.read(
-						reinterpret_cast<char*>(chunk->data_[i]),
-						sizes[i] * entityCount
-					);
-				}
-
-				// Entity map housekeeping
-				for (size_t e = 0; e < entityCount; e++)
-				{
-					uint32_t entityID = chunk->entities_[e];
-					entityMap_[entityID] = EntityLoc{ archetype, chunkIndex, e };
-				}
-			}
-
-			// Ensuring that entity id will be incremented safely
-			uint32_t highestID{};
-			for (auto& [entityID, _] : entityMap_)
-			{
-				highestID = Math::maxValue(highestID, entityID);
-			}
-			id = highestID + 1;
-#else
 			for (uint32_t c = 0; c < chunkCount; ++c)
 			{
 				// Read in entity count for each chunk
