@@ -115,7 +115,7 @@ namespace ECS
 		template <typename... Components, typename... Values>
 		Entity create(Values&&... val)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Entity Creation Operation" };
 #endif
 			static_assert(sizeof...(Components) == sizeof...(Values),
@@ -174,7 +174,7 @@ namespace ECS
 		template <typename... Components>
 		Entity create()
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Entity Creation Operation" };
 #endif
 			// Component types and sizes are sorted by the type indices
@@ -243,7 +243,7 @@ namespace ECS
 		*//*========================================================================================*/
 		uint32_t clone(const uint32_t& progenitorID)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Entity cloning Operation" };
 #endif
 			// Using the cloned entity's id to clone the new entity
@@ -296,7 +296,7 @@ namespace ECS
 			const std::vector<std::type_index>& types,
 			const std::vector<size_t>& sizes)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Entity Archetype Shift Operation" };
 #endif
 			auto& srcLoc = entityMap_.at(entityID);
@@ -387,7 +387,7 @@ namespace ECS
 		*//*========================================================================================*/
 		void destroyEntity(const uint32_t& entityID)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Entity Destruction Operation" };
 #endif
 			// Look up location of entity to destroy
@@ -446,7 +446,7 @@ namespace ECS
 		template <typename... Components, typename... Values>
 		std::vector<Entity> findEntity(Values... values)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Finding Entity Operation" };
 #endif
 
@@ -595,7 +595,7 @@ namespace ECS
 		*//*========================================================================================*/
 		void cleanup(Archetype* archetype, const size_t& srcChnkIdx)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Archetype Chunk Cleanup Operation" };
 #endif
 			Chunk* chunk = archetype->chunks_[srcChnkIdx];
@@ -621,7 +621,7 @@ namespace ECS
 				archetype->chunks_.pop_back();
 
 				// Free memory for the chunk
-#ifdef ARENA_ENABLED
+#if ARENA_ENABLED
 				chunk->~Chunk();
 				archetype->chunkSlab_.free(chunk);
 #endif
@@ -707,7 +707,7 @@ namespace ECS
 		*//*========================================================================================*/
 		void destroy(EntityManager& entMng)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Destroy Operation" };
 #endif
 
@@ -741,7 +741,7 @@ namespace ECS
 		template <typename CompType>
 		CompType& get(EntityManager& entMng)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Get Operation" };
 #endif
 			// Search for entity in entityMap
@@ -762,7 +762,7 @@ namespace ECS
 		template <typename CompType>
 		void set(EntityManager& entMng, const CompType& value)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Set Operation" };
 #endif
 			// Search for entity in entityMap
@@ -784,7 +784,7 @@ namespace ECS
 		template <typename... Components, typename... Values>
 		void add(EntityManager& entMng, Values&&... val)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Adding Component Operation" };
 #endif
 			// Check if any of the added components
@@ -860,7 +860,7 @@ namespace ECS
 		template <typename... Components>
 		void remove(EntityManager& entMng)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Remove Component Operation" };
 #endif
 			// Verify that the entity owns these components
@@ -923,7 +923,7 @@ namespace ECS
 		*//*========================================================================================*/
 		Entity clone(EntityManager& entMng)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Entity Cloning Operation" };
 #endif
 			return entMng.clone(id_);

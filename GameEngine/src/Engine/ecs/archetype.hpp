@@ -40,7 +40,7 @@ namespace ECS
 		Memory::EnoSlabAllocator chunkSlab_;
 #endif
 
-		const uint32_t entityCount_{ 5 };								// Number of entities stored in a chunk
+		const uint32_t entityCount_{ 50 };								// Number of entities stored in a chunk
 
 		Archetype(
 			Memory::EnoECSArena& arena,
@@ -119,16 +119,6 @@ namespace ECS
 			chunks_.push_back(chunk);
 			return chunk;
 #endif
-
-			//#ifdef ARENA_ENABLED
-			//			// Construct the chunk in an arena space
-			//			void* mem = arena.alloc(sizeof(Chunk), alignof(Chunk));
-			//			Chunk* chunk = new (mem) Chunk(arena, entityCount, types, typeSizes);
-			//
-			//			chunks_.push_back(chunk);
-			// 
-			// 			return chunk;
-			//#endif
 		}
 	};
 
