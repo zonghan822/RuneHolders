@@ -1326,8 +1326,6 @@
 
 			[struct ECSComponents::AIComponent]
 			{
-				"currentState": <char32> { None }
-				"nextState": <char32> { Idle }
 				"awarenessRadius": <float> { 250 }
 				"chaseSpeed": <float> { 90 }
 				"attackRange": <float> { 40 }
@@ -1335,25 +1333,6 @@
 				"attackDuration": <float> { 0.3 }
 				"hurtDuration": <float> { 0.4 }
 				"health": <int> { 100 }
-				"useScriptCallbacks": <bool> { 0 }
-				"cbIdleEnter": <char64> {  }
-				"cbIdleUpdate": <char64> {  }
-				"cbIdleExit": <char64> {  }
-				"cbChaseEnter": <char64> {  }
-				"cbChaseUpdate": <char64> {  }
-				"cbChaseExit": <char64> {  }
-				"cbWindupEnter": <char64> {  }
-				"cbWindupUpdate": <char64> {  }
-				"cbWindupExit": <char64> {  }
-				"cbAttackEnter": <char64> {  }
-				"cbAttackUpdate": <char64> {  }
-				"cbAttackExit": <char64> {  }
-				"cbHurtEnter": <char64> {  }
-				"cbHurtUpdate": <char64> {  }
-				"cbHurtExit": <char64> {  }
-				"cbDeathEnter": <char64> {  }
-				"cbDeathUpdate": <char64> {  }
-				"cbDeathExit": <char64> {  }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
@@ -1410,8 +1389,39 @@
 				"spellColor": <int> { 0 }
 				"useColorMatching": <bool> { 0 }
 			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 6 }
+				"CurrentState": <char32> { idle }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { idle }
+				"State[0].onEnter": <char64> { idle_enter }
+				"State[0].onUpdate": <char64> { idle_update }
+				"State[0].onExit": <char64> { idle_exit }
+				"State[1].name": <char32> { death }
+				"State[1].onEnter": <char64> { death_enter }
+				"State[1].onUpdate": <char64> {  }
+				"State[1].onExit": <char64> { death_exit }
+				"State[2].name": <char32> { attack }
+				"State[2].onEnter": <char64> { attack_enter }
+				"State[2].onUpdate": <char64> { attack_update }
+				"State[2].onExit": <char64> { attack_exit }
+				"State[3].name": <char32> { chase }
+				"State[3].onEnter": <char64> { chase_enter }
+				"State[3].onUpdate": <char64> { chase_update }
+				"State[3].onExit": <char64> { chase_exit }
+				"State[4].name": <char32> { windup }
+				"State[4].onEnter": <char64> { windup_enter }
+				"State[4].onUpdate": <char64> { windup_update }
+				"State[4].onExit": <char64> { windup_exit }
+				"State[5].name": <char32> { hurt }
+				"State[5].onEnter": <char64> { hurt_enter }
+				"State[5].onUpdate": <char64> { hurt_update }
+				"State[5].onExit": <char64> { hurt_exit }
+			}
 		}
-		"Script": { 0 }
+		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Snail_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
