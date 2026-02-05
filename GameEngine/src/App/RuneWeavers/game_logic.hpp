@@ -69,6 +69,7 @@ private:
     // Rune System
     uint32_t runeSystemEntityID_ = 0;  // ID of entity holding RuneSystemStateComponent
     bool runeSystemInitialized_ = false;
+    std::shared_ptr<Graphics::EnoTexture> runeTexture_;  // Cached rune spritesheet texture
 
     // Pause Menu and Spellbook System
     bool isPaused_ = false;

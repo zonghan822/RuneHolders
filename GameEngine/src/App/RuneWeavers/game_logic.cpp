@@ -1374,6 +1374,13 @@ void GameApplication::initializeRuneSystem()
 
 	runeSystemEntityID_ = runeSystemEntity.id();
 
+	// Pre-load and cache the rune texture
+	auto& resourceLoader = engine_.getResourceLoader();
+	runeTexture_ = resourceLoader.getTexture("Runes_White_Sheet_Large");
+	if (!runeTexture_ || !runeTexture_->isValid()) {
+		std::cerr << "[RuneSystem] WARNING: Failed to pre-load rune texture!" << std::endl;
+	}
+
 	runeSystemInitialized_ = true;
 }
 
@@ -1496,10 +1503,23 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	auto& resourceLoader = engine_.getResourceLoader();
+	// Use cached texture - reload if not available
+	if (!runeTexture_ || !runeTexture_->isValid()) {
+		auto& resourceLoader = engine_.getResourceLoader();
+		runeTexture_ = resourceLoader.getTexture("Runes_White_Sheet_Large");
+		if (!runeTexture_ || !runeTexture_->isValid()) {
+			std::cerr << "[RuneSystem] ERROR: Failed to load rune texture!" << std::endl;
+			return;
+		}
+	}
 
-	// Load the rune spritesheet
-	auto runeTexture = resourceLoader.getTexture("Runes_White_Sheet_Large");
+	// Clean up any leftover runes from previous cycle
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i) {
+		if (runeState.runeEntityIDs[i] != UINT32_MAX) {
+			entityManager.destroyEntity(runeState.runeEntityIDs[i]);
+			runeState.runeEntityIDs[i] = UINT32_MAX;
+		}
+	}
 
 	constexpr float PI = 3.14159265359f;
 
@@ -1509,7 +1529,11 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	// Store circle center for spell spawning
 	runeState.circleCenter = mouseWorldPos;
 
-	// Spawn 6 runes in a circle pattern
+	// Reset connection state before spawning
+	runeState.resetConnection();
+
+	// Spawn 6 runes in a circle pattern - create ALL entities first
+	int runesCreated = 0;
 	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i)
 	{
 		// Calculate angles
@@ -1522,41 +1546,39 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 
 		// Create rune entity
 		ECS::Entity rune = entityManager.create();
+		uint32_t runeId = rune.id();
 
-		std::string runeName = "Rune_" + std::to_string(runeNumber);
-		rune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(runeName.c_str()));
+		// Add all components
+		rune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(("Rune_" + std::to_string(runeNumber)).c_str()));
 		rune.add<ECSComponents::TransformComponent>(entityManager);
 		rune.add<ECSComponents::DrawInfoComponent>(entityManager);
-		rune.add<ECSComponents::AnimationControllerComponent>(entityManager);
 		rune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(i, runeNumber, 30.0f));
 
+		// Configure transform
 		auto& transform = rune.get<ECSComponents::TransformComponent>(entityManager);
 		transform.pos = { x, y };
 		transform.scale = { 1.0f, 1.0f };
 
+		// Configure draw info - use cached texture member variable
 		auto& draw = rune.get<ECSComponents::DrawInfoComponent>(entityManager);
-		draw.width = 56.0f;		// Spritesheet frame size
+		draw.width = 56.0f;
 		draw.height = 56.0f;
 		draw.color = Graphics::Color::White;
 		strcpy_s(draw.shape, "Rectangle");
-		draw.texture = runeTexture;
-		draw.texID = runeNumber - 1;  // Set texID to select correct column (rune 1 = column 0, etc.)
-
-		// Setup animation controller with spritesheet info
-		auto& animComp = rune.get<ECSComponents::AnimationControllerComponent>(entityManager);
-		animComp.frameWidth = 56;
-		animComp.frameHeight = 56;
-		animComp.rows = 1;
-		animComp.cols = 6;
+		draw.texture = runeTexture_;  // Use cached member texture
+		draw.texID = runeNumber - 1;
 
 		// Store entity ID
-		runeState.runeEntityIDs[i] = rune.id();
-
+		runeState.runeEntityIDs[i] = runeId;
+		runesCreated++;
 	}
 
-	// Reset connection state
-	runeState.resetConnection();
+	// Verify all 6 runes were created
+	if (runesCreated != 6) {
+		std::cerr << "[RuneSystem] ERROR: Only created " << runesCreated << " runes!" << std::endl;
+	}
 
+	// Mark cache dirty AFTER all entities are created
 	entitiesDirty_ = true;
 }
 
@@ -1566,19 +1588,20 @@ void GameApplication::destroyRunes()
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	// Destroy all 6 runes
+	// Destroy all 6 runes - always try to destroy, don't check for component
 	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i) {
 		if (runeState.runeEntityIDs[i] != UINT32_MAX) {
-			ECS::Entity runeEntity(runeState.runeEntityIDs[i]);
-			if (runeEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-				entityManager.destroyEntity(runeState.runeEntityIDs[i]);
-			}
+			// Try to destroy the entity - entityManager handles invalid IDs gracefully
+			entityManager.destroyEntity(runeState.runeEntityIDs[i]);
 			runeState.runeEntityIDs[i] = UINT32_MAX;
 		}
 	}
 
-	// Reset connection state
+	// Reset ALL rune-related state to ensure clean slate
 	runeState.resetConnection();
+	runeState.runesActive = false;
+	runeState.isLeftClickHeld = false;
+	runeState.isDrawingLine = false;
 
 	// Mark entities as dirty to refresh rendering cache
 	entitiesDirty_ = true;
