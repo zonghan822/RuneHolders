@@ -112,6 +112,15 @@ namespace ECSComponents
 	void collectObjectsByLayer(Engine::EnoEngine& eng, std::vector<ECS::Entity>& cachedEntities);
 
 	/*============================================================================================
+	 * \brief				Walk up the scene tree; return false if any ancestor is invisible.
+	 * \param[in]			entityID - the ID of the entity to check
+	 * \param[in]			tree - reference to the scene tree
+	 * \param[in]			entityMng - reference to EntityManager
+	 * \return				true if all ancestors are visible, false otherwise
+	*//*========================================================================================*/
+	bool isAncestorVisible(uint32_t entityID, Editor::EnoSceneTree& tree, ECS::EntityManager& entityMng);
+
+	/*============================================================================================
 	 * \brief				Equality operator overload for the visibility component
 	 * \param[in]			readonly reference to a VisibilityComponent
 	 * \param[in]			readonly reference to a VisibilityComponent

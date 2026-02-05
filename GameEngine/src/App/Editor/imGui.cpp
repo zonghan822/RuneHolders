@@ -2177,13 +2177,21 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	// --- NameComponent ---
 	if (entity.has<ECSComponents::NameComponent>(entMng)) {
 		auto& nameComp = entity.get<ECSComponents::NameComponent>(entMng);
+		ImGui::SeparatorText("Name");
+		ImGui::InputText("##Name", nameComp.name, sizeof(nameComp.name));
+	}
+	else
+	{	
+		// Add name component
+		ImGui::SeparatorText("Name Component");
+		ImGui::TextDisabled("No name component attached");
 
-		char buffer[32];
-		strncpy_s(buffer, nameComp.name, sizeof(buffer) - 1);
-		buffer[sizeof(buffer) - 1] = '\0';
+		if (ImGui::Button("Add name Component"))
+		{
+			ECSComponents::NameComponent nc;
 
-		ImGui::Text("Name: %s", nameComp.name);
-
+			entity.add<ECSComponents::NameComponent>(entMng, nc);
+		}
 	}
 
 	// ---------- Visibility Component ---------
@@ -2193,8 +2201,10 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		ImGui::SeparatorText("Visibility Component");
 
-		// Toggle checkbox for visibility
-		ImGui::Checkbox("Entity Visibility", &vi.visible);
+		// Toggle checkbox for visibility (children inherit at render time via ancestor check)
+		if (ImGui::Checkbox("Entity Visibility", &vi.visible)) {
+			if (g_game) g_game->markEntitiesDirty();
+		}
 
 		// Header with +/- buttons to adjust entity's layer
 		ImGui::Text("Z Index Layer");
@@ -2649,7 +2659,13 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetTooltip("Trigger detects collisions but doesn't block movement.\nRequires 'Is Active' to be checked.");
 		}
-		
+
+		ImGui::Spacing();
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 60.0f);
+		if (ImGui::Button("Remove##collider")) {
+			entity.remove<ECSComponents::CollisionComponent>(entMng);
+			if (g_game) g_game->markEntitiesDirty();
+		}
 	}
 	else {
 		// Allow adding a collider if the entity doesn't have one
@@ -3034,6 +3050,59 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 	}
 
+	// --- Text Component ---
+	if (entity.has<ECSComponents::TextComponent>(entMng)) {
+		auto& textComp = entity.get<ECSComponents::TextComponent>(entMng);
+		ImGui::SeparatorText("Text");
+
+		// Auto-size textbox height based on line count (minimum 2 lines)
+		int lineCount = 1;
+		for (int i = 0; textComp.text[i]; ++i) {
+			if (textComp.text[i] == '\n') ++lineCount;
+		}
+		float textHeight = ImGui::GetTextLineHeightWithSpacing() * (lineCount + 1);
+		float minHeight  = ImGui::GetTextLineHeightWithSpacing() * 2.0f;
+		ImGui::InputTextMultiline("##TextContent", textComp.text, sizeof(textComp.text),
+			ImVec2(-1.0f, std::max(textHeight, minHeight)));
+
+		// Font selector dropdown
+		auto fontNames = engine_.getResourceLoader().getFontNames();
+		std::vector<const char*> fontNamesCStr;
+		fontNamesCStr.reserve(fontNames.size());
+		for (const auto& name : fontNames) {
+			fontNamesCStr.push_back(name.c_str());
+		}
+		int currentFontIdx = 0;
+		for (int i = 0; i < static_cast<int>(fontNames.size()); ++i) {
+			if (fontNames[i] == textComp.fontName) {
+				currentFontIdx = i;
+				break;
+			}
+		}
+		if (ImGui::Combo("Font", &currentFontIdx, fontNamesCStr.data(), static_cast<int>(fontNamesCStr.size()))) {
+			strncpy_s(textComp.fontName, fontNames[currentFontIdx].c_str(), sizeof(textComp.fontName) - 1);
+			textComp.fontName[sizeof(textComp.fontName) - 1] = '\0';
+		}
+
+		// Font size (scale)
+		ImGui::DragFloat("Size", &textComp.fontSize, 0.1f, 0.1f, 10.0f);
+
+		ImGui::Spacing();
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 60.0f);
+		if (ImGui::Button("Remove##text")) {
+			entity.remove<ECSComponents::TextComponent>(entMng);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+	else {
+		ImGui::SeparatorText("Text");
+		ImGui::TextDisabled("No TextComponent attached");
+		if (ImGui::Button("Add Text Component")) {
+			entity.add<ECSComponents::TextComponent>(entMng);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+
 	// --------- Button Component ----------
 	bool hasButtonComponent = entity.has<ECSComponents::ButtonComponent>(entMng);
 	if (hasButtonComponent)
@@ -3277,7 +3346,14 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		{
 			// Add new empty signal
 			button.addSignal();
-			
+
+		}
+
+		ImGui::Spacing();
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 60.0f);
+		if (ImGui::Button("Remove##button")) {
+			entity.remove<ECSComponents::ButtonComponent>(entMng);
+			if (g_game) g_game->markEntitiesDirty();
 		}
 
 	}
@@ -5178,12 +5254,14 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	}
 
 	// Keyboard shortcuts for gizmo modes
-	if (ImGui::IsKeyPressed(ImGuiKey_Q)) currentGizmoMode = GIZMO_TRANSLATE;
-	if (ImGui::IsKeyPressed(ImGuiKey_E)) currentGizmoMode = GIZMO_ROTATE;
-	if (ImGui::IsKeyPressed(ImGuiKey_R)) currentGizmoMode = GIZMO_SCALE;
+	if (!ImGui::GetIO().WantTextInput) {
+		if (ImGui::IsKeyPressed(ImGuiKey_Q)) currentGizmoMode = GIZMO_TRANSLATE;
+		if (ImGui::IsKeyPressed(ImGuiKey_E)) currentGizmoMode = GIZMO_ROTATE;
+		if (ImGui::IsKeyPressed(ImGuiKey_R)) currentGizmoMode = GIZMO_SCALE;
+	}
 
 	// Keyboard shortcuts for zoom (+ and - keys)
-	if (g_game) {
+	if (g_game && !ImGui::GetIO().WantTextInput) {
 		if (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)) {
 			g_game->adjustEditorZoom(0.1f);  // Zoom in
 		}
@@ -5193,7 +5271,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	}
 
 	// Keyboard shortcuts for layer change ([ and ] keys)
-	if (selectedEntityID != UINT32_MAX) {
+	if (selectedEntityID != UINT32_MAX && !ImGui::GetIO().WantTextInput) {
 		auto& entityManager = engine_.getEntityManager();
 		for (auto& e : entityManager.findEntity<>()) {
 			if (e.id() == selectedEntityID && e.has<ECSComponents::VisibilityComponent>(entityManager)) {

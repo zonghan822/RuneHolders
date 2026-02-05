@@ -79,6 +79,8 @@ private:
     // Font
     std::shared_ptr<Font::EnoFont> pixelifyFont_;
     std::shared_ptr<Font::EnoFont> timesFont_;
+    std::shared_ptr<Font::EnoFont> philosopherBoldFont;
+    std::shared_ptr<Font::EnoFont> philosopherRegularFont;
 
     // Player
     Player::PlayerConfig playerConfig_;
@@ -111,6 +113,16 @@ private:
     uint32_t pauseMenuEntityID_ = 0;
     uint32_t spellbookEntityID_ = 0;
     Math::eVec2<float> savedPlayerScale_ = { 2.0f, 2.0f };  // Save player scale when hiding (default to common scale)
+
+    // Dialogue System
+    bool dialogueActive_ = false;
+    int dialogueIndex_ = -1;
+    std::vector<std::string> dialogueTexts_;  // Series of texts to display (populate before use)
+    std::string dialogueTargetText_;                    // Full text to type out
+    std::string dialogueCurrentText_;                   // Text revealed so far
+    float       dialogueTypeTimer_  = 0.0f;             // Accumulator for typing timing
+    static constexpr float DIALOGUE_TYPE_SPEED = 0.03f; // Seconds per character
+    bool        dialogueTyping_     = false;            // True while typewriter is animating
 
 public:
     // Constructors
@@ -227,6 +239,10 @@ private:
     void destroyPauseMenu();                        // Destroy pause menu UI entity
     void hidePlayer();                              // Hide player by setting scale to 0
     void showPlayer();                              // Show player by restoring scale
+
+    // Dialogue System
+    void startDialogue();                           // Called on E inside Collectible-Scroll trigger – shows box, pauses game
+    void advanceDialogue();                         // Called on subsequent E presses – advances text or ends dialogue
 
     // Main Menu Button System (same as RuneWeavers)
     void setupMainMenuButtons();                    // Setup invisible buttons for main menu

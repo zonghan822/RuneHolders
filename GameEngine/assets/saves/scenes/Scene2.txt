@@ -1407,6 +1407,8 @@
 				"damageMultiplier": <float> { 1 }
 				"destroyOnHit": <bool> { 0 }
 				"damageType": <char32> { physical }
+				"spellColor": <int> { 0 }
+				"useColorMatching": <bool> { 0 }
 			}
 		}
 		"Script": { 0 }

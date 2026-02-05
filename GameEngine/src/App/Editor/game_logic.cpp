@@ -95,6 +95,16 @@ void GameApplication::initialize() {
 			engine_.getEventBus().publish(Audio::StopBGM{});
 		});
 
+	// Dialogue texts
+	dialogueTexts_ = {	"OH, WHAT'S THIS?",
+						"A SCROLL FULL OF SPELLS!",
+						"HEHEHEHE...",
+						"DID I JUST HEAR SOMETHING?",
+						"WH-WHO GOES THERE?", 
+						"...",
+						"I GUESS I WAS JUST HEARING THINGS THEN.",
+						"LET ME RECORD THE SPELLS IN MY SPELLBOOK." };
+
 	std::cout << "Game initialized successfully!" << std::endl;
 }
 
@@ -130,6 +140,8 @@ void GameApplication::setupGameSystems() {
 void GameApplication::setupFont() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
+	philosopherBoldFont = engine_.getResourceLoader().getFont("Philosopher-Bold");
+	philosopherRegularFont = engine_.getResourceLoader().getFont("Philosopher-Regular");
 }
 
 void GameApplication::setupCombatSystem() {
@@ -551,6 +563,59 @@ void GameApplication::updateGameLogic() {
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
 				std::cout << "[Input] Pause menu closed (ESC key pressed)" << std::endl;
 			}
+		}
+
+		// Handle E key - Interact with Collectible-Scroll or advance dialogue
+		if (inputMng.isKeyDown(GLFW_KEY_E)) {
+			if (dialogueActive_) {
+				if (dialogueTyping_) {
+					// Finish current text animation instantly
+					dialogueTyping_ = false;
+					dialogueCurrentText_ = dialogueTargetText_;
+					auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+					if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager)) {
+						auto& textComp = bodyText[0].get<ECSComponents::TextComponent>(entityManager);
+						strncpy_s(textComp.text, dialogueCurrentText_.c_str(), sizeof(textComp.text) - 1);
+						textComp.text[sizeof(textComp.text) - 1] = '\0';
+					}
+				}
+				else {
+					advanceDialogue();
+				}
+			}
+			else if (!isPaused_) {
+				// Find scroll entity
+				auto scrolls = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("Collectible-Scroll"));
+				if (!scrolls.empty()) {
+					for (auto& it : scrolls)
+					{
+						if (currentTriggersPlayerIsIn_.count(it.id()))
+						{
+							startDialogue();
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Dialogue typewriter animation
+	if (dialogueTyping_) {
+		// Start timer
+		dialogueTypeTimer_ += deltaTime;
+		while (dialogueTypeTimer_ >= DIALOGUE_TYPE_SPEED && dialogueCurrentText_.size() < dialogueTargetText_.size()) {
+			// Add next letter, reset timer
+			dialogueCurrentText_ += dialogueTargetText_[dialogueCurrentText_.size()];
+			dialogueTypeTimer_ -= DIALOGUE_TYPE_SPEED;
+		}
+		auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+		if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager)) {
+			auto& textComp = bodyText[0].get<ECSComponents::TextComponent>(entityManager);
+			strncpy_s(textComp.text, dialogueCurrentText_.c_str(), sizeof(textComp.text) - 1);
+			textComp.text[sizeof(textComp.text) - 1] = '\0';
+		}
+		if (dialogueCurrentText_.size() >= dialogueTargetText_.size()) {
+			dialogueTyping_ = false;
 		}
 	}
 
@@ -1059,6 +1124,63 @@ void GameApplication::updateGameLogic() {
 			}
 			catch (...) {}
 		}
+
+		// Flush pending entity batch before text drawing (drawTextScreen unbinds defaultShader)
+		graphics_.flush();
+
+		// Draw TextComponent entities (screen space, multiline support)
+		{
+			auto textEntities = engine_.getEntityManager().findEntity<ECSComponents::TextComponent>();
+			for (auto& textEntity : textEntities) {
+				if (textEntity.has<ECSComponents::VisibilityComponent>(entityManager)) {
+					if (!textEntity.get<ECSComponents::VisibilityComponent>(entityManager).visible)
+						continue;
+				}
+				if (!ECSComponents::isAncestorVisible(textEntity.id(), engine_.getEnoEditor().getSceneTree(), entityManager))
+					continue;
+				if (textEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+					auto& textComp  = textEntity.get<ECSComponents::TextComponent>(entityManager);
+					auto& transform = textEntity.get<ECSComponents::TransformComponent>(entityManager);
+					if (strlen(textComp.text) == 0) continue;
+
+					auto font = engine_.getResourceLoader().getFont(std::string(textComp.fontName));
+					if (!font) continue;
+
+					Math::eVec2<float> screenPos = {
+						transform.pos.x - editorCameraX_,
+						transform.pos.y - editorCameraY_
+					};
+
+					// Draw each line separately to support newlines
+					std::string fullText(textComp.text);
+					float lineHeight = 60.0f * textComp.fontSize;
+					float yOffset = 0.0f;
+					size_t start = 0;
+					while (start <= fullText.size()) {
+						size_t pos = fullText.find('\n', start);
+						std::string line = (pos != std::string::npos)
+							? fullText.substr(start, pos - start)
+							: fullText.substr(start);
+						if (!line.empty()) {
+							graphics_.drawTextScreen(
+								font, line,
+								Math::eVec2<float>{ screenPos.x, screenPos.y + yOffset },
+								textComp.fontSize,
+								Graphics::Color::White,
+								static_cast<float>(editorFbSizeX),
+								static_cast<float>(editorFbSizeY)
+							);
+						}
+						if (pos == std::string::npos) break;
+						yOffset += lineHeight;
+						start = pos + 1;
+					}
+				}
+			}
+		}
+
+		// Restore defaultShader after text drawing
+		graphics_.rebindDefaultShader();
 
 		// Render particles (with camera offset)
 		auto* particleSystem = engine_.getParticleSystem();
@@ -1722,13 +1844,6 @@ void GameApplication::drawShapes() {
 						rotation
 					);
 				}
-				//// Draw text for button component
-				//if (entity.has<ECSComponents::ButtonComponent>(entityManager))
-				//{
-				//	auto& b = entity.get<ECSComponents::ButtonComponent>(entityManager);
-				//	graphics.drawText(timesFont_, b.getName(), transform.pos, 0.5f, Color::Red);
-				//}
-				// Check if entity has visibility component
 				
 			}
 		}
@@ -1738,6 +1853,59 @@ void GameApplication::drawShapes() {
 			continue;
 		}
 	}
+
+	// Flush pending entity batch before text drawing (drawTextScreen unbinds defaultShader)
+	graphics.flush();
+
+	// Draw TextComponent entities (screen space, multiline support)
+	{
+		auto textEntities = engine_.getEntityManager().findEntity<ECSComponents::TextComponent>();
+		auto [w, h] = engine_.getWindowManager().getFramebufferSize();
+		for (auto& textEntity : textEntities) {
+			if (textEntity.has<ECSComponents::VisibilityComponent>(entityManager)) {
+				if (!textEntity.get<ECSComponents::VisibilityComponent>(entityManager).visible)
+					continue;
+			}
+			if (!ECSComponents::isAncestorVisible(textEntity.id(), engine_.getEnoEditor().getSceneTree(), entityManager))
+				continue;
+			if (textEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+				auto& textComp  = textEntity.get<ECSComponents::TextComponent>(entityManager);
+				auto& transform = textEntity.get<ECSComponents::TransformComponent>(entityManager);
+				if (strlen(textComp.text) == 0) continue;
+
+				auto font = engine_.getResourceLoader().getFont(std::string(textComp.fontName));
+				if (!font) continue;
+
+				// Draw each line separately to support newlines
+				std::string fullText(textComp.text);
+				float lineHeight = 60.0f * textComp.fontSize;
+				float yOffset = 0.0f;
+				size_t start = 0;
+				while (start <= fullText.size()) {
+					size_t pos = fullText.find('\n', start);
+					std::string line = (pos != std::string::npos)
+						? fullText.substr(start, pos - start)
+						: fullText.substr(start);
+					if (!line.empty()) {
+						graphics.drawTextScreen(
+							font, line,
+							Math::eVec2<float>{ transform.pos.x, transform.pos.y + yOffset },
+							textComp.fontSize,
+							Graphics::Color::White,
+							static_cast<float>(w),
+							static_cast<float>(h)
+						);
+					}
+					if (pos == std::string::npos) break;
+					yOffset += lineHeight;
+					start = pos + 1;
+				}
+			}
+		}
+	}
+
+	// Restore defaultShader after text drawing
+	graphics.rebindDefaultShader();
 }
 
 void GameApplication::applyTextureToPlayer(const Graphics::TextureData& texData) {
@@ -3821,5 +3989,102 @@ void GameApplication::testParticleSystem() {
 			testParticleEntityID_ = 0;
 			std::cout << "Test particle entity deleted\n";
 		}
+	}
+}
+
+// ========== Dialogue System ==========
+
+void GameApplication::startDialogue()
+{
+	if (dialogueTexts_.empty()) {
+		std::cout << "[Dialogue] No dialogue texts configured – populate dialogueTexts_ first" << std::endl;
+		return;
+	}
+
+	auto& entityManager = engine_.getEntityManager();
+
+	dialogueActive_ = true;
+	dialogueIndex_  = 0;
+	isPaused_       = true;
+	engine_.setIsPlaying(false);
+
+	// Find dialogue box by name
+	auto dialogueBox = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("DialogueBox"));
+
+	// Show the dialogue box
+	if (!dialogueBox.empty())
+	{
+		for (auto& it : dialogueBox)
+		{
+			if (it.has<ECSComponents::VisibilityComponent>(entityManager)) 
+			{
+				it.get<ECSComponents::VisibilityComponent>(entityManager).visible = true;
+		
+			}
+		}
+	}
+
+	// Start typewriter animation for first dialogue line
+	dialogueTargetText_  = dialogueTexts_[0];
+	dialogueCurrentText_.clear();
+	dialogueTypeTimer_   = 0.0f;
+	dialogueTyping_      = true;
+
+	// Clear body text entity to start fresh
+	auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+	if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager))
+	{
+		bodyText[0].get<ECSComponents::TextComponent>(entityManager).text[0] = '\0';
+	}
+
+	std::cout << "[Dialogue] Started – showing text 0: " << dialogueTexts_[0] << std::endl;
+}
+
+void GameApplication::advanceDialogue()
+{
+	dialogueIndex_++;
+
+	if (dialogueIndex_ >= static_cast<int>(dialogueTexts_.size())) {
+		// All texts have been shown – end the dialogue
+		dialogueActive_ = false;
+		dialogueTyping_      = false;
+		isPaused_       = false;
+		engine_.setIsPlaying(true);
+
+		auto& entityManager = engine_.getEntityManager();
+
+		// Hide the dialogue box
+		auto dialogueBox = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("DialogueBox"));
+
+		// Show the dialogue box
+		if (!dialogueBox.empty())
+		{
+			for (auto& it : dialogueBox)
+			{
+				if (it.has<ECSComponents::VisibilityComponent>(entityManager))
+				{
+					it.get<ECSComponents::VisibilityComponent>(entityManager).visible = false;
+
+				}
+			}
+		}
+
+		std::cout << "[Dialogue] Ended" << std::endl;
+	}
+	else {
+		// Start typewriter animation for next dialogue line
+		dialogueTargetText_  = dialogueTexts_[dialogueIndex_];
+		dialogueCurrentText_.clear();
+		dialogueTypeTimer_   = 0.0f;
+		dialogueTyping_      = true;
+
+		// Clear body text entity
+		auto& entityManager = engine_.getEntityManager();
+		auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+		if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager))
+		{
+			bodyText[0].get<ECSComponents::TextComponent>(entityManager).text[0] = '\0';
+		}
+		std::cout << "[Dialogue] Showing text " << dialogueIndex_ << ": " << dialogueTexts_[dialogueIndex_] << std::endl;
 	}
 }

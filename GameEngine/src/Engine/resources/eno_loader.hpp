@@ -184,6 +184,14 @@ namespace Resources
 		std::shared_ptr<Font::EnoFont> getFont(const std::string& name);
 
 		/*============================================================================================
+		* \brief	Retrieve names of all loaded fonts.
+		* \return	Sorted vector of font name strings.
+		*//*========================================================================================*/
+		std::vector<std::string> getFontNames() const {
+			return fontManager_.getFontNames();
+		}
+
+		/*============================================================================================
 		* \brief	Get the font directory path.
 		* \return	String reference to the font path.
 		*//*========================================================================================*/

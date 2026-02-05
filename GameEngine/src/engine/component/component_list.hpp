@@ -36,6 +36,7 @@
 	X(RuptureMarkComponent) \
 	X(FloatingTextComponent) \
 	X(ParticleEmitterComponent) \
+	X(TextComponent) \
 
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
