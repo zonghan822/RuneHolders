@@ -824,6 +824,16 @@ void GameApplication::updateEntities() {
 		cachedDrawableEntities_ = engine_.getEntityManager().findEntity<ECSComponents::DrawInfoComponent>();
 		cachedSceneTwoEntities_ = engine_.getEntityManager().findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("testcaven"));
 
+		// DEBUG: Count runes in cache
+		int runeCount = 0;
+		for (auto& ent : cachedDrawableEntities_) {
+			if (ent.has<ECSComponents::RuneComponent>(engine_.getEntityManager())) {
+				runeCount++;
+			}
+		}
+		if (runeCount > 0) {
+			std::cout << "[DEBUG] Cache rebuilt: " << runeCount << " runes found in cache" << std::endl;
+		}
 
 		entitiesDirty_ = false;
 
@@ -1187,6 +1197,9 @@ void GameApplication::drawShapes() {
 						if (entity.has<ECSComponents::RuneComponent>(entityManager)) {
 							auto& runeComp = entity.get<ECSComponents::RuneComponent>(entityManager);
 
+							// DEBUG: Log rune rendering
+							// std::cout << "[DEBUG] Rendering rune " << runeComp.runeNumber << " (entity " << entity.id() << ")" << std::endl;
+
 							// Calculate UV coordinates based on rune number
 							ECSComponents::RuneAssets::getRuneUV(runeComp.runeNumber, uvStart, uvEnd);
 						}
@@ -1280,8 +1293,16 @@ void GameApplication::drawShapes() {
 
 				}
 			}
+			catch (const std::exception& e) {
+				// Log the actual error to help debug missing runes
+				std::cerr << "[Rendering] Exception for entity " << entity.id()
+				          << ": " << e.what() << std::endl;
+				entitiesDirty_ = true;
+				continue;
+			}
 			catch (...) {
-				// Entity was destroyed, rebuild cache next frame
+				// Unknown exception
+				std::cerr << "[Rendering] Unknown exception for entity " << entity.id() << std::endl;
 				entitiesDirty_ = true;
 				continue;
 			}
@@ -1576,6 +1597,21 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	// Verify all 6 runes were created
 	if (runesCreated != 6) {
 		std::cerr << "[RuneSystem] ERROR: Only created " << runesCreated << " runes!" << std::endl;
+	}
+
+	// DEBUG: Verify all runes have valid texture
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i) {
+		if (runeState.runeEntityIDs[i] != UINT32_MAX) {
+			ECS::Entity runeEntity(runeState.runeEntityIDs[i]);
+			if (runeEntity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
+				auto& drawInfo = runeEntity.get<ECSComponents::DrawInfoComponent>(entityManager);
+				if (!drawInfo.texture || !drawInfo.texture->isValid()) {
+					std::cerr << "[RuneSystem] ERROR: Rune " << (i+1) << " has invalid texture!" << std::endl;
+				}
+			} else {
+				std::cerr << "[RuneSystem] ERROR: Rune " << (i+1) << " missing DrawInfoComponent!" << std::endl;
+			}
+		}
 	}
 
 	// Mark cache dirty AFTER all entities are created
