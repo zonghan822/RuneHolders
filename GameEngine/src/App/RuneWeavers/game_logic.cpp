@@ -649,6 +649,12 @@ void GameApplication::updateGameLogic() {
 
 		// Update combat system (damage dealing and health)
 		updateCombatSystem(deltaTime);
+
+		// Update floating texts (rise and fade)
+		updateFloatingTexts(deltaTime);
+
+		// Update rupture mark spells (state machine, enemy detection, damage)
+		updateRuptureMarks(deltaTime);
 	}
 
 	// Update camera system (replaces the old fixed projection)
@@ -1177,8 +1183,14 @@ void GameApplication::drawShapes() {
 						Math::eVec2<float> uvStart{ 0.0f, 0.0f };
 						Math::eVec2<float> uvEnd{ 1.0f, 1.0f };
 
+						// Custom rendering for runes (spritesheet with UV)
+						if (entity.has<ECSComponents::RuneComponent>(entityManager)) {
+							auto& runeComp = entity.get<ECSComponents::RuneComponent>(entityManager);
 
-						if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+							// Calculate UV coordinates based on rune number
+							ECSComponents::RuneAssets::getRuneUV(runeComp.runeNumber, uvStart, uvEnd);
+						}
+						else if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
 						{
 							auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
 							Animation::AnimationController* ctrl =
@@ -1362,6 +1374,13 @@ void GameApplication::initializeRuneSystem()
 
 	runeSystemEntityID_ = runeSystemEntity.id();
 
+	// Pre-load and cache the rune texture
+	auto& resourceLoader = engine_.getResourceLoader();
+	runeTexture_ = resourceLoader.getTexture("Runes_White_Sheet_Large");
+	if (!runeTexture_ || !runeTexture_->isValid()) {
+		std::cerr << "[RuneSystem] WARNING: Failed to pre-load rune texture!" << std::endl;
+	}
+
 	runeSystemInitialized_ = true;
 }
 
@@ -1428,56 +1447,16 @@ void GameApplication::updateRuneSystem()
 
 	// SPAWN RUNES when left click is first pressed
 	if (leftClickPressed && !runeState.runesActive) {
+		// Play rune spawn sound
+		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
 		spawnRunes(mouseWorldPos);
 		runeState.runesActive = true;
 		runeState.isLeftClickHeld = true;
-		runeState.spellCasted = false;  // Reset flag for new rune spawn
 	}
 
 	// UPDATE RUNES while left click is held
 	if (leftClickHeld && runeState.runesActive) {
 		updateRuneHover(mouseWorldPos);
-
-		// Update line drawing
-		if (runeState.isDrawingLine && !runeState.spellCasted) {
-			runeState.lineEnd = mouseWorldPos;
-
-			// Check if line connects to right rune
-			ECS::Entity rightRuneEntity(runeState.runeEntityIDs[1]);
-			if (rightRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
-			    rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-
-				auto& rightTransform = rightRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
-				auto& rightRune = rightRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
-
-				float distToRightRune = Math::eVec2Distance(mouseWorldPos, rightTransform.pos);
-
-				if (distToRightRune <= rightRune.radius) {
-					// Connection successful! Spawn fireball
-					Math::eVec2<float> fireballPos = {
-						(runeState.connectedPositions[0].x + rightTransform.pos.x) / 2.0f,
-						(runeState.connectedPositions[0].y + rightTransform.pos.y) / 2.0f
-					};
-					spawnFireball(fireballPos);
-
-					// Mark runes as connected
-					ECS::Entity leftRuneEntity(runeState.runeEntityIDs[0]);
-					if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-						leftRuneEntity.get<ECSComponents::RuneComponent>(entityManager).isConnected = true;
-					}
-					rightRune.isConnected = true;
-
-					// Set flag to prevent multiple fireballs
-					runeState.spellCasted = true;
-
-					// Destroy runes immediately after successful connection
-					destroyRunes();
-					runeState.runesActive = false;
-					runeState.isDrawingLine = false;
-
-				}
-			}
-		}
 	}
 
 	// DESTROY RUNES when left click is released
@@ -1486,7 +1465,6 @@ void GameApplication::updateRuneSystem()
 		runeState.runesActive = false;
 		runeState.isLeftClickHeld = false;
 		runeState.isDrawingLine = false;
-		runeState.spellCasted = false;  // Reset for next cycle
 	}
 
 	// Draw connection line if active
@@ -1515,6 +1493,7 @@ void GameApplication::updateRuneSystem()
 	for (uint32_t id : fireballsToDestroy) {
 		entityManager.destroyEntity(id);
 		entitiesDirty_ = true;
+		std::cout << "[RuneSystem] Fireball expired and destroyed" << std::endl;
 	}
 }
 
@@ -1524,54 +1503,83 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	// Load textures if not already loaded
-	auto& resourceLoader = engine_.getResourceLoader();
-	auto leftRuneTexture = resourceLoader.getTexture("Left_Rune");
-	auto rightRuneTexture = resourceLoader.getTexture("Right_Rune");
+	// Use cached texture - reload if not available
+	if (!runeTexture_ || !runeTexture_->isValid()) {
+		auto& resourceLoader = engine_.getResourceLoader();
+		runeTexture_ = resourceLoader.getTexture("Runes_White_Sheet_Large");
+		if (!runeTexture_ || !runeTexture_->isValid()) {
+			std::cerr << "[RuneSystem] ERROR: Failed to load rune texture!" << std::endl;
+			return;
+		}
+	}
 
-	// Spawn LEFT rune
-	ECS::Entity leftRune = entityManager.create();
-	leftRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("LeftRune"));
-	leftRune.add<ECSComponents::TransformComponent>(entityManager);
-	leftRune.add<ECSComponents::DrawInfoComponent>(entityManager);
-	leftRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(0, 1, 30.0f));
+	// Clean up any leftover runes from previous cycle
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i) {
+		if (runeState.runeEntityIDs[i] != UINT32_MAX) {
+			entityManager.destroyEntity(runeState.runeEntityIDs[i]);
+			runeState.runeEntityIDs[i] = UINT32_MAX;
+		}
+	}
 
-	auto& leftTransform = leftRune.get<ECSComponents::TransformComponent>(entityManager);
-	leftTransform.pos = { mouseWorldPos.x - runeState.runeCircleRadius, mouseWorldPos.y };
-	leftTransform.scale = { 1.0f, 1.0f };
+	constexpr float PI = 3.14159265359f;
 
-	auto& leftDraw = leftRune.get<ECSComponents::DrawInfoComponent>(entityManager);
-	leftDraw.width = 60.0f;
-	leftDraw.height = 60.0f;
-	leftDraw.color = Graphics::Color::White;
-	strcpy_s(leftDraw.shape, "Rectangle");
-	leftDraw.texture = leftRuneTexture;
+	// Rune numbers at each position (0=TL, 1=TR, 2=MR, 3=BR, 4=BL, 5=ML)
+	const int runeNumbers[6] = { 6, 1, 2, 3, 4, 5 };
 
-	// Spawn RIGHT rune
-	ECS::Entity rightRune = entityManager.create();
-	rightRune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("RightRune"));
-	rightRune.add<ECSComponents::TransformComponent>(entityManager);
-	rightRune.add<ECSComponents::DrawInfoComponent>(entityManager);
-	rightRune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(1, 2, 30.0f));
+	// Store circle center for spell spawning
+	runeState.circleCenter = mouseWorldPos;
 
-	auto& rightTransform = rightRune.get<ECSComponents::TransformComponent>(entityManager);
-	rightTransform.pos = { mouseWorldPos.x + runeState.runeCircleRadius, mouseWorldPos.y };
-	rightTransform.scale = { 1.0f, 1.0f };
+	// Reset connection state before spawning
+	runeState.resetConnection();
 
-	auto& rightDraw = rightRune.get<ECSComponents::DrawInfoComponent>(entityManager);
-	rightDraw.width = 60.0f;
-	rightDraw.height = 60.0f;
-	rightDraw.color = Graphics::Color::White;
-	strcpy_s(rightDraw.shape, "Rectangle");
-	rightDraw.texture = rightRuneTexture;
+	// Spawn 6 runes in a circle pattern - create ALL entities first
+	int runesCreated = 0;
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i)
+	{
+		// Calculate angles
+		float angle = (-120.0f + i * 60.0f) * (PI / 180.0f);
+		float x = mouseWorldPos.x + runeState.runeCircleRadius * std::cos(angle);
+		float y = mouseWorldPos.y + runeState.runeCircleRadius * std::sin(angle);
 
-	// Store entity IDs
-	runeState.runeEntityIDs[0] = leftRune.id();
-	runeState.runeEntityIDs[1] = rightRune.id();
+		// Get rune number for this position
+		int runeNumber = runeNumbers[i];
 
-	// Mark entities as dirty to refresh rendering cache
+		// Create rune entity
+		ECS::Entity rune = entityManager.create();
+		uint32_t runeId = rune.id();
+
+		// Add all components
+		rune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(("Rune_" + std::to_string(runeNumber)).c_str()));
+		rune.add<ECSComponents::TransformComponent>(entityManager);
+		rune.add<ECSComponents::DrawInfoComponent>(entityManager);
+		rune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(i, runeNumber, 30.0f));
+
+		// Configure transform
+		auto& transform = rune.get<ECSComponents::TransformComponent>(entityManager);
+		transform.pos = { x, y };
+		transform.scale = { 1.0f, 1.0f };
+
+		// Configure draw info - use cached texture member variable
+		auto& draw = rune.get<ECSComponents::DrawInfoComponent>(entityManager);
+		draw.width = 56.0f;
+		draw.height = 56.0f;
+		draw.color = Graphics::Color::White;
+		strcpy_s(draw.shape, "Rectangle");
+		draw.texture = runeTexture_;  // Use cached member texture
+		draw.texID = runeNumber - 1;
+
+		// Store entity ID
+		runeState.runeEntityIDs[i] = runeId;
+		runesCreated++;
+	}
+
+	// Verify all 6 runes were created
+	if (runesCreated != 6) {
+		std::cerr << "[RuneSystem] ERROR: Only created " << runesCreated << " runes!" << std::endl;
+	}
+
+	// Mark cache dirty AFTER all entities are created
 	entitiesDirty_ = true;
-
 }
 
 void GameApplication::destroyRunes()
@@ -1580,27 +1588,23 @@ void GameApplication::destroyRunes()
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	// Destroy left rune if it exists
-	if (runeState.runeEntityIDs[0] != UINT32_MAX) {
-		ECS::Entity leftRuneEntity(runeState.runeEntityIDs[0]);
-		if (leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-			entityManager.destroyEntity(runeState.runeEntityIDs[0]);
+	// Destroy all 6 runes - always try to destroy, don't check for component
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i) {
+		if (runeState.runeEntityIDs[i] != UINT32_MAX) {
+			// Try to destroy the entity - entityManager handles invalid IDs gracefully
+			entityManager.destroyEntity(runeState.runeEntityIDs[i]);
+			runeState.runeEntityIDs[i] = UINT32_MAX;
 		}
-		runeState.runeEntityIDs[0] = UINT32_MAX;
 	}
 
-	// Destroy right rune if it exists
-	if (runeState.runeEntityIDs[1] != UINT32_MAX) {
-		ECS::Entity rightRuneEntity(runeState.runeEntityIDs[1]);
-		if (rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-			entityManager.destroyEntity(runeState.runeEntityIDs[1]);
-		}
-		runeState.runeEntityIDs[1] = UINT32_MAX;
-	}
+	// Reset ALL rune-related state to ensure clean slate
+	runeState.resetConnection();
+	runeState.runesActive = false;
+	runeState.isLeftClickHeld = false;
+	runeState.isDrawingLine = false;
 
 	// Mark entities as dirty to refresh rendering cache
 	entitiesDirty_ = true;
-
 }
 
 void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
@@ -1609,48 +1613,91 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	// Check if mouse hovers over left rune
-	if (runeState.runeEntityIDs[0] != UINT32_MAX) {
-		ECS::Entity leftRuneEntity(runeState.runeEntityIDs[0]);
-		if (leftRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
-		    leftRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
+	// Check hover for all runes
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i)
+	{
+		if (runeState.runeEntityIDs[i] == UINT32_MAX) continue;
 
-			auto& leftTransform = leftRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
-			auto& leftRune = leftRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
+		ECS::Entity runeEntity(runeState.runeEntityIDs[i]);
+		if (!runeEntity.has<ECSComponents::TransformComponent>(entityManager) ||
+			!runeEntity.has<ECSComponents::RuneComponent>(entityManager))
+			continue;
 
-			float distToLeftRune = Math::eVec2Distance(mouseWorldPos, leftTransform.pos);
-			bool wasHovered = leftRune.isHovered;
-			leftRune.isHovered = (distToLeftRune <= leftRune.radius);
+		auto& transform = runeEntity.get<ECSComponents::TransformComponent>(entityManager);
+		auto& rune = runeEntity.get<ECSComponents::RuneComponent>(entityManager);
 
-			// Start drawing line when hovering over left rune
-			if (leftRune.isHovered && !wasHovered) {
+		float dist = Math::eVec2Distance(mouseWorldPos, transform.pos);
+		bool wasHovered = rune.isHovered;
+		rune.isHovered = (dist <= rune.radius);
+
+		// Rune hover - add to sequence if not already connected and not banned
+		if (rune.isHovered && !wasHovered && !rune.isConnected && !rune.isBanned && !runeState.spellCasted)
+		{
+			// Try to add this rune to the sequence
+			if (runeState.addRuneToSequence(rune.runeNumber, transform.pos))
+			{
+				rune.isConnected = true;
 				runeState.isDrawingLine = true;
-				runeState.connectedPositions[0] = leftTransform.pos;
-				runeState.lineEnd = mouseWorldPos;
-				// Play left rune hover sound
+
+				// Play sound
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+				std::cout << "[RuneSystem] Added rune " << rune.runeNumber
+				          << " to sequence (count: " << runeState.connectionCount << ")" << std::endl;
+
+				// Check if we've connected 4 runes
+				if (runeState.connectionCount == ECSComponents::RuneSystemStateComponent::SPELL_SEQUENCE_LENGTH)
+				{
+					// Check spell pattern
+					ECSComponents::SpellType spellType = runeState.checkSpellPattern();
+
+					if (spellType != ECSComponents::SpellType::NONE)
+					{
+						// Valid spell!
+						std::cout << "[RuneSystem] Valid spell cast: ";
+						switch (spellType) {
+							case ECSComponents::SpellType::ICE:
+								std::cout << "ICE (3-2-5-4)" << std::endl;
+								spawnRuptureMark(runeState.circleCenter, spellType);
+								break;
+							case ECSComponents::SpellType::FIRE:
+								std::cout << "FIRE (6-1-5-2)" << std::endl;
+								spawnRuptureMark(runeState.circleCenter, spellType);
+								break;
+							case ECSComponents::SpellType::LIGHT:
+								std::cout << "LIGHT (4-1-3-6)" << std::endl;
+								spawnRuptureMark(runeState.circleCenter, spellType);
+								break;
+							default:
+								break;
+						}
+						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+					}
+					else
+					{
+						// Invalid sequence
+						std::cout << "[RuneSystem] Invalid spell sequence: "
+						          << runeState.connectedRuneSequence[0] << "-"
+						          << runeState.connectedRuneSequence[1] << "-"
+						          << runeState.connectedRuneSequence[2] << "-"
+						          << runeState.connectedRuneSequence[3] << std::endl;
+					}
+
+					runeState.spellCasted = true;
+
+					// Destroy runes after spell attempt
+					destroyRunes();
+					runeState.runesActive = false;
+					runeState.isDrawingLine = false;
+					return;
+				}
 			}
 		}
 	}
 
-	// Update right rune hover state
-	if (runeState.runeEntityIDs[1] != UINT32_MAX) {
-		ECS::Entity rightRuneEntity(runeState.runeEntityIDs[1]);
-		if (rightRuneEntity.has<ECSComponents::TransformComponent>(entityManager) &&
-		    rightRuneEntity.has<ECSComponents::RuneComponent>(entityManager)) {
-
-			auto& rightTransform = rightRuneEntity.get<ECSComponents::TransformComponent>(entityManager);
-			auto& rightRune = rightRuneEntity.get<ECSComponents::RuneComponent>(entityManager);
-
-			float distToRightRune = Math::eVec2Distance(mouseWorldPos, rightTransform.pos);
-			bool wasRightHovered = rightRune.isHovered;
-			rightRune.isHovered = (distToRightRune <= rightRune.radius);
-
-			// Play right rune hover sound when first hovering
-			if (rightRune.isHovered && !wasRightHovered) {
-				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
-			}
-		}
+	// Update line end position while drawing
+	if (runeState.isDrawingLine && !runeState.spellCasted)
+	{
+		runeState.lineEnd = mouseWorldPos;
 	}
 }
 
@@ -1661,31 +1708,45 @@ void GameApplication::drawRuneConnectionLine()
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	// In RuneWeavers, positions are already in screen space
-	Math::eVec2<float> screenStart = runeState.connectedPositions[0];
-	Math::eVec2<float> screenEnd = runeState.lineEnd;
+	// Draw lines between connected runes (multi-segment line)
+	for (int i = 0; i < runeState.connectionCount; ++i)
+	{
+		Math::eVec2<float> screenStart = runeState.connectedPositions[i];
+		Math::eVec2<float> screenEnd;
 
-	// Draw line using graphics system
-	Math::eVec2<float> direction = {
-		screenEnd.x - screenStart.x,
-		screenEnd.y - screenStart.y
-	};
-	float length = Math::eVec2Length(direction);
+		// If this is the last connected rune, draw to mouse position
+		if (i == runeState.connectionCount - 1)
+		{
+			screenEnd = runeState.lineEnd;
+		}
+		else
+		{
+			// Draw to next connected rune
+			screenEnd = runeState.connectedPositions[i + 1];
+		}
 
-	if (length > 0.1f) {
-		float angle = std::atan2(direction.y, direction.x);
-		Math::eVec2<float> midpoint = {
-			screenStart.x + direction.x / 2.0f,
-			screenStart.y + direction.y / 2.0f
+		// Draw line segment
+		Math::eVec2<float> direction = {
+			screenEnd.x - screenStart.x,
+			screenEnd.y - screenStart.y
 		};
+		float length = Math::eVec2Length(direction);
 
-		graphics.drawRect(
-			midpoint,
-			Math::eVec2<float>{length, 3.0f},  // 3 pixels wide
-			Graphics::Color(1.0f, 1.0f, 0.0f, 0.8f),  // Yellow with transparency
-			true,
-			angle
-		);
+		if (length > 0.1f) {
+			float angle = std::atan2(direction.y, direction.x);
+			Math::eVec2<float> midpoint = {
+				screenStart.x + direction.x / 2.0f,
+				screenStart.y + direction.y / 2.0f
+			};
+
+			graphics.drawRect(
+				midpoint,
+				Math::eVec2<float>{length, 3.0f},  // 3 pixels wide
+				Graphics::Color(1.0f, 1.0f, 0.0f, 0.8f),  // Yellow with transparency
+				true,
+				angle
+			);
+		}
 	}
 }
 
@@ -1836,6 +1897,414 @@ void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
 	// Play fireball spawn sound effect
 	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Cast" });
 
+	std::cout << "[RuneSystem] Spawned fireball at position (" << pos.x << ", " << pos.y << ")" << std::endl;
+}
+
+void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSComponents::SpellType spellType)
+{
+	auto& entityManager = engine_.getEntityManager();
+	auto& resourceLoader = engine_.getResourceLoader();
+
+	// Determine spritesheets based on spell type
+	const char* spawnSheetName = "";
+	const char* windupSheetName = "";
+	const char* explosionSheetName = "";
+
+	switch (spellType)
+	{
+	case ECSComponents::SpellType::ICE:
+		spawnSheetName = "RuptureMark-Ice-Spawn-Sheet";
+		windupSheetName = "RuptureMark-Ice-Windup-Sheet";
+		explosionSheetName = "RuptureMark-Ice-Explosion-Sheet";
+		break;
+	case ECSComponents::SpellType::FIRE:
+		spawnSheetName = "RuptureMark-Fire-Spawn-Sheet";
+		windupSheetName = "RuptureMark-Fire-Windup-Sheet";
+		explosionSheetName = "RuptureMark-Fire-Explosion-Sheet";
+		break;
+	case ECSComponents::SpellType::LIGHT:
+		spawnSheetName = "RuptureMark-Light-Spawn-Sheet";
+		windupSheetName = "RuptureMark-Light-Windup-Sheet";
+		explosionSheetName = "RuptureMark-Light-Explosion-Sheet";
+		break;
+	default:
+		return;
+	}
+
+	auto texture = resourceLoader.getTexture(spawnSheetName);
+
+	// Create rupture mark entity
+	ECS::Entity ruptureMark = entityManager.create();
+	ruptureMark.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("RuptureMark"));
+	ruptureMark.add<ECSComponents::TransformComponent>(entityManager);
+	ruptureMark.add<ECSComponents::DrawInfoComponent>(entityManager);
+	ruptureMark.add<ECSComponents::AnimationControllerComponent>(entityManager);
+	ruptureMark.add<ECSComponents::RuptureMarkComponent>(entityManager, ECSComponents::RuptureMarkComponent(spellType, 20.0f, 180.0f));
+
+	auto& transform = ruptureMark.get<ECSComponents::TransformComponent>(entityManager);
+	transform.pos = pos;
+	transform.scale = { 1.0f, 1.0f };
+
+	auto& draw = ruptureMark.get<ECSComponents::DrawInfoComponent>(entityManager);
+	draw.width = 128.0f;
+	draw.height = 128.0f;
+	draw.color = Graphics::Color::White;
+	strcpy_s(draw.shape, "Rectangle");
+	draw.texture = texture;
+
+	// Setup all 3 animations
+	auto& animComp = ruptureMark.get<ECSComponents::AnimationControllerComponent>(entityManager);
+
+	// Spawn animation (1024x128 sheet = 8 frames of 128x128)
+	animComp.setAnimationData(
+		"spawn",
+		spawnSheetName,
+		128, 128,  // frame size
+		1, 8,      // 1 row, 8 columns
+		0.1f,      // frame duration
+		false      // not looping
+	);
+
+	// Windup animation (640x128 sheet = 5 frames of 128x128)
+	animComp.setAnimationData(
+		"windup",
+		windupSheetName,
+		128, 128,  // frame size
+		1, 5,      // 1 row, 5 columns
+		0.1f,      // frame duration
+		false      // not looping
+	);
+
+	// Explosion animation (512x128 sheet = 4 frames of 128x128)
+	animComp.setAnimationData(
+		"explosion",
+		explosionSheetName,
+		128, 128,  // frame size
+		1, 4,      // 1 row, 4 columns
+		0.1f,      // frame duration
+		false      // not looping
+	);
+
+	strcpy_s(animComp.currentAnimationName, "spawn");
+
+	entitiesDirty_ = true;
+
+	std::cout << "[RuneSystem] Spawned RuptureMark at (" << pos.x << ", " << pos.y << ")" << std::endl;
+}
+
+void GameApplication::updateRuptureMarks(float deltaTime)
+{
+	auto& entityManager = engine_.getEntityManager();
+	auto& animRegistry = engine_.getAnimationRegistry();
+	auto& resourceLoader = engine_.getResourceLoader();
+	std::vector<uint32_t> marksToDestroy;
+	std::vector<uint32_t> enemiesToDestroy;
+
+	for (const auto& [id, loc] : entityManager.getMap())
+	{
+		ECS::Entity entity(id);
+		if (!entity.has<ECSComponents::RuptureMarkComponent>(entityManager) || !entity.has<ECSComponents::TransformComponent>(entityManager))
+			continue;
+
+		auto& mark = entity.get<ECSComponents::RuptureMarkComponent>(entityManager);
+		auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+
+		mark.stateTimer += deltaTime;
+
+		switch (mark.state)
+		{
+		case ECSComponents::RuptureMarkState::SPAWNING:
+		{
+			if (mark.stateTimer >= mark.spawnDuration)
+			{
+				mark.state = ECSComponents::RuptureMarkState::IDLE;
+				mark.stateTimer = 0.0f;
+				std::cout << "[RuptureMark] Entered IDLE state" << std::endl;
+			}
+			break;
+		}
+
+		case ECSComponents::RuptureMarkState::IDLE:
+		{
+			// Check for enemies in range
+			const char* targetEnemy = mark.getTargetEnemyName();
+
+			for (const auto& [enemyId, enemyLoc] : entityManager.getMap())
+			{
+				ECS::Entity enemyEntity(enemyId);
+				if (!enemyEntity.has<ECSComponents::AIComponent>(entityManager) ||
+					!enemyEntity.has<ECSComponents::TransformComponent>(entityManager))
+					continue;
+
+				// Check if this is the target enemy type by name OR texture path
+				bool isTargetEnemy = false;
+
+				// Check entity name
+				if (enemyEntity.has<ECSComponents::NameComponent>(entityManager))
+				{
+					auto& enemyName = enemyEntity.get<ECSComponents::NameComponent>(entityManager);
+					if (strstr(enemyName.name, targetEnemy) != nullptr)
+						isTargetEnemy = true;
+				}
+
+				// Also check texture path (e.g., "Enemy-Slug-Idle-Sheet" contains "Slug")
+				if (!isTargetEnemy && enemyEntity.has<ECSComponents::DrawInfoComponent>(entityManager))
+				{
+					auto& enemyDraw = enemyEntity.get<ECSComponents::DrawInfoComponent>(entityManager);
+					if (strstr(enemyDraw.texturePath, targetEnemy) != nullptr)
+						isTargetEnemy = true;
+				}
+
+				if (!isTargetEnemy)
+					continue;
+
+				auto& enemyTransform = enemyEntity.get<ECSComponents::TransformComponent>(entityManager);
+				float dist = Math::eVec2Distance(transform.pos, enemyTransform.pos);
+
+				if (dist <= mark.detectionRadius)
+				{
+					// Enemy triggered the mark! Switch to windup animation
+					mark.state = ECSComponents::RuptureMarkState::WINDUP;
+					mark.stateTimer = 0.0f;
+					mark.triggeredByEntityID = enemyId;
+
+					// Switch to windup animation
+					if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager) &&
+						entity.has<ECSComponents::DrawInfoComponent>(entityManager))
+					{
+						auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+						auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
+
+						strcpy_s(animComp.currentAnimationName, "windup");
+
+						// Get the windup texture and update draw component
+						for (int i = 0; i < animComp.animationCount; ++i)
+						{
+							if (strcmp(animComp.animations[i].name, "windup") == 0)
+							{
+								auto windupTex = resourceLoader.getTexture(animComp.animations[i].texturePath);
+								if (windupTex)
+								{
+									drawComp.texture = windupTex;
+									strncpy_s(drawComp.texturePath, animComp.animations[i].texturePath, sizeof(drawComp.texturePath) - 1);
+								}
+
+								// Reset the animation controller if exists
+								auto* ctrl = animRegistry.get(animComp.controllerID);
+								if (ctrl)
+								{
+									ctrl->setAnimation("windup");
+								}
+								break;
+							}
+						}
+						entitiesDirty_ = true;
+					}
+
+					std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
+					break;
+				}
+			}
+			break;
+		}
+
+		case ECSComponents::RuptureMarkState::WINDUP:
+		{
+			if (mark.stateTimer >= mark.windupDuration)
+			{
+				mark.state = ECSComponents::RuptureMarkState::EXPLODING;
+				mark.stateTimer = 0.0f;
+
+				// Switch to explosion animation
+				if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager) &&
+					entity.has<ECSComponents::DrawInfoComponent>(entityManager))
+				{
+					auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+					auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
+
+					strcpy_s(animComp.currentAnimationName, "explosion");
+
+					// Get the explosion texture and update draw component
+					for (int i = 0; i < animComp.animationCount; ++i)
+					{
+						if (strcmp(animComp.animations[i].name, "explosion") == 0)
+						{
+							auto explosionTex = resourceLoader.getTexture(animComp.animations[i].texturePath);
+							if (explosionTex)
+							{
+								drawComp.texture = explosionTex;
+								strncpy_s(drawComp.texturePath, animComp.animations[i].texturePath, sizeof(drawComp.texturePath) - 1);
+							}
+
+							// Reset the animation controller if exists
+							auto* ctrl = animRegistry.get(animComp.controllerID);
+							if (ctrl)
+							{
+								ctrl->setAnimation("explosion");
+							}
+							break;
+						}
+					}
+					entitiesDirty_ = true;
+				}
+
+				// Deal damage to the triggering enemy
+				if (mark.triggeredByEntityID != UINT32_MAX)
+				{
+					ECS::Entity enemyEntity(mark.triggeredByEntityID);
+
+					// Use HealthComponent for proper damage handling
+					if (enemyEntity.has<ECSComponents::HealthComponent>(entityManager))
+					{
+						auto& health = enemyEntity.get<ECSComponents::HealthComponent>(entityManager);
+						bool died = health.takeDamage(mark.damage);
+						std::cout << "[RuptureMark] EXPLODING! Dealt " << mark.damage << " damage. Enemy HP: " << health.currentHealth << "/" << health.maxHealth << std::endl;
+
+						// Also update AIComponent health to stay in sync
+						if (enemyEntity.has<ECSComponents::AIComponent>(entityManager))
+						{
+							auto& ai = enemyEntity.get<ECSComponents::AIComponent>(entityManager);
+							ai.health = static_cast<int>(health.currentHealth);
+						}
+
+						// Trigger state change through StateMachineSystem
+						if (!died)
+						{
+							engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "Hurt");
+						}
+						else
+						{
+							engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "Death");
+							enemiesToDestroy.push_back(mark.triggeredByEntityID);
+						}
+					}
+					// Fallback to AIComponent if no HealthComponent
+					else if (enemyEntity.has<ECSComponents::AIComponent>(entityManager))
+					{
+						auto& ai = enemyEntity.get<ECSComponents::AIComponent>(entityManager);
+						ai.health -= static_cast<int>(mark.damage);
+						std::cout << "[RuptureMark] EXPLODING! Dealt " << mark.damage << " damage. Enemy HP: " << ai.health << std::endl;
+					}
+				}
+			}
+			break;
+		}
+
+		case ECSComponents::RuptureMarkState::EXPLODING:
+		{
+			if (mark.stateTimer >= mark.explosionDuration)
+			{
+				mark.state = ECSComponents::RuptureMarkState::FINISHED;
+				std::cout << "[RuptureMark] Finished, marking for destruction" << std::endl;
+			}
+			break;
+		}
+
+		case ECSComponents::RuptureMarkState::FINISHED:
+		{
+			marksToDestroy.push_back(id);
+			break;
+		}
+		}
+	}
+
+	// Destroy finished marks
+	for (uint32_t id : marksToDestroy)
+	{
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
+
+	// Destroy dead enemies
+	for (uint32_t id : enemiesToDestroy)
+	{
+		std::cout << "[RuptureMark] Destroying dead enemy (ID: " << id << ")" << std::endl;
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
+}
+
+void GameApplication::spawnFloatingText(const Math::eVec2<float>& pos, const char* text)
+{
+	auto& entityManager = engine_.getEntityManager();
+
+	// Create floating text entity
+	ECS::Entity floatingText = entityManager.create();
+	floatingText.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("FloatingText"));
+	floatingText.add<ECSComponents::TransformComponent>(entityManager);
+	floatingText.add<ECSComponents::FloatingTextComponent>(entityManager, ECSComponents::FloatingTextComponent(text, 1.5f, 50.0f));
+
+	auto& transform = floatingText.get<ECSComponents::TransformComponent>(entityManager);
+	transform.pos = pos;
+	transform.scale = { 1.0f, 1.0f };
+
+	entitiesDirty_ = true;
+
+	std::cout << "[RuneSystem] Spawned floating text: " << text << std::endl;
+}
+
+void GameApplication::updateFloatingTexts(float deltaTime)
+{
+	auto& entityManager = engine_.getEntityManager();
+	auto& graphics = engine_.getGraphicsManager();
+	std::vector<uint32_t> textsToDestroy;
+
+	// Get camera position for world-to-screen conversion
+	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+	float cameraX = 0.0f;
+	float cameraY = 0.0f;
+
+	if (!cameraEntities.empty()) {
+		auto& camera = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
+		cameraX = camera.position.x - camera.viewportWidth * 0.5f;
+		cameraY = camera.position.y - camera.viewportHeight * 0.5f;
+	}
+
+	for (const auto& [id, loc] : entityManager.getMap()) {
+		ECS::Entity entity(id);
+		if (entity.has<ECSComponents::FloatingTextComponent>(entityManager) &&
+		    entity.has<ECSComponents::TransformComponent>(entityManager)) {
+
+			auto& floatText = entity.get<ECSComponents::FloatingTextComponent>(entityManager);
+			auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+
+			// Update elapsed time
+			floatText.elapsedTime += deltaTime;
+
+			// Move text upward
+			transform.pos.y -= floatText.riseSpeed * deltaTime;
+
+			// Check if expired
+			if (floatText.elapsedTime >= floatText.lifetime) {
+				textsToDestroy.push_back(id);
+			}
+			else {
+				// Render the floating text
+				float alpha = floatText.getCurrentAlpha();
+
+				// Convert world position to screen position
+				Math::eVec2<float> screenPos = {
+					transform.pos.x - cameraX,
+					transform.pos.y - cameraY
+				};
+
+				// Draw text with fading alpha
+				graphics.drawText(
+					pixelifyFont_,
+					std::string(floatText.text),
+					screenPos,
+					1.0f,  // scale
+					Graphics::Color(1.0f, 0.3f, 0.3f, alpha)  // Red color with fading alpha
+				);
+			}
+		}
+	}
+
+	// Destroy expired floating texts
+	for (uint32_t id : textsToDestroy) {
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
 }
 
 void GameApplication::updateCombatSystem(float dt)
@@ -2039,16 +2508,38 @@ void GameApplication::updateEnemyAI(float dt)
 
 	ECS::Entity playerEntity(playerEntityID_);
 	if (!playerEntity.has<ECSComponents::TransformComponent>(entityManager)) return;
+	if (!playerEntity.has<ECSComponents::CollisionComponent>(entityManager)) return;
 
 	auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
+	auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
 	Math::eVec2<float> playerPos = playerTransform.pos;
 
+	// Get player collision radius (for circle) or half-size (for rect)
+	float playerRadius = 0.0f;
+	if (playerCollision.type == ECSComponents::ColliderType::CIRCLE) {
+		playerRadius = playerCollision.data.circle.radius * playerTransform.scale.x;
+	} else if (playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
+		playerRadius = std::max(playerCollision.data.rectangle.width, playerCollision.data.rectangle.height) * 0.5f * playerTransform.scale.x;
+	}
+
 	// Get all enemies with AI component
-	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent>();
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent, ECSComponents::CollisionComponent>();
 
 	for (auto& enemy : enemies) {
 		auto& ai = enemy.get<ECSComponents::AIComponent>(entityManager);
 		auto& transform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+		auto& collision = enemy.get<ECSComponents::CollisionComponent>(entityManager);
+
+		// Get enemy collision size
+		float enemyRadius = 0.0f;
+		if (collision.type == ECSComponents::ColliderType::CIRCLE) {
+			enemyRadius = collision.data.circle.radius * transform.scale.x;
+		} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
+			enemyRadius = std::max(collision.data.rectangle.width, collision.data.rectangle.height) * 0.5f * transform.scale.x;
+		}
+
+		// Minimum distance to avoid overlap
+		float minDistance = playerRadius + enemyRadius + 2.0f; // Small buffer
 
 		// Calculate distance to player
 		float distToPlayer = Math::eVec2Distance(transform.pos, playerPos);
@@ -2056,8 +2547,8 @@ void GameApplication::updateEnemyAI(float dt)
 		// Only chase if player is within awareness radius
 		if (distToPlayer > ai.awarenessRadius) continue;
 
-		// Don't move if already at attack range
-		if (distToPlayer <= ai.attackRange) continue;
+		// Don't move if already at attack range OR too close (would overlap)
+		if (distToPlayer <= ai.attackRange || distToPlayer <= minDistance) continue;
 
 		// Simple direct chase - move toward player
 		Math::eVec2<float> direction = { playerPos.x - transform.pos.x, playerPos.y - transform.pos.y };
@@ -2068,8 +2559,19 @@ void GameApplication::updateEnemyAI(float dt)
 			direction.x /= length;
 			direction.y /= length;
 
-			transform.pos.x += direction.x * ai.chaseSpeed * dt;
-			transform.pos.y += direction.y * ai.chaseSpeed * dt;
+			// Calculate movement amount
+			float moveAmount = ai.chaseSpeed * dt;
+
+			// Don't move closer than minDistance
+			float maxMove = distToPlayer - minDistance;
+			if (moveAmount > maxMove) {
+				moveAmount = maxMove;
+			}
+
+			if (moveAmount > 0.0f) {
+				transform.pos.x += direction.x * moveAmount;
+				transform.pos.y += direction.y * moveAmount;
+			}
 		}
 	}
 }
@@ -2270,7 +2772,7 @@ void GameApplication::setupMainMenuButtons() {
 	playCollision.isTrigger = true;
 
 	auto& playBtn = playButton.get<ECSComponents::ButtonComponent>(entityManager);
-	playBtn.setTargetScene("Scene1.txt");
+	//playBtn.setTargetScene("Scene1.txt");
 	playBtn.getActive() = true;
 
 	// Controls Button at (363, 1263) with size (79x79) rotated 45 degrees

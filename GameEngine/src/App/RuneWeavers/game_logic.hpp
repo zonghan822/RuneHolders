@@ -69,6 +69,7 @@ private:
     // Rune System
     uint32_t runeSystemEntityID_ = 0;  // ID of entity holding RuneSystemStateComponent
     bool runeSystemInitialized_ = false;
+    std::shared_ptr<Graphics::EnoTexture> runeTexture_;  // Cached rune spritesheet texture
 
     // Pause Menu and Spellbook System
     bool isPaused_ = false;
@@ -130,13 +131,17 @@ private:
     void displayFPS();
 
     // Rune system methods
-    void initializeRuneSystem();                    // Initialize rune system entity
-    void updateRuneSystem();                        // Update rune system logic each frame
-    void spawnRunes(const Math::eVec2<float>& mouseWorldPos);   // Spawn left and right runes
-    void destroyRunes();                            // Destroy spawned runes
+    void initializeRuneSystem();                                    // Initialize rune system entity
+    void updateRuneSystem();                                        // Update rune system logic each frame
+    void spawnRunes(const Math::eVec2<float>& mouseWorldPos);       // Spawn all 6 runes in circle
+    void destroyRunes();                                            // Destroy spawned runes
     void updateRuneHover(const Math::eVec2<float>& mouseWorldPos);  // Check if mouse hovers over runes
-    void drawRuneConnectionLine();                  // Draw line connecting runes
-    void spawnFireball(const Math::eVec2<float>& pos);  // Spawn fireball when runes connect
+    void drawRuneConnectionLine();                                  // Draw line connecting runes
+    void spawnFireball(const Math::eVec2<float>& pos);              // Spawn fireball when runes connect
+    void spawnFloatingText(const Math::eVec2<float>& pos, const char* text);  // Spawn floating text message
+    void updateFloatingTexts(float deltaTime);                      // Update floating text positions and alpha
+    void spawnRuptureMark(const Math::eVec2<float>& pos, ECSComponents::SpellType spellType);  // Spawn rupture mark spell
+    void updateRuptureMarks(float deltaTime);                       // Update rupture mark state machines
 
     // Combat system methods
     void updateCombatSystem(float deltaTime);       // Handle damage dealing and health updates

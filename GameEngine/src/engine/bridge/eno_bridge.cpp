@@ -15,6 +15,10 @@ namespace Bridge
                 std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
                 return;
             }
+
+            // DLL has its own copy of FileSystem statics (separate from the EXE's).
+            // Initialize them here so inlined paths like selectScene resolve correctly.
+            FileSystem::Initialize();
         }
 
         ENGINE_API bool __stdcall IsKeyPressed(int key)
@@ -120,6 +124,48 @@ namespace Bridge
             }
 
             return success;
+        }
+
+        // Static buffer for returning AI state string
+        static wchar_t aiStateBuffer[64];
+
+        ENGINE_API const wchar_t* __stdcall GetEntityAIState(uint32_t entityID)
+        {
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return L"";
+            }
+
+            auto& entMng = gEngine->getEntityManager();
+            ECS::Entity entity(entityID);
+
+            if (!entity.has<ECSComponents::StateMachineComponent>(entMng)) {
+                return L"";
+            }
+
+            auto& stateMachine = entity.get<ECSComponents::StateMachineComponent>(entMng);
+
+            // Convert char[] to wchar_t[]
+            size_t len = strlen(stateMachine.currentState);
+            for (size_t i = 0; i < len && i < 63; ++i) {
+                aiStateBuffer[i] = static_cast<wchar_t>(stateMachine.currentState[i]);
+            }
+            aiStateBuffer[len < 63 ? len : 63] = L'\0';
+
+            return aiStateBuffer;
+        }
+
+        ENGINE_API void __stdcall LoadScene(const wchar_t* sceneName)
+        {
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return;
+            }
+
+            std::wstring wName(sceneName);
+            std::string name(wName.begin(), wName.end());
+
+            gEngine->getEnoEditor().selectScene(name);
         }
     }
 }

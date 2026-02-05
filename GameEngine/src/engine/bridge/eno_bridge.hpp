@@ -30,6 +30,9 @@ namespace Bridge {
 
         // ================= AI =================
         ENGINE_API const wchar_t* __stdcall GetEntityAIState(uint32_t entityID);
+
+        // ================= Scene =================
+        ENGINE_API void __stdcall LoadScene(const wchar_t* sceneName);
     }
 }
 

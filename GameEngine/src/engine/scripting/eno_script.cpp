@@ -209,6 +209,7 @@ namespace Script
 		}
 	}
 
+	std::wstring EnoScript::getName() const { return name_; }
 	std::string EnoScript::path() { return wideToUtf8(path_); }
 	std::unordered_multimap<std::wstring, Field>& EnoScript::vars() { return vars_; }
 	std::unordered_set<std::wstring>& EnoScript::origin() { return origin_; }
