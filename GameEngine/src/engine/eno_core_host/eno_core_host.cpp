@@ -49,9 +49,9 @@ namespace Core
 		}
 
 		bus_.subscribe<ScriptEvent>(
-			[this](const ScriptEvent& event) {
+			[&](const ScriptEvent& event) {
 				// Call the method using the proxy system
-				callScriptMethod(event.className, event.methodName, event.entityID);
+				callScriptMethod(event.className, event.methodName, event.scriptID);
 			}
 		);
 	}
@@ -400,7 +400,7 @@ namespace Core
 		uint32_t entityID) {
 		// Convert method name to wide string
 		std::wstring wMethodName(methodName.begin(), methodName.end());
-
+		 
 		// Use the instanced proxy call to invoke the method on the specific entity
 		// This calls the C# method on the script instance associated with this entity
 		auto proxyMethod = proxyCall(
@@ -409,7 +409,7 @@ namespace Core
 			entityID
 		);
 
-		// className is already the full qualified name (e.g., "Eno.PlayerController, GameScripts")
+		// className is already the full qualified name (e.g., "Eno.PlayerController")
 		// Use it directly without adding "Eno." prefix
 		if (proxyMethod) {
 			// Call the method

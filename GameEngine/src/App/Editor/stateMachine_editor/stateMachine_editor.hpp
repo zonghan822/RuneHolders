@@ -45,7 +45,7 @@ namespace Editor {
         char newScriptName_[64] = "";
         std::string warningBuf_ = "";
         bool showScriptDialog_ = false;
-        bool showAttachDialog = false;
+        bool showAttachDialog_ = false;
 
         // Render script attachment UI
         void renderScriptSection(Editor::Node* node) {
@@ -81,7 +81,7 @@ namespace Editor {
                 ImGui::SameLine();
 
                 if (ImGui::Button("Attach Existing Script")) {
-                    renderScriptSelectionPopup(node);
+                    showAttachDialog_ = true;
                 }
 
                 ImGui::SameLine();
@@ -93,7 +93,10 @@ namespace Editor {
                 renderScriptCreationDialog(node);
             }
 
-            
+            // Script attach dialog
+            if (showAttachDialog_) {
+                renderScriptSelectionPopup(node);
+            }
         }
 
         // Render list of states
@@ -166,7 +169,8 @@ namespace Editor {
                 return;
             }
 
-            ImGui::InputText("State Name", newStateName_, sizeof(newStateName_));
+            ImGui::Text("State name");
+            ImGui::InputText("##New_State_Name", newStateName_, sizeof(newStateName_));
 
             if (ImGui::Button("Add State")) {
                 if (!newStateName_ || newStateName_[0] == '\0') {
@@ -235,7 +239,12 @@ namespace Editor {
 
                     if (ImGui::Selectable(scriptNameStr.c_str())) {
                         attachScript(node, scriptName);
+                        showAttachDialog_ = false;
                     }
+                }
+
+                if (ImGui::Button("Cancel")) {
+                    showAttachDialog_ = false;
                 }
 
                 ImGui::EndPopup();

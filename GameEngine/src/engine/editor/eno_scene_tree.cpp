@@ -328,6 +328,8 @@ namespace Editor
 				//coreHost_.setMetaData(org, node->entity_.id(), false);
 				coreHost_.setMetaData(org, node->sceneObjectID_, false);
 			}
+
+			node->script_.reset();
 		}
 	}
 
@@ -341,6 +343,8 @@ namespace Editor
 				//coreHost_.setMetaData(org, selectedNode_->entity_.id(), false);
 				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_, false);
 			}
+
+			selectedNode_->script_.reset();
 		}
 	}
 

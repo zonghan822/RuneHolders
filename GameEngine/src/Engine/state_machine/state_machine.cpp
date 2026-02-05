@@ -64,7 +64,7 @@ namespace FSM {
 
             if (currentStateInfo && currentStateInfo->onUpdateMethod[0] != '\0') {
                 entMng.getEventBus().publish(Core::ScriptEvent{
-                    scriptID,  // Use sceneObjectID_ for script instance lookup
+                    scriptID,
                     className,
                     currentStateInfo->onUpdateMethod
                     });
