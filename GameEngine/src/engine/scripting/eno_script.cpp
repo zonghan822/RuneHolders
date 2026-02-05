@@ -231,6 +231,7 @@ namespace Script
 	// ================== Signal ==================
 	std::pair<std::string, std::string> EnoScript::signalWrite(std::string nodeName, std::string signalName)
 	{
+		std::wcout << "Path: " << path_ << std::endl;
 		std::fstream file{ path_, std::ios::in | std::ios::out };
 		if (!file)
 			throw std::runtime_error("Failed to find the file to write to!");

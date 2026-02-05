@@ -69,7 +69,7 @@ namespace ECSComponents {
 		*//*========================================================================================*/
 		void setSignalType(const std::string& signalName)
 		{
-			size_t copy_length = std::min(signalName.length(), (size_t)63);
+			size_t copy_length = Math::minValue(signalName.length(), (size_t)63);
 			std::strncpy(selectedSignalType, signalName.c_str(), copy_length);
 			selectedSignalType[copy_length] = '\0';
 		}
@@ -85,7 +85,7 @@ namespace ECSComponents {
 
 		void setTargetObject(const std::string& objName)
 		{
-			size_t copy_length = std::min(objName.length(), (size_t)63);
+			size_t copy_length = Math::minValue(objName.length(), (size_t)63);
 			std::strncpy(targetObject, objName.c_str(), copy_length);
 			targetObject[copy_length] = '\0';
 		}
