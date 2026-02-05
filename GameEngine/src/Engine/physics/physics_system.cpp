@@ -301,10 +301,6 @@ namespace Physics
                     }
                     else
                     {
-                        // Publish collision event
-
-
-
                         // Hit a static wall - just stop movement
                         physics.velocity = { 0.0f, 0.0f };
                     }

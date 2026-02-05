@@ -2485,16 +2485,38 @@ void GameApplication::updateEnemyAI(float dt)
 
 	ECS::Entity playerEntity(playerEntityID_);
 	if (!playerEntity.has<ECSComponents::TransformComponent>(entityManager)) return;
+	if (!playerEntity.has<ECSComponents::CollisionComponent>(entityManager)) return;
 
 	auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
+	auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
 	Math::eVec2<float> playerPos = playerTransform.pos;
 
+	// Get player collision radius (for circle) or half-size (for rect)
+	float playerRadius = 0.0f;
+	if (playerCollision.type == ECSComponents::ColliderType::CIRCLE) {
+		playerRadius = playerCollision.data.circle.radius * playerTransform.scale.x;
+	} else if (playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
+		playerRadius = std::max(playerCollision.data.rectangle.width, playerCollision.data.rectangle.height) * 0.5f * playerTransform.scale.x;
+	}
+
 	// Get all enemies with AI component
-	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent>();
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent, ECSComponents::CollisionComponent>();
 
 	for (auto& enemy : enemies) {
 		auto& ai = enemy.get<ECSComponents::AIComponent>(entityManager);
 		auto& transform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+		auto& collision = enemy.get<ECSComponents::CollisionComponent>(entityManager);
+
+		// Get enemy collision size
+		float enemyRadius = 0.0f;
+		if (collision.type == ECSComponents::ColliderType::CIRCLE) {
+			enemyRadius = collision.data.circle.radius * transform.scale.x;
+		} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
+			enemyRadius = std::max(collision.data.rectangle.width, collision.data.rectangle.height) * 0.5f * transform.scale.x;
+		}
+
+		// Minimum distance to avoid overlap
+		float minDistance = playerRadius + enemyRadius + 2.0f; // Small buffer
 
 		// Calculate distance to player
 		float distToPlayer = Math::eVec2Distance(transform.pos, playerPos);
@@ -2502,8 +2524,8 @@ void GameApplication::updateEnemyAI(float dt)
 		// Only chase if player is within awareness radius
 		if (distToPlayer > ai.awarenessRadius) continue;
 
-		// Don't move if already at attack range
-		if (distToPlayer <= ai.attackRange) continue;
+		// Don't move if already at attack range OR too close (would overlap)
+		if (distToPlayer <= ai.attackRange || distToPlayer <= minDistance) continue;
 
 		// Simple direct chase - move toward player
 		Math::eVec2<float> direction = { playerPos.x - transform.pos.x, playerPos.y - transform.pos.y };
@@ -2514,8 +2536,19 @@ void GameApplication::updateEnemyAI(float dt)
 			direction.x /= length;
 			direction.y /= length;
 
-			transform.pos.x += direction.x * ai.chaseSpeed * dt;
-			transform.pos.y += direction.y * ai.chaseSpeed * dt;
+			// Calculate movement amount
+			float moveAmount = ai.chaseSpeed * dt;
+
+			// Don't move closer than minDistance
+			float maxMove = distToPlayer - minDistance;
+			if (moveAmount > maxMove) {
+				moveAmount = maxMove;
+			}
+
+			if (moveAmount > 0.0f) {
+				transform.pos.x += direction.x * moveAmount;
+				transform.pos.y += direction.y * moveAmount;
+			}
 		}
 	}
 }
