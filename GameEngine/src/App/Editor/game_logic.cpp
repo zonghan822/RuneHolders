@@ -846,9 +846,9 @@ void GameApplication::updateGameLogic() {
 		int editorFbSizeX = getEditorWidth();
 		int editorFbSizeY = getEditorHeight();
 
-		// Clamp camera to world bounds (accounting for zoom)
-		editorCameraX_ = std::clamp(editorCameraX_, 0.0f, worldWidth_ - static_cast<float>(editorFbSizeX));
-		editorCameraY_ = std::clamp(editorCameraY_, 0.0f, worldHeight_ - static_cast<float>(editorFbSizeY));
+		//// Clamp camera to world bounds (accounting for zoom)
+		//editorCameraX_ = std::clamp(editorCameraX_, 0.0f, worldWidth_ - static_cast<float>(editorFbSizeX));
+		//editorCameraY_ = std::clamp(editorCameraY_, 0.0f, worldHeight_ - static_cast<float>(editorFbSizeY));
 
 		// Only resize framebuffer when size changes (expensive operation)
 		if (editorFbSizeX != lastEditorFbWidth_ || editorFbSizeY != lastEditorFbHeight_) {

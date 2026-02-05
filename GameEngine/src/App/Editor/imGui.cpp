@@ -11,6 +11,7 @@
 *//*========================================================================================*/
 #include <filesystem>
 #include <random>
+#include <unordered_map>
 #include "imGui.hpp"
 #include "game_logic.hpp"
 #include "player/player_config.hpp"
@@ -2441,6 +2442,32 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			// For non-player entities, allow independent width/height scaling
 			ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
 			ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+
+			// Scale multiplier for both width and height
+			static std::unordered_map<uint32_t, float> entityScales;
+			static std::unordered_map<uint32_t, std::pair<float, float>> entityBaseSizes;
+
+			uint32_t entityID = entity.id();
+
+			// Initialize base size and scale if not stored
+			if (entityBaseSizes.find(entityID) == entityBaseSizes.end()) {
+				entityBaseSizes[entityID] = {draw.width, draw.height};
+				entityScales[entityID] = 1.0f;
+			}
+
+			float& scale = entityScales[entityID];
+			auto& baseSize = entityBaseSizes[entityID];
+
+			if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.1f, 10.0f)) {
+				// Apply scale to base size
+				draw.width = baseSize.first * scale;
+				draw.height = baseSize.second * scale;
+			}
+
+			// Update base size if width/height changed directly
+			if (oldWidth != draw.width || oldHeight != draw.height) {
+				baseSize = {draw.width / scale, draw.height / scale};
+			}
 		}
 
 		// Auto-update collision when width/height changes
