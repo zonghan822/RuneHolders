@@ -193,6 +193,11 @@ void GameApplication::setupScripting() {
 	engine_.getCoreHost().defineBegin();
 	engine_.getCoreHost().defineUpdate();
 	engine_.getCoreHost().defineSMD();
+
+	// Re-register all scripts that were loaded before the scripting system was initialized
+	// Scene loading happens in EnoEditor constructor before setupScripting(), so rpm_ was null
+	// during initial registration. This ensures scripts are properly registered.
+	engine_.getEnoEditor().getSceneTree().registerAllScripts();
 }
 
 
@@ -1492,6 +1497,7 @@ void GameApplication::updateEntities() {
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
 			{
+				coreHost.hotReload();
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
 			}
@@ -1504,7 +1510,6 @@ void GameApplication::updateEntities() {
 					{
 						for (const auto& org : node->script_->origin())
 						{
-							std::wcout << "origin of call: " << org << " for entity " << node->entity_.id() << std::endl;
 							//coreHost.begin(org, node->entity_.id());  
 							coreHost.begin(org, node->sceneObjectID_);
 						}

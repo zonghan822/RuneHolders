@@ -103,6 +103,7 @@ namespace Eno
 
             // Specify method to be called
             var method = script.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
+            
             if (method == null)
             {
                 Console.WriteLine($"[ScriptProxy] Method '{methodName}' not found in class '{className}'.");
