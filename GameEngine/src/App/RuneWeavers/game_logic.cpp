@@ -955,12 +955,12 @@ void GameApplication::updateEntities() {
 		// Switch animation based on movement
 		if (isMoving) {
 			if (playerAnimController_.getCurrentAnimationName() != "walk") {
-				//playerAnimController_.setAnimation("walk");
+				playerAnimController_.setAnimation("walk");
 			}
 		}
 		else {
 			if (playerAnimController_.getCurrentAnimationName() != "idle") {
-				//playerAnimController_.setAnimation("idle");
+				playerAnimController_.setAnimation("idle");
 			}
 		}
 		// NOTE: Player system update is now done in eno_engine.cpp::updateGameSystems()
