@@ -106,6 +106,9 @@ namespace Editor
 		void detachScript(Node* node);
 		void detachScript();
 
+		// Re-register all scripts (call after scripting system is initialized)
+		void registerAllScripts();
+
 		// Serialize/Deserialize scene tree data
 		void save(const std::string&);
 		void load(const std::string&);

@@ -27,6 +27,7 @@
 #include "../component/components/camera_component.hpp"
 #include "../component/components/rune_component.hpp"
 #include "../component/components/combat_components.hpp"
+#include "../component/components/state_machine_component.hpp"
 #include "../component/components/text_component.hpp"
 #include "../particle/particle_component.hpp"
 

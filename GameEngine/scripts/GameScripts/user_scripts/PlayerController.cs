@@ -99,10 +99,4 @@ namespace Eno
 
         }
     }
-
-    public class ArmController : ScriptBase
-    {
-        [Port(90, 210)]
-        public double velocity = 100.5;
-    }
 }

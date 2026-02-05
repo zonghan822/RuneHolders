@@ -16,6 +16,7 @@
 #include "player/player_config.hpp"
 #include "player/player_archetype_config.hpp"
 #include "editor/undo/undo_manager.hpp"
+#include "stateMachine_editor/stateMachine_editor.hpp"
 
 #undef min
 #undef max
@@ -533,6 +534,7 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 			// Remove from scene hierarchy and destroy children
 			Node* node = sceneTree.getNodeByEntityID(a.id());
 			if (node) {
+				engine_.getStateMachineSys().removeStateMachine(node->sceneObjectID_);
 				destroyChildrenRecursive(node, entityManager);
 				sceneTree.kill(node);
 			}
@@ -1073,6 +1075,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				// Remove from scene hierarchy and destroy children
 				Editor::Node* node = sceneTree.getNodeByEntityID(playerEntityID_);
 				if (node) {
+					engine_.getStateMachineSys().removeStateMachine(node->sceneObjectID_);
 					destroyChildrenRecursive(node, engine_.getEntityManager());
 					sceneTree.kill(node);
 				}
@@ -1375,6 +1378,9 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 			// First, destroy all child entities recursively
 			destroyChildrenRecursive(node, em);
+
+			// Clean up state machine
+			engine_.getStateMachineSys().removeStateMachine(node->sceneObjectID_);
 
 			// Then kill the scene tree nodes (removes from tree structure)
 			sceneTree.kill(node);
@@ -2714,16 +2720,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::SeparatorText("AI");
 
 		// ----------------------------
-		// 1. Show Current State (read-only)
-		// ----------------------------
-		ImGui::Text("Current State: ");
-		ImGui::SameLine();
-
-		ImGui::TextColored(ImVec4(0.6f, 0.9f, 1.0f, 1.0f), "%s", ai.currentState);
-		ImGui::Separator();
-
-		// ----------------------------
-		// 2. Core AI Behavior Params
+		// Core AI Behavior Params
 		// ----------------------------
 		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
 		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
@@ -2744,6 +2741,24 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::Button("Add AI")) {
 			// Add a default AI component
 			entity.add<ECSComponents::AIComponent>(entMng);
+		}
+	}
+
+	auto& smEditor = g_game->getStateMachineEditor();
+	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
+		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
+		ImGui::SeparatorText("State Machine");
+
+		Node* node = sceneTree.getNodeByEntityID(entity.id());
+		smEditor.renderStateMachineUI(node, smc);
+	}
+	else {
+		ImGui::SeparatorText("State Machine");
+
+		// Allow adding state machine component if the entity doesn't have one
+		if (ImGui::Button("Add State Machine")) {
+			// Add a default state machine component
+			entity.add<ECSComponents::StateMachineComponent>(entMng);
 		}
 	}
 

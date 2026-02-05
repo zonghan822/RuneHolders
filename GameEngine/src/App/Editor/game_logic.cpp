@@ -46,6 +46,8 @@ void GameApplication::initialize() {
 	mapEditor_ = std::make_unique<MapEditor>(tileMap);
 	Math::eVec2<float> worldSize = tileMap.getWorldSize();
 
+	stateMachineEditor_ = std::make_unique<Editor::StateMachineEditor>(engine_.getEnoEditor());
+
 	worldWidth_ = worldSize.x;
 	worldHeight_ = worldSize.y;
 
@@ -2785,17 +2787,17 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 						{
 							auto& ai = enemyEntity.get<ECSComponents::AIComponent>(entityManager);
 							ai.health = static_cast<int>(health.currentHealth);
+						}
 
-							// Trigger hurt state if not dead
-							if (!died)
-							{
-								strcpy_s(ai.nextState, "Hurt");
-							}
-							else
-							{
-								strcpy_s(ai.nextState, "Death");
-								enemiesToDestroy.push_back(mark.triggeredByEntityID);
-							}
+						// Trigger state change through StateMachineSystem
+						if (!died)
+						{
+							engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "Hurt");
+						}
+						else
+						{
+							engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "Death");
+							enemiesToDestroy.push_back(mark.triggeredByEntityID);
 						}
 					}
 					// Fallback to AIComponent if no HealthComponent

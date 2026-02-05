@@ -1,5 +1,5 @@
 #include "ai_path_agent.hpp"
-#include "../state/ai_events.hpp"
+#include "../ai_events.hpp"
 
 namespace AI {
 

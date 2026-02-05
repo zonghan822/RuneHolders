@@ -31,6 +31,7 @@
 	X(FireballComponent) \
 	X(HealthComponent) \
 	X(DamageComponent) \
+	X(StateMachineComponent) \
 	X(VulnerabilityComponent) \
 	X(RuptureMarkComponent) \
 	X(FloatingTextComponent) \

@@ -191,6 +191,10 @@ void GameApplication::setupScripting() {
 	engine_.getCoreHost().defineBegin();
 	engine_.getCoreHost().defineUpdate();
 	engine_.getCoreHost().defineSMD();
+
+	// Re-register all scripts that were loaded before the scripting system was initialized
+	// Scene loading happens before setupScripting(), so rpm_ was null during initial registration
+	engine_.getEnoEditor().getSceneTree().registerAllScripts();
 }
 
 void GameApplication::setupGameAudio() {
@@ -636,6 +640,9 @@ void GameApplication::updateGameLogic() {
 	if (!isPaused_) {
 		// Always update player movement (no editor state checks for game)
 		playerSystem_->Update(entityManager, inputMng, deltaTime);
+
+		// Update enemy AI (pathfinding and movement toward player)
+		updateEnemyAI(deltaTime);
 
 		// Update rune system
 		updateRuneSystem();
@@ -2017,6 +2024,52 @@ void GameApplication::updateCombatSystem(float dt)
 					playerHealth.invulnerabilityTimer = 0.5f;
 				}
 			}
+		}
+	}
+}
+
+// ========== ENEMY AI SYSTEM ==========
+
+void GameApplication::updateEnemyAI(float dt)
+{
+	auto& entityManager = engine_.getEntityManager();
+
+	// Need player to chase
+	if (!playerSpawned_) return;
+
+	ECS::Entity playerEntity(playerEntityID_);
+	if (!playerEntity.has<ECSComponents::TransformComponent>(entityManager)) return;
+
+	auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
+	Math::eVec2<float> playerPos = playerTransform.pos;
+
+	// Get all enemies with AI component
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent>();
+
+	for (auto& enemy : enemies) {
+		auto& ai = enemy.get<ECSComponents::AIComponent>(entityManager);
+		auto& transform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+
+		// Calculate distance to player
+		float distToPlayer = Math::eVec2Distance(transform.pos, playerPos);
+
+		// Only chase if player is within awareness radius
+		if (distToPlayer > ai.awarenessRadius) continue;
+
+		// Don't move if already at attack range
+		if (distToPlayer <= ai.attackRange) continue;
+
+		// Simple direct chase - move toward player
+		Math::eVec2<float> direction = { playerPos.x - transform.pos.x, playerPos.y - transform.pos.y };
+		float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+
+		if (length > 0.1f) {
+			// Normalize and apply speed
+			direction.x /= length;
+			direction.y /= length;
+
+			transform.pos.x += direction.x * ai.chaseSpeed * dt;
+			transform.pos.y += direction.y * ai.chaseSpeed * dt;
 		}
 	}
 }

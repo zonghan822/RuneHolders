@@ -1,7 +1,6 @@
 #include "eno_scene_tree.hpp"
 
 #include "../math/math.hpp"
-#include "../ai/state/ai_events.hpp"
 #include "../component/components/visibility.hpp"
 
 namespace Editor
@@ -341,6 +340,22 @@ namespace Editor
 			{
 				//coreHost_.setMetaData(org, selectedNode_->entity_.id(), false);
 				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_, false);
+			}
+		}
+	}
+
+	// Re-register all scripts with the scripting system
+	// This is needed because scenes may load before the scripting system is initialized
+	void EnoSceneTree::registerAllScripts()
+	{
+		for (auto& [id, node] : tree_)
+		{
+			if (node->script_)
+			{
+				for (const auto& org : node->script_->origin())
+				{
+					coreHost_.setMetaData(org, node->sceneObjectID_, true);
+				}
 			}
 		}
 	}
@@ -1198,10 +1213,15 @@ namespace Editor
 
 	std::string EnoSceneTree::stripPrefix(const std::string& str)
 	{
-		std::string prefix = "struct ECSComponents::";
+		// MSVC returns "struct" or "class" depending on type
+		std::string structPrefix = "struct ECSComponents::";
+		std::string classPrefix = "class ECSComponents::";
 
-		if (str.rfind(prefix, 0) == 0)
-			return str.substr(prefix.length());
+		if (str.rfind(structPrefix, 0) == 0)
+			return str.substr(structPrefix.length());
+
+		if (str.rfind(classPrefix, 0) == 0)
+			return str.substr(classPrefix.length());
 
 		std::cerr << "Prefix to strip cannot be found!" << std::endl;
 		return str;

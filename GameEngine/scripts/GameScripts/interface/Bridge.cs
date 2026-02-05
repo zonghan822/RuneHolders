@@ -5,22 +5,22 @@ namespace Eno
 {
     public static class Bridge
     {
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool IsKeyReleased(KeyCode key);
 
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool IsKeyPressed(KeyCode key);
 
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool IsKeyHeld(KeyCode key);
 
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern int ModsApplied();
 
-        [DllImport("EnoEngine.exe", CharSet = CharSet.Unicode)]
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern bool SetEntityAnimation(uint entityID, string animationName);
 
-        [DllImport("EnoEngine.exe", CharSet = CharSet.Unicode)]
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern IntPtr GetEntityAIState(uint entityID);
 
         // Helper to convert the returned pointer to a string

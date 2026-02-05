@@ -18,7 +18,7 @@ void FileSystem::Initialize()
     //rootDir_ = std::filesystem::path(buffer).root_path();
 
     assetsDir_ = exeDir_ / "assets";
-    scriptsDir_ = exeDir_ / "scripts/GameScripts/user_scripts";
+    scriptsDir_ = exeDir_ / "scripts\\GameScripts\\user_scripts";
     sourceAssetsDir_ = rootDir_ / "assets";
 }
 

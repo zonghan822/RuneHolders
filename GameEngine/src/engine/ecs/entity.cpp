@@ -103,11 +103,16 @@ namespace ECS
 			if (compEnd == std::string::npos) break;
 			std::string compName = data.substr(pos + 1, compEnd - pos - 1);
 
-			// *can be revisited for further improvement
-			const std::string prefix = "struct ECSComponents::";
-			if (compName.rfind(prefix, 0) == 0)
+			// Strip namespace prefix (MSVC returns "struct" or "class" depending on type)
+			const std::string structPrefix = "struct ECSComponents::";
+			const std::string classPrefix = "class ECSComponents::";
+			if (compName.rfind(structPrefix, 0) == 0)
 			{
-				compName = compName.substr(prefix.size());
+				compName = compName.substr(structPrefix.size());
+			}
+			else if (compName.rfind(classPrefix, 0) == 0)
+			{
+				compName = compName.substr(classPrefix.size());
 			}
 
 			// Component Data scope
@@ -230,7 +235,9 @@ namespace ECS
 					}
 				});
 
-			pos = data.find('[', compEnd + 1);
+			// Search for next component AFTER the current component's data block
+			// (not after compEnd, which would incorrectly match '[' in field names like "State[0].name")
+			pos = data.find('[', compScopeEnd);
 			if (pos == std::string::npos)
 				break;
 		}

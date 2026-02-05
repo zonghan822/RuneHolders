@@ -1,6 +1,7 @@
 #include "eno_bridge.hpp"
 #include "../component/components/drawInfo.hpp"
 #include "../component/components/ai_component.hpp"
+#include "../component/components/state_machine_component.hpp"
 
 static Engine::EnoEngine* gEngine = nullptr;
 
@@ -56,6 +57,20 @@ namespace Bridge
             return input.currentMods();
         }
 
+        ENGINE_API void ChangeState(const wchar_t* stateName, uint32_t entityID) 
+        {
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return;
+            }
+
+            std::wstring wState(stateName);
+            std::string state(wState.begin(), wState.end());
+
+            // Request state change through the system
+            gEngine->getStateMachineSys().requestStateChange(entityID, state);
+        }
+        
         //Animation Bridging -> C# should call this function whenever theres a need to change animation
         ENGINE_API bool __stdcall SetEntityAnimation(uint32_t entityID, const wchar_t* animationName)
         {
@@ -120,16 +135,16 @@ namespace Bridge
             auto& entMng = gEngine->getEntityManager();
             ECS::Entity entity(entityID);
 
-            if (!entity.has<ECSComponents::AIComponent>(entMng)) {
+            if (!entity.has<ECSComponents::StateMachineComponent>(entMng)) {
                 return L"";
             }
 
-            auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
+            auto& stateMachine = entity.get<ECSComponents::StateMachineComponent>(entMng);
 
             // Convert char[] to wchar_t[]
-            size_t len = strlen(ai.currentState);
+            size_t len = strlen(stateMachine.currentState);
             for (size_t i = 0; i < len && i < 63; ++i) {
-                aiStateBuffer[i] = static_cast<wchar_t>(ai.currentState[i]);
+                aiStateBuffer[i] = static_cast<wchar_t>(stateMachine.currentState[i]);
             }
             aiStateBuffer[len < 63 ? len : 63] = L'\0';
 

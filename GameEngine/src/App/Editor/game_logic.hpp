@@ -19,6 +19,7 @@
 #include "player/player_config.hpp"
 #include "player/player.hpp"
 #include "map_editor/map_editor.hpp"
+#include "stateMachine_editor/stateMachine_editor.hpp"
 
 
 class GameApplication {
@@ -94,6 +95,9 @@ private:
 
     // Map Editor (To be removed after set tilemap as node)
     std::unique_ptr<MapEditor> mapEditor_;
+
+    // State Machine Editor
+    std::unique_ptr<Editor::StateMachineEditor> stateMachineEditor_;
 
     // Rune System
     uint32_t runeSystemEntityID_;  // ID of entity holding RuneSystemStateComponent
@@ -180,6 +184,9 @@ public:
 
     // Get map editor
     MapEditor& getMapEditor() { return *mapEditor_; }
+
+    // Get map editor
+    Editor::StateMachineEditor& getStateMachineEditor() { return *stateMachineEditor_; }
 
 
 private:
