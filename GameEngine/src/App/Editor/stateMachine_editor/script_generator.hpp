@@ -118,6 +118,49 @@ namespace Script {
             return hasEnter && hasUpdate && hasExit;
         }
 
+        static std::vector<std::string> extractStatesFromScript(const std::string& scriptPath) {
+            std::ifstream file(scriptPath);
+            if (!file) return {};
+
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            std::string content = buffer.str();
+
+            std::unordered_map<std::string, int> stateMask;
+            // bitmask: 1 = enter, 2 = update, 4 = exit
+
+            auto scan = [&](const std::string& suffix, int bit) {
+                size_t pos = 0;
+                while ((pos = content.find(suffix, pos)) != std::string::npos) {
+                    // walk backwards to get state name
+                    size_t end = pos;
+                    size_t start = end;
+
+                    while (start > 0 &&
+                        (isalnum(content[start - 1]) || content[start - 1] == '_')) {
+                        --start;
+                    }
+
+                    std::string state = content.substr(start, end - start);
+                    stateMask[state] |= bit;
+                    pos = end + suffix.size();
+                }
+                };
+
+            scan("_enter()", 1);
+            scan("_update()", 2);
+            scan("_exit()", 4);
+
+            std::vector<std::string> result;
+            for (auto& [state, mask] : stateMask) {
+                if (mask == 0b111) { // enter + update + exit
+                    result.push_back(state);
+                }
+            }
+
+            return result;
+        }
+
     private:
         static std::string toLower(const std::string& str) {
             std::string result = str;

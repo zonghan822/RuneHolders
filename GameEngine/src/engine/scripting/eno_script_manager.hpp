@@ -77,12 +77,12 @@ namespace Eno
 {
 	public class ${} : ScriptBase
     {
-        public static void Begin()
+        public void Begin()
         {
 
 		}
 
-        public static void Update()
+        public void Update()
         {
 
 		}

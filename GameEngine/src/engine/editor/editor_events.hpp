@@ -30,7 +30,6 @@ namespace Editor
 	struct GameInitialized {};
 	struct GameStopped {};
 
-	struct TestTree {};
 
 	/*============================================================================================
 	 * \brief				A request to delete the currently selected entity

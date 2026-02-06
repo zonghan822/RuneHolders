@@ -25,13 +25,13 @@ void GameApplication::initialize() {
 	// Initialize player system
 	playerSystem_ = std::make_unique<Player::PlayerSystem>();
 
+	// Load player config
+	playerConfig_.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
+
 	// Setup all game content
 	setupPrefabs();
-	setupGameSystems();
 	setupGameAudio();
-	setupTreeTesting();
 	setupGameEvents();
-	setupGameMath();
 	setupImGui();
 	setupAnimations();
 	setupScripting();
@@ -132,11 +132,6 @@ void GameApplication::setupPrefabs() {
 
 	ECSComponents::Preset::saveAll(prefabManager);
 	ECSComponents::Preset::loadAll(prefabManager);
-}
-
-void GameApplication::setupGameSystems() {
-	
-
 }
 
 void GameApplication::setupFont() {
@@ -243,32 +238,8 @@ void GameApplication::setupGameAudio() {
 		std::string soundName = "Typing_" + std::string(i < 10 ? "0" : "") + std::to_string(i);
 		audioMng.publishSoundRequest(soundName);
 	}
-
-	// setup input to play sound
-	auto& inputMng = engine_.getInputManager();
-
-
-	// Undo/Redo System
-	// Ctrl+Z for undo
-	inputMng.setupKey("Undo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL);
-	inputMng.setupEvent<Editor::UndoAction>("Undo");
-
-	// Ctrl+Shift+Z for redo
-	inputMng.setupKey("Redo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT);
-	inputMng.setupEvent<Editor::RedoAction>("Redo");
 }
 
-void GameApplication::setupTreeTesting()
-{
-	auto& inputMng = engine_.getInputManager();
-
-	inputMng.setupKey("Test Editor Tree", GLFW_KEY_Q, glfwGetKeyScancode(GLFW_KEY_Q), GLFW_RELEASE, 0);
-	inputMng.setupEvent<Editor::TestTree>("Test Editor Tree");
-
-	// Setup Delete key for entity deletion
-	inputMng.setupKey("Delete Selected Entity", GLFW_KEY_DELETE, glfwGetKeyScancode(GLFW_KEY_DELETE), GLFW_RELEASE, 0);
-	inputMng.setupEvent<Editor::DeleteSelectedEntity>("Delete Selected Entity");
-}
 
 void GameApplication::playSceneBGM()
 {
@@ -358,6 +329,22 @@ void GameApplication::playSceneBGM()
 }
 
 void GameApplication::setupGameEvents() {
+
+	auto& inputMng = engine_.getInputManager();
+
+	// Setup Delete key for entity deletion
+	inputMng.setupKey("Delete Selected Entity", GLFW_KEY_DELETE, glfwGetKeyScancode(GLFW_KEY_DELETE), GLFW_RELEASE, 0);
+	inputMng.setupEvent<Editor::DeleteSelectedEntity>("Delete Selected Entity");
+
+	// Undo/Redo System
+	// Ctrl+Z for undo
+	inputMng.setupKey("Undo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL);
+	inputMng.setupEvent<Editor::UndoAction>("Undo");
+
+	// Ctrl+Shift+Z for redo
+	inputMng.setupKey("Redo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT);
+	inputMng.setupEvent<Editor::RedoAction>("Redo");
+
 	// Subscribe to collision events for trigger tracking
 	auto& eventBus = engine_.getEventBus();
 
@@ -395,25 +382,6 @@ void GameApplication::setupGameEvents() {
 	);
 }
 
-void GameApplication::setupGameMath() {
-
-	// Math lib and maybe collision
-	//std::cout << "Calling math function\n";
-	//Math::eVec2 vec{ 1.1f, 1.2f };
-	//Math::eVec2 vec2{ 1.3f, 2.f };
-	//vec += vec2;
-	//std::cout << "vector : " << vec.x << ", " << vec.y << std::endl;
-
-	Collision::RunBasicCollisionTest();
-
-	// NOTE: Systems are now initialized in eno_engine.cpp::setupGameSystems()
-	// No need to initialize them here anymore
-
-	// Load player config
-	playerConfig_.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
-	//std::cout << "[GameLogic] Player config loaded" << std::endl;
-}
-
 void GameApplication::setupAnimations() {
 	// Load the sprite sheet texture
 	backgroundTexture_ = engine_.getResourceLoader().getTexture("Background");
@@ -431,12 +399,12 @@ void GameApplication::setupAnimations() {
 		return;
 	}
 
-	// Create player idle animation - 1 row, 17 columns, 96x96 per frame
+	// Create player idle animation
 	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
-		96,    // Frame width
-		96,    // Frame height
-		1632,  // Sheet width (96 * 17 = 1632)
-		96,    // Sheet height
+		128,    // Frame width
+		128,    // Frame height
+		768,    // Sheet width
+		384,    // Sheet height
 		0,     // Start frame
 		17,    // Frame count
 		0.1f   // Duration per frame
@@ -461,29 +429,6 @@ void GameApplication::setupAnimations() {
 
 	std::cout << "Player animation setup complete!" << std::endl;
 }
-
-//void GameApplication::createTestObjectsAndAddToSceneTree() {
-//	auto& entityManager = engine_.getEntityManager();
-//
-//	// Create the test objects (boxes)
-//	createTestObject(entityManager);
-//
-//
-//	// Now add all entities with NameComponent "testcaven" to the scene tree
-//	std::vector<ECS::Entity> testEntities = entityManager.findEntity<ECSComponents::NameComponent>(
-//		ECSComponents::NameComponent("testcaven")
-//	);
-//
-//	std::cout << "[GameLogic] Adding " << testEntities.size() << " test objects to scene tree..." << std::endl;
-//
-//	for (auto& entity : testEntities) {
-//		// Add each entity to the scene tree as a root node
-//		engine_.getEnoEditor().getSceneTree().createFromEntity(entity, nullptr);
-//		std::cout << "[GameLogic] Added entity " << entity.id() << " to scene tree" << std::endl;
-//	}
-//
-//	std::cout << "[GameLogic] Test objects added to scene tree successfully!" << std::endl;
-//}
 
 void GameApplication::setupImGui() {
 	GLFWwindow* window = engine_.getWindowManager().getWindow();
@@ -1533,32 +1478,9 @@ void GameApplication::updateEntities() {
 						}
 					}
 				}
-
-				//for (auto* node : sceneTree_->getAllNodes())
-				//{
-				//	if (!node->script_)continue;
-				//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
-				//	std::wcout << L"[DEBUG] Entity ID " << node->entity_.id()
-				//		<< L" running Begin for class: " << node->script_->extrClassName(node->script_->name_.data())
-				//		<< std::endl;
-				//	coreHost.runScriptMethod(className, L"Begin");
-
-
-
-				//}
 				hasBegun = true;
 			}
-
-			//for (auto* node : sceneTree_->getAllNodes())
-			//{
-			//	if (!node->script_) continue;
-
-			//	std::wstring className = node->script_->extrClassName(node->script_->name_.data());
-			//	coreHost.runScriptMethod(className, L"Update");
-			//}
 			
-			
-			//for (const auto& node : sceneTree_->getAllNodes())
 			for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
 			{
 				if (node->script_ && !node->entity_.has<ECSComponents::ButtonComponent>(engine_.getEntityManager()))
@@ -2113,8 +2035,6 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 
 	// Load the rune spritesheet
 	auto runeTexture = resourceLoader.getTexture("Runes_White_Sheet_Large");
-
-	constexpr float PI = 3.14159265359f;
 	
 	// Rune numbers at each position (0=TL, 1=TR, 2=MR, 3=BR, 4=BL, 5=ML)
 	const int runeNumbers[6] = { 6, 1, 2, 3, 4, 5 };
