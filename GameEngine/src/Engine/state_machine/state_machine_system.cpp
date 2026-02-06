@@ -3,6 +3,8 @@
 
 namespace FSM {
 
+    constexpr uint32_t INVALID_ENTITY_ID = std::numeric_limits<uint32_t>::max();
+
     StateMachineSystem::StateMachineSystem(Event::EnoEventBus& bus) : bus_(bus)
     {
         // Auto-register when StateMachineComponent added
@@ -41,6 +43,7 @@ namespace FSM {
     void StateMachineSystem::update(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager) {
         // Process pending state changes first
         for (auto& [entityID, newState] : pendingStateChanges_) {
+            if (entityID == INVALID_ENTITY_ID) continue;
             Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
             if (!node) continue;
             if (!node->script_) continue;
@@ -59,6 +62,7 @@ namespace FSM {
 
         // Update all active state machines
         for (auto& [entityID, stateMachine] : stateMachines_) {
+            if (entityID == INVALID_ENTITY_ID) continue;
             Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
             if (!node) continue;
             if (!node->enabled_) continue;
@@ -78,6 +82,7 @@ namespace FSM {
 
     // Request a state change for an entity
     void StateMachineSystem::requestStateChange(uint32_t entityID, const std::string& newState) {
+        if (entityID == INVALID_ENTITY_ID) return;
         pendingStateChanges_[entityID] = newState;
     }
 
@@ -89,6 +94,7 @@ namespace FSM {
 
     // Create a state machine for an entity
     void StateMachineSystem::createStateMachine(uint32_t entityID) {
+        if (entityID == INVALID_ENTITY_ID) return;
         if (!stateMachines_.contains(entityID)) {
             stateMachines_[entityID] = StateMachine();
         }
@@ -96,6 +102,7 @@ namespace FSM {
 
     // Clean up state machine when entity is destroyed
     void StateMachineSystem::removeStateMachine(uint32_t entityID) {
+        if (entityID == INVALID_ENTITY_ID) return;
         stateMachines_.erase(entityID);
         pendingStateChanges_.erase(entityID);
     }

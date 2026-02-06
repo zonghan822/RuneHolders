@@ -367,7 +367,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -395,7 +395,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX || !entity.has<ECSComponents::TransformComponent>(entMng)) {
                 return false;
@@ -463,11 +463,11 @@ namespace Bridge
             uint32_t entityID = node->entity_.id();
             std::cout << "[AI Bridge] Destroying entity and node (sceneObj: " << sceneObjectID << ", entity: " << entityID << ")" << std::endl;
 
+            // kill the node from scene tree
+            sceneTree.kill(node);
+
             // destroy the ECS entity
             entMng.destroyEntity(entityID);
-
-            // Finally, kill the node from scene tree
-            sceneTree.kill(node);
 
             return true;
         }
