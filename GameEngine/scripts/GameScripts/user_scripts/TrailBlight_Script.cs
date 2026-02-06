@@ -278,11 +278,14 @@ namespace Eno
             float deltaTime = Bridge.GetDeltaTime();
             stateTimer -= deltaTime;
 
+            Console.WriteLine($"[TrailBlight {ID}] death_update - timer: {stateTimer:F2}s");
+
             // Wait for death animation to complete, then destroy self
             if (stateTimer <= 0.0f)
             {
-                Console.WriteLine($"[TrailBlight {ID}] Death animation complete, destroying entity");
-                Bridge.DestroyEntity(ID);
+                Console.WriteLine($"[TrailBlight {ID}] Death animation complete, calling DestroyEntity");
+                bool destroyed = Bridge.DestroyEntity(ID);
+                Console.WriteLine($"[TrailBlight {ID}] DestroyEntity returned: {destroyed}");
             }
         }
 

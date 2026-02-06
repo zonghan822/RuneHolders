@@ -53,6 +53,9 @@ namespace Bridge {
         ENGINE_API bool __stdcall SetAIHealth(uint32_t entityID, int health);
         ENGINE_API bool __stdcall GetAIHealth(uint32_t entityID, int* outHealth);
         ENGINE_API bool __stdcall FindAndTriggerRuptureMark(uint32_t entityID, int spellType, float* outDamage);
+
+        // ============= Entity Management =============
+        ENGINE_API bool __stdcall DestroyEntity(uint32_t entityID);
     }
 }
 

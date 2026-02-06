@@ -453,14 +453,22 @@ namespace Bridge
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
 
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
-            if (entity.id() == UINT32_MAX) {
-                std::cerr << "[AI Bridge] DestroyEntity: Invalid entity for sceneObjectID " << sceneObjectID << std::endl;
+            // Get the node from scene tree
+            Editor::Node* node = sceneTree.getNodeBySceneObjectID(sceneObjectID);
+            if (!node) {
+                std::cerr << "[AI Bridge] DestroyEntity: Invalid node for sceneObjectID " << sceneObjectID << std::endl;
                 return false;
             }
 
-            std::cout << "[AI Bridge] Destroying entity (sceneObj: " << sceneObjectID << ", entity: " << entity.id() << ")" << std::endl;
-            entMng.destroyEntity(entity.id());
+            uint32_t entityID = node->entity_.id();
+            std::cout << "[AI Bridge] Destroying entity and node (sceneObj: " << sceneObjectID << ", entity: " << entityID << ")" << std::endl;
+
+            // destroy the ECS entity
+            entMng.destroyEntity(entityID);
+
+            // Finally, kill the node from scene tree
+            sceneTree.kill(node);
+
             return true;
         }
     }
