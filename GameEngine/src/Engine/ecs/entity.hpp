@@ -395,6 +395,8 @@ namespace ECS
 
 			cleanup(loc.archetype, loc.chunkIndex);
 
+			entityMap_.erase(entityID);
+
 			destroyedEntityIDs_.push_back(entityID);
 
 			bus_.publish(EntityDestroyed{
@@ -942,7 +944,7 @@ namespace ECS
 		*//*========================================================================================*/
 		Entity clone(EntityManager& entMng)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Entity Cloning Operation" };
 #endif
 			return entMng.clone(id_);
@@ -955,7 +957,7 @@ namespace ECS
 		template <typename... Components>
 		bool has(EntityManager& entMng)
 		{
-#ifdef BENCHMARKING_ENABLED
+#if BENCHMARKING_ENABLED
 			Profiler::ScopeTimer timer{ "Component Check Operation" };
 #endif
 			return (... && (std::find(isAt(entMng, id_).archetype->types_.begin(),
