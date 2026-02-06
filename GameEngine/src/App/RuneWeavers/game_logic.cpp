@@ -14,8 +14,18 @@
 #include <GLFW/glfw3.h>
 #include <sstream>
 #include <iomanip>
+#include <random>
 
 #include "math/math.hpp"
+
+// Random number generator for dialogue typing sounds
+static std::mt19937 rng(std::random_device{}());
+
+// Helper function for random float generation
+float randomFloat(float min, float max) {
+	std::uniform_real_distribution<float> dist(min, max);
+	return dist(rng);
+}
 
 float scaleSize = 1.0f;
 float rotationRadians = 0.f;
@@ -40,7 +50,7 @@ void GameApplication::initialize() {
 	setupCamera();
 	setupCombatSystem();
 	setupMainMenuButtons();
-	setupSceneTransitions();
+	/*setupSceneTransitions();*/
 
 	auto& tileMap = engine_.getTileMap();
 
@@ -229,6 +239,12 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Fireball-Cast");
 	audioMng.publishSoundRequest("Fireball-Explosion-Small");
 
+	// Typing sounds for dialogue
+	for (int i = 1; i <= 21; ++i) {
+		std::string soundName = "Typing_" + std::string(i < 10 ? "0" : "") + std::to_string(i);
+		audioMng.publishSoundRequest(soundName);
+	}
+
 	// BGM
 	audioMng.publishSoundRequest("BGM_01_Layer1_loop");
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");
@@ -409,6 +425,16 @@ void GameApplication::setupGameEvents() {
 			// Window restored - stay paused until player manually resumes
 		}
 	});
+
+	// Dialogue texts
+	dialogueTexts_ = {	"OH, WHAT'S THIS?",
+						"A SCROLL FULL OF SPELLS!",
+						"HEHEHEHE...",
+						"DID I JUST HEAR SOMETHING?",
+						"WH-WHO GOES THERE?",
+						"...",
+						"I GUESS I WAS JUST HEARING THINGS THEN.",
+						"LET ME RECORD THE SPELLS IN MY SPELLBOOK." };
 }
 
 void GameApplication::setupAnimations() {
@@ -467,7 +493,15 @@ void GameApplication::updateCamera() {
 
 		if (!camera.isActive) continue;
 
-		// Camera is static - position and viewport are set in editor only
+		// Sync script camera: pick up changes from C# bridge
+		if (engine_.consumeScriptCameraDirty()) {
+			auto camPos = engine_.getScriptCameraPos();
+			camera.position.x = camPos.x;
+			camera.position.y = camPos.y;
+		}
+		// Keep script camera in sync so GetCameraPosition returns current values
+		engine_.syncScriptCameraPos(camera.position.x, camera.position.y);
+
 		// Set projection matrix based on camera
 		// The camera position is the center of the viewport
 		float left = camera.position.x - camera.viewportWidth * 0.5f;
@@ -589,13 +623,106 @@ void GameApplication::updateGameLogic() {
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
 			}
 		}
+
+		// Handle E key - Interact with Collectible-Scroll or advance dialogue
+		if (inputMng.isKeyDown(GLFW_KEY_E)) {
+			if (dialogueActive_) {
+				if (dialogueTyping_) {
+					// Finish current text animation instantly
+					dialogueTyping_ = false;
+					dialogueCurrentText_ = dialogueTargetText_;
+					auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+					if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager)) {
+						auto& textComp = bodyText[0].get<ECSComponents::TextComponent>(entityManager);
+						strncpy_s(textComp.text, dialogueCurrentText_.c_str(), sizeof(textComp.text) - 1);
+						textComp.text[sizeof(textComp.text) - 1] = '\0';
+					}
+				}
+				else {
+					advanceDialogue();
+				}
+			}
+			else if (!isPaused_) {
+				// Check if player is colliding with UI-PopUp-E entity
+				if (playerSpawned_ && playerEntityID_ != 0) {
+					ECS::Entity playerEntity(playerEntityID_);
+					if (playerEntity.has<ECSComponents::TransformComponent>(entityManager) &&
+						playerEntity.has<ECSComponents::CollisionComponent>(entityManager)) {
+
+						auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
+						auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
+
+						// Find all UI-PopUp-E entities
+						auto scrolls = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("UI-PopUp-E"));
+						for (auto& scroll : scrolls) {
+							if (scroll.has<ECSComponents::TransformComponent>(entityManager) &&
+								scroll.has<ECSComponents::CollisionComponent>(entityManager)) {
+
+								auto& scrollTransform = scroll.get<ECSComponents::TransformComponent>(entityManager);
+								auto& scrollCollision = scroll.get<ECSComponents::CollisionComponent>(entityManager);
+
+								// Check AABB collision
+								if (scrollCollision.type == ECSComponents::ColliderType::RECTANGLE &&
+									playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
+
+									// Get positions with offsets
+									float playerX = playerTransform.pos.x + playerCollision.offset.x;
+									float playerY = playerTransform.pos.y + playerCollision.offset.y;
+									float scrollX = scrollTransform.pos.x + scrollCollision.offset.x;
+									float scrollY = scrollTransform.pos.y + scrollCollision.offset.y;
+
+									// Get half dimensions
+									float playerHalfW = (playerCollision.data.rectangle.width * playerTransform.scale.x) * 0.5f;
+									float playerHalfH = (playerCollision.data.rectangle.height * playerTransform.scale.y) * 0.5f;
+									float scrollHalfW = (scrollCollision.data.rectangle.width * scrollTransform.scale.x) * 0.5f;
+									float scrollHalfH = (scrollCollision.data.rectangle.height * scrollTransform.scale.y) * 0.5f;
+
+									// AABB collision test
+									if ((std::abs(playerX - scrollX) <= (playerHalfW + scrollHalfW)) &&
+										(std::abs(playerY - scrollY) <= (playerHalfH + scrollHalfH))) {
+										startDialogue();
+										break; // Only trigger once
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Dialogue typewriter animation
+	if (dialogueTyping_) {
+		// Start timer
+		dialogueTypeTimer_ += deltaTime;
+		while (dialogueTypeTimer_ >= DIALOGUE_TYPE_SPEED && dialogueCurrentText_.size() < dialogueTargetText_.size()) {
+			// Add next letter, reset timer
+			dialogueCurrentText_ += dialogueTargetText_[dialogueCurrentText_.size()];
+			dialogueTypeTimer_ -= DIALOGUE_TYPE_SPEED;
+			//Play audio here for keyclicks here: Yun Qi
+			int typingSoundValue = static_cast<int>(randomFloat(1, 22)); // 1-21 inclusive
+			std::string number = (typingSoundValue < 10 ? "0" : "") + std::to_string(typingSoundValue);
+			std::string typeSound = "Typing_" + number;
+			engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", typeSound });
+
+		}
+		auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+		if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager)) {
+			auto& textComp = bodyText[0].get<ECSComponents::TextComponent>(entityManager);
+			strncpy_s(textComp.text, dialogueCurrentText_.c_str(), sizeof(textComp.text) - 1);
+			textComp.text[sizeof(textComp.text) - 1] = '\0';
+		}
+		if (dialogueCurrentText_.size() >= dialogueTargetText_.size()) {
+			dialogueTyping_ = false;
+		}
 	}
 
 	// Update main menu buttons (outside pause check - buttons work even when paused)
 	updateMainMenuButtons();
 
 	// Update scene transitions (check for player collision with transition triggers)
-	updateSceneTransitions();
+	//updateSceneTransitions();
 
 	// Only update game systems when not paused
 	if (!isPaused_) {
@@ -1091,6 +1218,9 @@ void GameApplication::drawPlayerAndIndicator() {
 		}
 		catch (...) {}
 	}
+
+	// CRITICAL: Flush the player batch immediately to ensure it renders with correct projection
+	graphics.flush();
 }
 
 
@@ -1263,6 +1393,82 @@ void GameApplication::drawShapes() {
 			}
 		}
 	}
+
+	// Flush pending entity batch before text drawing (drawTextScreen unbinds defaultShader)
+	graphics.flush();
+
+	// Get active camera for offset calculation and viewport size
+	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+	float cameraX = 0.0f;
+	float cameraY = 0.0f;
+	float viewportWidth = 1920.0f;
+	float viewportHeight = 1080.0f;
+
+	if (!cameraEntities.empty()) {
+		auto& camera = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
+		cameraX = camera.position.x - camera.viewportWidth * 0.5f;
+		cameraY = camera.position.y - camera.viewportHeight * 0.5f;
+		viewportWidth = camera.viewportWidth;
+		viewportHeight = camera.viewportHeight;
+	}
+
+	// Draw TextComponent entities (world space, multiline support)
+	{
+		auto textEntities = engine_.getEntityManager().findEntity<ECSComponents::TextComponent>();
+		for (auto& textEntity : textEntities) {
+			if (textEntity.has<ECSComponents::VisibilityComponent>(entityManager)) {
+				if (!textEntity.get<ECSComponents::VisibilityComponent>(entityManager).visible)
+					continue;
+			}
+			if (!ECSComponents::isAncestorVisible(textEntity.id(), engine_.getEnoEditor().getSceneTree(), entityManager))
+				continue;
+			if (textEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+				auto& textComp  = textEntity.get<ECSComponents::TextComponent>(entityManager);
+				auto& transform = textEntity.get<ECSComponents::TransformComponent>(entityManager);
+				if (strlen(textComp.text) == 0) continue;
+
+				auto font = engine_.getResourceLoader().getFont(std::string(textComp.fontName));
+				if (!font) continue;
+
+				// Use transform.pos directly (same as sprite rendering - no parent accumulation)
+				Math::eVec2<float> worldPos = transform.pos;
+
+				// Convert world position to camera-relative position for rendering
+				Math::eVec2<float> screenPos = {
+					worldPos.x - cameraX,
+					worldPos.y - cameraY
+				};
+
+				// Draw each line separately to support newlines
+				std::string fullText(textComp.text);
+				float lineHeight = 60.0f * textComp.fontSize;
+				float yOffset = 0.0f;
+				size_t start = 0;
+				while (start <= fullText.size()) {
+					size_t pos = fullText.find('\n', start);
+					std::string line = (pos != std::string::npos)
+						? fullText.substr(start, pos - start)
+						: fullText.substr(start);
+					if (!line.empty()) {
+						graphics.drawTextScreen(
+							font, line,
+							Math::eVec2<float>{ screenPos.x, screenPos.y + yOffset },
+							textComp.fontSize,
+							Graphics::Color::White,
+							viewportWidth,
+							viewportHeight
+						);
+					}
+					if (pos == std::string::npos) break;
+					yOffset += lineHeight;
+					start = pos + 1;
+				}
+			}
+		}
+	}
+
+	// Restore defaultShader after text drawing
+	graphics.rebindDefaultShader();
 }
 
 void GameApplication::displayFPS() {
@@ -1676,8 +1882,6 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	auto& entityManager = engine_.getEntityManager();
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
-
-	constexpr float PI = 3.14159265359f;
 
 	// Store circle center for spell spawning
 	runeState.circleCenter = mouseWorldPos;
@@ -2339,7 +2543,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 						entitiesDirty_ = true;
 					}
 
-					std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
+					//std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
 					break;
 				}
 			}
@@ -2820,6 +3024,7 @@ void GameApplication::spawnSpellbook() {
 	auto spellbookTexture = resourceLoader.getTexture("SpellBook-HowToCast_Fireball");
 
 	if (!spellbookTexture || !spellbookTexture->isValid()) {
+		std::cerr << "[Spellbook] Failed to load spellbook texture!" << std::endl;
 		return;
 	}
 
@@ -2849,6 +3054,7 @@ void GameApplication::spawnSpellbook() {
 	// Mark entities dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
+	std::cout << "[Spellbook] Spellbook UI spawned at (1024, 1024)" << std::endl;
 }
 
 void GameApplication::destroySpellbook() {
@@ -2857,16 +3063,11 @@ void GameApplication::destroySpellbook() {
 		entityManager.destroyEntity(spellbookEntityID_);
 		spellbookEntityID_ = 0;
 		entitiesDirty_ = true;
+		std::cout << "[Spellbook] Spellbook UI destroyed" << std::endl;
 	}
 }
 
 void GameApplication::spawnPauseMenu() {
-	// Don't spawn if pause menu already exists
-	if (pauseMenuEntityID_ != 0) {
-		std::cout << "[PauseMenu] Pause menu already exists (ID: " << pauseMenuEntityID_ << ")" << std::endl;
-		return;
-	}
-
 	auto& entityManager = engine_.getEntityManager();
 	auto& resourceLoader = engine_.getResourceLoader();
 
@@ -2874,6 +3075,7 @@ void GameApplication::spawnPauseMenu() {
 	auto pauseMenuTexture = resourceLoader.getTexture("PauseMenu-Popup");
 
 	if (!pauseMenuTexture || !pauseMenuTexture->isValid()) {
+		std::cerr << "[PauseMenu] Failed to load pause menu texture!" << std::endl;
 		return;
 	}
 
@@ -2900,12 +3102,12 @@ void GameApplication::spawnPauseMenu() {
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = pauseMenuTexture;
 
+	// Mark entities dirty to refresh rendering cache
 	// Setup pause menu buttons (Resume and Main Menu)
 	setupPauseMenuButtons();
-
-	// Mark entities dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
+	std::cout << "[PauseMenu] Pause menu UI spawned at (1024, 1024)" << std::endl;
 }
 
 void GameApplication::destroyPauseMenu() {
@@ -2937,6 +3139,7 @@ void GameApplication::destroyPauseMenu() {
 	}
 
 	entitiesDirty_ = true;
+	std::cout << "[PauseMenu] Pause menu UI and buttons destroyed" << std::endl;
 }
 
 void GameApplication::hidePlayer() {
@@ -3101,7 +3304,7 @@ void GameApplication::updateMainMenuButtons() {
 	// Get window size for conversion
 	auto windowSize = engine_.getWindowManager().getWindowSize();
 
-	// Get mouse position and convert to world space
+	// Get mouse position (keep in screen space)
 	auto mouseScreenPos = inputMng.getMousePosition();
 	Math::eVec2<float> mouseWorldPos = Graphics::screenToWorld(
 		{ static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
@@ -3112,6 +3315,55 @@ void GameApplication::updateMainMenuButtons() {
 		cameraX,
 		cameraY
 	);
+
+	//std::vector<ECS::Entity> entityList = entityManager.findEntity<ECSComponents::ButtonComponent>();
+
+	//for (auto& ent : entityList)
+	//{
+	//	auto& c = ent.get<ECSComponents::CollisionComponent>(engine_.getEntityManager());
+	//	auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
+	//	auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
+	//	auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
+	//	if (inputMng.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
+	//	{
+	//		// Check if button is active
+	//		if (b.getActive())
+	//		{
+	//			// Convert button position from world space to screen space
+	//			Math::eVec2<float> buttonScreenPos = Graphics::worldToScreen(
+	//				t.pos,
+	//				{ 0.0f, 0.0f },
+	//				{ static_cast<float>(windowSize.first), static_cast<float>(windowSize.second) },
+	//				viewportWidth,
+	//				viewportHeight,
+	//				cameraX,
+	//				cameraY
+	//			);
+
+	//			// Create transform with screen-space position
+	//			ECSComponents::TransformComponent screenTransform = t;
+	//			screenTransform.pos = buttonScreenPos;
+
+	//			// Mouse position in screen space
+	//			Math::eVec2<float> mousePos = {
+	//				static_cast<float>(mouseScreenPos.first),
+	//				static_cast<float>(mouseScreenPos.second)
+	//			};
+
+	//			// Check if mouse pos in clickable area (both now in screen space)
+	//			if (b.onClick(mousePos, screenTransform, d, c))
+	//			{
+
+	//				// Emit signal
+	//				auto signalIt = b.signals_.find("onClick");
+	//				if (signalIt != b.signals_.end())
+	//				{
+	//					signalIt->second.emit();
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 
 	// Check for mouse click
 	bool mouseClicked = inputMng.isMouseDown(GLFW_MOUSE_BUTTON_LEFT);
@@ -3186,7 +3438,7 @@ void GameApplication::updateMainMenuButtons() {
 }
 
 void GameApplication::handlePlayButton() {
-	engine_.getEnoEditor().selectScene("Scene1.txt");
+	engine_.getEnoEditor().selectScene("Level1.txt");
 	entitiesDirty_ = true;
 
 	// Re-scan for player entity in the new scene
@@ -3231,7 +3483,7 @@ void GameApplication::handleControlsButton() {
 	auto& resourceLoader = engine_.getResourceLoader();
 
 	// Load controls texture
-	auto controlsTexture = resourceLoader.getTexture("MainMenu-ControlsDisplayV2");
+	auto controlsTexture = resourceLoader.getTexture("UI-HowToPlay");
 
 	if (!controlsTexture || !controlsTexture->isValid()) {
 		return;
@@ -3439,115 +3691,115 @@ void GameApplication::handleQuitYesButton() {
 // SCENE TRANSITION SYSTEM IMPLEMENTATION
 // ============================================================================
 
-void GameApplication::setupSceneTransitions() {
-	auto& entityManager = engine_.getEntityManager();
+//void GameApplication::setupSceneTransitions() {
+//	auto& entityManager = engine_.getEntityManager();
+//
+//	// Create invisible trigger hitbox for Scene1 -> Scene2 transition
+//	// Position: (1023, 656), Size: 75x50, Rotation: 0 degrees
+//	ECS::Entity sceneTransitionTrigger = entityManager.create();
+//	scene1ToScene2TriggerID_ = sceneTransitionTrigger.id();
+//
+//	sceneTransitionTrigger.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Scene1ToScene2Trigger"));
+//	sceneTransitionTrigger.add<ECSComponents::TransformComponent>(entityManager);
+//	sceneTransitionTrigger.add<ECSComponents::CollisionComponent>(entityManager);
+//
+//	auto& transform = sceneTransitionTrigger.get<ECSComponents::TransformComponent>(entityManager);
+//	transform.pos = { 1023.0f, 656.0f };
+//	transform.scale = { 1.0f, 1.0f };
+//
+//	auto& collision = sceneTransitionTrigger.get<ECSComponents::CollisionComponent>(entityManager);
+//	collision.type = ECSComponents::ColliderType::RECTANGLE;
+//	collision.data.rectangle.width = 75.0f;
+//	collision.data.rectangle.height = 50.0f;
+//	collision.rotation = 0.0f;
+//	collision.isTrigger = true;
+//	collision.isActive = false; // Start inactive, will activate only in Scene1
 
-	// Create invisible trigger hitbox for Scene1 -> Scene2 transition
-	// Position: (1023, 656), Size: 75x50, Rotation: 0 degrees
-	ECS::Entity sceneTransitionTrigger = entityManager.create();
-	scene1ToScene2TriggerID_ = sceneTransitionTrigger.id();
+//}
 
-	sceneTransitionTrigger.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Scene1ToScene2Trigger"));
-	sceneTransitionTrigger.add<ECSComponents::TransformComponent>(entityManager);
-	sceneTransitionTrigger.add<ECSComponents::CollisionComponent>(entityManager);
-
-	auto& transform = sceneTransitionTrigger.get<ECSComponents::TransformComponent>(entityManager);
-	transform.pos = { 1023.0f, 656.0f };
-	transform.scale = { 1.0f, 1.0f };
-
-	auto& collision = sceneTransitionTrigger.get<ECSComponents::CollisionComponent>(entityManager);
-	collision.type = ECSComponents::ColliderType::RECTANGLE;
-	collision.data.rectangle.width = 75.0f;
-	collision.data.rectangle.height = 50.0f;
-	collision.rotation = 0.0f;
-	collision.isTrigger = true;
-	collision.isActive = false; // Start inactive, will activate only in Scene1
-
-}
-
-void GameApplication::updateSceneTransitions() {
-	auto& entityManager = engine_.getEntityManager();
-	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
-	std::string sceneName = currentScene.getSceneName();
-
-	// Only check for transitions in Scene1
-	if (sceneName != "Scene1.txt") {
-		// Deactivate trigger if not in Scene1
-		if (scene1ToScene2TriggerID_ != 0) {
-			ECS::Entity trigger(scene1ToScene2TriggerID_);
-			if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
-				auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
-				collision.isActive = false;
-			}
-		}
-		return;
-	}
-
-	// Activate trigger in Scene1
-	if (scene1ToScene2TriggerID_ != 0) {
-		ECS::Entity trigger(scene1ToScene2TriggerID_);
-		if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
-			auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
-			collision.isActive = true;
-		}
-	}
-
-	// Check if player exists
-	if (!playerSpawned_ || playerEntityID_ == 0) {
-		return;
-	}
-
-	// Get player entity
-	ECS::Entity player(playerEntityID_);
-	if (!player.has<ECSComponents::TransformComponent>(entityManager) ||
-		!player.has<ECSComponents::CollisionComponent>(entityManager)) {
-		return;
-	}
-
-	// Get player components
-	auto& playerTransform = player.get<ECSComponents::TransformComponent>(entityManager);
-	auto& playerCollision = player.get<ECSComponents::CollisionComponent>(entityManager);
-
-	// Get trigger entity
-	ECS::Entity trigger(scene1ToScene2TriggerID_);
-	if (!trigger.has<ECSComponents::TransformComponent>(entityManager) ||
-		!trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
-		return;
-	}
-
-	auto& triggerTransform = trigger.get<ECSComponents::TransformComponent>(entityManager);
-	auto& triggerCollision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
-
-	// Simple AABB collision check (rectangle-to-rectangle)
-	float playerLeft = playerTransform.pos.x - (playerCollision.data.rectangle.width * 0.5f);
-	float playerRight = playerTransform.pos.x + (playerCollision.data.rectangle.width * 0.5f);
-	float playerTop = playerTransform.pos.y - (playerCollision.data.rectangle.height * 0.5f);
-	float playerBottom = playerTransform.pos.y + (playerCollision.data.rectangle.height * 0.5f);
-
-	float triggerLeft = triggerTransform.pos.x - (triggerCollision.data.rectangle.width * 0.5f);
-	float triggerRight = triggerTransform.pos.x + (triggerCollision.data.rectangle.width * 0.5f);
-	float triggerTop = triggerTransform.pos.y - (triggerCollision.data.rectangle.height * 0.5f);
-	float triggerBottom = triggerTransform.pos.y + (triggerCollision.data.rectangle.height * 0.5f);
-
-	// Check for overlap
-	bool colliding = !(playerRight < triggerLeft || playerLeft > triggerRight ||
-	                   playerBottom < triggerTop || playerTop > triggerBottom);
-
-	if (colliding) {
-		engine_.getEnoEditor().selectScene("Scene2.txt");
-		entitiesDirty_ = true;
-
-		// Re-scan for player in new scene
-		std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
-		if (!playerEntities.empty()) {
-			playerEntityID_ = playerEntities[0].id();
-			playerSpawned_ = true;
-		} else {
-			playerSpawned_ = false;
-			playerEntityID_ = 0;
-		}
-	}
-}
+//void GameApplication::updateSceneTransitions() {
+//	auto& entityManager = engine_.getEntityManager();
+//	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+//	std::string sceneName = currentScene.getSceneName();
+//
+//	// Only check for transitions in Scene1
+//	if (sceneName != "Scene1.txt") {
+//		// Deactivate trigger if not in Scene1
+//		if (scene1ToScene2TriggerID_ != 0) {
+//			ECS::Entity trigger(scene1ToScene2TriggerID_);
+//			if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+//				auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+//				collision.isActive = false;
+//			}
+//		}
+//		return;
+//	}
+//
+//	// Activate trigger in Scene1
+//	if (scene1ToScene2TriggerID_ != 0) {
+//		ECS::Entity trigger(scene1ToScene2TriggerID_);
+//		if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+//			auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+//			collision.isActive = true;
+//		}
+//	}
+//
+//	// Check if player exists
+//	if (!playerSpawned_ || playerEntityID_ == 0) {
+//		return;
+//	}
+//
+//	// Get player entity
+//	ECS::Entity player(playerEntityID_);
+//	if (!player.has<ECSComponents::TransformComponent>(entityManager) ||
+//		!player.has<ECSComponents::CollisionComponent>(entityManager)) {
+//		return;
+//	}
+//
+//	// Get player components
+//	auto& playerTransform = player.get<ECSComponents::TransformComponent>(entityManager);
+//	auto& playerCollision = player.get<ECSComponents::CollisionComponent>(entityManager);
+//
+//	// Get trigger entity
+//	ECS::Entity trigger(scene1ToScene2TriggerID_);
+//	if (!trigger.has<ECSComponents::TransformComponent>(entityManager) ||
+//		!trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+//		return;
+//	}
+//
+//	auto& triggerTransform = trigger.get<ECSComponents::TransformComponent>(entityManager);
+//	auto& triggerCollision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+//
+//	// Simple AABB collision check (rectangle-to-rectangle)
+//	float playerLeft = playerTransform.pos.x - (playerCollision.data.rectangle.width * 0.5f);
+//	float playerRight = playerTransform.pos.x + (playerCollision.data.rectangle.width * 0.5f);
+//	float playerTop = playerTransform.pos.y - (playerCollision.data.rectangle.height * 0.5f);
+//	float playerBottom = playerTransform.pos.y + (playerCollision.data.rectangle.height * 0.5f);
+//
+//	float triggerLeft = triggerTransform.pos.x - (triggerCollision.data.rectangle.width * 0.5f);
+//	float triggerRight = triggerTransform.pos.x + (triggerCollision.data.rectangle.width * 0.5f);
+//	float triggerTop = triggerTransform.pos.y - (triggerCollision.data.rectangle.height * 0.5f);
+//	float triggerBottom = triggerTransform.pos.y + (triggerCollision.data.rectangle.height * 0.5f);
+//
+//	// Check for overlap
+//	bool colliding = !(playerRight < triggerLeft || playerLeft > triggerRight ||
+//	                   playerBottom < triggerTop || playerTop > triggerBottom);
+//
+//	if (colliding) {
+//		engine_.getEnoEditor().selectScene("Scene2.txt");
+//		entitiesDirty_ = true;
+//
+//		// Re-scan for player in new scene
+//		std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+//		if (!playerEntities.empty()) {
+//			playerEntityID_ = playerEntities[0].id();
+//			playerSpawned_ = true;
+//		} else {
+//			playerSpawned_ = false;
+//			playerEntityID_ = 0;
+//		}
+//	}
+//}
 
 // ============================================================================
 // PAUSE MENU BUTTON SYSTEM IMPLEMENTATION
@@ -3662,4 +3914,101 @@ void GameApplication::handleMainMenuButton() {
 	// Recreate main menu buttons after scene load (they're not saved in the scene file)
 	setupMainMenuButtons();
 
+}
+
+// ========== Dialogue System ==========
+
+void GameApplication::startDialogue()
+{
+	if (dialogueTexts_.empty()) {
+		std::cout << "[Dialogue] No dialogue texts configured – populate dialogueTexts_ first" << std::endl;
+		return;
+	}
+
+	auto& entityManager = engine_.getEntityManager();
+
+	dialogueActive_ = true;
+	dialogueIndex_  = 0;
+	isPaused_       = true;
+	engine_.setIsPlaying(false);
+
+	// Find dialogue box by name
+	auto dialogueBox = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("DialogueBox"));
+
+	// Show the dialogue box
+	if (!dialogueBox.empty())
+	{
+		for (auto& it : dialogueBox)
+		{
+			if (it.has<ECSComponents::VisibilityComponent>(entityManager))
+			{
+				it.get<ECSComponents::VisibilityComponent>(entityManager).visible = true;
+
+			}
+		}
+	}
+
+	// Start typewriter animation for first dialogue line
+	dialogueTargetText_  = dialogueTexts_[0];
+	dialogueCurrentText_.clear();
+	dialogueTypeTimer_   = 0.0f;
+	dialogueTyping_      = true;
+
+	// Clear body text entity to start fresh
+	auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+	if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager))
+	{
+		bodyText[0].get<ECSComponents::TextComponent>(entityManager).text[0] = '\0';
+	}
+
+	std::cout << "[Dialogue] Started – showing text 0: " << dialogueTexts_[0] << std::endl;
+}
+
+void GameApplication::advanceDialogue()
+{
+	dialogueIndex_++;
+
+	if (dialogueIndex_ >= static_cast<int>(dialogueTexts_.size())) {
+		// All texts have been shown – end the dialogue
+		dialogueActive_ = false;
+		dialogueTyping_      = false;
+		isPaused_       = false;
+		engine_.setIsPlaying(true);
+
+		auto& entityManager = engine_.getEntityManager();
+
+		// Hide the dialogue box
+		auto dialogueBox = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("DialogueBox"));
+
+		// Show the dialogue box
+		if (!dialogueBox.empty())
+		{
+			for (auto& it : dialogueBox)
+			{
+				if (it.has<ECSComponents::VisibilityComponent>(entityManager))
+				{
+					it.get<ECSComponents::VisibilityComponent>(entityManager).visible = false;
+
+				}
+			}
+		}
+
+		std::cout << "[Dialogue] Ended" << std::endl;
+	}
+	else {
+		// Start typewriter animation for next dialogue line
+		dialogueTargetText_  = dialogueTexts_[dialogueIndex_];
+		dialogueCurrentText_.clear();
+		dialogueTypeTimer_   = 0.0f;
+		dialogueTyping_      = true;
+
+		// Clear body text entity
+		auto& entityManager = engine_.getEntityManager();
+		auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+		if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager))
+		{
+			bodyText[0].get<ECSComponents::TextComponent>(entityManager).text[0] = '\0';
+		}
+		std::cout << "[Dialogue] Showing text " << dialogueIndex_ << ": " << dialogueTexts_[dialogueIndex_] << std::endl;
+	}
 }

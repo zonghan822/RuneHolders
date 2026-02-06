@@ -131,11 +131,11 @@ namespace ECSComponents {
 			// Check if the entity is rotated
 			if (c.rotation != 0.0f)
 			{
-				float halfW = d.width / 2;
-				float halfH = d.height / 2;
-
+				float halfW = c.data.rectangle.width / 2;
+				float halfH = c.data.rectangle.height / 2;
+				
 				Math::eVec2<float> corners[4];
-				rotateRectCorners(t.pos, d.width, d.height, c.rotation, corners);
+				rotateRectCorners(t.pos, c.data.rectangle.width, c.data.rectangle.height, c.rotation, corners);
 				Math::eVec2<float> newMousePos = { mousePos.x - t.pos.x, mousePos.y - t.pos.y };
 
 				float cos = cosf(c.rotation);
@@ -160,10 +160,10 @@ namespace ECSComponents {
 			else
 			{
 				// Check if mousePos is within button
-				if (mousePos.x >= (t.pos.x - (d.width * 0.5f)) &&	// Left limit
-					mousePos.x <= (t.pos.x + (d.width * 0.5f)) &&	// Right limit
-					mousePos.y >= (t.pos.y - (d.height * 0.5f)) &&	// Upper limit
-					mousePos.y <= (t.pos.y + (d.height * 0.5f)))	// Lower limit
+				if (mousePos.x >= (t.pos.x - (c.data.rectangle.width * 0.5f)) &&	// Left limit
+					mousePos.x <= (t.pos.x + (c.data.rectangle.width * 0.5f)) &&	// Right limit
+					mousePos.y >= (t.pos.y - (c.data.rectangle.height * 0.5f)) &&	// Upper limit
+					mousePos.y <= (t.pos.y + (c.data.rectangle.height * 0.5f)))	// Lower limit
 				{
 					// The button is clicked
 					std::cout << "[Button] CLICK!" << std::endl;

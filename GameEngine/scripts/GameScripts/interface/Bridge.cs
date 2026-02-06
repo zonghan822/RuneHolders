@@ -82,5 +82,22 @@ namespace Eno
         // Entity Management
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool DestroyEntity(uint entityID);
+        // Entity Transform
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool SetEntityPosition(uint entityID, float x, float y);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool SetPlayerPosition(float x, float y);
+
+        // Camera
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool GetCameraPosition(out float outX, out float outY);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool SetCameraPosition(float x, float y);
+
+        // Audio
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
+        public static extern void PlayInstantAudio(string groupName, string soundName);
     }
 }

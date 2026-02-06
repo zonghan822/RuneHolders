@@ -166,7 +166,7 @@ namespace ECS
 					// 
 					// (further reflect-related documentation can be found in components with
 					// reflect defined e.g the visibility component in visibility.hpp)
-					component.reflect([&](const std::string& name, auto& value, auto type)
+					component.reflect([&](const std::string& name, auto& value, auto)
 						{
 							if (name != fname) return;
 
