@@ -652,6 +652,12 @@ void GameApplication::updateGameLogic() {
 						auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
 						auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
 
+						// Calculate player position and dimensions once (used for both scroll and teacher checks)
+						float playerX = playerTransform.pos.x + playerCollision.offset.x;
+						float playerY = playerTransform.pos.y + playerCollision.offset.y;
+						float playerHalfW = (playerCollision.data.rectangle.width * playerTransform.scale.x) * 0.5f;
+						float playerHalfH = (playerCollision.data.rectangle.height * playerTransform.scale.y) * 0.5f;
+
 						// Find all UI-PopUp-E entities
 						auto scrolls = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("UI-PopUp-E"));
 						for (auto& scroll : scrolls) {
@@ -665,15 +671,8 @@ void GameApplication::updateGameLogic() {
 								if (scrollCollision.type == ECSComponents::ColliderType::RECTANGLE &&
 									playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
 
-									// Get positions with offsets
-									float playerX = playerTransform.pos.x + playerCollision.offset.x;
-									float playerY = playerTransform.pos.y + playerCollision.offset.y;
 									float scrollX = scrollTransform.pos.x + scrollCollision.offset.x;
 									float scrollY = scrollTransform.pos.y + scrollCollision.offset.y;
-
-									// Get half dimensions
-									float playerHalfW = (playerCollision.data.rectangle.width * playerTransform.scale.x) * 0.5f;
-									float playerHalfH = (playerCollision.data.rectangle.height * playerTransform.scale.y) * 0.5f;
 									float scrollHalfW = (scrollCollision.data.rectangle.width * scrollTransform.scale.x) * 0.5f;
 									float scrollHalfH = (scrollCollision.data.rectangle.height * scrollTransform.scale.y) * 0.5f;
 
@@ -681,6 +680,46 @@ void GameApplication::updateGameLogic() {
 									if ((std::abs(playerX - scrollX) <= (playerHalfW + scrollHalfW)) &&
 										(std::abs(playerY - scrollY) <= (playerHalfH + scrollHalfH))) {
 										startDialogue();
+										break; // Only trigger once
+									}
+								}
+							}
+						}
+
+						// Check if player is colliding with Teacher E entity
+						auto teacherE = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("Teacher E"));
+						for (auto& teacher : teacherE) {
+							if (teacher.has<ECSComponents::TransformComponent>(entityManager) &&
+								teacher.has<ECSComponents::CollisionComponent>(entityManager)) {
+
+								auto& teacherTransform = teacher.get<ECSComponents::TransformComponent>(entityManager);
+								auto& teacherCollision = teacher.get<ECSComponents::CollisionComponent>(entityManager);
+
+								// Check AABB collision
+								if (teacherCollision.type == ECSComponents::ColliderType::RECTANGLE &&
+									playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
+
+									// Get positions with offsets
+									float teacherX = teacherTransform.pos.x + teacherCollision.offset.x;
+									float teacherY = teacherTransform.pos.y + teacherCollision.offset.y;
+
+									// Get half dimensions
+									float teacherHalfW = (teacherCollision.data.rectangle.width * teacherTransform.scale.x) * 0.5f;
+									float teacherHalfH = (teacherCollision.data.rectangle.height * teacherTransform.scale.y) * 0.5f;
+
+									// AABB collision test
+									if ((std::abs(playerX - teacherX) <= (playerHalfW + teacherHalfW)) &&
+										(std::abs(playerY - teacherY) <= (playerHalfH + teacherHalfH))) {
+
+										// Set WinScreen-M4 to visible
+										auto winScreen = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
+										if (!winScreen.empty()) {
+											for (auto& screen : winScreen) {
+												if (screen.has<ECSComponents::VisibilityComponent>(entityManager)) {
+													screen.get<ECSComponents::VisibilityComponent>(entityManager).visible = true;
+												}
+											}
+										}
 										break; // Only trigger once
 									}
 								}

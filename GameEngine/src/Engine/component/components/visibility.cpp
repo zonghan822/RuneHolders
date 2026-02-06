@@ -1,8 +1,8 @@
 /*============================================================================================
 * @file         visibility.cpp
 * @author       Caven Koh (caven.koh@digipen.edu)
-* @date
-* @brief
+* @date			29/01/2026
+* @brief		Contains functions to sort entities into layers for rendering
 *//*========================================================================================*/
 #include "visibility.hpp"
 #include "../../engine/eno_engine.hpp"

@@ -226,3 +226,8 @@
 		}
 	]
 }
+
+"LayerMetadata":
+{
+	"AvailableLayers": { 4 }
+}
