@@ -10,7 +10,7 @@ namespace Eno
 
         // Where the camera should pan to (world coordinates)
         [Port("Target camera X position")]
-        public float targetCamX = 1700f;
+        public float targetCamX = 2000f;
 
         [Port("Target camera Y position")]
         public float targetCamY = 1000f;
@@ -20,7 +20,7 @@ namespace Eno
         public float destPlayerX = 2000f;
 
         [Port("Player destination Y")]
-        public float destPlayerY = 3594f;
+        public float destPlayerY = 1000f;
 
         // How fast the camera pans (pixels per second)
         [Port(100, 5000)]
