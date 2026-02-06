@@ -189,6 +189,8 @@ namespace Engine
 
 		AI::PathfindingSystem& getPathfinder() { return *pathfinder_; }
 
+		AI::AIManager& getAIManager() { return *aiMng_; }
+
 		/*============================================================================================
 		* \brief		Gets the Particle System for particle effects
 		* \return		Pointer to ParticleSystem instance (may be null if not initialized)
@@ -234,6 +236,7 @@ namespace Engine
 		std::unique_ptr<Map::TileMapSystem> tilemapSystem_;
 		std::unique_ptr<AI::PathfindingSystem> pathfinder_;
 		std::unique_ptr<Editor::EnoEditor> editor_;
+		std::unique_ptr<AI::AIManager> aiMng_;
 		Animation::AnimationControllerRegistry animRegistry;
 
 		// Systems
