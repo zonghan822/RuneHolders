@@ -225,7 +225,7 @@ namespace ECS
 				}
 			});
 
-			pos = data.find('[', compEnd + 1);
+			pos = data.find('[', compScopeEnd + 1);
 			if (pos == std::string::npos)
 				break;
 		}

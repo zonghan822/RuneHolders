@@ -1,4 +1,5 @@
 #include "state_machine_system.hpp"
+#include "../editor/editor_events.hpp"
 
 namespace FSM {
 
