@@ -22,6 +22,18 @@ constexpr float PI = 3.14159265358979323846f;
 
 namespace Math
 {
+	template <typename T>
+	constexpr inline T maxValue(const T& a, const T& b) requires std::is_arithmetic_v<T>
+	{
+		return (a < b) ? b : a;
+	}
+
+	template <typename T>
+	constexpr inline T minValue(const T& a, const T& b) requires std::is_arithmetic_v<T>
+	{
+		return (a > b) ? b : a;
+	}
+
 	template <typename Type>
 	concept Arithmetic = std::is_arithmetic_v<Type>;
 
