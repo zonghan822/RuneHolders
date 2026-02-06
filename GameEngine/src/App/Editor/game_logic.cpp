@@ -3988,6 +3988,11 @@ void GameApplication::handleMainMenuButton() {
 }
 
 void GameApplication::testParticleSystem() {
+	// Only allow particle testing in play mode
+	if (!engine_.getIsPlaying()) {
+		return;
+	}
+
 	auto& entityManager = engine_.getEntityManager();
 	auto& input = engine_.getInputManager();
 

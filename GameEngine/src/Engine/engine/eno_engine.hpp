@@ -229,7 +229,7 @@ namespace Engine
 		Event::EnoEventBus bus_;
 		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
-		Memory::EnoECSArena ecsArena_{ 1ull * 1024 * 1024 };
+		Memory::EnoECSArena ecsArena_{ 8ull * 1024 * 1024 };
 		ECS::EntityManager entityMng_{ ecsArena_, bus_ };
 		ECSComponents::EnoPrefabManager prefabMng_{ bus_ };
 		Core::EnoCoreHost coreHost_{ bus_ };
