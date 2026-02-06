@@ -59,6 +59,9 @@ namespace Bridge {
         // ================= Camera =================
         ENGINE_API bool __stdcall GetCameraPosition(float* outX, float* outY);
         ENGINE_API bool __stdcall SetCameraPosition(float x, float y);
+
+        // ================= Audio ================= 
+        ENGINE_API void __stdcall PlayInstantAudio(const wchar_t* groupName, const wchar_t* soundName);
     }
 }
 

@@ -86,5 +86,9 @@ namespace Eno
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool SetCameraPosition(float x, float y);
+
+        // Audio
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
+        public static extern void PlayInstantAudio(string groupName, string soundName);
     }
 }

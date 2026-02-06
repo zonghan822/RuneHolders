@@ -3221,7 +3221,7 @@ void GameApplication::updateMainMenuButtons() {
 }
 
 void GameApplication::handlePlayButton() {
-	engine_.getEnoEditor().selectScene("Scene1.txt");
+	engine_.getEnoEditor().selectScene("Level1.txt");
 	entitiesDirty_ = true;
 
 	// Re-scan for player entity in the new scene
