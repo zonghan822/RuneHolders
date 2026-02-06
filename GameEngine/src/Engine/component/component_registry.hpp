@@ -228,7 +228,7 @@ namespace ECSComponents
 
 	COMPONENT_LIST
 #undef X
-
+			std::cout << typeIdx.name() << std::endl;
 			throw std::runtime_error("Unknown component passed to be deduced!");
 		}
 
@@ -248,9 +248,9 @@ namespace ECSComponents
 		return;	\
 	}
 
-	COMPONENT_LIST
+			COMPONENT_LIST
 #undef X
-
+			std::cout << typeName << std::endl;
 			throw std::runtime_error("Unknown component passed to be deduced!");
 		}
 	};
