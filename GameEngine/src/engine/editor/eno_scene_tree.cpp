@@ -2,6 +2,7 @@
 
 #include "../math/math.hpp"
 #include "../component/components/visibility.hpp"
+#include "../file/file_system.hpp"
 
 namespace Editor
 {
@@ -453,7 +454,12 @@ namespace Editor
 			// Attached Script
 			appendIndent(save, jsonLevel);
 			if (it->second->script_)
-				save << "\"Script\": { " << it->second->script_->path() << " }\n";
+			{
+				// Extract just the filename from the full path for portability
+				std::string scriptPath = it->second->script_->path();
+				std::string scriptFilename = extractFname(scriptPath);
+				save << "\"Script\": { " << scriptFilename << " }\n";
+			}
 			else
 				save << "\"Script\": { }\n";
 
@@ -704,8 +710,23 @@ namespace Editor
 				// Extract script name, convert to wide and assign
 				std::string fname{ extractFname(scriptPath.value()) };
 				std::wstring wfname = { fname.begin(), fname.end() };
-				std::wstring wpath = { scriptPath.value().begin(), scriptPath.value().end() };
 
+				// Reconstruct full path from scripts directory for portability
+				// Check if it's just a filename (no path separators) or an absolute path
+				std::filesystem::path fullScriptPath;
+				if (scriptPath.value().find('/') == std::string::npos &&
+					scriptPath.value().find('\\') == std::string::npos)
+				{
+					// It's just a filename, construct full path
+					fullScriptPath = FileSystem::GetScriptsDir() / scriptPath.value();
+				}
+				else
+				{
+					// It's an absolute path (old format), use as-is for backward compatibility
+					fullScriptPath = scriptPath.value();
+				}
+
+				std::wstring wpath = fullScriptPath.wstring();
 				auto script = std::make_unique<Script::EnoScript>(coreHost_, wfname, wpath);
 				attachScript(node.get(), std::move(script));
 				//node->script_ = std::make_unique<Script::EnoScript>(coreHost_, wfname, wpath);
