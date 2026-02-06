@@ -280,12 +280,15 @@ namespace Eno
 
             Console.WriteLine($"[TrailBlight {ID}] death_update - timer: {stateTimer:F2}s");
 
-            // Wait for death animation to complete, then destroy self
+            // Wait for death animation to complete, then teleport away (workaround for crash)
             if (stateTimer <= 0.0f)
             {
-                Console.WriteLine($"[TrailBlight {ID}] Death animation complete, calling DestroyEntity");
-                bool destroyed = Bridge.DestroyEntity(ID);
-                Console.WriteLine($"[TrailBlight {ID}] DestroyEntity returned: {destroyed}");
+                Console.WriteLine($"[TrailBlight {ID}] Death animation complete, teleporting away");
+                // Teleport far off screen instead of destroying to avoid crash
+                bool teleported = Bridge.SetEntityPosition(ID, -10000.0f, -10000.0f);
+                Console.WriteLine($"[TrailBlight {ID}] SetEntityPosition returned: {teleported}");
+                // Disable velocity so it stays there
+                Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             }
         }
 
