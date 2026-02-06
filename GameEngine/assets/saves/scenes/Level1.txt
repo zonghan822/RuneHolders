@@ -384,7 +384,7 @@
 		{
 			[struct ECSComponents::NameComponent]
 			{
-				"Name": <char32> { Trailblight }
+				"Name": <char32> { Trailblight1 }
 			}
 
 			[struct ECSComponents::VisibilityComponent]
@@ -395,7 +395,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1959.18 | y : 4472.88 }
+				"Position": <eVec2(float)> { x : 2453.34 | y : 3455.86 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1.26851 | y : 1.26851 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -403,8 +403,8 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 64 }
-				"Height": <float> { 64 }
+				"Width": <float> { 96 }
+				"Height": <float> { 96 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Enemy-Trailblight-Walk-Sheet }
@@ -418,8 +418,8 @@
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 64 }
-				"Height": <float> { 64 }
+				"Width": <float> { 96 }
+				"Height": <float> { 96 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -439,13 +439,13 @@
 
 			[struct ECSComponents::BoxComponent]
 			{
-				"isPushable": <bool> { 1 }
+				"isPushable": <bool> { 0 }
 				"pushResistance": <float> { 0.2 }
 			}
 
 			[struct ECSComponents::AIComponent]
 			{
-				"awarenessRadius": <float> { 200 }
+				"awarenessRadius": <float> { 300 }
 				"chaseSpeed": <float> { 90 }
 				"attackRange": <float> { 40 }
 				"windupTime": <float> { 0.5 }
@@ -544,7 +544,7 @@
 				"State[0].onExit": <char64> { idle_exit }
 				"State[1].name": <char32> { death }
 				"State[1].onEnter": <char64> { death_enter }
-				"State[1].onUpdate": <char64> {  }
+				"State[1].onUpdate": <char64> { death_update }
 				"State[1].onExit": <char64> { death_exit }
 				"State[2].name": <char32> { attack }
 				"State[2].onEnter": <char64> { attack_enter }
@@ -4235,6 +4235,591 @@
 		}
 		"Script": { }
 		"Parent": { 81 }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Node84]
+	{
+		"ID": { 84 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Trailblight2 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1501.34 | y : 3373.04 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 96 }
+				"Height": <float> { 96 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Enemy-Trailblight-Walk-Sheet }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 96 }
+				"Height": <float> { 96 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 2 }
+				"Drag": <float> { 8 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::BoxComponent]
+			{
+				"isPushable": <bool> { 0 }
+				"pushResistance": <float> { 0.2 }
+			}
+
+			[struct ECSComponents::AIComponent]
+			{
+				"awarenessRadius": <float> { 300 }
+				"chaseSpeed": <float> { 90 }
+				"attackRange": <float> { 40 }
+				"windupTime": <float> { 0.5 }
+				"attackDuration": <float> { 0.3 }
+				"hurtDuration": <float> { 0.4 }
+				"health": <int> { 100 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 9 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 6 }
+				"Current Animation": <char64> { windup }
+				"Anim0 Name": <char64> { death }
+				"Anim0 Texture": <texchar240> { Enemy-Trailblight-Death-Sheet }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 4 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { hurt }
+				"Anim1 Texture": <texchar240> { Enemy-Trailblight-Hurt-Sheet }
+				"Anim1 FrameW": <int> { 96 }
+				"Anim1 FrameH": <int> { 96 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
+				"Anim2 Name": <char64> { idle }
+				"Anim2 Texture": <texchar240> { Enemy-Trailblight-Idle-Sheet }
+				"Anim2 FrameW": <int> { 96 }
+				"Anim2 FrameH": <int> { 96 }
+				"Anim2 Rows": <int> { 1 }
+				"Anim2 Cols": <int> { 8 }
+				"Anim2 Duration": <float> { 0.1 }
+				"Anim2 Looping": <bool> { 1 }
+				"Anim3 Name": <char64> { attack }
+				"Anim3 Texture": <texchar240> { Enemy-Trailblight-Walk-Sheet }
+				"Anim3 FrameW": <int> { 96 }
+				"Anim3 FrameH": <int> { 96 }
+				"Anim3 Rows": <int> { 1 }
+				"Anim3 Cols": <int> { 9 }
+				"Anim3 Duration": <float> { 0.1 }
+				"Anim3 Looping": <bool> { 1 }
+				"Anim4 Name": <char64> { chase }
+				"Anim4 Texture": <texchar240> { Enemy-Trailblight-Walk-Sheet }
+				"Anim4 FrameW": <int> { 96 }
+				"Anim4 FrameH": <int> { 96 }
+				"Anim4 Rows": <int> { 1 }
+				"Anim4 Cols": <int> { 9 }
+				"Anim4 Duration": <float> { 0.1 }
+				"Anim4 Looping": <bool> { 1 }
+				"Anim5 Name": <char64> { windup }
+				"Anim5 Texture": <texchar240> { Enemy-Trailblight-Walk-Sheet }
+				"Anim5 FrameW": <int> { 96 }
+				"Anim5 FrameH": <int> { 96 }
+				"Anim5 Rows": <int> { 1 }
+				"Anim5 Cols": <int> { 9 }
+				"Anim5 Duration": <float> { 0.1 }
+				"Anim5 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 50 }
+				"maxHealth": <float> { 50 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
+
+			[struct ECSComponents::DamageComponent]
+			{
+				"damageAmount": <float> { 10 }
+				"damageMultiplier": <float> { 1 }
+				"destroyOnHit": <bool> { 0 }
+				"damageType": <char32> { physical }
+				"spellColor": <int> { 0 }
+				"useColorMatching": <bool> { 0 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 6 }
+				"CurrentState": <char32> { idle }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { idle }
+				"State[0].onEnter": <char64> { idle_enter }
+				"State[0].onUpdate": <char64> { idle_update }
+				"State[0].onExit": <char64> { idle_exit }
+				"State[1].name": <char32> { death }
+				"State[1].onEnter": <char64> { death_enter }
+				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onExit": <char64> { death_exit }
+				"State[2].name": <char32> { attack }
+				"State[2].onEnter": <char64> { attack_enter }
+				"State[2].onUpdate": <char64> { attack_update }
+				"State[2].onExit": <char64> { attack_exit }
+				"State[3].name": <char32> { chase }
+				"State[3].onEnter": <char64> { chase_enter }
+				"State[3].onUpdate": <char64> { chase_update }
+				"State[3].onExit": <char64> { chase_exit }
+				"State[4].name": <char32> { windup }
+				"State[4].onEnter": <char64> { windup_enter }
+				"State[4].onUpdate": <char64> { windup_update }
+				"State[4].onExit": <char64> { windup_exit }
+				"State[5].name": <char32> { hurt }
+				"State[5].onEnter": <char64> { hurt_enter }
+				"State[5].onUpdate": <char64> { hurt_update }
+				"State[5].onExit": <char64> { hurt_exit }
+			}
+		}
+		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\TrailBlight_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Node85]
+	{
+		"ID": { 85 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Trailblight3 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1476.22 | y : 2361.34 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 96 }
+				"Height": <float> { 96 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Enemy-Trailblight-Walk-Sheet }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 96 }
+				"Height": <float> { 96 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 2 }
+				"Drag": <float> { 8 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::BoxComponent]
+			{
+				"isPushable": <bool> { 0 }
+				"pushResistance": <float> { 0.2 }
+			}
+
+			[struct ECSComponents::AIComponent]
+			{
+				"awarenessRadius": <float> { 300 }
+				"chaseSpeed": <float> { 90 }
+				"attackRange": <float> { 40 }
+				"windupTime": <float> { 0.5 }
+				"attackDuration": <float> { 0.3 }
+				"hurtDuration": <float> { 0.4 }
+				"health": <int> { 100 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 9 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 6 }
+				"Current Animation": <char64> { windup }
+				"Anim0 Name": <char64> { death }
+				"Anim0 Texture": <texchar240> { Enemy-Trailblight-Death-Sheet }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 4 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { hurt }
+				"Anim1 Texture": <texchar240> { Enemy-Trailblight-Hurt-Sheet }
+				"Anim1 FrameW": <int> { 96 }
+				"Anim1 FrameH": <int> { 96 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
+				"Anim2 Name": <char64> { idle }
+				"Anim2 Texture": <texchar240> { Enemy-Trailblight-Idle-Sheet }
+				"Anim2 FrameW": <int> { 96 }
+				"Anim2 FrameH": <int> { 96 }
+				"Anim2 Rows": <int> { 1 }
+				"Anim2 Cols": <int> { 8 }
+				"Anim2 Duration": <float> { 0.1 }
+				"Anim2 Looping": <bool> { 1 }
+				"Anim3 Name": <char64> { attack }
+				"Anim3 Texture": <texchar240> { Enemy-Trailblight-Walk-Sheet }
+				"Anim3 FrameW": <int> { 96 }
+				"Anim3 FrameH": <int> { 96 }
+				"Anim3 Rows": <int> { 1 }
+				"Anim3 Cols": <int> { 9 }
+				"Anim3 Duration": <float> { 0.1 }
+				"Anim3 Looping": <bool> { 1 }
+				"Anim4 Name": <char64> { chase }
+				"Anim4 Texture": <texchar240> { Enemy-Trailblight-Walk-Sheet }
+				"Anim4 FrameW": <int> { 96 }
+				"Anim4 FrameH": <int> { 96 }
+				"Anim4 Rows": <int> { 1 }
+				"Anim4 Cols": <int> { 9 }
+				"Anim4 Duration": <float> { 0.1 }
+				"Anim4 Looping": <bool> { 1 }
+				"Anim5 Name": <char64> { windup }
+				"Anim5 Texture": <texchar240> { Enemy-Trailblight-Walk-Sheet }
+				"Anim5 FrameW": <int> { 96 }
+				"Anim5 FrameH": <int> { 96 }
+				"Anim5 Rows": <int> { 1 }
+				"Anim5 Cols": <int> { 9 }
+				"Anim5 Duration": <float> { 0.1 }
+				"Anim5 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 50 }
+				"maxHealth": <float> { 50 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
+
+			[struct ECSComponents::DamageComponent]
+			{
+				"damageAmount": <float> { 10 }
+				"damageMultiplier": <float> { 1 }
+				"destroyOnHit": <bool> { 0 }
+				"damageType": <char32> { physical }
+				"spellColor": <int> { 0 }
+				"useColorMatching": <bool> { 0 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 6 }
+				"CurrentState": <char32> { idle }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { idle }
+				"State[0].onEnter": <char64> { idle_enter }
+				"State[0].onUpdate": <char64> { idle_update }
+				"State[0].onExit": <char64> { idle_exit }
+				"State[1].name": <char32> { death }
+				"State[1].onEnter": <char64> { death_enter }
+				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onExit": <char64> { death_exit }
+				"State[2].name": <char32> { attack }
+				"State[2].onEnter": <char64> { attack_enter }
+				"State[2].onUpdate": <char64> { attack_update }
+				"State[2].onExit": <char64> { attack_exit }
+				"State[3].name": <char32> { chase }
+				"State[3].onEnter": <char64> { chase_enter }
+				"State[3].onUpdate": <char64> { chase_update }
+				"State[3].onExit": <char64> { chase_exit }
+				"State[4].name": <char32> { windup }
+				"State[4].onEnter": <char64> { windup_enter }
+				"State[4].onUpdate": <char64> { windup_update }
+				"State[4].onExit": <char64> { windup_exit }
+				"State[5].name": <char32> { hurt }
+				"State[5].onEnter": <char64> { hurt_enter }
+				"State[5].onUpdate": <char64> { hurt_update }
+				"State[5].onExit": <char64> { hurt_exit }
+			}
+		}
+		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\TrailBlight_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Node86]
+	{
+		"ID": { 86 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { BloodWing1 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 2558.12 | y : 2221.72 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 64 }
+				"Height": <float> { 64 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Enemy-Bloodwing-IdleFlyRest-Sheet }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 64 }
+				"Height": <float> { 64 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 2 }
+				"Drag": <float> { 8 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::BoxComponent]
+			{
+				"isPushable": <bool> { 0 }
+				"pushResistance": <float> { 0.2 }
+			}
+
+			[struct ECSComponents::AIComponent]
+			{
+				"awarenessRadius": <float> { 300 }
+				"chaseSpeed": <float> { 140 }
+				"attackRange": <float> { 40 }
+				"windupTime": <float> { 0.5 }
+				"attackDuration": <float> { 0.3 }
+				"hurtDuration": <float> { 0.4 }
+				"health": <int> { 100 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 64 }
+				"Frame Height": <int> { 64 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 2 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 6 }
+				"Current Animation": <char64> { chase }
+				"Anim0 Name": <char64> { death }
+				"Anim0 Texture": <texchar240> { Enemy-Bloodwing-Death-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 4 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { hurt }
+				"Anim1 Texture": <texchar240> { Enemy-Bloodwing-Hurt-Sheet }
+				"Anim1 FrameW": <int> { 64 }
+				"Anim1 FrameH": <int> { 64 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
+				"Anim2 Name": <char64> { idle }
+				"Anim2 Texture": <texchar240> { Enemy-Bloodwing-IdleFlyRest-Sheet }
+				"Anim2 FrameW": <int> { 64 }
+				"Anim2 FrameH": <int> { 64 }
+				"Anim2 Rows": <int> { 1 }
+				"Anim2 Cols": <int> { 2 }
+				"Anim2 Duration": <float> { 0.1 }
+				"Anim2 Looping": <bool> { 1 }
+				"Anim3 Name": <char64> { attack }
+				"Anim3 Texture": <texchar240> { Enemy-Bloodwing-Attack-Sheet }
+				"Anim3 FrameW": <int> { 64 }
+				"Anim3 FrameH": <int> { 64 }
+				"Anim3 Rows": <int> { 1 }
+				"Anim3 Cols": <int> { 1 }
+				"Anim3 Duration": <float> { 0.1 }
+				"Anim3 Looping": <bool> { 1 }
+				"Anim4 Name": <char64> { chase }
+				"Anim4 Texture": <texchar240> { Enemy-Bloodwing-IdleFlyRest-Sheet }
+				"Anim4 FrameW": <int> { 64 }
+				"Anim4 FrameH": <int> { 64 }
+				"Anim4 Rows": <int> { 1 }
+				"Anim4 Cols": <int> { 2 }
+				"Anim4 Duration": <float> { 0.1 }
+				"Anim4 Looping": <bool> { 1 }
+				"Anim5 Name": <char64> { windup }
+				"Anim5 Texture": <texchar240> { Enemy-Bloodwing-Windup-Sheet }
+				"Anim5 FrameW": <int> { 64 }
+				"Anim5 FrameH": <int> { 64 }
+				"Anim5 Rows": <int> { 1 }
+				"Anim5 Cols": <int> { 1 }
+				"Anim5 Duration": <float> { 0.1 }
+				"Anim5 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 50 }
+				"maxHealth": <float> { 50 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
+
+			[struct ECSComponents::DamageComponent]
+			{
+				"damageAmount": <float> { 10 }
+				"damageMultiplier": <float> { 1 }
+				"destroyOnHit": <bool> { 0 }
+				"damageType": <char32> { physical }
+				"spellColor": <int> { 0 }
+				"useColorMatching": <bool> { 0 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 6 }
+				"CurrentState": <char32> { idle }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { idle }
+				"State[0].onEnter": <char64> { idle_enter }
+				"State[0].onUpdate": <char64> { idle_update }
+				"State[0].onExit": <char64> { idle_exit }
+				"State[1].name": <char32> { death }
+				"State[1].onEnter": <char64> { death_enter }
+				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onExit": <char64> { death_exit }
+				"State[2].name": <char32> { attack }
+				"State[2].onEnter": <char64> { attack_enter }
+				"State[2].onUpdate": <char64> { attack_update }
+				"State[2].onExit": <char64> { attack_exit }
+				"State[3].name": <char32> { chase }
+				"State[3].onEnter": <char64> { chase_enter }
+				"State[3].onUpdate": <char64> { chase_update }
+				"State[3].onExit": <char64> { chase_exit }
+				"State[4].name": <char32> { windup }
+				"State[4].onEnter": <char64> { windup_enter }
+				"State[4].onUpdate": <char64> { windup_update }
+				"State[4].onExit": <char64> { windup_exit }
+				"State[5].name": <char32> { hurt }
+				"State[5].onEnter": <char64> { hurt_enter }
+				"State[5].onUpdate": <char64> { hurt_update }
+				"State[5].onExit": <char64> { hurt_exit }
+			}
+		}
+		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Bloodwing_Script.cs }
+		"Parent": { }
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }

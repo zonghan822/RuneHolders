@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace Eno
 {
-	public class Bloodwing_Script : ScriptBase
+	public class BloodWing_Script : ScriptBase
     {
-        // Bloodwing AI parameters (loaded from AIComponent)
+        // BloodWing AI parameters (loaded from AIComponent)
         private float awarenessRadius;
         private float chaseSpeed;
         private float attackRange;
@@ -20,17 +20,17 @@ namespace Eno
 
         public void Begin()
         {
-            Console.WriteLine($"[Bloodwing] Initializing Bloodwing entity {ID}");
+            Console.WriteLine($"[BloodWing] Initializing BloodWing entity {ID}");
 
             // Load AI parameters from the AIComponent
             if (Bridge.GetAIComponent(ID, out awarenessRadius, out chaseSpeed, out attackRange,
                 out windupTime, out attackDuration, out hurtDuration, out health, out allowDiagonal))
             {
-                Console.WriteLine($"[Bloodwing {ID}] Loaded AI params - Chase: {chaseSpeed}, Attack Range: {attackRange}, Awareness: {awarenessRadius}");
+                Console.WriteLine($"[BloodWing {ID}] Loaded AI params - Chase: {chaseSpeed}, Attack Range: {attackRange}, Awareness: {awarenessRadius}");
             }
             else
             {
-                Console.WriteLine($"[Bloodwing {ID}] ERROR: Failed to load AIComponent! Using defaults.");
+                Console.WriteLine($"[BloodWing {ID}] ERROR: Failed to load AIComponent! Using defaults.");
                 // Fallback defaults
                 awarenessRadius = 200.0f;
                 chaseSpeed = 90.0f;
@@ -62,6 +62,8 @@ namespace Eno
         // Called when entering the idle state
         public void idle_enter()
         {
+            Bridge.SetEntityAnimation(ID, "idle");
+
             // Stop movement when entering idle
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             Bridge.ClearPath(ID);
@@ -80,7 +82,7 @@ namespace Eno
                     if (distance < awarenessRadius)
                     {
                         // Player is in range, start chasing
-                        Console.WriteLine($"[Bloodwing {ID}] Player detected! Distance: {distance:F1}");
+                        Console.WriteLine($"[BloodWing {ID}] Player detected! Distance: {distance:F1}");
                         Bridge.ChangeState(ID, "chase");
                     }
                 }
@@ -90,13 +92,14 @@ namespace Eno
         // Called when exiting the idle state
         public void idle_exit()
         {
-            Console.WriteLine($"[Bloodwing {ID}] Leaving idle state");
+            Console.WriteLine($"[BloodWing {ID}] Leaving idle state");
         }
 
         // Called when entering the chase state
         public void chase_enter()
         {
-            Console.WriteLine($"[Bloodwing {ID}] Entering chase state");
+            Bridge.SetEntityAnimation(ID, "chase");
+            Console.WriteLine($"[BloodWing {ID}] Entering chase state");
         }
 
         // Called every frame while in the chase state
@@ -106,7 +109,7 @@ namespace Eno
             if (!Bridge.GetPlayerPosition(out float playerX, out float playerY))
             {
                 // Player not found, return to idle
-                Console.WriteLine($"[Bloodwing {ID}] Lost player, returning to idle");
+                Console.WriteLine($"[BloodWing {ID}] Lost player, returning to idle");
                 Bridge.ChangeState(ID, "idle");
                 return;
             }
@@ -121,7 +124,7 @@ namespace Eno
             // Check if player is out of awareness range (with hysteresis)
             if (distanceToPlayer > awarenessRadius * 1.2f)
             {
-                Console.WriteLine($"[Bloodwing {ID}] Player too far, returning to idle");
+                Console.WriteLine($"[BloodWing {ID}] Player too far, returning to idle");
                 Bridge.ChangeState(ID, "idle");
                 return;
             }
@@ -129,7 +132,7 @@ namespace Eno
             // Check if in attack range
             if (distanceToPlayer < attackRange)
             {
-                Console.WriteLine($"[Bloodwing {ID}] Player in attack range!");
+                Console.WriteLine($"[BloodWing {ID}] Player in attack range!");
                 Bridge.ChangeState(ID, "windup");
                 return;
             }
@@ -163,16 +166,18 @@ namespace Eno
         {
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             Bridge.ClearPath(ID);
-            Console.WriteLine($"[Bloodwing {ID}] Exiting chase state");
+            Console.WriteLine($"[BloodWing {ID}] Exiting chase state");
         }
 
         // Called when entering the windup state
         public void windup_enter()
         {
+            Bridge.SetEntityAnimation(ID, "windup");
+
             // Stop movement during windup
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             stateTimer = windupTime;
-            Console.WriteLine($"[Bloodwing {ID}] Winding up for attack ({windupTime}s)");
+            Console.WriteLine($"[BloodWing {ID}] Winding up for attack ({windupTime}s)");
         }
 
         // Called every frame while in the windup state
@@ -188,13 +193,15 @@ namespace Eno
         // Called when exiting the windup state
         public void windup_exit()
         {
-            Console.WriteLine($"[Bloodwing {ID}] Windup complete");
+            Console.WriteLine($"[BloodWing {ID}] Windup complete");
         }
 
         // Called when entering the attack state
         public void attack_enter()
         {
-            Console.WriteLine($"[Bloodwing {ID}] Attacking!");
+            Bridge.SetEntityAnimation(ID, "attack");
+
+            Console.WriteLine($"[BloodWing {ID}] Attacking!");
             // Stop movement during attack
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
 
@@ -218,13 +225,14 @@ namespace Eno
         // Called when exiting the attack state
         public void attack_exit()
         {
-            Console.WriteLine($"[Bloodwing {ID}] Attack finished");
+            Console.WriteLine($"[BloodWing {ID}] Attack finished");
         }
 
         // Called when entering the hurt state
         public void hurt_enter()
         {
-            Console.WriteLine($"[Bloodwing {ID}] Ouch! Taking damage!");
+            Bridge.SetEntityAnimation(ID, "hurt");
+            Console.WriteLine($"[BloodWing {ID}] Ouch! Taking damage!");
             // Stop movement when hurt
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
 
@@ -247,34 +255,48 @@ namespace Eno
         // Called when exiting the hurt state
         public void hurt_exit()
         {
-            Console.WriteLine($"[Bloodwing {ID}] Recovering from hurt");
+            Console.WriteLine($"[BloodWing {ID}] Recovering from hurt");
         }
 
         // Called when entering the death state
         public void death_enter()
         {
-            Console.WriteLine($"[Bloodwing {ID}] Defeated!");
+            Bridge.SetEntityAnimation(ID, "death");
+            Console.WriteLine($"[BloodWing {ID}] Defeated!");
             // Stop all movement
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             Bridge.ClearPath(ID);
 
-            // TODO: Play death animation, drop loot, award XP, etc.
-            // Entity will be destroyed by the game logic after death animation completes
+            // Start death timer
+            stateTimer = 1.0f; // 1 seconds for death animation
         }
 
         // Called every frame while in the death state
         public void death_update()
         {
-            // Death state - entity should remain still
-            // Entity cleanup is handled by the engine after death animation
+            // Decrement death timer
+            float deltaTime = Bridge.GetDeltaTime();
+            stateTimer -= deltaTime;
+
+            Console.WriteLine($"[BloodWing {ID}] death_update - timer: {stateTimer:F2}s");
+
+            // Wait for death animation to complete, then teleport away (workaround for crash)
+            if (stateTimer <= 0.0f)
+            {
+                Console.WriteLine($"[BloodWing {ID}] Death animation complete, teleporting away");
+                // Teleport far off screen instead of destroying to avoid crash
+                bool teleported = Bridge.SetEntityPosition(ID, -10000.0f, -10000.0f);
+                Console.WriteLine($"[BloodWing {ID}] SetEntityPosition returned: {teleported}");
+                // Disable velocity so it stays there
+                Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
+            }
         }
 
         // Called when exiting the death state
         public void death_exit()
         {
             // This typically won't be called as entity is destroyed in death state
-            Console.WriteLine($"[Bloodwing {ID}] Death state exited");
+            Console.WriteLine($"[BloodWing {ID}] Death state exited");
         }
 	}
-}
-			
+}	
