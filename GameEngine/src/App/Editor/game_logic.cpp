@@ -459,7 +459,7 @@ void GameApplication::updateGameLogic() {
 
 	// Update main menu buttons (works in both play mode and edit mode)
 	updateMainMenuButtons();
-	updateSceneTransitions();
+	//updateSceneTransitions();
 
 	// ========== PAUSE MENU AND SPELLBOOK INPUT HANDLING ==========
 	// Only handle pause/spellbook input when in play mode AND player exists

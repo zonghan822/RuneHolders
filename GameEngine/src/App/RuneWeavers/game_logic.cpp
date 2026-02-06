@@ -40,7 +40,7 @@ void GameApplication::initialize() {
 	setupCamera();
 	setupCombatSystem();
 	setupMainMenuButtons();
-	setupSceneTransitions();
+	/*setupSceneTransitions();*/
 
 	auto& tileMap = engine_.getTileMap();
 
@@ -595,7 +595,7 @@ void GameApplication::updateGameLogic() {
 	updateMainMenuButtons();
 
 	// Update scene transitions (check for player collision with transition triggers)
-	updateSceneTransitions();
+	//updateSceneTransitions();
 
 	// Only update game systems when not paused
 	if (!isPaused_) {
@@ -2820,6 +2820,7 @@ void GameApplication::spawnSpellbook() {
 	auto spellbookTexture = resourceLoader.getTexture("SpellBook-HowToCast_Fireball");
 
 	if (!spellbookTexture || !spellbookTexture->isValid()) {
+		std::cerr << "[Spellbook] Failed to load spellbook texture!" << std::endl;
 		return;
 	}
 
@@ -2849,6 +2850,7 @@ void GameApplication::spawnSpellbook() {
 	// Mark entities dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
+	std::cout << "[Spellbook] Spellbook UI spawned at (1024, 1024)" << std::endl;
 }
 
 void GameApplication::destroySpellbook() {
@@ -2857,16 +2859,11 @@ void GameApplication::destroySpellbook() {
 		entityManager.destroyEntity(spellbookEntityID_);
 		spellbookEntityID_ = 0;
 		entitiesDirty_ = true;
+		std::cout << "[Spellbook] Spellbook UI destroyed" << std::endl;
 	}
 }
 
 void GameApplication::spawnPauseMenu() {
-	// Don't spawn if pause menu already exists
-	if (pauseMenuEntityID_ != 0) {
-		std::cout << "[PauseMenu] Pause menu already exists (ID: " << pauseMenuEntityID_ << ")" << std::endl;
-		return;
-	}
-
 	auto& entityManager = engine_.getEntityManager();
 	auto& resourceLoader = engine_.getResourceLoader();
 
@@ -2874,6 +2871,7 @@ void GameApplication::spawnPauseMenu() {
 	auto pauseMenuTexture = resourceLoader.getTexture("PauseMenu-Popup");
 
 	if (!pauseMenuTexture || !pauseMenuTexture->isValid()) {
+		std::cerr << "[PauseMenu] Failed to load pause menu texture!" << std::endl;
 		return;
 	}
 
@@ -2900,12 +2898,12 @@ void GameApplication::spawnPauseMenu() {
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = pauseMenuTexture;
 
+	// Mark entities dirty to refresh rendering cache
 	// Setup pause menu buttons (Resume and Main Menu)
 	setupPauseMenuButtons();
-
-	// Mark entities dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
+	std::cout << "[PauseMenu] Pause menu UI spawned at (1024, 1024)" << std::endl;
 }
 
 void GameApplication::destroyPauseMenu() {
@@ -2937,6 +2935,7 @@ void GameApplication::destroyPauseMenu() {
 	}
 
 	entitiesDirty_ = true;
+	std::cout << "[PauseMenu] Pause menu UI and buttons destroyed" << std::endl;
 }
 
 void GameApplication::hidePlayer() {
@@ -3186,7 +3185,7 @@ void GameApplication::updateMainMenuButtons() {
 }
 
 void GameApplication::handlePlayButton() {
-	engine_.getEnoEditor().selectScene("Scene1.txt");
+	engine_.getEnoEditor().selectScene("Level1.txt");
 	entitiesDirty_ = true;
 
 	// Re-scan for player entity in the new scene
@@ -3231,7 +3230,7 @@ void GameApplication::handleControlsButton() {
 	auto& resourceLoader = engine_.getResourceLoader();
 
 	// Load controls texture
-	auto controlsTexture = resourceLoader.getTexture("MainMenu-ControlsDisplayV2");
+	auto controlsTexture = resourceLoader.getTexture("UI-HowToPlay");
 
 	if (!controlsTexture || !controlsTexture->isValid()) {
 		return;
@@ -3439,115 +3438,115 @@ void GameApplication::handleQuitYesButton() {
 // SCENE TRANSITION SYSTEM IMPLEMENTATION
 // ============================================================================
 
-void GameApplication::setupSceneTransitions() {
-	auto& entityManager = engine_.getEntityManager();
+//void GameApplication::setupSceneTransitions() {
+//	auto& entityManager = engine_.getEntityManager();
+//
+//	// Create invisible trigger hitbox for Scene1 -> Scene2 transition
+//	// Position: (1023, 656), Size: 75x50, Rotation: 0 degrees
+//	ECS::Entity sceneTransitionTrigger = entityManager.create();
+//	scene1ToScene2TriggerID_ = sceneTransitionTrigger.id();
+//
+//	sceneTransitionTrigger.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Scene1ToScene2Trigger"));
+//	sceneTransitionTrigger.add<ECSComponents::TransformComponent>(entityManager);
+//	sceneTransitionTrigger.add<ECSComponents::CollisionComponent>(entityManager);
+//
+//	auto& transform = sceneTransitionTrigger.get<ECSComponents::TransformComponent>(entityManager);
+//	transform.pos = { 1023.0f, 656.0f };
+//	transform.scale = { 1.0f, 1.0f };
+//
+//	auto& collision = sceneTransitionTrigger.get<ECSComponents::CollisionComponent>(entityManager);
+//	collision.type = ECSComponents::ColliderType::RECTANGLE;
+//	collision.data.rectangle.width = 75.0f;
+//	collision.data.rectangle.height = 50.0f;
+//	collision.rotation = 0.0f;
+//	collision.isTrigger = true;
+//	collision.isActive = false; // Start inactive, will activate only in Scene1
 
-	// Create invisible trigger hitbox for Scene1 -> Scene2 transition
-	// Position: (1023, 656), Size: 75x50, Rotation: 0 degrees
-	ECS::Entity sceneTransitionTrigger = entityManager.create();
-	scene1ToScene2TriggerID_ = sceneTransitionTrigger.id();
+//}
 
-	sceneTransitionTrigger.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Scene1ToScene2Trigger"));
-	sceneTransitionTrigger.add<ECSComponents::TransformComponent>(entityManager);
-	sceneTransitionTrigger.add<ECSComponents::CollisionComponent>(entityManager);
-
-	auto& transform = sceneTransitionTrigger.get<ECSComponents::TransformComponent>(entityManager);
-	transform.pos = { 1023.0f, 656.0f };
-	transform.scale = { 1.0f, 1.0f };
-
-	auto& collision = sceneTransitionTrigger.get<ECSComponents::CollisionComponent>(entityManager);
-	collision.type = ECSComponents::ColliderType::RECTANGLE;
-	collision.data.rectangle.width = 75.0f;
-	collision.data.rectangle.height = 50.0f;
-	collision.rotation = 0.0f;
-	collision.isTrigger = true;
-	collision.isActive = false; // Start inactive, will activate only in Scene1
-
-}
-
-void GameApplication::updateSceneTransitions() {
-	auto& entityManager = engine_.getEntityManager();
-	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
-	std::string sceneName = currentScene.getSceneName();
-
-	// Only check for transitions in Scene1
-	if (sceneName != "Scene1.txt") {
-		// Deactivate trigger if not in Scene1
-		if (scene1ToScene2TriggerID_ != 0) {
-			ECS::Entity trigger(scene1ToScene2TriggerID_);
-			if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
-				auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
-				collision.isActive = false;
-			}
-		}
-		return;
-	}
-
-	// Activate trigger in Scene1
-	if (scene1ToScene2TriggerID_ != 0) {
-		ECS::Entity trigger(scene1ToScene2TriggerID_);
-		if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
-			auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
-			collision.isActive = true;
-		}
-	}
-
-	// Check if player exists
-	if (!playerSpawned_ || playerEntityID_ == 0) {
-		return;
-	}
-
-	// Get player entity
-	ECS::Entity player(playerEntityID_);
-	if (!player.has<ECSComponents::TransformComponent>(entityManager) ||
-		!player.has<ECSComponents::CollisionComponent>(entityManager)) {
-		return;
-	}
-
-	// Get player components
-	auto& playerTransform = player.get<ECSComponents::TransformComponent>(entityManager);
-	auto& playerCollision = player.get<ECSComponents::CollisionComponent>(entityManager);
-
-	// Get trigger entity
-	ECS::Entity trigger(scene1ToScene2TriggerID_);
-	if (!trigger.has<ECSComponents::TransformComponent>(entityManager) ||
-		!trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
-		return;
-	}
-
-	auto& triggerTransform = trigger.get<ECSComponents::TransformComponent>(entityManager);
-	auto& triggerCollision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
-
-	// Simple AABB collision check (rectangle-to-rectangle)
-	float playerLeft = playerTransform.pos.x - (playerCollision.data.rectangle.width * 0.5f);
-	float playerRight = playerTransform.pos.x + (playerCollision.data.rectangle.width * 0.5f);
-	float playerTop = playerTransform.pos.y - (playerCollision.data.rectangle.height * 0.5f);
-	float playerBottom = playerTransform.pos.y + (playerCollision.data.rectangle.height * 0.5f);
-
-	float triggerLeft = triggerTransform.pos.x - (triggerCollision.data.rectangle.width * 0.5f);
-	float triggerRight = triggerTransform.pos.x + (triggerCollision.data.rectangle.width * 0.5f);
-	float triggerTop = triggerTransform.pos.y - (triggerCollision.data.rectangle.height * 0.5f);
-	float triggerBottom = triggerTransform.pos.y + (triggerCollision.data.rectangle.height * 0.5f);
-
-	// Check for overlap
-	bool colliding = !(playerRight < triggerLeft || playerLeft > triggerRight ||
-	                   playerBottom < triggerTop || playerTop > triggerBottom);
-
-	if (colliding) {
-		engine_.getEnoEditor().selectScene("Scene2.txt");
-		entitiesDirty_ = true;
-
-		// Re-scan for player in new scene
-		std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
-		if (!playerEntities.empty()) {
-			playerEntityID_ = playerEntities[0].id();
-			playerSpawned_ = true;
-		} else {
-			playerSpawned_ = false;
-			playerEntityID_ = 0;
-		}
-	}
-}
+//void GameApplication::updateSceneTransitions() {
+//	auto& entityManager = engine_.getEntityManager();
+//	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+//	std::string sceneName = currentScene.getSceneName();
+//
+//	// Only check for transitions in Scene1
+//	if (sceneName != "Scene1.txt") {
+//		// Deactivate trigger if not in Scene1
+//		if (scene1ToScene2TriggerID_ != 0) {
+//			ECS::Entity trigger(scene1ToScene2TriggerID_);
+//			if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+//				auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+//				collision.isActive = false;
+//			}
+//		}
+//		return;
+//	}
+//
+//	// Activate trigger in Scene1
+//	if (scene1ToScene2TriggerID_ != 0) {
+//		ECS::Entity trigger(scene1ToScene2TriggerID_);
+//		if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+//			auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+//			collision.isActive = true;
+//		}
+//	}
+//
+//	// Check if player exists
+//	if (!playerSpawned_ || playerEntityID_ == 0) {
+//		return;
+//	}
+//
+//	// Get player entity
+//	ECS::Entity player(playerEntityID_);
+//	if (!player.has<ECSComponents::TransformComponent>(entityManager) ||
+//		!player.has<ECSComponents::CollisionComponent>(entityManager)) {
+//		return;
+//	}
+//
+//	// Get player components
+//	auto& playerTransform = player.get<ECSComponents::TransformComponent>(entityManager);
+//	auto& playerCollision = player.get<ECSComponents::CollisionComponent>(entityManager);
+//
+//	// Get trigger entity
+//	ECS::Entity trigger(scene1ToScene2TriggerID_);
+//	if (!trigger.has<ECSComponents::TransformComponent>(entityManager) ||
+//		!trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+//		return;
+//	}
+//
+//	auto& triggerTransform = trigger.get<ECSComponents::TransformComponent>(entityManager);
+//	auto& triggerCollision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+//
+//	// Simple AABB collision check (rectangle-to-rectangle)
+//	float playerLeft = playerTransform.pos.x - (playerCollision.data.rectangle.width * 0.5f);
+//	float playerRight = playerTransform.pos.x + (playerCollision.data.rectangle.width * 0.5f);
+//	float playerTop = playerTransform.pos.y - (playerCollision.data.rectangle.height * 0.5f);
+//	float playerBottom = playerTransform.pos.y + (playerCollision.data.rectangle.height * 0.5f);
+//
+//	float triggerLeft = triggerTransform.pos.x - (triggerCollision.data.rectangle.width * 0.5f);
+//	float triggerRight = triggerTransform.pos.x + (triggerCollision.data.rectangle.width * 0.5f);
+//	float triggerTop = triggerTransform.pos.y - (triggerCollision.data.rectangle.height * 0.5f);
+//	float triggerBottom = triggerTransform.pos.y + (triggerCollision.data.rectangle.height * 0.5f);
+//
+//	// Check for overlap
+//	bool colliding = !(playerRight < triggerLeft || playerLeft > triggerRight ||
+//	                   playerBottom < triggerTop || playerTop > triggerBottom);
+//
+//	if (colliding) {
+//		engine_.getEnoEditor().selectScene("Scene2.txt");
+//		entitiesDirty_ = true;
+//
+//		// Re-scan for player in new scene
+//		std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+//		if (!playerEntities.empty()) {
+//			playerEntityID_ = playerEntities[0].id();
+//			playerSpawned_ = true;
+//		} else {
+//			playerSpawned_ = false;
+//			playerEntityID_ = 0;
+//		}
+//	}
+//}
 
 // ============================================================================
 // PAUSE MENU BUTTON SYSTEM IMPLEMENTATION
