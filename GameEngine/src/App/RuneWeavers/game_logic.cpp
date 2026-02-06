@@ -40,7 +40,7 @@ void GameApplication::initialize() {
 	setupCamera();
 	setupCombatSystem();
 	setupMainMenuButtons();
-	setupSceneTransitions();
+	/*setupSceneTransitions();*/
 
 	auto& tileMap = engine_.getTileMap();
 
@@ -603,7 +603,7 @@ void GameApplication::updateGameLogic() {
 	updateMainMenuButtons();
 
 	// Update scene transitions (check for player collision with transition triggers)
-	updateSceneTransitions();
+	//updateSceneTransitions();
 
 	// Only update game systems when not paused
 	if (!isPaused_) {
@@ -745,21 +745,9 @@ void GameApplication::loadEntityTextures() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& loader = engine_.getResourceLoader();
 
-	for (auto& [entityID, entityLoc] : entityManager.getMap()) {
-		// Check if entity has RenderComponent
-		bool hasRender = false;
-		for (const auto& type : entityLoc.archetype->types_) {
-			if (type == std::type_index(typeid(ECSComponents::RenderComponent))) {
-				hasRender = true;
-				break;
-			}
-		}
-
-		if (!hasRender) continue;
-
-		// Get RenderComponent
-		size_t renderIndex = entityLoc.archetype->findComponentIndex<ECSComponents::RenderComponent>();
-		auto& renderComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::RenderComponent>(renderIndex, entityLoc.entityIndexInChunk);
+	auto renderEntities = entityManager.findEntity<ECSComponents::RenderComponent>();
+	for (auto& entity : renderEntities) {
+		auto& renderComp = entity.get<ECSComponents::RenderComponent>(entityManager);
 
 		// If texture path is set but texture is not loaded, load it
 		if (strlen(renderComp.texturePath) > 0 && (!renderComp.texture || !renderComp.texture->isValid())) {
@@ -772,11 +760,6 @@ void GameApplication::loadEntityTextures() {
 
 			// Get texture from resource loader
 			renderComp.texture = loader.getTexture(textureName);
-
-			if (renderComp.texture && renderComp.texture->isValid()) {
-			}
-			else {
-			}
 		}
 	}
 }
@@ -1595,16 +1578,14 @@ void GameApplication::updateRuneSystem()
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 	std::vector<uint32_t> fireballsToDestroy;
 
-	for (const auto& [id, loc] : entityManager.getMap()) {
-		ECS::Entity entity(id);
-		if (entity.has<ECSComponents::FireballComponent>(entityManager)) {
-			auto& fireballComp = entity.get<ECSComponents::FireballComponent>(entityManager);
-			fireballComp.elapsedTime += deltaTime;
+	auto fireballs = entityManager.findEntity<ECSComponents::FireballComponent>();
+	for (auto& entity : fireballs) {
+		auto& fireballComp = entity.get<ECSComponents::FireballComponent>(entityManager);
+		fireballComp.elapsedTime += deltaTime;
 
-			// Check if fireball has exceeded its lifetime
-			if (fireballComp.elapsedTime >= fireballComp.lifetime) {
-				fireballsToDestroy.push_back(id);
-			}
+		// Check if fireball has exceeded its lifetime
+		if (fireballComp.elapsedTime >= fireballComp.lifetime) {
+			fireballsToDestroy.push_back(entity.id());
 		}
 	}
 
@@ -2269,11 +2250,12 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 	std::vector<uint32_t> marksToDestroy;
 	std::vector<uint32_t> enemiesToDestroy;
 
-	for (const auto& [id, loc] : entityManager.getMap())
+	// Get all rupture marks and enemies once at the start
+	auto ruptureMarks = entityManager.findEntity<ECSComponents::RuptureMarkComponent, ECSComponents::TransformComponent>();
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent>();
+
+	for (auto& entity : ruptureMarks)
 	{
-		ECS::Entity entity(id);
-		if (!entity.has<ECSComponents::RuptureMarkComponent>(entityManager) || !entity.has<ECSComponents::TransformComponent>(entityManager))
-			continue;
 
 		auto& mark = entity.get<ECSComponents::RuptureMarkComponent>(entityManager);
 		auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
@@ -2298,13 +2280,8 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 			// Check for enemies in range
 			const char* targetEnemy = mark.getTargetEnemyName();
 
-			for (const auto& [enemyId, enemyLoc] : entityManager.getMap())
+			for (auto& enemyEntity : enemies)
 			{
-				ECS::Entity enemyEntity(enemyId);
-				if (!enemyEntity.has<ECSComponents::AIComponent>(entityManager) ||
-					!enemyEntity.has<ECSComponents::TransformComponent>(entityManager))
-					continue;
-
 				// Check if this is the target enemy type by name OR texture path
 				bool isTargetEnemy = false;
 
@@ -2335,7 +2312,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 					// Enemy triggered the mark! Switch to windup animation
 					mark.state = ECSComponents::RuptureMarkState::WINDUP;
 					mark.stateTimer = 0.0f;
-					mark.triggeredByEntityID = enemyId;
+					mark.triggeredByEntityID = enemyEntity.id();
 
 					// Switch to windup animation
 					if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager) &&
@@ -2471,7 +2448,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 
 		case ECSComponents::RuptureMarkState::FINISHED:
 		{
-			marksToDestroy.push_back(id);
+			marksToDestroy.push_back(entity.id());
 			break;
 		}
 		}
@@ -2529,43 +2506,39 @@ void GameApplication::updateFloatingTexts(float deltaTime)
 		cameraY = camera.position.y - camera.viewportHeight * 0.5f;
 	}
 
-	for (const auto& [id, loc] : entityManager.getMap()) {
-		ECS::Entity entity(id);
-		if (entity.has<ECSComponents::FloatingTextComponent>(entityManager) &&
-		    entity.has<ECSComponents::TransformComponent>(entityManager)) {
+	auto floatingTexts = entityManager.findEntity<ECSComponents::FloatingTextComponent, ECSComponents::TransformComponent>();
+	for (auto& entity : floatingTexts) {
+		auto& floatText = entity.get<ECSComponents::FloatingTextComponent>(entityManager);
+		auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 
-			auto& floatText = entity.get<ECSComponents::FloatingTextComponent>(entityManager);
-			auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+		// Update elapsed time
+		floatText.elapsedTime += deltaTime;
 
-			// Update elapsed time
-			floatText.elapsedTime += deltaTime;
+		// Move text upward
+		transform.pos.y -= floatText.riseSpeed * deltaTime;
 
-			// Move text upward
-			transform.pos.y -= floatText.riseSpeed * deltaTime;
+		// Check if expired
+		if (floatText.elapsedTime >= floatText.lifetime) {
+			textsToDestroy.push_back(entity.id());
+		}
+		else {
+			// Render the floating text
+			float alpha = floatText.getCurrentAlpha();
 
-			// Check if expired
-			if (floatText.elapsedTime >= floatText.lifetime) {
-				textsToDestroy.push_back(id);
-			}
-			else {
-				// Render the floating text
-				float alpha = floatText.getCurrentAlpha();
+			// Convert world position to screen position
+			Math::eVec2<float> screenPos = {
+				transform.pos.x - cameraX,
+				transform.pos.y - cameraY
+			};
 
-				// Convert world position to screen position
-				Math::eVec2<float> screenPos = {
-					transform.pos.x - cameraX,
-					transform.pos.y - cameraY
-				};
-
-				// Draw text with fading alpha
-				graphics.drawText(
-					pixelifyFont_,
-					std::string(floatText.text),
-					screenPos,
-					1.0f,  // scale
-					Graphics::Color(1.0f, 0.3f, 0.3f, alpha)  // Red color with fading alpha
-				);
-			}
+			// Draw text with fading alpha
+			graphics.drawText(
+				pixelifyFont_,
+				std::string(floatText.text),
+				screenPos,
+				1.0f,  // scale
+				Graphics::Color(1.0f, 0.3f, 0.3f, alpha)  // Red color with fading alpha
+			);
 		}
 	}
 
@@ -2855,6 +2828,7 @@ void GameApplication::spawnSpellbook() {
 	auto spellbookTexture = resourceLoader.getTexture("SpellBook-HowToCast_Fireball");
 
 	if (!spellbookTexture || !spellbookTexture->isValid()) {
+		std::cerr << "[Spellbook] Failed to load spellbook texture!" << std::endl;
 		return;
 	}
 
@@ -2884,6 +2858,7 @@ void GameApplication::spawnSpellbook() {
 	// Mark entities dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
+	std::cout << "[Spellbook] Spellbook UI spawned at (1024, 1024)" << std::endl;
 }
 
 void GameApplication::destroySpellbook() {
@@ -2892,16 +2867,11 @@ void GameApplication::destroySpellbook() {
 		entityManager.destroyEntity(spellbookEntityID_);
 		spellbookEntityID_ = 0;
 		entitiesDirty_ = true;
+		std::cout << "[Spellbook] Spellbook UI destroyed" << std::endl;
 	}
 }
 
 void GameApplication::spawnPauseMenu() {
-	// Don't spawn if pause menu already exists
-	if (pauseMenuEntityID_ != 0) {
-		std::cout << "[PauseMenu] Pause menu already exists (ID: " << pauseMenuEntityID_ << ")" << std::endl;
-		return;
-	}
-
 	auto& entityManager = engine_.getEntityManager();
 	auto& resourceLoader = engine_.getResourceLoader();
 
@@ -2909,6 +2879,7 @@ void GameApplication::spawnPauseMenu() {
 	auto pauseMenuTexture = resourceLoader.getTexture("PauseMenu-Popup");
 
 	if (!pauseMenuTexture || !pauseMenuTexture->isValid()) {
+		std::cerr << "[PauseMenu] Failed to load pause menu texture!" << std::endl;
 		return;
 	}
 
@@ -2935,12 +2906,12 @@ void GameApplication::spawnPauseMenu() {
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = pauseMenuTexture;
 
+	// Mark entities dirty to refresh rendering cache
 	// Setup pause menu buttons (Resume and Main Menu)
 	setupPauseMenuButtons();
-
-	// Mark entities dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
+	std::cout << "[PauseMenu] Pause menu UI spawned at (1024, 1024)" << std::endl;
 }
 
 void GameApplication::destroyPauseMenu() {
@@ -2972,6 +2943,7 @@ void GameApplication::destroyPauseMenu() {
 	}
 
 	entitiesDirty_ = true;
+	std::cout << "[PauseMenu] Pause menu UI and buttons destroyed" << std::endl;
 }
 
 void GameApplication::hidePlayer() {
@@ -3266,7 +3238,7 @@ void GameApplication::handleControlsButton() {
 	auto& resourceLoader = engine_.getResourceLoader();
 
 	// Load controls texture
-	auto controlsTexture = resourceLoader.getTexture("MainMenu-ControlsDisplayV2");
+	auto controlsTexture = resourceLoader.getTexture("UI-HowToPlay");
 
 	if (!controlsTexture || !controlsTexture->isValid()) {
 		return;
@@ -3474,115 +3446,115 @@ void GameApplication::handleQuitYesButton() {
 // SCENE TRANSITION SYSTEM IMPLEMENTATION
 // ============================================================================
 
-void GameApplication::setupSceneTransitions() {
-	auto& entityManager = engine_.getEntityManager();
+//void GameApplication::setupSceneTransitions() {
+//	auto& entityManager = engine_.getEntityManager();
+//
+//	// Create invisible trigger hitbox for Scene1 -> Scene2 transition
+//	// Position: (1023, 656), Size: 75x50, Rotation: 0 degrees
+//	ECS::Entity sceneTransitionTrigger = entityManager.create();
+//	scene1ToScene2TriggerID_ = sceneTransitionTrigger.id();
+//
+//	sceneTransitionTrigger.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Scene1ToScene2Trigger"));
+//	sceneTransitionTrigger.add<ECSComponents::TransformComponent>(entityManager);
+//	sceneTransitionTrigger.add<ECSComponents::CollisionComponent>(entityManager);
+//
+//	auto& transform = sceneTransitionTrigger.get<ECSComponents::TransformComponent>(entityManager);
+//	transform.pos = { 1023.0f, 656.0f };
+//	transform.scale = { 1.0f, 1.0f };
+//
+//	auto& collision = sceneTransitionTrigger.get<ECSComponents::CollisionComponent>(entityManager);
+//	collision.type = ECSComponents::ColliderType::RECTANGLE;
+//	collision.data.rectangle.width = 75.0f;
+//	collision.data.rectangle.height = 50.0f;
+//	collision.rotation = 0.0f;
+//	collision.isTrigger = true;
+//	collision.isActive = false; // Start inactive, will activate only in Scene1
 
-	// Create invisible trigger hitbox for Scene1 -> Scene2 transition
-	// Position: (1023, 656), Size: 75x50, Rotation: 0 degrees
-	ECS::Entity sceneTransitionTrigger = entityManager.create();
-	scene1ToScene2TriggerID_ = sceneTransitionTrigger.id();
+//}
 
-	sceneTransitionTrigger.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Scene1ToScene2Trigger"));
-	sceneTransitionTrigger.add<ECSComponents::TransformComponent>(entityManager);
-	sceneTransitionTrigger.add<ECSComponents::CollisionComponent>(entityManager);
-
-	auto& transform = sceneTransitionTrigger.get<ECSComponents::TransformComponent>(entityManager);
-	transform.pos = { 1023.0f, 656.0f };
-	transform.scale = { 1.0f, 1.0f };
-
-	auto& collision = sceneTransitionTrigger.get<ECSComponents::CollisionComponent>(entityManager);
-	collision.type = ECSComponents::ColliderType::RECTANGLE;
-	collision.data.rectangle.width = 75.0f;
-	collision.data.rectangle.height = 50.0f;
-	collision.rotation = 0.0f;
-	collision.isTrigger = true;
-	collision.isActive = false; // Start inactive, will activate only in Scene1
-
-}
-
-void GameApplication::updateSceneTransitions() {
-	auto& entityManager = engine_.getEntityManager();
-	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
-	std::string sceneName = currentScene.getSceneName();
-
-	// Only check for transitions in Scene1
-	if (sceneName != "Scene1.txt") {
-		// Deactivate trigger if not in Scene1
-		if (scene1ToScene2TriggerID_ != 0) {
-			ECS::Entity trigger(scene1ToScene2TriggerID_);
-			if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
-				auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
-				collision.isActive = false;
-			}
-		}
-		return;
-	}
-
-	// Activate trigger in Scene1
-	if (scene1ToScene2TriggerID_ != 0) {
-		ECS::Entity trigger(scene1ToScene2TriggerID_);
-		if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
-			auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
-			collision.isActive = true;
-		}
-	}
-
-	// Check if player exists
-	if (!playerSpawned_ || playerEntityID_ == 0) {
-		return;
-	}
-
-	// Get player entity
-	ECS::Entity player(playerEntityID_);
-	if (!player.has<ECSComponents::TransformComponent>(entityManager) ||
-		!player.has<ECSComponents::CollisionComponent>(entityManager)) {
-		return;
-	}
-
-	// Get player components
-	auto& playerTransform = player.get<ECSComponents::TransformComponent>(entityManager);
-	auto& playerCollision = player.get<ECSComponents::CollisionComponent>(entityManager);
-
-	// Get trigger entity
-	ECS::Entity trigger(scene1ToScene2TriggerID_);
-	if (!trigger.has<ECSComponents::TransformComponent>(entityManager) ||
-		!trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
-		return;
-	}
-
-	auto& triggerTransform = trigger.get<ECSComponents::TransformComponent>(entityManager);
-	auto& triggerCollision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
-
-	// Simple AABB collision check (rectangle-to-rectangle)
-	float playerLeft = playerTransform.pos.x - (playerCollision.data.rectangle.width * 0.5f);
-	float playerRight = playerTransform.pos.x + (playerCollision.data.rectangle.width * 0.5f);
-	float playerTop = playerTransform.pos.y - (playerCollision.data.rectangle.height * 0.5f);
-	float playerBottom = playerTransform.pos.y + (playerCollision.data.rectangle.height * 0.5f);
-
-	float triggerLeft = triggerTransform.pos.x - (triggerCollision.data.rectangle.width * 0.5f);
-	float triggerRight = triggerTransform.pos.x + (triggerCollision.data.rectangle.width * 0.5f);
-	float triggerTop = triggerTransform.pos.y - (triggerCollision.data.rectangle.height * 0.5f);
-	float triggerBottom = triggerTransform.pos.y + (triggerCollision.data.rectangle.height * 0.5f);
-
-	// Check for overlap
-	bool colliding = !(playerRight < triggerLeft || playerLeft > triggerRight ||
-	                   playerBottom < triggerTop || playerTop > triggerBottom);
-
-	if (colliding) {
-		engine_.getEnoEditor().selectScene("Scene2.txt");
-		entitiesDirty_ = true;
-
-		// Re-scan for player in new scene
-		std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
-		if (!playerEntities.empty()) {
-			playerEntityID_ = playerEntities[0].id();
-			playerSpawned_ = true;
-		} else {
-			playerSpawned_ = false;
-			playerEntityID_ = 0;
-		}
-	}
-}
+//void GameApplication::updateSceneTransitions() {
+//	auto& entityManager = engine_.getEntityManager();
+//	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
+//	std::string sceneName = currentScene.getSceneName();
+//
+//	// Only check for transitions in Scene1
+//	if (sceneName != "Scene1.txt") {
+//		// Deactivate trigger if not in Scene1
+//		if (scene1ToScene2TriggerID_ != 0) {
+//			ECS::Entity trigger(scene1ToScene2TriggerID_);
+//			if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+//				auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+//				collision.isActive = false;
+//			}
+//		}
+//		return;
+//	}
+//
+//	// Activate trigger in Scene1
+//	if (scene1ToScene2TriggerID_ != 0) {
+//		ECS::Entity trigger(scene1ToScene2TriggerID_);
+//		if (trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+//			auto& collision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+//			collision.isActive = true;
+//		}
+//	}
+//
+//	// Check if player exists
+//	if (!playerSpawned_ || playerEntityID_ == 0) {
+//		return;
+//	}
+//
+//	// Get player entity
+//	ECS::Entity player(playerEntityID_);
+//	if (!player.has<ECSComponents::TransformComponent>(entityManager) ||
+//		!player.has<ECSComponents::CollisionComponent>(entityManager)) {
+//		return;
+//	}
+//
+//	// Get player components
+//	auto& playerTransform = player.get<ECSComponents::TransformComponent>(entityManager);
+//	auto& playerCollision = player.get<ECSComponents::CollisionComponent>(entityManager);
+//
+//	// Get trigger entity
+//	ECS::Entity trigger(scene1ToScene2TriggerID_);
+//	if (!trigger.has<ECSComponents::TransformComponent>(entityManager) ||
+//		!trigger.has<ECSComponents::CollisionComponent>(entityManager)) {
+//		return;
+//	}
+//
+//	auto& triggerTransform = trigger.get<ECSComponents::TransformComponent>(entityManager);
+//	auto& triggerCollision = trigger.get<ECSComponents::CollisionComponent>(entityManager);
+//
+//	// Simple AABB collision check (rectangle-to-rectangle)
+//	float playerLeft = playerTransform.pos.x - (playerCollision.data.rectangle.width * 0.5f);
+//	float playerRight = playerTransform.pos.x + (playerCollision.data.rectangle.width * 0.5f);
+//	float playerTop = playerTransform.pos.y - (playerCollision.data.rectangle.height * 0.5f);
+//	float playerBottom = playerTransform.pos.y + (playerCollision.data.rectangle.height * 0.5f);
+//
+//	float triggerLeft = triggerTransform.pos.x - (triggerCollision.data.rectangle.width * 0.5f);
+//	float triggerRight = triggerTransform.pos.x + (triggerCollision.data.rectangle.width * 0.5f);
+//	float triggerTop = triggerTransform.pos.y - (triggerCollision.data.rectangle.height * 0.5f);
+//	float triggerBottom = triggerTransform.pos.y + (triggerCollision.data.rectangle.height * 0.5f);
+//
+//	// Check for overlap
+//	bool colliding = !(playerRight < triggerLeft || playerLeft > triggerRight ||
+//	                   playerBottom < triggerTop || playerTop > triggerBottom);
+//
+//	if (colliding) {
+//		engine_.getEnoEditor().selectScene("Scene2.txt");
+//		entitiesDirty_ = true;
+//
+//		// Re-scan for player in new scene
+//		std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+//		if (!playerEntities.empty()) {
+//			playerEntityID_ = playerEntities[0].id();
+//			playerSpawned_ = true;
+//		} else {
+//			playerSpawned_ = false;
+//			playerEntityID_ = 0;
+//		}
+//	}
+//}
 
 // ============================================================================
 // PAUSE MENU BUTTON SYSTEM IMPLEMENTATION
