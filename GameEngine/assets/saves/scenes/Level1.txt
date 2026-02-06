@@ -1,5 +1,67 @@
 {
 
+	[Dialogue1]
+	{
+		"ID": { 6 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Dialogue1 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 2016.56 | y : 4458.31 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 718.9 }
+				"Height": <float> { 889.2 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Dialogue1 }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::CameraComponent]
+			{
+				"Viewport Width": <float> { 1920 }
+				"Viewport Height": <float> { 1080 }
+				"Position": <eVec2(float)> { x : 2016.56 | y : 4458.31 }
+				"Is Active": <bool> { 1 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
 	[Node70]
 	{
 		"ID": { 70 }
@@ -94,26 +156,26 @@
 		"Enabled": { true }
 	}
 
-	[Dialogue1]
+	[UI-PopUp-E]
 	{
-		"ID": { 6 }
+		"ID": { 7 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
 			[struct ECSComponents::NameComponent]
 			{
-				"Name": <char32> { Dialogue1 }
+				"Name": <char32> { UI-PopUp-E }
 			}
 
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 2016.56 | y : 4458.31 }
+				"Position": <eVec2(float)> { x : 2110.71 | y : 4240.21 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -121,12 +183,23 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 718.9 }
-				"Height": <float> { 889.2 }
+				"Width": <float> { 48 }
+				"Height": <float> { 48 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Dialogue1 }
+				"Texture Path": <texchar240> { UI-PopUp-E }
 				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 1 }
+				"Is Active": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 180 }
+				"Height": <float> { 180 }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
@@ -139,14 +212,6 @@
 				"Looping": <bool> { 1 }
 				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::CameraComponent]
-			{
-				"Viewport Width": <float> { 1920 }
-				"Viewport Height": <float> { 1080 }
-				"Position": <eVec2(float)> { x : 2016.56 | y : 4458.31 }
-				"Is Active": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -177,7 +242,7 @@
 			{
 				"Position": <eVec2(float)> { x : 2018.79 | y : 4781.12 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 2.5 | y : 2.5 }
+				"Scale": <eVec2(float)> { x : 2 | y : 2 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
 			}
 
@@ -248,71 +313,6 @@
 				"isDead": <bool> { 0 }
 				"invulnerable": <bool> { 0 }
 				"invulnerabilityTimer": <float> { 0 }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-	}
-
-	[UI-PopUp-E]
-	{
-		"ID": { 7 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { UI-PopUp-E }
-			}
-
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 4 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 2131.3 | y : 4249.56 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 48 }
-				"Height": <float> { 48 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { UI-PopUp-E }
-				"TexID": <int> { 0 }
-			}
-
-			[struct ECSComponents::CollisionComponent]
-			{
-				"Type": <ColliderType> { Rectangle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
-				"Is Active": <bool> { 1 }
-				"Rotation": <float> { 0 }
-				"Width": <float> { 185 }
-				"Height": <float> { 185 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
 			}
 		}
 		"Script": { }
@@ -430,6 +430,60 @@
 		"Enabled": { true }
 	}
 
+	[Combat2]
+	{
+		"ID": { 10 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Combat2 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 2016.56 | y : 2201.18 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1748.5 }
+				"Height": <float> { 889.2 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Combat2 }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
 	[Node34]
 	{
 		"ID": { 34 }
@@ -495,60 +549,6 @@
 			{
 				"isPushable": <bool> { 0 }
 				"pushResistance": <float> { 0.2 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-	}
-
-	[Combat2]
-	{
-		"ID": { 10 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { Combat2 }
-			}
-
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 2016.56 | y : 2201.18 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 1748.5 }
-				"Height": <float> { 889.2 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Combat2 }
-				"TexID": <int> { 0 }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
@@ -3461,13 +3461,13 @@
 
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 5 }
+				"Z Index": <uint32_t> { 3 }
 				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 2013.15 | y : 685.1 }
+				"Position": <eVec2(float)> { x : 2013.15 | y : 678.454 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -3486,12 +3486,12 @@
 			[struct ECSComponents::CollisionComponent]
 			{
 				"Type": <ColliderType> { Rectangle }
-				"Offset": <eVec2(float)> { x : 0 | y : 120 }
-				"Is Trigger": <bool> { 1 }
-				"Is Active": <bool> { 1 }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 0 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 180 }
-				"Height": <float> { 200 }
+				"Width": <float> { 48 }
+				"Height": <float> { 48 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -3582,7 +3582,7 @@
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 1 }
+				"Is Active": <bool> { 0 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 155.852 }
 				"Height": <float> { 78.5338 }
@@ -3628,8 +3628,15 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 0 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+			}
 		}
-		"Script": { }
+		"Script": { C:\Users\koeyu\source\repos\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door2Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -3676,7 +3683,7 @@
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 1 }
+				"Is Active": <bool> { 0 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 119.584 }
 				"Height": <float> { 59.7922 }
@@ -3722,8 +3729,15 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 0 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+			}
 		}
-		"Script": { }
+		"Script": { C:\Users\koeyu\source\repos\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\DoorScript.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -4045,7 +4059,7 @@
 		"Enabled": { true }
 	}
 
-	[WinScreen-M4]
+	[Node84]
 	{
 		"ID": { 84 }
 		"Layer": { 0 }
@@ -4053,18 +4067,18 @@
 		{
 			[struct ECSComponents::NameComponent]
 			{
-				"Name": <char32> { WinScreen-M4 }
+				"Name": <char32> { Door 3 }
 			}
 
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 5 }
+				"Z Index": <uint32_t> { 3 }
 				"Visible": <bool> { 0 }
 			}
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1962.07 | y : 1104.95 }
+				"Position": <eVec2(float)> { x : 2016.87 | y : 1823.66 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -4072,12 +4086,44 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 1920 }
-				"Height": <float> { 1080 }
+				"Width": <float> { 101 }
+				"Height": <float> { 50 }
 				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { WinScreen-M4 }
+				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
+				"Texture Path": <texchar240> {  }
 				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 0 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 101 }
+				"Height": <float> { 50 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 2 }
+				"Drag": <float> { 8 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::BoxComponent]
+			{
+				"isPushable": <bool> { 0 }
+				"pushResistance": <float> { 0.2 }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
@@ -4091,8 +4137,15 @@
 				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
 			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 0 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+			}
 		}
-		"Script": { }
+		"Script": { C:\Users\koeyu\source\repos\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door3Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }

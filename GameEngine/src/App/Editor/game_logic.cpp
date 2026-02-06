@@ -223,6 +223,10 @@ void GameApplication::setupGameAudio() {
 
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-3");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-4");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-5");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-6");
 
 	// Spellbook audio
 	audioMng.publishSoundRequest("Spellbook_Open_01");
@@ -234,6 +238,7 @@ void GameApplication::setupGameAudio() {
 
 	// Scene BGM audio
 	audioMng.publishSoundRequest("BGM_01_Layer1_loop");  // Main menu BGM
+	audioMng.publishSoundRequest("BGM_01_Layer2_loop");  // 
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");  // General scene ambience
 
 	// Typing sounds for dialogue
@@ -261,7 +266,8 @@ void GameApplication::playSceneBGM()
 	else
 	{
 		// All other scenes play the ambient creaking wood
-		bgmName = "Ambience_Creaking_Wood";
+		//bgmName = "Ambience_Creaking_Wood";
+		bgmName = "BGM_01_Layer2_loop";
 	}
 
 	// Check if the sound is loaded before trying to play it
@@ -2069,7 +2075,9 @@ void GameApplication::updateRuneSystem()
 		runeState.resetConnection();
 
 		// Play rune spawn sound
-		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+		int x = randomFloat(1,6);
+		std::string sound = "Rune-GalaxyBellPad-" + std::to_string(x);
+		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", sound });
 
 		// Move pooled runes to cursor position
 		spawnRunes(mouseWorldPos);
@@ -2302,7 +2310,10 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 				updateRuneVisualStates();
 
 				// Play sound
-				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+				int x = randomFloat(1,6);
+				std::string sound = "Rune-GalaxyBellPad-" + std::to_string(x);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", sound });
+				//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
 				std::cout << "[RuneSystem] Added rune " << rune.runeNumber
 				          << " to sequence (count: " << runeState.connectionCount << ")" << std::endl;
 
@@ -2332,7 +2343,10 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 							default:
 								break;
 						}
-						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+						int x = randomFloat(1, 6);
+						std::string sound = "Rune-GalaxyBellPad-" + std::to_string(x);
+						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", sound });
+						//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
 					}
 					else
 					{
