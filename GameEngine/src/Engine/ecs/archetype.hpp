@@ -47,7 +47,7 @@ namespace ECS
 			Memory::EnoECSArena& arena,
 			std::vector<std::type_index> types,
 			std::vector<size_t> sizes,
-			size_t initialChunkCount = 4)
+			size_t initialChunkCount = 64)
 			:
 			types_(std::move(types)),
 			typeSizes_(std::move(sizes)),
