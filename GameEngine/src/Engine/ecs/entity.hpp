@@ -395,7 +395,7 @@ namespace ECS
 
 			cleanup(loc.archetype, loc.chunkIndex);
 
-			// entityMap_.erase(entityID);
+			entityMap_.erase(entityID);
 
 			destroyedEntityIDs_.push_back(entityID);
 

@@ -5658,8 +5658,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				}
 			}
 
-			entityManager.viewMap();
-
 			// Draw camera preview rectangle for all active cameras
 			auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
 			for (auto& camEntity : cameraEntities) {
