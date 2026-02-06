@@ -27,6 +27,14 @@ namespace FSM {
                 this->removeStateMachine(ev.entityID);
             }
         );
+
+        // Clear all state machines when the scene stops so stale entity IDs
+        // don't persist across a scene reload
+        bus_.subscribe<Editor::StopScene>(
+            [this](const Editor::StopScene&) {
+                this->clear();
+            }
+        );
     }
 
     // Update all entities with state machine components
