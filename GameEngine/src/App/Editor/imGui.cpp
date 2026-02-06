@@ -2056,9 +2056,9 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 				{
 					auto& sounds = loader.getSoundsMap();
-					auto it = sounds.find(selectedName);
-					if (it != sounds.end())
-						sounds.erase(it);
+					auto it2 = sounds.find(selectedName);
+					if (it2 != sounds.end())
+						sounds.erase(it2);
 				}
 
 				// Delete the file from disk

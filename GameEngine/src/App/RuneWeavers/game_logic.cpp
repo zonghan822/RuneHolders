@@ -1685,8 +1685,6 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	constexpr float PI = 3.14159265359f;
-
 	// Store circle center for spell spawning
 	runeState.circleCenter = mouseWorldPos;
 
@@ -2347,7 +2345,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 						entitiesDirty_ = true;
 					}
 
-					std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
+					//std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
 					break;
 				}
 			}
