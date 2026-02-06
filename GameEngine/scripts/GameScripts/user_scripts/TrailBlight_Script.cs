@@ -17,10 +17,6 @@ namespace Eno
 
         private float attackTimer = 0.0f;
         private float stateTimer = 0.0f;
-        private float pendingDamage = 0.0f;
-
-        // SpellType.ICE = 1 (Trailblight is vulnerable to ICE rupture marks)
-        private const int SPELL_TYPE_ICE = 1;
 
         public void Begin()
         {
@@ -66,6 +62,8 @@ namespace Eno
         // Called when entering the idle state
         public void idle_enter()
         {
+            Bridge.SetEntityAnimation(ID, "idle");
+
             // Stop movement when entering idle
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             Bridge.ClearPath(ID);
@@ -74,14 +72,6 @@ namespace Eno
         // Called every frame while in the idle state
         public void idle_update()
         {
-            // Check for ICE rupture marks in range
-            if (Bridge.FindAndTriggerRuptureMark(ID, SPELL_TYPE_ICE, out float damage))
-            {
-                pendingDamage = damage;
-                Bridge.ChangeState(ID, "hurt");
-                return;
-            }
-
             // Check if player is in awareness range
             if (Bridge.GetPlayerPosition(out float playerX, out float playerY))
             {
@@ -108,20 +98,13 @@ namespace Eno
         // Called when entering the chase state
         public void chase_enter()
         {
+            Bridge.SetEntityAnimation(ID, "chase");
             Console.WriteLine($"[TrailBlight {ID}] Entering chase state");
         }
 
         // Called every frame while in the chase state
         public void chase_update()
         {
-            // Check for ICE rupture marks in range
-            if (Bridge.FindAndTriggerRuptureMark(ID, SPELL_TYPE_ICE, out float damage))
-            {
-                pendingDamage = damage;
-                Bridge.ChangeState(ID, "hurt");
-                return;
-            }
-
             // Get player position
             if (!Bridge.GetPlayerPosition(out float playerX, out float playerY))
             {
@@ -189,6 +172,8 @@ namespace Eno
         // Called when entering the windup state
         public void windup_enter()
         {
+            Bridge.SetEntityAnimation(ID, "windup");
+
             // Stop movement during windup
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             stateTimer = windupTime;
@@ -214,6 +199,8 @@ namespace Eno
         // Called when entering the attack state
         public void attack_enter()
         {
+            Bridge.SetEntityAnimation(ID, "attack");
+
             Console.WriteLine($"[TrailBlight {ID}] Attacking!");
             // Stop movement during attack
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
@@ -244,50 +231,24 @@ namespace Eno
         // Called when entering the hurt state
         public void hurt_enter()
         {
+            Bridge.SetEntityAnimation(ID, "hurt");
+            Console.WriteLine($"[TrailBlight {ID}] Ouch! Taking damage!");
             // Stop movement when hurt
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
-            Bridge.ClearPath(ID);
-
-            // Apply pending damage from rupture mark (dealt from script side)
-            if (pendingDamage > 0.0f)
-            {
-                health -= (int)pendingDamage;
-                if (health < 0) health = 0;
-                Bridge.SetAIHealth(ID, health);
-                Console.WriteLine($"[TrailBlight {ID}] Hit by RuptureMark! Dealt {pendingDamage} damage. HP: {health}");
-                pendingDamage = 0.0f;
-            }
-            else
-            {
-                // Damage from other sources - sync health from engine
-                if (Bridge.GetAIHealth(ID, out int currentHealth))
-                {
-                    health = currentHealth;
-                }
-                Console.WriteLine($"[TrailBlight {ID}] Ouch! Taking damage! HP: {health}");
-            }
 
             // Set hurt duration timer
             stateTimer = hurtDuration;
 
-            // Play hurt animation
-            Bridge.SetEntityAnimation(ID, "hurt");
+            // TODO: Play hurt animation, apply knockback, etc.
         }
 
         // Called every frame while in the hurt state
         public void hurt_update()
         {
-            // Transition after hitstun recovery
+            // Transition back to chase after hitstun recovery
             if (stateTimer <= 0.0f)
             {
-                if (health <= 0)
-                {
-                    Bridge.ChangeState(ID, "death");
-                }
-                else
-                {
-                    Bridge.ChangeState(ID, "chase");
-                }
+                Bridge.ChangeState(ID, "chase");
             }
         }
 
@@ -300,29 +261,34 @@ namespace Eno
         // Called when entering the death state
         public void death_enter()
         {
+            Bridge.SetEntityAnimation(ID, "death");
             Console.WriteLine($"[TrailBlight {ID}] Defeated!");
-            health = 0;
-
             // Stop all movement
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             Bridge.ClearPath(ID);
 
-            // Play death animation
-            Bridge.SetEntityAnimation(ID, "death");
+            // Start death timer
+            stateTimer = 1.0f; // 1 seconds for death animation
+
+            // TODO: Play death animation, drop loot, award XP, etc.
         }
 
         // Called every frame while in the death state
         public void death_update()
         {
-            // Death state - entity should remain still
-            // Entity cleanup is handled by the engine/game_logic after death animation
+            // Wait for death animation to complete, then destroy self
+            if (stateTimer <= 0.0f)
+            {
+                Console.WriteLine($"[TrailBlight {ID}] Death animation complete, destroying entity");
+                Bridge.DestroyEntity(ID);
+            }
         }
 
         // Called when exiting the death state
         public void death_exit()
         {
+            // This typically won't be called as entity is destroyed in death state
             Console.WriteLine($"[TrailBlight {ID}] Death state exited");
         }
 	}
 }
-			

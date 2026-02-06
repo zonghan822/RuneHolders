@@ -441,5 +441,27 @@ namespace Bridge
             *outDamage = 0.0f;
             return false;
         }
+
+        // Destroy an entity (called by scripts when ready to be removed, e.g., after death animation)
+        ENGINE_API bool __stdcall DestroyEntity(uint32_t sceneObjectID)
+        {
+            if (!gEngine) {
+                std::cerr << "[AI Bridge] Engine not initialized!" << std::endl;
+                return false;
+            }
+
+            auto& entMng = gEngine->getEntityManager();
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            if (entity.id() == UINT32_MAX) {
+                std::cerr << "[AI Bridge] DestroyEntity: Invalid entity for sceneObjectID " << sceneObjectID << std::endl;
+                return false;
+            }
+
+            std::cout << "[AI Bridge] Destroying entity (sceneObj: " << sceneObjectID << ", entity: " << entity.id() << ")" << std::endl;
+            entMng.destroyEntity(entity.id());
+            return true;
+        }
     }
 }

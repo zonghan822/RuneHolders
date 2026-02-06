@@ -226,11 +226,11 @@ private:
     void spawnFireball(const Math::eVec2<float>& pos);              // Spawn fireball when runes connect
     void spawnFloatingText(const Math::eVec2<float>& pos, const char* text);  // Spawn floating text message
     void updateFloatingTexts(float deltaTime);                      // Update floating text positions and alpha
+    void spawnRuptureMark(const Math::eVec2<float>& pos, ECSComponents::SpellType spellType);
+    void updateRuptureMarks(float deltaTime);
 
     // Combat system methods
     void updateCombatSystem(float deltaTime);       // Handle damage dealing and health updates
-    void spawnRuptureMark(const Math::eVec2<float>& pos, ECSComponents::SpellType spellType);
-    void updateRuptureMarks(float deltaTime);
 
     // Pause Menu and Spellbook methods
     void spawnSpellbook();                          // Spawn spellbook UI entity

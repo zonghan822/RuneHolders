@@ -406,7 +406,7 @@ void GameApplication::setupAnimations() {
 		768,    // Sheet width
 		384,    // Sheet height
 		0,     // Start frame
-		18,    // Frame count
+		17,    // Frame count
 		0.1f   // Duration per frame
 	);
 
@@ -414,13 +414,13 @@ void GameApplication::setupAnimations() {
 	playerAnimController_.addAnimation("idle", playerIdleAnim);
 
 	auto playerWalkAnim = Animation::createSpriteSheetAnimation(
-		128,    // Frame width
-		128,    // Frame height
-		512,    // Sheet width
-		128,    // Sheet height
+		96,    // Frame width
+		96,    // Frame height
+		384,  // Sheet width
+		96,    // Sheet height
 		0,     // Start frame
 		4,    // Frame count
-		0.1f  // Faster duration for walking
+		0.08f  // Faster duration for walking
 	);
 	playerWalkAnim.setLooping(true);
 	playerAnimController_.addAnimation("walk", playerWalkAnim);
@@ -2573,7 +2573,7 @@ void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSCompone
 	ruptureMark.add<ECSComponents::TransformComponent>(entityManager);
 	ruptureMark.add<ECSComponents::DrawInfoComponent>(entityManager);
 	ruptureMark.add<ECSComponents::AnimationControllerComponent>(entityManager);
-	ruptureMark.add<ECSComponents::RuptureMarkComponent>(entityManager, ECSComponents::RuptureMarkComponent(spellType, 20.0f, 180.0f));
+	ruptureMark.add<ECSComponents::RuptureMarkComponent>(entityManager, ECSComponents::RuptureMarkComponent(spellType, 50.0f, 180.0f));
 
 
 	auto& transform = ruptureMark.get<ECSComponents::TransformComponent>(entityManager);
@@ -2634,8 +2634,9 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 	auto& resourceLoader = engine_.getResourceLoader();
 	std::vector<uint32_t> marksToDestroy;
 
-	// Get all rupture marks
+	// Get all rupture marks and enemies once at the start
 	auto ruptureMarks = entityManager.findEntity<ECSComponents::RuptureMarkComponent, ECSComponents::TransformComponent>();
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent>();
 
 	// Debug: Count how many RuptureMarks exist
 	static float countTimer = 0.0f;
@@ -2670,43 +2671,110 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 
 		case ECSComponents::RuptureMarkState::IDLE:
 		{
-			// Idle marks wait to be triggered by enemy scripts via bridge
+			// Check for enemies in range
+			const char* targetEnemy = mark.getTargetEnemyName();
+
+			// Debug: Log once per second to avoid spam
+			static float debugTimer = 0.0f;
+			debugTimer += deltaTime;
+			bool shouldLog = debugTimer >= 1.0f;
+			if (shouldLog) {
+				debugTimer = 0.0f;
+				//std::cout << "[RuptureMark DEBUG] Looking for target: '" << targetEnemy << "'" << std::endl;
+				//std::cout << "[RuptureMark DEBUG] Mark position: (" << transform.pos.x << ", " << transform.pos.y << "), radius: " << mark.detectionRadius << std::endl;
+			}
+
+			for (auto& enemyEntity : enemies)
+			{
+				// Debug: Found an AI entity
+				const char* debugName = "???";
+				const char* debugTexture = "???";
+				if (enemyEntity.has<ECSComponents::NameComponent>(entityManager))
+					debugName = enemyEntity.get<ECSComponents::NameComponent>(entityManager).name;
+				if (enemyEntity.has<ECSComponents::DrawInfoComponent>(entityManager))
+					debugTexture = enemyEntity.get<ECSComponents::DrawInfoComponent>(entityManager).texturePath;
+
+				// Check if this is the target enemy type by name OR texture path
+				bool isTargetEnemy = false;
+
+				// Check entity name
+				if (enemyEntity.has<ECSComponents::NameComponent>(entityManager))
+				{
+					auto& enemyName = enemyEntity.get<ECSComponents::NameComponent>(entityManager);
+					if (strstr(enemyName.name, targetEnemy) != nullptr)
+						isTargetEnemy = true;
+				}
+
+				// Also check texture path (e.g., "Enemy-Slug-Idle-Sheet" contains "Slug")
+				if (!isTargetEnemy && enemyEntity.has<ECSComponents::DrawInfoComponent>(entityManager))
+				{
+					auto& enemyDraw = enemyEntity.get<ECSComponents::DrawInfoComponent>(entityManager);
+					if (strstr(enemyDraw.texturePath, targetEnemy) != nullptr)
+						isTargetEnemy = true;
+				}
+
+				auto& enemyTransform = enemyEntity.get<ECSComponents::TransformComponent>(entityManager);
+				float dist = Math::eVec2Distance(transform.pos, enemyTransform.pos);
+
+				if (shouldLog) {
+					//std::cout << "[RuptureMark DEBUG] Found AI entity - Name: '" << debugName
+					//		  << "', Texture: '" << debugTexture
+					//		  << "', IsTarget: " << (isTargetEnemy ? "YES" : "NO")
+					//		  << ", Distance: " << dist << std::endl;
+				}
+
+				if (!isTargetEnemy)
+					continue;
+
+				if (dist <= mark.detectionRadius)
+				{
+					// Enemy triggered the mark! Switch to windup animation
+					mark.state = ECSComponents::RuptureMarkState::WINDUP;
+					mark.stateTimer = 0.0f;
+					mark.triggeredByEntityID = enemyEntity.id();
+
+					// Switch to windup animation
+					if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager) &&
+						entity.has<ECSComponents::DrawInfoComponent>(entityManager))
+					{
+						auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+						auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
+
+						strcpy_s(animComp.currentAnimationName, "windup");
+
+						// Get the windup texture and update draw component
+						for (int i = 0; i < animComp.animationCount; ++i)
+						{
+							if (strcmp(animComp.animations[i].name, "windup") == 0)
+							{
+								auto windupTex = resourceLoader.getTexture(animComp.animations[i].texturePath);
+								if (windupTex)
+								{
+									drawComp.texture = windupTex;
+									strncpy_s(drawComp.texturePath, animComp.animations[i].texturePath, sizeof(drawComp.texturePath) - 1);
+								}
+
+								// Reset the animation controller if exists
+								auto* ctrl = animRegistry.get(animComp.controllerID);
+								if (ctrl)
+								{
+									ctrl->setAnimation("windup");
+								}
+								break;
+							}
+						}
+						entitiesDirty_ = true;
+					}
+
+					//std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
+					break;
+				}
+			}
 			break;
 		}
 
 		case ECSComponents::RuptureMarkState::WINDUP:
 		{
-			// Set windup animation on entry (triggered by script via bridge)
-			if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager) &&
-				entity.has<ECSComponents::DrawInfoComponent>(entityManager))
-			{
-				auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
-				if (strcmp(animComp.currentAnimationName, "windup") != 0)
-				{
-					auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
-					strcpy_s(animComp.currentAnimationName, "windup");
-					for (int i = 0; i < animComp.animationCount; ++i)
-					{
-						if (strcmp(animComp.animations[i].name, "windup") == 0)
-						{
-							auto windupTex = resourceLoader.getTexture(animComp.animations[i].texturePath);
-							if (windupTex)
-							{
-								drawComp.texture = windupTex;
-								strncpy_s(drawComp.texturePath, animComp.animations[i].texturePath, sizeof(drawComp.texturePath) - 1);
-							}
-							auto* ctrl = animRegistry.get(animComp.controllerID);
-							if (ctrl)
-							{
-								ctrl->setAnimation("windup");
-							}
-							break;
-						}
-					}
-					entitiesDirty_ = true;
-				}
-			}
-
 			if (mark.stateTimer >= mark.windupDuration)
 			{
 				mark.state = ECSComponents::RuptureMarkState::EXPLODING;
@@ -2745,7 +2813,106 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 					entitiesDirty_ = true;
 				}
 
-				// Damage is handled by enemy scripts via bridge, not here
+				// Deal damage to the triggering enemy
+				if (mark.triggeredByEntityID != UINT32_MAX)
+				{
+					ECS::Entity enemyEntity(mark.triggeredByEntityID);
+
+					// Use HealthComponent for proper damage handling
+					if (enemyEntity.has<ECSComponents::HealthComponent>(entityManager))
+					{
+						auto& health = enemyEntity.get<ECSComponents::HealthComponent>(entityManager);
+
+						// Skip if already dead (prevents hurt state from overriding death state)
+						if (health.isDead)
+						{
+							std::cout << "[RuptureMark] Enemy already dead, skipping damage" << std::endl;
+							continue;
+						}
+
+						bool died = health.takeDamage(mark.damage);
+						std::cout << "[RuptureMark] EXPLODING! Dealt " << mark.damage << " damage. Enemy HP: " << health.currentHealth << "/" << health.maxHealth << std::endl;
+
+						// Also update AIComponent health to stay in sync
+						if (enemyEntity.has<ECSComponents::AIComponent>(entityManager))
+						{
+							auto& ai = enemyEntity.get<ECSComponents::AIComponent>(entityManager);
+							ai.health = static_cast<int>(health.currentHealth);
+						}
+
+						// Trigger state change through StateMachineSystem
+						if (!died)
+						{
+							// Check if entity has state machine before requesting state change
+							if (enemyEntity.has<ECSComponents::StateMachineComponent>(entityManager))
+							{
+								engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "hurt");
+							}
+						}
+						else
+						{
+							std::cout << "[RuptureMark] Enemy defeated!" << std::endl;
+
+							// Check if entity has state machine for death handling
+							if (enemyEntity.has<ECSComponents::StateMachineComponent>(entityManager))
+							{
+								// Transition to death state - script will handle destruction via DestroyEntity bridge call
+								std::cout << "[RuptureMark] Transitioning to death state (script will handle cleanup)" << std::endl;
+								engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "death");
+							}
+							else
+							{
+								// No state machine, destroy immediately
+								std::cout << "[RuptureMark] Destroying enemy immediately (no state machine)" << std::endl;
+								entityManager.destroyEntity(mark.triggeredByEntityID);
+								entitiesDirty_ = true;
+							}
+						}
+					}
+					// Fallback to AIComponent if no HealthComponent
+					else if (enemyEntity.has<ECSComponents::AIComponent>(entityManager))
+					{
+						auto& ai = enemyEntity.get<ECSComponents::AIComponent>(entityManager);
+
+						// Skip if already dead (prevents hurt state from overriding death state)
+						if (ai.health <= 0)
+						{
+							std::cout << "[RuptureMark] Enemy already dead, skipping damage" << std::endl;
+							continue;
+						}
+
+						ai.health -= static_cast<int>(mark.damage);
+						std::cout << "[RuptureMark] EXPLODING! Dealt " << mark.damage << " damage. Enemy HP: " << ai.health << std::endl;
+
+						// Check if enemy died
+						if (ai.health <= 0)
+						{
+							std::cout << "[RuptureMark] Enemy defeated!" << std::endl;
+
+							// Check if entity has state machine
+							if (enemyEntity.has<ECSComponents::StateMachineComponent>(entityManager))
+							{
+								std::cout << "[RuptureMark] Transitioning to death state (script will handle cleanup)" << std::endl;
+								engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "death");
+							}
+							else
+							{
+								// No state machine, destroy immediately
+								std::cout << "[RuptureMark] Destroying enemy immediately (no state machine)" << std::endl;
+								entityManager.destroyEntity(mark.triggeredByEntityID);
+								entitiesDirty_ = true;
+							}
+						}
+						else
+						{
+							// Check if entity has state machine before requesting hurt state
+							if (enemyEntity.has<ECSComponents::StateMachineComponent>(entityManager))
+							{
+								engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "hurt");
+							}
+						}
+					}
+				}
 			}
 			break;
 		}
@@ -2775,6 +2942,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 		entitiesDirty_ = true;
 	}
 
+	// Note: Dead enemies with state machines are handled by their scripts via DestroyEntity bridge call
 }
 
 void GameApplication::spawnFloatingText(const Math::eVec2<float>& pos, const char* text)
@@ -2893,7 +3061,6 @@ void GameApplication::updateCombatSystem(float dt)
 
 	// Track entities to destroy (avoid destroying while iterating)
 	std::set<uint32_t> fireballsToDestroy;
-	std::set<uint32_t> enemiesToDestroy;
 
 	for (auto& fireball : fireballs) {
 		// Skip if already marked for destruction
@@ -2905,8 +3072,6 @@ void GameApplication::updateCombatSystem(float dt)
 		auto& fireballDamage = fireball.get<ECSComponents::DamageComponent>(entityManager);
 
 		for (auto& enemy : enemies) {
-			// Skip if already marked for destruction
-			if (enemiesToDestroy.count(enemy.id()) > 0) continue;
 			if (!enemy.has<ECSComponents::TransformComponent>(entityManager)) continue;
 
 			auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
@@ -2915,6 +3080,12 @@ void GameApplication::updateCombatSystem(float dt)
 
 			// Check AABB collision between fireball and enemy
 			if (checkAABBCollision(fireballTransform, fireballCollision, enemyTransform, enemyCollision)) {
+				// Skip if already dead (prevents hurt state from overriding death state)
+				if (enemyHealth.isDead) {
+					std::cout << "[Combat] Enemy already dead, skipping fireball damage" << std::endl;
+					continue;
+				}
+
 				// Deal damage to enemy
 				float damage = fireballDamage.getTotalDamage();
 				bool died = enemyHealth.takeDamage(damage);
@@ -2925,9 +3096,28 @@ void GameApplication::updateCombatSystem(float dt)
 				std::cout << "[Combat] Fireball hit enemy! Dealt " << damage << " damage. "
 					<< "Enemy HP: " << enemyHealth.currentHealth << "/" << enemyHealth.maxHealth << std::endl;
 
+				// Handle death or hurt state
 				if (died) {
 					std::cout << "[Combat] Enemy died!" << std::endl;
-					enemiesToDestroy.insert(enemy.id());
+
+					// Check if entity has state machine for death handling
+					if (enemy.has<ECSComponents::StateMachineComponent>(entityManager))
+					{
+						std::cout << "[Combat] Transitioning to death state" << std::endl;
+						engine_.getStateMachineSys().requestStateChange(enemy.id(), "death");
+						// Enemy destruction handled by script via DestroyEntity bridge call
+					}
+					else
+					{
+						// No state machine, destroy immediately
+						std::cout << "[Combat] Destroying enemy immediately (no state machine)" << std::endl;
+						entityManager.destroyEntity(enemy.id());
+						entitiesDirty_ = true;
+					}
+				}
+				else if (enemy.has<ECSComponents::StateMachineComponent>(entityManager)) {
+					// Trigger hurt state for non-fatal damage
+					engine_.getStateMachineSys().requestStateChange(enemy.id(), "hurt");
 				}
 
 				// Mark fireball for destruction
@@ -2939,15 +3129,13 @@ void GameApplication::updateCombatSystem(float dt)
 		}
 	}
 
-	// Destroy marked entities after iteration
+	// Destroy marked fireballs after iteration
 	for (uint32_t id : fireballsToDestroy) {
 		entityManager.destroyEntity(id);
 		entitiesDirty_ = true;
 	}
-	for (uint32_t id : enemiesToDestroy) {
-		entityManager.destroyEntity(id);
-		entitiesDirty_ = true;
-	}
+
+	// Note: Dead enemies with state machines are handled by their scripts via DestroyEntity bridge call
 
 	// ENEMY vs PLAYER collision damage
 	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
@@ -2962,8 +3150,6 @@ void GameApplication::updateCombatSystem(float dt)
 			auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
 
 			for (auto& enemy : enemies) {
-				// Skip enemies that are marked for destruction
-				if (enemiesToDestroy.count(enemy.id()) > 0) continue;
 				if (!enemy.has<ECSComponents::TransformComponent>(entityManager) ||
 					!enemy.has<ECSComponents::DamageComponent>(entityManager)) continue;
 
