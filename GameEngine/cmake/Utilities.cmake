@@ -286,6 +286,19 @@ macro(set_dotnet)
     if(NOT DOTNET_HOST_DIR)
         message(FATAL_ERROR "Could not find .NET host folder under ${DOTNET_RUNTIME_PATH}")
     endif()
+    # Extract version from directory name (e.g. ".../host/fxr/8.0.21" -> "8.0.21")
+    get_filename_component(DOTNET_HOST_FXR_VERSION "${DOTNET_HOST_DIR}" NAME)
+
+    # Locate the .NET runtime shared framework directory
+    file(GLOB DOTNET_SHARED_FX_DIRS
+        "${DOTNET_RUNTIME_PATH}/shared/Microsoft.NETCore.App/*"
+    )
+    list(GET DOTNET_SHARED_FX_DIRS 0 DOTNET_SHARED_FX_DIR)
+    if(NOT DOTNET_SHARED_FX_DIR)
+        message(FATAL_ERROR "Could not find .NET shared framework under ${DOTNET_RUNTIME_PATH}/shared/")
+    endif()
+    # Extract version from directory name (e.g. ".../Microsoft.NETCore.App/8.0.21" -> "8.0.21")
+    get_filename_component(DOTNET_SHARED_FX_VERSION "${DOTNET_SHARED_FX_DIR}" NAME)
 
     function(_dotnet_copy_dll TARGET)
         add_custom_command(TARGET ${TARGET} POST_BUILD
@@ -293,6 +306,24 @@ macro(set_dotnet)
                 "${DOTNET_HOST_DIR}/hostfxr.dll"
                 "${DOTNET_NATIVE_DIR}/nethost.dll"
                 "$<TARGET_FILE_DIR:${TARGET}>"
+        )
+        # Copy the .NET runtime shared framework next to the executable
+        add_custom_command(TARGET ${TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                "$<TARGET_FILE_DIR:${TARGET}>/dotnet_rt/shared/Microsoft.NETCore.App"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${DOTNET_SHARED_FX_DIR}"
+                "$<TARGET_FILE_DIR:${TARGET}>/dotnet_rt/shared/Microsoft.NETCore.App/${DOTNET_SHARED_FX_VERSION}"
+            COMMENT "Copying .NET runtime framework to output directory"
+        )
+        # Copy the host/fxr directory for hostfxr resolution
+        add_custom_command(TARGET ${TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                "$<TARGET_FILE_DIR:${TARGET}>/dotnet_rt/host/fxr"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${DOTNET_HOST_DIR}"
+                "$<TARGET_FILE_DIR:${TARGET}>/dotnet_rt/host/fxr/${DOTNET_HOST_FXR_VERSION}"
+            COMMENT "Copying hostfxr to output directory"
         )
     endfunction()
 endmacro()

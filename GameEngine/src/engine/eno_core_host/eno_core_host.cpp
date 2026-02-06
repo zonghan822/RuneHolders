@@ -99,7 +99,12 @@ namespace Core
 	// Initialize hostfxr library
 	void EnoCoreHost::init()
 	{
-		_putenv_s("DOTNET_ROOT", DOTNET_ROOT);
+		// Try bundled runtime next to exe first, fall back to build-time path
+		auto bundledRoot = FileSystem::GetExecutableDir() / "dotnet_rt";
+		if (std::filesystem::exists(bundledRoot / "shared"))
+			_putenv_s("DOTNET_ROOT", bundledRoot.string().c_str());
+		else
+			_putenv_s("DOTNET_ROOT", DOTNET_ROOT);
 
 		// Load hostfxr module
 		char_t hfLibPath[MAX_PATH];
