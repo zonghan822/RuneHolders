@@ -23,30 +23,11 @@ namespace Physics
      *===========================================================================================*/
     void PhysicsSystem::Update(ECS::EntityManager& entityManager, float deltaTime)
     {
-        // Get all entities in the world
-        auto& entityMap = entityManager.getMap();
-
         // PHASE 1: Apply forces and integrate velocities for all physics entities
-        for (auto& [entityID, entityLoc] : entityMap)
+        auto physicsEntities = entityManager.findEntity<ECSComponents::PhysicsComponent, ECSComponents::TransformComponent>();
+        for (auto& entity : physicsEntities)
         {
-            // Check if entity has PhysicsComponent
-            bool hasPhysics = false;
-            bool hasTransform = false;
-
-            for (const auto& type : entityLoc.archetype->types_)
-            {
-                if (type == std::type_index(typeid(ECSComponents::PhysicsComponent)))
-                    hasPhysics = true;
-                else if (type == std::type_index(typeid(ECSComponents::TransformComponent)))
-                    hasTransform = true;
-            }
-
-            // Skip entities without physics
-            if (!hasPhysics || !hasTransform)
-                continue;
-
-            // Get physics component
-            auto& physics = GetPhysics(entityLoc);
+            auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
 
             // Skip kinematic objects (manually controlled, like trigger zones)
             if (physics.isKinematic)
@@ -69,31 +50,12 @@ namespace Physics
         }
 
         // PHASE 2: Integrate velocities into positions with collision detection
-        for (auto& [entityID, entityLoc] : entityMap)
+        auto collidablePhysicsEntities = entityManager.findEntity<ECSComponents::PhysicsComponent, ECSComponents::TransformComponent, ECSComponents::CollisionComponent>();
+        for (auto& entity : collidablePhysicsEntities)
         {
-            // Check if entity has all required components for physics movement
-            bool hasPhysics = false;
-            bool hasTransform = false;
-            bool hasCollision = false;
-
-            for (const auto& type : entityLoc.archetype->types_)
-            {
-                if (type == std::type_index(typeid(ECSComponents::PhysicsComponent)))
-                    hasPhysics = true;
-                else if (type == std::type_index(typeid(ECSComponents::TransformComponent)))
-                    hasTransform = true;
-                else if (type == std::type_index(typeid(ECSComponents::CollisionComponent)))
-                    hasCollision = true;
-            }
-
-            // Skip entities without required components
-            if (!hasPhysics || !hasTransform || !hasCollision)
-                continue;
-
-            // Get components
-            auto& transform = GetTransform(entityLoc);
-            auto& physics = GetPhysics(entityLoc);
-            auto& collision = GetCollision(entityLoc);
+            auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+            auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
+            auto& collision = entity.get<ECSComponents::CollisionComponent>(entityManager);
 
             // Skip kinematic objects
             if (physics.isKinematic)
@@ -104,7 +66,7 @@ namespace Physics
                 continue;
 
             // Integrate velocity into position (with collision response)
-            IntegrateVelocity(entityID, transform, physics, collision, entityManager, deltaTime);
+            IntegrateVelocity(entity.id(), transform, physics, collision, entityManager, deltaTime);
         }
     }
 
@@ -195,37 +157,20 @@ namespace Physics
             transform.pos.y + displacement.y
         };
 
-        // Check for collisions with all other entities
-        auto& entityMap = entityManager.getMap();
+        // Check for collisions with all other collidable entities
+        auto collidables = entityManager.findEntity<ECSComponents::CollisionComponent, ECSComponents::TransformComponent>();
         bool hadCollision = false;
 
-        for (auto& [otherID, otherLoc] : entityMap)
+        for (auto& otherEntity : collidables)
         {
-            // Skip self (compare map keys)
-            if (entityID == otherID)
-                continue;
-
-            // Check if other entity has collision component
-            bool otherHasCollision = false;
-            bool otherHasTransform = false;
-            bool otherHasPhysics = false;
-
-            for (const auto& type : otherLoc.archetype->types_)
-            {
-                if (type == std::type_index(typeid(ECSComponents::CollisionComponent)))
-                    otherHasCollision = true;
-                else if (type == std::type_index(typeid(ECSComponents::TransformComponent)))
-                    otherHasTransform = true;
-                else if (type == std::type_index(typeid(ECSComponents::PhysicsComponent)))
-                    otherHasPhysics = true;
-            }
-
-            if (!otherHasCollision || !otherHasTransform)
+            // Skip self
+            if (entityID == otherEntity.id())
                 continue;
 
             // Get other entity's components
-            auto& otherTransform = GetTransform(otherLoc);
-            auto& otherCollision = GetCollision(otherLoc);
+            auto& otherTransform = otherEntity.get<ECSComponents::TransformComponent>(entityManager);
+            auto& otherCollision = otherEntity.get<ECSComponents::CollisionComponent>(entityManager);
+            bool otherHasPhysics = otherEntity.has<ECSComponents::PhysicsComponent>(entityManager);
 
             // Skip inactive colliders or triggers
             if (!otherCollision.isActive || otherCollision.isTrigger)
@@ -283,12 +228,12 @@ namespace Physics
             if (overlaps)
             {
                 hadCollision = true;
-                bus_.publish(CollideEvent{ entityID, otherID });
+                bus_.publish(CollideEvent{ entityID, otherEntity.id() });
 
                 // If other entity has physics, resolve collision with momentum transfer
                 if (otherHasPhysics)
                 {
-                    auto& otherPhysics = GetPhysics(otherLoc);
+                    auto& otherPhysics = otherEntity.get<ECSComponents::PhysicsComponent>(entityManager);
 
                     // Don't push kinematic objects (like walls)
                     if (!otherPhysics.isKinematic)
