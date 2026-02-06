@@ -52,6 +52,7 @@ namespace Bridge {
             int* outHealth, bool* outAllowDiagonal);
         ENGINE_API bool __stdcall SetAIHealth(uint32_t entityID, int health);
         ENGINE_API bool __stdcall GetAIHealth(uint32_t entityID, int* outHealth);
+        ENGINE_API bool __stdcall FindAndTriggerRuptureMark(uint32_t entityID, int spellType, float* outDamage);
     }
 }
 

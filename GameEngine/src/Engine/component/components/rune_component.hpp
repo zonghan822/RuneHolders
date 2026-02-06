@@ -274,9 +274,9 @@ namespace ECSComponents
         {
             switch (spellType)
             {
-            case SpellType::ICE:   return "Snail";     // Matches "Snail" entities
-            case SpellType::FIRE:  return "CrystalFly";
-            case SpellType::LIGHT: return "Bat";
+            case SpellType::ICE:   return "Trailblight";
+            case SpellType::FIRE:  return "NullFly";
+            case SpellType::LIGHT: return "Bloodwing";
             default:               return "";
             }
         }

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace Eno
 {
-	public class Bat_Script : ScriptBase
+	public class TrailBlight_Script : ScriptBase
     {
-        // Bat AI parameters (loaded from AIComponent)
+        // TrailBlight AI parameters (loaded from AIComponent)
         private float awarenessRadius;
         private float chaseSpeed;
         private float attackRange;
@@ -17,20 +17,24 @@ namespace Eno
 
         private float attackTimer = 0.0f;
         private float stateTimer = 0.0f;
+        private float pendingDamage = 0.0f;
+
+        // SpellType.ICE = 1 (Trailblight is vulnerable to ICE rupture marks)
+        private const int SPELL_TYPE_ICE = 1;
 
         public void Begin()
         {
-            Console.WriteLine($"[Bat] Initializing Bat entity {ID}");
+            Console.WriteLine($"[TrailBlight] Initializing TrailBlight entity {ID}");
 
             // Load AI parameters from the AIComponent
             if (Bridge.GetAIComponent(ID, out awarenessRadius, out chaseSpeed, out attackRange,
                 out windupTime, out attackDuration, out hurtDuration, out health, out allowDiagonal))
             {
-                Console.WriteLine($"[Bat {ID}] Loaded AI params - Chase: {chaseSpeed}, Attack Range: {attackRange}, Awareness: {awarenessRadius}");
+                Console.WriteLine($"[TrailBlight {ID}] Loaded AI params - Chase: {chaseSpeed}, Attack Range: {attackRange}, Awareness: {awarenessRadius}");
             }
             else
             {
-                Console.WriteLine($"[Bat {ID}] ERROR: Failed to load AIComponent! Using defaults.");
+                Console.WriteLine($"[TrailBlight {ID}] ERROR: Failed to load AIComponent! Using defaults.");
                 // Fallback defaults
                 awarenessRadius = 200.0f;
                 chaseSpeed = 90.0f;
@@ -70,6 +74,14 @@ namespace Eno
         // Called every frame while in the idle state
         public void idle_update()
         {
+            // Check for ICE rupture marks in range
+            if (Bridge.FindAndTriggerRuptureMark(ID, SPELL_TYPE_ICE, out float damage))
+            {
+                pendingDamage = damage;
+                Bridge.ChangeState(ID, "hurt");
+                return;
+            }
+
             // Check if player is in awareness range
             if (Bridge.GetPlayerPosition(out float playerX, out float playerY))
             {
@@ -80,7 +92,7 @@ namespace Eno
                     if (distance < awarenessRadius)
                     {
                         // Player is in range, start chasing
-                        Console.WriteLine($"[Bat {ID}] Player detected! Distance: {distance:F1}");
+                        Console.WriteLine($"[TrailBlight {ID}] Player detected! Distance: {distance:F1}");
                         Bridge.ChangeState(ID, "chase");
                     }
                 }
@@ -90,23 +102,31 @@ namespace Eno
         // Called when exiting the idle state
         public void idle_exit()
         {
-            Console.WriteLine($"[Bat {ID}] Leaving idle state");
+            Console.WriteLine($"[TrailBlight {ID}] Leaving idle state");
         }
 
         // Called when entering the chase state
         public void chase_enter()
         {
-            Console.WriteLine($"[Bat {ID}] Entering chase state");
+            Console.WriteLine($"[TrailBlight {ID}] Entering chase state");
         }
 
         // Called every frame while in the chase state
         public void chase_update()
         {
+            // Check for ICE rupture marks in range
+            if (Bridge.FindAndTriggerRuptureMark(ID, SPELL_TYPE_ICE, out float damage))
+            {
+                pendingDamage = damage;
+                Bridge.ChangeState(ID, "hurt");
+                return;
+            }
+
             // Get player position
             if (!Bridge.GetPlayerPosition(out float playerX, out float playerY))
             {
                 // Player not found, return to idle
-                Console.WriteLine($"[Bat {ID}] Lost player, returning to idle");
+                Console.WriteLine($"[TrailBlight {ID}] Lost player, returning to idle");
                 Bridge.ChangeState(ID, "idle");
                 return;
             }
@@ -121,7 +141,7 @@ namespace Eno
             // Check if player is out of awareness range (with hysteresis)
             if (distanceToPlayer > awarenessRadius * 1.2f)
             {
-                Console.WriteLine($"[Bat {ID}] Player too far, returning to idle");
+                Console.WriteLine($"[TrailBlight {ID}] Player too far, returning to idle");
                 Bridge.ChangeState(ID, "idle");
                 return;
             }
@@ -129,7 +149,7 @@ namespace Eno
             // Check if in attack range
             if (distanceToPlayer < attackRange)
             {
-                Console.WriteLine($"[Bat {ID}] Player in attack range!");
+                Console.WriteLine($"[TrailBlight {ID}] Player in attack range!");
                 Bridge.ChangeState(ID, "windup");
                 return;
             }
@@ -163,7 +183,7 @@ namespace Eno
         {
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             Bridge.ClearPath(ID);
-            Console.WriteLine($"[Bat {ID}] Exiting chase state");
+            Console.WriteLine($"[TrailBlight {ID}] Exiting chase state");
         }
 
         // Called when entering the windup state
@@ -172,7 +192,7 @@ namespace Eno
             // Stop movement during windup
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             stateTimer = windupTime;
-            Console.WriteLine($"[Bat {ID}] Winding up for attack ({windupTime}s)");
+            Console.WriteLine($"[TrailBlight {ID}] Winding up for attack ({windupTime}s)");
         }
 
         // Called every frame while in the windup state
@@ -188,13 +208,13 @@ namespace Eno
         // Called when exiting the windup state
         public void windup_exit()
         {
-            Console.WriteLine($"[Bat {ID}] Windup complete");
+            Console.WriteLine($"[TrailBlight {ID}] Windup complete");
         }
 
         // Called when entering the attack state
         public void attack_enter()
         {
-            Console.WriteLine($"[Bat {ID}] Attacking!");
+            Console.WriteLine($"[TrailBlight {ID}] Attacking!");
             // Stop movement during attack
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
 
@@ -218,62 +238,90 @@ namespace Eno
         // Called when exiting the attack state
         public void attack_exit()
         {
-            Console.WriteLine($"[Bat {ID}] Attack finished");
+            Console.WriteLine($"[TrailBlight {ID}] Attack finished");
         }
 
         // Called when entering the hurt state
         public void hurt_enter()
         {
-            Console.WriteLine($"[Bat {ID}] Ouch! Taking damage!");
             // Stop movement when hurt
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
+            Bridge.ClearPath(ID);
+
+            // Apply pending damage from rupture mark (dealt from script side)
+            if (pendingDamage > 0.0f)
+            {
+                health -= (int)pendingDamage;
+                if (health < 0) health = 0;
+                Bridge.SetAIHealth(ID, health);
+                Console.WriteLine($"[TrailBlight {ID}] Hit by RuptureMark! Dealt {pendingDamage} damage. HP: {health}");
+                pendingDamage = 0.0f;
+            }
+            else
+            {
+                // Damage from other sources - sync health from engine
+                if (Bridge.GetAIHealth(ID, out int currentHealth))
+                {
+                    health = currentHealth;
+                }
+                Console.WriteLine($"[TrailBlight {ID}] Ouch! Taking damage! HP: {health}");
+            }
 
             // Set hurt duration timer
             stateTimer = hurtDuration;
 
-            // TODO: Play hurt animation, apply knockback, etc.
+            // Play hurt animation
+            Bridge.SetEntityAnimation(ID, "hurt");
         }
 
         // Called every frame while in the hurt state
         public void hurt_update()
         {
-            // Transition back to chase after hitstun recovery
+            // Transition after hitstun recovery
             if (stateTimer <= 0.0f)
             {
-                Bridge.ChangeState(ID, "chase");
+                if (health <= 0)
+                {
+                    Bridge.ChangeState(ID, "death");
+                }
+                else
+                {
+                    Bridge.ChangeState(ID, "chase");
+                }
             }
         }
 
         // Called when exiting the hurt state
         public void hurt_exit()
         {
-            Console.WriteLine($"[Bat {ID}] Recovering from hurt");
+            Console.WriteLine($"[TrailBlight {ID}] Recovering from hurt");
         }
 
         // Called when entering the death state
         public void death_enter()
         {
-            Console.WriteLine($"[Bat {ID}] Defeated!");
+            Console.WriteLine($"[TrailBlight {ID}] Defeated!");
+            health = 0;
+
             // Stop all movement
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             Bridge.ClearPath(ID);
 
-            // TODO: Play death animation, drop loot, award XP, etc.
-            // Entity will be destroyed by the game logic after death animation completes
+            // Play death animation
+            Bridge.SetEntityAnimation(ID, "death");
         }
 
         // Called every frame while in the death state
         public void death_update()
         {
             // Death state - entity should remain still
-            // Entity cleanup is handled by the engine after death animation
+            // Entity cleanup is handled by the engine/game_logic after death animation
         }
 
         // Called when exiting the death state
         public void death_exit()
         {
-            // This typically won't be called as entity is destroyed in death state
-            Console.WriteLine($"[Bat {ID}] Death state exited");
+            Console.WriteLine($"[TrailBlight {ID}] Death state exited");
         }
 	}
 }
