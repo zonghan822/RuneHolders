@@ -1528,8 +1528,8 @@ void GameApplication::updateEntities() {
 					{
 						for (const auto& org : node->script_->origin())
 						{
-							//coreHost.begin(org, node->entity_.id());  
-							coreHost.begin(org, node->sceneObjectID_);
+							// Use entity_.id() so script ID matches ECS entity ID for bridge functions
+							coreHost.begin(org, node->entity_.id());
 						}
 					}
 				}
@@ -1565,8 +1565,8 @@ void GameApplication::updateEntities() {
 				{
 					for (const auto& org : node->script_->origin())
 					{
-						//coreHost.update(org, node->entity_.id());  
-						coreHost.update(org, node->sceneObjectID_);
+						// Use entity_.id() so script ID matches ECS entity ID for bridge functions
+						coreHost.update(org, node->entity_.id());
 					}
 				}
 			}

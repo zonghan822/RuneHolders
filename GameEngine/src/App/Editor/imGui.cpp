@@ -1251,9 +1251,33 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		if (attachScript && selectedScriptIndex >= 0) {
 			std::wstring selectedScript = availableScripts[selectedScriptIndex];
 			std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-			auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
-			if (script)
+			auto script = scriptMng.loadScript(selectedScript);
+			if (script) {
+				std::string scriptPath = script->path();  // Get path before moving
 				sceneTree.attachScript(createdNode, std::move(script));
+
+				// Auto-extract states from script and populate StateMachineComponent
+				auto extractedStates = Script::EnoScriptManager::extractStatesFromScript(scriptPath);
+				if (!extractedStates.empty()) {
+					if (!createdNode->entity_.has<ECSComponents::StateMachineComponent>(entityManager)) {
+						createdNode->entity_.add<ECSComponents::StateMachineComponent>(entityManager);
+					}
+					auto& smComp = createdNode->entity_.get<ECSComponents::StateMachineComponent>(entityManager);
+					for (const auto& stateName : extractedStates) {
+						// Check for duplicates before adding
+						bool exists = false;
+						for (int i = 0; i < smComp.numStates; ++i) {
+							if (std::string(smComp.states[i].name) == stateName) {
+								exists = true;
+								break;
+							}
+						}
+						if (!exists) {
+							smComp.addState(stateName.c_str());
+						}
+					}
+				}
+			}
 			else
 				std::cerr << "No script is attached!" << std::endl;
 		}
@@ -1335,18 +1359,36 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				);
 				undoManager.executeCommand(std::move(createCmd));
 
-				//if (attachScript) {
-				//	auto script = scriptMng.selectScript(); // file picker
-				//	if (script) {
-				//		sceneTree.attachScript(childNode, std::move(script));
-				//	}
-				//}
 				if (attachScript && selectedScriptIndex >= 0) {
 					std::wstring selectedScript = availableScripts[selectedScriptIndex];
 					std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-					auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
-					if (script)
+					auto script = scriptMng.loadScript(selectedScript);
+					if (script) {
+						std::string scriptPath = script->path();  // Get path before moving
 						sceneTree.attachScript(childNode, std::move(script));
+
+						// Auto-extract states from script and populate StateMachineComponent
+						auto extractedStates = Script::EnoScriptManager::extractStatesFromScript(scriptPath);
+						if (!extractedStates.empty()) {
+							if (!childNode->entity_.has<ECSComponents::StateMachineComponent>(entityManager)) {
+								childNode->entity_.add<ECSComponents::StateMachineComponent>(entityManager);
+							}
+							auto& smComp = childNode->entity_.get<ECSComponents::StateMachineComponent>(entityManager);
+							for (const auto& stateName : extractedStates) {
+								// Check for duplicates before adding
+								bool exists = false;
+								for (int i = 0; i < smComp.numStates; ++i) {
+									if (std::string(smComp.states[i].name) == stateName) {
+										exists = true;
+										break;
+									}
+								}
+								if (!exists) {
+									smComp.addState(stateName.c_str());
+								}
+							}
+						}
+					}
 				}
 
 				if (g_game) g_game->markEntitiesDirty();

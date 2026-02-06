@@ -298,11 +298,10 @@ namespace Editor
 
 			// Script attached will receive node metadata
 			// Retrieve each unique class stored for the script
-			// FIX: Use entity_.id() instead of sceneObjectID_ so bridge functions work correctly
+			// Use entity_.id() so bridge functions work correctly (they expect ECS entity IDs)
 			for (const auto& org : node->script_->origin())
 			{
-				//coreHost_.setMetaData(org, node->entity_.id(), true);
-				coreHost_.setMetaData(org, node->sceneObjectID_, true);
+				coreHost_.setMetaData(org, node->entity_.id(), true);
 			}
 		}
 	}
@@ -316,11 +315,10 @@ namespace Editor
 
 			// Script attached will receive node metadata
 			// Retrieve each unique class stored for the script
-			// FIX: Use entity_.id() instead of sceneObjectID_ so bridge functions work correctly
+			// Use entity_.id() so bridge functions work correctly (they expect ECS entity IDs)
 			for (const auto& org : selectedNode_->script_->origin())
 			{
-				//coreHost_.setMetaData(org, selectedNode_->entity_.id(), true);
-				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_, true);
+				coreHost_.setMetaData(org, selectedNode_->entity_.id(), true);
 			}
 		}
 	}
@@ -332,8 +330,7 @@ namespace Editor
 		{
 			for (const auto& org : node->script_->origin())
 			{
-				//coreHost_.setMetaData(org, node->entity_.id(), false);
-				coreHost_.setMetaData(org, node->sceneObjectID_, false);
+				coreHost_.setMetaData(org, node->entity_.id(), false);
 			}
 
 			node->script_.reset();
@@ -347,8 +344,7 @@ namespace Editor
 		{
 			for (const auto& org : selectedNode_->script_->origin())
 			{
-				//coreHost_.setMetaData(org, selectedNode_->entity_.id(), false);
-				coreHost_.setMetaData(org, selectedNode_->sceneObjectID_, false);
+				coreHost_.setMetaData(org, selectedNode_->entity_.id(), false);
 			}
 
 			selectedNode_->script_.reset();
@@ -365,7 +361,7 @@ namespace Editor
 			{
 				for (const auto& org : node->script_->origin())
 				{
-					coreHost_.setMetaData(org, node->sceneObjectID_, true);
+					coreHost_.setMetaData(org, node->entity_.id(), true);
 				}
 			}
 		}

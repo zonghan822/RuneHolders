@@ -999,8 +999,8 @@ void GameApplication::updateEntities() {
 				for (const auto& org : node->script_->origin())
 				{
 					std::wcout << "origin of call: " << org << " for entity " << node->entity_.id() << std::endl;
-					coreHost.begin(org, node->sceneObjectID_);
-					//coreHost.begin(org, node->entity_.id());  // FIX: Use entity_.id() instead of sceneObjectID_
+					// Use entity_.id() so script ID matches ECS entity ID for bridge functions
+					coreHost.begin(org, node->entity_.id());
 				}
 			}
 		}
@@ -1014,8 +1014,8 @@ void GameApplication::updateEntities() {
 		{
 			for (const auto& org : node->script_->origin())
 			{
-				coreHost.update(org, node->sceneObjectID_);
-				// coreHost.update(org, node->entity_.id());  // FIX: Use entity_.id() instead of sceneObjectID_
+				// Use entity_.id() so script ID matches ECS entity ID for bridge functions
+				coreHost.update(org, node->entity_.id());
 			}
 		}
 	}

@@ -310,12 +310,39 @@ namespace Editor {
                 auto script = scriptManager_.loadScript(scriptName);
 
                 if (script) {
+                    std::string scriptPath = script->path();  // Get path before moving
                     sceneTree_.attachScript(node, std::move(script));
 
-                    // Generate state methods for existing states
+                    // Auto-extract states from the script file
+                    auto extractedStates = Script::EnoScriptManager::extractStatesFromScript(scriptPath);
+
+                    // If states were found, ensure entity has StateMachineComponent and add states
+                    if (!extractedStates.empty()) {
+                        if (!node->entity_.has<ECSComponents::StateMachineComponent>(entMng_)) {
+                            node->entity_.add<ECSComponents::StateMachineComponent>(entMng_);
+                        }
+
+                        auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entMng_);
+
+                        // Add each extracted state to the component
+                        for (const auto& stateName : extractedStates) {
+                            // Check if state already exists to avoid duplicates
+                            bool exists = false;
+                            for (int i = 0; i < smComp.numStates; ++i) {
+                                if (std::string(smComp.states[i].name) == stateName) {
+                                    exists = true;
+                                    break;
+                                }
+                            }
+                            if (!exists) {
+                                smComp.addState(stateName.c_str());
+                            }
+                        }
+                    }
+
+                    // Generate state methods for all states (existing + newly added)
                     if (node->entity_.has<ECSComponents::StateMachineComponent>(entMng_)) {
                         auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entMng_);
-                        std::string scriptPath = node->script_->path();
 
                         for (int i = 0; i < smComp.numStates; ++i) {
                             Script::StateMachineScriptGenerator::generateStateMethods(scriptPath, smComp.states[i].name);
