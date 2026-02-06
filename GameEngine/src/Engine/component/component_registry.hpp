@@ -33,6 +33,9 @@
 
 #include "../component/component_list.hpp"
 
+// Settings
+#include "../ecs/eno_ecs_settings.hpp"
+
 // stds
 #include <cstdint>
 #include <unordered_map>
@@ -52,8 +55,12 @@ namespace ECSComponents
 		*//*========================================================================================*/
 		struct ComponentInfo
 		{
-			uint32_t id;
-			size_t size;
+			uint32_t id_;
+			size_t size_;
+
+#if ARENA_ENABLED
+			size_t alignment_;
+#endif
 		};
 
 		/*============================================================================================
@@ -64,7 +71,7 @@ namespace ECSComponents
 		{
 			static std::unordered_map<std::type_index, ComponentInfo> map =
 			{
-#define X(TYPE) { std::type_index(typeid(TYPE)), { __COUNTER__, sizeof(TYPE) } },
+#define X(TYPE) { std::type_index(typeid(TYPE)), { __COUNTER__, sizeof(TYPE), alignof(TYPE) } },
 				COMPONENT_LIST
 #undef X
 			};
@@ -80,8 +87,8 @@ namespace ECSComponents
 			for (const auto& component : ComponentMap())
 			{
 				std::cout << "Component: " << component.first.name() << std::endl
-					<< "ID: " << component.second.id << std::endl
-					<< "Size: " << component.second.size << std::endl
+					<< "ID: " << component.second.id_ << std::endl
+					<< "Size: " << component.second.size_ << std::endl
 					<< std::setw(10) << std::setfill('_') << std::endl;
 			}
 
@@ -121,7 +128,7 @@ namespace ECSComponents
 				throw std::runtime_error("Component searched has not been registered in the Component Registry map!");
 			}
 
-			return it->second.id;
+			return it->second.id_;
 		}
 
 		/*============================================================================================
@@ -136,7 +143,7 @@ namespace ECSComponents
 				ComponentMap().end(),
 				[id](const std::pair<std::type_index, ComponentInfo>& pair)
 				{
-					return pair.second.id == id;
+					return pair.second.id_ == id;
 				});
 
 			if (it == ComponentMap().end())
@@ -160,7 +167,22 @@ namespace ECSComponents
 				throw std::runtime_error("Component searched has not been registered in the Component Registry map!");
 			}
 
-			return it->second.size;
+			return it->second.size_;
+		}
+
+		/*============================================================================================
+		 * \brief			Get a component's alignment
+		 * \param[in]       Component type
+		*//*========================================================================================*/
+		static std::size_t GetComponentAlign(const std::type_index& type)
+		{
+			auto it = ComponentMap().find(type);
+			if (it == ComponentMap().end())
+			{
+				throw std::runtime_error("Component searched has not been registered in the Component Registry map!");
+			}
+
+			return it->second.alignment_;
 		}
 
 		// Deduce component type with type index
