@@ -13,7 +13,7 @@ extern Engine::EnoEngine* gEngine;
 namespace Bridge
 {
     // Helper function to get entity from sceneObjectID
-    static ECS::Entity GetEntityFromSceneObjectID(uint32_t sceneObjectID, ECS::EntityManager& entMng, Editor::EnoSceneTree& sceneTree)
+    static ECS::Entity GetEntityFromSceneObjectID(uint32_t sceneObjectID, Editor::EnoSceneTree& sceneTree)
     {
         Editor::Node* node = sceneTree.getNodeBySceneObjectID(sceneObjectID);
         if (!node) {
@@ -63,7 +63,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX || !entity.has<ECSComponents::TransformComponent>(entMng)) {
                 return false;
@@ -86,7 +86,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX || !entity.has<ECSComponents::PhysicsComponent>(entMng)) {
                 return false;
@@ -108,7 +108,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -147,7 +147,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -196,7 +196,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -243,7 +243,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -271,7 +271,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -340,7 +340,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -366,7 +366,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX || !entity.has<ECSComponents::TransformComponent>(entMng)) {
                 return false;
