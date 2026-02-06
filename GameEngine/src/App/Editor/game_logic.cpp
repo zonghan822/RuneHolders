@@ -383,49 +383,11 @@ void GameApplication::setupGameEvents() {
 void GameApplication::setupAnimations() {
 	// Load the sprite sheet texture
 	backgroundTexture_ = engine_.getResourceLoader().getTexture("Background");
-	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
-	playerWalkTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Walk-Sheet");
 
 	if (!backgroundTexture_ || !backgroundTexture_->isValid())
 	{
 		std::cerr << "Background texture not loaded properly" << std::endl;
 	}
-
-	if (!playerTexture_ || !playerTexture_->isValid())
-	{
-		std::cout << "Warning: Could not load player sprite sheet!" << std::endl;
-		return;
-	}
-
-	// Create player idle animation
-	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
-		128,    // Frame width
-		128,    // Frame height
-		768,    // Sheet width
-		384,    // Sheet height
-		0,     // Start frame
-		17,    // Frame count
-		0.1f   // Duration per frame
-	);
-
-	playerIdleAnim.setLooping(true);
-	playerAnimController_.addAnimation("idle", playerIdleAnim);
-
-	auto playerWalkAnim = Animation::createSpriteSheetAnimation(
-		96,    // Frame width
-		96,    // Frame height
-		384,  // Sheet width
-		96,    // Sheet height
-		0,     // Start frame
-		4,    // Frame count
-		0.08f  // Faster duration for walking
-	);
-	playerWalkAnim.setLooping(true);
-	playerAnimController_.addAnimation("walk", playerWalkAnim);
-
-	playerAnimController_.setAnimation("idle");
-
-	std::cout << "Player animation setup complete!" << std::endl;
 }
 
 void GameApplication::setupImGui() {
@@ -886,9 +848,9 @@ void GameApplication::updateGameLogic() {
 				ECS::Entity& entity = *entityPtr;
 				try {
 					if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
-						if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
-							continue; // Skip player, drawn separately
-						}
+					//	if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
+					//		continue; // Skip player, drawn separately
+					//	}
 
 					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
@@ -1031,60 +993,6 @@ void GameApplication::updateGameLogic() {
 					continue;
 				}
 			}
-		}
-
-		// Draw player in editor view (with camera offset - convert to screen space) - NO RED CURSOR
-		if (playerSpawned_) {
-			try {
-				auto& entityMap = engine_.getEntityManager().getMap();
-				auto it = entityMap.find(playerEntityID_);
-				if (it != entityMap.end()) {
-					// Get player system from engine (no longer a global)
-					if (playerSystem_) {
-						auto& transform = playerSystem_->GetTransform(it->second);
-						auto& frame = playerAnimController_.getCurrentFrame();
-
-						std::shared_ptr<Graphics::EnoTexture> currentTexture;
-						if (playerAnimController_.getCurrentAnimationName() == "walk") {
-							currentTexture = playerWalkTexture_;
-						}
-						else {
-							currentTexture = playerTexture_;
-						}
-
-						Math::eVec2<float> uvStart = frame.uvStart;
-						Math::eVec2<float> uvEnd = frame.uvEnd;
-
-						if (playerFacingDirection_ == -1) {
-							std::swap(uvStart.x, uvEnd.x);
-						}
-
-						if (currentTexture && currentTexture->isValid()) {
-							float scaledWidth = (playerConfig_.spriteWidth * transform.scale.x);
-							float scaledHeight = (playerConfig_.spriteHeight * transform.scale.y);
-
-							// Apply camera offset to player position
-							float screenX = transform.pos.x - editorCameraX_;
-							float screenY = transform.pos.y - editorCameraY_;
-							Math::eVec2<float> topLeft = {
-								screenX - (scaledWidth * 0.5f),
-								screenY - (scaledHeight * 0.5f)
-							};
-
-							graphics_.drawTexturedQuadUV(
-								topLeft,
-								Math::eVec2<float>{scaledWidth, scaledHeight},
-								currentTexture,
-								uvStart,
-								uvEnd,
-								Graphics::Color::White,
-								transform.rot.x
-							);
-						}
-					}
-				}
-			}
-			catch (...) {}
 		}
 
 		// Flush pending entity batch before text drawing (drawTextScreen unbinds defaultShader)

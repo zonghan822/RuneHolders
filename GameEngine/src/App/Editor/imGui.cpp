@@ -1054,6 +1054,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			// Create complete player entity using the config
 			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
 				engine_.getEntityManager(),
+				engine_.getAnimationRegistry(),
 				Math::eVec2<float>{centerX, centerY},
 				playerConfig
 			);
@@ -1167,8 +1168,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			ImGui::Text("No scripts found.");
 		}
 	}
-
-
 
 	if (ImGui::Button("Add Root Node")) {
 		auto& entityManager = engine_.getEntityManager();
