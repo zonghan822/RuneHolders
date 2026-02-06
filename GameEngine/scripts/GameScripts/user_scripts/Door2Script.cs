@@ -13,7 +13,7 @@ namespace Eno
         public float targetCamX = 2000f;
 
         [Port("Target camera Y position")]
-        public float targetCamY = 2000f;
+        public float targetCamY = 2300f;
 
         // Where the player should be teleported after the camera finishes panning
         [Port("Player destination X")]

@@ -238,6 +238,7 @@ void GameApplication::setupGameAudio() {
 
 	// Scene BGM audio
 	audioMng.publishSoundRequest("BGM_01_Layer1_loop");  // Main menu BGM
+	audioMng.publishSoundRequest("BGM_01_Layer2_loop");  // 
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");  // General scene ambience
 
 	// Typing sounds for dialogue
@@ -265,7 +266,8 @@ void GameApplication::playSceneBGM()
 	else
 	{
 		// All other scenes play the ambient creaking wood
-		bgmName = "Ambience_Creaking_Wood";
+		//bgmName = "Ambience_Creaking_Wood";
+		bgmName = "BGM_01_Layer2_loop";
 	}
 
 	// Check if the sound is loaded before trying to play it
