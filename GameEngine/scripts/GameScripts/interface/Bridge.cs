@@ -72,5 +72,8 @@ namespace Eno
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool SetAIHealth(uint entityID, int health);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool GetAIHealth(uint entityID, out int outHealth);
     }
 }

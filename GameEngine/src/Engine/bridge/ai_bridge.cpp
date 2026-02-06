@@ -355,5 +355,31 @@ namespace Bridge
 
             return true;
         }
+
+        // Get AI component health
+        ENGINE_API bool __stdcall GetAIHealth(uint32_t sceneObjectID, int* outHealth)
+        {
+            if (!gEngine) {
+                std::cerr << "[AI Bridge] Engine not initialized!" << std::endl;
+                return false;
+            }
+
+            auto& entMng = gEngine->getEntityManager();
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+
+            if (entity.id() == UINT32_MAX) {
+                return false;
+            }
+
+            if (!entity.has<ECSComponents::AIComponent>(entMng)) {
+                return false;
+            }
+
+            auto& aiComp = entity.get<ECSComponents::AIComponent>(entMng);
+            *outHealth = aiComp.health;
+
+            return true;
+        }
     }
 }

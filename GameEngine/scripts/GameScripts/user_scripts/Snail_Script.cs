@@ -224,23 +224,39 @@ namespace Eno
         // Called when entering the hurt state
         public void hurt_enter()
         {
-            Console.WriteLine($"[Snail {ID}] Ouch! Taking damage!");
             // Stop movement when hurt
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
+            Bridge.ClearPath(ID);
+
+            // Sync health from engine (damage was dealt on C++ side by RuptureMark/combat system)
+            if (Bridge.GetAIHealth(ID, out int currentHealth))
+            {
+                health = currentHealth;
+            }
+
+            Console.WriteLine($"[Snail {ID}] Ouch! Taking damage! HP: {health}");
 
             // Set hurt duration timer
             stateTimer = hurtDuration;
 
-            // TODO: Play hurt animation, apply knockback, etc.
+            // Play hurt animation
+            Bridge.SetEntityAnimation(ID, "hurt");
         }
 
         // Called every frame while in the hurt state
         public void hurt_update()
         {
-            // Transition back to chase after hitstun recovery
+            // Transition after hitstun recovery
             if (stateTimer <= 0.0f)
             {
-                Bridge.ChangeState(ID, "chase");
+                if (health <= 0)
+                {
+                    Bridge.ChangeState(ID, "death");
+                }
+                else
+                {
+                    Bridge.ChangeState(ID, "chase");
+                }
             }
         }
 
@@ -254,25 +270,26 @@ namespace Eno
         public void death_enter()
         {
             Console.WriteLine($"[Snail {ID}] Defeated!");
+            health = 0;
+
             // Stop all movement
             Bridge.SetEntityVelocity(ID, 0.0f, 0.0f);
             Bridge.ClearPath(ID);
 
-            // TODO: Play death animation, drop loot, award XP, etc.
-            // Entity will be destroyed by the game logic after death animation completes
+            // Play death animation
+            Bridge.SetEntityAnimation(ID, "death");
         }
 
         // Called every frame while in the death state
         public void death_update()
         {
             // Death state - entity should remain still
-            // Entity cleanup is handled by the engine after death animation
+            // Entity cleanup is handled by the engine/game_logic after death animation
         }
 
         // Called when exiting the death state
         public void death_exit()
         {
-            // This typically won't be called as entity is destroyed in death state
             Console.WriteLine($"[Snail {ID}] Death state exited");
         }
 	}

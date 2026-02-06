@@ -2769,11 +2769,11 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 						// Trigger state change through StateMachineSystem
 						if (!died)
 						{
-							engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "Hurt");
+							engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "hurt");
 						}
 						else
 						{
-							engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "Death");
+							engine_.getStateMachineSys().requestStateChange(mark.triggeredByEntityID, "death");
 							enemiesToDestroy.push_back(mark.triggeredByEntityID);
 						}
 					}
