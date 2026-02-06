@@ -51,6 +51,14 @@ namespace Bridge {
             float* outAttackRange, float* outWindupTime, float* outAttackDuration, float* outHurtDuration,
             int* outHealth, bool* outAllowDiagonal);
         ENGINE_API bool __stdcall SetAIHealth(uint32_t entityID, int health);
+
+        // ============= Entity Transform =============
+        ENGINE_API bool __stdcall SetEntityPosition(uint32_t entityID, float x, float y);
+        ENGINE_API bool __stdcall SetPlayerPosition(float x, float y);
+
+        // ================= Camera =================
+        ENGINE_API bool __stdcall GetCameraPosition(float* outX, float* outY);
+        ENGINE_API bool __stdcall SetCameraPosition(float x, float y);
     }
 }
 
