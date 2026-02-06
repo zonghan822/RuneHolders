@@ -697,6 +697,10 @@ void GameApplication::updateGameLogic() {
 		}
 		// Restore player visibility if they were hidden
 		showPlayer();
+
+		// Reset rune system so it re-initializes on next play
+		runeSystemInitialized_ = false;
+
 		std::cout << "[Editor] Scene stopped - cleaned up pause/spellbook entities" << std::endl;
 	}
 
@@ -1918,9 +1922,65 @@ void GameApplication::initializeRuneSystem()
 	runeSystemEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("RuneSystem"));
 
 	runeSystemEntityID_ = runeSystemEntity.id();
+	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+
+	// Pre-load and cache all rune textures
+	auto& resourceLoader = engine_.getResourceLoader();
+	runeTexture_ = resourceLoader.getTexture("Runes_White_Sheet_Large");
+	runeTextureGrey_ = resourceLoader.getTexture("Runes_Grey_Sheet_Small");
+	runeTextureGreen_ = resourceLoader.getTexture("Runes_Green_Sheet_Large");
+
+	if (!runeTexture_ || !runeTexture_->isValid()) {
+		std::cerr << "[RuneSystem] WARNING: Failed to pre-load rune texture!" << std::endl;
+	}
+
+	// Create all 6 runes once (pooled) - position off-screen
+	constexpr float OFF_SCREEN_POS = -9999.0f;
+	const int runeNumbers[6] = { 6, 1, 2, 3, 4, 5 };
+
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i)
+	{
+		int runeNumber = runeNumbers[i];
+
+		// Create rune entity
+		ECS::Entity rune = entityManager.create();
+		uint32_t runeId = rune.id();
+
+		// Add all components
+		rune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(("Rune_" + std::to_string(runeNumber)).c_str()));
+		rune.add<ECSComponents::TransformComponent>(entityManager);
+		rune.add<ECSComponents::DrawInfoComponent>(entityManager);
+		rune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(i, runeNumber, 30.0f));
+		rune.add<ECSComponents::VisibilityComponent>(entityManager);
+
+		// Configure transform - position off-screen initially
+		auto& transform = rune.get<ECSComponents::TransformComponent>(entityManager);
+		transform.pos = { OFF_SCREEN_POS, OFF_SCREEN_POS };
+		transform.scale = { 1.0f, 1.0f };
+
+		// Configure visibility - high z_index to draw on top of everything
+		auto& visibility = rune.get<ECSComponents::VisibilityComponent>(entityManager);
+		visibility.z_index = 15;  // High value within MAX_LAYERS (20) = drawn on top
+		visibility.visible = true;
+
+		// Configure draw info
+		auto& draw = rune.get<ECSComponents::DrawInfoComponent>(entityManager);
+		draw.width = 56.0f;
+		draw.height = 56.0f;
+		draw.color = Graphics::Color::White;
+		strcpy_s(draw.shape, "Rectangle");
+		draw.texture = runeTexture_;
+		draw.texID = runeNumber - 1;
+
+		// Store entity ID in the rune system state
+		runeState.runeEntityIDs[i] = runeId;
+
+		std::cout << "[RuneSystem] Created pooled rune " << runeNumber << " with entity ID: " << runeId << std::endl;
+	}
 
 	runeSystemInitialized_ = true;
-	std::cout << "[RuneSystem] Initialized rune system entity" << std::endl;
+	entitiesDirty_ = true;
+	std::cout << "[RuneSystem] Initialized with 6 pooled runes" << std::endl;
 }
 
 void GameApplication::updateRuneSystem()
@@ -1971,10 +2031,15 @@ void GameApplication::updateRuneSystem()
 	bool leftClickHeld = inputManager.isMousePressed(GLFW_MOUSE_BUTTON_LEFT);
 	bool leftClickReleased = inputManager.isMouseUp(GLFW_MOUSE_BUTTON_LEFT);
 
-	// SPAWN RUNES when left click is first pressed
+	// ACTIVATE RUNES when left click is first pressed (move from off-screen to cursor)
 	if (leftClickPressed && !runeState.runesActive) {
-		// Play right rune hover sound when first hovering
+		// Reset connection state
+		runeState.resetConnection();
+
+		// Play rune spawn sound
 		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+
+		// Move pooled runes to cursor position
 		spawnRunes(mouseWorldPos);
 		runeState.runesActive = true;
 		runeState.isLeftClickHeld = true;
@@ -2024,91 +2089,154 @@ void GameApplication::updateRuneSystem()
 	}
 }
 
-
-void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
+void GameApplication::updateRuneVisualStates()
 {
 	auto& entityManager = engine_.getEntityManager();
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	auto& resourceLoader = engine_.getResourceLoader();
+	int validNextRunes = runeState.getValidNextRunes();
 
-	// Load the rune spritesheet
-	auto runeTexture = resourceLoader.getTexture("Runes_White_Sheet_Large");
-	
-	// Rune numbers at each position (0=TL, 1=TR, 2=MR, 3=BR, 4=BL, 5=ML)
-	const int runeNumbers[6] = { 6, 1, 2, 3, 4, 5 };
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i)
+	{
+		if (runeState.runeEntityIDs[i] == UINT32_MAX) continue;
+
+		ECS::Entity runeEntity(runeState.runeEntityIDs[i]);
+		if (!runeEntity.has<ECSComponents::RuneComponent>(entityManager) || !runeEntity.has<ECSComponents::DrawInfoComponent>(entityManager)) continue;
+
+		auto& rune = runeEntity.get<ECSComponents::RuneComponent>(entityManager);
+		auto& draw = runeEntity.get<ECSComponents::DrawInfoComponent>(entityManager);
+
+		// Determine visual state
+		if (rune.isConnected)
+		{
+			rune.visualState = ECSComponents::RuneVisualState::SELECTED;
+		}
+		else if (validNextRunes & (1 << rune.runeNumber))
+		{
+			if (runeState.connectionCount == 0)
+				rune.visualState = ECSComponents::RuneVisualState::AVAILABLE_START;
+			else
+				rune.visualState = ECSComponents::RuneVisualState::NEXT_VALID;
+		}
+		else
+		{
+			rune.visualState = ECSComponents::RuneVisualState::UNAVAILABLE;
+		}
+
+		// Apply texture and size based on visual state
+		switch (rune.visualState)
+		{
+		case ECSComponents::RuneVisualState::UNAVAILABLE:
+			//std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> UNAVAILABLE (grey)" << std::endl;
+			draw.texture = runeTextureGrey_;
+			draw.width = 40.0f;   // Small size
+			draw.height = 40.0f;
+			break;
+
+		case ECSComponents::RuneVisualState::SELECTED:
+			//std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> SELECTED (green)" << std::endl;
+			draw.texture = runeTextureGreen_;
+			draw.width = 56.0f;   // Large size
+			draw.height = 56.0f;
+			break;
+
+		case ECSComponents::RuneVisualState::AVAILABLE_START:
+		case ECSComponents::RuneVisualState::NEXT_VALID:
+			//std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> AVAILABLE (white)" << std::endl;
+			draw.texture = runeTexture_;  // White Large
+			draw.width = 56.0f;
+			draw.height = 56.0f;
+			break;
+		}
+
+		// Debug: verify texture was applied
+		//std::cout << "[DEBUG] Rune " << rune.runeNumber << " texture after apply: "
+		         // << (draw.texture && draw.texture->isValid() ? "VALID" : "NULL/INVALID") << std::endl;
+	}
+}
+
+void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
+{
+	// POOLING APPROACH: Move existing runes to cursor position (no entity creation)
+	auto& entityManager = engine_.getEntityManager();
+	ECS::Entity runeSystemEntity(runeSystemEntityID_);
+	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
+
+	constexpr float PI = 3.14159265359f;
 
 	// Store circle center for spell spawning
 	runeState.circleCenter = mouseWorldPos;
 
-	// Spawn 6 runes in a circle pattern
-	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i) 
+	// Reset connection state
+	runeState.resetConnection();
+
+	// Move all 6 pooled runes to circle pattern around cursor
+	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i)
 	{
-		// Calculate angles
+		if (runeState.runeEntityIDs[i] == UINT32_MAX) {
+			std::cerr << "[RuneSystem] ERROR: Pooled rune " << i << " has invalid ID!" << std::endl;
+			continue;
+		}
+
+		ECS::Entity runeEntity(runeState.runeEntityIDs[i]);
+		if (!runeEntity.has<ECSComponents::TransformComponent>(entityManager) ||
+			!runeEntity.has<ECSComponents::RuneComponent>(entityManager)) {
+			std::cerr << "[RuneSystem] ERROR: Pooled rune " << i << " missing components!" << std::endl;
+			continue;
+		}
+
+		// Calculate position in circle
 		float angle = (-120.0f + i * 60.0f) * (PI / 180.0f);
 		float x = mouseWorldPos.x + runeState.runeCircleRadius * std::cos(angle);
 		float y = mouseWorldPos.y + runeState.runeCircleRadius * std::sin(angle);
 
-		// Get rune number for this position
-		int runeNumber = runeNumbers[i];
-
-		// Create rune entity
-		ECS::Entity rune = entityManager.create();
-
-		std::string runeName = "Rune_" + std::to_string(runeNumber);
-		rune.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent(runeName.c_str()));
-		rune.add<ECSComponents::TransformComponent>(entityManager);
-		rune.add<ECSComponents::DrawInfoComponent>(entityManager);
-		rune.add<ECSComponents::RuneComponent>(entityManager, ECSComponents::RuneComponent(i, runeNumber, 30.0f));
-
-		auto& transform = rune.get<ECSComponents::TransformComponent>(entityManager);
+		// Move rune to position
+		auto& transform = runeEntity.get<ECSComponents::TransformComponent>(entityManager);
 		transform.pos = { x, y };
-		transform.scale = { 1.0f, 1.0f };
 
-		auto& draw = rune.get<ECSComponents::DrawInfoComponent>(entityManager);
-		draw.width = 56.0f;		// Spritesheet frame size
-		draw.height = 56.0f;
-		draw.color = Graphics::Color::White;
-		strcpy_s(draw.shape, "Rectangle");
-		draw.texture = runeTexture;
-
-		// Store entity ID
-		runeState.runeEntityIDs[i] = rune.id();
-
+		// Reset rune state
+		auto& rune = runeEntity.get<ECSComponents::RuneComponent>(entityManager);
+		rune.isConnected = false;
+		rune.isHovered = false;
 	}
 
-	// Reset connection state
-	runeState.resetConnection();
-
-	entitiesDirty_ = true;
+	// Set initial visual states (starting runes highlighted)
+	updateRuneVisualStates();
 }
 
 void GameApplication::destroyRunes()
 {
+	// POOLING APPROACH: Move runes off-screen (no entity destruction)
 	auto& entityManager = engine_.getEntityManager();
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	// Destory all 6 runes
+	constexpr float OFF_SCREEN_POS = -9999.0f;
+
+	// Move all 6 runes off-screen
 	for (int i = 0; i < ECSComponents::RUNE_COUNT; ++i) {
-		if (runeState.runeEntityIDs[i] != UINT32_MAX)
-		{
-			ECS::Entity runeEntity(runeState.runeEntityIDs[i]);
-			if (runeEntity.has<ECSComponents::RuneComponent>(entityManager))
-			{
-				entityManager.destroyEntity(runeState.runeEntityIDs[i]);
-			}
-			runeState.resetConnection();
-			entitiesDirty_ = true;
+		if (runeState.runeEntityIDs[i] == UINT32_MAX) continue;
+
+		ECS::Entity runeEntity(runeState.runeEntityIDs[i]);
+		if (runeEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+			auto& transform = runeEntity.get<ECSComponents::TransformComponent>(entityManager);
+			transform.pos = { OFF_SCREEN_POS, OFF_SCREEN_POS };
+		}
+
+		// Reset rune state
+		if (runeEntity.has<ECSComponents::RuneComponent>(entityManager)) {
+			auto& rune = runeEntity.get<ECSComponents::RuneComponent>(entityManager);
+			rune.isConnected = false;
+			rune.isHovered = false;
 		}
 	}
 
+	// Reset rune system state
 	runeState.resetConnection();
-	// Mark entities as dirty to refresh rendering cache
-	entitiesDirty_ = true;
-
-	std::cout << "[RuneSystem] Destroyed runes" << std::endl;
+	runeState.runesActive = false;
+	runeState.isLeftClickHeld = false;
+	runeState.isDrawingLine = false;
 }
 
 void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
@@ -2142,6 +2270,9 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 			{
 				rune.isConnected = true;
 				runeState.isDrawingLine = true;
+
+				// Update visual states to show next valid runes
+				updateRuneVisualStates();
 
 				// Play sound
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
@@ -2530,8 +2661,8 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 			if (e.has<ECSComponents::RuptureMarkComponent>(entityManager))
 				ruptureCount++;
 		}
-		if (ruptureCount > 0)
-			std::cout << "[RuptureMark DEBUG] Total RuptureMarks in scene: " << ruptureCount << std::endl;
+		//if (ruptureCount > 0)
+			//std::cout << "[RuptureMark DEBUG] Total RuptureMarks in scene: " << ruptureCount << std::endl;
 	}
 
 	for (const auto& [id, loc] : entityManager.getMap())
@@ -2554,7 +2685,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 			{
 				mark.state = ECSComponents::RuptureMarkState::IDLE;
 				mark.stateTimer = 0.0f;
-				std::cout << "[RuptureMark] Entered IDLE state" << std::endl;
+				//std::cout << "[RuptureMark] Entered IDLE state" << std::endl;
 			}
 			break;
 		}
@@ -2570,8 +2701,8 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 			bool shouldLog = debugTimer >= 1.0f;
 			if (shouldLog) {
 				debugTimer = 0.0f;
-				std::cout << "[RuptureMark DEBUG] Looking for target: '" << targetEnemy << "'" << std::endl;
-				std::cout << "[RuptureMark DEBUG] Mark position: (" << transform.pos.x << ", " << transform.pos.y << "), radius: " << mark.detectionRadius << std::endl;
+				//std::cout << "[RuptureMark DEBUG] Looking for target: '" << targetEnemy << "'" << std::endl;
+				//std::cout << "[RuptureMark DEBUG] Mark position: (" << transform.pos.x << ", " << transform.pos.y << "), radius: " << mark.detectionRadius << std::endl;
 			}
 
 			for (const auto& [enemyId, enemyLoc] : entityManager.getMap())
@@ -2612,10 +2743,10 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 				float dist = Math::eVec2Distance(transform.pos, enemyTransform.pos);
 
 				if (shouldLog) {
-					std::cout << "[RuptureMark DEBUG] Found AI entity - Name: '" << debugName
-							  << "', Texture: '" << debugTexture
-							  << "', IsTarget: " << (isTargetEnemy ? "YES" : "NO")
-							  << ", Distance: " << dist << std::endl;
+					//std::cout << "[RuptureMark DEBUG] Found AI entity - Name: '" << debugName
+					//		  << "', Texture: '" << debugTexture
+					//		  << "', IsTarget: " << (isTargetEnemy ? "YES" : "NO")
+					//		  << ", Distance: " << dist << std::endl;
 				}
 
 				if (!isTargetEnemy)
