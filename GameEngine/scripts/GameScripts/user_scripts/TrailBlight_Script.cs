@@ -269,13 +269,15 @@ namespace Eno
 
             // Start death timer
             stateTimer = 1.0f; // 1 seconds for death animation
-
-            // TODO: Play death animation, drop loot, award XP, etc.
         }
 
         // Called every frame while in the death state
         public void death_update()
         {
+            // Decrement death timer
+            float deltaTime = Bridge.GetDeltaTime();
+            stateTimer -= deltaTime;
+
             // Wait for death animation to complete, then destroy self
             if (stateTimer <= 0.0f)
             {
