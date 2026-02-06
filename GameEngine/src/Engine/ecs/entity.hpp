@@ -394,9 +394,7 @@ namespace ECS
 				entityMap_[movedID].entityIndexInChunk = loc.entityIndexInChunk;
 
 			cleanup(loc.archetype, loc.chunkIndex);
-
 			entityMap_.erase(entityID);
-
 			destroyedEntityIDs_.push_back(entityID);
 
 			bus_.publish(EntityDestroyed{

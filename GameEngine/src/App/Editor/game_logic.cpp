@@ -86,6 +86,8 @@ void GameApplication::initialize() {
 		{
 			std::cout << "[GameApplication] Play button pressed - starting BGM" << std::endl;
 			playSceneBGM();
+			// Mark entities dirty so animation controllers get re-initialized before scripts run
+			entitiesDirty_ = true;
 		});
 
 	// Subscribe to StopScene event to stop BGM when game stops
