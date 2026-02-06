@@ -209,6 +209,12 @@ namespace Engine
 		*//*========================================================================================*/
 		bool getIsPlaying() const { return isPlaying_; }
 
+		// Script-accessible camera position (world-space center of viewport).
+		// The bridge reads/writes this; the App layer syncs it with its own camera.
+		void setScriptCameraPos(float x, float y) { scriptCameraPos_ = {x, y}; scriptCameraDirty_ = true; }
+		Math::eVec2<float> getScriptCameraPos() const { return scriptCameraPos_; }
+		bool consumeScriptCameraDirty() { bool d = scriptCameraDirty_; scriptCameraDirty_ = false; return d; }
+		void syncScriptCameraPos(float x, float y) { scriptCameraPos_ = {x, y}; }
 
 	private:
 
@@ -250,6 +256,10 @@ namespace Engine
 
 		// Game state
 		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)
+
+		// Script camera (center of viewport in world space)
+		Math::eVec2<float> scriptCameraPos_{ 0.0f, 0.0f };
+		bool scriptCameraDirty_{ false };
 
 		// Time
 		double dt_ = 0.0;

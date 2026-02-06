@@ -61,6 +61,9 @@ void GameApplication::initialize() {
 	editorCameraX_ = (worldWidth_ / 2.0f) - static_cast<float>(EDITOR_WIDTH) / 2.f;
 	editorCameraY_ = (worldHeight_ / 2.0f) - static_cast<float>(EDITOR_HEIGHT) / 2.f;
 
+	// Initialize script camera to match
+	engine_.syncScriptCameraPos(worldWidth_ / 2.0f, worldHeight_ / 2.0f);
+
 	// Subscribe to delete selected entity event (using GameApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
 		{
@@ -756,6 +759,13 @@ void GameApplication::updateGameLogic() {
 		gameFramebuffer_->unbind();
 	}
 
+	// ==== SYNC SCRIPT CAMERA (pick up changes from C# bridge) ====
+	if (engine_.consumeScriptCameraDirty()) {
+		auto camCenter = engine_.getScriptCameraPos();
+		editorCameraX_ = camCenter.x - static_cast<float>(EDITOR_WIDTH) * 0.5f;
+		editorCameraY_ = camCenter.y - static_cast<float>(EDITOR_HEIGHT) * 0.5f;
+	}
+
 	// ==== CAMERA PANNING INPUT (ONLY IN PLAY MODE) ====
 	if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing) {
 		auto& inputManager = engine_.getInputManager();
@@ -804,6 +814,12 @@ void GameApplication::updateGameLogic() {
 			if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
 		}
+
+		// Keep script camera in sync with editor camera (so GetCameraPosition returns current values)
+		engine_.syncScriptCameraPos(
+			editorCameraX_ + static_cast<float>(EDITOR_WIDTH) * 0.5f,
+			editorCameraY_ + static_cast<float>(EDITOR_HEIGHT) * 0.5f
+		);
 
 		// Calculate viewport size with zoom (zoom is now limited to prevent exceeding world bounds)
 		int editorFbSizeX = getEditorWidth();

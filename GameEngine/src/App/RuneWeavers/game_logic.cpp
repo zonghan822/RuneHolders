@@ -467,7 +467,15 @@ void GameApplication::updateCamera() {
 
 		if (!camera.isActive) continue;
 
-		// Camera is static - position and viewport are set in editor only
+		// Sync script camera: pick up changes from C# bridge
+		if (engine_.consumeScriptCameraDirty()) {
+			auto camPos = engine_.getScriptCameraPos();
+			camera.position.x = camPos.x;
+			camera.position.y = camPos.y;
+		}
+		// Keep script camera in sync so GetCameraPosition returns current values
+		engine_.syncScriptCameraPos(camera.position.x, camera.position.y);
+
 		// Set projection matrix based on camera
 		// The camera position is the center of the viewport
 		float left = camera.position.x - camera.viewportWidth * 0.5f;
