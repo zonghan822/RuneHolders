@@ -8,6 +8,16 @@ Engine::EnoEngine* gEngine = nullptr;
 
 namespace Bridge
 {
+    // Helper function to get entity from sceneObjectID
+    static ECS::Entity GetEntityFromSceneObjectID(uint32_t sceneObjectID, ECS::EntityManager& entMng, Editor::EnoSceneTree& sceneTree)
+    {
+        Editor::Node* node = sceneTree.getNodeBySceneObjectID(sceneObjectID);
+        if (!node) {
+            return ECS::Entity(UINT32_MAX); // Invalid entity
+        }
+        return node->entity_;
+    }
+
     extern "C" {
         ENGINE_API void __stdcall Bridge_Init(void* enginePtr)
         {
@@ -98,7 +108,7 @@ namespace Bridge
         }
         
         //Animation Bridging -> C# should call this function whenever theres a need to change animation
-        ENGINE_API bool __stdcall SetEntityAnimation(uint32_t entityID, const wchar_t* animationName)
+        ENGINE_API bool __stdcall SetEntityAnimation(uint32_t NodeID, const wchar_t* animationName)
         {
             if (!gEngine) {
                 std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
@@ -111,11 +121,11 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& animRegistry = gEngine->getAnimationRegistry();
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+            ECS::Entity entity = GetEntityFromSceneObjectID(NodeID, entMng, sceneTree);
 
-            // Check if entity exists and has animation component
-            ECS::Entity entity(entityID);
             if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng)) {
-                std::cerr << "[Bridge] Entity " << entityID << " has no AnimationControllerComponent!" << std::endl;
+                std::cerr << "[Bridge] Entity " << NodeID << " has no AnimationControllerComponent!" << std::endl;
                 return false;
             }
 
@@ -123,7 +133,7 @@ namespace Bridge
             Animation::AnimationController* ctrl = animRegistry.get(animComp.controllerID);
 
             if (!ctrl) {
-                std::cerr << "[Bridge] No AnimationController found for entity " << entityID << std::endl;
+                std::cerr << "[Bridge] No AnimationController found for entity " << NodeID << std::endl;
                 return false;
             }
 
@@ -140,7 +150,7 @@ namespace Bridge
                     auto tex = ctrl->getCurrentTexture();
                     if (tex) {
                         drawComp.texture = tex;
-                        std::cout << "[Bridge] Set animation '" << name << "' and updated texture for entity " << entityID << std::endl;
+                        std::cout << "[Bridge] Set animation '" << name << "' and updated texture for entity " << NodeID << std::endl;
                     }
                 }
             }

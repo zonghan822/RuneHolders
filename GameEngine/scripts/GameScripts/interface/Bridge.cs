@@ -22,8 +22,8 @@ namespace Eno
         [DllImport("Engine_shared.dll")]
         public static extern int ModsApplied();
 
-        // Animation
-        [DllImport("Engine_shared.dll")]
+        //[DllImport("Engine_shared.dll", CharSet = CharSet.Unicode)]
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern bool SetEntityAnimation(uint entityID, string animationName);
 
         // State Machine

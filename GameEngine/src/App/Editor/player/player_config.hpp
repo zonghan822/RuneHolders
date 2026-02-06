@@ -54,8 +54,8 @@ namespace Player
             , maxSpeed(200.0f)              // Max speed clamp
             , mass(1.0f)                    // Standard mass
             , canMove(true)
-            , spriteWidth(48.0f)
-            , spriteHeight(48.0f)
+            , spriteWidth(128.0f)
+            , spriteHeight(128.0f)
             , colliderWidth(48.0f)
             , colliderHeight(48.0f)
             , dashDuration(0.3f)

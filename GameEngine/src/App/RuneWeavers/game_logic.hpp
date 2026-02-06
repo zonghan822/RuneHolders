@@ -73,6 +73,11 @@ private:
     bool runeSystemInitialized_ = false;
     std::shared_ptr<Graphics::EnoTexture> runeTexture_;  // Cached rune spritesheet texture
 
+    std::shared_ptr<Graphics::EnoTexture> runeTextureGrey_;     // Grey Small Sheet
+    std::shared_ptr<Graphics::EnoTexture> runeTextureGreen_;    // Green Large Sheet
+    std::shared_ptr<Graphics::EnoTexture> runeTextureRed_;      // Red Small Sheet (invalid state)
+    std::shared_ptr<Graphics::EnoTexture> runeLineTexture_;     // Line connection texture        
+
     // Pause Menu and Spellbook System
     bool isPaused_ = false;
     bool showSpellbook_ = false;
@@ -133,6 +138,7 @@ private:
     // Rune system methods
     void initializeRuneSystem();                                    // Initialize rune system entity
     void updateRuneSystem();                                        // Update rune system logic each frame
+    void updateRuneVisualStates();                                  // Update rune visuals based on selection
     void spawnRunes(const Math::eVec2<float>& mouseWorldPos);       // Spawn all 6 runes in circle
     void destroyRunes();                                            // Destroy spawned runes
     void updateRuneHover(const Math::eVec2<float>& mouseWorldPos);  // Check if mouse hovers over runes
