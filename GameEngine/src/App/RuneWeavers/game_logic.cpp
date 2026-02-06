@@ -29,16 +29,11 @@ void GameApplication::initialize() {
 	// This ensures RuneWeavers always starts at the main menu regardless of LastSavedScene.txt
 	engine_.getEnoEditor().selectScene("MainMenu.txt");
 
-	// Initialize player system
-	playerSystem_ = std::make_unique<Player::PlayerSystem>();
-
 	// Setup all game content
 	setupPrefabs();
 	setupGameSystems();
 	setupGameAudio();
-	setupTreeTesting();
 	setupGameEvents();
-	setupGameMath();
 	setupAnimations();
 	setupScripting();
 	setupFont();
@@ -109,6 +104,13 @@ void GameApplication::setupPrefabs() {
 }
 
 void GameApplication::setupGameSystems() {
+
+	// Initialize player system
+	playerSystem_ = std::make_unique<Player::PlayerSystem>();
+
+	// Load player config
+	playerConfig_.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
+
 	// Check if a player entity exists in the scene
 	auto& entityManager = engine_.getEntityManager();
 	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
@@ -118,13 +120,13 @@ void GameApplication::setupGameSystems() {
 		playerEntityID_ = playerEntities[0].id();
 		playerSpawned_ = true;
 	}
-	else {
-	}
 }
 
 void GameApplication::setupFont() {
 	pixelifyFont_ = engine_.getResourceLoader().getFont("PixelifySans");
 	timesFont_ = engine_.getResourceLoader().getFont("times");
+	philosopherBoldFont = engine_.getResourceLoader().getFont("Philosopher-Bold");
+	philosopherRegularFont = engine_.getResourceLoader().getFont("Philosopher-Regular");
 }
 
 void GameApplication::setupCamera() {
@@ -145,7 +147,6 @@ void GameApplication::setupCamera() {
 
 		ECSComponents::NameComponent nameComp("Main Camera");
 		ECS::Entity cameraEntity = entityManager.create<ECSComponents::NameComponent, ECSComponents::CameraComponent>(nameComp, camera);
-	} else {
 	}
 }
 
@@ -231,32 +232,8 @@ void GameApplication::setupGameAudio() {
 	// BGM
 	audioMng.publishSoundRequest("BGM_01_Layer1_loop");
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");
-
-	// setup input to play sound
-	auto& inputMng = engine_.getInputManager();
-
-
-	// Undo/Redo System
-	// Ctrl+Z for undo
-	inputMng.setupKey("Undo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL);
-	inputMng.setupEvent<Editor::UndoAction>("Undo");
-
-	// Ctrl+Shift+Z for redo
-	inputMng.setupKey("Redo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT);
-	inputMng.setupEvent<Editor::RedoAction>("Redo");
 }
 
-void GameApplication::setupTreeTesting()
-{
-	auto& inputMng = engine_.getInputManager();
-
-	inputMng.setupKey("Test Editor Tree", GLFW_KEY_Q, glfwGetKeyScancode(GLFW_KEY_Q), GLFW_RELEASE, 0);
-	inputMng.setupEvent<Editor::TestTree>("Test Editor Tree");
-
-	// Setup Delete key for entity deletion
-	inputMng.setupKey("Delete Selected Entity", GLFW_KEY_DELETE, glfwGetKeyScancode(GLFW_KEY_DELETE), GLFW_RELEASE, 0);
-	inputMng.setupEvent<Editor::DeleteSelectedEntity>("Delete Selected Entity");
-}
 
 void GameApplication::playSceneBGM()
 {
@@ -434,22 +411,6 @@ void GameApplication::setupGameEvents() {
 	});
 }
 
-void GameApplication::setupGameMath() {
-
-	// Math lib and maybe collision
-	//Math::eVec2 vec{ 1.1f, 1.2f };
-	//Math::eVec2 vec2{ 1.3f, 2.f };
-	//vec += vec2;
-
-	Collision::RunBasicCollisionTest();
-
-	// NOTE: Systems are now initialized in eno_engine.cpp::setupGameSystems()
-	// No need to initialize them here anymore
-
-	// Load player config
-	playerConfig_.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
-}
-
 void GameApplication::setupAnimations() {
 	// Load the sprite sheet texture
 	backgroundTexture_ = engine_.getResourceLoader().getTexture("Background");
@@ -465,12 +426,12 @@ void GameApplication::setupAnimations() {
 		return;
 	}
 
-	// Create player idle animation - 1 row, 17 columns, 96x96 per frame
+	// Create player idle animation
 	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
-		96,    // Frame width
-		96,    // Frame height
-		1632,  // Sheet width (96 * 17 = 1632)
-		96,    // Sheet height
+		128,    // Frame width
+		128,    // Frame height
+		768,    // Sheet width
+		384,    // Sheet height
 		0,     // Start frame
 		17,    // Frame count
 		0.1f   // Duration per frame
