@@ -737,21 +737,9 @@ void GameApplication::loadEntityTextures() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& loader = engine_.getResourceLoader();
 
-	for (auto& [entityID, entityLoc] : entityManager.getMap()) {
-		// Check if entity has RenderComponent
-		bool hasRender = false;
-		for (const auto& type : entityLoc.archetype->types_) {
-			if (type == std::type_index(typeid(ECSComponents::RenderComponent))) {
-				hasRender = true;
-				break;
-			}
-		}
-
-		if (!hasRender) continue;
-
-		// Get RenderComponent
-		size_t renderIndex = entityLoc.archetype->findComponentIndex<ECSComponents::RenderComponent>();
-		auto& renderComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::RenderComponent>(renderIndex, entityLoc.entityIndexInChunk);
+	auto renderEntities = entityManager.findEntity<ECSComponents::RenderComponent>();
+	for (auto& entity : renderEntities) {
+		auto& renderComp = entity.get<ECSComponents::RenderComponent>(entityManager);
 
 		// If texture path is set but texture is not loaded, load it
 		if (strlen(renderComp.texturePath) > 0 && (!renderComp.texture || !renderComp.texture->isValid())) {
@@ -764,11 +752,6 @@ void GameApplication::loadEntityTextures() {
 
 			// Get texture from resource loader
 			renderComp.texture = loader.getTexture(textureName);
-
-			if (renderComp.texture && renderComp.texture->isValid()) {
-			}
-			else {
-			}
 		}
 	}
 }
@@ -1587,16 +1570,14 @@ void GameApplication::updateRuneSystem()
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 	std::vector<uint32_t> fireballsToDestroy;
 
-	for (const auto& [id, loc] : entityManager.getMap()) {
-		ECS::Entity entity(id);
-		if (entity.has<ECSComponents::FireballComponent>(entityManager)) {
-			auto& fireballComp = entity.get<ECSComponents::FireballComponent>(entityManager);
-			fireballComp.elapsedTime += deltaTime;
+	auto fireballs = entityManager.findEntity<ECSComponents::FireballComponent>();
+	for (auto& entity : fireballs) {
+		auto& fireballComp = entity.get<ECSComponents::FireballComponent>(entityManager);
+		fireballComp.elapsedTime += deltaTime;
 
-			// Check if fireball has exceeded its lifetime
-			if (fireballComp.elapsedTime >= fireballComp.lifetime) {
-				fireballsToDestroy.push_back(id);
-			}
+		// Check if fireball has exceeded its lifetime
+		if (fireballComp.elapsedTime >= fireballComp.lifetime) {
+			fireballsToDestroy.push_back(entity.id());
 		}
 	}
 
@@ -2261,11 +2242,12 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 	std::vector<uint32_t> marksToDestroy;
 	std::vector<uint32_t> enemiesToDestroy;
 
-	for (const auto& [id, loc] : entityManager.getMap())
+	// Get all rupture marks and enemies once at the start
+	auto ruptureMarks = entityManager.findEntity<ECSComponents::RuptureMarkComponent, ECSComponents::TransformComponent>();
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent>();
+
+	for (auto& entity : ruptureMarks)
 	{
-		ECS::Entity entity(id);
-		if (!entity.has<ECSComponents::RuptureMarkComponent>(entityManager) || !entity.has<ECSComponents::TransformComponent>(entityManager))
-			continue;
 
 		auto& mark = entity.get<ECSComponents::RuptureMarkComponent>(entityManager);
 		auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
@@ -2290,13 +2272,8 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 			// Check for enemies in range
 			const char* targetEnemy = mark.getTargetEnemyName();
 
-			for (const auto& [enemyId, enemyLoc] : entityManager.getMap())
+			for (auto& enemyEntity : enemies)
 			{
-				ECS::Entity enemyEntity(enemyId);
-				if (!enemyEntity.has<ECSComponents::AIComponent>(entityManager) ||
-					!enemyEntity.has<ECSComponents::TransformComponent>(entityManager))
-					continue;
-
 				// Check if this is the target enemy type by name OR texture path
 				bool isTargetEnemy = false;
 
@@ -2327,7 +2304,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 					// Enemy triggered the mark! Switch to windup animation
 					mark.state = ECSComponents::RuptureMarkState::WINDUP;
 					mark.stateTimer = 0.0f;
-					mark.triggeredByEntityID = enemyId;
+					mark.triggeredByEntityID = enemyEntity.id();
 
 					// Switch to windup animation
 					if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager) &&
@@ -2463,7 +2440,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 
 		case ECSComponents::RuptureMarkState::FINISHED:
 		{
-			marksToDestroy.push_back(id);
+			marksToDestroy.push_back(entity.id());
 			break;
 		}
 		}
@@ -2521,43 +2498,39 @@ void GameApplication::updateFloatingTexts(float deltaTime)
 		cameraY = camera.position.y - camera.viewportHeight * 0.5f;
 	}
 
-	for (const auto& [id, loc] : entityManager.getMap()) {
-		ECS::Entity entity(id);
-		if (entity.has<ECSComponents::FloatingTextComponent>(entityManager) &&
-		    entity.has<ECSComponents::TransformComponent>(entityManager)) {
+	auto floatingTexts = entityManager.findEntity<ECSComponents::FloatingTextComponent, ECSComponents::TransformComponent>();
+	for (auto& entity : floatingTexts) {
+		auto& floatText = entity.get<ECSComponents::FloatingTextComponent>(entityManager);
+		auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 
-			auto& floatText = entity.get<ECSComponents::FloatingTextComponent>(entityManager);
-			auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+		// Update elapsed time
+		floatText.elapsedTime += deltaTime;
 
-			// Update elapsed time
-			floatText.elapsedTime += deltaTime;
+		// Move text upward
+		transform.pos.y -= floatText.riseSpeed * deltaTime;
 
-			// Move text upward
-			transform.pos.y -= floatText.riseSpeed * deltaTime;
+		// Check if expired
+		if (floatText.elapsedTime >= floatText.lifetime) {
+			textsToDestroy.push_back(entity.id());
+		}
+		else {
+			// Render the floating text
+			float alpha = floatText.getCurrentAlpha();
 
-			// Check if expired
-			if (floatText.elapsedTime >= floatText.lifetime) {
-				textsToDestroy.push_back(id);
-			}
-			else {
-				// Render the floating text
-				float alpha = floatText.getCurrentAlpha();
+			// Convert world position to screen position
+			Math::eVec2<float> screenPos = {
+				transform.pos.x - cameraX,
+				transform.pos.y - cameraY
+			};
 
-				// Convert world position to screen position
-				Math::eVec2<float> screenPos = {
-					transform.pos.x - cameraX,
-					transform.pos.y - cameraY
-				};
-
-				// Draw text with fading alpha
-				graphics.drawText(
-					pixelifyFont_,
-					std::string(floatText.text),
-					screenPos,
-					1.0f,  // scale
-					Graphics::Color(1.0f, 0.3f, 0.3f, alpha)  // Red color with fading alpha
-				);
-			}
+			// Draw text with fading alpha
+			graphics.drawText(
+				pixelifyFont_,
+				std::string(floatText.text),
+				screenPos,
+				1.0f,  // scale
+				Graphics::Color(1.0f, 0.3f, 0.3f, alpha)  // Red color with fading alpha
+			);
 		}
 	}
 
