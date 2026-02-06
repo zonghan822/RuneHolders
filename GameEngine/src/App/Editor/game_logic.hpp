@@ -44,7 +44,6 @@ private:
     std::shared_ptr<Graphics::EnoTexture> backgroundTexture_;
     std::shared_ptr<Graphics::EnoTexture> playerWalkTexture_;
     Animation::AnimationController playerAnimController_;
-    //Animation::AnimationController enemyAnimController_;
     int playerFacingDirection_ = 1;
 
     std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
@@ -195,12 +194,9 @@ public:
 private:
     // Setup (called during initialize())
     void setupPrefabs();        // Prefab instantiation
-    void setupGameSystems();    // Register user systems (player, enemy, etc...)
-    void setupTreeTesting();    // Editor tree testing code
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
     void playSceneBGM();        // Play appropriate BGM based on current scene
-    void setupGameMath();       // math demonstration code
     void setupImGui();          // setup ImGui code
     void setupAnimations();
     void setupScripting();

@@ -3,7 +3,8 @@
 #include "../component/components/ai_component.hpp"
 #include "../component/components/state_machine_component.hpp"
 
-static Engine::EnoEngine* gEngine = nullptr;
+// Global engine pointer shared across all bridge files
+Engine::EnoEngine* gEngine = nullptr;
 
 namespace Bridge
 {
@@ -19,6 +20,15 @@ namespace Bridge
             // DLL has its own copy of FileSystem statics (separate from the EXE's).
             // Initialize them here so inlined paths like selectScene resolve correctly.
             FileSystem::Initialize();
+        }
+
+        ENGINE_API float __stdcall GetDeltaTime()
+        {
+            if (!gEngine) {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+                return 0.0f;
+            }
+            return gEngine->getDeltaTime();
         }
 
         ENGINE_API bool __stdcall IsKeyPressed(int key)
@@ -61,7 +71,7 @@ namespace Bridge
             return input.currentMods();
         }
 
-        ENGINE_API void ChangeState(const wchar_t* stateName, uint32_t entityID) 
+        ENGINE_API void ChangeState(uint32_t sceneObjectID, const wchar_t* stateName)
         {
             if (!gEngine) {
                 std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
@@ -71,7 +81,19 @@ namespace Bridge
             std::wstring wState(stateName);
             std::string state(wState.begin(), wState.end());
 
-            // Request state change through the system
+            // Get entity ID from sceneObjectID
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+            Editor::Node* node = sceneTree.getNodeBySceneObjectID(sceneObjectID);
+
+            if (!node) {
+                std::cerr << "[Bridge] ChangeState: No node found for sceneObjectID " << sceneObjectID << std::endl;
+                return;
+            }
+
+            uint32_t entityID = node->entity_.id();
+            std::cout << "[Bridge] ChangeState: sceneObjectID " << sceneObjectID << " -> entityID " << entityID << " -> state '" << state << "'" << std::endl;
+
+            // Request state change through the system (uses ECS entity ID)
             gEngine->getStateMachineSys().requestStateChange(entityID, state);
         }
         

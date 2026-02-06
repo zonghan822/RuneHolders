@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <memory>
+#include <vector>
 #include "imgui.h"
 
 #include "script_generator.hpp"
@@ -66,6 +67,9 @@ namespace Editor {
 
                 if (ImGui::Button("Detach Script")) {
                     sceneTree_.detachScript(node);
+                    if (node->entity_.has<ECSComponents::StateMachineComponent>(entMng_)) {
+                        node->entity_.remove<ECSComponents::StateMachineComponent>(entMng_);
+                    }
                 }
             }
             else {
@@ -138,7 +142,6 @@ namespace Editor {
                 ImGui::Unindent();
 
                 // Action buttons
-                ImGui::SameLine();
                 if (ImGui::SmallButton("Set Current")) {
                     setCurrentState(smComp, smComp.states[i].name);
                 }
@@ -189,8 +192,6 @@ namespace Editor {
 
         // Add a new state
         void addState(Editor::Node* node, ECSComponents::StateMachineComponent& smComp, const char* stateName) {
-            // to debug
-            std::cout << "Add state..." << std::endl;
             if (smComp.addState(stateName)) {
                 // Auto-generate methods in script if script is attached
                 if (node->script_) {
@@ -319,6 +320,18 @@ namespace Editor {
 
                         for (int i = 0; i < smComp.numStates; ++i) {
                             Script::StateMachineScriptGenerator::generateStateMethods(scriptPath, smComp.states[i].name);
+                        }
+
+                        // Add existing state in the script
+                        auto scriptStates = Script::StateMachineScriptGenerator::extractStatesFromScript(scriptPath);
+                        for (const auto& state : scriptStates) {
+                            smComp.addState(state.c_str());
+
+                            // Set as current state if it's the first state
+                            if (smComp.numStates == 1) {
+                                strncpy(smComp.currentState, state.c_str(), sizeof(smComp.currentState) - 1);
+                                smComp.currentState[sizeof(smComp.currentState) - 1] = '\0';
+                            }
                         }
                     }
                 }

@@ -55,6 +55,8 @@ private:
     // Font
     std::shared_ptr<Font::EnoFont> pixelifyFont_;
     std::shared_ptr<Font::EnoFont> timesFont_;
+    std::shared_ptr<Font::EnoFont> philosopherBoldFont;
+    std::shared_ptr<Font::EnoFont> philosopherRegularFont;
 
     // Player
     Player::PlayerConfig playerConfig_;
@@ -113,10 +115,8 @@ private:
     // Setup (called during initialize())
     void setupPrefabs();        // Prefab instantiation
     void setupGameSystems();    // Register user systems (player, enemy, etc...)
-    void setupTreeTesting();    // Editor tree testing code
     void setupGameAudio();      // audio setup code
     void setupGameEvents();     // event bus setup code
-    void setupGameMath();       // math demonstration code
     void setupAnimations();
     void setupScripting();
     void setupFont();           // setup font

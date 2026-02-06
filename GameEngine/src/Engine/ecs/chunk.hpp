@@ -9,6 +9,15 @@
 
 #pragma once
 
+// Arena
+#include "../memory/eno_ecs_arena.hpp"
+
+// Registry
+#include "../component/component_registry.hpp"
+
+// Settings
+#include "eno_ecs_settings.hpp"
+
 // stds
 #include <vector>
 #include <typeindex>
@@ -20,66 +29,69 @@
 
 namespace ECS
 {
-	/*============================================================================================
-		* \brief		memory blocks that contain entities of a single archetype in SoA format
-	*//*========================================================================================*/
 	struct Chunk
 	{
-		std::unique_ptr<std::byte[]> data;					// Starting address of the chunk
-		std::vector<void*> pComponent;						// Pointer to each component
-		std::vector<size_t> componentSizes;					// Size of each component
-		std::vector<std::type_index> componentTypes;		// Type of each component (for calling destructors)
+		static constexpr uint32_t INVALID_ENTITY = UINT32_MAX;									// Sentinel for indicating an invalid entity
 
-		size_t capacity;									// Max number of entities for the chunk to store
-		size_t current;										// Current number of entities stored
+		std::vector<std::byte*> data_;																		// Starting address of each component using 2d indexing
+		size_t* componentSizes_;																// Size of each component
+		uint32_t* entities_;																	// Used to track global entity id on local chunk
+		std::vector<std::type_index> types_;													// All types in the component
 
-		/*============================================================================================
-			* \brief			Chunk Constructor
-			* \param[in]		Max number of entities to store
-			* \param[in]		Types to be stored
-			* \param[in]		Sizes of types to store
-		*//*========================================================================================*/
+		size_t capacity_;																		// Max number of entities for the chunk to store
+		size_t current_;																		// Current number of entities stored
+
+		Memory::EnoECSArena& arena_;															// Arena handle
+
 		Chunk(
+			Memory::EnoECSArena& arena,
 			uint32_t chunkCapacity,
-			std::vector<std::type_index>& types,
-			std::vector<size_t>& sizes)
+			const std::vector<std::type_index>& types,
+			const std::vector<size_t>& sizes)
 			:
-			capacity{ chunkCapacity },
-			current{ 0 },
-			componentTypes{ types }
+			capacity_{ chunkCapacity },
+			current_{ 0 },
+			types_{ types },
+			arena_{ arena }
 		{
-			// Allocate the size of the chunk
-			// based on components
-			size_t totalSize{};
-			for (const size_t size : sizes)
-			{
-				totalSize += size * capacity;
-			}
+			size_t componentCount = sizes.size();
 
-			// Assign new memory to chunk memory
-			data = std::make_unique<std::byte[]>(totalSize);
+			// Entity allocations
+			entities_ = static_cast<uint32_t*>(arena.alloc(sizeof(uint32_t) * capacity_, alignof(uint32_t)));
 
-			// Partition each region of memory
-			size_t offset{};
-			for (const size_t& size : sizes)
+			// Component sizes allocations
+			componentSizes_ = static_cast<size_t*>(arena.alloc(sizeof(size_t) * componentCount, alignof(size_t)));
+
+			// Data allocations
+			data_.resize(componentCount);
+			for (size_t i = 0; i < componentCount; i++)
 			{
-				pComponent.push_back(data.get() + offset);
-				componentSizes.push_back(size);
-				offset += size * capacity;
+				size_t bytes = sizes[i] * capacity_;
+				data_[i] = static_cast<std::byte*>(arena.alloc(bytes, ECSComponents::EnoComponentRegistry::GetComponentAlign(types[i])));
+				componentSizes_[i] = sizes[i];
 			}
 		}
 
-		/*============================================================================================
-			* \brief			Chunk Destructor - properly destroys all components
-		*//*========================================================================================*/
-		~Chunk();  // Implemented in archetype.hpp to avoid circular dependency
+		~Chunk()
+		{
+			// Invoke the destructor of all components
+			for (size_t compIdx = 0; compIdx < types_.size(); ++compIdx)
+			{
+				ECSComponents::EnoComponentRegistry::DeduceCompType(
+					types_[compIdx], [this, compIdx]<typename T>()
+				{
+					for (size_t entIdx = 0; entIdx < current_; ++entIdx)
+					{
+						void* ptr = data_[compIdx] + entIdx * sizeof(T);
+						reinterpret_cast<T*>(data_[compIdx] + entIdx * sizeof(T))->~T();
+					}
+				});
+			}
+		}
 
-		/*============================================================================================
-			* \brief			Retrieve the value of an entity's component
-			* \param[in]		Component index
-			* \param[in]		Entity index
-			* \return			Value of a component
-		*//*========================================================================================*/
+		// Retrieve the value of an entity's component
+		// Component Index: Index of the component within the memory layout
+		// Entity Index: Index of the entity within the chunk's memory
 		template <typename T>
 		T& retrieve(const size_t& componentIndex, const size_t& entityIndex)
 		{
@@ -88,75 +100,135 @@ namespace ECS
 			return *reinterpret_cast<T*>(p);
 		}
 
-		/*============================================================================================
-			* \brief			Default construct a specified component
-			* \param[in]		Component index
-			* \param[in]		Entity index
-		*//*========================================================================================*/
+		// Default construct a component and its value(s)
+		// Component Index: Index of the component within the memory layout
+		// Entity Index: Index of the entity within the chunk's memory
 		template <typename T>
-		void set(const size_t& componentIndex, const size_t& entityIndex)
+		void set(
+			const size_t& componentIndex,
+			const size_t& entityIndex)
 		{
-			assert(componentIndex < pComponent.size());
+#if ARENA_ENABLED
+			assert(componentIndex < data_.size());
+			assert(entityIndex < capacity_);
 
-			// Cast back to a pointer and look for component
-			char* p = search(componentIndex, entityIndex);
-
-			// Construct component into memory
-			new (p) T{};
+			T* compArray = reinterpret_cast<T*>(data_[componentIndex]);
+			new (&compArray[entityIndex]) T{};
+#endif
 		}
 
-		/*============================================================================================
-			* \brief			Set a value in a specified component
-			* \param[in]		Component index
-			* \param[in]		Entity index
-			* \param[in]		Forwarded value
-		*//*========================================================================================*/
+		// Set a value in a specified component
+		// Component Index: Index of the component within the memory layout
+		// Entity Index: Index of the entity within the chunk's memory
+		// Value: Value to assign to the component
 		template <typename T, typename U>
-		void setVal(const size_t& componentIndex, const size_t& entityIndex, U&& value)
+		void setVal(
+			const size_t& componentIndex,
+			const size_t& entityIndex,
+			U&& value)
 		{
-			assert(componentIndex < pComponent.size());
+#if ARENA_ENABLED
+			assert(componentIndex < data_.size());
+			assert(entityIndex < capacity_);
 
-			// Cast back to a pointer and look for component
-			char* p = search(componentIndex, entityIndex);
-
-			// Construct component into memory
-			new (p) T{ std::forward<U>(value) };
+			// Search for the right memory location and construct (with value)
+			char* loc = search(componentIndex, entityIndex);
+			new (loc) T{ std::forward<U>(value) };
+#endif
 		}
 
-		/*============================================================================================
-			* \brief			Modify a value in a specified component
-			* \param[in]		Component index
-			* \param[in]		Entity index
-			* \param[in]		Forwarded value
-		*//*========================================================================================*/
+		// Modify a value in a specified component
 		template <typename T, typename U>
-		void modify(const size_t& componentIndex, const size_t& entityIndex, U&& value)
+		void modify(
+			const size_t& componentIndex,
+			const size_t& entityIndex,
+			U&& value)
 		{
-			assert(componentIndex < pComponent.size());
+#if ARENA_ENABLED
+			assert(componentIndex < data_.size());
+			assert(entityIndex < current_);
 
-			// Cast back to a pointer and look for component
-			char* p = search(componentIndex, entityIndex);
-
-			// Invoke the destructor for previous object
-			// stored in this location
-			reinterpret_cast<T*>(p)->~T();
-
-			// Construct component into memory
-			new (p) T{ std::forward<U>(value) };
+			// Search for the right memory location
+			// Before constructing, invoke the destructor of the component
+			// and subsequently regenerate the component with the specified value
+			char* loc = search(componentIndex, entityIndex);
+			reinterpret_cast<T*>(loc)->~T();
+			new (loc) T{ std::forward<U>(value) };
+#endif
 		}
 
-		/*============================================================================================
-			* \brief			Identify the location of the component of a given entity
-			* \param[in]		Component index
-			* \param[in]		Entity index
-			* \return			Pointer to the start of the component of an entity
-		*//*========================================================================================*/
+		// Invoke the destructor of all components within the chunk
+		void destroyComponents(std::vector<std::type_index>& types)
+		{
+			for (size_t comp = 0; comp < types.size(); comp++)
+			{
+				ECSComponents::EnoComponentRegistry::DeduceCompType(types[comp], [&]<typename T>()
+				{
+					std::byte* base = data_[comp];
+					size_t stride = componentSizes_[comp];
+
+					for (size_t row = 0; row < current_; ++row)
+					{
+						reinterpret_cast<T*>(base + row * stride)->~T();
+					}
+				});
+			}
+		}
+
+		// Invoke the destructor of all components belonging to the specified entity
+		// Return is the entity index
+		uint32_t destroyEntity(size_t entityIndex, const std::vector<std::type_index>& types)
+		{
+			assert(current_ > 0 && entityIndex < current_);
+
+			size_t last = current_ - 1;
+			uint32_t movedEntityID = INVALID_ENTITY;
+
+			// If not destroying the last entity, move the last entity into this slot
+			if (entityIndex != last)
+			{
+				std::swap(entities_[entityIndex], entities_[last]);
+				movedEntityID = entities_[entityIndex];
+
+				// Move components
+				for (size_t comp = 0; comp < types.size(); ++comp)
+				{
+					ECSComponents::EnoComponentRegistry::DeduceCompType(types[comp], [this, comp, entityIndex, last]<typename T>()
+					{
+						T* dest = reinterpret_cast<T*>(data_[comp] + entityIndex * sizeof(T));
+						T* src = reinterpret_cast<T*>(data_[comp] + last * sizeof(T));
+
+						*dest = std::move(*src);
+						src->~T();
+					});
+				}
+			}
+			else
+			{
+				// Destroy the last entity directly
+				for (size_t comp = 0; comp < types.size(); ++comp)
+				{
+					ECSComponents::EnoComponentRegistry::DeduceCompType(types[comp], [this, comp, last]<typename T>()
+					{
+						T* component = reinterpret_cast<T*>(data_[comp] + last * sizeof(T));
+						component->~T();
+					});
+				}
+			}
+
+			entities_[last] = INVALID_ENTITY;
+			--current_;
+
+			return movedEntityID;
+		}
+
+		// Identify the location of the component of a given entity
 		char* search(const size_t& componentIndex, const size_t& entityIndex)
 		{
-			auto pComp = static_cast<char*>(pComponent[componentIndex]);
-			char* loc = pComp + entityIndex * componentSizes[componentIndex];
+			std::byte* base = data_[componentIndex];
+			size_t stride = componentSizes_[componentIndex];
 
-			return loc;
+			return reinterpret_cast<char*>(base + entityIndex * stride);
 		}
 	};
 }

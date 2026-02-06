@@ -12,7 +12,7 @@ namespace FSM {
             return; // No state machine component
         }
 
-        auto sm = entity.get<ECSComponents::StateMachineComponent>(entMng);
+        auto& sm = entity.get<ECSComponents::StateMachineComponent>(entMng);
 
         if (strcmp(sm.currentState, newState) == 0) return;
 

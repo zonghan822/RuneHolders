@@ -6,9 +6,8 @@ file(GLOB_RECURSE ENGINE_SRC_FILES
 )
 
 # Identify the bridging files
-set(BRIDGE_FILES
-    ${CMAKE_CURRENT_LIST_DIR}/bridge/eno_bridge.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/bridge/eno_bridge.hpp
+file(GLOB BRIDGE_FILES
+    "${CMAKE_CURRENT_LIST_DIR}/bridge/*"
 )
 
 set(ENGINE_SRC_NO_BRIDGE ${ENGINE_SRC_FILES})

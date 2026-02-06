@@ -189,6 +189,8 @@ namespace Engine
 
 		AI::PathfindingSystem& getPathfinder() { return *pathfinder_; }
 
+		AI::AIManager& getAIManager() { return *aiMng_; }
+
 		/*============================================================================================
 		* \brief		Gets the Particle System for particle effects
 		* \return		Pointer to ParticleSystem instance (may be null if not initialized)
@@ -227,12 +229,14 @@ namespace Engine
 		Event::EnoEventBus bus_;
 		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
-		ECS::EntityManager entityMng_{ bus_ };
+		Memory::EnoECSArena ecsArena_{ 1ull * 1024 * 1024 };
+		ECS::EntityManager entityMng_{ ecsArena_, bus_ };
 		ECSComponents::EnoPrefabManager prefabMng_{ bus_ };
 		Core::EnoCoreHost coreHost_{ bus_ };
 		std::unique_ptr<Map::TileMapSystem> tilemapSystem_;
 		std::unique_ptr<AI::PathfindingSystem> pathfinder_;
 		std::unique_ptr<Editor::EnoEditor> editor_;
+		std::unique_ptr<AI::AIManager> aiMng_;
 		Animation::AnimationControllerRegistry animRegistry;
 
 		// Systems
