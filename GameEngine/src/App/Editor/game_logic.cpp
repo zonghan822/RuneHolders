@@ -223,6 +223,10 @@ void GameApplication::setupGameAudio() {
 
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-3");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-4");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-5");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-6");
 
 	// Spellbook audio
 	audioMng.publishSoundRequest("Spellbook_Open_01");
@@ -234,6 +238,7 @@ void GameApplication::setupGameAudio() {
 
 	// Scene BGM audio
 	audioMng.publishSoundRequest("BGM_01_Layer1_loop");  // Main menu BGM
+	audioMng.publishSoundRequest("BGM_01_Layer2_loop");  // 
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");  // General scene ambience
 
 	// Typing sounds for dialogue
@@ -261,7 +266,8 @@ void GameApplication::playSceneBGM()
 	else
 	{
 		// All other scenes play the ambient creaking wood
-		bgmName = "Ambience_Creaking_Wood";
+		//bgmName = "Ambience_Creaking_Wood";
+		bgmName = "BGM_01_Layer2_loop";
 	}
 
 	// Check if the sound is loaded before trying to play it
@@ -519,7 +525,13 @@ void GameApplication::updateGameLogic() {
 						auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
 						auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
 
-						// Find all UI-PopUp-E entities
+						// Calculate player position and dimensions once (used for both scroll and teacher checks)
+						float playerX = playerTransform.pos.x + playerCollision.offset.x;
+						float playerY = playerTransform.pos.y + playerCollision.offset.y;
+						float playerHalfW = (playerCollision.data.rectangle.width * playerTransform.scale.x) * 0.5f;
+						float playerHalfH = (playerCollision.data.rectangle.height * playerTransform.scale.y) * 0.5f;
+
+					// Find all UI-PopUp-E entities
 						auto scrolls = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("UI-PopUp-E"));
 						for (auto& scroll : scrolls) {
 							if (scroll.has<ECSComponents::TransformComponent>(entityManager) &&
@@ -533,14 +545,10 @@ void GameApplication::updateGameLogic() {
 									playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
 
 									// Get positions with offsets
-									float playerX = playerTransform.pos.x + playerCollision.offset.x;
-									float playerY = playerTransform.pos.y + playerCollision.offset.y;
 									float scrollX = scrollTransform.pos.x + scrollCollision.offset.x;
 									float scrollY = scrollTransform.pos.y + scrollCollision.offset.y;
 
 									// Get half dimensions
-									float playerHalfW = (playerCollision.data.rectangle.width * playerTransform.scale.x) * 0.5f;
-									float playerHalfH = (playerCollision.data.rectangle.height * playerTransform.scale.y) * 0.5f;
 									float scrollHalfW = (scrollCollision.data.rectangle.width * scrollTransform.scale.x) * 0.5f;
 									float scrollHalfH = (scrollCollision.data.rectangle.height * scrollTransform.scale.y) * 0.5f;
 
@@ -548,6 +556,46 @@ void GameApplication::updateGameLogic() {
 									if ((std::abs(playerX - scrollX) <= (playerHalfW + scrollHalfW)) &&
 										(std::abs(playerY - scrollY) <= (playerHalfH + scrollHalfH))) {
 										startDialogue();
+										break; // Only trigger once
+									}
+								}
+							}
+						}
+
+						// Check if player is colliding with Teacher E entity
+						auto teacherE = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("Teacher E"));
+						for (auto& teacher : teacherE) {
+							if (teacher.has<ECSComponents::TransformComponent>(entityManager) &&
+								teacher.has<ECSComponents::CollisionComponent>(entityManager)) {
+
+								auto& teacherTransform = teacher.get<ECSComponents::TransformComponent>(entityManager);
+								auto& teacherCollision = teacher.get<ECSComponents::CollisionComponent>(entityManager);
+
+								// Check AABB collision
+								if (teacherCollision.type == ECSComponents::ColliderType::RECTANGLE &&
+									playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
+
+									// Get positions with offsets
+									float teacherX = teacherTransform.pos.x + teacherCollision.offset.x;
+									float teacherY = teacherTransform.pos.y + teacherCollision.offset.y;
+
+									// Get half dimensions
+									float teacherHalfW = (teacherCollision.data.rectangle.width * teacherTransform.scale.x) * 0.5f;
+									float teacherHalfH = (teacherCollision.data.rectangle.height * teacherTransform.scale.y) * 0.5f;
+
+									// AABB collision test
+									if ((std::abs(playerX - teacherX) <= (playerHalfW + teacherHalfW)) &&
+										(std::abs(playerY - teacherY) <= (playerHalfH + teacherHalfH))) {
+
+										// Set WinScreen-M4 to visible
+										auto winScreen = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
+										if (!winScreen.empty()) {
+											for (auto& screen : winScreen) {
+												if (screen.has<ECSComponents::VisibilityComponent>(entityManager)) {
+													screen.get<ECSComponents::VisibilityComponent>(entityManager).visible = true;
+												}
+											}
+										}
 										break; // Only trigger once
 									}
 								}
@@ -2027,7 +2075,9 @@ void GameApplication::updateRuneSystem()
 		runeState.resetConnection();
 
 		// Play rune spawn sound
-		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+		int x = randomFloat(1,6);
+		std::string sound = "Rune-GalaxyBellPad-" + std::to_string(x);
+		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", sound });
 
 		// Move pooled runes to cursor position
 		spawnRunes(mouseWorldPos);
@@ -2260,7 +2310,10 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 				updateRuneVisualStates();
 
 				// Play sound
-				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+				int x = randomFloat(1,6);
+				std::string sound = "Rune-GalaxyBellPad-" + std::to_string(x);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", sound });
+				//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
 				std::cout << "[RuneSystem] Added rune " << rune.runeNumber
 				          << " to sequence (count: " << runeState.connectionCount << ")" << std::endl;
 
@@ -2290,7 +2343,10 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 							default:
 								break;
 						}
-						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+						int x = randomFloat(1, 6);
+						std::string sound = "Rune-GalaxyBellPad-" + std::to_string(x);
+						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", sound });
+						//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
 					}
 					else
 					{

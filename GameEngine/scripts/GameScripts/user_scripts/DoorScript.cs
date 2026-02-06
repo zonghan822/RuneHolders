@@ -10,17 +10,17 @@ namespace Eno
 
         // Where the camera should pan to (world coordinates)
         [Port("Target camera X position")]
-        public float targetCamX = 0f;
+        public float targetCamX = 2000f;
 
         [Port("Target camera Y position")]
-        public float targetCamY = 1080f;
+        public float targetCamY = 3300f;
 
         // Where the player should be teleported after the camera finishes panning
         [Port("Player destination X")]
-        public float destPlayerX = 0f;
+        public float destPlayerX = 2000f;
 
         [Port("Player destination Y")]
-        public float destPlayerY = 1080f;
+        public float destPlayerY = 3594f;
 
         // How fast the camera pans (pixels per second)
         [Port(100, 5000)]
@@ -52,7 +52,7 @@ namespace Eno
 
             if (dist < triggerRadius)
             {
-                Bridge.PlayInstantAudio("SFX", "Fireball-Explosion-Small");
+                Bridge.PlayInstantAudio("SFX", "SpellCast_01");
                 isTransitioning = true;
                 hasTriggered = true;
                 Console.WriteLine("[Door] Player entered door - starting camera pan");

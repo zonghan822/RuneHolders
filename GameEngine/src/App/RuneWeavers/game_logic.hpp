@@ -83,6 +83,10 @@ private:
     bool showSpellbook_ = false;
     uint32_t pauseMenuEntityID_ = 0;
     uint32_t spellbookEntityID_ = 0;
+    uint32_t spellbookIconEntityID_ = 0;  // Persistent UI icon in bottom right corner
+    uint32_t resumeButtonEntityID_ = 0;
+    uint32_t mainMenuButtonEntityID_ = 0;
+    uint32_t quitGameButtonEntityID_ = 0;
     Math::eVec2<float> savedPlayerScale_ = { 2.0f, 2.0f };  // Save player scale when hiding (default to common scale)
 
     // Dialogue System
@@ -131,6 +135,7 @@ private:
     void setupScripting();
     void setupFont();           // setup font
     void setupCamera();         // setup camera system
+    void setupSpellbookIcon();  // setup persistent spellbook icon UI
     void setupCombatSystem();   // Add health/damage to player and enemies
     void playSceneBGM();        // Play appropriate BGM based on current scene
 
@@ -139,6 +144,7 @@ private:
     void updateEntities();      // Update entity logic per frame
     void loadEntityTextures();  // Load textures for entities with texture paths
     void updateCamera();  // Update camera position and projection
+    void updateSpellbookIcon(); // Update spellbook icon position to follow camera
 
     void drawPlayerAndIndicator();
 
@@ -200,8 +206,10 @@ private:
     void setupPauseMenuButtons();                   // Setup pause menu buttons (called when spawning pause menu)
     void handleResumeButton();                      // Handle resume button click
     void handleMainMenuButton();                    // Handle main menu button click
-    uint32_t resumeButtonEntityID_ = 0;
-    uint32_t mainMenuButtonEntityID_ = 0;
+    void handleQuitGameButton();                    // Handle quit game button click
+
+    // Win Screen Button System
+    void setupWinScreenButtons();                   // Setup win screen buttons (called when WinScreen-M4 is visible)
 
     bool isDisplayFPS_ = false;
 };

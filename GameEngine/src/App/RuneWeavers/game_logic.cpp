@@ -27,7 +27,7 @@ float randomFloat(float min, float max) {
 	return dist(rng);
 }
 
-float scaleSize = 1.0f;
+float scaleSize = 2.5f;
 float rotationRadians = 0.f;
 
 
@@ -48,8 +48,10 @@ void GameApplication::initialize() {
 	setupScripting();
 	setupFont();
 	setupCamera();
+	setupSpellbookIcon();
 	setupCombatSystem();
 	setupMainMenuButtons();
+	setupWinScreenButtons();
 	/*setupSceneTransitions();*/
 
 	auto& tileMap = engine_.getTileMap();
@@ -160,6 +162,50 @@ void GameApplication::setupCamera() {
 	}
 }
 
+void GameApplication::setupSpellbookIcon() {
+	auto& entityManager = engine_.getEntityManager();
+	auto& resourceLoader = engine_.getResourceLoader();
+
+	// Load spellbook icon texture
+	auto spellbookIconTexture = resourceLoader.getTexture("UI-Spellbook-Icon-F");
+
+	if (!spellbookIconTexture || !spellbookIconTexture->isValid()) {
+		std::cerr << "[SpellbookIcon] Failed to load spellbook icon texture!" << std::endl;
+		return;
+	}
+
+	// Create spellbook icon entity
+	ECS::Entity iconEntity = entityManager.create();
+	spellbookIconEntityID_ = iconEntity.id();
+
+	// Add components
+	iconEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Spellbook Icon UI"));
+	iconEntity.add<ECSComponents::TransformComponent>(entityManager);
+	iconEntity.add<ECSComponents::DrawInfoComponent>(entityManager);
+	iconEntity.add<ECSComponents::VisibilityComponent>(entityManager);
+
+	// Configure transform - will be updated every frame in updateSpellbookIcon()
+	auto& transform = iconEntity.get<ECSComponents::TransformComponent>(entityManager);
+	transform.pos = { 0.0f, 0.0f }; // Will be updated
+	transform.scale = { 1.0f, 1.0f };
+	transform.rot = { 0.0f, 0.0f };
+
+	// Configure rendering - 257x257 texture
+	auto& draw = iconEntity.get<ECSComponents::DrawInfoComponent>(entityManager);
+	draw.width = 257.0f;
+	draw.height = 257.0f;
+	draw.color = Graphics::Color::White;
+	strcpy_s(draw.shape, "Rectangle");
+	draw.texture = spellbookIconTexture;
+
+	// Configure visibility - high z_index to render in front
+	auto& visibility = iconEntity.get<ECSComponents::VisibilityComponent>(entityManager);
+	visibility.z_index = 17;
+	visibility.visible = true;
+
+	std::cout << "[SpellbookIcon] Spellbook icon UI created" << std::endl;
+}
+
 void GameApplication::setupCombatSystem() {
 	auto& entityManager = engine_.getEntityManager();
 
@@ -230,6 +276,10 @@ void GameApplication::setupGameAudio() {
 	// Rune hover audio
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-3");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-4");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-5");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-6");
 
 	// Spellbook audio
 	audioMng.publishSoundRequest("Spellbook_Open_01");
@@ -247,6 +297,7 @@ void GameApplication::setupGameAudio() {
 
 	// BGM
 	audioMng.publishSoundRequest("BGM_01_Layer1_loop");
+	audioMng.publishSoundRequest("BGM_01_Layer2_loop");
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");
 }
 
@@ -267,7 +318,8 @@ void GameApplication::playSceneBGM()
 	else
 	{
 		// All other scenes play the ambient creaking wood
-		bgmName = "Ambience_Creaking_Wood";
+		//bgmName = "Ambience_Creaking_Wood";
+		bgmName = "BGM_01_Layer2_loop";
 	}
 
 	// Check if the sound is loaded before trying to play it
@@ -531,6 +583,48 @@ void GameApplication::updateCamera() {
 	}
 }
 
+void GameApplication::updateSpellbookIcon() {
+	if (spellbookIconEntityID_ == 0) return;
+
+	auto& entityManager = engine_.getEntityManager();
+
+	// Get the spellbook icon entity
+	ECS::Entity iconEntity(spellbookIconEntityID_);
+
+	if (!iconEntity.has<ECSComponents::TransformComponent>(entityManager)) return;
+	if (!iconEntity.has<ECSComponents::VisibilityComponent>(entityManager)) return;
+
+	// Check current scene - only show icon after MainMenu
+	std::string currentScene = engine_.getEnoEditor().getCurrentScene().getSceneName();
+	bool isMainMenu = (currentScene == "MainMenu.txt");
+
+	// Update visibility based on scene
+	auto& visibility = iconEntity.get<ECSComponents::VisibilityComponent>(entityManager);
+	visibility.visible = !isMainMenu;
+
+	// Only update position if visible
+	if (!isMainMenu) {
+		// Get camera position
+		Math::eVec2<float> cameraCenter = { 960.0f, 540.0f }; // Default
+		std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+		for (auto& cameraEntity : cameraEntities) {
+			auto& camera = cameraEntity.get<ECSComponents::CameraComponent>(entityManager);
+			if (camera.isActive) {
+				cameraCenter = camera.position;
+				break;
+			}
+		}
+
+		// Position icon in bottom right corner of screen
+		// Camera viewport is 1920x1080, icon is 257x257
+		// Bottom right corner offset: (+960 - 128.5, +540 - 128.5) from camera center
+		// Adjust slightly inward for padding: -20 pixels from edge
+		auto& transform = iconEntity.get<ECSComponents::TransformComponent>(entityManager);
+		transform.pos.x = cameraCenter.x + (1920.0f * 0.5f) - 128.5f - 20.0f;
+		transform.pos.y = cameraCenter.y + (1080.0f * 0.5f) - 128.5f - 20.0f;
+	}
+}
+
 void GameApplication::updateGameLogic() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& graphics_ = engine_.getGraphicsManager();
@@ -574,9 +668,9 @@ void GameApplication::updateGameLogic() {
 
 	if (playerExists) {
 		// Handle F key - Toggle Spellbook
-		if (inputMng.isKeyDown(GLFW_KEY_F) && !isPaused_) {
-			if (!showSpellbook_) {
-				// Open spellbook and pause game
+		if (inputMng.isKeyDown(GLFW_KEY_F)) {
+			if (!showSpellbook_ && !isPaused_) {
+				// Open spellbook and pause game (only if not already paused by pause menu)
 				showSpellbook_ = true;
 				isPaused_ = true;
 				hidePlayer();
@@ -584,8 +678,8 @@ void GameApplication::updateGameLogic() {
 				engine_.setIsPlaying(false);
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Open_01" });
 			}
-			else {
-				// Close spellbook and resume game
+			else if (showSpellbook_) {
+				// Close spellbook and resume game (works even when paused)
 				showSpellbook_ = false;
 				isPaused_ = false;
 				destroySpellbook();
@@ -652,6 +746,12 @@ void GameApplication::updateGameLogic() {
 						auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
 						auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
 
+						// Calculate player position and dimensions once (used for both scroll and teacher checks)
+						float playerX = playerTransform.pos.x + playerCollision.offset.x;
+						float playerY = playerTransform.pos.y + playerCollision.offset.y;
+						float playerHalfW = (playerCollision.data.rectangle.width * playerTransform.scale.x) * 0.5f;
+						float playerHalfH = (playerCollision.data.rectangle.height * playerTransform.scale.y) * 0.5f;
+
 						// Find all UI-PopUp-E entities
 						auto scrolls = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("UI-PopUp-E"));
 						for (auto& scroll : scrolls) {
@@ -665,15 +765,8 @@ void GameApplication::updateGameLogic() {
 								if (scrollCollision.type == ECSComponents::ColliderType::RECTANGLE &&
 									playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
 
-									// Get positions with offsets
-									float playerX = playerTransform.pos.x + playerCollision.offset.x;
-									float playerY = playerTransform.pos.y + playerCollision.offset.y;
 									float scrollX = scrollTransform.pos.x + scrollCollision.offset.x;
 									float scrollY = scrollTransform.pos.y + scrollCollision.offset.y;
-
-									// Get half dimensions
-									float playerHalfW = (playerCollision.data.rectangle.width * playerTransform.scale.x) * 0.5f;
-									float playerHalfH = (playerCollision.data.rectangle.height * playerTransform.scale.y) * 0.5f;
 									float scrollHalfW = (scrollCollision.data.rectangle.width * scrollTransform.scale.x) * 0.5f;
 									float scrollHalfH = (scrollCollision.data.rectangle.height * scrollTransform.scale.y) * 0.5f;
 
@@ -681,6 +774,66 @@ void GameApplication::updateGameLogic() {
 									if ((std::abs(playerX - scrollX) <= (playerHalfW + scrollHalfW)) &&
 										(std::abs(playerY - scrollY) <= (playerHalfH + scrollHalfH))) {
 										startDialogue();
+										break; // Only trigger once
+									}
+								}
+							}
+						}
+
+						// Check if player is colliding with Teacher E entity
+						auto teacherE = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("Teacher E"));
+						for (auto& teacher : teacherE) {
+							if (teacher.has<ECSComponents::TransformComponent>(entityManager) &&
+								teacher.has<ECSComponents::CollisionComponent>(entityManager)) {
+
+								auto& teacherTransform = teacher.get<ECSComponents::TransformComponent>(entityManager);
+								auto& teacherCollision = teacher.get<ECSComponents::CollisionComponent>(entityManager);
+
+								// Check AABB collision
+								if (teacherCollision.type == ECSComponents::ColliderType::RECTANGLE &&
+									playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
+
+									// Get positions with offsets
+									float teacherX = teacherTransform.pos.x + teacherCollision.offset.x;
+									float teacherY = teacherTransform.pos.y + teacherCollision.offset.y;
+
+									// Get half dimensions
+									float teacherHalfW = (teacherCollision.data.rectangle.width * teacherTransform.scale.x) * 0.5f;
+									float teacherHalfH = (teacherCollision.data.rectangle.height * teacherTransform.scale.y) * 0.5f;
+
+									// AABB collision test
+									if ((std::abs(playerX - teacherX) <= (playerHalfW + teacherHalfW)) &&
+										(std::abs(playerY - teacherY) <= (playerHalfH + teacherHalfH))) {
+
+										// Get camera position to center the win screen
+									Math::eVec2<float> cameraCenter = { 960.0f, 540.0f }; // Default center
+									std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+									for (auto& cameraEntity : cameraEntities) {
+										auto& camera = cameraEntity.get<ECSComponents::CameraComponent>(entityManager);
+										if (camera.isActive) {
+											cameraCenter = camera.position;
+											break;
+										}
+									}
+
+									// Set WinScreen-M4 position and visibility
+									auto winScreen = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
+									if (!winScreen.empty()) {
+										for (auto& screen : winScreen) {
+											// Set transform position to camera center
+											if (screen.has<ECSComponents::TransformComponent>(entityManager)) {
+												auto& winTransform = screen.get<ECSComponents::TransformComponent>(entityManager);
+												winTransform.pos = cameraCenter;
+											}
+											// Set visible
+											if (screen.has<ECSComponents::VisibilityComponent>(entityManager)) {
+												screen.get<ECSComponents::VisibilityComponent>(entityManager).visible = true;
+											}
+										}
+										// Update win screen button positions based on new WinScreen-M4 position
+										setupWinScreenButtons();
+										std::cout << "[WinScreen] WinScreen-M4 positioned at camera center (" << cameraCenter.x << ", " << cameraCenter.y << ")" << std::endl;
+									}
 										break; // Only trigger once
 									}
 								}
@@ -747,6 +900,9 @@ void GameApplication::updateGameLogic() {
 
 	// Update camera system (replaces the old fixed projection)
 	updateCamera();
+
+	// Update spellbook icon position (follows camera)
+	updateSpellbookIcon();
 
 	// Animation state (must be outside the pause check so currentFrame is accessible later)
 	static float animationTimer = 0.0f;
@@ -1738,18 +1894,35 @@ void GameApplication::updateRuneSystem()
 		cameraY
 	);
 
+	// Check if win screen is visible (prevent rune spawning when win screen is open)
+	bool winScreenVisible = false;
+	auto winScreenEntities = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
+	if (!winScreenEntities.empty()) {
+		auto& winScreenEntity = winScreenEntities[0];
+		if (winScreenEntity.has<ECSComponents::VisibilityComponent>(entityManager)) {
+			winScreenVisible = winScreenEntity.get<ECSComponents::VisibilityComponent>(entityManager).visible;
+		}
+	}
+
 	// Check if left mouse button is pressed this frame
 	bool leftClickPressed = inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT);
 	bool leftClickHeld = inputManager.isMousePressed(GLFW_MOUSE_BUTTON_LEFT);
 	bool leftClickReleased = inputManager.isMouseUp(GLFW_MOUSE_BUTTON_LEFT);
 
 	// ACTIVATE RUNES when left click is first pressed (move from off-screen to cursor)
-	if (leftClickPressed && !runeState.runesActive) {
+	// Don't spawn runes if win screen is visible
+	if (leftClickPressed && !runeState.runesActive && !winScreenVisible) {
 		// Reset connection state
 		runeState.resetConnection();
 
 		// Play rune spawn sound
-		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+		//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+		static std::random_device rd;              // seed
+		static std::mt19937 gen(rd());              // Mersenne Twister
+		static std::uniform_int_distribution<int> dist(1, 6);
+		int soundIndex = dist(gen);
+		std::string soundName = "Rune-GalaxyBellPad-" + std::to_string(soundIndex);
+		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", soundName });
 
 		// Move pooled runes to cursor position
 		spawnRunes(mouseWorldPos);
@@ -2010,8 +2183,13 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 					runeState.lineColorState = ECSComponents::LineColorState::INVALID;
 
 					// Play invalid sound
-					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });  // TODO: use a different sound for invalid
-
+					//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });  // TODO: use a different sound for invalid
+					static std::random_device rd;              // seed
+					static std::mt19937 gen(rd());              // Mersenne Twister
+					static std::uniform_int_distribution<int> dist(1, 6);
+					int soundIndex = dist(gen);
+					std::string soundName = "Rune-GalaxyBellPad-" + std::to_string(soundIndex);
+					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", soundName });
 					// Update visuals to show all red
 					updateRuneVisualStates();
 					return;  // Stop processing hover
@@ -2028,7 +2206,13 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 				runeState.isDrawingLine = true;
 
 				// Play sound
-				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+				//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+				static std::random_device rd;              // seed
+				static std::mt19937 gen(rd());              // Mersenne Twister
+				static std::uniform_int_distribution<int> dist(1, 6);
+				int soundIndex = dist(gen);
+				std::string soundName = "Rune-GalaxyBellPad-" + std::to_string(soundIndex);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", soundName });
 				std::cout << "[RuneSystem] Added rune " << rune.runeNumber
 				          << " to sequence (count: " << runeState.connectionCount << ")" << std::endl;
 
@@ -2062,7 +2246,13 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 							default:
 								break;
 						}
-						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+						//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+						static std::random_device rd;              // seed
+						static std::mt19937 gen(rd());              // Mersenne Twister
+						static std::uniform_int_distribution<int> dist(1, 6);
+						int soundIndex = dist(gen);
+						std::string soundName = "Rune-GalaxyBellPad-" + std::to_string(soundIndex);
+						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", soundName });
 					}
 					else
 					{
@@ -3021,11 +3211,22 @@ void GameApplication::spawnSpellbook() {
 	auto& resourceLoader = engine_.getResourceLoader();
 
 	// Load spellbook texture
-	auto spellbookTexture = resourceLoader.getTexture("SpellBook-HowToCast_Fireball");
+	auto spellbookTexture = resourceLoader.getTexture("UI-SpellBook");
 
 	if (!spellbookTexture || !spellbookTexture->isValid()) {
 		std::cerr << "[Spellbook] Failed to load spellbook texture!" << std::endl;
 		return;
+	}
+
+	// Get camera position to center the spellbook
+	Math::eVec2<float> cameraCenter = { 960.0f, 540.0f }; // Default center
+	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+	for (auto& cameraEntity : cameraEntities) {
+		auto& camera = cameraEntity.get<ECSComponents::CameraComponent>(entityManager);
+		if (camera.isActive) {
+			cameraCenter = camera.position;
+			break;
+		}
 	}
 
 	// Create spellbook entity
@@ -3036,10 +3237,11 @@ void GameApplication::spawnSpellbook() {
 	spellbookEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Spellbook UI"));
 	spellbookEntity.add<ECSComponents::TransformComponent>(entityManager);
 	spellbookEntity.add<ECSComponents::DrawInfoComponent>(entityManager);
+	spellbookEntity.add<ECSComponents::VisibilityComponent>(entityManager);
 
-	// Configure transform - centered at 1024, 1024
+	// Configure transform - centered relative to camera
 	auto& transform = spellbookEntity.get<ECSComponents::TransformComponent>(entityManager);
-	transform.pos = { 1024.0f, 1024.0f };
+	transform.pos = cameraCenter;
 	transform.scale = { 1.0f, 1.0f };
 	transform.rot = { 0.0f, 0.0f };
 
@@ -3051,10 +3253,15 @@ void GameApplication::spawnSpellbook() {
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = spellbookTexture;
 
+	// Configure visibility - high z_index to render in front
+	auto& visibility = spellbookEntity.get<ECSComponents::VisibilityComponent>(entityManager);
+	visibility.z_index = 19;
+	visibility.visible = true;
+
 	// Mark entities dirty to refresh rendering cache
 	entitiesDirty_ = true;
 
-	std::cout << "[Spellbook] Spellbook UI spawned at (1024, 1024)" << std::endl;
+	std::cout << "[Spellbook] Spellbook UI spawned at camera center (" << cameraCenter.x << ", " << cameraCenter.y << ")" << std::endl;
 }
 
 void GameApplication::destroySpellbook() {
@@ -3072,11 +3279,22 @@ void GameApplication::spawnPauseMenu() {
 	auto& resourceLoader = engine_.getResourceLoader();
 
 	// Load pause menu texture
-	auto pauseMenuTexture = resourceLoader.getTexture("PauseMenu-Popup");
+	auto pauseMenuTexture = resourceLoader.getTexture("UI-Pause");
 
 	if (!pauseMenuTexture || !pauseMenuTexture->isValid()) {
 		std::cerr << "[PauseMenu] Failed to load pause menu texture!" << std::endl;
 		return;
+	}
+
+	// Get camera position to center the pause menu
+	Math::eVec2<float> cameraCenter = { 960.0f, 540.0f }; // Default center
+	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+	for (auto& cameraEntity : cameraEntities) {
+		auto& camera = cameraEntity.get<ECSComponents::CameraComponent>(entityManager);
+		if (camera.isActive) {
+			cameraCenter = camera.position;
+			break;
+		}
 	}
 
 	// Create pause menu entity
@@ -3087,10 +3305,11 @@ void GameApplication::spawnPauseMenu() {
 	pauseMenuEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Pause Menu UI"));
 	pauseMenuEntity.add<ECSComponents::TransformComponent>(entityManager);
 	pauseMenuEntity.add<ECSComponents::DrawInfoComponent>(entityManager);
+	pauseMenuEntity.add<ECSComponents::VisibilityComponent>(entityManager);
 
-	// Configure transform - centered at 1024, 1024
+	// Configure transform - centered relative to camera
 	auto& transform = pauseMenuEntity.get<ECSComponents::TransformComponent>(entityManager);
-	transform.pos = { 1024.0f, 1024.0f };
+	transform.pos = cameraCenter;
 	transform.scale = { 1.0f, 1.0f };
 	transform.rot = { 0.0f, 0.0f };
 
@@ -3102,12 +3321,17 @@ void GameApplication::spawnPauseMenu() {
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = pauseMenuTexture;
 
+	// Configure visibility - high z_index to render in front
+	auto& visibility = pauseMenuEntity.get<ECSComponents::VisibilityComponent>(entityManager);
+	visibility.z_index = 18;
+	visibility.visible = true;
+
 	// Mark entities dirty to refresh rendering cache
 	// Setup pause menu buttons (Resume and Main Menu)
 	setupPauseMenuButtons();
 	entitiesDirty_ = true;
 
-	std::cout << "[PauseMenu] Pause menu UI spawned at (1024, 1024)" << std::endl;
+	std::cout << "[PauseMenu] Pause menu UI spawned at camera center (" << cameraCenter.x << ", " << cameraCenter.y << ")" << std::endl;
 }
 
 void GameApplication::destroyPauseMenu() {
@@ -3136,6 +3360,14 @@ void GameApplication::destroyPauseMenu() {
 			entityManager.destroyEntity(mainMenuButtonEntityID_);
 		}
 		mainMenuButtonEntityID_ = 0;
+	}
+
+	// Destroy Quit Game button (check if it exists first)
+	if (quitGameButtonEntityID_ != 0) {
+		if (entityMap.find(quitGameButtonEntityID_) != entityMap.end()) {
+			entityManager.destroyEntity(quitGameButtonEntityID_);
+		}
+		quitGameButtonEntityID_ = 0;
 	}
 
 	entitiesDirty_ = true;
@@ -3431,6 +3663,60 @@ void GameApplication::updateMainMenuButtons() {
 				} else if (buttonName == "MainMenuButton") {
 					handleMainMenuButton();
 					return;
+				} else if (buttonName == "QuitGameButton") {
+					handleQuitGameButton();
+					return;
+				}
+			}
+
+			// Handle win screen buttons (only when WinScreen-M4 is visible)
+			auto winScreenEntities = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
+			if (!winScreenEntities.empty()) {
+				auto& winScreenEntity = winScreenEntities[0];
+				if (winScreenEntity.has<ECSComponents::VisibilityComponent>(entityManager)) {
+					auto& winScreenVis = winScreenEntity.get<ECSComponents::VisibilityComponent>(entityManager);
+					if (winScreenVis.visible) {
+						if (buttonName == "mainmenu button") {
+							std::cout << "[WinScreen] Main Menu button pressed - returning to main menu" << std::endl;
+
+							// Clean up before scene change (similar to handleMainMenuButton)
+							destroyPauseMenu();
+							if (spellbookEntityID_ != 0) {
+								destroySpellbook();
+							}
+							showPlayer();  // Restore player visibility before scene change
+
+							// Clear all entity IDs to prevent crashes when trying to access them after scene change
+							resumeButtonEntityID_ = 0;
+							mainMenuButtonEntityID_ = 0;
+							quitGameButtonEntityID_ = 0;
+							pauseMenuEntityID_ = 0;
+							spellbookEntityID_ = 0;
+							controlsDisplayEntityID_ = 0;
+							quitConfirmEntityID_ = 0;
+							playerEntityID_ = 0;
+
+							// Reset game state flags
+							isPaused_ = false;
+							showSpellbook_ = false;
+							playerSpawned_ = false;
+							engine_.setIsPlaying(true);
+
+							// Change scene to Main Menu
+							engine_.getEnoEditor().selectScene("MainMenu.txt");
+							entitiesDirty_ = true;
+
+							// Recreate main menu buttons after scene load
+							setupMainMenuButtons();
+							return;
+						} else if (buttonName == "quitgame button") {
+							std::cout << "[WinScreen] Quit Game button pressed - exiting application" << std::endl;
+							// Quit the application
+							engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
+							engine_.getWindowManager().setShouldClose(true);
+							return;
+						}
+					}
 				}
 			}
 		}
@@ -3508,7 +3794,7 @@ void GameApplication::handleControlsButton() {
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = controlsTexture;
 
-	// Create close button at (313, 591) with size (72x72) rotated 45 degrees
+	// Create close button at (482.725, 1029.319) with size (72x72) rotated 45 degrees
 	ECS::Entity closeButton = entityManager.create();
 	closeButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("ControlsCloseButton"));
 	closeButton.add<ECSComponents::TransformComponent>(entityManager);
@@ -3517,7 +3803,7 @@ void GameApplication::handleControlsButton() {
 	closeButton.add<ECSComponents::ButtonComponent>(entityManager);
 
 	auto& closeTransform = closeButton.get<ECSComponents::TransformComponent>(entityManager);
-	closeTransform.pos = { 313.0f, 591.0f };
+	closeTransform.pos = { 482.725f, 1029.319f };
 	closeTransform.scale = { 1.0f, 1.0f };
 	closeTransform.rot.x = 0.785398f; // 45 degrees in radians
 
@@ -3808,7 +4094,18 @@ void GameApplication::handleQuitYesButton() {
 void GameApplication::setupPauseMenuButtons() {
 	auto& entityManager = engine_.getEntityManager();
 
-	// Resume Button at (716, 965) with size (100x100) rotated 45 degrees
+	// Get camera position to position buttons relative to pause menu
+	Math::eVec2<float> cameraCenter = { 960.0f, 540.0f }; // Default center
+	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+	for (auto& cameraEntity : cameraEntities) {
+		auto& camera = cameraEntity.get<ECSComponents::CameraComponent>(entityManager);
+		if (camera.isActive) {
+			cameraCenter = camera.position;
+			break;
+		}
+	}
+
+	// Resume Button - offset from center: (-382.364, -74.977), size 83x83
 	ECS::Entity resumeButton = entityManager.create();
 	resumeButtonEntityID_ = resumeButton.id();
 
@@ -3817,29 +4114,34 @@ void GameApplication::setupPauseMenuButtons() {
 	resumeButton.add<ECSComponents::DrawInfoComponent>(entityManager);
 	resumeButton.add<ECSComponents::CollisionComponent>(entityManager);
 	resumeButton.add<ECSComponents::ButtonComponent>(entityManager);
+	resumeButton.add<ECSComponents::VisibilityComponent>(entityManager);
 
 	auto& resumeTransform = resumeButton.get<ECSComponents::TransformComponent>(entityManager);
-	resumeTransform.pos = { 716.0f, 965.0f };
+	resumeTransform.pos = { cameraCenter.x - 382.364f, cameraCenter.y - 74.977f };
 	resumeTransform.scale = { 1.0f, 1.0f };
 	resumeTransform.rot.x = 0.785398f; // 45 degrees in radians
 
 	auto& resumeDraw = resumeButton.get<ECSComponents::DrawInfoComponent>(entityManager);
-	resumeDraw.width = 100.0f;
-	resumeDraw.height = 100.0f;
+	resumeDraw.width = 83.0f;
+	resumeDraw.height = 83.0f;
 	resumeDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
 	strcpy_s(resumeDraw.shape, "Rectangle");
 
 	auto& resumeCollision = resumeButton.get<ECSComponents::CollisionComponent>(entityManager);
 	resumeCollision.type = ECSComponents::ColliderType::RECTANGLE;
-	resumeCollision.data.rectangle.width = 100.0f;
-	resumeCollision.data.rectangle.height = 100.0f;
+	resumeCollision.data.rectangle.width = 83.0f;
+	resumeCollision.data.rectangle.height = 83.0f;
 	resumeCollision.rotation = 0.785398f; // 45 degrees in radians
 	resumeCollision.isTrigger = true;
 
 	auto& resumeBtn = resumeButton.get<ECSComponents::ButtonComponent>(entityManager);
 	resumeBtn.getActive() = true;
 
-	// Main Menu Button at (557, 1141) with size (56x56) rotated 45 degrees
+	auto& resumeVisibility = resumeButton.get<ECSComponents::VisibilityComponent>(entityManager);
+	resumeVisibility.z_index = 18;
+	resumeVisibility.visible = true;
+
+	// Main Menu Button - offset from center: (-523.838, 90.475), size 73x73
 	ECS::Entity mainMenuButton = entityManager.create();
 	mainMenuButtonEntityID_ = mainMenuButton.id();
 
@@ -3848,27 +4150,68 @@ void GameApplication::setupPauseMenuButtons() {
 	mainMenuButton.add<ECSComponents::DrawInfoComponent>(entityManager);
 	mainMenuButton.add<ECSComponents::CollisionComponent>(entityManager);
 	mainMenuButton.add<ECSComponents::ButtonComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::VisibilityComponent>(entityManager);
 
 	auto& menuTransform = mainMenuButton.get<ECSComponents::TransformComponent>(entityManager);
-	menuTransform.pos = { 557.0f, 1141.0f };
+	menuTransform.pos = { cameraCenter.x - 523.838f, cameraCenter.y + 90.475f };
 	menuTransform.scale = { 1.0f, 1.0f };
 	menuTransform.rot.x = 0.785398f; // 45 degrees in radians
 
 	auto& menuDraw = mainMenuButton.get<ECSComponents::DrawInfoComponent>(entityManager);
-	menuDraw.width = 56.0f;
-	menuDraw.height = 56.0f;
+	menuDraw.width = 73.0f;
+	menuDraw.height = 73.0f;
 	menuDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
 	strcpy_s(menuDraw.shape, "Rectangle");
 
 	auto& menuCollision = mainMenuButton.get<ECSComponents::CollisionComponent>(entityManager);
 	menuCollision.type = ECSComponents::ColliderType::RECTANGLE;
-	menuCollision.data.rectangle.width = 56.0f;
-	menuCollision.data.rectangle.height = 56.0f;
+	menuCollision.data.rectangle.width = 73.0f;
+	menuCollision.data.rectangle.height = 73.0f;
 	menuCollision.rotation = 0.785398f; // 45 degrees in radians
 	menuCollision.isTrigger = true;
 
 	auto& menuBtn = mainMenuButton.get<ECSComponents::ButtonComponent>(entityManager);
 	menuBtn.getActive() = true;
+
+	auto& menuVisibility = mainMenuButton.get<ECSComponents::VisibilityComponent>(entityManager);
+	menuVisibility.z_index = 18;
+	menuVisibility.visible = true;
+
+	// Quit Game Button - offset from center: (-243.288, 85.679), size 73x73
+	ECS::Entity quitButton = entityManager.create();
+	quitGameButtonEntityID_ = quitButton.id();
+
+	quitButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("QuitGameButton"));
+	quitButton.add<ECSComponents::TransformComponent>(entityManager);
+	quitButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	quitButton.add<ECSComponents::CollisionComponent>(entityManager);
+	quitButton.add<ECSComponents::ButtonComponent>(entityManager);
+	quitButton.add<ECSComponents::VisibilityComponent>(entityManager);
+
+	auto& quitTransform = quitButton.get<ECSComponents::TransformComponent>(entityManager);
+	quitTransform.pos = { cameraCenter.x - 243.288f, cameraCenter.y + 85.679f };
+	quitTransform.scale = { 1.0f, 1.0f };
+	quitTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& quitDraw = quitButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	quitDraw.width = 73.0f;
+	quitDraw.height = 73.0f;
+	quitDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(quitDraw.shape, "Rectangle");
+
+	auto& quitCollision = quitButton.get<ECSComponents::CollisionComponent>(entityManager);
+	quitCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	quitCollision.data.rectangle.width = 73.0f;
+	quitCollision.data.rectangle.height = 73.0f;
+	quitCollision.rotation = 0.785398f; // 45 degrees in radians
+	quitCollision.isTrigger = true;
+
+	auto& quitBtn = quitButton.get<ECSComponents::ButtonComponent>(entityManager);
+	quitBtn.getActive() = true;
+
+	auto& quitVisibility = quitButton.get<ECSComponents::VisibilityComponent>(entityManager);
+	quitVisibility.z_index = 18;
+	quitVisibility.visible = true;
 
 }
 
@@ -3895,6 +4238,7 @@ void GameApplication::handleMainMenuButton() {
 	// Clear all entity IDs to prevent crashes when trying to access them after scene change
 	resumeButtonEntityID_ = 0;
 	mainMenuButtonEntityID_ = 0;
+	quitGameButtonEntityID_ = 0;
 	pauseMenuEntityID_ = 0;
 	spellbookEntityID_ = 0;
 	controlsDisplayEntityID_ = 0;
@@ -3914,6 +4258,100 @@ void GameApplication::handleMainMenuButton() {
 	// Recreate main menu buttons after scene load (they're not saved in the scene file)
 	setupMainMenuButtons();
 
+}
+
+void GameApplication::handleQuitGameButton() {
+	// Clean up pause menu
+	destroyPauseMenu();
+	if (spellbookEntityID_ != 0) {
+		destroySpellbook();
+	}
+
+	// Quit the application
+	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
+	engine_.getWindowManager().setShouldClose(true);
+}
+
+// ============================================================================
+// WIN SCREEN BUTTON SYSTEM IMPLEMENTATION
+// ============================================================================
+
+void GameApplication::setupWinScreenButtons() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Get WinScreen-M4 position to position buttons relative to it
+	Math::eVec2<float> winScreenCenter = { 960.0f, 540.0f }; // Default center
+	auto winScreenEntities = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
+	if (!winScreenEntities.empty()) {
+		auto& winScreenEntity = winScreenEntities[0];
+		if (winScreenEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+			auto& winScreenTransform = winScreenEntity.get<ECSComponents::TransformComponent>(entityManager);
+			winScreenCenter = winScreenTransform.pos;
+		}
+	}
+
+	// Main Menu Button - 80 pixels left, 126 pixels below center
+	ECS::Entity mainMenuButton = entityManager.create();
+	mainMenuButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("mainmenu button"));
+	mainMenuButton.add<ECSComponents::TransformComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::CollisionComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& mainMenuTransform = mainMenuButton.get<ECSComponents::TransformComponent>(entityManager);
+	mainMenuTransform.pos = { winScreenCenter.x - 80.0f, winScreenCenter.y + 126.0f };
+	mainMenuTransform.scale = { 1.0f, 1.0f };
+	mainMenuTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& mainMenuDraw = mainMenuButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	mainMenuDraw.width = 0.0f;
+	mainMenuDraw.height = 0.0f;
+	mainMenuDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(mainMenuDraw.shape, "Rectangle");
+
+	auto& mainMenuCollision = mainMenuButton.get<ECSComponents::CollisionComponent>(entityManager);
+	mainMenuCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	mainMenuCollision.data.rectangle.width = 100.0f;
+	mainMenuCollision.data.rectangle.height = 100.0f;
+	mainMenuCollision.rotation = 0.785398f; // 45 degrees in radians
+	mainMenuCollision.isTrigger = true;
+
+	auto& mainMenuBtn = mainMenuButton.get<ECSComponents::ButtonComponent>(entityManager);
+	mainMenuBtn.getActive() = true;
+
+	std::cout << "[WinScreen] Main Menu button created at position (" << mainMenuTransform.pos.x << ", " << mainMenuTransform.pos.y << ") with collision size 100x100" << std::endl;
+
+	// Quit Game Button - 80 pixels right, 126 pixels below center
+	ECS::Entity quitGameButton = entityManager.create();
+	quitGameButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("quitgame button"));
+	quitGameButton.add<ECSComponents::TransformComponent>(entityManager);
+	quitGameButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	quitGameButton.add<ECSComponents::CollisionComponent>(entityManager);
+	quitGameButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& quitGameTransform = quitGameButton.get<ECSComponents::TransformComponent>(entityManager);
+	quitGameTransform.pos = { winScreenCenter.x + 80.0f, winScreenCenter.y + 126.0f };
+	quitGameTransform.scale = { 1.0f, 1.0f };
+	quitGameTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& quitGameDraw = quitGameButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	quitGameDraw.width = 0.0f;
+	quitGameDraw.height = 0.0f;
+	quitGameDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(quitGameDraw.shape, "Rectangle");
+
+	auto& quitGameCollision = quitGameButton.get<ECSComponents::CollisionComponent>(entityManager);
+	quitGameCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	quitGameCollision.data.rectangle.width = 100.0f;
+	quitGameCollision.data.rectangle.height = 100.0f;
+	quitGameCollision.rotation = 0.785398f; // 45 degrees in radians
+	quitGameCollision.isTrigger = true;
+
+	auto& quitGameBtn = quitGameButton.get<ECSComponents::ButtonComponent>(entityManager);
+	quitGameBtn.getActive() = true;
+
+	std::cout << "[WinScreen] Quit Game button created at position (" << quitGameTransform.pos.x << ", " << quitGameTransform.pos.y << ") with collision size 100x100" << std::endl;
+	std::cout << "[WinScreen] Win screen buttons created at WinScreen-M4 center (" << winScreenCenter.x << ", " << winScreenCenter.y << ")" << std::endl;
 }
 
 // ========== Dialogue System ==========
