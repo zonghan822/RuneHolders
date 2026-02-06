@@ -397,7 +397,7 @@
 			{
 				"Position": <eVec2(float)> { x : 2453.34 | y : 3455.86 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1.26851 | y : 1.26851 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
 			}
 
@@ -445,7 +445,7 @@
 
 			[struct ECSComponents::AIComponent]
 			{
-				"awarenessRadius": <float> { 300 }
+				"awarenessRadius": <float> { 500 }
 				"chaseSpeed": <float> { 90 }
 				"attackRange": <float> { 40 }
 				"windupTime": <float> { 0.5 }
@@ -3681,12 +3681,12 @@
 			[struct ECSComponents::CollisionComponent]
 			{
 				"Type": <ColliderType> { Rectangle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 0 }
+				"Offset": <eVec2(float)> { x : 0 | y : 120 }
+				"Is Trigger": <bool> { 1 }
+				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 48 }
-				"Height": <float> { 48 }
+				"Width": <float> { 200 }
+				"Height": <float> { 200 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -3777,7 +3777,7 @@
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 1 }
+				"Is Active": <bool> { 0 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 155.852 }
 				"Height": <float> { 78.5338 }
@@ -3823,8 +3823,15 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 0 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+			}
 		}
-		"Script": { }
+		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door2Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -3871,7 +3878,7 @@
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 1 }
+				"Is Active": <bool> { 0 }
 				"Rotation": <float> { 0 }
 				"Width": <float> { 119.584 }
 				"Height": <float> { 59.7922 }
@@ -3894,7 +3901,7 @@
 
 			[struct ECSComponents::BoxComponent]
 			{
-				"isPushable": <bool> { 1 }
+				"isPushable": <bool> { 0 }
 				"pushResistance": <float> { 0.2 }
 			}
 
@@ -3917,8 +3924,15 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 0 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+			}
 		}
-		"Script": { }
+		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\DoorScript.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -4309,8 +4323,8 @@
 
 			[struct ECSComponents::AIComponent]
 			{
-				"awarenessRadius": <float> { 300 }
-				"chaseSpeed": <float> { 90 }
+				"awarenessRadius": <float> { 500 }
+				"chaseSpeed": <float> { 50 }
 				"attackRange": <float> { 40 }
 				"windupTime": <float> { 0.5 }
 				"attackDuration": <float> { 0.3 }
@@ -4504,8 +4518,8 @@
 
 			[struct ECSComponents::AIComponent]
 			{
-				"awarenessRadius": <float> { 300 }
-				"chaseSpeed": <float> { 90 }
+				"awarenessRadius": <float> { 500 }
+				"chaseSpeed": <float> { 50 }
 				"attackRange": <float> { 40 }
 				"windupTime": <float> { 0.5 }
 				"attackDuration": <float> { 0.3 }
@@ -4699,8 +4713,8 @@
 
 			[struct ECSComponents::AIComponent]
 			{
-				"awarenessRadius": <float> { 300 }
-				"chaseSpeed": <float> { 140 }
+				"awarenessRadius": <float> { 500 }
+				"chaseSpeed": <float> { 150 }
 				"attackRange": <float> { 40 }
 				"windupTime": <float> { 0.5 }
 				"attackDuration": <float> { 0.3 }
@@ -4819,6 +4833,153 @@
 			}
 		}
 		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Bloodwing_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Node87]
+	{
+		"ID": { 87 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Door3 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 0 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 2019.91 | y : 1820.16 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1.5146 | y : 1.5146 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 75.7298 }
+				"Height": <float> { 75.7298 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 0 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 75.7298 }
+				"Height": <float> { 75.7298 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 2 }
+				"Drag": <float> { 8 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::BoxComponent]
+			{
+				"isPushable": <bool> { 0 }
+				"pushResistance": <float> { 0.2 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 0 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+			}
+		}
+		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door3Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[WinScreen-M4]
+	{
+		"ID": { 88 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { WinScreen-M4 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 4 }
+				"Visible": <bool> { 0 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 572.747 | y : 948.319 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1920 }
+				"Height": <float> { 1080 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { WinScreen-M4 }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
