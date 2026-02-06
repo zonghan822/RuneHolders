@@ -419,6 +419,60 @@
 		"Enabled": { true }
 	}
 
+	[Combat2]
+	{
+		"ID": { 10 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Combat2 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 2016.56 | y : 2201.18 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1748.5 }
+				"Height": <float> { 889.2 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Combat2 }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
 	[Node34]
 	{
 		"ID": { 34 }
@@ -484,60 +538,6 @@
 			{
 				"isPushable": <bool> { 0 }
 				"pushResistance": <float> { 0.2 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-	}
-
-	[Combat2]
-	{
-		"ID": { 10 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { Combat2 }
-			}
-
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 2016.56 | y : 2201.18 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 1748.5 }
-				"Height": <float> { 889.2 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Combat2 }
-				"TexID": <int> { 0 }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
@@ -3819,26 +3819,26 @@
 		"Enabled": { true }
 	}
 
-	[Node80]
+	[UI-DialogueBox]
 	{
-		"ID": { 80 }
+		"ID": { 81 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
 			[struct ECSComponents::NameComponent]
 			{
-				"Name": <char32> { Entity 7 }
+				"Name": <char32> { DialogueBox }
 			}
 
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 0 }
 			}
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 2024.21 | y : 1819.18 }
+				"Position": <eVec2(float)> { x : 2002.45 | y : 4769.91 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -3846,10 +3846,64 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 50 }
-				"Height": <float> { 50 }
+				"Width": <float> { 1280 }
+				"Height": <float> { 300 }
 				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 0 | g : 1 | b : 0 | a : 1 }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-DialogueBox }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { 82, 83 }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Node82]
+	{
+		"ID": { 82 }
+		"Layer": { 1 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { name text }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 5 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1396.42 | y : 4675.65 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 0 }
+				"Height": <float> { 0 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 0 | b : 0 | a : 1 }
 				"Texture Path": <texchar240> {  }
 				"TexID": <int> { 0 }
 			}
@@ -3859,10 +3913,10 @@
 				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 0 }
+				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 50 }
-				"Height": <float> { 50 }
+				"Width": <float> { 0 }
+				"Height": <float> { 0 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -3882,7 +3936,7 @@
 
 			[struct ECSComponents::BoxComponent]
 			{
-				"isPushable": <bool> { 0 }
+				"isPushable": <bool> { 1 }
 				"pushResistance": <float> { 0.2 }
 			}
 
@@ -3898,15 +3952,97 @@
 				"Current Animation": <char64> {  }
 			}
 
-			[struct ECSComponents::StateMachineComponent]
+			[struct ECSComponents::TextComponent]
 			{
-				"NumStates": <int> { 0 }
-				"CurrentState": <char32> { None }
-				"TimeInState": <float> { 0 }
+				"Text": <char256> { Cassia }
+				"FontName": <char64> { Philosopher-Bold }
+				"FontSize": <float> { 1 }
 			}
 		}
-		"Script": { C:\Users\koeyu\source\repos\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door3Script.cs }
-		"Parent": { }
+		"Script": { }
+		"Parent": { 81 }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Node83]
+	{
+		"ID": { 83 }
+		"Layer": { 1 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { body text }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 5 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1400.16 | y : 4786.08 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 0 }
+				"Height": <float> { 0 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 0 | b : 0 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 2 }
+				"Drag": <float> { 8 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::BoxComponent]
+			{
+				"isPushable": <bool> { 1 }
+				"pushResistance": <float> { 0.2 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::TextComponent]
+			{
+				"Text": <char256> { body text }
+				"FontName": <char64> { Philosopher-Bold }
+				"FontSize": <float> { 0.6 }
+			}
+		}
+		"Script": { }
+		"Parent": { 81 }
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }
@@ -3993,4 +4129,9 @@
 			]
 		}
 	]
+}
+
+"LayerMetadata":
+{
+	"AvailableLayers": { 6 }
 }

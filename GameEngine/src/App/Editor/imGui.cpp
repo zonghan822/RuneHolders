@@ -2056,9 +2056,9 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 				{
 					auto& sounds = loader.getSoundsMap();
-					auto it = sounds.find(selectedName);
-					if (it != sounds.end())
-						sounds.erase(it);
+					auto it2 = sounds.find(selectedName);
+					if (it2 != sounds.end())
+						sounds.erase(it2);
 				}
 
 				// Delete the file from disk
@@ -4245,7 +4245,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 // Read states from entity's StateMachineComponent
 void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
-	Node* entNode = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id());
+	//Node* entNode = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id());
 	auto& entMng = engine_.getEntityManager();
 
 	// Read states from StateMachineComponent if available
@@ -4262,7 +4262,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	const auto& textures = loader.getAllTextures();
 	static std::string selected = "";  //currently selected
 	//auto& entMng = engine_.getEntityManager();
-	auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;  //This can be useful later on to find the behaviors/entity states available
+	//auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;  //This can be useful later on to find the behaviors/entity states available
 
 	//Dynamically allow player to choose the state that they want to edit.
 	static int selectedStateIdx = 0;
@@ -5208,7 +5208,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 	// Keyboard shortcuts for layer change ([ and ] keys)
 	if (selectedEntityID != UINT32_MAX && !ImGui::GetIO().WantTextInput) {
-		auto& entityManager = engine_.getEntityManager();
 		for (auto& e : entityManager.findEntity<>()) {
 			if (e.id() == selectedEntityID && e.has<ECSComponents::VisibilityComponent>(entityManager)) {
 				auto& vi = e.get<ECSComponents::VisibilityComponent>(entityManager);

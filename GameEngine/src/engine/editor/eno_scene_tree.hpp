@@ -14,6 +14,7 @@
 #include "../eno_core_host/eno_core_host.hpp"
 #include "../tilemap/tilemap.hpp"
 #include "../component/components/buttons.hpp"
+#include "../component/components/visibility.hpp"
 
 // stds
 #include <sstream>

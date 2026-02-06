@@ -3,44 +3,13 @@ using System.Runtime.InteropServices;
 
 namespace Eno
 {
-	public class ButtonController : ScriptBase
+	public class ButtonScript : ScriptBase
     {
-        public void onClick()
-        {
-            Console.WriteLine("[ButtonScript] Button Clicked!");
-		}
-
 	
-
-	
-		public void _when_node2_()
+		public void _when_node32_onclick()
         {
-
-        }
-	
-		public void _when_node2_onclick()
-        {
-
-        }
-	
-		public void _when_node1_onclick()
-        {
-
-        }
-	
-		public void _when_node57_onclick()
-        {
-
-        }
-	
-		public void _when_node60_onclick()
-        {
-
-        }
-	
-		public void _when_node59_onclick()
-        {
-
+			Console.WriteLine("[ButtonScript] Button clicked! Loading Level1...");
+			Bridge.LoadScene("Level1.txt");
         }
 	}
 

@@ -586,7 +586,15 @@ namespace Editor
 
 		appendIndent(save, 1);
 		save << "]\n";
+		save << "}\n\n";
+
+		// Save layer metadata
+		save << "\"LayerMetadata\":\n";
+		save << "{\n";
+		appendIndent(save, 1);
+		save << "\"AvailableLayers\": { " << ECSComponents::availableLayers << " }\n";
 		save << "}\n";
+
 	save.close();
 	FileSystem::SyncToSource(filename);
 	}
@@ -818,6 +826,33 @@ namespace Editor
 
 			// Add one default empty layer
 			tileMap_.addLayer("Tile Layer 1", false);
+		}
+
+		// Load layer metadata (availableLayers)
+		size_t layerMetadataPos = data.find("\"LayerMetadata\"");
+		if (layerMetadataPos != std::string::npos) {
+			std::cout << "[EnoSceneTree] Loading layer metadata..." << std::endl;
+
+			size_t metadataStart = data.find('{', layerMetadataPos);
+			if (metadataStart != std::string::npos) {
+				size_t metadataEnd = findMatchingBrace(data, metadataStart);
+				if (metadataEnd != std::string::npos) {
+					// Extract availableLayers
+					auto availLayers = extract<uint32_t>(data, "AvailableLayers", metadataStart, metadataEnd);
+					if (availLayers.has_value() && availLayers.value() > 0 && availLayers.value() <= static_cast<uint32_t>(ECSComponents::MAX_LAYERS)) {
+						ECSComponents::availableLayers = static_cast<int>(availLayers.value());
+						std::cout << "[EnoSceneTree] Restored availableLayers to: " << ECSComponents::availableLayers << std::endl;
+					}
+					else {
+						std::cerr << "[EnoSceneTree] Warning: Invalid AvailableLayers value, using default" << std::endl;
+					}
+				}
+			}
+		}
+		else {
+			std::cout << "[EnoSceneTree] No layer metadata found, using default availableLayers (4)" << std::endl;
+			// Reset to default if not found in scene file (for backward compatibility)
+			ECSComponents::availableLayers = 4;
 		}
 
 	}

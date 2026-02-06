@@ -222,6 +222,7 @@ namespace Core
 		// ---------  Handling script state based on engine state ---------
 		void HRSetup();
 		void hotReload();
+		void syncScriptsToSource();
 
 		// Script backend (compilation and reloading)
 

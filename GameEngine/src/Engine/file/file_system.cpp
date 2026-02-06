@@ -6,6 +6,7 @@ std::filesystem::path FileSystem::rootDir_;
 std::filesystem::path FileSystem::assetsDir_;
 std::filesystem::path FileSystem::scriptsDir_;
 std::filesystem::path FileSystem::sourceAssetsDir_;
+std::filesystem::path FileSystem::sourceScriptsDir_;
 
 void FileSystem::Initialize()
 {
@@ -20,6 +21,7 @@ void FileSystem::Initialize()
     assetsDir_ = exeDir_ / "assets";
     scriptsDir_ = exeDir_ / "scripts\\GameScripts\\user_scripts";
     sourceAssetsDir_ = rootDir_ / "assets";
+    sourceScriptsDir_ = rootDir_ / "scripts/GameScripts/user_scripts";
 }
 
 const std::filesystem::path& FileSystem::GetRootDir()
@@ -45,6 +47,11 @@ const std::filesystem::path& FileSystem::GetScriptsDir()
 const std::filesystem::path& FileSystem::GetSourceAssetsDir()
 {
     return sourceAssetsDir_;
+}
+
+const std::filesystem::path& FileSystem::GetSourceScriptsDir()
+{
+    return sourceScriptsDir_;
 }
 
 void FileSystem::SyncToSource(const std::string& buildFilePath)
@@ -80,5 +87,33 @@ void FileSystem::RemoveFromSource(const std::string& buildFilePath)
     catch (const std::filesystem::filesystem_error& e)
     {
         std::cerr << "[FileSystem] RemoveFromSource failed for '" << buildFilePath << "': " << e.what() << std::endl;
+    }
+}
+
+void FileSystem::SyncScriptToSource(const std::string& buildScriptPath)
+{
+    try
+    {
+        std::filesystem::path buildPath{ buildScriptPath };
+
+        // Get relative path from build scripts dir
+        std::filesystem::path relative = std::filesystem::relative(buildPath, scriptsDir_);
+
+        // Construct destination path in source
+        std::filesystem::path destPath = sourceScriptsDir_ / relative;
+
+        // Create parent directories if needed
+        std::filesystem::create_directories(destPath.parent_path());
+
+        // Copy with overwrite
+        std::filesystem::copy_file(buildPath, destPath,
+                                   std::filesystem::copy_options::overwrite_existing);
+
+        std::cout << "[FileSystem] Synced script to source: " << destPath << std::endl;
+    }
+    catch (const std::filesystem::filesystem_error& e)
+    {
+        std::cerr << "[FileSystem] SyncScriptToSource failed for '"
+                  << buildScriptPath << "': " << e.what() << std::endl;
     }
 }

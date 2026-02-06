@@ -85,10 +85,6 @@ private:
     Player::PlayerConfig playerConfig_;
     std::unique_ptr<Player::PlayerSystem> playerSystem_;
 
-    // Trigger tracking (for one-time entry/exit logging)
-    std::set<uint32_t> currentTriggersPlayerIsIn_;
-    std::set<uint32_t> previousTriggersPlayerWasIn_;
-
     // Scene Tree (note: must be initialized after engine_ is initialized)
     std::unique_ptr<Editor::EnoSceneTree> sceneTree_;
 

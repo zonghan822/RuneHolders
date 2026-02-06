@@ -17,12 +17,20 @@
 
 namespace Memory
 {
-	// This is a monotonic arena, with expansions
-	// being done in a list. When a block runs out of
-	// memory, we simply allocate a new block.
-	//
-	// There will be no memory coalescing as memory is handled
-	// locally within the slab/ecs itself
+	// Uses linear allocation
+		// Rationale for using linear allocation:
+		// 
+		// Much of the actual data allocation within chunks
+		// are allocated and managed by the ECS,
+		// so I will not look into coalescing memory, and
+		// instead focus on providing an arena with no internal fragmentation and 
+		// maximum data locality. This would also be most ideal for ECS objects
+		// as they are mostly long-living, so there will not be too much allocation overhead
+
+		// Sources:
+		// https://blog.molecular-matters.com/2012/08/14/memory-allocation-strategies-a-linear-allocator/
+		// https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002/
+
 	class EnoECSArena : public IAlignedAlloc
 	{
 	private:
