@@ -564,7 +564,7 @@
 				"State[5].onExit": <char64> { hurt_exit }
 			}
 		}
-		"Script": { C:\Users\muhdr\OneDrive\Documents\GitHub\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\TrailBlight_Script.cs }
+		"Script": { TrailBlight_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -3831,7 +3831,7 @@
 				"TimeInState": <float> { 0 }
 			}
 		}
-		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door2Script.cs }
+		"Script": { Door2Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -3932,7 +3932,7 @@
 				"TimeInState": <float> { 0 }
 			}
 		}
-		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\DoorScript.cs }
+		"Script": { DoorScript.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -4442,7 +4442,7 @@
 				"State[5].onExit": <char64> { hurt_exit }
 			}
 		}
-		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\TrailBlight_Script.cs }
+		"Script": { TrailBlight_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -4637,7 +4637,7 @@
 				"State[5].onExit": <char64> { hurt_exit }
 			}
 		}
-		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\TrailBlight_Script.cs }
+		"Script": { TrailBlight_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -4832,7 +4832,7 @@
 				"State[5].onExit": <char64> { hurt_exit }
 			}
 		}
-		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Bloodwing_Script.cs }
+		"Script": { Bloodwing_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -4925,7 +4925,7 @@
 				"TimeInState": <float> { 0 }
 			}
 		}
-		"Script": { C:\Users\zongh\Repos\School\Trimester 4\RuneHolders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door3Script.cs }
+		"Script": { Door3Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
