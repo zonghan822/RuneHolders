@@ -61,6 +61,9 @@ void GameApplication::initialize() {
 	editorCameraX_ = (worldWidth_ / 2.0f) - static_cast<float>(EDITOR_WIDTH) / 2.f;
 	editorCameraY_ = (worldHeight_ / 2.0f) - static_cast<float>(EDITOR_HEIGHT) / 2.f;
 
+	// Initialize script camera to match
+	engine_.syncScriptCameraPos(worldWidth_ / 2.0f, worldHeight_ / 2.0f);
+
 	// Subscribe to delete selected entity event (using GameApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
 		{
@@ -423,7 +426,7 @@ void GameApplication::updateGameLogic() {
 
 	// Update main menu buttons (works in both play mode and edit mode)
 	updateMainMenuButtons();
-	updateSceneTransitions();
+	//updateSceneTransitions();
 
 	// ========== PAUSE MENU AND SPELLBOOK INPUT HANDLING ==========
 	// Only handle pause/spellbook input when in play mode AND player exists
@@ -755,6 +758,13 @@ void GameApplication::updateGameLogic() {
 		gameFramebuffer_->unbind();
 	}
 
+	// ==== SYNC SCRIPT CAMERA (pick up changes from C# bridge) ====
+	if (engine_.consumeScriptCameraDirty()) {
+		auto camCenter = engine_.getScriptCameraPos();
+		editorCameraX_ = camCenter.x - static_cast<float>(EDITOR_WIDTH) * 0.5f;
+		editorCameraY_ = camCenter.y - static_cast<float>(EDITOR_HEIGHT) * 0.5f;
+	}
+
 	// ==== CAMERA PANNING INPUT (ONLY IN PLAY MODE) ====
 	if (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing) {
 		auto& inputManager = engine_.getInputManager();
@@ -803,6 +813,12 @@ void GameApplication::updateGameLogic() {
 			if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
 			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
 		}
+
+		// Keep script camera in sync with editor camera (so GetCameraPosition returns current values)
+		engine_.syncScriptCameraPos(
+			editorCameraX_ + static_cast<float>(EDITOR_WIDTH) * 0.5f,
+			editorCameraY_ + static_cast<float>(EDITOR_HEIGHT) * 0.5f
+		);
 
 		// Calculate viewport size with zoom (zoom is now limited to prevent exceeding world bounds)
 		int editorFbSizeX = getEditorWidth();
@@ -1198,21 +1214,9 @@ void GameApplication::loadEntityTextures() {
 	auto& entityManager = engine_.getEntityManager();
 	auto& loader = engine_.getResourceLoader();
 
-	for (auto& [entityID, entityLoc] : entityManager.getMap()) {
-		// Check if entity has RenderComponent
-		bool hasRender = false;
-		for (const auto& type : entityLoc.archetype->types_) {
-			if (type == std::type_index(typeid(ECSComponents::RenderComponent))) {
-				hasRender = true;
-				break;
-			}
-		}
-
-		if (!hasRender) continue;
-
-		// Get RenderComponent
-		size_t renderIndex = entityLoc.archetype->findComponentIndex<ECSComponents::RenderComponent>();
-		auto& renderComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::RenderComponent>(renderIndex, entityLoc.entityIndexInChunk);
+	auto renderEntities = entityManager.findEntity<ECSComponents::RenderComponent>();
+	for (auto& entity : renderEntities) {
+		auto& renderComp = entity.get<ECSComponents::RenderComponent>(entityManager);
 
 		// If texture path is set but texture is not loaded, load it
 		if (strlen(renderComp.texturePath) > 0 && (!renderComp.texture || !renderComp.texture->isValid())) {
@@ -1227,7 +1231,7 @@ void GameApplication::loadEntityTextures() {
 			renderComp.texture = loader.getTexture(textureName);
 
 			if (renderComp.texture && renderComp.texture->isValid()) {
-				//std::cout << "[GameLogic] Loaded texture '" << textureName << "' for entity " << entityID << std::endl;
+				//std::cout << "[GameLogic] Loaded texture '" << textureName << "' for entity " << entity.id() << std::endl;
 			} else {
 				//std::cerr << "[GameLogic] Failed to load texture '" << textureName << "' from path: " << renderComp.texturePath << std::endl;
 			}
@@ -2053,17 +2057,14 @@ void GameApplication::updateRuneSystem()
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 	std::vector<uint32_t> fireballsToDestroy;
 
-	//Rework: Entity loop might need rework. Also destroying fireball is in update_runesystem.
-	for (const auto& [id, loc] : entityManager.getMap()) {
-		ECS::Entity entity(id);
-		if (entity.has<ECSComponents::FireballComponent>(entityManager)) {
-			auto& fireballComp = entity.get<ECSComponents::FireballComponent>(entityManager);
-			fireballComp.elapsedTime += deltaTime;
+	auto fireballs = entityManager.findEntity<ECSComponents::FireballComponent>();
+	for (auto& entity : fireballs) {
+		auto& fireballComp = entity.get<ECSComponents::FireballComponent>(entityManager);
+		fireballComp.elapsedTime += deltaTime;
 
-			// Check if fireball has exceeded its lifetime
-			if (fireballComp.elapsedTime >= fireballComp.lifetime) {
-				fireballsToDestroy.push_back(id);
-			}
+		// Check if fireball has exceeded its lifetime
+		if (fireballComp.elapsedTime >= fireballComp.lifetime) {
+			fireballsToDestroy.push_back(entity.id());
 		}
 	}
 
@@ -2148,8 +2149,6 @@ void GameApplication::spawnRunes(const Math::eVec2<float>& mouseWorldPos)
 	auto& entityManager = engine_.getEntityManager();
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
-
-	constexpr float PI = 3.14159265359f;
 
 	// Store circle center for spell spawning
 	runeState.circleCenter = mouseWorldPos;
@@ -2636,26 +2635,21 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 	std::vector<uint32_t> marksToDestroy;
 	std::vector<uint32_t> enemiesToDestroy;
 
+	// Get all rupture marks and enemies once at the start
+	auto ruptureMarks = entityManager.findEntity<ECSComponents::RuptureMarkComponent, ECSComponents::TransformComponent>();
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent>();
+
 	// Debug: Count how many RuptureMarks exist
 	static float countTimer = 0.0f;
 	countTimer += deltaTime;
 	if (countTimer >= 2.0f) {
 		countTimer = 0.0f;
-		int ruptureCount = 0;
-		for (const auto& [id, loc] : entityManager.getMap()) {
-			ECS::Entity e(id);
-			if (e.has<ECSComponents::RuptureMarkComponent>(entityManager))
-				ruptureCount++;
-		}
-		//if (ruptureCount > 0)
-			//std::cout << "[RuptureMark DEBUG] Total RuptureMarks in scene: " << ruptureCount << std::endl;
+		//if (!ruptureMarks.empty())
+			//std::cout << "[RuptureMark DEBUG] Total RuptureMarks in scene: " << ruptureMarks.size() << std::endl;
 	}
 
-	for (const auto& [id, loc] : entityManager.getMap())
+	for (auto& entity : ruptureMarks)
 	{
-		ECS::Entity entity(id);
-		if (!entity.has<ECSComponents::RuptureMarkComponent>(entityManager) || !entity.has<ECSComponents::TransformComponent>(entityManager))
-			continue;
 
 		auto& mark = entity.get<ECSComponents::RuptureMarkComponent>(entityManager);
 		auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
@@ -2691,13 +2685,8 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 				//std::cout << "[RuptureMark DEBUG] Mark position: (" << transform.pos.x << ", " << transform.pos.y << "), radius: " << mark.detectionRadius << std::endl;
 			}
 
-			for (const auto& [enemyId, enemyLoc] : entityManager.getMap())
+			for (auto& enemyEntity : enemies)
 			{
-				ECS::Entity enemyEntity(enemyId);
-				if (!enemyEntity.has<ECSComponents::AIComponent>(entityManager) ||
-					!enemyEntity.has<ECSComponents::TransformComponent>(entityManager))
-					continue;
-
 				// Debug: Found an AI entity
 				const char* debugName = "???";
 				const char* debugTexture = "???";
@@ -2743,7 +2732,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 					// Enemy triggered the mark! Switch to windup animation
 					mark.state = ECSComponents::RuptureMarkState::WINDUP;
 					mark.stateTimer = 0.0f;
-					mark.triggeredByEntityID = enemyId;
+					mark.triggeredByEntityID = enemyEntity.id();
 
 					// Switch to windup animation
 					if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager) &&
@@ -2778,7 +2767,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 						entitiesDirty_ = true;
 					}
 
-					std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
+					//std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
 					break;
 				}
 			}
@@ -2879,7 +2868,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 
 		case ECSComponents::RuptureMarkState::FINISHED:
 		{
-			marksToDestroy.push_back(id);
+			marksToDestroy.push_back(entity.id());
 			break;
 		}
 		}
@@ -2926,43 +2915,39 @@ void GameApplication::updateFloatingTexts(float deltaTime)
 	auto& graphics = engine_.getGraphicsManager();
 	std::vector<uint32_t> textsToDestroy;
 
-	for (const auto& [id, loc] : entityManager.getMap()) {
-		ECS::Entity entity(id);
-		if (entity.has<ECSComponents::FloatingTextComponent>(entityManager) &&
-		    entity.has<ECSComponents::TransformComponent>(entityManager)) {
+	auto floatingTexts = entityManager.findEntity<ECSComponents::FloatingTextComponent, ECSComponents::TransformComponent>();
+	for (auto& entity : floatingTexts) {
+		auto& floatText = entity.get<ECSComponents::FloatingTextComponent>(entityManager);
+		auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 
-			auto& floatText = entity.get<ECSComponents::FloatingTextComponent>(entityManager);
-			auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+		// Update elapsed time
+		floatText.elapsedTime += deltaTime;
 
-			// Update elapsed time
-			floatText.elapsedTime += deltaTime;
+		// Move text upward
+		transform.pos.y -= floatText.riseSpeed * deltaTime;
 
-			// Move text upward
-			transform.pos.y -= floatText.riseSpeed * deltaTime;
+		// Check if expired
+		if (floatText.elapsedTime >= floatText.lifetime) {
+			textsToDestroy.push_back(entity.id());
+		}
+		else {
+			// Render the floating text
+			float alpha = floatText.getCurrentAlpha();
 
-			// Check if expired
-			if (floatText.elapsedTime >= floatText.lifetime) {
-				textsToDestroy.push_back(id);
-			}
-			else {
-				// Render the floating text
-				float alpha = floatText.getCurrentAlpha();
+			// Convert world position to screen position
+			Math::eVec2<float> screenPos = {
+				transform.pos.x - editorCameraX_,
+				transform.pos.y - editorCameraY_
+			};
 
-				// Convert world position to screen position
-				Math::eVec2<float> screenPos = {
-					transform.pos.x - editorCameraX_,
-					transform.pos.y - editorCameraY_
-				};
-
-				// Draw text with fading alpha
-				graphics.drawText(
-					pixelifyFont_,
-					std::string(floatText.text),
-					screenPos,
-					1.0f,  // scale
-					Graphics::Color(1.0f, 0.3f, 0.3f, alpha)  // Red color with fading alpha
-				);
-			}
+			// Draw text with fading alpha
+			graphics.drawText(
+				pixelifyFont_,
+				std::string(floatText.text),
+				screenPos,
+				1.0f,  // scale
+				Graphics::Color(1.0f, 0.3f, 0.3f, alpha)  // Red color with fading alpha
+			);
 		}
 	}
 
@@ -3974,6 +3959,11 @@ void GameApplication::handleMainMenuButton() {
 }
 
 void GameApplication::testParticleSystem() {
+	// Only allow particle testing in play mode
+	if (!engine_.getIsPlaying()) {
+		return;
+	}
+
 	auto& entityManager = engine_.getEntityManager();
 	auto& input = engine_.getInputManager();
 

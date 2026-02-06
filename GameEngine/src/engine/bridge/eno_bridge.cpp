@@ -9,7 +9,7 @@ Engine::EnoEngine* gEngine = nullptr;
 namespace Bridge
 {
     // Helper function to get entity from sceneObjectID
-    static ECS::Entity GetEntityFromSceneObjectID(uint32_t sceneObjectID, ECS::EntityManager& entMng, Editor::EnoSceneTree& sceneTree)
+    static ECS::Entity GetEntityFromSceneObjectID(uint32_t sceneObjectID, Editor::EnoSceneTree& sceneTree)
     {
         Editor::Node* node = sceneTree.getNodeBySceneObjectID(sceneObjectID);
         if (!node) {
@@ -38,7 +38,7 @@ namespace Bridge
                 std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
                 return 0.0f;
             }
-            return gEngine->getDeltaTime();
+            return static_cast<float>(gEngine->getDeltaTime());
         }
 
         ENGINE_API bool __stdcall IsKeyPressed(int key)
@@ -122,7 +122,7 @@ namespace Bridge
             auto& entMng = gEngine->getEntityManager();
             auto& animRegistry = gEngine->getAnimationRegistry();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(NodeID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(NodeID, sceneTree);
 
             if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng)) {
                 std::cerr << "[Bridge] Entity " << NodeID << " has no AnimationControllerComponent!" << std::endl;

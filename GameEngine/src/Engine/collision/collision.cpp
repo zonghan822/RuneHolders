@@ -1175,7 +1175,7 @@ namespace Collision {
 			case ColliderType::LINE:
 			{
 				// Line: Bounding box encompasses both endpoints
-				float minX = std::min(collision.data.line.p1.x, collision.data.line.p2.x);
+				// float minX = std::min(collision.data.line.p1.x, collision.data.line.p2.x); this is unused - zhe an
 				float maxX = std::max(collision.data.line.p1.x, collision.data.line.p2.x);
 				float minY = std::min(collision.data.line.p1.y, collision.data.line.p2.y);
 				float maxY = std::max(collision.data.line.p1.y, collision.data.line.p2.y);

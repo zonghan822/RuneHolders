@@ -13,7 +13,7 @@ extern Engine::EnoEngine* gEngine;
 namespace Bridge
 {
     // Helper function to get entity from sceneObjectID
-    static ECS::Entity GetEntityFromSceneObjectID(uint32_t sceneObjectID, ECS::EntityManager& entMng, Editor::EnoSceneTree& sceneTree)
+    static ECS::Entity GetEntityFromSceneObjectID(uint32_t sceneObjectID, Editor::EnoSceneTree& sceneTree)
     {
         Editor::Node* node = sceneTree.getNodeBySceneObjectID(sceneObjectID);
         if (!node) {
@@ -63,7 +63,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX || !entity.has<ECSComponents::TransformComponent>(entMng)) {
                 return false;
@@ -86,7 +86,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX || !entity.has<ECSComponents::PhysicsComponent>(entMng)) {
                 return false;
@@ -108,7 +108,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -147,7 +147,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -196,7 +196,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -243,7 +243,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -271,7 +271,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -340,7 +340,7 @@ namespace Bridge
 
             auto& entMng = gEngine->getEntityManager();
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, entMng, sceneTree);
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
 
             if (entity.id() == UINT32_MAX) {
                 return false;
@@ -353,6 +353,88 @@ namespace Bridge
             auto& aiComp = entity.get<ECSComponents::AIComponent>(entMng);
             aiComp.health = health;
 
+            return true;
+        }
+
+        // Set entity's position directly (teleport)
+        ENGINE_API bool __stdcall SetEntityPosition(uint32_t sceneObjectID, float x, float y)
+        {
+            if (!gEngine) {
+                std::cerr << "[AI Bridge] Engine not initialized!" << std::endl;
+                return false;
+            }
+
+            auto& entMng = gEngine->getEntityManager();
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
+
+            if (entity.id() == UINT32_MAX || !entity.has<ECSComponents::TransformComponent>(entMng)) {
+                return false;
+            }
+
+            auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
+            transform.pos.x = x;
+            transform.pos.y = y;
+
+            return true;
+        }
+
+        // Set the player entity's position directly (teleport) and zero velocity
+        ENGINE_API bool __stdcall SetPlayerPosition(float x, float y)
+        {
+            if (!gEngine) {
+                std::cerr << "[AI Bridge] Engine not initialized!" << std::endl;
+                return false;
+            }
+
+            auto& entMng = gEngine->getEntityManager();
+            auto playerEntities = entMng.findEntity<ECSComponents::PlayerComponent>();
+            if (playerEntities.empty()) {
+                return false;
+            }
+
+            ECS::Entity playerEntity = playerEntities[0];
+            if (!playerEntity.has<ECSComponents::TransformComponent>(entMng)) {
+                return false;
+            }
+
+            auto& transform = playerEntity.get<ECSComponents::TransformComponent>(entMng);
+            transform.pos.x = x;
+            transform.pos.y = y;
+
+            // Zero velocity so physics doesn't move the player away from the destination
+            if (playerEntity.has<ECSComponents::PhysicsComponent>(entMng)) {
+                auto& physics = playerEntity.get<ECSComponents::PhysicsComponent>(entMng);
+                physics.velocity = Math::eVec2<float>{ 0.0f, 0.0f };
+                physics.ClearForces();
+            }
+
+            return true;
+        }
+
+        // Get the camera's world position (reads from engine's script camera)
+        ENGINE_API bool __stdcall GetCameraPosition(float* outX, float* outY)
+        {
+            if (!gEngine) {
+                std::cerr << "[AI Bridge] Engine not initialized!" << std::endl;
+                return false;
+            }
+
+            auto pos = gEngine->getScriptCameraPos();
+            *outX = pos.x;
+            *outY = pos.y;
+            return true;
+        }
+
+        // Set the camera's world position (writes to engine's script camera)
+        ENGINE_API bool __stdcall SetCameraPosition(float x, float y)
+        {
+            if (!gEngine) {
+                std::cerr << "[AI Bridge] Engine not initialized!" << std::endl;
+                return false;
+            }
+
+            gEngine->setScriptCameraPos(x, y);
             return true;
         }
     }
