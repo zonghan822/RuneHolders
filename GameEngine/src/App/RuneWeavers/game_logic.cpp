@@ -51,6 +51,7 @@ void GameApplication::initialize() {
 	setupSpellbookIcon();
 	setupCombatSystem();
 	setupMainMenuButtons();
+	setupWinScreenButtons();
 	/*setupSceneTransitions();*/
 
 	auto& tileMap = engine_.getTileMap();
@@ -804,15 +805,35 @@ void GameApplication::updateGameLogic() {
 									if ((std::abs(playerX - teacherX) <= (playerHalfW + teacherHalfW)) &&
 										(std::abs(playerY - teacherY) <= (playerHalfH + teacherHalfH))) {
 
-										// Set WinScreen-M4 to visible
-										auto winScreen = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
-										if (!winScreen.empty()) {
-											for (auto& screen : winScreen) {
-												if (screen.has<ECSComponents::VisibilityComponent>(entityManager)) {
-													screen.get<ECSComponents::VisibilityComponent>(entityManager).visible = true;
-												}
+										// Get camera position to center the win screen
+									Math::eVec2<float> cameraCenter = { 960.0f, 540.0f }; // Default center
+									std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+									for (auto& cameraEntity : cameraEntities) {
+										auto& camera = cameraEntity.get<ECSComponents::CameraComponent>(entityManager);
+										if (camera.isActive) {
+											cameraCenter = camera.position;
+											break;
+										}
+									}
+
+									// Set WinScreen-M4 position and visibility
+									auto winScreen = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
+									if (!winScreen.empty()) {
+										for (auto& screen : winScreen) {
+											// Set transform position to camera center
+											if (screen.has<ECSComponents::TransformComponent>(entityManager)) {
+												auto& winTransform = screen.get<ECSComponents::TransformComponent>(entityManager);
+												winTransform.pos = cameraCenter;
+											}
+											// Set visible
+											if (screen.has<ECSComponents::VisibilityComponent>(entityManager)) {
+												screen.get<ECSComponents::VisibilityComponent>(entityManager).visible = true;
 											}
 										}
+										// Update win screen button positions based on new WinScreen-M4 position
+										setupWinScreenButtons();
+										std::cout << "[WinScreen] WinScreen-M4 positioned at camera center (" << cameraCenter.x << ", " << cameraCenter.y << ")" << std::endl;
+									}
 										break; // Only trigger once
 									}
 								}
@@ -1873,13 +1894,24 @@ void GameApplication::updateRuneSystem()
 		cameraY
 	);
 
+	// Check if win screen is visible (prevent rune spawning when win screen is open)
+	bool winScreenVisible = false;
+	auto winScreenEntities = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
+	if (!winScreenEntities.empty()) {
+		auto& winScreenEntity = winScreenEntities[0];
+		if (winScreenEntity.has<ECSComponents::VisibilityComponent>(entityManager)) {
+			winScreenVisible = winScreenEntity.get<ECSComponents::VisibilityComponent>(entityManager).visible;
+		}
+	}
+
 	// Check if left mouse button is pressed this frame
 	bool leftClickPressed = inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT);
 	bool leftClickHeld = inputManager.isMousePressed(GLFW_MOUSE_BUTTON_LEFT);
 	bool leftClickReleased = inputManager.isMouseUp(GLFW_MOUSE_BUTTON_LEFT);
 
 	// ACTIVATE RUNES when left click is first pressed (move from off-screen to cursor)
-	if (leftClickPressed && !runeState.runesActive) {
+	// Don't spawn runes if win screen is visible
+	if (leftClickPressed && !runeState.runesActive && !winScreenVisible) {
 		// Reset connection state
 		runeState.resetConnection();
 
@@ -3636,6 +3668,57 @@ void GameApplication::updateMainMenuButtons() {
 					return;
 				}
 			}
+
+			// Handle win screen buttons (only when WinScreen-M4 is visible)
+			auto winScreenEntities = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
+			if (!winScreenEntities.empty()) {
+				auto& winScreenEntity = winScreenEntities[0];
+				if (winScreenEntity.has<ECSComponents::VisibilityComponent>(entityManager)) {
+					auto& winScreenVis = winScreenEntity.get<ECSComponents::VisibilityComponent>(entityManager);
+					if (winScreenVis.visible) {
+						if (buttonName == "mainmenu button") {
+							std::cout << "[WinScreen] Main Menu button pressed - returning to main menu" << std::endl;
+
+							// Clean up before scene change (similar to handleMainMenuButton)
+							destroyPauseMenu();
+							if (spellbookEntityID_ != 0) {
+								destroySpellbook();
+							}
+							showPlayer();  // Restore player visibility before scene change
+
+							// Clear all entity IDs to prevent crashes when trying to access them after scene change
+							resumeButtonEntityID_ = 0;
+							mainMenuButtonEntityID_ = 0;
+							quitGameButtonEntityID_ = 0;
+							pauseMenuEntityID_ = 0;
+							spellbookEntityID_ = 0;
+							controlsDisplayEntityID_ = 0;
+							quitConfirmEntityID_ = 0;
+							playerEntityID_ = 0;
+
+							// Reset game state flags
+							isPaused_ = false;
+							showSpellbook_ = false;
+							playerSpawned_ = false;
+							engine_.setIsPlaying(true);
+
+							// Change scene to Main Menu
+							engine_.getEnoEditor().selectScene("MainMenu.txt");
+							entitiesDirty_ = true;
+
+							// Recreate main menu buttons after scene load
+							setupMainMenuButtons();
+							return;
+						} else if (buttonName == "quitgame button") {
+							std::cout << "[WinScreen] Quit Game button pressed - exiting application" << std::endl;
+							// Quit the application
+							engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
+							engine_.getWindowManager().setShouldClose(true);
+							return;
+						}
+					}
+				}
+			}
 		}
 	}
 }
@@ -4187,6 +4270,88 @@ void GameApplication::handleQuitGameButton() {
 	// Quit the application
 	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
 	engine_.getWindowManager().setShouldClose(true);
+}
+
+// ============================================================================
+// WIN SCREEN BUTTON SYSTEM IMPLEMENTATION
+// ============================================================================
+
+void GameApplication::setupWinScreenButtons() {
+	auto& entityManager = engine_.getEntityManager();
+
+	// Get WinScreen-M4 position to position buttons relative to it
+	Math::eVec2<float> winScreenCenter = { 960.0f, 540.0f }; // Default center
+	auto winScreenEntities = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("WinScreen-M4"));
+	if (!winScreenEntities.empty()) {
+		auto& winScreenEntity = winScreenEntities[0];
+		if (winScreenEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+			auto& winScreenTransform = winScreenEntity.get<ECSComponents::TransformComponent>(entityManager);
+			winScreenCenter = winScreenTransform.pos;
+		}
+	}
+
+	// Main Menu Button - 80 pixels left, 126 pixels below center
+	ECS::Entity mainMenuButton = entityManager.create();
+	mainMenuButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("mainmenu button"));
+	mainMenuButton.add<ECSComponents::TransformComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::CollisionComponent>(entityManager);
+	mainMenuButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& mainMenuTransform = mainMenuButton.get<ECSComponents::TransformComponent>(entityManager);
+	mainMenuTransform.pos = { winScreenCenter.x - 80.0f, winScreenCenter.y + 126.0f };
+	mainMenuTransform.scale = { 1.0f, 1.0f };
+	mainMenuTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& mainMenuDraw = mainMenuButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	mainMenuDraw.width = 0.0f;
+	mainMenuDraw.height = 0.0f;
+	mainMenuDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(mainMenuDraw.shape, "Rectangle");
+
+	auto& mainMenuCollision = mainMenuButton.get<ECSComponents::CollisionComponent>(entityManager);
+	mainMenuCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	mainMenuCollision.data.rectangle.width = 100.0f;
+	mainMenuCollision.data.rectangle.height = 100.0f;
+	mainMenuCollision.rotation = 0.785398f; // 45 degrees in radians
+	mainMenuCollision.isTrigger = true;
+
+	auto& mainMenuBtn = mainMenuButton.get<ECSComponents::ButtonComponent>(entityManager);
+	mainMenuBtn.getActive() = true;
+
+	std::cout << "[WinScreen] Main Menu button created at position (" << mainMenuTransform.pos.x << ", " << mainMenuTransform.pos.y << ") with collision size 100x100" << std::endl;
+
+	// Quit Game Button - 80 pixels right, 126 pixels below center
+	ECS::Entity quitGameButton = entityManager.create();
+	quitGameButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("quitgame button"));
+	quitGameButton.add<ECSComponents::TransformComponent>(entityManager);
+	quitGameButton.add<ECSComponents::DrawInfoComponent>(entityManager);
+	quitGameButton.add<ECSComponents::CollisionComponent>(entityManager);
+	quitGameButton.add<ECSComponents::ButtonComponent>(entityManager);
+
+	auto& quitGameTransform = quitGameButton.get<ECSComponents::TransformComponent>(entityManager);
+	quitGameTransform.pos = { winScreenCenter.x + 80.0f, winScreenCenter.y + 126.0f };
+	quitGameTransform.scale = { 1.0f, 1.0f };
+	quitGameTransform.rot.x = 0.785398f; // 45 degrees in radians
+
+	auto& quitGameDraw = quitGameButton.get<ECSComponents::DrawInfoComponent>(entityManager);
+	quitGameDraw.width = 0.0f;
+	quitGameDraw.height = 0.0f;
+	quitGameDraw.color = Graphics::Color(0.0f, 0.0f, 0.0f, 0.0f); // Invisible
+	strcpy_s(quitGameDraw.shape, "Rectangle");
+
+	auto& quitGameCollision = quitGameButton.get<ECSComponents::CollisionComponent>(entityManager);
+	quitGameCollision.type = ECSComponents::ColliderType::RECTANGLE;
+	quitGameCollision.data.rectangle.width = 100.0f;
+	quitGameCollision.data.rectangle.height = 100.0f;
+	quitGameCollision.rotation = 0.785398f; // 45 degrees in radians
+	quitGameCollision.isTrigger = true;
+
+	auto& quitGameBtn = quitGameButton.get<ECSComponents::ButtonComponent>(entityManager);
+	quitGameBtn.getActive() = true;
+
+	std::cout << "[WinScreen] Quit Game button created at position (" << quitGameTransform.pos.x << ", " << quitGameTransform.pos.y << ") with collision size 100x100" << std::endl;
+	std::cout << "[WinScreen] Win screen buttons created at WinScreen-M4 center (" << winScreenCenter.x << ", " << winScreenCenter.y << ")" << std::endl;
 }
 
 // ========== Dialogue System ==========

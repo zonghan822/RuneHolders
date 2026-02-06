@@ -3486,12 +3486,12 @@
 			[struct ECSComponents::CollisionComponent]
 			{
 				"Type": <ColliderType> { Rectangle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 0 }
+				"Offset": <eVec2(float)> { x : 0 | y : 120 }
+				"Is Trigger": <bool> { 1 }
+				"Is Active": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Width": <float> { 48 }
-				"Height": <float> { 48 }
+				"Width": <float> { 200 }
+				"Height": <float> { 200 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -3636,7 +3636,7 @@
 				"TimeInState": <float> { 0 }
 			}
 		}
-		"Script": { C:\Users\koeyu\source\repos\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door2Script.cs }
+		"Script": { C:\SIT\Year 2\Gam\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door2Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -3737,7 +3737,7 @@
 				"TimeInState": <float> { 0 }
 			}
 		}
-		"Script": { C:\Users\koeyu\source\repos\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\DoorScript.cs }
+		"Script": { C:\SIT\Year 2\Gam\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\DoorScript.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -4145,7 +4145,61 @@
 				"TimeInState": <float> { 0 }
 			}
 		}
-		"Script": { C:\Users\koeyu\source\repos\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door3Script.cs }
+		"Script": { C:\SIT\Year 2\Gam\csd2401f25_team_runeholders\GameEngine\build\projects\App\Debug\scripts\GameScripts\user_scripts\Door3Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[WinScreen-M4]
+	{
+		"ID": { 85 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { WinScreen-M4 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 5 }
+				"Visible": <bool> { 0 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 2001.34 | y : 987.09 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1920 }
+				"Height": <float> { 1080 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { WinScreen-M4 }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }

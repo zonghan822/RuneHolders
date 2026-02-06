@@ -208,5 +208,8 @@ private:
     void handleMainMenuButton();                    // Handle main menu button click
     void handleQuitGameButton();                    // Handle quit game button click
 
+    // Win Screen Button System
+    void setupWinScreenButtons();                   // Setup win screen buttons (called when WinScreen-M4 is visible)
+
     bool isDisplayFPS_ = false;
 };
