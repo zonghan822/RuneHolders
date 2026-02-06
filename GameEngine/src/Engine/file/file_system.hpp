@@ -13,7 +13,9 @@ public:
     static const std::filesystem::path& GetAssetsDir();
     static const std::filesystem::path& GetScriptsDir();
     static const std::filesystem::path& GetSourceAssetsDir();
+    static const std::filesystem::path& GetSourceScriptsDir();
     static void SyncToSource(const std::string& buildFilePath);
+    static void SyncScriptToSource(const std::string& buildScriptPath);
     static void RemoveFromSource(const std::string& buildFilePath);
 
 private:
@@ -22,4 +24,5 @@ private:
     static std::filesystem::path assetsDir_;
     static std::filesystem::path scriptsDir_;
     static std::filesystem::path sourceAssetsDir_;
+    static std::filesystem::path sourceScriptsDir_;
 };

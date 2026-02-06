@@ -14,8 +14,18 @@
 #include <GLFW/glfw3.h>
 #include <sstream>
 #include <iomanip>
+#include <random>
 
 #include "math/math.hpp"
+
+// Random number generator for dialogue typing sounds
+static std::mt19937 rng(std::random_device{}());
+
+// Helper function for random float generation
+float randomFloat(float min, float max) {
+	std::uniform_real_distribution<float> dist(min, max);
+	return dist(rng);
+}
 
 float scaleSize = 1.0f;
 float rotationRadians = 0.f;
@@ -229,6 +239,12 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Fireball-Cast");
 	audioMng.publishSoundRequest("Fireball-Explosion-Small");
 
+	// Typing sounds for dialogue
+	for (int i = 1; i <= 21; ++i) {
+		std::string soundName = "Typing_" + std::string(i < 10 ? "0" : "") + std::to_string(i);
+		audioMng.publishSoundRequest(soundName);
+	}
+
 	// BGM
 	audioMng.publishSoundRequest("BGM_01_Layer1_loop");
 	audioMng.publishSoundRequest("Ambience_Creaking_Wood");
@@ -409,6 +425,16 @@ void GameApplication::setupGameEvents() {
 			// Window restored - stay paused until player manually resumes
 		}
 	});
+
+	// Dialogue texts
+	dialogueTexts_ = {	"OH, WHAT'S THIS?",
+						"A SCROLL FULL OF SPELLS!",
+						"HEHEHEHE...",
+						"DID I JUST HEAR SOMETHING?",
+						"WH-WHO GOES THERE?",
+						"...",
+						"I GUESS I WAS JUST HEARING THINGS THEN.",
+						"LET ME RECORD THE SPELLS IN MY SPELLBOOK." };
 }
 
 void GameApplication::setupAnimations() {
@@ -588,6 +614,99 @@ void GameApplication::updateGameLogic() {
 				engine_.setIsPlaying(true);
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
 			}
+		}
+
+		// Handle E key - Interact with Collectible-Scroll or advance dialogue
+		if (inputMng.isKeyDown(GLFW_KEY_E)) {
+			if (dialogueActive_) {
+				if (dialogueTyping_) {
+					// Finish current text animation instantly
+					dialogueTyping_ = false;
+					dialogueCurrentText_ = dialogueTargetText_;
+					auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+					if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager)) {
+						auto& textComp = bodyText[0].get<ECSComponents::TextComponent>(entityManager);
+						strncpy_s(textComp.text, dialogueCurrentText_.c_str(), sizeof(textComp.text) - 1);
+						textComp.text[sizeof(textComp.text) - 1] = '\0';
+					}
+				}
+				else {
+					advanceDialogue();
+				}
+			}
+			else if (!isPaused_) {
+				// Check if player is colliding with UI-PopUp-E entity
+				if (playerSpawned_ && playerEntityID_ != 0) {
+					ECS::Entity playerEntity(playerEntityID_);
+					if (playerEntity.has<ECSComponents::TransformComponent>(entityManager) &&
+						playerEntity.has<ECSComponents::CollisionComponent>(entityManager)) {
+
+						auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
+						auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
+
+						// Find all UI-PopUp-E entities
+						auto scrolls = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("UI-PopUp-E"));
+						for (auto& scroll : scrolls) {
+							if (scroll.has<ECSComponents::TransformComponent>(entityManager) &&
+								scroll.has<ECSComponents::CollisionComponent>(entityManager)) {
+
+								auto& scrollTransform = scroll.get<ECSComponents::TransformComponent>(entityManager);
+								auto& scrollCollision = scroll.get<ECSComponents::CollisionComponent>(entityManager);
+
+								// Check AABB collision
+								if (scrollCollision.type == ECSComponents::ColliderType::RECTANGLE &&
+									playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
+
+									// Get positions with offsets
+									float playerX = playerTransform.pos.x + playerCollision.offset.x;
+									float playerY = playerTransform.pos.y + playerCollision.offset.y;
+									float scrollX = scrollTransform.pos.x + scrollCollision.offset.x;
+									float scrollY = scrollTransform.pos.y + scrollCollision.offset.y;
+
+									// Get half dimensions
+									float playerHalfW = (playerCollision.data.rectangle.width * playerTransform.scale.x) * 0.5f;
+									float playerHalfH = (playerCollision.data.rectangle.height * playerTransform.scale.y) * 0.5f;
+									float scrollHalfW = (scrollCollision.data.rectangle.width * scrollTransform.scale.x) * 0.5f;
+									float scrollHalfH = (scrollCollision.data.rectangle.height * scrollTransform.scale.y) * 0.5f;
+
+									// AABB collision test
+									if ((std::abs(playerX - scrollX) <= (playerHalfW + scrollHalfW)) &&
+										(std::abs(playerY - scrollY) <= (playerHalfH + scrollHalfH))) {
+										startDialogue();
+										break; // Only trigger once
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Dialogue typewriter animation
+	if (dialogueTyping_) {
+		// Start timer
+		dialogueTypeTimer_ += deltaTime;
+		while (dialogueTypeTimer_ >= DIALOGUE_TYPE_SPEED && dialogueCurrentText_.size() < dialogueTargetText_.size()) {
+			// Add next letter, reset timer
+			dialogueCurrentText_ += dialogueTargetText_[dialogueCurrentText_.size()];
+			dialogueTypeTimer_ -= DIALOGUE_TYPE_SPEED;
+			//Play audio here for keyclicks here: Yun Qi
+			int typingSoundValue = static_cast<int>(randomFloat(1, 22)); // 1-21 inclusive
+			std::string number = (typingSoundValue < 10 ? "0" : "") + std::to_string(typingSoundValue);
+			std::string typeSound = "Typing_" + number;
+			engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", typeSound });
+
+		}
+		auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+		if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager)) {
+			auto& textComp = bodyText[0].get<ECSComponents::TextComponent>(entityManager);
+			strncpy_s(textComp.text, dialogueCurrentText_.c_str(), sizeof(textComp.text) - 1);
+			textComp.text[sizeof(textComp.text) - 1] = '\0';
+		}
+		if (dialogueCurrentText_.size() >= dialogueTargetText_.size()) {
+			dialogueTyping_ = false;
 		}
 	}
 
@@ -1108,6 +1227,9 @@ void GameApplication::drawPlayerAndIndicator() {
 		}
 		catch (...) {}
 	}
+
+	// CRITICAL: Flush the player batch immediately to ensure it renders with correct projection
+	graphics.flush();
 }
 
 
@@ -1280,6 +1402,82 @@ void GameApplication::drawShapes() {
 			}
 		}
 	}
+
+	// Flush pending entity batch before text drawing (drawTextScreen unbinds defaultShader)
+	graphics.flush();
+
+	// Get active camera for offset calculation and viewport size
+	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+	float cameraX = 0.0f;
+	float cameraY = 0.0f;
+	float viewportWidth = 1920.0f;
+	float viewportHeight = 1080.0f;
+
+	if (!cameraEntities.empty()) {
+		auto& camera = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
+		cameraX = camera.position.x - camera.viewportWidth * 0.5f;
+		cameraY = camera.position.y - camera.viewportHeight * 0.5f;
+		viewportWidth = camera.viewportWidth;
+		viewportHeight = camera.viewportHeight;
+	}
+
+	// Draw TextComponent entities (world space, multiline support)
+	{
+		auto textEntities = engine_.getEntityManager().findEntity<ECSComponents::TextComponent>();
+		for (auto& textEntity : textEntities) {
+			if (textEntity.has<ECSComponents::VisibilityComponent>(entityManager)) {
+				if (!textEntity.get<ECSComponents::VisibilityComponent>(entityManager).visible)
+					continue;
+			}
+			if (!ECSComponents::isAncestorVisible(textEntity.id(), engine_.getEnoEditor().getSceneTree(), entityManager))
+				continue;
+			if (textEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+				auto& textComp  = textEntity.get<ECSComponents::TextComponent>(entityManager);
+				auto& transform = textEntity.get<ECSComponents::TransformComponent>(entityManager);
+				if (strlen(textComp.text) == 0) continue;
+
+				auto font = engine_.getResourceLoader().getFont(std::string(textComp.fontName));
+				if (!font) continue;
+
+				// Use transform.pos directly (same as sprite rendering - no parent accumulation)
+				Math::eVec2<float> worldPos = transform.pos;
+
+				// Convert world position to camera-relative position for rendering
+				Math::eVec2<float> screenPos = {
+					worldPos.x - cameraX,
+					worldPos.y - cameraY
+				};
+
+				// Draw each line separately to support newlines
+				std::string fullText(textComp.text);
+				float lineHeight = 60.0f * textComp.fontSize;
+				float yOffset = 0.0f;
+				size_t start = 0;
+				while (start <= fullText.size()) {
+					size_t pos = fullText.find('\n', start);
+					std::string line = (pos != std::string::npos)
+						? fullText.substr(start, pos - start)
+						: fullText.substr(start);
+					if (!line.empty()) {
+						graphics.drawTextScreen(
+							font, line,
+							Math::eVec2<float>{ screenPos.x, screenPos.y + yOffset },
+							textComp.fontSize,
+							Graphics::Color::White,
+							viewportWidth,
+							viewportHeight
+						);
+					}
+					if (pos == std::string::npos) break;
+					yOffset += lineHeight;
+					start = pos + 1;
+				}
+			}
+		}
+	}
+
+	// Restore defaultShader after text drawing
+	graphics.rebindDefaultShader();
 }
 
 void GameApplication::displayFPS() {
@@ -3128,7 +3326,7 @@ void GameApplication::updateMainMenuButtons() {
 	// Get window size for conversion
 	auto windowSize = engine_.getWindowManager().getWindowSize();
 
-	// Get mouse position and convert to world space
+	// Get mouse position (keep in screen space)
 	auto mouseScreenPos = inputMng.getMousePosition();
 	Math::eVec2<float> mouseWorldPos = Graphics::screenToWorld(
 		{ static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
@@ -3139,6 +3337,55 @@ void GameApplication::updateMainMenuButtons() {
 		cameraX,
 		cameraY
 	);
+
+	//std::vector<ECS::Entity> entityList = entityManager.findEntity<ECSComponents::ButtonComponent>();
+
+	//for (auto& ent : entityList)
+	//{
+	//	auto& c = ent.get<ECSComponents::CollisionComponent>(engine_.getEntityManager());
+	//	auto& t = ent.get<ECSComponents::TransformComponent>(engine_.getEntityManager());
+	//	auto& d = ent.get<ECSComponents::DrawInfoComponent>(engine_.getEntityManager());
+	//	auto& b = ent.get<ECSComponents::ButtonComponent>(engine_.getEntityManager());
+	//	if (inputMng.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
+	//	{
+	//		// Check if button is active
+	//		if (b.getActive())
+	//		{
+	//			// Convert button position from world space to screen space
+	//			Math::eVec2<float> buttonScreenPos = Graphics::worldToScreen(
+	//				t.pos,
+	//				{ 0.0f, 0.0f },
+	//				{ static_cast<float>(windowSize.first), static_cast<float>(windowSize.second) },
+	//				viewportWidth,
+	//				viewportHeight,
+	//				cameraX,
+	//				cameraY
+	//			);
+
+	//			// Create transform with screen-space position
+	//			ECSComponents::TransformComponent screenTransform = t;
+	//			screenTransform.pos = buttonScreenPos;
+
+	//			// Mouse position in screen space
+	//			Math::eVec2<float> mousePos = {
+	//				static_cast<float>(mouseScreenPos.first),
+	//				static_cast<float>(mouseScreenPos.second)
+	//			};
+
+	//			// Check if mouse pos in clickable area (both now in screen space)
+	//			if (b.onClick(mousePos, screenTransform, d, c))
+	//			{
+
+	//				// Emit signal
+	//				auto signalIt = b.signals_.find("onClick");
+	//				if (signalIt != b.signals_.end())
+	//				{
+	//					signalIt->second.emit();
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 
 	// Check for mouse click
 	bool mouseClicked = inputMng.isMouseDown(GLFW_MOUSE_BUTTON_LEFT);
@@ -3213,7 +3460,7 @@ void GameApplication::updateMainMenuButtons() {
 }
 
 void GameApplication::handlePlayButton() {
-	engine_.getEnoEditor().selectScene("Scene1.txt");
+	engine_.getEnoEditor().selectScene("Level1.txt");
 	entitiesDirty_ = true;
 
 	// Re-scan for player entity in the new scene
@@ -3689,4 +3936,101 @@ void GameApplication::handleMainMenuButton() {
 	// Recreate main menu buttons after scene load (they're not saved in the scene file)
 	setupMainMenuButtons();
 
+}
+
+// ========== Dialogue System ==========
+
+void GameApplication::startDialogue()
+{
+	if (dialogueTexts_.empty()) {
+		std::cout << "[Dialogue] No dialogue texts configured – populate dialogueTexts_ first" << std::endl;
+		return;
+	}
+
+	auto& entityManager = engine_.getEntityManager();
+
+	dialogueActive_ = true;
+	dialogueIndex_  = 0;
+	isPaused_       = true;
+	engine_.setIsPlaying(false);
+
+	// Find dialogue box by name
+	auto dialogueBox = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("DialogueBox"));
+
+	// Show the dialogue box
+	if (!dialogueBox.empty())
+	{
+		for (auto& it : dialogueBox)
+		{
+			if (it.has<ECSComponents::VisibilityComponent>(entityManager))
+			{
+				it.get<ECSComponents::VisibilityComponent>(entityManager).visible = true;
+
+			}
+		}
+	}
+
+	// Start typewriter animation for first dialogue line
+	dialogueTargetText_  = dialogueTexts_[0];
+	dialogueCurrentText_.clear();
+	dialogueTypeTimer_   = 0.0f;
+	dialogueTyping_      = true;
+
+	// Clear body text entity to start fresh
+	auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+	if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager))
+	{
+		bodyText[0].get<ECSComponents::TextComponent>(entityManager).text[0] = '\0';
+	}
+
+	std::cout << "[Dialogue] Started – showing text 0: " << dialogueTexts_[0] << std::endl;
+}
+
+void GameApplication::advanceDialogue()
+{
+	dialogueIndex_++;
+
+	if (dialogueIndex_ >= static_cast<int>(dialogueTexts_.size())) {
+		// All texts have been shown – end the dialogue
+		dialogueActive_ = false;
+		dialogueTyping_      = false;
+		isPaused_       = false;
+		engine_.setIsPlaying(true);
+
+		auto& entityManager = engine_.getEntityManager();
+
+		// Hide the dialogue box
+		auto dialogueBox = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("DialogueBox"));
+
+		// Show the dialogue box
+		if (!dialogueBox.empty())
+		{
+			for (auto& it : dialogueBox)
+			{
+				if (it.has<ECSComponents::VisibilityComponent>(entityManager))
+				{
+					it.get<ECSComponents::VisibilityComponent>(entityManager).visible = false;
+
+				}
+			}
+		}
+
+		std::cout << "[Dialogue] Ended" << std::endl;
+	}
+	else {
+		// Start typewriter animation for next dialogue line
+		dialogueTargetText_  = dialogueTexts_[dialogueIndex_];
+		dialogueCurrentText_.clear();
+		dialogueTypeTimer_   = 0.0f;
+		dialogueTyping_      = true;
+
+		// Clear body text entity
+		auto& entityManager = engine_.getEntityManager();
+		auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
+		if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager))
+		{
+			bodyText[0].get<ECSComponents::TextComponent>(entityManager).text[0] = '\0';
+		}
+		std::cout << "[Dialogue] Showing text " << dialogueIndex_ << ": " << dialogueTexts_[dialogueIndex_] << std::endl;
+	}
 }

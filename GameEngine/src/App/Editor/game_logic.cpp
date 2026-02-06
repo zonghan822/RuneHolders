@@ -37,7 +37,7 @@ void GameApplication::initialize() {
 	setupScripting();
 	setupFont();
 	setupCombatSystem();
-	setupMainMenuButtons();
+	//setupMainMenuButtons();
 	setupSceneTransitions();
 
 	auto& tileMap = engine_.getTileMap();
@@ -344,42 +344,6 @@ void GameApplication::setupGameEvents() {
 	// Ctrl+Shift+Z for redo
 	inputMng.setupKey("Redo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT);
 	inputMng.setupEvent<Editor::RedoAction>("Redo");
-
-	// Subscribe to collision events for trigger tracking
-	auto& eventBus = engine_.getEventBus();
-
-	eventBus.subscribe<Collision::CollisionEvent>(
-		[this](const Collision::CollisionEvent& event) {
-			// Check if one of the entities is the player and the other is a trigger
-			uint32_t triggerID = 0;
-			bool isPlayerInvolved = false;
-
-			// Check if entityA is trigger and entityB is player
-			if (event.isEntityA_Trigger && event.entityB_ID == playerEntityID_) {
-				triggerID = event.entityA_ID;
-				isPlayerInvolved = true;
-			}
-			// Check if entityB is trigger and entityA is player
-			else if (event.isEntityB_Trigger && event.entityA_ID == playerEntityID_) {
-				triggerID = event.entityB_ID;
-				isPlayerInvolved = true;
-			}
-
-			// If player is colliding with a trigger, add it to current frame's set
-			if (isPlayerInvolved && triggerID != 0) {
-				currentTriggersPlayerIsIn_.insert(triggerID);
-			}
-		}
-	);
-
-	// Subscribe to EntityDestroyed to clean up tracking
-	eventBus.subscribe<ECS::EntityDestroyed>(
-		[this](const ECS::EntityDestroyed& event) {
-			// Remove destroyed entity from both tracking sets
-			currentTriggersPlayerIsIn_.erase(event.entityID);
-			previousTriggersPlayerWasIn_.erase(event.entityID);
-		}
-	);
 }
 
 void GameApplication::setupAnimations() {
@@ -542,14 +506,49 @@ void GameApplication::updateGameLogic() {
 				}
 			}
 			else if (!isPaused_) {
-				// Find scroll entity
-				auto scrolls = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("Collectible-Scroll"));
-				if (!scrolls.empty()) {
-					for (auto& it : scrolls)
-					{
-						if (currentTriggersPlayerIsIn_.count(it.id()))
-						{
-							startDialogue();
+				// Check if player is colliding with UI-PopUp-E entity
+				auto playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+				if (!playerEntities.empty()) {
+					auto& playerEntity = playerEntities[0];
+					if (playerEntity.has<ECSComponents::TransformComponent>(entityManager) &&
+						playerEntity.has<ECSComponents::CollisionComponent>(entityManager)) {
+
+						auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
+						auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
+
+						// Find all UI-PopUp-E entities
+						auto scrolls = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("UI-PopUp-E"));
+						for (auto& scroll : scrolls) {
+							if (scroll.has<ECSComponents::TransformComponent>(entityManager) &&
+								scroll.has<ECSComponents::CollisionComponent>(entityManager)) {
+
+								auto& scrollTransform = scroll.get<ECSComponents::TransformComponent>(entityManager);
+								auto& scrollCollision = scroll.get<ECSComponents::CollisionComponent>(entityManager);
+
+								// Check AABB collision
+								if (scrollCollision.type == ECSComponents::ColliderType::RECTANGLE &&
+									playerCollision.type == ECSComponents::ColliderType::RECTANGLE) {
+
+									// Get positions with offsets
+									float playerX = playerTransform.pos.x + playerCollision.offset.x;
+									float playerY = playerTransform.pos.y + playerCollision.offset.y;
+									float scrollX = scrollTransform.pos.x + scrollCollision.offset.x;
+									float scrollY = scrollTransform.pos.y + scrollCollision.offset.y;
+
+									// Get half dimensions
+									float playerHalfW = (playerCollision.data.rectangle.width * playerTransform.scale.x) * 0.5f;
+									float playerHalfH = (playerCollision.data.rectangle.height * playerTransform.scale.y) * 0.5f;
+									float scrollHalfW = (scrollCollision.data.rectangle.width * scrollTransform.scale.x) * 0.5f;
+									float scrollHalfH = (scrollCollision.data.rectangle.height * scrollTransform.scale.y) * 0.5f;
+
+									// AABB collision test
+									if ((std::abs(playerX - scrollX) <= (playerHalfW + scrollHalfW)) &&
+										(std::abs(playerY - scrollY) <= (playerHalfH + scrollHalfH))) {
+										startDialogue();
+										break; // Only trigger once
+									}
+								}
+							}
 						}
 					}
 				}
@@ -1244,26 +1243,6 @@ void GameApplication::updateEntities() {
 	auto& inputManager = engine_.getInputManager();
 	auto& graphics = engine_.getGraphicsManager();
 
-	// Detect trigger entries (new triggers in current set that weren't in previous set)
-	for (uint32_t triggerID : currentTriggersPlayerIsIn_) {
-		if (previousTriggersPlayerWasIn_.find(triggerID) == previousTriggersPlayerWasIn_.end()) {
-			std::cout << "[Trigger] Player (ID:" << playerEntityID_ << ") ENTERED trigger (ID:" << triggerID << ")" << std::endl;
-		}
-	}
-
-	// Detect trigger exits (triggers in previous set that aren't in current set)
-	for (uint32_t triggerID : previousTriggersPlayerWasIn_) {
-		if (currentTriggersPlayerIsIn_.find(triggerID) == currentTriggersPlayerIsIn_.end()) {
-			std::cout << "[Trigger] Player (ID:" << playerEntityID_ << ") EXITED trigger (ID:" << triggerID << ")" << std::endl;
-		}
-	}
-
-	// Save current frame's triggers as previous for next frame
-	previousTriggersPlayerWasIn_ = currentTriggersPlayerIsIn_;
-
-	// Clear current set - it will be rebuilt by collision events this frame
-	currentTriggersPlayerIsIn_.clear();
-
 	// Draw background
 	graphics.drawTexturedQuadUV(
 		Math::eVec2<float>{0.0f, 0.0f},           // Position at origin
@@ -1803,13 +1782,16 @@ void GameApplication::drawShapes() {
 		}
 	}
 
-	// Flush pending entity batch before text drawing (drawTextScreen unbinds defaultShader)
+	// Flush pending entity batch before text drawing (drawText unbinds defaultShader)
 	graphics.flush();
 
-	// Draw TextComponent entities (screen space, multiline support)
+	// Get active camera for offset calculation
+	float cameraX = editorCameraX_;
+	float cameraY = editorCameraY_;
+
+	// Draw TextComponent entities (world space, multiline support)
 	{
 		auto textEntities = engine_.getEntityManager().findEntity<ECSComponents::TextComponent>();
-		auto [w, h] = engine_.getWindowManager().getFramebufferSize();
 		for (auto& textEntity : textEntities) {
 			if (textEntity.has<ECSComponents::VisibilityComponent>(entityManager)) {
 				if (!textEntity.get<ECSComponents::VisibilityComponent>(entityManager).visible)
@@ -1825,6 +1807,12 @@ void GameApplication::drawShapes() {
 				auto font = engine_.getResourceLoader().getFont(std::string(textComp.fontName));
 				if (!font) continue;
 
+				// Convert world position to camera-relative position for rendering
+				Math::eVec2<float> screenPos = {
+					transform.pos.x - cameraX,
+					transform.pos.y - cameraY
+				};
+
 				// Draw each line separately to support newlines
 				std::string fullText(textComp.text);
 				float lineHeight = 60.0f * textComp.fontSize;
@@ -1836,13 +1824,11 @@ void GameApplication::drawShapes() {
 						? fullText.substr(start, pos - start)
 						: fullText.substr(start);
 					if (!line.empty()) {
-						graphics.drawTextScreen(
+						graphics.drawText(
 							font, line,
-							Math::eVec2<float>{ transform.pos.x, transform.pos.y + yOffset },
+							Math::eVec2<float>{ screenPos.x, screenPos.y + yOffset },
 							textComp.fontSize,
-							Graphics::Color::White,
-							static_cast<float>(w),
-							static_cast<float>(h)
+							Graphics::Color::White
 						);
 					}
 					if (pos == std::string::npos) break;
@@ -3304,7 +3290,7 @@ void GameApplication::showPlayer() {
 
 void GameApplication::setupMainMenuButtons() {
 	auto& entityManager = engine_.getEntityManager();
-
+	
 	// Play Button at (613, 1310) with size (94x94) rotated 45 degrees
 	ECS::Entity playButton = entityManager.create();
 	playButton.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("PlayButton"));
@@ -3982,7 +3968,7 @@ void GameApplication::handleMainMenuButton() {
 	entitiesDirty_ = true;
 
 	// Recreate main menu buttons after scene load (they're not saved in the scene file)
-	setupMainMenuButtons();
+	//setupMainMenuButtons();
 
 	std::cout << "[PauseMenu] Returned to MainMenu" << std::endl;
 }
