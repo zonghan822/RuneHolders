@@ -385,11 +385,49 @@ void GameApplication::setupGameEvents() {
 void GameApplication::setupAnimations() {
 	// Load the sprite sheet texture
 	backgroundTexture_ = engine_.getResourceLoader().getTexture("Background");
+	playerTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Idle-Sheet");
+	playerWalkTexture_ = engine_.getResourceLoader().getTexture("Protagonist-Walk-Sheet");
 
 	if (!backgroundTexture_ || !backgroundTexture_->isValid())
 	{
 		std::cerr << "Background texture not loaded properly" << std::endl;
 	}
+
+	if (!playerTexture_ || !playerTexture_->isValid())
+	{
+		std::cout << "Warning: Could not load player sprite sheet!" << std::endl;
+		return;
+	}
+
+	// Create player idle animation
+	auto playerIdleAnim = Animation::createSpriteSheetAnimation(
+		128,    // Frame width
+		128,    // Frame height
+		768,    // Sheet width
+		384,    // Sheet height
+		0,     // Start frame
+		18,    // Frame count
+		0.1f   // Duration per frame
+	);
+
+	playerIdleAnim.setLooping(true);
+	playerAnimController_.addAnimation("idle", playerIdleAnim);
+
+	auto playerWalkAnim = Animation::createSpriteSheetAnimation(
+		128,    // Frame width
+		128,    // Frame height
+		512,    // Sheet width
+		128,    // Sheet height
+		0,     // Start frame
+		4,    // Frame count
+		0.1f  // Faster duration for walking
+	);
+	playerWalkAnim.setLooping(true);
+	playerAnimController_.addAnimation("walk", playerWalkAnim);
+
+	playerAnimController_.setAnimation("idle");
+
+	std::cout << "Player animation setup complete!" << std::endl;
 }
 
 void GameApplication::setupImGui() {
@@ -551,6 +589,9 @@ void GameApplication::updateGameLogic() {
 
 		// Update rune system
 		updateRuneSystem();
+
+		// Update combat system (damage dealing and health)
+		updateCombatSystem(deltaTime);
 
 		// Update floating texts (rise and fade)
 		updateFloatingTexts(deltaTime);
@@ -851,9 +892,9 @@ void GameApplication::updateGameLogic() {
 				ECS::Entity& entity = *entityPtr;
 				try {
 					if (entity.has<ECSComponents::DrawInfoComponent>(entityManager)) {
-					//	if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
-					//		continue; // Skip player, drawn separately
-					//	}
+						if (entity.has<ECSComponents::PlayerComponent>(entityManager)) {
+							continue; // Skip player, drawn separately
+						}
 
 					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
@@ -996,6 +1037,60 @@ void GameApplication::updateGameLogic() {
 					continue;
 				}
 			}
+		}
+
+		// Draw player in editor view (with camera offset - convert to screen space) - NO RED CURSOR
+		if (playerSpawned_) {
+			try {
+				auto& entityMap = engine_.getEntityManager().getMap();
+				auto it = entityMap.find(playerEntityID_);
+				if (it != entityMap.end()) {
+					// Get player system from engine (no longer a global)
+					if (playerSystem_) {
+						auto& transform = playerSystem_->GetTransform(it->second);
+						auto& frame = playerAnimController_.getCurrentFrame();
+
+						std::shared_ptr<Graphics::EnoTexture> currentTexture;
+						if (playerAnimController_.getCurrentAnimationName() == "walk") {
+							currentTexture = playerWalkTexture_;
+						}
+						else {
+							currentTexture = playerTexture_;
+						}
+
+						Math::eVec2<float> uvStart = frame.uvStart;
+						Math::eVec2<float> uvEnd = frame.uvEnd;
+
+						if (playerFacingDirection_ == -1) {
+							std::swap(uvStart.x, uvEnd.x);
+						}
+
+						if (currentTexture && currentTexture->isValid()) {
+							float scaledWidth = (playerConfig_.spriteWidth * transform.scale.x);
+							float scaledHeight = (playerConfig_.spriteHeight * transform.scale.y);
+
+							// Apply camera offset to player position
+							float screenX = transform.pos.x - editorCameraX_;
+							float screenY = transform.pos.y - editorCameraY_;
+							Math::eVec2<float> topLeft = {
+								screenX - (scaledWidth * 0.5f),
+								screenY - (scaledHeight * 0.5f)
+							};
+
+							graphics_.drawTexturedQuadUV(
+								topLeft,
+								Math::eVec2<float>{scaledWidth, scaledHeight},
+								currentTexture,
+								uvStart,
+								uvEnd,
+								Graphics::Color::White,
+								transform.rot.x
+							);
+						}
+					}
+				}
+			}
+			catch (...) {}
 		}
 
 		// Flush pending entity batch before text drawing (drawTextScreen unbinds defaultShader)
@@ -2747,6 +2842,158 @@ void GameApplication::updateFloatingTexts(float deltaTime)
 	for (uint32_t id : textsToDestroy) {
 		entityManager.destroyEntity(id);
 		entitiesDirty_ = true;
+	}
+}
+
+void GameApplication::updateCombatSystem(float dt)
+{
+	auto& entityManager = engine_.getEntityManager();
+
+	// Helper lambda for AABB collision check
+	auto checkAABBCollision = [](
+		const ECSComponents::TransformComponent& transA, const ECSComponents::CollisionComponent& collA,
+		const ECSComponents::TransformComponent& transB, const ECSComponents::CollisionComponent& collB) -> bool
+		{
+			// Only check rectangle colliders
+			if (collA.type != ECSComponents::ColliderType::RECTANGLE || collB.type != ECSComponents::ColliderType::RECTANGLE)
+				return false;
+
+			// Get positions with offsets
+			float aX = transA.pos.x + collA.offset.x;
+			float aY = transA.pos.y + collA.offset.y;
+			float bX = transB.pos.x + collB.offset.x;
+			float bY = transB.pos.y + collB.offset.y;
+
+			// Get half dimensions
+			float aHalfW = collA.data.rectangle.width * 0.5f;
+			float aHalfH = collA.data.rectangle.height * 0.5f;
+			float bHalfW = collB.data.rectangle.width * 0.5f;
+			float bHalfH = collB.data.rectangle.height * 0.5f;
+
+			// AABB collision test - use <= to include touching edges
+			return (std::abs(aX - bX) <= (aHalfW + bHalfW)) &&
+				   (std::abs(aY - bY) <= (aHalfH + bHalfH));
+	};
+
+	// Update invulnerability timers
+	auto entitiesWithHealth = entityManager.findEntity<ECSComponents::HealthComponent>();
+	for (auto& entity : entitiesWithHealth) {
+		auto& health = entity.get<ECSComponents::HealthComponent>(entityManager);
+		if (health.invulnerable && health.invulnerabilityTimer > 0.0f) {
+			health.invulnerabilityTimer -= dt;
+			if (health.invulnerabilityTimer <= 0.0f) {
+				health.invulnerable = false;
+			}
+		}
+	}
+
+	// FIREBALL vs ENEMY collision damage
+	auto fireballs = entityManager.findEntity<ECSComponents::FireballComponent, ECSComponents::CollisionComponent, ECSComponents::DamageComponent>();
+	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::CollisionComponent, ECSComponents::HealthComponent>();
+
+	// Track entities to destroy (avoid destroying while iterating)
+	std::set<uint32_t> fireballsToDestroy;
+	std::set<uint32_t> enemiesToDestroy;
+
+	for (auto& fireball : fireballs) {
+		// Skip if already marked for destruction
+		if (fireballsToDestroy.count(fireball.id()) > 0) continue;
+		if (!fireball.has<ECSComponents::TransformComponent>(entityManager)) continue;
+
+		auto& fireballTransform = fireball.get<ECSComponents::TransformComponent>(entityManager);
+		auto& fireballCollision = fireball.get<ECSComponents::CollisionComponent>(entityManager);
+		auto& fireballDamage = fireball.get<ECSComponents::DamageComponent>(entityManager);
+
+		for (auto& enemy : enemies) {
+			// Skip if already marked for destruction
+			if (enemiesToDestroy.count(enemy.id()) > 0) continue;
+			if (!enemy.has<ECSComponents::TransformComponent>(entityManager)) continue;
+
+			auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+			auto& enemyCollision = enemy.get<ECSComponents::CollisionComponent>(entityManager);
+			auto& enemyHealth = enemy.get<ECSComponents::HealthComponent>(entityManager);
+
+			// Check AABB collision between fireball and enemy
+			if (checkAABBCollision(fireballTransform, fireballCollision, enemyTransform, enemyCollision)) {
+				// Deal damage to enemy
+				float damage = fireballDamage.getTotalDamage();
+				bool died = enemyHealth.takeDamage(damage);
+
+				// Play fireball hit sound effect
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Explosion-Small" });
+
+				std::cout << "[Combat] Fireball hit enemy! Dealt " << damage << " damage. "
+					<< "Enemy HP: " << enemyHealth.currentHealth << "/" << enemyHealth.maxHealth << std::endl;
+
+				if (died) {
+					std::cout << "[Combat] Enemy died!" << std::endl;
+					enemiesToDestroy.insert(enemy.id());
+				}
+
+				// Mark fireball for destruction
+				if (fireballDamage.destroyOnHit) {
+					fireballsToDestroy.insert(fireball.id());
+					break; // Exit enemy loop, this fireball hit something
+				}
+			}
+		}
+	}
+
+	// Destroy marked entities after iteration
+	for (uint32_t id : fireballsToDestroy) {
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
+	for (uint32_t id : enemiesToDestroy) {
+		entityManager.destroyEntity(id);
+		entitiesDirty_ = true;
+	}
+
+	// ENEMY vs PLAYER collision damage
+	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
+	if (!playerEntities.empty()) {
+		ECS::Entity& playerEntity = playerEntities[0];
+		if (playerEntity.has<ECSComponents::HealthComponent>(entityManager) &&
+			playerEntity.has<ECSComponents::CollisionComponent>(entityManager) &&
+			playerEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+
+			auto& playerHealth = playerEntity.get<ECSComponents::HealthComponent>(entityManager);
+			auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
+			auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
+
+			for (auto& enemy : enemies) {
+				// Skip enemies that are marked for destruction
+				if (enemiesToDestroy.count(enemy.id()) > 0) continue;
+				if (!enemy.has<ECSComponents::TransformComponent>(entityManager) ||
+					!enemy.has<ECSComponents::DamageComponent>(entityManager)) continue;
+
+				auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
+				auto& enemyCollision = enemy.get<ECSComponents::CollisionComponent>(entityManager);
+				auto& enemyDamage = enemy.get<ECSComponents::DamageComponent>(entityManager);
+
+				// Check AABB collision between enemy and player
+				if (checkAABBCollision(
+					playerTransform, playerCollision,
+					enemyTransform, enemyCollision)) {
+
+					// Deal damage to player
+					float damage = enemyDamage.getTotalDamage();
+					bool died = playerHealth.takeDamage(damage);
+
+					std::cout << "[Combat] Enemy hit player! Dealt " << damage << " damage. "
+						<< "Player HP: " << playerHealth.currentHealth << "/" << playerHealth.maxHealth << std::endl;
+
+					if (died) {
+						std::cout << "[Combat] Player died!" << std::endl;
+						// TODO: Handle player death (game over, respawn, etc.)
+					}
+
+					// Give player temporary invulnerability after being hit (0.5 seconds)
+					playerHealth.invulnerable = true;
+					playerHealth.invulnerabilityTimer = 0.5f;
+				}
+			}
+		}
 	}
 }
 

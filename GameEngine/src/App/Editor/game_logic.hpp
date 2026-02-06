@@ -228,6 +228,7 @@ private:
     void updateFloatingTexts(float deltaTime);                      // Update floating text positions and alpha
 
     // Combat system methods
+    void updateCombatSystem(float deltaTime);       // Handle damage dealing and health updates
     void spawnRuptureMark(const Math::eVec2<float>& pos, ECSComponents::SpellType spellType);
     void updateRuptureMarks(float deltaTime);
 

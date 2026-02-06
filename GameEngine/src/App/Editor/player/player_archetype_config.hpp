@@ -35,7 +35,7 @@ namespace Player
      *===========================================================================================*/
     inline ECS::Entity CreatePlayerEntity(
         ECS::EntityManager& entityManager,
-        Animation::AnimationControllerRegistry& animController,
+//      Animation::AnimationControllerRegistry& animController,
         const Math::eVec2<float>& position,
         float maxSpeed = 200.0f,
         float acceleration = 800.0f,
@@ -99,7 +99,7 @@ namespace Player
             Color::Green
         );
         player.add<ECSComponents::DrawInfoComponent>(entityManager, drawComp);
-        player.add<ECSComponents::AnimationControllerComponent>(entityManager, animController.createController());
+//      player.add<ECSComponents::AnimationControllerComponent>(entityManager, animController.createController());
 
         return player;
     }
@@ -113,13 +113,13 @@ namespace Player
      *===========================================================================================*/
     inline ECS::Entity CreatePlayerEntityFromConfig(
         ECS::EntityManager& entityManager,
-        Animation::AnimationControllerRegistry& animController,
+//      Animation::AnimationControllerRegistry& animController,
         const Math::eVec2<float>& position,
         const PlayerConfig& config)
     {
         return CreatePlayerEntity(
             entityManager,
-            animController,
+//          animController,
             position,
             config.maxSpeed,
             config.acceleration,
