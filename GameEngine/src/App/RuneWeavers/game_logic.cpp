@@ -14,6 +14,7 @@
 #include <GLFW/glfw3.h>
 #include <sstream>
 #include <iomanip>
+#include <random>
 
 #include "math/math.hpp"
 
@@ -220,6 +221,10 @@ void GameApplication::setupGameAudio() {
 	// Rune hover audio
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-3");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-4");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-5");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-6");
 
 	// Spellbook audio
 	audioMng.publishSoundRequest("Spellbook_Open_01");
@@ -1551,7 +1556,13 @@ void GameApplication::updateRuneSystem()
 		runeState.resetConnection();
 
 		// Play rune spawn sound
-		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+		//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+		static std::random_device rd;              // seed
+		static std::mt19937 gen(rd());              // Mersenne Twister
+		static std::uniform_int_distribution<int> dist(1, 6);
+		int soundIndex = dist(gen);
+		std::string soundName = "Rune-GalaxyBellPad-" + std::to_string(soundIndex);
+		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", soundName });
 
 		// Move pooled runes to cursor position
 		spawnRunes(mouseWorldPos);
@@ -1814,8 +1825,13 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 					runeState.lineColorState = ECSComponents::LineColorState::INVALID;
 
 					// Play invalid sound
-					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });  // TODO: use a different sound for invalid
-
+					//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });  // TODO: use a different sound for invalid
+					static std::random_device rd;              // seed
+					static std::mt19937 gen(rd());              // Mersenne Twister
+					static std::uniform_int_distribution<int> dist(1, 6);
+					int soundIndex = dist(gen);
+					std::string soundName = "Rune-GalaxyBellPad-" + std::to_string(soundIndex);
+					engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", soundName });
 					// Update visuals to show all red
 					updateRuneVisualStates();
 					return;  // Stop processing hover
@@ -1832,7 +1848,13 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 				runeState.isDrawingLine = true;
 
 				// Play sound
-				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+				//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+				static std::random_device rd;              // seed
+				static std::mt19937 gen(rd());              // Mersenne Twister
+				static std::uniform_int_distribution<int> dist(1, 6);
+				int soundIndex = dist(gen);
+				std::string soundName = "Rune-GalaxyBellPad-" + std::to_string(soundIndex);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", soundName });
 				std::cout << "[RuneSystem] Added rune " << rune.runeNumber
 				          << " to sequence (count: " << runeState.connectionCount << ")" << std::endl;
 
@@ -1866,7 +1888,13 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 							default:
 								break;
 						}
-						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+						//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+						static std::random_device rd;              // seed
+						static std::mt19937 gen(rd());              // Mersenne Twister
+						static std::uniform_int_distribution<int> dist(1, 6);
+						int soundIndex = dist(gen);
+						std::string soundName = "Rune-GalaxyBellPad-" + std::to_string(soundIndex);
+						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", soundName });
 					}
 					else
 					{
@@ -2347,7 +2375,7 @@ void GameApplication::updateRuptureMarks(float deltaTime)
 						entitiesDirty_ = true;
 					}
 
-					std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
+					//std::cout << "[RuptureMark] Triggered by enemy (ID: " << enemyId << ")! Entering WINDUP" << std::endl;
 					break;
 				}
 			}

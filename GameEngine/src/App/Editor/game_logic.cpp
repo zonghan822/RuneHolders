@@ -223,6 +223,10 @@ void GameApplication::setupGameAudio() {
 
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-1");
 	audioMng.publishSoundRequest("Rune-GalaxyBellPad-2");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-3");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-4");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-5");
+	audioMng.publishSoundRequest("Rune-GalaxyBellPad-6");
 
 	// Spellbook audio
 	audioMng.publishSoundRequest("Spellbook_Open_01");
@@ -2041,7 +2045,9 @@ void GameApplication::updateRuneSystem()
 		runeState.resetConnection();
 
 		// Play rune spawn sound
-		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+		int x = randomFloat(1,6);
+		std::string sound = "Rune-GalaxyBellPad-" + std::to_string(x);
+		engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", sound });
 
 		// Move pooled runes to cursor position
 		spawnRunes(mouseWorldPos);
@@ -2276,7 +2282,10 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 				updateRuneVisualStates();
 
 				// Play sound
-				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
+				int x = randomFloat(1,6);
+				std::string sound = "Rune-GalaxyBellPad-" + std::to_string(x);
+				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", sound });
+				//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-1" });
 				std::cout << "[RuneSystem] Added rune " << rune.runeNumber
 				          << " to sequence (count: " << runeState.connectionCount << ")" << std::endl;
 
@@ -2306,7 +2315,10 @@ void GameApplication::updateRuneHover(const Math::eVec2<float>& mouseWorldPos)
 							default:
 								break;
 						}
-						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
+						int x = randomFloat(1, 6);
+						std::string sound = "Rune-GalaxyBellPad-" + std::to_string(x);
+						engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", sound });
+						//engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Rune-GalaxyBellPad-2" });
 					}
 					else
 					{
