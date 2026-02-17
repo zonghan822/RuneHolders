@@ -52,7 +52,7 @@ namespace Player
         * \param[in]   float deltaTime - Time since last frame in seconds
         * \return      void
         *//*========================================================================================*/
-        void Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime);
+        void Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime, const Collision::CollisionSystem& collisionSystem);
 
         /*============================================================================================
         * \brief       Helper to get transform component from entity (made public for game_logic access)
@@ -91,7 +91,8 @@ namespace Player
             const ECSComponents::TransformComponent& playerTransform,
             const Math::eVec2<float>& targetPos,
             const ECSComponents::PlayerComponent& playerComp,
-            ECS::EntityManager& entityManager);
+            ECS::EntityManager& entityManager,
+            const Collision::SpatialHash& spatialHash);
     };
 
 } // namespace Player

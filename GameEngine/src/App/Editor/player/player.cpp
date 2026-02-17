@@ -63,9 +63,9 @@ namespace Player
      * 6. Integrate: position += velocity * dt (with collision)
      * 7. Clear forces for next frame
      *===========================================================================================*/
-    void PlayerSystem::Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime)
+    void PlayerSystem::Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime, const Collision::CollisionSystem& collisionSystem)
     {
-            
+        const auto& spatialHash = collisionSystem.GetSpatialHash();
         auto playerEntities = entityManager.findEntity<
             ECSComponents::PlayerComponent,
             ECSComponents::PhysicsComponent,
@@ -124,7 +124,7 @@ namespace Player
                 };
 
                 // Check if we can move to target position (collision check)
-                if (CanMoveTo(entity.id(), collider, transform, targetPos, playerComp, entityManager))
+                if (CanMoveTo(entity.id(), collider, transform, targetPos, playerComp, entityManager, spatialHash))
                 {
                     transform.pos.x = targetPos.x;
                     transform.pos.y = targetPos.y;
@@ -220,7 +220,7 @@ namespace Player
             };
 
             // Check if the target position is valid (no collision with solid objects)
-            if (CanMoveTo(entity.id(), collider, transform, targetPosBoth, playerComp, entityManager))
+            if (CanMoveTo(entity.id(), collider, transform, targetPosBoth, playerComp, entityManager, spatialHash))
             {
                 // Movement is valid - update transform position
                 transform.pos.x = targetPosBoth.x;
@@ -237,7 +237,7 @@ namespace Player
                     transform.pos.y  // Keep Y unchanged
                 };
 
-                if (CanMoveTo(entity.id(), collider, transform, targetPosX, playerComp, entityManager))
+                if (CanMoveTo(entity.id(), collider, transform, targetPosX, playerComp, entityManager, spatialHash))
                 {
                     transform.pos.x = targetPosX.x;
                 }
@@ -254,7 +254,7 @@ namespace Player
                     transform.pos.y + displacement.y
                 };
 
-                if (CanMoveTo(entity.id(), collider, transform, targetPosY, playerComp, entityManager))
+                if (CanMoveTo(entity.id(), collider, transform, targetPosY, playerComp, entityManager, spatialHash))
                 {
                     // Can move on Y-axis - update position
                     transform.pos.y = targetPosY.y;
@@ -320,7 +320,8 @@ namespace Player
         const ECSComponents::TransformComponent& playerTransform,
         const Math::eVec2<float>& targetPos,
         const ECSComponents::PlayerComponent& playerComp,
-        ECS::EntityManager& entityManager)
+        ECS::EntityManager& entityManager,
+        const Collision::SpatialHash& spatialHash)
     {
         // Create temporary transform at target position for collision testing
         ECSComponents::TransformComponent testTransform;
@@ -328,17 +329,24 @@ namespace Player
         testTransform.pos.y = targetPos.y;
         testTransform.rot = playerTransform.rot;           // Apply rotation from player
         testTransform.scale = playerTransform.scale;       // Apply scale from player
-
-        // Query all entities with Transform + Collision
-        auto collidables = entityManager.findEntity<
-            ECSComponents::TransformComponent,
-            ECSComponents::CollisionComponent>();
         
-        for (auto& other : collidables) 
+        // Get player's half extents for the spatial hash quey
+        float halfWidth = playerCollider.data.rectangle.width * 0.5f;
+        float halfHeight = playerCollider.data.rectangle.height * 0.5f;
+
+        // Query ONLY NEARBY entities instead of the entire world
+        auto nearbyIDs = spatialHash.Query(targetPos, halfWidth, halfHeight);
+        
+        for (uint32_t otherID : nearbyIDs) 
         {
             // Don't check collision with self
-            if (other.id() == playerEntityID)
+            if (otherID == playerEntityID)
                 continue;
+
+            ECS::Entity other{ otherID };
+
+            // Make sure the entity has the components we need
+            if (!other.has<ECSComponents::TransformComponent, ECSComponents::CollisionComponent>(entityManager)) continue;
 
             auto& otherTransform = other.get<ECSComponents::TransformComponent>(entityManager);
             auto& otherCollider = reinterpret_cast<Collision::CollisionComponent&>(other.get<ECSComponents::CollisionComponent>(entityManager));

@@ -486,6 +486,8 @@ namespace Collision
 		*//*========================================================================================*/
 		void ClearCallbacks();
 
+		const SpatialHash& GetSpatialHash() const { return spatialHash_;  }
+
 	private:
 		// Event bus for publishing collision events
 		Event::EnoEventBus& eventBus_;

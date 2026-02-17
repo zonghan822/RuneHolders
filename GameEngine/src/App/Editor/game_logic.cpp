@@ -635,7 +635,7 @@ void GameApplication::updateGameLogic() {
 
 	// Only update player movement when in play mode and not paused
 	if (isPlayMode && !isPaused_) {
-		playerSystem_->Update(entityManager, inputMng, deltaTime);
+		playerSystem_->Update(entityManager, inputMng, deltaTime, *engine_.getCollisionSystem());
 
 		// Update rune system
 		updateRuneSystem();

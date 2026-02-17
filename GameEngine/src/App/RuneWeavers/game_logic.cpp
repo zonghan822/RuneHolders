@@ -880,7 +880,7 @@ void GameApplication::updateGameLogic() {
 	// Only update game systems when not paused
 	if (!isPaused_) {
 		// Always update player movement (no editor state checks for game)
-		playerSystem_->Update(entityManager, inputMng, deltaTime);
+		playerSystem_->Update(entityManager, inputMng, deltaTime, *engine_.getCollisionSystem());
 
 		// Update enemy AI (pathfinding and movement toward player)
 		updateEnemyAI(deltaTime);
@@ -3726,6 +3726,7 @@ void GameApplication::updateMainMenuButtons() {
 void GameApplication::handlePlayButton() {
 	engine_.getEnoEditor().selectScene("Level1.txt");
 	entitiesDirty_ = true;
+	engine_.setIsPlaying(true);
 
 	// Re-scan for player entity in the new scene
 	auto& entityManager = engine_.getEntityManager();
