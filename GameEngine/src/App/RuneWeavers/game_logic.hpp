@@ -159,7 +159,6 @@ private:
     void destroyRunes();                                            // Destroy spawned runes
     void updateRuneHover(const Math::eVec2<float>& mouseWorldPos);  // Check if mouse hovers over runes
     void drawRuneConnectionLine();                                  // Draw line connecting runes
-    void spawnFireball(const Math::eVec2<float>& pos);              // Spawn fireball when runes connect
     void spawnFloatingText(const Math::eVec2<float>& pos, const char* text);  // Spawn floating text message
     void updateFloatingTexts(float deltaTime);                      // Update floating text positions and alpha
     void spawnRuptureMark(const Math::eVec2<float>& pos, ECSComponents::SpellType spellType);  // Spawn rupture mark spell

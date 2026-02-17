@@ -232,10 +232,6 @@ void GameApplication::setupGameAudio() {
 	audioMng.publishSoundRequest("Spellbook_Open_01");
 	audioMng.publishSoundRequest("Spellbook_Close_01");
 
-	// Fireball audio
-	audioMng.publishSoundRequest("Fireball-Cast");  // Add your fireball spawn sound file name here
-	audioMng.publishSoundRequest("Fireball-Explosion-Small");    // Add your fireball hit sound file name here
-
 	// Scene BGM audio
 	audioMng.publishSoundRequest("BGM_01_Layer1_loop");  // Main menu BGM
 	audioMng.publishSoundRequest("BGM_01_Layer2_loop");  // 
@@ -1015,11 +1011,6 @@ void GameApplication::updateGameLogic() {
 									// Get UV coordinates
 									Math::eVec2<float> uvStart = frame.uvStart;
 									Math::eVec2<float> uvEnd = frame.uvEnd;
-
-									// Check if entity is a fireball and flip it horizontally
-									if (entity.has<ECSComponents::FireballComponent>(entityManager)) {
-										std::swap(uvStart.x, uvEnd.x);
-									}
 
 									// Check if entity is an enemy with AI and flip based on movement direction
 									if (entity.has<ECSComponents::AIComponent>(entityManager) &&
@@ -2105,25 +2096,6 @@ void GameApplication::updateRuneSystem()
 
 	// Update fireballs - check lifetime and destroy expired ones
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
-	std::vector<uint32_t> fireballsToDestroy;
-
-	auto fireballs = entityManager.findEntity<ECSComponents::FireballComponent>();
-	for (auto& entity : fireballs) {
-		auto& fireballComp = entity.get<ECSComponents::FireballComponent>(entityManager);
-		fireballComp.elapsedTime += deltaTime;
-
-		// Check if fireball has exceeded its lifetime
-		if (fireballComp.elapsedTime >= fireballComp.lifetime) {
-			fireballsToDestroy.push_back(entity.id());
-		}
-	}
-
-	// Destroy expired fireballs
-	for (uint32_t id : fireballsToDestroy) {
-		entityManager.destroyEntity(id);
-		entitiesDirty_ = true;
-		std::cout << "[RuneSystem] Fireball expired and destroyed" << std::endl;
-	}
 }
 
 void GameApplication::updateRuneVisualStates()
@@ -2437,157 +2409,6 @@ void GameApplication::drawRuneConnectionLine()
 			);
 		}
 	}
-}
-
-void GameApplication::spawnFireball(const Math::eVec2<float>& pos)
-{
-	auto& entityManager = engine_.getEntityManager();
-	auto& resourceLoader = engine_.getResourceLoader();
-
-	// Get player position
-	Math::eVec2<float> playerPos = pos;
-	std::vector<ECS::Entity> playerEntities = entityManager.findEntity<ECSComponents::PlayerComponent>();
-	if (!playerEntities.empty()) {
-		auto& playerEntity = playerEntities[0];
-		if (playerEntity.has<ECSComponents::TransformComponent>(entityManager)) {
-			playerPos = playerEntity.get<ECSComponents::TransformComponent>(entityManager).pos;
-		}
-	}
-
-	// Find nearest enemy
-	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::TransformComponent>();
-	Math::eVec2<float> targetPos = playerPos; // Default if no enemy found
-	float minDistance = FLT_MAX;
-	bool foundEnemy = false;
-
-	for (auto& enemy : enemies) {
-		auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
-		float distance = Math::eVec2Distance(playerPos, enemyTransform.pos);
-		if (distance < minDistance) {
-			minDistance = distance;
-			targetPos = enemyTransform.pos;
-			foundEnemy = true;
-		}
-	}
-
-	// If no enemy found, use mouse position as target
-	if (!foundEnemy) {
-		auto& inputManager = engine_.getInputManager();
-		auto mouseScreenPos = inputManager.getMousePosition();
-
-		// Get camera for world space conversion
-		std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
-		float cameraX = 0.0f;
-		float cameraY = 0.0f;
-		float viewportWidth = 1920.0f;
-		float viewportHeight = 1080.0f;
-
-		if (!cameraEntities.empty()) {
-			auto& camera = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
-			cameraX = camera.position.x - camera.viewportWidth * 0.5f;
-			cameraY = camera.position.y - camera.viewportHeight * 0.5f;
-			viewportWidth = camera.viewportWidth;
-			viewportHeight = camera.viewportHeight;
-		}
-
-		// Get window size for conversion
-		auto windowSize = engine_.getWindowManager().getWindowSize();
-
-		// Convert mouse position to world space
-		targetPos = Graphics::screenToWorld(
-			{ static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
-			{ 0.0f, 0.0f },
-			{ static_cast<float>(windowSize.first), static_cast<float>(windowSize.second) },
-			viewportWidth,
-			viewportHeight,
-			cameraX,
-			cameraY
-		);
-	}
-
-	// Calculate direction to target
-	Math::eVec2<float> direction = { targetPos.x - playerPos.x, targetPos.y - playerPos.y };
-	float length = Math::eVec2Length(direction);
-	if (length > 0.0f) {
-		direction.x /= length;  // Normalize
-		direction.y /= length;
-	}
-
-	// Calculate rotation angle for fireball orientation
-	// atan2 gives angle in radians, fireball sprite points left by default (-180 degrees or PI radians)
-	// So we need to add PI to make it point in the direction of movement
-	float fireballRotation = std::atan2(direction.y, direction.x);
-
-	// Offset spawn position so fireball doesn't collide with player
-	float spawnOffset = 100.0f;  // Spawn 100 pixels away from player center
-	Math::eVec2<float> spawnPos = {
-		playerPos.x + direction.x * spawnOffset,
-		playerPos.y + direction.y * spawnOffset
-	};
-
-	// Load fireball spritesheet texture
-	auto fireballTexture = resourceLoader.getTexture("Spell-Fireball-Flying-Sheet");
-
-	// Create fireball entity
-	ECS::Entity fireball = entityManager.create();
-	fireball.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent("Fireball"));
-	fireball.add<ECSComponents::TransformComponent>(entityManager);
-	fireball.add<ECSComponents::DrawInfoComponent>(entityManager);
-	fireball.add<ECSComponents::AnimationControllerComponent>(entityManager);
-	fireball.add<ECSComponents::FireballComponent>(entityManager, ECSComponents::FireballComponent(5.0f));
-	fireball.add<ECSComponents::DamageComponent>(entityManager, ECSComponents::DamageComponent(25.0f, true));
-	fireball.add<ECSComponents::PhysicsComponent>(entityManager);
-
-	auto& transform = fireball.get<ECSComponents::TransformComponent>(entityManager);
-	transform.pos = spawnPos;  // Spawn offset from player
-	transform.scale = { 1.0f, 1.0f };
-	transform.rot.x = fireballRotation;  // Set rotation to face direction of travel
-
-	// Set fireball velocity toward target
-	auto& physics = fireball.get<ECSComponents::PhysicsComponent>(entityManager);
-	float fireballSpeed = 400.0f;  // Pixels per second
-	physics.velocity.x = direction.x * fireballSpeed;
-	physics.velocity.y = direction.y * fireballSpeed;
-
-	auto& draw = fireball.get<ECSComponents::DrawInfoComponent>(entityManager);
-	draw.width = 90.0f;   // Match sprite frame width (360/4 = 90)
-	draw.height = 48.0f;  // Match sprite frame height
-	draw.color = Graphics::Color::White;
-	strcpy_s(draw.shape, "Rectangle");
-	draw.texture = fireballTexture;
-
-	// Setup collision box for fireball (rectangle collider)
-	ECSComponents::CollisionComponent fireballCollision(
-		60.0f,  // width - smaller than visual for better gameplay feel
-		40.0f,  // height
-		Math::eVec2<float>{0.0f, 0.0f},  // offset
-		false   // not a trigger
-	);
-	fireball.add<ECSComponents::CollisionComponent>(entityManager, fireballCollision);
-
-	// Setup animation configuration - fireball spritesheet is 1 row, 4 columns, 90x48 per frame
-	auto& animComp = fireball.get<ECSComponents::AnimationControllerComponent>(entityManager);
-	if (fireballTexture && fireballTexture->isValid()) {
-		animComp.setAnimationData(
-			"fly",                              // Animation name
-			"Spell-Fireball-Flying-Sheet",      // Texture path (match resource loader name)
-			90,                                 // Frame width
-			48,                                 // Frame height
-			1,                                  // Rows
-			4,                                  // Cols
-			0.1f,                               // Frame duration
-			true                                // Looping
-		);
-		strcpy_s(animComp.currentAnimationName, "fly");
-	}
-
-	// Mark entities as dirty to refresh rendering cache
-	entitiesDirty_ = true;
-
-	// Play fireball spawn sound effect
-	engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Cast" });
-
-	std::cout << "[RuneSystem] Spawned fireball at position (" << pos.x << ", " << pos.y << ")" << std::endl;
 }
 
 void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSComponents::SpellType spellType)
@@ -3111,85 +2932,8 @@ void GameApplication::updateCombatSystem(float dt)
 		}
 	}
 
-	// FIREBALL vs ENEMY collision damage
-	auto fireballs = entityManager.findEntity<ECSComponents::FireballComponent, ECSComponents::CollisionComponent, ECSComponents::DamageComponent>();
+	// ENEMY collision damage
 	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::CollisionComponent, ECSComponents::HealthComponent>();
-
-	// Track entities to destroy (avoid destroying while iterating)
-	std::set<uint32_t> fireballsToDestroy;
-
-	for (auto& fireball : fireballs) {
-		// Skip if already marked for destruction
-		if (fireballsToDestroy.count(fireball.id()) > 0) continue;
-		if (!fireball.has<ECSComponents::TransformComponent>(entityManager)) continue;
-
-		auto& fireballTransform = fireball.get<ECSComponents::TransformComponent>(entityManager);
-		auto& fireballCollision = fireball.get<ECSComponents::CollisionComponent>(entityManager);
-		auto& fireballDamage = fireball.get<ECSComponents::DamageComponent>(entityManager);
-
-		for (auto& enemy : enemies) {
-			if (!enemy.has<ECSComponents::TransformComponent>(entityManager)) continue;
-
-			auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
-			auto& enemyCollision = enemy.get<ECSComponents::CollisionComponent>(entityManager);
-			auto& enemyHealth = enemy.get<ECSComponents::HealthComponent>(entityManager);
-
-			// Check AABB collision between fireball and enemy
-			if (checkAABBCollision(fireballTransform, fireballCollision, enemyTransform, enemyCollision)) {
-				// Skip if already dead (prevents hurt state from overriding death state)
-				if (enemyHealth.isDead) {
-					std::cout << "[Combat] Enemy already dead, skipping fireball damage" << std::endl;
-					continue;
-				}
-
-				// Deal damage to enemy
-				float damage = fireballDamage.getTotalDamage();
-				bool died = enemyHealth.takeDamage(damage);
-
-				// Play fireball hit sound effect
-				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Fireball-Explosion-Small" });
-
-				std::cout << "[Combat] Fireball hit enemy! Dealt " << damage << " damage. "
-					<< "Enemy HP: " << enemyHealth.currentHealth << "/" << enemyHealth.maxHealth << std::endl;
-
-				// Handle death or hurt state
-				if (died) {
-					std::cout << "[Combat] Enemy died!" << std::endl;
-
-					// Check if entity has state machine for death handling
-					if (enemy.has<ECSComponents::StateMachineComponent>(entityManager))
-					{
-						std::cout << "[Combat] Transitioning to death state" << std::endl;
-						engine_.getStateMachineSys().requestStateChange(enemy.id(), "death");
-						// Enemy destruction handled by script via DestroyEntity bridge call
-					}
-					else
-					{
-						// No state machine, destroy immediately
-						std::cout << "[Combat] Destroying enemy immediately (no state machine)" << std::endl;
-						entityManager.destroyEntity(enemy.id());
-						entitiesDirty_ = true;
-					}
-				}
-				else if (enemy.has<ECSComponents::StateMachineComponent>(entityManager)) {
-					// Trigger hurt state for non-fatal damage
-					engine_.getStateMachineSys().requestStateChange(enemy.id(), "hurt");
-				}
-
-				// Mark fireball for destruction
-				if (fireballDamage.destroyOnHit) {
-					fireballsToDestroy.insert(fireball.id());
-					break; // Exit enemy loop, this fireball hit something
-				}
-			}
-		}
-	}
-
-	// Destroy marked fireballs after iteration
-	for (uint32_t id : fireballsToDestroy) {
-		entityManager.destroyEntity(id);
-		entitiesDirty_ = true;
-	}
 
 	// Note: Dead enemies with state machines are handled by their scripts via DestroyEntity bridge call
 
