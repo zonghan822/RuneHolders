@@ -2043,17 +2043,8 @@ void GameApplication::updateRuneSystem()
 
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
 
-	// Get mouse position and convert to world space
-	auto mouseScreenPos = inputManager.getMousePosition();
-	Math::eVec2<float> mouseWorldPos = Graphics::screenToWorld(
-		{ static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
-		getEditorViewMin(),
-		getEditorViewMax(),
-		static_cast<float>(getEditorWidth()),
-		static_cast<float>(getEditorHeight()),
-		getEditorCameraX(),
-		getEditorCameraY()
-	);
+	// Get mouse position in world space
+	Math::eVec2<float> mouseWorldPos = getMouseWorldPos();
 
 	// Check if left mouse button is pressed this frame
 	bool leftClickPressed = inputManager.isMouseDown(GLFW_MOUSE_BUTTON_LEFT);
@@ -2096,6 +2087,38 @@ void GameApplication::updateRuneSystem()
 
 	// Update fireballs - check lifetime and destroy expired ones
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
+}
+
+Math::eVec2<float> GameApplication::getMouseWorldPos()
+{
+	auto& entityManager = engine_.getEntityManager();
+
+	float cameraX = 0.0f;
+	float cameraY = 0.0f;
+	float viewportWidth = 1920.0f;
+	float viewportHeight = 1080.0f;
+
+	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+	if (!cameraEntities.empty()) {
+		auto& camera = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
+		cameraX = camera.position.x - camera.viewportWidth * 0.5f;
+		cameraY = camera.position.y - camera.viewportHeight * 0.5f;
+		viewportWidth = camera.viewportWidth;
+		viewportHeight = camera.viewportHeight;
+	}
+
+	auto windowSize = engine_.getWindowManager().getWindowSize();
+	auto mouseScreenPos = engine_.getInputManager().getMousePosition();
+
+	return Graphics::screenToWorld(
+		{ static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
+		getEditorViewMin(),
+		getEditorViewMax(),
+		static_cast<float>(getEditorWidth()),
+		static_cast<float>(getEditorHeight()),
+		getEditorCameraX(),
+		getEditorCameraY()
+	);
 }
 
 void GameApplication::updateRuneVisualStates()
@@ -3259,30 +3282,33 @@ void GameApplication::updateMainMenuButtons() {
 	extern ImVec2 lastGameViewportPos;
 	extern ImVec2 lastGameViewportSize;
 
-	// Get mouse position
-	auto mouseScreenPos = inputMng.getMousePosition();
+	//// Get mouse position
+	//auto mouseScreenPos = inputMng.getMousePosition();
 
-	// Check if mouse is within game viewport bounds
-	bool mouseInGameView = (mouseScreenPos.first >= lastGameViewportPos.x &&
-	                        mouseScreenPos.first <= (lastGameViewportPos.x + lastGameViewportSize.x) &&
-	                        mouseScreenPos.second >= lastGameViewportPos.y &&
-	                        mouseScreenPos.second <= (lastGameViewportPos.y + lastGameViewportSize.y));
+	//// Check if mouse is within game viewport bounds
+	//bool mouseInGameView = (mouseScreenPos.first >= lastGameViewportPos.x &&
+	//                        mouseScreenPos.first <= (lastGameViewportPos.x + lastGameViewportSize.x) &&
+	//                        mouseScreenPos.second >= lastGameViewportPos.y &&
+	//                        mouseScreenPos.second <= (lastGameViewportPos.y + lastGameViewportSize.y));
 
-	if (!mouseInGameView) return; // Don't process buttons if mouse is outside game view
+	//if (!mouseInGameView) return; // Don't process buttons if mouse is outside game view
 
-	// Convert screen space mouse to viewport-relative coordinates
-	float viewportMouseX = static_cast<float>(mouseScreenPos.first) - lastGameViewportPos.x;
-	float viewportMouseY = static_cast<float>(mouseScreenPos.second) - lastGameViewportPos.y;
+	//// Convert screen space mouse to viewport-relative coordinates
+	//float viewportMouseX = static_cast<float>(mouseScreenPos.first) - lastGameViewportPos.x;
+	//float viewportMouseY = static_cast<float>(mouseScreenPos.second) - lastGameViewportPos.y;
 
-	// Normalize to 0-1 range based on viewport size
-	float normalizedX = viewportMouseX / lastGameViewportSize.x;
-	float normalizedY = viewportMouseY / lastGameViewportSize.y;
+	//// Normalize to 0-1 range based on viewport size
+	//float normalizedX = viewportMouseX / lastGameViewportSize.x;
+	//float normalizedY = viewportMouseY / lastGameViewportSize.y;
 
-	// Convert to world space (assuming 1920x1080 game resolution)
-	Math::eVec2<float> mouseWorldPos = {
-		normalizedX * worldWidth_,
-		normalizedY * worldHeight_
-	};
+	//// Convert to world space (assuming 1920x1080 game resolution)
+	//Math::eVec2<float> mouseWorldPos = {
+	//	normalizedX * worldWidth_,
+	//	normalizedY * worldHeight_
+	//};
+
+	// Get mouse position in world space
+	Math::eVec2<float> mouseWorldPos = getMouseWorldPos();
 
 	// Check for mouse click
 	bool mouseClicked = inputMng.isMouseDown(GLFW_MOUSE_BUTTON_LEFT);

@@ -1855,35 +1855,8 @@ void GameApplication::updateRuneSystem()
 		return;
 	}
 
-	// Get camera position for world space conversion
-	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
-	float cameraX = 0.0f;
-	float cameraY = 0.0f;
-	float viewportWidth = 1920.0f;
-	float viewportHeight = 1080.0f;
-
-	if (!cameraEntities.empty()) {
-		auto& camera = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
-		cameraX = camera.position.x - camera.viewportWidth * 0.5f;
-		cameraY = camera.position.y - camera.viewportHeight * 0.5f;
-		viewportWidth = camera.viewportWidth;
-		viewportHeight = camera.viewportHeight;
-	}
-
-	// Get window size for fullscreen conversion
-	auto windowSize = engine_.getWindowManager().getWindowSize();
-
-	// Get mouse position and convert to world space
-	auto mouseScreenPos = inputManager.getMousePosition();
-	Math::eVec2<float> mouseWorldPos = Graphics::screenToWorld(
-		{ static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
-		{ 0.0f, 0.0f },  // Screen min (fullscreen starts at 0,0)
-		{ static_cast<float>(windowSize.first), static_cast<float>(windowSize.second) },  // Screen max
-		viewportWidth,
-		viewportHeight,
-		cameraX,
-		cameraY
-	);
+	// Get mouse position in world space
+	Math::eVec2<float> mouseWorldPos = getMouseWorldPos();
 
 	// Check if win screen is visible (prevent rune spawning when win screen is open)
 	bool winScreenVisible = false;
@@ -1936,6 +1909,38 @@ void GameApplication::updateRuneSystem()
 
 	// Lines are now drawn at the end of the render pipeline in updateGameLogic()
 	}
+
+Math::eVec2<float> GameApplication::getMouseWorldPos()
+{
+	auto& entityManager = engine_.getEntityManager();
+
+	float cameraX = 0.0f;
+	float cameraY = 0.0f;
+	float viewportWidth = 1920.0f;
+	float viewportHeight = 1080.0f;
+
+	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+	if (!cameraEntities.empty()) {
+		auto& camera = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
+		cameraX = camera.position.x - camera.viewportWidth * 0.5f;
+		cameraY = camera.position.y - camera.viewportHeight * 0.5f;
+		viewportWidth = camera.viewportWidth;
+		viewportHeight = camera.viewportHeight;
+	}
+
+	auto windowSize = engine_.getWindowManager().getWindowSize();
+	auto mouseScreenPos = engine_.getInputManager().getMousePosition();
+
+	return Graphics::screenToWorld(
+		{ static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
+		{ 0.0f, 0.0f },
+		{ static_cast<float>(windowSize.first), static_cast<float>(windowSize.second) },
+		viewportWidth,
+		viewportHeight,
+		cameraX,
+		cameraY
+	);
+}
 
 void GameApplication::updateRuneVisualStates()
 {
@@ -3289,35 +3294,8 @@ void GameApplication::updateMainMenuButtons() {
 	// Only process main menu buttons if we're in MainMenu scene
 	bool inMainMenu = (sceneName == "MainMenu.txt");
 
-	// Get camera for world space conversion
-	std::vector<ECS::Entity> cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
-	float cameraX = 0.0f;
-	float cameraY = 0.0f;
-	float viewportWidth = 1920.0f;
-	float viewportHeight = 1080.0f;
-
-	if (!cameraEntities.empty()) {
-		auto& camera = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
-		cameraX = camera.position.x - camera.viewportWidth * 0.5f;
-		cameraY = camera.position.y - camera.viewportHeight * 0.5f;
-		viewportWidth = camera.viewportWidth;
-		viewportHeight = camera.viewportHeight;
-	}
-
-	// Get window size for conversion
-	auto windowSize = engine_.getWindowManager().getWindowSize();
-
-	// Get mouse position (keep in screen space)
-	auto mouseScreenPos = inputMng.getMousePosition();
-	Math::eVec2<float> mouseWorldPos = Graphics::screenToWorld(
-		{ static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
-		{ 0.0f, 0.0f },
-		{ static_cast<float>(windowSize.first), static_cast<float>(windowSize.second) },
-		viewportWidth,
-		viewportHeight,
-		cameraX,
-		cameraY
-	);
+	// Get mouse position in world space
+	Math::eVec2<float> mouseWorldPos = getMouseWorldPos();
 
 	//std::vector<ECS::Entity> entityList = entityManager.findEntity<ECSComponents::ButtonComponent>();
 
