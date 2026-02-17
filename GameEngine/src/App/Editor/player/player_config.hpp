@@ -43,6 +43,11 @@ namespace Player
         float dashDistance;             // How far to dash in pixels
         float dashCooldown;             // Cooldown between dashes in seconds
 
+        // Push parameters
+        float pushForce;                // Base push force for pushing boxes
+        float defaultDashDirX;          // Default dash direction X component
+        float defaultDashDirY;          // Default dash direction Y component
+
         /*============================================================================================
          * \brief       Default constructor with fallback values if file loading fails
          *===========================================================================================*/
@@ -61,6 +66,9 @@ namespace Player
             , dashDuration(0.3f)
             , dashDistance(150.0f)
             , dashCooldown(0.5f)
+            , pushForce(1500.0f)
+            , defaultDashDirX(0.0f)
+            , defaultDashDirY(0.1f)
         {
         }
 
@@ -118,6 +126,12 @@ namespace Player
                         dashDistance = value;
                     else if (key == "dashCooldown")
                         dashCooldown = value;
+                    else if (key == "pushForce")
+                        pushForce = value;
+                    else if (key == "defaultDashDirX")
+                        defaultDashDirX == value;
+                    else if (key == "defaultDashDirY")
+                        defaultDashDirY == value;
                 }
                 // Parse bool values (canMove = true/false)
                 else
@@ -156,6 +170,8 @@ namespace Player
             std::cout << "Dash Duration: " << dashDuration << "s" << std::endl;
             std::cout << "Dash Distance: " << dashDistance << "px" << std::endl;
             std::cout << "Dash Cooldown: " << dashCooldown << "s" << std::endl;
+            std::cout << "Push Force: " << pushForce << std::endl;
+            std::cout << "Default Dash Dir: " << defaultDashDirX << ", " << defaultDashDirY << std::endl;
             std::cout << "===========================" << std::endl;
         }
     };

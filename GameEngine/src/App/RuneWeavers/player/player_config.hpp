@@ -43,6 +43,11 @@ namespace Player
         float dashDistance;             // How far to dash in pixels
         float dashCooldown;             // Cooldown between dashes in seconds
 
+        // Push parameters
+        float pushForce;                // Base push force for pushing boxes
+        float defaultDashDirX;          // Default dash direction X component
+        float defaultDashDirY;          // Default dash direction Y component
+
         /*============================================================================================
          * \brief       Default constructor with fallback values if file loading fails
          *===========================================================================================*/
@@ -61,6 +66,9 @@ namespace Player
             , dashDuration(0.3f)
             , dashDistance(150.0f)
             , dashCooldown(0.5f)
+            , pushForce(1500.0f)
+            , defaultDashDirX(0.0f)
+            , defaultDashDirY(1.0f)
         {
         }
 
@@ -116,6 +124,12 @@ namespace Player
                         dashDistance = value;
                     else if (key == "dashCooldown")
                         dashCooldown = value;
+                    else if (key == "pushForce")
+                        pushForce == value;
+                    else if (key == "defaultDashDirX")
+                        defaultDashDirX == value;
+                    else if (key == "defaultDashDirY")
+                        defaultDashDirY == value;
                 }
                 // Parse bool values (canMove = true/false)
                 else

@@ -8,7 +8,7 @@
 *===========================================================================================*/
 
 #include "player.hpp"
-#include <GLFW/glfw3.h>
+#include "input/eno_input_params.hpp"
 
 namespace Player
 {
@@ -65,45 +65,25 @@ namespace Player
      *===========================================================================================*/
     void PlayerSystem::Update(ECS::EntityManager& entityManager, Input::EnoInputManager& inputManager, float deltaTime)
     {
-        // Get the entity map which contains all entities with their locations
-        auto& entityMap = entityManager.getMap();
+            
+        auto playerEntities = entityManager.findEntity<
+            ECSComponents::PlayerComponent,
+            ECSComponents::PhysicsComponent,
+            ECSComponents::TransformComponent,
+            ECSComponents::CollisionComponent>();
 
-        // Iterate through ALL entities in the world
-        for (auto& [entityID, entityLoc] : entityMap)
+        for (auto& entity : playerEntities) 
         {
-            // Check if this entity has BOTH PlayerComponent AND PhysicsComponent
-            bool hasPlayer = false;
-            bool hasPhysics = false;
+            auto& playerComp = entity.get<ECSComponents::PlayerComponent>(entityManager);
+            auto& physicsComp = entity.get<ECSComponents::PhysicsComponent>(entityManager);
 
-            for (const auto& type : entityLoc.archetype->types_)
-            {
-                if (type == std::type_index(typeid(ECSComponents::PlayerComponent)))
-                    hasPlayer = true;
-                else if (type == std::type_index(typeid(ECSComponents::PhysicsComponent)))
-                    hasPhysics = true;
-            }
-
-            // Skip entities that don't have both components
-            if (!hasPlayer || !hasPhysics)
-                continue;
-
-            // Get the player and physics components for this entity
-            size_t playerIndex = entityLoc.archetype->findComponentIndex<ECSComponents::PlayerComponent>();
-            auto& playerComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::PlayerComponent>(
-                playerIndex, entityLoc.entityIndexInChunk);
-
-            size_t physicsIndex = entityLoc.archetype->findComponentIndex<ECSComponents::PhysicsComponent>();
-            auto& physicsComp = entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::PhysicsComponent>(
-                physicsIndex, entityLoc.entityIndexInChunk);
-
-            // Skip if player cannot move (e.g., stunned, frozen)
             if (!playerComp.canMove)
                 continue;
-
-            // Get current transform and collision components using EntityLoc
-            auto& transform = GetTransform(entityLoc);
-            auto& collider = GetCollision(entityLoc);
-
+            
+            auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+            auto& collider = reinterpret_cast<Collision::CollisionComponent&>(entity.get<ECSComponents::CollisionComponent>(entityManager));
+        
+            
             // ====== UPDATE DASH COOLDOWN ======
             if (playerComp.dashCooldownTimer > 0.0f)
             {
@@ -144,7 +124,7 @@ namespace Player
                 };
 
                 // Check if we can move to target position (collision check)
-                if (CanMoveTo(entityLoc, collider, targetPos, entityManager))
+                if (CanMoveTo(entity.id(), collider, transform, targetPos, playerComp, entityManager))
                 {
                     transform.pos.x = targetPos.x;
                     transform.pos.y = targetPos.y;
@@ -163,7 +143,7 @@ namespace Player
             }
 
             // ====== INITIATE DASH WITH SPACEBAR KEY ======
-            if (inputManager.isKeyPressed(GLFW_KEY_SPACE) && playerComp.dashCooldownTimer <= 0.0f && playerComp.canMove)
+            if (inputManager.isKeyPressed(Input::KeyCode::Space) && playerComp.dashCooldownTimer <= 0.0f && playerComp.canMove)
             {
                 // Get current movement input to determine dash direction
                 Math::eVec2<float> input = GetMovementInput(inputManager);
@@ -179,7 +159,7 @@ namespace Player
                     }
                     else
                     {
-                        input = { 0.0f, 1.0f };  // Default dash down
+                        input = playerComp.defaultDashDir;  // Default dash down
                     }
                 }
 
@@ -240,7 +220,7 @@ namespace Player
             };
 
             // Check if the target position is valid (no collision with solid objects)
-            if (CanMoveTo(entityLoc, collider, targetPosBoth, entityManager))
+            if (CanMoveTo(entity.id(), collider, transform, targetPosBoth, playerComp, entityManager))
             {
                 // Movement is valid - update transform position
                 transform.pos.x = targetPosBoth.x;
@@ -257,7 +237,7 @@ namespace Player
                     transform.pos.y  // Keep Y unchanged
                 };
 
-                if (CanMoveTo(entityLoc, collider, targetPosX, entityManager))
+                if (CanMoveTo(entity.id(), collider, transform, targetPosX, playerComp, entityManager))
                 {
                     transform.pos.x = targetPosX.x;
                 }
@@ -274,7 +254,7 @@ namespace Player
                     transform.pos.y + displacement.y
                 };
 
-                if (CanMoveTo(entityLoc, collider, targetPosY, entityManager))
+                if (CanMoveTo(entity.id(), collider, transform, targetPosY, playerComp, entityManager))
                 {
                     // Can move on Y-axis - update position
                     transform.pos.y = targetPosY.y;
@@ -305,13 +285,13 @@ namespace Player
 
         // Use EnoInputManager's isKeyPressed() for continuous WASD input
         // isKeyPressed() returns true while the key is held down
-        if (inputManager.isKeyPressed(GLFW_KEY_W))
+        if (inputManager.isKeyPressed(Input::KeyCode::W))
             input.y -= 1.0f;                       // Move up (negative Y in screen space)
-        if (inputManager.isKeyPressed(GLFW_KEY_S))
+        if (inputManager.isKeyPressed(Input::KeyCode::S))
             input.y += 1.0f;                       // Move down (positive Y in screen space)
-        if (inputManager.isKeyPressed(GLFW_KEY_A))
+        if (inputManager.isKeyPressed(Input::KeyCode::A))
             input.x -= 1.0f;                       // Move left (negative X)
-        if (inputManager.isKeyPressed(GLFW_KEY_D))
+        if (inputManager.isKeyPressed(Input::KeyCode::D))
             input.x += 1.0f;                       // Move right (positive X)
 
         // Normalize diagonal movement to ensure consistent speed
@@ -335,14 +315,13 @@ namespace Player
      * \return      bool - True if movement is valid (no collision), false otherwise
      *===========================================================================================*/
     bool PlayerSystem::CanMoveTo(
-        const ECS::EntityLoc& playerEntity,
+        uint32_t playerEntityID,
         const Collision::CollisionComponent& playerCollider,
+        const ECSComponents::TransformComponent& playerTransform,
         const Math::eVec2<float>& targetPos,
+        const ECSComponents::PlayerComponent& playerComp,
         ECS::EntityManager& entityManager)
     {
-        // Get the actual player's transform to use the same scale and rotation
-        auto& playerTransform = GetTransform(playerEntity);
-
         // Create temporary transform at target position for collision testing
         ECSComponents::TransformComponent testTransform;
         testTransform.pos.x = targetPos.x;
@@ -350,71 +329,36 @@ namespace Player
         testTransform.rot = playerTransform.rot;           // Apply rotation from player
         testTransform.scale = playerTransform.scale;       // Apply scale from player
 
-        // Check collision with all other entities
-        auto& entityMap = entityManager.getMap();
-
-        for (auto& [otherID, otherLoc] : entityMap)
+        // Query all entities with Transform + Collision
+        auto collidables = entityManager.findEntity<
+            ECSComponents::TransformComponent,
+            ECSComponents::CollisionComponent>();
+        
+        for (auto& other : collidables) 
         {
             // Don't check collision with self
-            if (&otherLoc == &playerEntity)
+            if (other.id() == playerEntityID)
                 continue;
 
-            // Check if other entity has transform and collision
-            bool hasTransform = false;
-            bool hasCollision = false;
-
-            for (const auto& type : otherLoc.archetype->types_)
-            {
-                if (type == std::type_index(typeid(ECSComponents::TransformComponent)))
-                    hasTransform = true;
-                else if (type == std::type_index(typeid(ECSComponents::CollisionComponent)))
-                    hasCollision = true;
-            }
-
-            if (!hasTransform || !hasCollision)
-                continue;
-
-            // Get other entity's components
-            auto& otherTransform = GetTransform(otherLoc);
-            auto& otherCollider = GetCollision(otherLoc);
+            auto& otherTransform = other.get<ECSComponents::TransformComponent>(entityManager);
+            auto& otherCollider = reinterpret_cast<Collision::CollisionComponent&>(other.get<ECSComponents::CollisionComponent>(entityManager));
 
             // Skip inactive colliders and triggers
-            if (!otherCollider.isActive || otherCollider.isTrigger)
-                continue;
+            if (!otherCollider.isActive || otherCollider.isTrigger) continue;
 
             // Perform collision test at target position
             Collision::CollisionResult result = Collision::CollisionDetection::CheckCollision(
                 playerCollider, testTransform,
-                otherCollider, otherTransform
-            );
+                otherCollider, otherTransform);
 
-            // If collision detected
             if (result.hasCollision)
             {
-                // Check if other entity has PhysicsComponent and BoxComponent (pushable box)
-                bool hasPhysics = false;
-                bool hasBox = false;
-
-                for (const auto& type : otherLoc.archetype->types_)
+                // Check if it's a pushable box
+                if (other.has<ECSComponents::PhysicsComponent, ECSComponents::BoxComponent>(entityManager))
                 {
-                    if (type == std::type_index(typeid(ECSComponents::PhysicsComponent)))
-                        hasPhysics = true;
-                    else if (type == std::type_index(typeid(ECSComponents::BoxComponent)))
-                        hasBox = true;
-                }
+                    auto& otherPhysics = other.get<ECSComponents::PhysicsComponent>(entityManager);
+                    auto& boxComp = other.get<ECSComponents::BoxComponent>(entityManager);
 
-                // If it's a pushable box, apply force to push it (but still block movement)
-                if (hasPhysics && hasBox)
-                {
-                    size_t physicsIndex = otherLoc.archetype->findComponentIndex<ECSComponents::PhysicsComponent>();
-                    auto& otherPhysics = otherLoc.archetype->chunks_[otherLoc.chunkIndex]->retrieve<ECSComponents::PhysicsComponent>(
-                        physicsIndex, otherLoc.entityIndexInChunk);
-
-                    size_t boxIndex = otherLoc.archetype->findComponentIndex<ECSComponents::BoxComponent>();
-                    auto& boxComp = otherLoc.archetype->chunks_[otherLoc.chunkIndex]->retrieve<ECSComponents::BoxComponent>(
-                        boxIndex, otherLoc.entityIndexInChunk);
-
-                    // Only push if box is pushable
                     if (boxComp.isPushable && !otherPhysics.isKinematic)
                     {
                         // Calculate push direction (from player to box)
@@ -423,7 +367,7 @@ namespace Player
                         pushDir.y = otherTransform.pos.y - testTransform.pos.y;
 
                         // Normalize direction
-                        float length = sqrtf(pushDir.x * pushDir.x + pushDir.y * pushDir.y);
+                        float length = sqrtf(pushDir.x * pushDir.y + pushDir.y * pushDir.y);
                         if (length > 0.0f)
                         {
                             pushDir.x /= length;
@@ -431,15 +375,15 @@ namespace Player
                         }
 
                         // Apply push force (reduced by box resistance)
-                        float pushForce = 1500.0f * (1.0f - boxComp.pushResistance);
+                        float pushMagnitude = playerComp.pushForce * (1.0f - boxComp.pushResistance);
                         otherPhysics.AddForce(Math::eVec2<float>{
-                            pushDir.x * pushForce,
-                            pushDir.y * pushForce
+                            pushDir.x* pushMagnitude,
+                                pushDir.y* pushMagnitude
                         });
                     }
                 }
 
-                // Block movement - player can't walk through objects
+                // Block movement
                 return false;
             }
         }

@@ -86,12 +86,12 @@ namespace Player
         * \return      bool - True if position is valid (no collisions)
         *//*========================================================================================*/
         bool CanMoveTo(
-            const ECS::EntityLoc& playerEntity,
+            uint32_t playerEntityID,
             const Collision::CollisionComponent& playerCollider,
+            const ECSComponents::TransformComponent& playerTransform,
             const Math::eVec2<float>& targetPos,
+            const ECSComponents::PlayerComponent& playerComp,
             ECS::EntityManager& entityManager);
-
-
     };
 
 } // namespace Player

@@ -52,6 +52,10 @@ namespace ECSComponents
         Math::eVec2<float> dashDirection;   // Direction of the dash
         Math::eVec2<float> dashStartPos;    // Starting position of dash
 
+        // Push and default direction parameters
+        float pushForce;                    // Base force applied when pushing boxes (N)
+        Math::eVec2<float> defaultDashDir;  // Default dash direction when no input/velocity
+
         /*============================================================================================
          * \brief       Default constructor with fallback values
          * \param[in]   float speed - Max movement speed (default: 200.0f pixels/sec)
@@ -77,6 +81,8 @@ namespace ECSComponents
             , dashCooldownTimer(0.0f)
             , dashDirection{ 0.0f, 0.0f }
             , dashStartPos{ 0.0f, 0.0f }
+            , pushForce(1500.0f)
+            , defaultDashDir{ 0.0f, 1.0f }
         {}
 
         // Signals
@@ -118,6 +124,8 @@ namespace ECSComponents
             l("Dash Cooldown Timer", dashCooldownTimer, "float");
             l("Dash Direction", dashDirection, "eVec2(float)");
             l("Dash Start Position", dashStartPos, "eVec2(float)");
+            l("Push Force", pushForce, "float");
+            l("Default Dash Direction", defaultDashDir, "eVec2(float)");
         }
 
         template <typename Visitor>
@@ -146,6 +154,9 @@ namespace ECSComponents
             l("Dash Cooldown Timer", dashCooldownTimer, "float");
             l("Dash Direction", dashDirection, "eVec2(float)");
             l("Dash Start Position", dashStartPos, "eVec2(float)");
+            l("Push Force", pushForce, "float");
+            l("Default Dash Direction", defaultDashDir, "eVec2(float)");
+
         }
     };
 
