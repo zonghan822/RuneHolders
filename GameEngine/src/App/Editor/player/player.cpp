@@ -367,7 +367,7 @@ namespace Player
                         pushDir.y = otherTransform.pos.y - testTransform.pos.y;
 
                         // Normalize direction
-                        float length = sqrtf(pushDir.x * pushDir.y + pushDir.y * pushDir.y);
+                        float length = sqrtf(pushDir.x * pushDir.x + pushDir.y * pushDir.y);
                         if (length > 0.0f)
                         {
                             pushDir.x /= length;

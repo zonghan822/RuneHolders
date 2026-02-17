@@ -190,7 +190,6 @@ namespace Player
 
             if (Math::eVec2SquaredLength(input) > 0.01f)
             {
-                // Set velocity directly for instant, responsive movement (no acceleration)
                 physicsComp.velocity.x = input.x * playerComp.maxSpeed;
                 physicsComp.velocity.y = input.y * playerComp.maxSpeed;
             }
@@ -367,7 +366,7 @@ namespace Player
                         pushDir.y = otherTransform.pos.y - testTransform.pos.y;
 
                         // Normalize direction
-                        float length = sqrtf(pushDir.x * pushDir.y + pushDir.y * pushDir.y);
+                        float length = sqrtf(pushDir.x * pushDir.x + pushDir.y * pushDir.y);
                         if (length > 0.0f)
                         {
                             pushDir.x /= length;
