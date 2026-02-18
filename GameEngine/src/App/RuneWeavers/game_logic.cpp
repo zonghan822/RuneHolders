@@ -1761,8 +1761,8 @@ void GameApplication::initializeRuneSystem()
 
 		// Configure draw info
 		auto& draw = rune.get<ECSComponents::DrawInfoComponent>(entityManager);
-		draw.width = 56.0f;
-		draw.height = 56.0f;
+		draw.width = runeState.runeSizeLarge;
+		draw.height = runeState.runeSizeLarge;
 		draw.color = Graphics::Color::White;
 		strcpy_s(draw.shape, "Rectangle");
 		draw.texture = runeTexture_;
@@ -1988,31 +1988,31 @@ void GameApplication::updateRuneVisualStates()
 		case ECSComponents::RuneVisualState::UNAVAILABLE:
 			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> UNAVAILABLE (grey)" << std::endl;
 			draw.texture = runeTextureGrey_;
-			draw.width = 40.0f;   // Small size
-			draw.height = 40.0f;
+			draw.width = runeState.runeSizeSmall;   // Small size
+			draw.height = runeState.runeSizeSmall;
 			break;
 
 		case ECSComponents::RuneVisualState::SELECTED:
 			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> SELECTED (green)" << std::endl;
 			draw.texture = runeTextureGreen_;
-			draw.width = 56.0f;   // Large size
-			draw.height = 56.0f;
+			draw.width = runeState.runeSizeLarge;   // Large size
+			draw.height = runeState.runeSizeLarge;
 			break;
 
 		case ECSComponents::RuneVisualState::AVAILABLE_START:
 		case ECSComponents::RuneVisualState::NEXT_VALID:
 			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> AVAILABLE (white)" << std::endl;
 			draw.texture = runeTexture_;  // White Large
-			draw.width = 56.0f;
-			draw.height = 56.0f;
+			draw.width = runeState.runeSizeLarge;
+			draw.height = runeState.runeSizeLarge;
 			break;
 
 		case ECSComponents::RuneVisualState::INVALID:
 			std::cout << "[DEBUG] Rune " << rune.runeNumber << " -> INVALID (red), runeTextureRed_ is "
 			          << (runeTextureRed_ && runeTextureRed_->isValid() ? "VALID" : "NULL/INVALID") << std::endl;
 			draw.texture = runeTextureRed_;
-			draw.width = 40.0f;   // Small size
-			draw.height = 40.0f;
+			draw.width = runeState.runeSizeSmall; // Small Size
+			draw.height = runeState.runeSizeSmall;
 			break;
 		}
 
@@ -2263,7 +2263,6 @@ void GameApplication::drawRuneConnectionLine()
 	auto& graphics = engine_.getGraphicsManager();
 	ECS::Entity runeSystemEntity(runeSystemEntityID_);
 	auto& runeState = runeSystemEntity.get<ECSComponents::RuneSystemStateComponent>(entityManager);
-
 	// Determine line color based on state
 	Graphics::Color lineColor;
 	switch (runeState.lineColorState)
@@ -2282,7 +2281,7 @@ void GameApplication::drawRuneConnectionLine()
 		break;
 	}
 
-	constexpr float LINE_WIDTH = 8.0f;  // Line thickness in pixels
+	const float LINE_WIDTH = runeState.lineWidth;
 
 	std::cout << "[DEBUG] drawRuneConnectionLine called, connectionCount=" << runeState.connectionCount
 	          << ", lineEnd=(" << runeState.lineEnd.x << "," << runeState.lineEnd.y << ")" << std::endl;

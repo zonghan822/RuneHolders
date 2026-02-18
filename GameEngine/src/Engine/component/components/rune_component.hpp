@@ -423,6 +423,11 @@ namespace ECSComponents
         Math::eVec2<float> connectedPositions[SPELL_SEQUENCE_LENGTH];
         Math::eVec2<float> lineEnd;     // Current mouse position (end of line)
 
+        // Rune visual states
+        float runeSizeLarge;            // Size for available/selected runes (default 56)
+        float runeSizeSmall;            // Size for unavailable/invalid runes (default 40)
+        float lineWidth;                // Connection line thickness (default 8)
+
         float runeCircleRadius;         // Radius of the rune circle pattern
         Math::eVec2<float> circleCenter; // Center of the rune circle (for spell spawn)
 
@@ -442,6 +447,9 @@ namespace ECSComponents
             , connectionCount(0)
             , lineEnd(0.0f, 0.0f)
             , runeCircleRadius(100.0f)
+            , runeSizeLarge(56.0f)
+            , runeSizeSmall(40.0f)
+            , lineWidth(8.0f)
             , circleCenter(0.0f, 0.0f)
         {
             for (int i = 0; i < RUNE_COUNT; ++i) {
@@ -568,6 +576,9 @@ namespace ECSComponents
             l("isDrawingLine", isDrawingLine, "bool");
             l("spellCasted", spellCasted, "bool");
             l("runeCircleRadius", runeCircleRadius, "float");
+            l("runeSizeLarge", runeSizeLarge, "float");
+            l("runeSizeSmall", runeSizeSmall, "float");
+            l("lineWidth", lineWidth, "float");
         }
 
         template <typename Visitor>
@@ -578,6 +589,9 @@ namespace ECSComponents
             l("isDrawingLine", isDrawingLine, "bool");
             l("spellCasted", spellCasted, "bool");
             l("runeCircleRadius", runeCircleRadius, "float");
+            l("runeSizeLarge", runeSizeLarge, "float");
+            l("runeSizeSmall", runeSizeSmall, "float");
+            l("lineWidth", lineWidth, "float");
         }
 
         friend std::ostream& operator<<(std::ostream& os, const RuneSystemStateComponent& rs)
