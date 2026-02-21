@@ -2473,7 +2473,7 @@ void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSCompone
 	ruptureMark.add<ECSComponents::TransformComponent>(entityManager);
 	ruptureMark.add<ECSComponents::DrawInfoComponent>(entityManager);
 	ruptureMark.add<ECSComponents::AnimationControllerComponent>(entityManager);
-	ruptureMark.add<ECSComponents::RuptureMarkComponent>(entityManager, ECSComponents::RuptureMarkComponent(spellType, 50.0f, 180.0f));
+	ruptureMark.add<ECSComponents::RuptureMarkComponent>(entityManager, ECSComponents::RuptureMarkComponent(spellType));
 
 
 	auto& transform = ruptureMark.get<ECSComponents::TransformComponent>(entityManager);
@@ -2481,8 +2481,9 @@ void GameApplication::spawnRuptureMark(const Math::eVec2<float>& pos, ECSCompone
 	transform.scale = { 1.0f, 1.0f };
 
 	auto& draw = ruptureMark.get<ECSComponents::DrawInfoComponent>(entityManager);
-	draw.width = 128.0f;
-	draw.height = 128.0f;
+	auto& ruptureComp = ruptureMark.get<ECSComponents::RuptureMarkComponent>(entityManager);
+	draw.width = ruptureComp.drawSize;
+	draw.height = ruptureComp.drawSize;
 	draw.color = Graphics::Color::White;
 	strcpy_s(draw.shape, "Rectangle");
 	draw.texture = texture;

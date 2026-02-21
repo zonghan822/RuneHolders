@@ -238,6 +238,7 @@ namespace ECSComponents
         float spawnDuration;
         float windupDuration;
         float explosionDuration;
+        float drawSize;
 
         // Signals
         std::unordered_map<std::string, Events::EnoSignal> signals_;
@@ -246,16 +247,17 @@ namespace ECSComponents
             : spellType(SpellType::ICE)
             , state(RuptureMarkState::SPAWNING)
             , stateTimer(0.0f)
-            , detectionRadius(50.0f)
+            , detectionRadius(180.0f)
             , damage(50.0f)
             , triggeredByEntityID(UINT32_MAX)
             , spawnDuration(0.8f)
             , windupDuration(0.5f)
             , explosionDuration(0.4f)
+            , drawSize(128.0f)
         {
         }
 
-        RuptureMarkComponent(SpellType type, float dmg = 50.0f, float radius = 50.0f)
+        RuptureMarkComponent(SpellType type, float dmg = 50.0f, float radius = 180.0f)
             : spellType(type)
             , state(RuptureMarkState::SPAWNING)
             , stateTimer(0.0f)
@@ -265,6 +267,7 @@ namespace ECSComponents
             , spawnDuration(0.8f)
             , windupDuration(0.5f)
             , explosionDuration(0.4f)
+            , drawSize(128.0f)
         {
         }
 
@@ -292,6 +295,7 @@ namespace ECSComponents
             l("stateTimer", stateTimer, "float");
             l("detectionRadius", detectionRadius, "float");
             l("damage", damage, "float");
+            l("drawSize", drawSize, "float");
             spellType = static_cast<SpellType>(typeInt);
             state = static_cast<RuptureMarkState>(stateInt);
         }
@@ -306,6 +310,7 @@ namespace ECSComponents
             l("stateTimer", stateTimer, "float");
             l("detectionRadius", detectionRadius, "float");
             l("damage", damage, "float");
+            l("drawSize", drawSize, "float");
         }
 
         friend std::ostream& operator<<(std::ostream& os, const RuptureMarkComponent& rm)
