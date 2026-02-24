@@ -354,37 +354,7 @@ namespace Core
 			(FileSystem::GetScriptsDir().wstring() + L'/').c_str(),
 			(FileSystem::GetExecutableDir().wstring() + L'/').c_str()
 		);
-
-		// Sync all user scripts back to source after hot reload
-		syncScriptsToSource();
 	}
-
-	void EnoCoreHost::syncScriptsToSource()
-	{
-		namespace fs = std::filesystem;
-
-		try
-		{
-			fs::path buildScriptsDir = FileSystem::GetScriptsDir();
-
-			std::cout << "[CoreHost] Syncing scripts from: " << buildScriptsDir << std::endl;
-
-			for (const auto& entry : fs::directory_iterator(buildScriptsDir))
-			{
-				if (entry.is_regular_file() && entry.path().extension() == ".cs")
-				{
-					FileSystem::SyncScriptToSource(entry.path().string());
-				}
-			}
-
-			std::cout << "[CoreHost] Script sync completed" << std::endl;
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "[CoreHost] Script sync failed: " << e.what() << std::endl;
-		}
-	}
-
 
 	// Retrieve script vars
 	template <typename T>

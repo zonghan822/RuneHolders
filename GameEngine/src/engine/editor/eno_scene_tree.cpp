@@ -602,7 +602,6 @@ namespace Editor
 		save << "}\n";
 
 	save.close();
-	FileSystem::SyncToSource(filename);
 	}
 
 	// Deserialize data
