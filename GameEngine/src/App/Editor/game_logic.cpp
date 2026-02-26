@@ -328,7 +328,7 @@ void GameApplication::playSceneBGM()
 		auto camPos = camEnt[0].get<ECSComponents::CameraComponent>(entityManager).position;
 
 		audioMng.prepareMod(audioComp);
-		if (!camera.empty())
+		if (!camEnt.empty())
 			audioMng.play(audioComp, camPos);
 		else
 			audioMng.play(audioComp);
