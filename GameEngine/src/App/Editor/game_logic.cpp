@@ -1518,7 +1518,6 @@ void GameApplication::updateEntities() {
 					}
 				}
 			}
-			updateTestObject(engine_.getEntityManager(), engine_);
 
 			// loop to check for UI button entities 
 			std::vector<ECS::Entity> entityList = engine_.getEntityManager().findEntity<ECSComponents::ButtonComponent>();
@@ -1584,9 +1583,6 @@ void GameApplication::updateEntities() {
 			// Check if key frame mode is true
 			if (keyFrameMode)
 			{
-				// Update one time
-				updateTestObject(engine_.getEntityManager(), engine_);
-
 				// Reset variables - transition back to Paused for next frame
 				// NOTE: Don't set state back to Paused here! It happens too early in the frame.
 				// The state will be reset to Paused at the end of this function after rendering.

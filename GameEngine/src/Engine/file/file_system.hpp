@@ -14,9 +14,6 @@ public:
     static const std::filesystem::path& GetScriptsDir();
     static const std::filesystem::path& GetSourceAssetsDir();
     static const std::filesystem::path& GetSourceScriptsDir();
-    static void SyncToSource(const std::string& buildFilePath);
-    static void SyncScriptToSource(const std::string& buildScriptPath);
-    static void RemoveFromSource(const std::string& buildFilePath);
 
 private:
     static std::filesystem::path exeDir_;

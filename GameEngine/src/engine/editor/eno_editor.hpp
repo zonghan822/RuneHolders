@@ -87,10 +87,8 @@ namespace Editor
 		*//*========================================================================================*/
 		void deleteScene(std::string sceneName)
 		{
-			// Remove from build and source
 			std::string path = FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName;
 			std::filesystem::remove(path);
-			FileSystem::RemoveFromSource(path);
 
 			// Find scene index in scenes_ list
 			auto index = std::find_if(scenes_.begin(), scenes_.end(),
@@ -337,7 +335,6 @@ namespace Editor
 			}
 			newFile << "{\n\n}";
 			newFile.close();
-			FileSystem::SyncToSource(fullPath);
 
 			// Load file first (this sets currentScene)
 			tree_.load(fullPath);
@@ -435,7 +432,6 @@ namespace Editor
 			}
 			lastSceneSave << selectedScene_->getSceneName();
 			lastSceneSave.close();
-			FileSystem::SyncToSource(path);
 		}
 
 		EnoSceneTree& getSceneTree()

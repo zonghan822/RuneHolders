@@ -63,20 +63,4 @@ _fmod_copy_dll(${APP_NAME})
 _dotnet_copy_dll(${APP_NAME})
 _engine_copy_dll(${APP_NAME})
 
-# Call the function to copy assets
-COPY_FOLDER_IF_DIFFERENT(
-    ${APP_NAME}
-    "${CMAKE_SOURCE_DIR}/assets"
-    DESTINATIONS
-        "${PROJECT_BINARY_DIR}/$<CONFIG>/assets"
-)
-
-# Call the function to copy scripts
-COPY_FOLDER_IF_DIFFERENT(
-    ${APP_NAME}
-    "${CMAKE_SOURCE_DIR}/scripts"
-    DESTINATIONS
-        "${PROJECT_BINARY_DIR}/$<CONFIG>/scripts"
-)
-
 ENDMACRO(SETUP_APP)

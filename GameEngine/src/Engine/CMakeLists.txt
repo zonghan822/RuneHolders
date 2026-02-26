@@ -80,30 +80,16 @@ target_link_libraries(${ENGINE_NAME}_shared PRIVATE
 # Export definitions
 # ----------------------------------------------------------
 foreach(target ${ENGINE_NAME}_static ${ENGINE_NAME}_shared)
-    target_compile_definitions(${target} PRIVATE 
+    target_compile_definitions(${target} PRIVATE
         DOTNET_ROOT="${DOTNET_RUNTIME_PATH}/"
         -DGLEW_STATIC
         -D_CRT_NONSTDC_NO_DEPRECATE
     )
 endforeach()
 
+
 target_compile_definitions(${ENGINE_NAME}_shared PRIVATE 
     ENGINE_BUILD_DLL
     ENGINE_USE_DLL
 )
 
-# Call the function to copy assets
-COPY_FOLDER_IF_DIFFERENT(
-    ${ENGINE_NAME}_shared
-    "${CMAKE_SOURCE_DIR}/assets"
-    DESTINATIONS
-        "${CMAKE_BINARY_DIR}/projects/Engine/$<CONFIG>/assets"
-)
-
-# Call the function to copy scripts
-COPY_FOLDER_IF_DIFFERENT(
-    ${ENGINE_NAME}_shared
-    "${CMAKE_SOURCE_DIR}/scripts"
-    DESTINATIONS
-        "${CMAKE_BINARY_DIR}/projects/Engine/$<CONFIG>/scripts"
-)
