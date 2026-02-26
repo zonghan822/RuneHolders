@@ -91,7 +91,7 @@ namespace Audio
 		/*============================================================================================
 			 * \brief					(Overload) Play a sound from an audio component
 		*//*========================================================================================*/
-		void play(ECSComponents::AudioComponent&, float, float);
+		void play(ECSComponents::AudioComponent&, Math::eVec2<float>);
 
 		/*============================================================================================
 		 * \brief						Play all loaded sounds
