@@ -22,6 +22,9 @@
 // Event Bus
 #include "../event/event_bus.hpp"
 
+// Math
+#include "../math/math.hpp"
+
 //stds
 #include <cstdint>
 #include <fstream>
@@ -84,6 +87,11 @@ namespace Audio
 			 * \brief					Play a sound from an audio component
 		*//*========================================================================================*/
 		void play(ECSComponents::AudioComponent&);
+
+		/*============================================================================================
+			 * \brief					(Overload) Play a sound from an audio component
+		*//*========================================================================================*/
+		void play(ECSComponents::AudioComponent&, float, float);
 
 		/*============================================================================================
 		 * \brief						Play all loaded sounds

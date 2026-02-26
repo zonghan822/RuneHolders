@@ -103,6 +103,14 @@
 		"Dash Start Position": {
 			"value": "x : 0 | y : 0",
 			"type": "eVec2(float)"
+		},
+		"Push Force": {
+			"value": "1500",
+			"type": "float"
+		},
+		"Default Dash Direction": {
+			"value": "x : 0 | y : 1",
+			"type": "eVec2(float)"
 		}
 	},
 	"struct ECSComponents::CollisionComponent": {

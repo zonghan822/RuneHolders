@@ -219,6 +219,84 @@ namespace Audio
 	}
 
 	/*============================================================================================
+	 * \brief				(Overload) Sets up and plays sound based on params provided by an audio component
+	 * \param[in]			Audio component
+	*//*========================================================================================*/
+	void EnoAudioManager::play(ECSComponents::AudioComponent& audioComp, Math::eVec2<float> camPos)
+	{
+		// CRITICAL FIX: Don't restart audio that's already playing
+		// This prevents the game loop from constantly restarting audio every frame
+		if (audioComp.isPlaying_)
+		{
+			return; // Audio already playing, nothing to do
+		}
+
+		// Auto-prepare if sound pointer is null but name is set
+		// This handles cases where audio was deserialized from a save file
+		if (audioComp.audioMod_.sound_ == nullptr && audioComp.audioMod_.name_[0] != '\0')
+		{
+			std::cout << "[Audio] Auto-preparing audio module for: " << audioComp.audioMod_.name_ << std::endl;
+			prepareMod(audioComp);
+		}
+
+		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
+		std::string group{ audioComp.audioMod_.chGroup_ };
+		FMOD::ChannelGroup* chGroup{ nullptr };
+
+		auto it = channelGroups_.find(group);
+		if (it == channelGroups_.end())
+		{
+			// Create and store a new channel group for the audio component
+			system->createChannelGroup(audioComp.audioMod_.chGroup_, &chGroup);
+			channelGroups_[group] = chGroup;
+		}
+		else
+		{
+			// Channel group exists and will be used
+			chGroup = it->second;
+		}
+
+		// Apply loop settings to the sound before playing
+		applyLoopSettings(sound, audioComp);
+
+		// Play the sound (channel is created here)
+		FMOD::Channel* channel{ nullptr };
+		system->playSound(
+			audioComp.audioMod_.sound_,
+			chGroup,
+			true,  // Start paused so we can apply settings first
+			&channel);
+
+		// Now that channel exists, apply volume/pitch/pan
+		if (channel)
+		{
+			// Modify volume/pan based on cam pos
+			audioComp.volume_ -= 0.125 * camPos.x;
+			audioComp.panScale_ -= 0.125 * camPos.x;
+
+			modifyBasic(channel, createSP(audioComp));
+
+			// CRITICAL FIX: Always unpause when play() is called
+			// The play() function is meant to START playback
+			// isAutoplay_ should only control scene-start behavior, not manual play
+			channel->setPaused(false);
+
+			// Store the channel for later use
+			channels_.push_back(channel);
+
+			// Mark as playing AFTER successfully starting playback
+			audioComp.isPlaying_ = true;
+		}
+
+		// Emit signals
+		auto signalIt = audioComp.signals_.find("started");
+		if (signalIt != audioComp.signals_.end())
+		{
+			signalIt->second.emit({ audioComp.volume_ });
+		}
+	}
+
+	/*============================================================================================
 	 * \brief				Play all loaded sounds
 	 * \param[in]			Set pause state for sounds
 	*//*========================================================================================*/

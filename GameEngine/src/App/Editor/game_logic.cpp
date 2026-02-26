@@ -323,6 +323,15 @@ void GameApplication::playSceneBGM()
 	// Prepare and play the audio
 	try
 	{
+		// Assuming there is only 1 camera component
+		auto camEnt = entityManager.findEntity<ECSComponents::CameraComponent>();
+		auto camPos = camEnt[0].get<ECSComponents::CameraComponent>(entityManager).position;
+
+		audioMng.prepareMod(audioComp);
+		if (!camera.empty())
+			audioMng.play(audioComp, camPos);
+		else
+			audioMng.play(audioComp);
 		audioMng.prepareMod(audioComp);
 		audioMng.play(audioComp);
 		std::cout << "[GameApplication] Started playing BGM: " << bgmName << std::endl;

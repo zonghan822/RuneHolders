@@ -18,25 +18,17 @@
 		}
 	},
 	"struct ECSComponents::ButtonComponent": {
-		"BtnText": {
-			"value": "Button",
-			"type": "char32"
-		},
-		"TargetScene": {
-			"value": "NIL",
-			"type": "char32"
+		"IsActive": {
+			"value": "1",
+			"type": "bool"
 		},
 		"TargetObject": {
 			"value": "",
 			"type": "char64"
 		},
-		"IsActive": {
-			"value": "1",
-			"type": "bool"
-		},
-		"SavedFunctionType": {
-			"value": "1",
-			"type": "int"
+		"SelectedSignal": {
+			"value": "",
+			"type": "char32"
 		}
 	},
 	"struct ECSComponents::RenderComponent": {
@@ -71,7 +63,7 @@
 			"type": "uint32_t"
 		},
 		"Visible": {
-			"value": "0",
+			"value": "1",
 			"type": "bool"
 		}
 	},
