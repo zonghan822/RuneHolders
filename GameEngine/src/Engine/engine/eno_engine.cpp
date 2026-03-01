@@ -82,7 +82,7 @@ namespace Engine
 			graphicsMng_.beginFrame(Graphics::Color::Black);  // Clear to black
 
 			// Update audio system
-			if (isPlaying_) audioMng_.process();
+			if (isPlaying_) audioMng_.process(deltaTime);
 
 			// Call game logic if provided
 			if (gameUpdateCallback) {
