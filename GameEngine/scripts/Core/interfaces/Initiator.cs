@@ -11,36 +11,42 @@ namespace Eno
         public static void SetHRManager(IHotReloadManager manager)
         {
             HRManager = manager;
-
-            // Make sure the watcher also uses the same manager
-            ScriptWatcher.SetHRManager(manager);
         }
 
         public static void InitSequence(string usPath, string dllPath)
         {
-            // Start watching scripts
-            ScriptWatcher.BeginWatching(usPath, dllPath);
-
             // Hot Reloading
             // Compile main DLL to a temporary dll
-            HRManager!.CompileToTemp(usPath, dllPath);
-           
+            var path = HRManager!.CompileToTemp(usPath, dllPath);
+            if (path == null)
+            {
+                // Compilation failed
+                Console.WriteLine("Hot reload to be skipped due to failed compilation");
+                return;
+            }
+
             // Load temporary dll
             HRManager!.Init(dllPath);
-            HRManager!.LoadTemp();
+            HRManager!.Load(path);
         }
 
         public static void ReloadSequence(string usPath, string dllPath)
         {
-            // Unload
+             // Unload
             HRManager!.Unload();
 
             // Recompile user scripts
-            HRManager!.CompileToTemp(usPath, dllPath);
+            var path = HRManager!.CompileToTemp(usPath, dllPath);
+            if (path == null)
+            {
+                // Compilation failed
+                Console.WriteLine("Hot reload to be skipped due to failed compilation");
+                return;
+            }
 
             // Reload
             HRManager!.Init(dllPath);
-            HRManager!.LoadTemp();
+            HRManager!.Load(path);
         }
 
         [UnmanagedCallersOnly(EntryPoint = "Shutdown")]

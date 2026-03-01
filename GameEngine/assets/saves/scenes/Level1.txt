@@ -213,6 +213,8 @@
 				"Dash Cooldown Timer": <float> { 0 }
 				"Dash Direction": <eVec2(float)> { x : 0 | y : 0 }
 				"Dash Start Position": <eVec2(float)> { x : 0 | y : 0 }
+				"Push Force": <float> { 1500 }
+				"Default Dash Direction": <eVec2(float)> { x : 0 | y : 1 }
 			}
 
 			[struct ECSComponents::CollisionComponent]
@@ -544,7 +546,7 @@
 				"State[0].onExit": <char64> { idle_exit }
 				"State[1].name": <char32> { death }
 				"State[1].onEnter": <char64> { death_enter }
-				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onUpdate": <char64> {  }
 				"State[1].onExit": <char64> { death_exit }
 				"State[2].name": <char32> { attack }
 				"State[2].onEnter": <char64> { attack_enter }
@@ -4422,7 +4424,7 @@
 				"State[0].onExit": <char64> { idle_exit }
 				"State[1].name": <char32> { death }
 				"State[1].onEnter": <char64> { death_enter }
-				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onUpdate": <char64> {  }
 				"State[1].onExit": <char64> { death_exit }
 				"State[2].name": <char32> { attack }
 				"State[2].onEnter": <char64> { attack_enter }
@@ -4617,7 +4619,7 @@
 				"State[0].onExit": <char64> { idle_exit }
 				"State[1].name": <char32> { death }
 				"State[1].onEnter": <char64> { death_enter }
-				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onUpdate": <char64> {  }
 				"State[1].onExit": <char64> { death_exit }
 				"State[2].name": <char32> { attack }
 				"State[2].onEnter": <char64> { attack_enter }
@@ -4812,7 +4814,7 @@
 				"State[0].onExit": <char64> { idle_exit }
 				"State[1].name": <char32> { death }
 				"State[1].onEnter": <char64> { death_enter }
-				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onUpdate": <char64> {  }
 				"State[1].onExit": <char64> { death_exit }
 				"State[2].name": <char32> { attack }
 				"State[2].onEnter": <char64> { attack_enter }

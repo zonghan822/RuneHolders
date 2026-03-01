@@ -89,6 +89,8 @@ namespace Eno
                 Proxy = new ScriptProxy(loadedAssembly);
             else
                 Proxy.SetAssembly(loadedAssembly);
+            
+            ProxyEntry.SetProxy(Proxy);
 
             Console.WriteLine("Loaded assembly via memory stream (file unlocked)!");
         }

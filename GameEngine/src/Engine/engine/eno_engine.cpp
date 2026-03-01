@@ -53,7 +53,24 @@ namespace Engine
 		{
 			updateTime(1.0);
 			window_.pollEvents();
-			coreHost_.areScriptsModified();
+
+			// Script watch
+			bool modified = coreHost_.areScriptsModified();
+
+			if (modified)
+			{
+				std::cout << "------------- Script has been Modified -------------" << std::endl;
+
+				// Re-register all scripts
+				for (size_t i = 0; i < editor_->getSceneTree().getAllNodes().size(); i++)
+				{
+					if (editor_->getSceneTree().getAllNodes()[i]->script_)
+					{
+						editor_->getSceneTree().getAllNodes()[i]->script_->registerInst(
+							editor_->getSceneTree().getAllNodes()[i]->sceneObjectID_);
+					}
+				}
+			}
 
 			float deltaTime = static_cast<float>(dt_);
 
