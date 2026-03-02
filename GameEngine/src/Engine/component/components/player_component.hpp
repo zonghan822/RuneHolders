@@ -56,6 +56,9 @@ namespace ECSComponents
         float pushForce;                    // Base force applied when pushing boxes (N)
         Math::eVec2<float> defaultDashDir;  // Default dash direction when no input/velocity
 
+        // Scripting
+        bool useScriptedMovement;           // If true, C# script controls velocity (skips C++ input + dash)
+
         /*============================================================================================
          * \brief       Default constructor with fallback values
          * \param[in]   float speed - Max movement speed (default: 200.0f pixels/sec)
@@ -83,6 +86,7 @@ namespace ECSComponents
             , dashStartPos{ 0.0f, 0.0f }
             , pushForce(1500.0f)
             , defaultDashDir{ 0.0f, 1.0f }
+            , useScriptedMovement(false)
         {}
 
         // Signals
@@ -126,6 +130,7 @@ namespace ECSComponents
             l("Dash Start Position", dashStartPos, "eVec2(float)");
             l("Push Force", pushForce, "float");
             l("Default Dash Direction", defaultDashDir, "eVec2(float)");
+            l("Use Scripted Movement", useScriptedMovement, "bool");
         }
 
         template <typename Visitor>
@@ -156,6 +161,7 @@ namespace ECSComponents
             l("Dash Start Position", dashStartPos, "eVec2(float)");
             l("Push Force", pushForce, "float");
             l("Default Dash Direction", defaultDashDir, "eVec2(float)");
+            l("Use Scripted Movement", useScriptedMovement, "bool");
 
         }
     };
