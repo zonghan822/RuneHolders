@@ -527,6 +527,25 @@ namespace Bridge
             return true;
         }
 
+        ENGINE_API bool __stdcall SetPlayerScriptedMovement(bool enabled)
+        {
+            if (!gEngine) {
+                std::cerr << "[AI Bridge] Engine not initialized!" << std::endl;
+                return false;
+            }
+
+            auto& entMng = gEngine->getEntityManager();
+            auto playerEntities = entMng.findEntity<ECSComponents::PlayerComponent>();
+            if (playerEntities.empty()) {
+                return false;
+            }
+
+            auto& playerComp = playerEntities[0].get<ECSComponents::PlayerComponent>(entMng);
+            playerComp.useScriptedMovement = enabled;
+
+            return true;
+        }
+
         // Get the camera's world position (reads from engine's script camera)
         ENGINE_API bool __stdcall GetCameraPosition(float* outX, float* outY)
         {

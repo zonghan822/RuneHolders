@@ -84,125 +84,130 @@ namespace Player
             auto& collider = reinterpret_cast<Collision::CollisionComponent&>(entity.get<ECSComponents::CollisionComponent>(entityManager));
 
 
-            // ====== UPDATE DASH COOLDOWN ======
-            if (playerComp.dashCooldownTimer > 0.0f)
+            if (!playerComp.useScriptedMovement)
             {
-                playerComp.dashCooldownTimer -= deltaTime;
-                if (playerComp.dashCooldownTimer < 0.0f)
-                    playerComp.dashCooldownTimer = 0.0f;
-            }
 
-            // ====== DASH LOGIC (instant burst) ======
-            if (playerComp.isDashing)
-            {
-                // Update dash timer
-                playerComp.dashTimer += deltaTime;
 
-                // Calculate progress (0 to 1)
-                float progress = playerComp.dashTimer / playerComp.dashDuration;
-
-                if (progress >= 1.0f)
+                // ====== UPDATE DASH COOLDOWN ======
+                if (playerComp.dashCooldownTimer > 0.0f)
                 {
-                    // Dash complete
-                    progress = 1.0f;
-                    playerComp.isDashing = false;
-                    playerComp.dashTimer = 0.0f;
-                    playerComp.dashCooldownTimer = playerComp.dashCooldown;
-
-                    // Reset velocity after dash ends (prevents momentum carry-over)
-                    physicsComp.velocity = { 0.0f, 0.0f };
+                    playerComp.dashCooldownTimer -= deltaTime;
+                    if (playerComp.dashCooldownTimer < 0.0f)
+                        playerComp.dashCooldownTimer = 0.0f;
                 }
 
-                // Apply easing function
-                float easedProgress = EaseOutCubic(progress);
-
-                // Calculate target position
-                Math::eVec2<float> targetPos =
+                // ====== DASH LOGIC (instant burst) ======
+                if (playerComp.isDashing)
                 {
-                    playerComp.dashStartPos.x + (playerComp.dashDirection.x * playerComp.dashDistance * easedProgress),
-                    playerComp.dashStartPos.y + (playerComp.dashDirection.y * playerComp.dashDistance * easedProgress)
-                };
+                    // Update dash timer
+                    playerComp.dashTimer += deltaTime;
 
-                // Check if we can move to target position (collision check)
-                if (CanMoveTo(entity.id(), collider, transform, targetPos, playerComp, entityManager, spatialHash))
-                {
-                    transform.pos.x = targetPos.x;
-                    transform.pos.y = targetPos.y;
-                }
-                else
-                {
-                    // Hit something - end dash early
-                    playerComp.isDashing = false;
-                    playerComp.dashTimer = 0.0f;
-                    playerComp.dashCooldownTimer = playerComp.dashCooldown;
-                    physicsComp.velocity = { 0.0f, 0.0f };
-                }
+                    // Calculate progress (0 to 1)
+                    float progress = playerComp.dashTimer / playerComp.dashDuration;
 
-                // Skip normal movement during dash
-                continue;
-            }
-
-            // ====== INITIATE DASH WITH SPACEBAR KEY ======
-            if (inputManager.isKeyPressed(Input::KeyCode::Space) && playerComp.dashCooldownTimer <= 0.0f && playerComp.canMove)
-            {
-                // Get current movement input to determine dash direction
-                Math::eVec2<float> input = GetMovementInput(inputManager);
-
-                // If no input, dash in last movement direction (use velocity direction)
-                if (Math::eVec2SquaredLength(input) < 0.01f)
-                {
-                    // Use current velocity direction, or default to down
-                    float velLenSq = Math::eVec2SquaredLength(physicsComp.velocity);
-                    if (velLenSq > 0.01f)
+                    if (progress >= 1.0f)
                     {
-                        Math::eVec2Normalize(input, physicsComp.velocity);
+                        // Dash complete
+                        progress = 1.0f;
+                        playerComp.isDashing = false;
+                        playerComp.dashTimer = 0.0f;
+                        playerComp.dashCooldownTimer = playerComp.dashCooldown;
+
+                        // Reset velocity after dash ends (prevents momentum carry-over)
+                        physicsComp.velocity = { 0.0f, 0.0f };
+                    }
+
+                    // Apply easing function
+                    float easedProgress = EaseOutCubic(progress);
+
+                    // Calculate target position
+                    Math::eVec2<float> targetPos =
+                    {
+                        playerComp.dashStartPos.x + (playerComp.dashDirection.x * playerComp.dashDistance * easedProgress),
+                        playerComp.dashStartPos.y + (playerComp.dashDirection.y * playerComp.dashDistance * easedProgress)
+                    };
+
+                    // Check if we can move to target position (collision check)
+                    if (CanMoveTo(entity.id(), collider, transform, targetPos, playerComp, entityManager, spatialHash))
+                    {
+                        transform.pos.x = targetPos.x;
+                        transform.pos.y = targetPos.y;
                     }
                     else
                     {
-                        input = playerComp.defaultDashDir;  // Default dash down
+                        // Hit something - end dash early
+                        playerComp.isDashing = false;
+                        playerComp.dashTimer = 0.0f;
+                        playerComp.dashCooldownTimer = playerComp.dashCooldown;
+                        physicsComp.velocity = { 0.0f, 0.0f };
                     }
+
+                    // Skip normal movement during dash
+                    continue;
                 }
 
-                // Normalize the direction
-                Math::eVec2<float> dashDir;
-                Math::eVec2Normalize(dashDir, input);
+                // ====== INITIATE DASH WITH SPACEBAR KEY ======
+                if (inputManager.isKeyPressed(Input::KeyCode::Space) && playerComp.dashCooldownTimer <= 0.0f && playerComp.canMove)
+                {
+                    // Get current movement input to determine dash direction
+                    Math::eVec2<float> input = GetMovementInput(inputManager);
 
-                // Start the dash
-                playerComp.isDashing = true;
-                playerComp.dashTimer = 0.0f;
-                playerComp.dashDirection = dashDir;
-                playerComp.dashStartPos = { transform.pos.x, transform.pos.y };
+                    // If no input, dash in last movement direction (use velocity direction)
+                    if (Math::eVec2SquaredLength(input) < 0.01f)
+                    {
+                        // Use current velocity direction, or default to down
+                        float velLenSq = Math::eVec2SquaredLength(physicsComp.velocity);
+                        if (velLenSq > 0.01f)
+                        {
+                            Math::eVec2Normalize(input, physicsComp.velocity);
+                        }
+                        else
+                        {
+                            input = playerComp.defaultDashDir;  // Default dash down
+                        }
+                    }
 
-                // Zero out velocity during dash
-                physicsComp.velocity = { 0.0f, 0.0f };
+                    // Normalize the direction
+                    Math::eVec2<float> dashDir;
+                    Math::eVec2Normalize(dashDir, input);
 
-                // Skip normal movement this frame
-                continue;
+                    // Start the dash
+                    playerComp.isDashing = true;
+                    playerComp.dashTimer = 0.0f;
+                    playerComp.dashDirection = dashDir;
+                    playerComp.dashStartPos = { transform.pos.x, transform.pos.y };
+
+                    // Zero out velocity during dash
+                    physicsComp.velocity = { 0.0f, 0.0f };
+
+                    // Skip normal movement this frame
+                    continue;
+                }
+
+                // ====== FORCE-BASED PHYSICS MOVEMENT ======
+
+                // Clear forces from last frame
+                physicsComp.ClearForces();
+
+                // Get movement input
+                Math::eVec2<float> input = GetMovementInput(inputManager);
+
+                if (Math::eVec2SquaredLength(input) > 0.01f)
+                {
+                    // Set velocity directly for instant, responsive movement (no acceleration)
+                    physicsComp.velocity.x = input.x * playerComp.maxSpeed;
+                    physicsComp.velocity.y = input.y * playerComp.maxSpeed;
+                }
+                else
+                {
+                    // No input - stop immediately
+                    physicsComp.velocity = { 0.0f, 0.0f };
+                }
+
+                // Clear acceleration since we're setting velocity directly
+                physicsComp.acceleration = { 0.0f, 0.0f };
+
             }
-
-            // ====== FORCE-BASED PHYSICS MOVEMENT ======
-
-            // Clear forces from last frame
-            physicsComp.ClearForces();
-
-            // Get movement input
-            Math::eVec2<float> input = GetMovementInput(inputManager);
-
-            if (Math::eVec2SquaredLength(input) > 0.01f)
-            {
-                // Set velocity directly for instant, responsive movement (no acceleration)
-                physicsComp.velocity.x = input.x * playerComp.maxSpeed;
-                physicsComp.velocity.y = input.y * playerComp.maxSpeed;
-            }
-            else
-            {
-                // No input - stop immediately
-                physicsComp.velocity = { 0.0f, 0.0f };
-            }
-
-            // Clear acceleration since we're setting velocity directly
-            physicsComp.acceleration = { 0.0f, 0.0f };
-
             // Integrate velocity into position (with collision response)
             // p(t+dt) = p(t) + v * dt
             Math::eVec2<float> displacement =

@@ -61,6 +61,9 @@ namespace Bridge {
         ENGINE_API bool __stdcall SetEntityPosition(uint32_t entityID, float x, float y);
         ENGINE_API bool __stdcall SetPlayerPosition(float x, float y);
 
+        // ================= Player Scripting =================
+        ENGINE_API bool __stdcall SetPlayerScriptedMovement(bool enabled);
+
         // ================= Camera =================
         ENGINE_API bool __stdcall GetCameraPosition(float* outX, float* outY);
         ENGINE_API bool __stdcall SetCameraPosition(float x, float y);
