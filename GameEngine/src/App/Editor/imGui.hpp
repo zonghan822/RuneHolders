@@ -25,6 +25,7 @@
 #include "player/player.hpp"
 #include "game_logic.hpp"
 #include "../../Engine/prefab/prefab.hpp"
+#include "../../Engine/raycast/raycast_renderer.hpp"
 
 // Variables
 static std::mt19937 rng(std::random_device{}());
@@ -307,3 +308,10 @@ void clearSelectedEntity();
  * \return      void
 *//*========================================================================================*/
 void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager);
+
+/*============================================================================================
+ * \brief       Displays the Raycast 3D View panel (Wolfenstein-style first-person renderer)
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayRaycastVisualizerTab(Engine::EnoEngine& engine_);
