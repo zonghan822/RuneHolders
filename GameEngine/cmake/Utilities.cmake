@@ -329,6 +329,11 @@ macro(set_dotnet)
 endmacro()
 
 function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
+    if(ARGC GREATER 3)
+        set(DLL_NAME ${ARGV3})
+    else()
+        set(DLL_NAME ${TARGET_NAME})
+    endif()
     set(CONFIG_OUTPUT_DIR "${OUTPUT_DIR}/$<CONFIG>")
 
     # Gather all C# source files in the project directory
@@ -341,7 +346,7 @@ function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
     # Publish the C# project
     # =========================================================
     add_custom_command(
-        OUTPUT ${CONFIG_OUTPUT_DIR}/${TARGET_NAME}.dll
+        OUTPUT ${CONFIG_OUTPUT_DIR}/${DLL_NAME}.dll
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CONFIG_OUTPUT_DIR}
         COMMAND ${DOTNET_CMD} publish ${CS_PROJECT_PATH}
             -f net8.0
@@ -357,7 +362,7 @@ function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
     )
     # Target depends on correct CONFIG output
     add_custom_target(${TARGET_NAME}_cs
-        DEPENDS ${CONFIG_OUTPUT_DIR}/${TARGET_NAME}.dll
+        DEPENDS ${CONFIG_OUTPUT_DIR}/${DLL_NAME}.dll
     )
 endfunction()
 

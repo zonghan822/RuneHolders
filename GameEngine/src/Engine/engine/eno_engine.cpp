@@ -75,23 +75,23 @@ namespace Engine
 			float deltaTime = static_cast<float>(dt_);
 
 			// Update physics system (gravity, forces, velocity integration)
-			// Only update physics when the game is playing (not paused/stopped)
-			if (physicsSys_ && isPlaying_) {
+			// Only update physics when the game is playing and not runtime-paused
+			if (physicsSys_ && isPlaying_ && !isPaused_) {
 				physicsSys_->Update(entityMng_, deltaTime);
 			}
 
 			// Update all state machines
-			if (isPlaying_) stateMachineSys_->update(editor_->getSceneTree(), entityMng_);
+			if (isPlaying_ && !isPaused_) stateMachineSys_->update(editor_->getSceneTree(), entityMng_);
 
 			// Update collision system (collision detection and response)
-			// Only update collision when the game is playing (not paused/stopped)
-			if (collisionSys_ && isPlaying_) {
+			// Only update collision when the game is playing and not runtime-paused
+			if (collisionSys_ && isPlaying_ && !isPaused_) {
 				collisionSys_->Update(entityMng_);
 			}
 
 			// Update particle system (emission and physics)
-			// Only update particles when the game is playing (not paused/stopped)
-			if (particleSys_ && isPlaying_) {
+			// Only update particles when the game is playing and not runtime-paused
+			if (particleSys_ && isPlaying_ && !isPaused_) {
 				particleSys_->Update(entityMng_, deltaTime);
 			}
 

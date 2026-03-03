@@ -209,6 +209,18 @@ namespace Engine
 		*//*========================================================================================*/
 		bool getIsPlaying() const { return isPlaying_; }
 
+		/*============================================================================================
+		* \brief		Sets the runtime pause state (pauses physics/AI/collision but keeps audio)
+		* \param[in]	paused - True to pause game systems, false to resume
+		*//*========================================================================================*/
+		void setPaused(bool paused) { isPaused_ = paused; }
+
+		/*============================================================================================
+		* \brief		Gets whether the game is runtime-paused (dialogue, menus, etc.)
+		* \return		True if game systems are paused, false otherwise
+		*//*========================================================================================*/
+		bool getIsPaused() const { return isPaused_; }
+
 		// Script-accessible camera position (world-space center of viewport).
 		// The bridge reads/writes this; the App layer syncs it with its own camera.
 		void setScriptCameraPos(float x, float y) { scriptCameraPos_ = {x, y}; scriptCameraDirty_ = true; }
@@ -256,6 +268,7 @@ namespace Engine
 
 		// Game state
 		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)
+		bool isPaused_  = false;  // Runtime pause (dialogue, menus) - pauses physics/AI/collision
 
 		// Script camera (center of viewport in world space)
 		Math::eVec2<float> scriptCameraPos_{ 0.0f, 0.0f };

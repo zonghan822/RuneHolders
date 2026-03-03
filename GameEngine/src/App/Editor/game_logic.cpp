@@ -329,7 +329,7 @@ void GameApplication::playSceneBGM()
 
 		// Prepare audio modifiers and play
 		audioMng.prepareMod(audioComp);
-		if (camEnt.empty())
+		if (!camEnt.empty())
 			audioMng.play(audioComp, camPos);
 		else
 			audioMng.play(audioComp);
