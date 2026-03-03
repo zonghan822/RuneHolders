@@ -8,30 +8,30 @@ std::filesystem::path FileSystem::scriptsDir_;
 std::filesystem::path FileSystem::sourceAssetsDir_;
 std::filesystem::path FileSystem::sourceScriptsDir_;
 
-void FileSystem::Initialize()
+void FileSystem::Initialize(const std::string& appName)
 {
     char buffer[MAX_PATH];
     GetModuleFileNameA(NULL, buffer, MAX_PATH);
     exeDir_ = std::filesystem::path(buffer).parent_path();
 
-    // Navigate up from build/projects/App/Debug to GameEngine root (4 levels up)
-    rootDir_ = exeDir_.parent_path().parent_path().parent_path().parent_path();
+    // Navigate up from build/projects/App/<AppName>/Debug to GameEngine root (5 levels up)
+    rootDir_ = exeDir_.parent_path().parent_path().parent_path()
+                       .parent_path().parent_path();
 
-    // Use the source directory directly when it exists (development).
-    // Fall back to the exe directory when shipped (source tree not present).
-    std::filesystem::path sourceAssets = rootDir_ / "assets";
+    std::filesystem::path sourceAssets = rootDir_ / "assets" / appName;
     if (std::filesystem::exists(sourceAssets))
     {
+        // Development: use per-app source dirs
         assetsDir_  = sourceAssets;
-        scriptsDir_ = rootDir_ / "scripts\\GameScripts\\user_scripts";
+        scriptsDir_ = rootDir_ / "scripts" / appName / "user_scripts";
     }
     else
     {
+        // Shipped: assets/ and scripts/ sit next to the exe
         assetsDir_  = exeDir_ / "assets";
-        scriptsDir_ = exeDir_ / "scripts\\GameScripts\\user_scripts";
+        scriptsDir_ = exeDir_ / "scripts" / "user_scripts";
     }
 
-    // Keep source aliases pointing to the same location (no longer separate paths)
     sourceAssetsDir_  = assetsDir_;
     sourceScriptsDir_ = scriptsDir_;
 }

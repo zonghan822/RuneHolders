@@ -21,7 +21,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         EnableMemoryLeakChecking();
 #endif
 
-        FileSystem::Initialize();
+        FileSystem::Initialize(ENO_APP_NAME);
 
         // Create game instance
         GameApplication game;

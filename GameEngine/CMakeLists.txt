@@ -22,15 +22,5 @@ set_fmod()
 set(rapidjson_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/lib/rapidjson)
 set_dotnet()
 
-# Build c# project
-set(SCRIPT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/scripts/GameScripts)
-set(SCRIPT_BINARY_DIR ${CMAKE_BINARY_DIR}/projects/App)
-set(SCRIPT_NAME GameScripts)
-build_csharp_scripts(
-    ${SCRIPT_NAME}
-    ${SCRIPT_SOURCE_DIR}
-    ${SCRIPT_BINARY_DIR}
-)
-
 ADD_SUBDIRECTORY(src/Engine ${CMAKE_BINARY_DIR}/projects/Engine)
 ADD_SUBDIRECTORY(src/App ${CMAKE_BINARY_DIR}/projects/App)

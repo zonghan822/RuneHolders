@@ -6,7 +6,7 @@
 class FileSystem
 {
 public:
-    static void Initialize();
+    static void Initialize(const std::string& appName);
 
     static const std::filesystem::path& GetExecutableDir();
     static const std::filesystem::path& GetRootDir();
