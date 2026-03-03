@@ -669,7 +669,7 @@ namespace Audio
 	{
 		constexpr float FADE_IN_TIME = 0.f;
 		constexpr float FADE_OUT_TIME = 2.f;
-		constexpr float DURATION = 2.f;
+		constexpr float DURATION = 1.f;
 
 		auto group = channelGroups_.find(name);
 		if (group == channelGroups_.end())
