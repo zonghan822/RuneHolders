@@ -1940,9 +1940,36 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	}
 	else
 	{
+		// Build a set of audio names that are attached to entities for indicators
+		auto& entMgr = engine_.getEntityManager();
+		std::vector<ECS::Entity> audioEntities = entMgr.findEntity<ECSComponents::AudioComponent>();
+		std::unordered_map<std::string, std::string> attachedAudioMap; // audioName -> entityName
+		for (ECS::Entity& ae : audioEntities)
+		{
+			auto& ac = ae.get<ECSComponents::AudioComponent>(entMgr);
+			if (strlen(ac.audioMod_.name_) > 0)
+			{
+				std::string entityLabel;
+				if (ae.has<ECSComponents::NameComponent>(entMgr))
+					entityLabel = ae.get<ECSComponents::NameComponent>(entMgr).name;
+				else
+					entityLabel = std::to_string(ae.id());
+				attachedAudioMap[ac.audioMod_.name_] = entityLabel;
+			}
+		}
+
 		for (int i = 0; i < audioAssets.size(); ++i)
 		{
-			if (ImGui::Selectable(audioAssets[i].c_str(), selectedAsset == i))
+			// Build display label with attachment indicator
+			std::string assetNameNoExt = audioAssets[i];
+			assetNameNoExt = assetNameNoExt.substr(0, assetNameNoExt.find_last_of('.'));
+
+			std::string displayLabel = audioAssets[i];
+			auto attachIt = attachedAudioMap.find(assetNameNoExt);
+			if (attachIt != attachedAudioMap.end())
+				displayLabel += "  -> [" + attachIt->second + "]";
+
+			if (ImGui::Selectable(displayLabel.c_str(), selectedAsset == i))
 			{
 				selectedAsset = i;
 
@@ -2058,12 +2085,79 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			bus.publish(Audio::StopBGM{});
 		}
 
-		auto& map = engine_.getEntityManager().getMap();
-		auto it = map.find(selectedEntityID);
+		// --- Entity target selection for audio attachment ---
+		static uint32_t audioTargetEntityID = UINT32_MAX;
+		static std::string audioAttachStatusMsg{};
+		static float audioAttachStatusTimer = 0.0f;
 
-		if (it == map.end())
+		auto& entityManager = engine_.getEntityManager();
+
+		// Default to the globally selected entity if no audio target has been picked yet
+		if (audioTargetEntityID == UINT32_MAX)
+			audioTargetEntityID = selectedEntityID;
+
+		// Build the label for the currently targeted entity
+		std::string targetLabel = "(No entity selected)";
 		{
-			ImGui::TextDisabled("Invalid entity selected");
+			auto& map = entityManager.getMap();
+			auto it = map.find(audioTargetEntityID);
+			if (it != map.end())
+			{
+				ECS::Entity targetEnt{ audioTargetEntityID };
+				if (targetEnt.has<ECSComponents::NameComponent>(entityManager))
+				{
+					const auto& nc = targetEnt.get<ECSComponents::NameComponent>(entityManager);
+					targetLabel = std::to_string(audioTargetEntityID) + ": " + nc.name;
+				}
+				else
+				{
+					targetLabel = std::to_string(audioTargetEntityID) + ": (unnamed)";
+				}
+			}
+		}
+
+		ImGui::Text("Target Entity:");
+		ImGui::SameLine();
+
+		// Combo dropdown to pick target entity
+		ImGui::SetNextItemWidth(-1);
+		if (ImGui::BeginCombo("##AudioTargetEntity", targetLabel.c_str()))
+		{
+			std::vector<ECS::Entity> namedEntities = entityManager.findEntity<ECSComponents::NameComponent>();
+			for (ECS::Entity& e : namedEntities)
+			{
+				const auto& nc = e.get<ECSComponents::NameComponent>(entityManager);
+				std::string label = std::to_string(e.id()) + ": " + nc.name;
+
+				// Show indicator if entity already has audio attached
+				if (e.has<ECSComponents::AudioComponent>(entityManager))
+				{
+					auto& ac = e.get<ECSComponents::AudioComponent>(entityManager);
+					if (strlen(ac.audioMod_.name_) > 0)
+						label += " [audio: " + std::string(ac.audioMod_.name_) + "]";
+				}
+
+				bool isSelected = (audioTargetEntityID == e.id());
+				if (ImGui::Selectable(label.c_str(), isSelected))
+				{
+					audioTargetEntityID = e.id();
+				}
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		// Validate target entity
+		bool validTarget = false;
+		{
+			auto& map = entityManager.getMap();
+			validTarget = (map.find(audioTargetEntityID) != map.end());
+		}
+
+		if (!validTarget)
+		{
+			ImGui::TextDisabled("Select a valid target entity above.");
 		}
 		else
 		{
@@ -2074,28 +2168,40 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			ImGui::Text("Channel Group:");
 			ImGui::Combo("##ChannelGroup", &selectedChannelGroup, channelGroups, IM_ARRAYSIZE(channelGroups));
 
-			if (ImGui::Button("Attach Audio to Selected Entity"))
+			if (ImGui::Button("Attach Audio"))
 			{
-				ECS::Entity selectedEntity{ selectedEntityID };
+				ECS::Entity targetEntity{ audioTargetEntityID };
 
 				// Add component if missing
-				if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
-					selectedEntity.add<ECSComponents::AudioComponent>(engine_.getEntityManager());
+				if (!targetEntity.has<ECSComponents::AudioComponent>(entityManager)) {
+					targetEntity.add<ECSComponents::AudioComponent>(entityManager);
 					std::cout << "[Audio] Added AudioComponent.\n";
 				}
 
 				// Fill it
-				ECSComponents::AudioComponent& ac = selectedEntity.get<ECSComponents::AudioComponent>(engine_.getEntityManager());
+				ECSComponents::AudioComponent& ac = targetEntity.get<ECSComponents::AudioComponent>(entityManager);
 
 				strncpy(ac.audioMod_.name_, selectedName.c_str(), sizeof(ac.audioMod_.name_) - 1);
 				strncpy(ac.audioMod_.chGroup_, channelGroups[selectedChannelGroup], sizeof(ac.audioMod_.chGroup_) - 1);
 
 				ac.audioMod_.sound_ = selectedSound;
 
+				// Build status message
+				audioAttachStatusMsg = "Attached '" + selectedName + "' to " + targetLabel;
+				audioAttachStatusTimer = 3.0f; // show for ~3 seconds
+
 				std::cout << "[Audio] Attached '" << selectedName
-					<< "' to entity " << selectedEntityID
+					<< "' to entity " << audioTargetEntityID
 					<< " with channel group '" << channelGroups[selectedChannelGroup] << "'\n";
 			}
+		}
+
+		// Show attach confirmation message (fades out)
+		if (audioAttachStatusTimer > 0.0f)
+		{
+			float alpha = (audioAttachStatusTimer > 1.0f) ? 1.0f : audioAttachStatusTimer;
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.3f, alpha), "%s", audioAttachStatusMsg.c_str());
+			audioAttachStatusTimer -= ImGui::GetIO().DeltaTime;
 		}
 
 		//Current state of audio deletion takes out the audio file from the build folder only.
