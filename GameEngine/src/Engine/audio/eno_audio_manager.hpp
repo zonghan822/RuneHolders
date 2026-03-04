@@ -11,6 +11,7 @@
 
 // FMOD
 #include "fmod.hpp"
+#include "fmod_errors.h"
 
 // Events
 #include "audio_events.hpp"
@@ -75,7 +76,7 @@ namespace Audio
 		/*============================================================================================
 		 * \brief						Update internal FMOD system
 		*//*========================================================================================*/
-		void process();
+		void process(float);
 
 		/*============================================================================================
 			 * \brief					Setup an audio component and its internal audio module
@@ -151,8 +152,7 @@ namespace Audio
 		 * \param[in]					Fade out time
 		 * \param[in]					Duration in seconds
 		*//*========================================================================================*/
-		void scheduleGroupFade(const std::string&,
-			const float&, const float&, const float&);
+		void scheduleGroupFade(const std::string&, float, float, float);
 
 		/*============================================================================================
 		 * \brief				Based on the audio component passed, create and return an
@@ -234,6 +234,13 @@ namespace Audio
 		void stopChannelGroup(const std::string&);
 
 		/*============================================================================================
+		* \brief				Stop all channels within a channel group after designated time
+		* \param[in]			Channel group name
+		* \param[in]			Duration
+		*//*========================================================================================*/
+		void stopAllChannels(FMOD::ChannelGroup*);
+
+		/*============================================================================================
 		 * \brief						Stop a channel
 		 * \param[in]					Pointer to a Channel
 		*//*========================================================================================*/
@@ -277,6 +284,12 @@ namespace Audio
 
 	private:
 
+		struct PendingStop
+		{
+			FMOD::ChannelGroup* group_;
+			float timeRemaining_;
+		};
+
 		// Params
 		static constexpr float FADE_IN = 5.f;
 		static constexpr float FADE_OUT = 5.f;
@@ -292,6 +305,9 @@ namespace Audio
 
 		// Channel Groups
 		std::unordered_map<std::string, FMOD::ChannelGroup*> channelGroups_;
+
+		// Pending Channel Groups
+		std::vector<PendingStop> pendingStops_;
 
 		// Sounds
 		std::unordered_map<std::string, FMOD::Sound*> sounds_;

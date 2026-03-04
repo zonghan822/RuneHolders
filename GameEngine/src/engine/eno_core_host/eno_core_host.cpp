@@ -656,17 +656,30 @@ namespace Core
 	}
 
 	// Detect change in script
-	void EnoCoreHost::areScriptsModified()
+	bool EnoCoreHost::areScriptsModified()
 	{
-		// Modify this with a map next time to map out scripts and times
-		static std::filesystem::file_time_type previousWriteTime{};
+		static std::unordered_map<std::string, std::filesystem::file_time_type> lastWriteTimes;
 
-		auto lastWrite = std::filesystem::last_write_time(asmDllPath);
-		if (lastWrite != previousWriteTime)
+		bool modified = false;
+		for (auto& entry : std::filesystem::recursive_directory_iterator(FileSystem::GetScriptsDir().wstring()))
 		{
-			previousWriteTime = lastWrite;
-			hotReload();
+			if (entry.is_regular_file() && entry.path().extension() == ".cs")
+			{
+				auto lastWrite = std::filesystem::last_write_time(entry.path());
+				auto it = lastWriteTimes.find(entry.path().string());
+
+				if (it == lastWriteTimes.end() || lastWrite != it->second)
+				{
+					lastWriteTimes[entry.path().string()] = lastWrite;
+					modified = true;
+				}
+			}
 		}
+
+		if (modified)
+			hotReload();
+
+		return modified;
 	}
 
 	// Call a method from a specified type (namespace.class, dll)

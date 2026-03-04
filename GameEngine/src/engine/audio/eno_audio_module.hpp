@@ -29,6 +29,7 @@ namespace Audio
 
 		// Sound
 		FMOD::Sound* sound_;
+		FMOD::Channel* ch_;
 		char chGroup_[32];
 
 		// Properties

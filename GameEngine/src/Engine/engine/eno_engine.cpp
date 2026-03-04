@@ -53,28 +53,45 @@ namespace Engine
 		{
 			updateTime(1.0);
 			window_.pollEvents();
-			coreHost_.areScriptsModified();
+
+			// Script watch
+			bool modified = coreHost_.areScriptsModified();
+
+			if (modified)
+			{
+				std::cout << "------------- Script has been Modified -------------" << std::endl;
+
+				// Re-register all scripts
+				for (size_t i = 0; i < editor_->getSceneTree().getAllNodes().size(); i++)
+				{
+					if (editor_->getSceneTree().getAllNodes()[i]->script_)
+					{
+						editor_->getSceneTree().getAllNodes()[i]->script_->registerInst(
+							editor_->getSceneTree().getAllNodes()[i]->sceneObjectID_);
+					}
+				}
+			}
 
 			float deltaTime = static_cast<float>(dt_);
 
 			// Update physics system (gravity, forces, velocity integration)
-			// Only update physics when the game is playing (not paused/stopped)
-			if (physicsSys_ && isPlaying_) {
+			// Only update physics when the game is playing and not runtime-paused
+			if (physicsSys_ && isPlaying_ && !isPaused_) {
 				physicsSys_->Update(entityMng_, deltaTime);
 			}
 
 			// Update all state machines
-			if (isPlaying_) stateMachineSys_->update(editor_->getSceneTree(), entityMng_);
+			if (isPlaying_ && !isPaused_) stateMachineSys_->update(editor_->getSceneTree(), entityMng_);
 
 			// Update collision system (collision detection and response)
-			// Only update collision when the game is playing (not paused/stopped)
-			if (collisionSys_ && isPlaying_) {
+			// Only update collision when the game is playing and not runtime-paused
+			if (collisionSys_ && isPlaying_ && !isPaused_) {
 				collisionSys_->Update(entityMng_);
 			}
 
 			// Update particle system (emission and physics)
-			// Only update particles when the game is playing (not paused/stopped)
-			if (particleSys_ && isPlaying_) {
+			// Only update particles when the game is playing and not runtime-paused
+			if (particleSys_ && isPlaying_ && !isPaused_) {
 				particleSys_->Update(entityMng_, deltaTime);
 			}
 
@@ -82,7 +99,7 @@ namespace Engine
 			graphicsMng_.beginFrame(Graphics::Color::Black);  // Clear to black
 
 			// Update audio system
-			if (isPlaying_) audioMng_.process();
+			if (isPlaying_) audioMng_.process(deltaTime);
 
 			// Call game logic if provided
 			if (gameUpdateCallback) {

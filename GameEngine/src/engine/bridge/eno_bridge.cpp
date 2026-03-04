@@ -29,7 +29,7 @@ namespace Bridge
 
             // DLL has its own copy of FileSystem statics (separate from the EXE's).
             // Initialize them here so inlined paths like selectScene resolve correctly.
-            FileSystem::Initialize();
+            // FileSystem::Initialize();
         }
 
         ENGINE_API float __stdcall GetDeltaTime()

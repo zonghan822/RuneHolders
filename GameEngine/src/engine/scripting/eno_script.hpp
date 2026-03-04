@@ -34,6 +34,8 @@ namespace Script
 	{
 	public:
 		EnoScript(Core::EnoCoreHost&, const std::wstring&, const std::wstring&);
+
+		void registerInst(uint32_t id);
 		std::wstring extrClassName(wchar_t*);
 		void map(const std::wstring&);
 		void displayVars();

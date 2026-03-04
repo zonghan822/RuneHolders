@@ -119,7 +119,13 @@ namespace Script
 	}
 #endif
 
-
+	void EnoScript::registerInst(uint32_t id)
+	{
+		for (const std::wstring& org : origin_)
+		{
+			coreHost_.setMetaData(org, id, true);
+		}
+	}
 
 	// Extract the class name
 	std::wstring EnoScript::extrClassName(wchar_t* name)

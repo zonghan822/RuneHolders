@@ -46,10 +46,24 @@ void GameApplication::initialize() {
 	setupGameEvents();
 	setupAnimations();
 	setupScripting();
+
+	// Wire up C# Logic Systems (must come after setupScripting())
+	{
+		auto e = engine_.getEntityManager().createEntity();
+		dialogueSystemEntityID_ = e.getID();
+		engine_.getCoreHost().setMetaData(L"Eno.DialogueSystem", dialogueSystemEntityID_, 1);
+		engine_.getCoreHost().begin(L"Eno.DialogueSystem", dialogueSystemEntityID_);
+	}
+	{
+		auto e = engine_.getEntityManager().createEntity();
+		combatSystemEntityID_ = e.getID();
+		engine_.getCoreHost().setMetaData(L"Eno.CombatSystem", combatSystemEntityID_, 1);
+		engine_.getCoreHost().begin(L"Eno.CombatSystem", combatSystemEntityID_);
+	}
+
 	setupFont();
 	setupCamera();
 	setupSpellbookIcon();
-	setupCombatSystem();
 	setupMainMenuButtons();
 	setupWinScreenButtons();
 	/*setupSceneTransitions();*/
@@ -204,42 +218,6 @@ void GameApplication::setupSpellbookIcon() {
 	visibility.visible = true;
 
 	std::cout << "[SpellbookIcon] Spellbook icon UI created" << std::endl;
-}
-
-void GameApplication::setupCombatSystem() {
-	auto& entityManager = engine_.getEntityManager();
-
-
-	// Add HealthComponent to player if it exists
-	if (playerSpawned_) {
-		ECS::Entity playerEntity(playerEntityID_);
-		if (!playerEntity.has<ECSComponents::HealthComponent>(entityManager)) {
-			playerEntity.add<ECSComponents::HealthComponent>(entityManager, 100.0f);
-		}
-	}
-
-	// Find all enemies with AIComponent and add health/damage
-	std::vector<ECS::Entity> enemies = entityManager.findEntity<ECSComponents::AIComponent>();
-	for (auto& enemy : enemies) {
-		// Add or reset HealthComponent
-		if (!enemy.has<ECSComponents::HealthComponent>(entityManager)) {
-			enemy.add<ECSComponents::HealthComponent>(entityManager, 50.0f);
-		} else {
-			// Reset health to max if component already exists
-			auto& health = enemy.get<ECSComponents::HealthComponent>(entityManager);
-			health.currentHealth = 50.0f;
-			health.maxHealth = 50.0f;
-			health.isDead = false;
-			health.invulnerable = false;
-			health.invulnerabilityTimer = 0.0f;
-		}
-
-		// Add DamageComponent if not already present
-		if (!enemy.has<ECSComponents::DamageComponent>(entityManager)) {
-			enemy.add<ECSComponents::DamageComponent>(entityManager, 10.0f);
-		}
-	}
-
 }
 
 void GameApplication::setupScripting() {
@@ -399,8 +377,8 @@ void GameApplication::setupGameEvents() {
 			}
 
 			// Pause the game if not already paused
-			if (!isPaused_) {
-				isPaused_ = true;
+			if (!engine_.getIsPaused()) {
+				engine_.setPaused(true);
 				engine_.setIsPlaying(false);
 			}
 
@@ -450,8 +428,8 @@ void GameApplication::setupGameEvents() {
 
 			// Window minimized, pause game
 			// Pause the game if not already paused
-			if (!isPaused_) {
-				isPaused_ = true;
+			if (!engine_.getIsPaused()) {
+				engine_.setPaused(true);
 				engine_.setIsPlaying(false);
 			}
 
@@ -474,15 +452,6 @@ void GameApplication::setupGameEvents() {
 		}
 	});
 
-	// Dialogue texts
-	dialogueTexts_ = {	"OH, WHAT'S THIS?",
-						"A SCROLL FULL OF SPELLS!",
-						"HEHEHEHE...",
-						"DID I JUST HEAR SOMETHING?",
-						"WH-WHO GOES THERE?",
-						"...",
-						"I GUESS I WAS JUST HEARING THINGS THEN.",
-						"LET ME RECORD THE SPELLS IN MY SPELLBOOK." };
 }
 
 void GameApplication::setupAnimations() {
@@ -665,10 +634,10 @@ void GameApplication::updateGameLogic() {
 	if (playerExists) {
 		// Handle F key - Toggle Spellbook
 		if (inputMng.isKeyDown(GLFW_KEY_F)) {
-			if (!showSpellbook_ && !isPaused_) {
+			if (!showSpellbook_ && !engine_.getIsPaused()) {
 				// Open spellbook and pause game (only if not already paused by pause menu)
 				showSpellbook_ = true;
-				isPaused_ = true;
+				engine_.setPaused(true);
 				hidePlayer();
 				spawnSpellbook();
 				engine_.setIsPlaying(false);
@@ -677,7 +646,7 @@ void GameApplication::updateGameLogic() {
 			else if (showSpellbook_) {
 				// Close spellbook and resume game (works even when paused)
 				showSpellbook_ = false;
-				isPaused_ = false;
+				engine_.setPaused(false);
 				destroySpellbook();
 				showPlayer();
 				engine_.setIsPlaying(true);
@@ -690,15 +659,15 @@ void GameApplication::updateGameLogic() {
 			if (showSpellbook_) {
 				// If spellbook is open, close it and resume game
 				showSpellbook_ = false;
-				isPaused_ = false;
+				engine_.setPaused(false);
 				destroySpellbook();
 				showPlayer();
 				engine_.setIsPlaying(true);
 				engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", "Spellbook_Close_01" });
 			}
-			else if (!isPaused_) {
+			else if (!engine_.getIsPaused()) {
 				// If not paused and not in spellbook, open pause menu
-				isPaused_ = true;
+				engine_.setPaused(true);
 				hidePlayer();
 				spawnPauseMenu();
 				engine_.setIsPlaying(false);
@@ -706,7 +675,7 @@ void GameApplication::updateGameLogic() {
 			}
 			else {
 				// If pause menu is open, close it and resume game
-				isPaused_ = false;
+				engine_.setPaused(false);
 				destroyPauseMenu();
 				showPlayer();
 				engine_.setIsPlaying(true);
@@ -714,25 +683,9 @@ void GameApplication::updateGameLogic() {
 			}
 		}
 
-		// Handle E key - Interact with Collectible-Scroll or advance dialogue
+		// Handle E key - Interact with Collectible-Scroll (dialogue handled by C# DialogueSystem)
 		if (inputMng.isKeyDown(GLFW_KEY_E)) {
-			if (dialogueActive_) {
-				if (dialogueTyping_) {
-					// Finish current text animation instantly
-					dialogueTyping_ = false;
-					dialogueCurrentText_ = dialogueTargetText_;
-					auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
-					if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager)) {
-						auto& textComp = bodyText[0].get<ECSComponents::TextComponent>(entityManager);
-						strncpy_s(textComp.text, dialogueCurrentText_.c_str(), sizeof(textComp.text) - 1);
-						textComp.text[sizeof(textComp.text) - 1] = '\0';
-					}
-				}
-				else {
-					advanceDialogue();
-				}
-			}
-			else if (!isPaused_) {
+			if (!engine_.getIsPaused()) {
 				// Check if player is colliding with UI-PopUp-E entity
 				if (playerSpawned_ && playerEntityID_ != 0) {
 					ECS::Entity playerEntity(playerEntityID_);
@@ -841,31 +794,9 @@ void GameApplication::updateGameLogic() {
 		}
 	}
 
-	// Dialogue typewriter animation
-	if (dialogueTyping_) {
-		// Start timer
-		dialogueTypeTimer_ += deltaTime;
-		while (dialogueTypeTimer_ >= DIALOGUE_TYPE_SPEED && dialogueCurrentText_.size() < dialogueTargetText_.size()) {
-			// Add next letter, reset timer
-			dialogueCurrentText_ += dialogueTargetText_[dialogueCurrentText_.size()];
-			dialogueTypeTimer_ -= DIALOGUE_TYPE_SPEED;
-			//Play audio here for keyclicks here: Yun Qi
-			int typingSoundValue = static_cast<int>(randomFloat(1, 22)); // 1-21 inclusive
-			std::string number = (typingSoundValue < 10 ? "0" : "") + std::to_string(typingSoundValue);
-			std::string typeSound = "Typing_" + number;
-			engine_.getEventBus().publish(Audio::PlayInstant{ "SFX", typeSound });
-
-		}
-		auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
-		if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager)) {
-			auto& textComp = bodyText[0].get<ECSComponents::TextComponent>(entityManager);
-			strncpy_s(textComp.text, dialogueCurrentText_.c_str(), sizeof(textComp.text) - 1);
-			textComp.text[sizeof(textComp.text) - 1] = '\0';
-		}
-		if (dialogueCurrentText_.size() >= dialogueTargetText_.size()) {
-			dialogueTyping_ = false;
-		}
-	}
+	// Update C# Logic Systems
+	engine_.getCoreHost().update(L"Eno.DialogueSystem", dialogueSystemEntityID_);
+	engine_.getCoreHost().update(L"Eno.CombatSystem",   combatSystemEntityID_);
 
 	// Update main menu buttons (outside pause check - buttons work even when paused)
 	updateMainMenuButtons();
@@ -874,7 +805,7 @@ void GameApplication::updateGameLogic() {
 	//updateSceneTransitions();
 
 	// Only update game systems when not paused
-	if (!isPaused_) {
+	if (!engine_.getIsPaused()) {
 		// Always update player movement (no editor state checks for game)
 		playerSystem_->Update(entityManager, inputMng, deltaTime, *engine_.getCollisionSystem());
 
@@ -883,9 +814,6 @@ void GameApplication::updateGameLogic() {
 
 		// Update rune system
 		updateRuneSystem();
-
-		// Update combat system (damage dealing and health)
-		updateCombatSystem(deltaTime);
 
 		// Update floating texts (rise and fade)
 		updateFloatingTexts(deltaTime);
@@ -907,7 +835,7 @@ void GameApplication::updateGameLogic() {
 	const float frameDuration = 0.1f;  // 0.1 seconds per frame
 
 	// Only update animations when not paused
-	if (!isPaused_) {
+	if (!engine_.getIsPaused()) {
 		if (playerTexture_ && playerSpawned_) {
 			playerAnimController_.update(deltaTime);
 		}
@@ -974,7 +902,7 @@ void GameApplication::updateGameLogic() {
 				continue;
 			}
 		}
-	} // End of if (!isPaused_)
+	} // End of if (!engine_.getIsPaused())
 
 	// Load textures for entities (if needed)
 	loadEntityTextures();
@@ -2759,148 +2687,6 @@ void GameApplication::updateFloatingTexts(float deltaTime)
 	}
 }
 
-void GameApplication::updateCombatSystem(float dt)
-{
-	auto& entityManager = engine_.getEntityManager();
-
-	// Helper lambda for AABB collision check
-	auto checkAABBCollision = [](
-		const ECSComponents::TransformComponent& transA, const ECSComponents::CollisionComponent& collA,
-		const ECSComponents::TransformComponent& transB, const ECSComponents::CollisionComponent& collB) -> bool
-		{
-			// Only check rectangle colliders
-			if (collA.type != ECSComponents::ColliderType::RECTANGLE || collB.type != ECSComponents::ColliderType::RECTANGLE)
-				return false;
-
-			// Get positions with offsets
-			float aX = transA.pos.x + collA.offset.x;
-			float aY = transA.pos.y + collA.offset.y;
-			float bX = transB.pos.x + collB.offset.x;
-			float bY = transB.pos.y + collB.offset.y;
-
-			// Get half dimensions - NOW ACCOUNTING FOR TRANSFORM SCALE
-			float aHalfW = (collA.data.rectangle.width * transA.scale.x) * 0.5f;
-			float aHalfH = (collA.data.rectangle.height * transA.scale.y) * 0.5f;
-			float bHalfW = (collB.data.rectangle.width * transB.scale.x) * 0.5f;
-			float bHalfH = (collB.data.rectangle.height * transB.scale.y) * 0.5f;
-
-			// AABB collision test - use <= to include touching edges
-			return (std::abs(aX - bX) <= (aHalfW + bHalfW)) &&
-				   (std::abs(aY - bY) <= (aHalfH + bHalfH));
-	};
-
-	// Update invulnerability timers
-	auto entitiesWithHealth = entityManager.findEntity<ECSComponents::HealthComponent>();
-	for (auto& entity : entitiesWithHealth) {
-		auto& health = entity.get<ECSComponents::HealthComponent>(entityManager);
-		if (health.invulnerable && health.invulnerabilityTimer > 0.0f) {
-			health.invulnerabilityTimer -= dt;
-			if (health.invulnerabilityTimer <= 0.0f) {
-				health.invulnerable = false;
-			}
-		}
-	}
-
-	// FIREBALL vs ENEMY collision damage
-	auto enemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::CollisionComponent, ECSComponents::HealthComponent>();
-
-	// Track entities to destroy (avoid destroying while iterating)
-	std::set<uint32_t> enemiesToDestroy;
-
-	// Check if we're in Scene2 and all enemies will be dead after destruction -> return to main menu
-	auto& currentScene = engine_.getEnoEditor().getCurrentScene();
-	std::string sceneName = currentScene.getSceneName();
-	bool shouldReturnToMenu = false;
-
-	if (sceneName == "Scene2.txt" && !enemiesToDestroy.empty()) {
-		// Count total enemies (including those about to be destroyed)
-		auto allEnemies = entityManager.findEntity<ECSComponents::AIComponent, ECSComponents::HealthComponent>();
-		// If the number of enemies to destroy equals total enemies, all will be dead
-		if (enemiesToDestroy.size() >= allEnemies.size()) {
-			std::cout << "[Scene2] All enemies defeated! Returning to main menu..." << std::endl;
-			shouldReturnToMenu = true;
-		}
-	}
-
-	// If returning to menu, clear all entity IDs first to prevent crashes
-	if (shouldReturnToMenu) {
-		// Destroy pause menu and spellbook if they exist
-		destroyPauseMenu();
-		if (spellbookEntityID_ != 0) {
-			destroySpellbook();
-		}
-		showPlayer();  // Restore player visibility before scene change
-
-		// Clear all entity IDs to prevent crashes when trying to access them after scene change
-		resumeButtonEntityID_ = 0;
-		mainMenuButtonEntityID_ = 0;
-		pauseMenuEntityID_ = 0;
-		spellbookEntityID_ = 0;
-		controlsDisplayEntityID_ = 0;
-		quitConfirmEntityID_ = 0;
-		playerEntityID_ = 0;
-
-		// Reset game state flags
-		isPaused_ = false;
-		showSpellbook_ = false;
-		playerSpawned_ = false;
-		engine_.setIsPlaying(true);
-
-		// Change scene (this will destroy all entities including enemies)
-		engine_.getEnoEditor().selectScene("MainMenu.txt");
-		entitiesDirty_ = true;
-
-		// Recreate main menu buttons after scene load
-		setupMainMenuButtons();
-
-		return; // Exit early - don't try to destroy entities since scene change already did it
-	}
-
-	for (uint32_t id : enemiesToDestroy) {
-		entityManager.destroyEntity(id);
-		entitiesDirty_ = true;
-	}
-
-	// ENEMY vs PLAYER collision damage
-	if (playerSpawned_) {
-		ECS::Entity playerEntity(playerEntityID_);
-		if (playerEntity.has<ECSComponents::HealthComponent>(entityManager) &&
-			playerEntity.has<ECSComponents::CollisionComponent>(entityManager) &&
-			playerEntity.has<ECSComponents::TransformComponent>(entityManager)) {
-
-			auto& playerHealth = playerEntity.get<ECSComponents::HealthComponent>(entityManager);
-			auto& playerCollision = playerEntity.get<ECSComponents::CollisionComponent>(entityManager);
-			auto& playerTransform = playerEntity.get<ECSComponents::TransformComponent>(entityManager);
-
-			for (auto& enemy : enemies) {
-				// Skip enemies that are marked for destruction
-				if (enemiesToDestroy.count(enemy.id()) > 0) continue;
-				if (!enemy.has<ECSComponents::TransformComponent>(entityManager) ||
-					!enemy.has<ECSComponents::DamageComponent>(entityManager)) continue;
-
-				auto& enemyTransform = enemy.get<ECSComponents::TransformComponent>(entityManager);
-				auto& enemyCollision = enemy.get<ECSComponents::CollisionComponent>(entityManager);
-				auto& enemyDamage = enemy.get<ECSComponents::DamageComponent>(entityManager);
-
-				// Check AABB collision between enemy and player
-				if (checkAABBCollision(playerTransform, playerCollision, enemyTransform, enemyCollision)) {
-					// Deal damage to player
-					float damage = enemyDamage.getTotalDamage();
-					bool died = playerHealth.takeDamage(damage);
-
-
-					if (died) {
-					}
-
-					// Give player temporary invulnerability after being hit
-					playerHealth.invulnerable = true;
-					playerHealth.invulnerabilityTimer = 0.5f;
-				}
-			}
-		}
-	}
-}
-
 // ========== ENEMY AI SYSTEM ==========
 
 void GameApplication::updateEnemyAI(float dt)
@@ -3446,7 +3232,7 @@ void GameApplication::updateMainMenuButtons() {
 							playerEntityID_ = 0;
 
 							// Reset game state flags
-							isPaused_ = false;
+							engine_.setPaused(false);
 							showSpellbook_ = false;
 							playerSpawned_ = false;
 							engine_.setIsPlaying(true);
@@ -3968,7 +3754,7 @@ void GameApplication::setupPauseMenuButtons() {
 void GameApplication::handleResumeButton() {
 
 	// Close pause menu and resume game
-	isPaused_ = false;
+	engine_.setPaused(false);
 	destroyPauseMenu();
 	showPlayer();
 	engine_.setIsPlaying(true);
@@ -3996,7 +3782,7 @@ void GameApplication::handleMainMenuButton() {
 	playerEntityID_ = 0;
 
 	// Reset game state flags
-	isPaused_ = false;
+	engine_.setPaused(false);
 	showSpellbook_ = false;
 	playerSpawned_ = false;
 	engine_.setIsPlaying(true);
@@ -4108,95 +3894,6 @@ void GameApplication::setupWinScreenButtons() {
 
 void GameApplication::startDialogue()
 {
-	if (dialogueTexts_.empty()) {
-		std::cout << "[Dialogue] No dialogue texts configured – populate dialogueTexts_ first" << std::endl;
-		return;
-	}
-
-	auto& entityManager = engine_.getEntityManager();
-
-	dialogueActive_ = true;
-	dialogueIndex_  = 0;
-	isPaused_       = true;
-	engine_.setIsPlaying(false);
-
-	// Find dialogue box by name
-	auto dialogueBox = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("DialogueBox"));
-
-	// Show the dialogue box
-	if (!dialogueBox.empty())
-	{
-		for (auto& it : dialogueBox)
-		{
-			if (it.has<ECSComponents::VisibilityComponent>(entityManager))
-			{
-				it.get<ECSComponents::VisibilityComponent>(entityManager).visible = true;
-
-			}
-		}
-	}
-
-	// Start typewriter animation for first dialogue line
-	dialogueTargetText_  = dialogueTexts_[0];
-	dialogueCurrentText_.clear();
-	dialogueTypeTimer_   = 0.0f;
-	dialogueTyping_      = true;
-
-	// Clear body text entity to start fresh
-	auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
-	if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager))
-	{
-		bodyText[0].get<ECSComponents::TextComponent>(entityManager).text[0] = '\0';
-	}
-
-	std::cout << "[Dialogue] Started – showing text 0: " << dialogueTexts_[0] << std::endl;
-}
-
-void GameApplication::advanceDialogue()
-{
-	dialogueIndex_++;
-
-	if (dialogueIndex_ >= static_cast<int>(dialogueTexts_.size())) {
-		// All texts have been shown – end the dialogue
-		dialogueActive_ = false;
-		dialogueTyping_      = false;
-		isPaused_       = false;
-		engine_.setIsPlaying(true);
-
-		auto& entityManager = engine_.getEntityManager();
-
-		// Hide the dialogue box
-		auto dialogueBox = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("DialogueBox"));
-
-		// Show the dialogue box
-		if (!dialogueBox.empty())
-		{
-			for (auto& it : dialogueBox)
-			{
-				if (it.has<ECSComponents::VisibilityComponent>(entityManager))
-				{
-					it.get<ECSComponents::VisibilityComponent>(entityManager).visible = false;
-
-				}
-			}
-		}
-
-		std::cout << "[Dialogue] Ended" << std::endl;
-	}
-	else {
-		// Start typewriter animation for next dialogue line
-		dialogueTargetText_  = dialogueTexts_[dialogueIndex_];
-		dialogueCurrentText_.clear();
-		dialogueTypeTimer_   = 0.0f;
-		dialogueTyping_      = true;
-
-		// Clear body text entity
-		auto& entityManager = engine_.getEntityManager();
-		auto bodyText = entityManager.findEntity<ECSComponents::NameComponent>(ECSComponents::NameComponent("body text"));
-		if (!bodyText.empty() && bodyText[0].has<ECSComponents::TextComponent>(entityManager))
-		{
-			bodyText[0].get<ECSComponents::TextComponent>(entityManager).text[0] = '\0';
-		}
-		std::cout << "[Dialogue] Showing text " << dialogueIndex_ << ": " << dialogueTexts_[dialogueIndex_] << std::endl;
-	}
+	// Delegate to C# DialogueSystem
+	engine_.getCoreHost().runScriptMethod(L"Eno.DialogueSystem", L"StartDialogue");
 }

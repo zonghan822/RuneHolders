@@ -70,6 +70,33 @@ namespace Bridge {
 
         // ================= Audio ================= 
         ENGINE_API void __stdcall PlayInstantAudio(const wchar_t* groupName, const wchar_t* soundName);
+
+        // ============= Entity Queries =============
+        ENGINE_API uint32_t __stdcall FindEntityByName(const wchar_t* name);
+
+        // ============= Entity State =============
+        ENGINE_API bool __stdcall SetEntityVisible(uint32_t entityID, bool visible);
+        ENGINE_API bool __stdcall SetEntityScale(uint32_t entityID, float x, float y);
+        ENGINE_API bool __stdcall GetEntityScale(uint32_t entityID, float* outX, float* outY);
+
+        // ============= Game Pause =============
+        ENGINE_API void __stdcall PauseGame();
+        ENGINE_API void __stdcall ResumeGame();
+        ENGINE_API bool __stdcall IsGamePaused();
+
+        // ============= Text =============
+        ENGINE_API bool __stdcall SetEntityText(uint32_t entityID, const wchar_t* text);
+
+        // ============= Assets =============
+        ENGINE_API const wchar_t* __stdcall GetAssetsDir();
+
+        // ============= Combat =============
+        ENGINE_API float __stdcall GetEntityHealth(uint32_t entityID);
+        ENGINE_API bool  __stdcall SetEntityHealth(uint32_t entityID, float hp);
+        ENGINE_API bool  __stdcall AddEntityDamage(uint32_t entityID, float damage);
+
+        // ============= Mouse =============
+        ENGINE_API bool __stdcall GetMouseWorldPosition(float* outX, float* outY);
     }
 }
 

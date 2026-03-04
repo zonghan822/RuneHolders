@@ -26,8 +26,14 @@ public static class HotReloadCompiler
 
         // Retrieve parsed representation of a .cs file, 
         // in the form of a Roslyn syntax tree
-        var newST = scripts.Select(file => 
-            CSharpSyntaxTree.ParseText(File.ReadAllText(file))).ToList();
+        var newST = scripts.Select(file =>
+        {
+            using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var sr = new StreamReader(fs))
+            {
+                return CSharpSyntaxTree.ParseText(sr.ReadToEnd());
+            }
+        }).ToList();
 
         // Get all assembles loaded in app domain
         // Filter out assemblies that are dynamic or have no physical file

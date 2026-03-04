@@ -99,5 +99,51 @@ namespace Eno
         // Audio
         [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern void PlayInstantAudio(string groupName, string soundName);
+
+        // Entity Queries
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
+        public static extern uint FindEntityByName(string name);
+
+        // Entity State
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool SetEntityVisible(uint entityID, bool visible);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool SetEntityScale(uint entityID, float x, float y);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool GetEntityScale(uint entityID, out float outX, out float outY);
+
+        // Game Pause
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void PauseGame();
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void ResumeGame();
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool IsGamePaused();
+
+        // Text
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
+        public static extern bool SetEntityText(uint entityID, string text);
+
+        // Assets
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
+        public static extern IntPtr GetAssetsDir();
+
+        // Combat
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern float GetEntityHealth(uint entityID);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool SetEntityHealth(uint entityID, float hp);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool AddEntityDamage(uint entityID, float damage);
+
+        // Mouse
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool GetMouseWorldPosition(out float outX, out float outY);
     }
 }

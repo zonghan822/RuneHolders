@@ -43,9 +43,6 @@ namespace Core
 		std::filesystem::path asmDllPath;
 		std::filesystem::path runtConfigJson;
 
-		//const wchar_t* userScriptPath{ SCRIPT_SRC_PATH };
-		//const wchar_t* asmDllAbsPath{ L"C:/Users/Lee Zhe An/source/repos/EnoEngine/scripting/GameScripts/Publish/GameScripts.dll" };
-
 		bool hasBegun_ = false;
 	public:
 
@@ -238,7 +235,7 @@ namespace Core
 		void defineSMD();
 
 
-		void areScriptsModified();
+		bool areScriptsModified();
 
 		void runScriptMethod(const std::wstring& className, const wchar_t* method);
 

@@ -79,7 +79,6 @@ private:
     std::shared_ptr<Graphics::EnoTexture> runeLineTexture_;     // Line connection texture        
 
     // Pause Menu and Spellbook System
-    bool isPaused_ = false;
     bool showSpellbook_ = false;
     uint32_t pauseMenuEntityID_ = 0;
     uint32_t spellbookEntityID_ = 0;
@@ -89,15 +88,9 @@ private:
     uint32_t quitGameButtonEntityID_ = 0;
     Math::eVec2<float> savedPlayerScale_ = { 2.0f, 2.0f };  // Save player scale when hiding (default to common scale)
 
-    // Dialogue System
-    bool dialogueActive_ = false;
-    int dialogueIndex_ = -1;
-    std::vector<std::string> dialogueTexts_;  // Series of texts to display (populate before use)
-    std::string dialogueTargetText_;                    // Full text to type out
-    std::string dialogueCurrentText_;                   // Text revealed so far
-    float       dialogueTypeTimer_  = 0.0f;             // Accumulator for typing timing
-    static constexpr float DIALOGUE_TYPE_SPEED = 0.03f; // Seconds per character
-    bool        dialogueTyping_     = false;            // True while typewriter is animating
+    // Logic System entity IDs (C# driven systems)
+    uint32_t dialogueSystemEntityID_ = 0;
+    uint32_t combatSystemEntityID_   = 0;
 
 public:
     // Constructors
@@ -136,7 +129,6 @@ private:
     void setupFont();           // setup font
     void setupCamera();         // setup camera system
     void setupSpellbookIcon();  // setup persistent spellbook icon UI
-    void setupCombatSystem();   // Add health/damage to player and enemies
     void playSceneBGM();        // Play appropriate BGM based on current scene
 
     // Update methods (called every frame)
@@ -165,8 +157,6 @@ private:
     void spawnRuptureMark(const Math::eVec2<float>& pos, ECSComponents::SpellType spellType);  // Spawn rupture mark spell
     void updateRuptureMarks(float deltaTime);                       // Update rupture mark state machines
 
-    // Combat system methods
-    void updateCombatSystem(float deltaTime);       // Handle damage dealing and health updates
 
     // AI system methods
     void updateEnemyAI(float deltaTime);            // Update enemy AI movement and pathfinding
@@ -179,9 +169,9 @@ private:
     void hidePlayer();                              // Hide player by setting scale to 0
     void showPlayer();                              // Show player by restoring scale
 
-    // Dialogue System
-    void startDialogue();                           // Called on E inside Collectible-Scroll trigger – shows box, pauses game
-    void advanceDialogue();                         // Called on subsequent E presses – advances text or ends dialogue
+
+    // Dialogue trigger (delegates to C# DialogueSystem)
+    void startDialogue();
 
     // Main Menu Button System
     void setupMainMenuButtons();                    // Setup invisible buttons for main menu
