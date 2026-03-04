@@ -52,7 +52,8 @@ namespace Eno
 
             if (dist < triggerRadius)
             {
-                Bridge.PlayInstantAudio("SFX", "SpellCast_01");
+                // Play whatever audio is attached to this door entity in the editor
+                Bridge.PlayEntityAudio(this.ID);
                 isTransitioning = true;
                 hasTriggered = true;
                 Console.WriteLine("[Door] Player entered door - starting camera pan");

@@ -65,8 +65,10 @@ namespace Bridge {
         ENGINE_API bool __stdcall GetCameraPosition(float* outX, float* outY);
         ENGINE_API bool __stdcall SetCameraPosition(float x, float y);
 
-        // ================= Audio ================= 
+        // ================= Audio =================
         ENGINE_API void __stdcall PlayInstantAudio(const wchar_t* groupName, const wchar_t* soundName);
+        ENGINE_API bool __stdcall PlayEntityAudio(uint32_t entityID);
+        ENGINE_API bool __stdcall StopEntityAudio(uint32_t entityID);
 
         // ============= Entity Queries =============
         ENGINE_API uint32_t __stdcall FindEntityByName(const wchar_t* name);

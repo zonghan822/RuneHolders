@@ -1,5 +1,67 @@
 {
 
+	[Dialogue1]
+	{
+		"ID": { 6 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Dialogue1 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 2016.56 | y : 4458.31 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 718.9 }
+				"Height": <float> { 889.2 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Dialogue1 }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::CameraComponent]
+			{
+				"Viewport Width": <float> { 1920 }
+				"Viewport Height": <float> { 1080 }
+				"Position": <eVec2(float)> { x : 2016.56 | y : 4458.31 }
+				"Is Active": <bool> { 1 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
 	[Node70]
 	{
 		"ID": { 70 }
@@ -94,26 +156,26 @@
 		"Enabled": { true }
 	}
 
-	[Dialogue1]
+	[UI-PopUp-E]
 	{
-		"ID": { 6 }
+		"ID": { 7 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
 			[struct ECSComponents::NameComponent]
 			{
-				"Name": <char32> { Dialogue1 }
+				"Name": <char32> { UI-PopUp-E }
 			}
 
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 2016.56 | y : 4458.31 }
+				"Position": <eVec2(float)> { x : 2131.3 | y : 4249.56 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -121,12 +183,23 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 718.9 }
-				"Height": <float> { 889.2 }
+				"Width": <float> { 48 }
+				"Height": <float> { 48 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Dialogue1 }
+				"Texture Path": <texchar240> { UI-PopUp-E }
 				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 1 }
+				"Is Active": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 185 }
+				"Height": <float> { 185 }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
@@ -139,14 +212,6 @@
 				"Looping": <bool> { 1 }
 				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::CameraComponent]
-			{
-				"Viewport Width": <float> { 1920 }
-				"Viewport Height": <float> { 1080 }
-				"Position": <eVec2(float)> { x : 2016.56 | y : 4458.31 }
-				"Is Active": <bool> { 1 }
 			}
 		}
 		"Script": { }
@@ -213,6 +278,8 @@
 				"Dash Cooldown Timer": <float> { 0 }
 				"Dash Direction": <eVec2(float)> { x : 0 | y : 0 }
 				"Dash Start Position": <eVec2(float)> { x : 0 | y : 0 }
+				"Push Force": <float> { 1500 }
+				"Default Dash Direction": <eVec2(float)> { x : 0 | y : 1 }
 			}
 
 			[struct ECSComponents::CollisionComponent]
@@ -248,125 +315,6 @@
 				"isDead": <bool> { 0 }
 				"invulnerable": <bool> { 0 }
 				"invulnerabilityTimer": <float> { 0 }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-	}
-
-	[UI-PopUp-E]
-	{
-		"ID": { 7 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { UI-PopUp-E }
-			}
-
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 4 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 2131.3 | y : 4249.56 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 48 }
-				"Height": <float> { 48 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { UI-PopUp-E }
-				"TexID": <int> { 0 }
-			}
-
-			[struct ECSComponents::CollisionComponent]
-			{
-				"Type": <ColliderType> { Rectangle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
-				"Is Active": <bool> { 1 }
-				"Rotation": <float> { 0 }
-				"Width": <float> { 185 }
-				"Height": <float> { 185 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-	}
-
-	[Combat1]
-	{
-		"ID": { 8 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { Combat1 }
-			}
-
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 2016.56 | y : 3328.76 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 1748.5 }
-				"Height": <float> { 804.05 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Combat1 }
-				"TexID": <int> { 0 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
 			}
 		}
 		"Script": { }
@@ -544,7 +492,7 @@
 				"State[0].onExit": <char64> { idle_exit }
 				"State[1].name": <char32> { death }
 				"State[1].onEnter": <char64> { death_enter }
-				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onUpdate": <char64> {  }
 				"State[1].onExit": <char64> { death_exit }
 				"State[2].name": <char32> { attack }
 				"State[2].onEnter": <char64> { attack_enter }
@@ -565,6 +513,60 @@
 			}
 		}
 		"Script": { TrailBlight_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+	}
+
+	[Combat1]
+	{
+		"ID": { 8 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::NameComponent]
+			{
+				"Name": <char32> { Combat1 }
+			}
+
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 2016.56 | y : 3328.76 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1748.5 }
+				"Height": <float> { 804.05 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Combat1 }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -604,6 +606,17 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { blackbackground }
 				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 0 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 1221.06 }
+				"Height": <float> { 990.842 }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
@@ -3905,6 +3918,28 @@
 				"pushResistance": <float> { 0.2 }
 			}
 
+			[struct ECSComponents::AudioComponent]
+			{
+				"Sound Name": <char32> { Spellbook_Close_01 }
+				"Sound Path": <char256> {  }
+				"Channel Group": <char32> { SFX }
+				"Loop Start": <float> { 0 }
+				"Loop End": <float> { 0 }
+				"Volume": <double> { 100 }
+				"Pitch Scale": <double> { 1 }
+				"Pan Scale": <double> { 0 }
+				"Is Playing": <bool> { 0 }
+				"Is Autoplay": <bool> { 0 }
+				"Enable Reverb": <bool> { 0 }
+				"Reverb Wet": <float> { 0 }
+				"Reverb Dry": <float> { 1 }
+				"Reverb Decay": <float> { 1500 }
+				"Enable EQ": <bool> { 0 }
+				"EQ Low Gain": <float> { 0 }
+				"EQ Mid Gain": <float> { 0 }
+				"EQ High Gain": <float> { 0 }
+			}
+
 			[struct ECSComponents::AnimationControllerComponent]
 			{
 				"Frame Width": <int> { 128 }
@@ -4422,7 +4457,7 @@
 				"State[0].onExit": <char64> { idle_exit }
 				"State[1].name": <char32> { death }
 				"State[1].onEnter": <char64> { death_enter }
-				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onUpdate": <char64> {  }
 				"State[1].onExit": <char64> { death_exit }
 				"State[2].name": <char32> { attack }
 				"State[2].onEnter": <char64> { attack_enter }
@@ -4617,7 +4652,7 @@
 				"State[0].onExit": <char64> { idle_exit }
 				"State[1].name": <char32> { death }
 				"State[1].onEnter": <char64> { death_enter }
-				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onUpdate": <char64> {  }
 				"State[1].onExit": <char64> { death_exit }
 				"State[2].name": <char32> { attack }
 				"State[2].onEnter": <char64> { attack_enter }
@@ -4812,7 +4847,7 @@
 				"State[0].onExit": <char64> { idle_exit }
 				"State[1].name": <char32> { death }
 				"State[1].onEnter": <char64> { death_enter }
-				"State[1].onUpdate": <char64> { death_update }
+				"State[1].onUpdate": <char64> {  }
 				"State[1].onExit": <char64> { death_exit }
 				"State[2].name": <char32> { attack }
 				"State[2].onEnter": <char64> { attack_enter }
