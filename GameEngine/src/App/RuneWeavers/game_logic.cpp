@@ -351,6 +351,9 @@ void GameApplication::playSceneBGM()
 	// Prepare and play the audio
 	try
 	{
+		// Publish RequestSound so the loader bridges this sound into
+		// the audio manager's map before prepareMod looks it up.
+		engine_.getEventBus().publish(Audio::RequestSound{ audioComp.audioMod_.name_ });
 		audioMng.prepareMod(audioComp);
 		audioMng.play(audioComp);
 	}
@@ -860,6 +863,16 @@ void GameApplication::updateGameLogic() {
 			if (in && node->enabled_)
 			{
 				auto& audioComp = node->entity_.get<ECSComponents::AudioComponent>(entityManager);
+
+				// Bridge sound from loader -> audio manager before playing.
+				// prepareMod (called inside play) looks in the audio manager's own
+				// sounds map, which is only populated via RequestSound events.
+				// Without this, any sound not in setupGameAudio's hardcoded list
+				// will silently fail to play on the second run.
+				if (audioComp.audioMod_.name_[0] != '\0')
+				{
+					engine_.getEventBus().publish(Audio::RequestSound{ audioComp.audioMod_.name_ });
+				}
 
 				// Auto-start audio if autoplay is enabled
 				if (audioComp.isAutoplay_)

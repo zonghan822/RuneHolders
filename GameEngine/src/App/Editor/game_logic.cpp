@@ -327,6 +327,8 @@ void GameApplication::playSceneBGM()
 		auto camEnt = entityManager.findEntity<ECSComponents::CameraComponent>();
 		auto camPos = camEnt[0].get<ECSComponents::CameraComponent>(entityManager).position;
 
+		// Bridge sound from loader -> audio manager before prepareMod looks it up
+		engine_.getEventBus().publish(Audio::RequestSound{ audioComp.audioMod_.name_ });
 		// Prepare audio modifiers and play
 		audioMng.prepareMod(audioComp);
 		if (!camEnt.empty())
@@ -725,9 +727,13 @@ void GameApplication::updateGameLogic() {
 				auto& audioComp = node->entity_.get<ECSComponents::AudioComponent>(entityManager);
 
 				// Prepare the audio module (load sound pointer if needed)
-				// This is necessary after deserializing from a saved scene
+				// This is necessary after deserializing from a saved scene.
+				// We publish RequestSound first so the loader bridges the sound
+				// into the audio manager's map — otherwise prepareMod finds nothing
+				// on the second run (audio manager map is empty until requested).
 				if (audioComp.audioMod_.name_[0] != '\0')
 				{
+					engine_.getEventBus().publish(Audio::RequestSound{ audioComp.audioMod_.name_ });
 					engine_.getAudioManager().prepareMod(audioComp);
 				}
 

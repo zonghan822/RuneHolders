@@ -9,6 +9,7 @@
 *				which includes the init, update and terminate functions.
 *     			There are also functions for spawning and counting entities.
 *//*========================================================================================*/
+#include <algorithm>
 #include <filesystem>
 #include <random>
 #include <unordered_map>
@@ -126,8 +127,19 @@ static bool g_resetEntityCounter = false;  // Flag to reset entity counter when 
 // Scene deletion error tracking
 static bool g_cannotDeleteActiveScene = false;
 
-// Audio filesystems
-static std::vector<std::string> audioAssets;
+// Audio browser tree
+struct AudioEntry {
+	std::string displayName;         // filename with extension, e.g. "laser.wav"
+	std::string stemName;            // filename without extension, used for FMOD lookup
+	std::filesystem::path buildPath; // path in the build/runtime assets folder
+	std::filesystem::path rootPath;  // path in the source assets folder (for deletion)
+};
+struct AudioFolder {
+	std::string folderName;
+	std::vector<AudioFolder> subfolders;
+	std::vector<AudioEntry> files;
+};
+static AudioFolder g_audioTree;
 
 // Audio error tracking - using a queue to store all errors
 struct AudioErrorInfo {
@@ -1746,42 +1758,69 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 }
 
-void LoadAudioAssets(Engine::EnoEngine& engine_)
+// Recursively scans a directory and populates an AudioFolder tree.
+// buildBase / rootBase are the top-level paths so we can derive the matching root path for each file.
+static void BuildAudioTree(AudioFolder& folder,
+	const std::filesystem::path& buildBase,
+	const std::filesystem::path& rootBase,
+	const std::filesystem::path& currentPath)
 {
-	audioAssets.clear();
+	if (!std::filesystem::exists(currentPath)) return;
 
-	// Get the list of ACTUALLY loaded sounds from the loader
-	// This ensures we only show files that were successfully loaded by FMOD
-	const auto& loadedSounds = engine_.getResourceLoader().getSounds();
-
-	// Add only the successfully loaded sound names to our UI list
-	for (const auto& soundPair : loadedSounds)
+	for (const auto& entry : std::filesystem::directory_iterator(currentPath))
 	{
-		// soundPair.first is the sound name (filename without extension)
-		// We need to find the actual filename with extension
-		std::vector<std::string> folders = {
-			engine_.getResourceLoader().getMusicPath().c_str(),
-			engine_.getResourceLoader().getSFXPath().c_str(),
-		};
-
-		for (const auto& folder : folders)
+		if (entry.is_directory())
 		{
-			if (!std::filesystem::exists(folder))
-				continue;
-
-			for (const auto& entry : std::filesystem::directory_iterator(folder))
+			AudioFolder sub;
+			sub.folderName = entry.path().filename().string();
+			BuildAudioTree(sub, buildBase, rootBase, entry.path());
+			if (!sub.subfolders.empty() || !sub.files.empty())
+				folder.subfolders.push_back(std::move(sub));
+		}
+		else if (entry.is_regular_file())
+		{
+			auto ext = entry.path().extension().string();
+			if (ext == ".wav" || ext == ".mp3")
 			{
-				if (!entry.is_regular_file()) continue;
-
-				// Check if this file's stem (name without extension) matches the loaded sound
-				if (entry.path().stem().string() == soundPair.first)
-				{
-					audioAssets.push_back(entry.path().filename().string());
-					break; // Found it, move to next sound
-				}
+				AudioEntry e;
+				e.displayName = entry.path().filename().string();
+				e.stemName    = entry.path().stem().string();
+				e.buildPath   = entry.path();
+				// mirror the relative path onto the root (source) folder
+				auto rel  = std::filesystem::relative(entry.path(), buildBase);
+				e.rootPath = rootBase / rel;
+				folder.files.push_back(std::move(e));
 			}
 		}
 	}
+
+	std::sort(folder.subfolders.begin(), folder.subfolders.end(),
+		[](const AudioFolder& a, const AudioFolder& b) { return a.folderName < b.folderName; });
+	std::sort(folder.files.begin(), folder.files.end(),
+		[](const AudioEntry& a, const AudioEntry& b) { return a.displayName < b.displayName; });
+}
+
+void LoadAudioAssets(Engine::EnoEngine& engine_)
+{
+	Resources::EnoLoader& loader = engine_.getResourceLoader();
+	g_audioTree = AudioFolder{};
+	g_audioTree.folderName = "sound";
+
+	AudioFolder musicFolder;
+	musicFolder.folderName = "music";
+	BuildAudioTree(musicFolder,
+		loader.getMusicPath(), loader.getRootMusicPath(),
+		loader.getMusicPath());
+	if (!musicFolder.subfolders.empty() || !musicFolder.files.empty())
+		g_audioTree.subfolders.push_back(std::move(musicFolder));
+
+	AudioFolder sfxFolder;
+	sfxFolder.folderName = "sfx";
+	BuildAudioTree(sfxFolder,
+		loader.getSFXPath(), loader.getRootSFXPath(),
+		loader.getSFXPath());
+	if (!sfxFolder.subfolders.empty() || !sfxFolder.files.empty())
+		g_audioTree.subfolders.push_back(std::move(sfxFolder));
 }
 
 void displayAudioTab(Engine::EnoEngine& engine_)
@@ -1922,7 +1961,6 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 		}
 	}
 
-	static int selectedAsset = -1;
 	static std::string selectedName{};
 	static FMOD::Sound* selectedSound = nullptr;
 
@@ -1931,101 +1969,93 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	static std::filesystem::path selectedFullRootPath{};
 	static std::string selectedFilenameWithExt{};
 
-	// ============== FILE LIST ==============
-	ImGui::BeginChild("AudioAssetList", ImVec2(0, 150), true);
-
-	if (audioAssets.empty())
+	// ============== FILE TREE ==============
+	// Build entity->audio attachment map for indicators
+	auto& entMgr = engine_.getEntityManager();
+	std::vector<ECS::Entity> audioEntities = entMgr.findEntity<ECSComponents::AudioComponent>();
+	std::unordered_map<std::string, std::string> attachedAudioMap; // stemName -> entityName
+	for (ECS::Entity& ae : audioEntities)
 	{
-		ImGui::TextDisabled("(No audio loaded. Press button above)");
+		auto& ac = ae.get<ECSComponents::AudioComponent>(entMgr);
+		if (strlen(ac.audioMod_.name_) > 0)
+		{
+			std::string entityLabel;
+			if (ae.has<ECSComponents::NameComponent>(entMgr))
+				entityLabel = ae.get<ECSComponents::NameComponent>(entMgr).name;
+			else
+				entityLabel = std::to_string(ae.id());
+			attachedAudioMap[ac.audioMod_.name_] = entityLabel;
+		}
+	}
+
+	ImGui::BeginChild("AudioAssetTree", ImVec2(0, 200), true);
+
+	bool treeIsEmpty = g_audioTree.subfolders.empty() && g_audioTree.files.empty();
+	if (treeIsEmpty)
+	{
+		ImGui::TextDisabled("(No audio loaded. Press \"Load Audio Files\" above)");
 	}
 	else
 	{
-		// Build a set of audio names that are attached to entities for indicators
-		auto& entMgr = engine_.getEntityManager();
-		std::vector<ECS::Entity> audioEntities = entMgr.findEntity<ECSComponents::AudioComponent>();
-		std::unordered_map<std::string, std::string> attachedAudioMap; // audioName -> entityName
-		for (ECS::Entity& ae : audioEntities)
+		// Recursive lambda to render each folder node
+		std::function<void(const AudioFolder&)> renderFolder = [&](const AudioFolder& folder)
 		{
-			auto& ac = ae.get<ECSComponents::AudioComponent>(entMgr);
-			if (strlen(ac.audioMod_.name_) > 0)
+			for (const AudioFolder& sub : folder.subfolders)
 			{
-				std::string entityLabel;
-				if (ae.has<ECSComponents::NameComponent>(entMgr))
-					entityLabel = ae.get<ECSComponents::NameComponent>(entMgr).name;
-				else
-					entityLabel = std::to_string(ae.id());
-				attachedAudioMap[ac.audioMod_.name_] = entityLabel;
-			}
-		}
-
-		for (int i = 0; i < audioAssets.size(); ++i)
-		{
-			// Build display label with attachment indicator
-			std::string assetNameNoExt = audioAssets[i];
-			assetNameNoExt = assetNameNoExt.substr(0, assetNameNoExt.find_last_of('.'));
-
-			std::string displayLabel = audioAssets[i];
-			auto attachIt = attachedAudioMap.find(assetNameNoExt);
-			if (attachIt != attachedAudioMap.end())
-				displayLabel += "  -> [" + attachIt->second + "]";
-
-			if (ImGui::Selectable(displayLabel.c_str(), selectedAsset == i))
-			{
-				selectedAsset = i;
-
-				selectedName = audioAssets[i];
-				selectedName = selectedName.substr(0, selectedName.find_last_of('.'));
-				
-
-				// YunQi M4 addition for deletion of audio files
-				selectedFilenameWithExt = audioAssets[i]; // this has extension, e.g. "laser.wav" operator/ does an append for path and extension
-
-				std::cout << "[Audio Selection] File: " << selectedFilenameWithExt << "\n";
-				std::cout << "[Audio Selection] Build Music Path: " << loader.getMusicPath() << "\n";
-				std::cout << "[Audio Selection] Build SFX Path: " << loader.getSFXPath() << "\n";
-				std::cout << "[Audio Selection] Root Music Path: " << loader.getRootMusicPath() << "\n";
-				std::cout << "[Audio Selection] Root SFX Path: " << loader.getRootSFXPath() << "\n";
-
-				std::filesystem::path musicPath					 =  std::filesystem::path(loader.getMusicPath()) / selectedFilenameWithExt;
-				std::filesystem::path sfxPath					 =  std::filesystem::path(loader.getSFXPath()) / selectedFilenameWithExt;
-				std::filesystem::path rootMusicPath				 =  std::filesystem::path(loader.getRootMusicPath()) / selectedFilenameWithExt;
-				std::filesystem::path rootSfxPath				 =  std::filesystem::path(loader.getRootSFXPath()) / selectedFilenameWithExt;
-
-				std::cout << "[Audio Selection] Checking build music: " << musicPath << " (exists: " << std::filesystem::exists(musicPath) << ")\n";
-				std::cout << "[Audio Selection] Checking build sfx: " << sfxPath << " (exists: " << std::filesystem::exists(sfxPath) << ")\n";
-				std::cout << "[Audio Selection] Checking root music: " << rootMusicPath << " (exists: " << std::filesystem::exists(rootMusicPath) << ")\n";
-				std::cout << "[Audio Selection] Checking root sfx: " << rootSfxPath << " (exists: " << std::filesystem::exists(rootSfxPath) << ")\n";
-
-				if (std::filesystem::exists(musicPath))			    selectedFullPath = musicPath;
-				else if (std::filesystem::exists(sfxPath))		    selectedFullPath = sfxPath;
-				else											    selectedFullPath.clear();
-				if (std::filesystem::exists(rootMusicPath))         selectedFullRootPath = rootMusicPath;
-				else if (std::filesystem::exists(rootSfxPath))		selectedFullRootPath = rootSfxPath;
-				else												selectedFullRootPath.clear();
-
-				std::cout << "[Audio Selection] Selected BUILD path: " << (selectedFullPath.empty() ? "(empty)" : selectedFullPath.string()) << "\n";
-				std::cout << "[Audio Selection] Selected ROOT path: " << (selectedFullRootPath.empty() ? "(empty)" : selectedFullRootPath.string()) << "\n";
-
-				std::cout << "[Audio] User selected: " << selectedName << "\n";
-
-				// Request engine to load this sound
-				bus.publish(Audio::RequestSound{ selectedName });
-
-				auto& sounds = loader.getSounds();
-				auto it = sounds.find(selectedName);
-
-				if (it != sounds.end())
+				ImGuiTreeNodeFlags folderFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+				if (ImGui::TreeNodeEx(sub.folderName.c_str(), folderFlags))
 				{
-					selectedSound = it->second;
-					std::cout << "[Audio] Loaded Sound: " << selectedName << "\n";
-				}
-				else
-				{
-					selectedSound = nullptr;
-					std::cout << "[Audio] ERROR: Sound not found after request.\n";
+					renderFolder(sub);
+					ImGui::TreePop();
 				}
 			}
-		}
+
+			for (const AudioEntry& entry : folder.files)
+			{
+				bool isSelected = (selectedFullPath == entry.buildPath);
+
+				std::string label = entry.displayName;
+				auto attachIt = attachedAudioMap.find(entry.stemName);
+				if (attachIt != attachedAudioMap.end())
+					label += "  -> [" + attachIt->second + "]";
+
+				// Grey out files not yet loaded into FMOD
+				bool isLoaded = loader.getSounds().count(entry.stemName) > 0;
+				if (!isLoaded)
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+
+				ImGuiSelectableFlags selFlags = ImGuiSelectableFlags_SpanAllColumns;
+				if (ImGui::Selectable(label.c_str(), isSelected, selFlags))
+				{
+					selectedName            = entry.stemName;
+					selectedFilenameWithExt = entry.displayName;
+					selectedFullPath        = entry.buildPath;
+					selectedFullRootPath    = entry.rootPath;
+
+					std::cout << "[Audio] User selected: " << selectedName << "\n";
+
+					bus.publish(Audio::RequestSound{ selectedName });
+
+					const auto& sounds = loader.getSounds();
+					auto it = sounds.find(selectedName);
+					if (it != sounds.end())
+					{
+						selectedSound = it->second;
+						std::cout << "[Audio] Loaded Sound: " << selectedName << "\n";
+					}
+					else
+					{
+						selectedSound = nullptr;
+						std::cout << "[Audio] Sound not in FMOD yet (not loaded): " << selectedName << "\n";
+					}
+				}
+
+				if (!isLoaded)
+					ImGui::PopStyleColor();
+			}
+		};
+
+		renderFolder(g_audioTree);
 	}
 
 	ImGui::EndChild();
@@ -2307,7 +2337,6 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 				LoadAudioAssets(engine_);
 
 				// Clear selection so UI doesn’t reference deleted item
-				selectedAsset = -1;
 				selectedName.clear();
 				selectedFilenameWithExt.clear();
 				selectedFullPath.clear();
