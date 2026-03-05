@@ -270,6 +270,18 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		std::cout << "[ImGui Audio] Subscribed to audio error events" << std::endl;
 	}
 
+	// Main menu bar
+	if (ImGui::BeginMainMenuBar()) {
+		if (ImGui::BeginMenu("File")) {
+			if (ImGui::MenuItem("Change Project...")) {
+				if (g_game) g_game->openProjectPicker();
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::Text("| %s", FileSystem::GetAssetsDir().filename().string().c_str());
+		ImGui::EndMainMenuBar();
+	}
+
 	// BEGIN DOCKSPACE
 	imGuiBeginDockspace();
 
