@@ -139,6 +139,215 @@ static std::vector<AudioErrorInfo> g_audioErrorQueue;
 
 #pragma endregion
 
+// ============================================================
+// Project Picker — file-scope state and helpers
+// ============================================================
+
+static bool                  s_showProjectPicker  = true;
+static std::vector<std::string> s_availableProjects;
+static int                   s_selectedProjectIdx = 0;
+static char                  s_newProjectNameBuf[128] = {};
+static bool                  s_creatingNewProject = false;
+
+static void scanAvailableProjects() {
+	s_availableProjects.clear();
+	std::filesystem::path assetsRoot = FileSystem::GetRootDir() / "assets";
+	if (!std::filesystem::exists(assetsRoot)) return;
+	for (auto& entry : std::filesystem::directory_iterator(assetsRoot)) {
+		if (entry.is_directory())
+			s_availableProjects.push_back(entry.path().filename().string());
+	}
+	std::sort(s_availableProjects.begin(), s_availableProjects.end());
+}
+
+static void applyProjectSelection(Engine::EnoEngine& engine_, const std::string& projectName) {
+	if (projectName == ENO_APP_NAME) {
+		std::cout << "[ProjectPicker] Keeping current project: " << projectName << std::endl;
+		return;
+	}
+	std::cout << "[ProjectPicker] Switching to project: " << projectName << std::endl;
+
+	// Ensure scripts directories exist before switching
+	std::filesystem::path scriptsBase = FileSystem::GetRootDir() / "scripts" / projectName;
+	std::filesystem::create_directories(scriptsBase / "user_scripts");
+	{
+		std::filesystem::path src = FileSystem::GetRootDir() / "scripts" / "RuneWeavers" / "GameScripts.csproj";
+		std::filesystem::path dst = scriptsBase / "GameScripts.csproj";
+		if (std::filesystem::exists(src) && !std::filesystem::exists(dst))
+			std::filesystem::copy_file(src, dst);
+	}
+
+	FileSystem::Initialize(projectName);
+	engine_.getResourceLoader().reloadPaths();
+	engine_.getEnoEditor().reloadProject();
+
+	if (g_game) g_game->markEntitiesDirty();
+	std::cout << "[ProjectPicker] Switched to: " << FileSystem::GetAssetsDir() << std::endl;
+}
+
+static void createNewProject(Engine::EnoEngine& engine_, const std::string& name) {
+	namespace fs = std::filesystem;
+	fs::path projectRoot = FileSystem::GetRootDir() / "assets" / name;
+	fs::path editorRoot  = FileSystem::GetRootDir() / "assets" / "Editor";
+
+	auto copyTemplate = [&](const fs::path& relPath) {
+		fs::path src = editorRoot / relPath;
+		fs::path dst = projectRoot / relPath;
+		if (fs::exists(src) && !fs::exists(dst))
+			fs::copy_file(src, dst);
+	};
+
+	auto copyDir = [&](const fs::path& relDir) {
+		fs::path src = editorRoot / relDir;
+		fs::path dst = projectRoot / relDir;
+		fs::create_directories(dst);
+		if (!fs::exists(src)) return;
+		for (auto& entry : fs::directory_iterator(src)) {
+			if (entry.is_regular_file())
+				fs::copy_file(entry.path(), dst / entry.path().filename(),
+					fs::copy_options::skip_existing);
+		}
+	};
+
+	fs::create_directories(projectRoot / "saves" / "scenes");
+	fs::create_directories(projectRoot / "saves" / "prefabs");
+	fs::create_directories(projectRoot / "saves" / "player");
+	fs::create_directories(projectRoot / "settings");
+	fs::create_directories(projectRoot / "shaders");
+	fs::create_directories(projectRoot / "crashlogs");
+	fs::create_directories(projectRoot / "fonts");
+	fs::create_directories(projectRoot / "art");
+	fs::create_directories(projectRoot / "sound" / "music");
+	fs::create_directories(projectRoot / "sound" / "sfx");
+
+	fs::path scriptsRoot = FileSystem::GetRootDir() / "scripts" / name;
+	fs::create_directories(scriptsRoot / "user_scripts");
+	{
+		fs::path srcCsproj = FileSystem::GetRootDir() / "scripts" / "RuneWeavers" / "GameScripts.csproj";
+		fs::path dstCsproj = scriptsRoot / "GameScripts.csproj";
+		if (fs::exists(srcCsproj) && !fs::exists(dstCsproj))
+			fs::copy_file(srcCsproj, dstCsproj);
+	}
+
+	copyDir("shaders");
+	copyTemplate(fs::path("settings") / "config.txt");
+	copyTemplate(fs::path("saves") / "player" / "player_config.txt");
+	copyDir(fs::path("saves") / "prefabs");
+
+	{
+		fs::path logFile = projectRoot / "crashlogs" / "crash_log.txt";
+		if (!fs::exists(logFile)) std::ofstream{ logFile };
+	}
+
+	scanAvailableProjects();
+	auto it = std::find(s_availableProjects.begin(), s_availableProjects.end(), name);
+	if (it != s_availableProjects.end())
+		s_selectedProjectIdx = static_cast<int>(std::distance(s_availableProjects.begin(), it));
+
+	std::cout << "[ProjectPicker] Created new project: " << name << std::endl;
+}
+
+bool isProjectPickerOpen() { return s_showProjectPicker; }
+
+void setProjectPickerOpen(bool open) {
+	s_showProjectPicker = open;
+	if (open) {
+		scanAvailableProjects();
+		auto it = std::find(s_availableProjects.begin(), s_availableProjects.end(), std::string(ENO_APP_NAME));
+		if (it != s_availableProjects.end())
+			s_selectedProjectIdx = static_cast<int>(std::distance(s_availableProjects.begin(), it));
+	}
+}
+
+void imGuiProjectPicker(Engine::EnoEngine& engine_) {
+	// Lazy init on first display
+	static bool initialized = false;
+	if (!initialized) {
+		initialized = true;
+		setProjectPickerOpen(true);  // scans projects and pre-selects current
+	}
+
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	const ImVec2 dlgSize = {460.f, s_creatingNewProject ? 210.f : 240.f};
+	ImGui::SetNextWindowPos(
+		{(io.DisplaySize.x - dlgSize.x) * 0.5f, (io.DisplaySize.y - dlgSize.y) * 0.5f},
+		ImGuiCond_Always);
+	ImGui::SetNextWindowSize(dlgSize, ImGuiCond_Always);
+	ImGui::SetNextWindowBgAlpha(1.0f);
+
+	ImGui::Begin(s_creatingNewProject ? "Create New Project" : "Open Project", nullptr,
+		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_NoBringToFrontOnFocus);
+
+	const float pad   = ImGui::GetStyle().WindowPadding.x;
+	const float itemW = dlgSize.x - pad * 2.f;
+
+	if (!s_creatingNewProject) {
+		ImGui::Text("Select a project to open:");
+		ImGui::Spacing();
+
+		if (!s_availableProjects.empty()) {
+			std::vector<const char*> items;
+			items.reserve(s_availableProjects.size());
+			for (auto& p : s_availableProjects) items.push_back(p.c_str());
+			ImGui::SetNextItemWidth(itemW);
+			ImGui::Combo("##projects", &s_selectedProjectIdx, items.data(), static_cast<int>(items.size()));
+		} else {
+			ImGui::TextDisabled("No projects found in assets/");
+		}
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x * 2.f) / 3.f;
+		if (ImGui::Button("Open", {btnW, 0}) && !s_availableProjects.empty()) {
+			applyProjectSelection(engine_, s_availableProjects[s_selectedProjectIdx]);
+			s_showProjectPicker = false;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("New Project", {btnW, 0})) {
+			s_creatingNewProject = true;
+			memset(s_newProjectNameBuf, 0, sizeof(s_newProjectNameBuf));
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", {btnW, 0})) {
+			s_showProjectPicker = false;
+		}
+	} else {
+		ImGui::Text("Project name:");
+		ImGui::SetNextItemWidth(itemW);
+		ImGui::InputText("##newname", s_newProjectNameBuf, sizeof(s_newProjectNameBuf));
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		bool nameValid = s_newProjectNameBuf[0] != '\0';
+		const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x) / 2.f;
+		if (!nameValid) ImGui::BeginDisabled();
+		if (ImGui::Button("Create", {btnW, 0})) {
+			createNewProject(engine_, s_newProjectNameBuf);
+			applyProjectSelection(engine_, s_newProjectNameBuf);
+			s_showProjectPicker = false;
+		}
+		if (!nameValid) ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button("Back", {btnW, 0})) {
+			s_creatingNewProject = false;
+		}
+	}
+
+	ImGui::End();
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
 /*============================================================================================
 * \\brief   Helper function for undo/redo system to mark entities dirty
 *
@@ -274,7 +483,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("Change Project...")) {
-				if (g_game) g_game->openProjectPicker();
+				setProjectPickerOpen(true);
 			}
 			ImGui::EndMenu();
 		}

@@ -22,6 +22,8 @@
 #include "map_editor/map_editor.hpp"
 #include "stateMachine_editor/stateMachine_editor.hpp"
 
+// Forward declaration to avoid circular include with imGui.hpp
+void setProjectPickerOpen(bool open);
 
 class GameApplication {
 private:
@@ -130,7 +132,7 @@ public:
     void shutdown();    // Called when application closed
 
     void markEntitiesDirty() { entitiesDirty_ = true; }
-    void openProjectPicker() { showProjectPicker_ = true; }
+    void openProjectPicker() { setProjectPickerOpen(true); }
 
     // Yun Qi's IMGUI sandbox
     //void setPlayerTexture(std::shared_ptr<Graphics::EnoTexture> newTex);
@@ -239,18 +241,6 @@ private:
     void setupSceneTransitions();                   // Setup scene transition triggers
     void updateSceneTransitions();                  // Check for scene transition collisions
     uint32_t scene1ToScene2TriggerID_ = 0;         // Scene transition trigger entity ID
-
-    // Project Picker (shown on startup)
-    bool showProjectPicker_       = true;
-    std::vector<std::string> availableProjects_;
-    int  selectedProjectIdx_      = 0;
-    char newProjectNameBuf_[128]  = {};
-    bool creatingNewProject_      = false;
-
-    void scanAvailableProjects();
-    void updateProjectPicker();
-    void createNewProject(const std::string& name);
-    void applyProjectSelection(const std::string& projectName);
 
     // Pause Menu Button System
     void setupPauseMenuButtons();                   // Setup pause menu buttons (called when spawning pause menu)
