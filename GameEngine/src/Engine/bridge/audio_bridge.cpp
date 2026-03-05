@@ -87,6 +87,14 @@ namespace Bridge
                 return false;
             }
 
+            // Reset stale FMOD channel pointer from a previous play session.
+            // When the game stops, FMOD invalidates all channels but the
+            // AudioComponent still holds the old pointer. Clear it so
+            // audioMgr.play() doesn't call stop() on freed memory.
+            if (!ac.isPlaying_) {
+                ac.audioMod_.ch_ = nullptr;
+            }
+
             auto& audioMgr = gEngine->getAudioManager();
             audioMgr.play(ac);
             return true;
