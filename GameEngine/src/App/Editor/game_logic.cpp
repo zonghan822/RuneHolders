@@ -1824,8 +1824,14 @@ void GameApplication::createNewProject(const std::string& name) {
 	fs::create_directories(projectRoot / "sound" / "sfx");
 
 	// Create scripts directory — required by scripting system (eno_core_host iterates it)
-	fs::path scriptsRoot = FileSystem::GetRootDir() / "scripts" / name / "user_scripts";
-	fs::create_directories(scriptsRoot);
+	fs::path scriptsRoot = FileSystem::GetRootDir() / "scripts" / name;
+	fs::create_directories(scriptsRoot / "user_scripts");
+
+	// Copy the .csproj from RuneWeavers — relative paths inside it work for any sibling project
+	fs::path srcCsproj = FileSystem::GetRootDir() / "scripts" / "RuneWeavers" / "GameScripts.csproj";
+	fs::path dstCsproj = scriptsRoot / "GameScripts.csproj";
+	if (fs::exists(srcCsproj) && !fs::exists(dstCsproj))
+		fs::copy_file(srcCsproj, dstCsproj);
 
 	// Copy template files from Editor (shaders, config, player config, prefabs)
 	copyDir("shaders");
@@ -1858,8 +1864,16 @@ void GameApplication::applyProjectSelection(const std::string& projectName) {
 
 	std::cout << "[ProjectPicker] Switching to project: " << projectName << std::endl;
 
-	// Ensure scripts directory exists before switching — scripting system iterates it unconditionally
-	std::filesystem::create_directories(FileSystem::GetRootDir() / "scripts" / projectName / "user_scripts");
+	// Ensure scripts directories exist before switching — scripting system iterates user_scripts unconditionally
+	std::filesystem::path scriptsBase = FileSystem::GetRootDir() / "scripts" / projectName;
+	std::filesystem::create_directories(scriptsBase / "user_scripts");
+	// Copy .csproj if missing (covers projects created outside the editor)
+	{
+		std::filesystem::path src = FileSystem::GetRootDir() / "scripts" / "RuneWeavers" / "GameScripts.csproj";
+		std::filesystem::path dst = scriptsBase / "GameScripts.csproj";
+		if (std::filesystem::exists(src) && !std::filesystem::exists(dst))
+			std::filesystem::copy_file(src, dst);
+	}
 
 	// Switch all FileSystem static paths to the new project
 	FileSystem::Initialize(projectName);
