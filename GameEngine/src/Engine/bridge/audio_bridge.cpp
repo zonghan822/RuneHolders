@@ -1,18 +1,7 @@
 #include "eno_bridge.hpp"
-#include "../component/components/audio.hpp"
 
 // gEngine is defined in eno_bridge.cpp
 extern Engine::EnoEngine* gEngine;
-
-// Helper: resolve sceneObjectID to ECS::Entity via scene tree
-static ECS::Entity GetAudioEntityFromID(uint32_t sceneObjectID)
-{
-    auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-    Editor::Node* node = sceneTree.getNodeBySceneObjectID(sceneObjectID);
-    if (!node)
-        return ECS::Entity(UINT32_MAX);
-    return node->entity_;
-}
 
 namespace Bridge
 {
@@ -41,7 +30,7 @@ namespace Bridge
             {
                 audioMgr.publishSoundRequest(sound);
             }
-
+            
             // Check again after the request
             //Console.WriteLine("Find Sound PIA");
             std::cout << "Find Sound PIA\n";
