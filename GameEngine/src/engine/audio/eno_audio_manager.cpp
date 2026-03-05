@@ -180,6 +180,11 @@ namespace Audio
 			return; // Audio already playing, nothing to do
 		}
 
+		// Since isPlaying_ is false, the stored channel pointer may be stale
+		// (FMOD invalidates channels on game stop but doesn't null the pointer).
+		// Clear it now so the ch->stop() below doesn't touch freed memory.
+		audioComp.audioMod_.ch_ = nullptr;
+
 		// Auto-prepare if sound pointer is null but name is set
 		// This handles cases where audio was deserialized from a save file
 		if (audioComp.audioMod_.sound_ == nullptr && audioComp.audioMod_.name_[0] != '\0')
@@ -191,7 +196,7 @@ namespace Audio
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
 		FMOD::Channel* ch{ audioComp.audioMod_.ch_ };
-		
+
 		FMOD::ChannelGroup* chGroup{ nullptr };
 
 		auto it = channelGroups_.find(group);
