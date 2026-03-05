@@ -26,15 +26,10 @@
 	X(PrefabInstanceComponent) \
 	X(AnimationControllerComponent)\
 	X(CameraComponent) \
-	X(RuneComponent) \
-	X(RuneSystemStateComponent) \
-	X(FireballComponent) \
 	X(HealthComponent) \
 	X(DamageComponent) \
 	X(StateMachineComponent) \
 	X(VulnerabilityComponent) \
-	X(RuptureMarkComponent) \
-	X(FloatingTextComponent) \
 	X(ParticleEmitterComponent) \
 	X(TextComponent) \
 

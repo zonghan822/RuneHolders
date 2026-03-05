@@ -11,6 +11,13 @@
     #define ENGINE_API
 #endif
 
+// Data passed from C# scripts to C++ render phase for rune connection lines
+struct RuneLineSegment {
+    float x1, y1, x2, y2;
+    float r, g, b, a;
+    float width;
+};
+
 namespace Bridge {
 
     extern "C" {
@@ -52,8 +59,6 @@ namespace Bridge {
             int* outHealth, bool* outAllowDiagonal);
         ENGINE_API bool __stdcall SetAIHealth(uint32_t entityID, int health);
         ENGINE_API bool __stdcall GetAIHealth(uint32_t entityID, int* outHealth);
-        ENGINE_API bool __stdcall FindAndTriggerRuptureMark(uint32_t entityID, int spellType, float* outDamage);
-
         // ============= Entity Management =============
         ENGINE_API bool __stdcall DestroyEntity(uint32_t entityID);
 
@@ -70,6 +75,7 @@ namespace Bridge {
 
         // ============= Entity Queries =============
         ENGINE_API uint32_t __stdcall FindEntityByName(const wchar_t* name);
+        ENGINE_API int      __stdcall FindAllEntitiesContainingName(const wchar_t* nameSubstr, uint32_t* outIDs, int maxCount);
 
         // ============= Entity State =============
         ENGINE_API bool __stdcall SetEntityVisible(uint32_t entityID, bool visible);
@@ -94,6 +100,27 @@ namespace Bridge {
 
         // ============= Mouse =============
         ENGINE_API bool __stdcall GetMouseWorldPosition(float* outX, float* outY);
+
+        // ============= Mouse Buttons =============
+        ENGINE_API bool __stdcall IsMouseHeld(int button);
+        ENGINE_API bool __stdcall IsMousePressed(int button);
+        ENGINE_API bool __stdcall IsMouseReleased(int button);
+
+        // ============= Rune Line Rendering =============
+        // C# script calls ClearRuneLines() + AddRuneLine() each frame during Update().
+        // C++ game logic calls DrawQueuedRuneLines() during the render phase.
+        ENGINE_API void __stdcall ClearRuneLines();
+        ENGINE_API void __stdcall AddRuneLine(float x1, float y1, float x2, float y2,
+                                              float r, float g, float b, float a, float width);
+        ENGINE_API void __stdcall DrawQueuedRuneLines();
+
+        // ============= Entity Draw Color =============
+        ENGINE_API bool __stdcall SetEntityDrawColor(uint32_t entityID, float r, float g, float b, float a);
+
+        // ============= Spell Spawning =============
+        // spellType: 1=ICE, 2=FIRE, 3=LIGHT
+        // Returns the sceneObjectID of the spawned entity (0 on failure)
+        ENGINE_API uint32_t __stdcall SpawnRuptureMark(float x, float y, int spellType);
     }
 }
 

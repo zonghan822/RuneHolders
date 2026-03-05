@@ -8,13 +8,20 @@
 #pragma once
 
 #include "../../event/signals.hpp"
-#include "rune_component.hpp"  // For RuneColor
 #include <iostream>
 #include <unordered_map>
 #include <string>
 
 namespace ECSComponents
 {
+    // Legacy color enum for combat system (spell color matching)
+    enum class RuneColor
+    {
+        RED,
+        BLUE,
+        GREEN
+    };
+
     /*============================================================================================
     * \brief    Vulnerability component for enemies - determines which spell color can damage them
     *           Use for: Enemies that can only be killed by specific colored spells

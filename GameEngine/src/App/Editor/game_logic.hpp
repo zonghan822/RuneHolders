@@ -93,13 +93,6 @@ private:
     // State Machine Editor
     std::unique_ptr<Editor::StateMachineEditor> stateMachineEditor_;
 
-    // Rune System
-    uint32_t runeSystemEntityID_;  // ID of entity holding RuneSystemStateComponent
-    bool runeSystemInitialized_ = false;
-    std::shared_ptr<Graphics::EnoTexture> runeTexture_;       // White Large sheet
-    std::shared_ptr<Graphics::EnoTexture> runeTextureGrey_;   // Grey Small sheet
-    std::shared_ptr<Graphics::EnoTexture> runeTextureGreen_;  // Green Large sheet
-
     // Particle Test
     uint32_t testParticleEntityID_ = 0;
     bool particleTestSpawned_ = false;
@@ -209,20 +202,6 @@ private:
     void drawPlayerAndIndicator();
 
     void drawShapes();
-
-    // Rune system methods
-    void initializeRuneSystem();                                    // Initialize rune system entity
-    void updateRuneSystem();                                        // Update rune system logic each frame
-    void spawnRunes(const Math::eVec2<float>& mouseWorldPos);       // Spawn left and right runes
-    void destroyRunes();                                            // Destroy spawned runes
-    void updateRuneHover(const Math::eVec2<float>& mouseWorldPos);  // Check if mouse hovers over runes
-    void updateRuneVisualStates();                                  // Update rune visuals based on selection
-    void drawRuneConnectionLine();                                  // Draw line connecting runes
-    Math::eVec2<float> getMouseWorldPos();                          // Helper: camera lookup + screen-to-world
-    void spawnFloatingText(const Math::eVec2<float>& pos, const char* text);  // Spawn floating text message
-    void updateFloatingTexts(float deltaTime);                      // Update floating text positions and alpha
-    void spawnRuptureMark(const Math::eVec2<float>& pos, ECSComponents::SpellType spellType);
-    void updateRuptureMarks(float deltaTime);
 
     // Combat system methods
     void updateCombatSystem(float deltaTime);       // Handle damage dealing and health updates

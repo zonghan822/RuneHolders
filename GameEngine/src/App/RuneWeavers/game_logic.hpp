@@ -68,16 +68,6 @@ private:
     bool showColliders_ = true;
     std::unordered_map<std::string, double> systemTimes_;
 
-    // Rune System
-    uint32_t runeSystemEntityID_ = 0;  // ID of entity holding RuneSystemStateComponent
-    bool runeSystemInitialized_ = false;
-    std::shared_ptr<Graphics::EnoTexture> runeTexture_;  // Cached rune spritesheet texture
-
-    std::shared_ptr<Graphics::EnoTexture> runeTextureGrey_;     // Grey Small Sheet
-    std::shared_ptr<Graphics::EnoTexture> runeTextureGreen_;    // Green Large Sheet
-    std::shared_ptr<Graphics::EnoTexture> runeTextureRed_;      // Red Small Sheet (invalid state)
-    std::shared_ptr<Graphics::EnoTexture> runeLineTexture_;     // Line connection texture        
-
     // Pause Menu and Spellbook System
     bool showSpellbook_ = false;
     uint32_t pauseMenuEntityID_ = 0;
@@ -142,21 +132,6 @@ private:
 
     void drawShapes();
     void displayFPS();
-
-    // Rune system methods
-    void initializeRuneSystem();                                    // Initialize rune system entity
-    void updateRuneSystem();                                        // Update rune system logic each frame
-    void updateRuneVisualStates();                                  // Update rune visuals based on selection
-    void spawnRunes(const Math::eVec2<float>& mouseWorldPos);       // Spawn all 6 runes in circle
-    void destroyRunes();                                            // Destroy spawned runes
-    void updateRuneHover(const Math::eVec2<float>& mouseWorldPos);  // Check if mouse hovers over runes
-    void drawRuneConnectionLine();                                  // Draw line connecting runes
-    Math::eVec2<float> getMouseWorldPos();                          // Helper: camera lookup + screen-to-world
-    void spawnFloatingText(const Math::eVec2<float>& pos, const char* text);  // Spawn floating text message
-    void updateFloatingTexts(float deltaTime);                      // Update floating text positions and alpha
-    void spawnRuptureMark(const Math::eVec2<float>& pos, ECSComponents::SpellType spellType);  // Spawn rupture mark spell
-    void updateRuptureMarks(float deltaTime);                       // Update rupture mark state machines
-
 
     // AI system methods
     void updateEnemyAI(float deltaTime);            // Update enemy AI movement and pathfinding
