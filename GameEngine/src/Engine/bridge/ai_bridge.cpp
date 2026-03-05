@@ -527,6 +527,21 @@ namespace Bridge
             return true;
         }
 
+        ENGINE_API bool __stdcall SetPlayerVelocity(float vx, float vy)
+        {
+            if (!gEngine) return false;
+            auto& entMng = gEngine->getEntityManager();
+            auto playerEntities = entMng.findEntity<ECSComponents::PlayerComponent>();
+            if (playerEntities.empty()) {
+                std::cout << "[SetPlayerVelocity] No player entity found!" << std::endl;
+                return false;
+            }
+            std::cout << "[SetPlayerVelocity] vx=" << vx << " vy=" << vy << std::endl;
+            auto& physics = playerEntities[0].get<ECSComponents::PhysicsComponent>(entMng);
+            physics.velocity = Math::eVec2<float>{ vx, vy };
+            return true;
+        }
+
         ENGINE_API bool __stdcall SetPlayerScriptedMovement(bool enabled)
         {
             if (!gEngine) {

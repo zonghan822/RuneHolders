@@ -89,6 +89,13 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool SetPlayerPosition(float x, float y);
 
+        // Player Scripting
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool SetPlayerScriptedMovement(bool enabled);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool SetPlayerVelocity(float vx, float vy);
+
         // Camera
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool GetCameraPosition(out float outX, out float outY);

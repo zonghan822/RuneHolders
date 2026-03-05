@@ -215,6 +215,7 @@
 				"Dash Start Position": <eVec2(float)> { x : 0 | y : 0 }
 				"Push Force": <float> { 1500 }
 				"Default Dash Direction": <eVec2(float)> { x : 0 | y : 1 }
+				"Use Scripted Movement": <bool> { 1 }
 			}
 
 			[struct ECSComponents::CollisionComponent]
@@ -252,7 +253,7 @@
 				"invulnerabilityTimer": <float> { 0 }
 			}
 		}
-		"Script": { }
+		"Script": { PlayerController.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }

@@ -111,6 +111,10 @@
 		"Default Dash Direction": {
 			"value": "x : 0 | y : 1",
 			"type": "eVec2(float)"
+		},
+		"Use Scripted Movement": {
+			"value": "0",
+			"type": "bool"
 		}
 	},
 	"struct ECSComponents::CollisionComponent": {

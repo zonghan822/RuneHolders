@@ -63,6 +63,7 @@ namespace Bridge {
 
         // ================= Player Scripting =================
         ENGINE_API bool __stdcall SetPlayerScriptedMovement(bool enabled);
+        ENGINE_API bool __stdcall SetPlayerVelocity(float vx, float vy);
 
         // ================= Camera =================
         ENGINE_API bool __stdcall GetCameraPosition(float* outX, float* outY);

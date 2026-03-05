@@ -77,6 +77,23 @@ namespace Eno
             {
                 Console.WriteLine("Pressed V, volume should be modified on entity 1 now!");
             }
+
+            float inputX = 0f;
+            float inputY = 0f;
+
+            if (Input.IsKeyHeld(KeyCode.W)) inputY -= 1f;
+            if (Input.IsKeyHeld(KeyCode.S)) inputY += 1f;
+            if (Input.IsKeyHeld(KeyCode.A)) inputX -= 1f;
+            if (Input.IsKeyHeld(KeyCode.D)) inputX += 1f;
+
+            float length = (float)Math.Sqrt(inputX * inputX + inputY * inputY);
+            if (length > 0.001f)
+            {
+                inputX /= length;
+                inputY /= length;
+            }
+
+            Bridge.SetEntityVelocity(this.ID, inputX * speed, inputY * speed);
         }
 
         private static void Jump()

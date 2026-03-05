@@ -21,7 +21,7 @@ namespace Eno
         [Port()]
         public States state = States.Walking;
 
-        public float speed = 5.10f;
+        public float speed = 200f;
 
         private static InputAction? ia1;
         private static InputAction? ia2;
@@ -47,6 +47,8 @@ namespace Eno
             ia2.Enable();
 
             Console.WriteLine($"End of begin method for entity: {this.ID}");
+
+            Bridge.SetPlayerScriptedMovement(true);
         }
 
         public void Update()
@@ -77,6 +79,23 @@ namespace Eno
             {
                 Console.WriteLine("Pressed V, volume should be modified on entity 1 now!");
             }
+
+            float inputX = 0f;
+            float inputY = 0f;
+
+            if (Input.IsKeyHeld(KeyCode.W)) inputY -= 1f;
+            if (Input.IsKeyHeld(KeyCode.S)) inputY += 1f;
+            if (Input.IsKeyHeld(KeyCode.A)) inputX -= 1f;
+            if (Input.IsKeyHeld(KeyCode.D)) inputX += 1f;
+
+            float length = (float)Math.Sqrt(inputX * inputX + inputY * inputY);
+            if (length > 0.001f)
+            {
+                inputX /= length;
+                inputY /= length;
+            }
+
+            Bridge.SetPlayerVelocity(inputX * speed, inputY * speed);
         }
 
         private static void Jump()
