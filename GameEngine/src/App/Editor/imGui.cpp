@@ -150,7 +150,7 @@ static void scanAvailableProjects() {
 	std::filesystem::path assetsRoot = FileSystem::GetRootDir() / "assets";
 	if (!std::filesystem::exists(assetsRoot)) return;
 	for (auto& entry : std::filesystem::directory_iterator(assetsRoot)) {
-		if (entry.is_directory())
+		if (entry.is_directory() && entry.path().filename().string() != "Editor")
 			s_availableProjects.push_back(entry.path().filename().string());
 	}
 	std::sort(s_availableProjects.begin(), s_availableProjects.end());
@@ -174,11 +174,26 @@ static void applyProjectSelection(Engine::EnoEngine& engine_, const std::string&
 	}
 
 	FileSystem::Initialize(projectName);
+
+	// The project's GameScripts.dll lives in a sibling directory of the Editor exe.
+	std::filesystem::path projectDllDir =
+		FileSystem::GetExecutableDir().parent_path() / projectName;
+
+	if (!engine_.isEditorReady())
+	{
+		// Pre-setup: create a fresh EnoCoreHost pointed at the project's DLL.
+		// setupLate() will see it's already set and skip recreation.
+		engine_.initScripting(projectDllDir);
+	}
+	else
+	{
+		// Post-setup: update the existing coreHost in-place so EnoEditor's
+		// reference stays valid, then reload delegates for the new project.
+		engine_.getCoreHost().reinitializeScripts(projectDllDir);
+	}
+
 	engine_.getResourceLoader().reloadPaths();
 
-	// reloadProject() is only valid after setupLate() has run.
-	// During the initial pre-setup project picker, the editor hasn't been
-	// created yet; setupLate() will pick up the correct project on its own.
 	if (engine_.isEditorReady())
 	{
 		engine_.getEnoEditor().reloadProject();
@@ -321,6 +336,7 @@ void imGuiProjectPicker(Engine::EnoEngine& engine_) {
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel", {btnW, 0})) {
 			s_showProjectPicker = false;
+			engine_.requestClose();
 		}
 	} else {
 		ImGui::Text("Project name:");

@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Eno
 {
-    public class CombatSystem : LogicSystem
+    public class CombatSystem : ScriptBase
     {
         [Port(1f, 500f)]
         public float playerHealth = 100f;

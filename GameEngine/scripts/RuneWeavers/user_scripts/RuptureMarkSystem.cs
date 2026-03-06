@@ -23,7 +23,7 @@ namespace Eno
     *   2 (FIRE)  → entity names containing "NullFly"
     *   3 (LIGHT) → entity names containing "Bloodwing"
     *//*========================================================================================*/
-    public class RuptureMarkSystem : LogicSystem
+    public class RuptureMarkSystem : ScriptBase
     {
         // ----------------------------------------------------------------
         // Configurable

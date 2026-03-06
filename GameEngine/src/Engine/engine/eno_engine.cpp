@@ -50,10 +50,23 @@ namespace Engine
 		loader_.loadShaders(loader_.getShaderPath());
 	}
 
+	void EnoEngine::initScripting(const std::filesystem::path& dllDir)
+	{
+		auto dir = dllDir.empty() ? FileSystem::GetExecutableDir() : dllDir;
+		auto dll = dir / "GameScripts.dll";
+		std::cout << "[initScripting] DLL path: " << dll << " - "
+		          << (std::filesystem::exists(dll) ? "EXISTS" : "NOT FOUND") << "\n";
+		coreHost_ = std::make_unique<Core::EnoCoreHost>(bus_, dir);
+	}
+
 	void EnoEngine::setupLate()
 	{
+		// Initialize scripting if not already done by initScripting() (e.g. Editor project picker)
+		if (!coreHost_)
+			coreHost_ = std::make_unique<Core::EnoCoreHost>(bus_);
+
 		// Initialize editor (loads saves/scenes from the current project)
-		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, coreHost_, *tilemapSystem_);
+		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_);
 
 		for (const auto &node : editor_->getSceneTree().getAllNodes())
 		{
@@ -61,7 +74,7 @@ namespace Engine
 			{
 				for (const auto &org : node->script_->origin())
 				{
-					coreHost_.begin(org, node->sceneObjectID_);
+					coreHost_->begin(org, node->sceneObjectID_);
 				}
 			}
 		}
@@ -101,7 +114,7 @@ namespace Engine
 		while (!window_.shouldClose())
 		{
 			// Script watch (beginFrame also polls events / updates time)
-			bool modified = coreHost_.areScriptsModified();
+			bool modified = coreHost_->areScriptsModified();
 
 			if (modified)
 			{
@@ -138,7 +151,7 @@ namespace Engine
 				{
 					for (const auto &org : node->script_->origin())
 					{
-						coreHost_.update(org, node->sceneObjectID_);
+						coreHost_->update(org, node->sceneObjectID_);
 					}
 				}
 			}

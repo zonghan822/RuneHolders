@@ -101,6 +101,10 @@ namespace Engine
 		*               Use in a custom game loop together with beginFrame() / endFrame().
 		*//*========================================================================================*/
 		bool shouldClose() const { return window_.shouldClose(); }
+		void requestClose() { window_.setShouldClose(true); }
+
+		// Returns true once initScripting() or setupLate() has created the script host.
+		bool isScriptingReady() const { return coreHost_ != nullptr; }
 
 		/*============================================================================================
 		* \brief		Executes the logic half of a frame: time, input polling, script/physics/
@@ -193,7 +197,16 @@ namespace Engine
 		* \brief		Gets the Core Host for scripting operations
 		* \return		Reference to the EnoCoreHost instance
 		*//*========================================================================================*/
-		Core::EnoCoreHost& getCoreHost() { return coreHost_; }
+		Core::EnoCoreHost& getCoreHost() { return *coreHost_; }
+
+		/*============================================================================================
+		* \brief		Initializes (or re-initializes) the scripting system from the specified DLL
+		*               directory. If dllDir is empty, uses FileSystem::GetExecutableDir().
+		*               For the Editor, call this with the selected project's exe directory
+		*               (e.g. GetExecutableDir().parent_path() / projectName) BEFORE setupLate().
+		*               setupLate() will skip re-creating the host if this has already been called.
+		*//*========================================================================================*/
+		void initScripting(const std::filesystem::path& dllDir = {});
 
 		/*============================================================================================
 		* \brief		Gets the Eno Editor for scripting operations
@@ -303,7 +316,7 @@ namespace Engine
 		Memory::EnoECSArena ecsArena_{ 8ull * 1024 * 1024 };
 		ECS::EntityManager entityMng_{ ecsArena_, bus_ };
 		ECSComponents::EnoPrefabManager prefabMng_{ bus_ };
-		Core::EnoCoreHost coreHost_{ bus_ };
+		std::unique_ptr<Core::EnoCoreHost> coreHost_;
 		std::unique_ptr<Map::TileMapSystem> tilemapSystem_;
 		std::unique_ptr<AI::PathfindingSystem> pathfinder_;
 		std::unique_ptr<Editor::EnoEditor> editor_;

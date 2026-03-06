@@ -23,7 +23,7 @@ namespace Eno
     *   FIRE  : 6-1-5-2   (damages NullFly enemies)
     *   LIGHT : 4-1-3-6   (damages Bloodwing enemies)
     *//*========================================================================================*/
-    public class RuneCastingSystem : LogicSystem
+    public class RuneCastingSystem : ScriptBase
     {
         // ----------------------------------------------------------------
         // Configurable parameters (editable in editor via [Port] if needed)
