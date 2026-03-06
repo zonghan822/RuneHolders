@@ -4,7 +4,7 @@ using System.Xml;
 
 namespace Eno
 {
-    public class ExampleController : ScriptBase
+    public class PlayerController : ScriptBase
     {
         [Port("The player's display name")]
         public string playerName = "Player1";
