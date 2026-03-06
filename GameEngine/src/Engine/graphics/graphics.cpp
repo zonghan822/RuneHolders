@@ -1558,12 +1558,7 @@ namespace Graphics
                         Math::eVec2<float> uvStart{ 0.0f, 0.0f };
                         Math::eVec2<float> uvEnd  { 1.0f, 1.0f };
 
-                        if (entity.has<ECSComponents::RuneComponent>(entityManager))
-                        {
-                            auto& runeComp = entity.get<ECSComponents::RuneComponent>(entityManager);
-                            ECSComponents::RuneAssets::getRuneUV(runeComp.runeNumber, uvStart, uvEnd);
-                        }
-                        else if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+                        if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
                         {
                             auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
                             Animation::AnimationController* ctrl =
