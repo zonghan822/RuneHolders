@@ -1519,6 +1519,8 @@ namespace Graphics
         }
 
         auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+        if (cameraEntities.empty()) return;
+
         auto& cam = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
         float cameraX   = cam.position.x - cam.viewportWidth  * 0.5f;
         float cameraY   = cam.position.y - cam.viewportHeight * 0.5f;

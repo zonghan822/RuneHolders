@@ -148,17 +148,19 @@ namespace ECSComponents
 		void save(const std::string& name, Tuple&& tuple)
 		{
 			std::string filename = FileSystem::GetAssetsDir().string() + "/saves/prefabs/" + name;
-			
+
 			// Append preferred extension for save file format
 			if (filename.find(".txt") == std::string::npos)
 			{
 				filename += ".txt";
 			}
 
+			std::filesystem::create_directories(FileSystem::GetAssetsDir() / "saves/prefabs");
 			std::ofstream save{ filename };
 			if (!save)
 			{
-				throw std::runtime_error("Failed to create a save file for the scene tree!");
+				std::cout << "[Prefab] Failed to create save file: " << filename << "\n";
+				return;
 			}
 
 			// Opening brace
@@ -219,7 +221,10 @@ namespace ECSComponents
 
 			std::ifstream file{ filePath };
 			if (!file)
-				throw std::runtime_error("Failed to open file at " + filePath.string());
+			{
+				std::cout << "[Prefab] File not found, skipping: " << filePath.string() << "\n";
+				return;
+			}
 
 			std::string presetName = filePath.stem().string();
 

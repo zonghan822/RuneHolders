@@ -50,15 +50,23 @@ namespace Editor
 					}
 				}
 			}
-			// In case of invalid file
+			// In case of invalid file (e.g. saves/scenes directory doesn't exist yet)
 			catch (const std::filesystem::filesystem_error& e)
 			{
-				std::cout << "Error: " << e.what();
-				return;
+				std::cout << "[EnoEditor] Scene directory not found: " << e.what() << "\n";
 			}
 
 			// Find the last loaded scene if possible
 			loadLastSavedScene();
+
+			// Safety net: if selectedScene_ is still null after loadLastSavedScene()
+			// (e.g. file creation failed), create an in-memory scene with no backing file.
+			if (!selectedScene_)
+			{
+				scenes_.push_back(std::make_unique<EnoScene>(bus_));
+				selectedScene_ = scenes_.back().get();
+				selectedScene_->setSceneName("New Scene.txt");
+			}
 
 			// *** TBD when operation isnt needed! ***
 			//bus_.subscribe<Editor::TestTree>([&](const Editor::TestTree)
@@ -327,11 +335,15 @@ namespace Editor
 			// Create full file path
 			std::string fullPath = filePath + defaultSceneName;
 
+			// Ensure directory exists before creating the file
+			std::filesystem::create_directories(filePath);
+
 			// Create file
 			std::ofstream newFile{ fullPath };
 			if (!newFile)
 			{
-				throw std::runtime_error("Failed to create a new scene: " + fullPath);
+				std::cerr << "[EnoEditor] Failed to create a new scene: " << fullPath << std::endl;
+				return;
 			}
 			newFile << "{\n\n}";
 			newFile.close();
@@ -422,13 +434,13 @@ namespace Editor
 		void updateLastSavedScene()
 		{
 			std::string path = FileSystem::GetAssetsDir().string() + "/saves/scenes/LastSavedScene.txt";
-			std::cout << "[DEBUG] Saving LastSavedScene.txt to: " << path << std::endl;
-			std::cout << "[DEBUG] Scene name: " << selectedScene_->getSceneName() << std::endl;
+			std::filesystem::create_directories(FileSystem::GetAssetsDir() / "saves/scenes");
 
 			std::ofstream lastSceneSave{ path };
 			if (!lastSceneSave)
 			{
-				throw std::runtime_error("[Eno_Editor] Failed to save current active scene name!");
+				std::cerr << "[EnoEditor] Failed to write LastSavedScene.txt: " << path << std::endl;
+				return;
 			}
 			lastSceneSave << selectedScene_->getSceneName();
 			lastSceneSave.close();
@@ -465,6 +477,13 @@ namespace Editor
 			}
 
 			loadLastSavedScene();
+
+			if (!selectedScene_)
+			{
+				scenes_.push_back(std::make_unique<EnoScene>(bus_));
+				selectedScene_ = scenes_.back().get();
+				selectedScene_->setSceneName("New Scene.txt");
+			}
 		}
 
 		EnoSceneTree& getSceneTree()
@@ -498,7 +517,7 @@ namespace Editor
 	private:
 		// Scenes
 		std::vector<std::unique_ptr<EnoScene>> scenes_;
-		EnoScene* selectedScene_;
+		EnoScene* selectedScene_ = nullptr;
 		bool wasPlaying = false;
 
 		// Core Host

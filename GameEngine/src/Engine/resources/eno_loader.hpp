@@ -206,7 +206,8 @@ namespace Resources
 		void loadSound(FMOD::System* system, const Container& extensions, const std::string& path) {
 			if (!std::filesystem::exists(path))
 			{
-				throw std::runtime_error("Specified path does not exist!");
+				std::cout << "[Loader] Sound path does not exist, skipping: " << path << "\n";
+				return;
 			}
 
 			// Iterate through a folder through the given path
