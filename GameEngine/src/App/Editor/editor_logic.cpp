@@ -19,13 +19,29 @@
 #include <typeindex>
 
 void EditorApplication::initialize() {
-	// Setup engine systems first (this now includes game systems)
-	engine_.setup();
+	// Phase 1: window + systems + shaders — enough to render ImGui.
+	engine_.setupEarly();
+	setupImGui();
+
+	// Project picker: let the user choose a project before any project-specific
+	// assets (saves, art, fonts, sounds) are loaded.
+	while (!engine_.shouldClose() && isProjectPickerOpen())
+	{
+		engine_.getWindowManager().pollEvents();
+		engine_.getGraphicsManager().beginFrame(Graphics::Color::Black);
+		imGuiProjectPicker(engine_);
+		engine_.getGraphicsManager().endFrame(engine_.getWindowManager());
+		engine_.getInputManager().endFrame();
+	}
+
+	if (engine_.shouldClose()) return;
+
+	// Phase 2: editor/scene loading + project-specific assets.
+	engine_.setupLate();
 
 	// Setup all game content
 	setupPrefabs();
 	setupGameEvents();
-	setupImGui();
 
 	auto& tileMap = engine_.getTileMap();
 
@@ -372,10 +388,6 @@ void EditorApplication::updateEditorState() {
 
 void EditorApplication::updateImGui() {
 	SystemTimer ImGuiTimer("ImGui", systemTimes_);
-	if (isProjectPickerOpen()) {
-		imGuiProjectPicker(engine_);
-		return;
-	}
 	imGuiDisplay(engine_, engine_.getEnoEditor().getSceneTree(), engine_.getEnoEditor().getUndoManager());
 }
 

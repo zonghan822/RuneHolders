@@ -19,6 +19,12 @@ namespace Engine
 {
 	void EnoEngine::setup()
 	{
+		setupEarly();
+		setupLate();
+	}
+
+	void EnoEngine::setupEarly()
+	{
 		configMng_.retrieveSettings();
 		auto [w, h] = configMng_.getWindowDim();
 		bool fullscreen = configMng_.getFullscreen();
@@ -40,7 +46,13 @@ namespace Engine
 		audioMng_.init();
 		graphicsMng_.initialize(window_);
 
-		// Initialize editor after tilemap is created
+		// Shaders are project-agnostic enough to load immediately
+		loader_.loadShaders(loader_.getShaderPath());
+	}
+
+	void EnoEngine::setupLate()
+	{
+		// Initialize editor (loads saves/scenes from the current project)
 		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, coreHost_, *tilemapSystem_);
 
 		for (const auto &node : editor_->getSceneTree().getAllNodes())
@@ -55,7 +67,12 @@ namespace Engine
 		}
 
 		Bridge::Bridge_Init(this);
-		setupResourceLoading();
+
+		// Load project-specific assets
+		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getMusicPath());
+		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getSFXPath());
+		loader_.loadImages(loader_.getImagePath());
+		loader_.loadFonts(loader_.getFontPath(), 48);
 
 		// Mark animations dirty whenever a scene is cleared/loaded
 		bus_.subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)
@@ -173,14 +190,13 @@ namespace Engine
 		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getMusicPath());
 		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getSFXPath());
 
-		// Loading shaders
-		loader_.loadShaders(loader_.getShaderPath());
-
 		// Loading images
 		loader_.loadImages(loader_.getImagePath());
 
 		// Loading fonts
 		loader_.loadFonts(loader_.getFontPath(), 48);
+
+		// Note: shaders are loaded in setupEarly() and are not reloaded here.
 	}
 
 	void EnoEngine::updateTime(double fps_calc_interval)

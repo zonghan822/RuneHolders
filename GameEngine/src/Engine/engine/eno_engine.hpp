@@ -65,9 +65,30 @@ namespace Engine
 	public:
 
 		/*============================================================================================
-		* \brief		Initializes all engine systems and sets up the application window
+		* \brief		Initializes all engine systems and sets up the application window.
+		*               Equivalent to calling setupEarly() then setupLate().
+		*               Use for standalone game builds where no project picker is needed.
 		*//*========================================================================================*/
 		void setup();
+
+		/*============================================================================================
+		* \brief		Phase 1 of initialization: config, window, all engine systems, and shaders.
+		*               Safe to call before a project is selected. After this returns the window is
+		*               open and ImGui can be rendered (e.g. for a project picker).
+		*//*========================================================================================*/
+		void setupEarly();
+
+		/*============================================================================================
+		* \brief		Phase 2 of initialization: editor/scene loading, sounds, images, fonts, and
+		*               event subscriptions. Must be called after a project has been selected so
+		*               FileSystem::GetAssetsDir() points to the correct project.
+		*//*========================================================================================*/
+		void setupLate();
+
+		/*============================================================================================
+		* \brief		Returns true once setupLate() has been called (editor_ is initialized).
+		*//*========================================================================================*/
+		bool isEditorReady() const { return editor_ != nullptr; }
 
 		/*============================================================================================
 		* \brief		Starts a fully self-contained game loop (no C++ callback needed).

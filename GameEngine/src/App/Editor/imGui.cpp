@@ -175,9 +175,15 @@ static void applyProjectSelection(Engine::EnoEngine& engine_, const std::string&
 
 	FileSystem::Initialize(projectName);
 	engine_.getResourceLoader().reloadPaths();
-	engine_.getEnoEditor().reloadProject();
 
-	if (g_game) g_game->markEntitiesDirty();
+	// reloadProject() is only valid after setupLate() has run.
+	// During the initial pre-setup project picker, the editor hasn't been
+	// created yet; setupLate() will pick up the correct project on its own.
+	if (engine_.isEditorReady())
+	{
+		engine_.getEnoEditor().reloadProject();
+		if (g_game) g_game->markEntitiesDirty();
+	}
 	std::cout << "[ProjectPicker] Switched to: " << FileSystem::GetAssetsDir() << std::endl;
 }
 
