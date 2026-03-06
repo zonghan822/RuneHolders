@@ -30,10 +30,14 @@ namespace Editor
 		std::string signal_;
 	};
 
-	inline std::ostream& operator<<(std::ostream& os, const Listener& l)
+#define PRESET(name, ...) name,
+	enum class NodeType : uint32_t
 	{
-		return os << l.listenerID_ << ", " << l.component_ << ", " << l.signal_;
-	}
+		EMPTY,
+		CUSTOM,
+		PRESET_LIST
+	};
+#undef
 
 	struct Node
 	{
@@ -41,6 +45,8 @@ namespace Editor
 		std::string name_;
 		uint32_t sceneObjectID_		{ 0 };
 		uint32_t nestedLayer_		{ 0 };
+
+		NodeType type_;
 
 		// Entity Data
 		ECS::Entity entity_;
@@ -77,11 +83,20 @@ namespace Editor
 		// Create a node from an existing entity (for ImGui integration)
 		Node* createFromEntity(ECS::Entity entity, Node* parent = nullptr);
 
+		// Find node by name
+		Node* getNodeByName(const std::string&);
+
 		// Get a node by entity ID
 		Node* getNodeByEntityID(uint32_t entityID);
 
 		// Get a node by scene object ID
 		Node* getNodeBySceneObjectID(uint32_t sceneObjID);
+
+		// Get child node by index
+		Node* getChild(Node*, uint32_t idx);
+
+		// Modify entity data by preset
+		void modNodeType(Node*, NodeType);
 
 		// Nest a node
 		void nest(Node*);
@@ -304,4 +319,9 @@ namespace Editor
 			const std::string&, const std::string&,
 			const size_t&, const size_t&);
 	};
+
+	inline std::ostream& operator<<(std::ostream& os, const Listener& l)
+	{
+		return os << l.listenerID_ << ", " << l.component_ << ", " << l.signal_;
+	}
 }

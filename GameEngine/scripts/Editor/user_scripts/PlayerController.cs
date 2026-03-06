@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Xml;
 
 namespace Eno
 {
@@ -29,6 +30,13 @@ namespace Eno
         public void Begin()
         {
             Console.WriteLine($"ID on script.cs: {this.ID}");
+            
+            Console.WriteLine(typeof(Node));
+            // Testing getting a node/child
+            // childNodeID = Bridge.GetChild(0, 0);
+            uint node3_Z_INDEX = GetNode("Node3").z_index;
+            Console.WriteLine($"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ node3_Z_INDEX: {node3_Z_INDEX}");
+
 
             // Creating a custom input
             ia1 = new InputAction("Jump")

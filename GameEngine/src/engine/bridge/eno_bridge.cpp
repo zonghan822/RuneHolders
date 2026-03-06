@@ -41,6 +41,39 @@ namespace Bridge
             return static_cast<float>(gEngine->getDeltaTime());
         }
 
+        ENGINE_API uint32_t __stdcall GetNode(const char* name)
+        {
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeByName(name);
+            if (!node)
+                return UINT32_MAX;
+
+            return node->sceneObjectID_;
+        }
+
+        ENGINE_API uint32_t __stdcall GetChild(uint32_t parentID, uint32_t index)
+        {
+            // Parent
+            Editor::Node* parent = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(parentID);
+            if (!parent)
+                return 0;
+
+            // Child
+            Editor::Node* child = gEngine->getEnoEditor().getSceneTree().getChild(parent, index);
+            if (!child)
+                return 0;
+
+            return child->sceneObjectID_;
+        }
+
+        ENGINE_API uint32_t __stdcall GetNodeType(uint32_t id)
+        {
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(id);
+            if (!node)
+                return static_cast<uint32_t>(Editor::NodeType::EMPTY);
+
+            return static_cast<uint32_t>(node->type_);
+        }
+
         ENGINE_API bool __stdcall IsKeyPressed(int key)
         {
             if (!gEngine) {

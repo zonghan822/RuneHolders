@@ -14,6 +14,18 @@ namespace Eno
             InputMng.Update();
         }
 
+        public uint nodeID;
+
+        public Node GetNode(string name)
+        {
+            return new Node(Bridge.GetNode(name));
+        }
+
+        public Node GetChild(uint index)
+        {
+            return new Node(Bridge.GetChild(nodeID, index));
+        }
+
         public uint ID { get; set; }
     }
 }

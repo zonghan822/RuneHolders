@@ -16,6 +16,11 @@ namespace Bridge {
     extern "C" {
         ENGINE_API void __stdcall Bridge_Init(void* enginePtr);
 
+        // ================= Node =================
+        ENGINE_API uint32_t __stdcall GetNode(const char* name);
+        ENGINE_API uint32_t __stdcall GetChild(uint32_t parentID, uint32_t index);
+        ENGINE_API uint32_t __stdcall GetNodeType(uint32_t id);
+
         // ================= Time =================
         ENGINE_API float __stdcall GetDeltaTime();
 

@@ -55,7 +55,14 @@ public static class HotReloadCompiler
             throw new FileNotFoundException("Core DLL not found", coreDllPath);
 
         assemblies.Add(MetadataReference.CreateFromFile(mainDllPath));
-        assemblies.Add(MetadataReference.CreateFromFile(coreDllPath));
+
+        var loadedCore = AppDomain.CurrentDomain.GetAssemblies().
+            FirstOrDefault(a => a.GetName().Name == "Core");
+            
+        if (loadedCore != null)
+            assemblies.Add(MetadataReference.CreateFromFile(loadedCore.Location));
+        else
+            assemblies.Add(MetadataReference.CreateFromFile(coreDllPath));
 
         // Creating the new Roslyn compilation with all of our
         // previously created components!

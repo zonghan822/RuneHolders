@@ -9,17 +9,27 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern float GetDeltaTime();
 
+        // Node
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
+        public static extern uint GetNode(string name);
+
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
+        public static extern uint GetChild(uint parentID, uint index);
+
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
+        public static extern uint GetNodeType(uint id);
+
         // Input
-        [DllImport("Engine_shared.dll")]
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern bool IsKeyReleased(KeyCode key);
 
-        [DllImport("Engine_shared.dll")]
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern bool IsKeyPressed(KeyCode key);
 
-        [DllImport("Engine_shared.dll")]
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern bool IsKeyHeld(KeyCode key);
 
-        [DllImport("Engine_shared.dll")]
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern int ModsApplied();
 
         //[DllImport("Engine_shared.dll", CharSet = CharSet.Unicode)]
@@ -145,5 +155,21 @@ namespace Eno
         // Mouse
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool GetMouseWorldPosition(out float outX, out float outY);
+
+        // ------------------- Visibility -------------------
+        // Z INDEX
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern uint GetZIndex(uint id);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetZIndex(uint id, uint value);
+
+        // Visibility
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool GetVisibility(uint id);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetVisibility(uint id, [MarshalAs(UnmanagedType.I1)] bool visibility);
     }
 }

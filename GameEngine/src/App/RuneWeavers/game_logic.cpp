@@ -49,14 +49,14 @@ void GameApplication::initialize() {
 
 	// Wire up C# Logic Systems (must come after setupScripting())
 	{
-		auto e = engine_.getEntityManager().createEntity();
-		dialogueSystemEntityID_ = e.getID();
+		auto e = engine_.getEntityManager().create<>();
+		dialogueSystemEntityID_ = e.id();
 		engine_.getCoreHost().setMetaData(L"Eno.DialogueSystem", dialogueSystemEntityID_, 1);
 		engine_.getCoreHost().begin(L"Eno.DialogueSystem", dialogueSystemEntityID_);
 	}
 	{
-		auto e = engine_.getEntityManager().createEntity();
-		combatSystemEntityID_ = e.getID();
+		auto e = engine_.getEntityManager().create<>();
+		combatSystemEntityID_ = e.id();
 		engine_.getCoreHost().setMetaData(L"Eno.CombatSystem", combatSystemEntityID_, 1);
 		engine_.getCoreHost().begin(L"Eno.CombatSystem", combatSystemEntityID_);
 	}

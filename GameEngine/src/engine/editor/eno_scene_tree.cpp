@@ -44,7 +44,7 @@ namespace Editor
 				ECSComponents::TransformComponent{ Math::eVec2{7.f, 7.f }, Math::eVec2{9.f, 9.f }, Math::eVec2{11.f, 11.f } },
 				ECSComponents::VisibilityComponent{}
 				);
-
+		node->type_ = NodeType::EMPTY;
 		node->parent_ = parent;
 		node->enabled_ = true;
 		node->script_ = nullptr;
@@ -86,6 +86,19 @@ namespace Editor
 
 		return unode;
 	}
+	
+	// Find and get a node by name
+	Node* EnoSceneTree::getNodeByName(const std::string& name)
+	{
+		for (const auto& node : tree_)
+		{
+			if (node.second->name_ == name)
+			{
+				// Found node
+				return node.second.get();
+			}
+		}
+	}
 
 	// Get a node by entity ID
 	Node* EnoSceneTree::getNodeByEntityID(uint32_t entityID)
@@ -103,6 +116,29 @@ namespace Editor
 	{
 		auto it = tree_.find(sceneObjID);
 		return it != tree_.end() ? it->second.get() : nullptr;
+	}
+
+	// Get a child by index
+	Node* EnoSceneTree::getChild(Node* node, uint32_t idx)
+	{
+		if (node->children_.empty())
+			return nullptr;
+
+		return node->children_[idx];
+	}
+
+	void EnoSceneTree::modNodeType(Node* node, NodeType type)
+	{
+		node->type_ = type;
+		switch (type)
+		{
+#define PRESET(name, ...) \
+		case NodeType::name: \
+			node->entity_ = entMng_.presetCreate(ECSComponents::Preset::name{});
+
+			PRESET_LIST
+#undef PRESET
+		}
 	}
 
 	// Nest a node
