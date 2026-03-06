@@ -11,6 +11,9 @@
 #pragma once
 
 #include "engine/eno_engine.hpp"
+
+// Forward declaration to avoid circular include with imGui.hpp
+void setProjectPickerOpen(bool open);
 #include <iostream>
 #include <memory>
 #include <set>
@@ -84,6 +87,7 @@ public:
     void shutdown();    // Called when application closed
 
     void markEntitiesDirty() { engine_.markAnimationsDirty(); }
+    void openProjectPicker() { setProjectPickerOpen(true); }
 
     Graphics::EnoFramebuffer* getGameFramebuffer() { return gameFramebuffer_.get(); }
     Graphics::EnoFramebuffer* getEditorFramebuffer() { return editorFramebuffer_.get(); }

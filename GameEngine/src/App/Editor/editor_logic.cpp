@@ -372,6 +372,10 @@ void EditorApplication::updateEditorState() {
 
 void EditorApplication::updateImGui() {
 	SystemTimer ImGuiTimer("ImGui", systemTimes_);
+	if (isProjectPickerOpen()) {
+		imGuiProjectPicker(engine_);
+		return;
+	}
 	imGuiDisplay(engine_, engine_.getEnoEditor().getSceneTree(), engine_.getEnoEditor().getUndoManager());
 }
 
