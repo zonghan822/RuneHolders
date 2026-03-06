@@ -74,6 +74,44 @@ namespace Bridge
             return static_cast<uint32_t>(node->type_);
         }
 
+        extern "C" __declspec(dllexport)
+            uint32_t __stdcall GetZIndex(uint32_t nodeID)
+        {
+            if (!gEngine)
+            {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+            }
+
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeByEntityID(nodeID);
+            if (!node)
+                return 0;
+
+            if (node->entity_.has<ECSComponents::VisibilityComponent>(gEngine->getEntityManager()))
+                return node->entity_.get<ECSComponents::VisibilityComponent>(gEngine->getEntityManager()).z_index;
+            else
+                throw std::runtime_error("No visibility component on the entity!");
+        }
+
+        ENGINE_API void __stdcall SetZIndex(uint32_t nodeID, uint32_t z)
+        {
+            if (!gEngine) 
+            {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+            }
+
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeByEntityID(nodeID);
+            if (!node)
+                return;
+
+            if (node->entity_.has<ECSComponents::VisibilityComponent>(gEngine->getEntityManager()))
+            {
+                auto& vis = node->entity_.get<ECSComponents::VisibilityComponent>(gEngine->getEntityManager());
+                vis.z_index = z;
+            }
+            else
+                throw std::runtime_error("No visibility component on the entity!");
+        }
+
         ENGINE_API bool __stdcall IsKeyPressed(int key)
         {
             if (!gEngine) {

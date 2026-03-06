@@ -4,7 +4,7 @@ using System.Xml;
 
 namespace Eno
 {
-    public class PlayerController : ScriptBase
+    public class ExampleController : ScriptBase
     {
         [Port("The player's display name")]
         public string playerName = "Player1";
@@ -34,10 +34,13 @@ namespace Eno
             // Testing GetNode
             uint node3_z_index = GetNode<Node2D>("Node3").z_index;
             Console.WriteLine($"1 Node3's z index: {node3_z_index}");
+            GetNode<Node2D>("Node3").z_index = 30;
 
             if (this.ID == 1)
                 GetChild<Node2D>(0).z_index = 860;
 
+            // Currently script is attached to node 3
+            // and this executes => Self<Node2D>().z_index is node 3's z index
             if (this.ID == 3)
                 Self<Node2D>().z_index = 720;
 
