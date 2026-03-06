@@ -13,11 +13,7 @@
 #include <random>
 #include <unordered_map>
 #include "imGui.hpp"
-#include "game_logic.hpp"
-#include "player/player_config.hpp"
-#include "player/player_archetype_config.hpp"
-#include "editor/undo/undo_manager.hpp"
-#include "stateMachine_editor/stateMachine_editor.hpp"
+
 
 #undef min
 #undef max
@@ -33,7 +29,7 @@ using Editor::Node;
 
 bool showColliders_ = true;
 
-GameApplication* g_game = nullptr;
+EditorApplication* g_game = nullptr;
 
 // Player entity ID (to track the player)
 uint32_t playerEntityID_ = 0;
@@ -278,19 +274,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	if (!layoutApplied) {
 		imGuiSetupDefaultLayout();
 		layoutApplied = true;
-	}
-
-	// Load player config once
-	static Player::PlayerConfig playerConfig;
-	static bool configLoaded = false;
-	if (!configLoaded) {
-		configLoaded = playerConfig.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
-		if (configLoaded) {
-			std::cout << "[ImGui] Player config loaded successfully" << std::endl;
-		}
-		else {
-			std::cout << "[ImGui] Using defauly player config values" << std::endl;
-		}
 	}
 
 	// Get ImGui IO for FPS display
@@ -800,7 +783,7 @@ void collectEntityIDs(Editor::Node* node, std::vector<uint32_t>& entityIDs)
 	}
 }
 
-void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager)
+void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager, Graphics::EnoGraphicsManager& graphicsManager)
 {
 	if (selectedEntityID == UINT32_MAX) {
 		std::cout << "[DEBUG] No entity selected for deletion\n";
@@ -829,7 +812,8 @@ void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& e
 		auto deleteCmd = std::make_unique<Editor::DeleteEntityCommand>(
 			sceneTree,
 			entityManager,
-			entity
+			entity,
+			graphicsManager
 		);
 
 		// Execute the deletion (also adds to undo history)
@@ -875,7 +859,8 @@ ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine&
 	auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 		sceneTree,
 		entityManager,
-		e
+		e,
+		engine.getGraphicsManager()
 	);
 	undoManager.executeCommand(std::move(createCmd));
 
@@ -1020,7 +1005,8 @@ void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 				sceneTree,
 				entityManager,
-				e
+				e,
+				engine_.getGraphicsManager()
 			);
 			undoManager.executeCommand(std::move(createCmd));
 
@@ -1112,30 +1098,30 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	if (!playerSpawned_) {
 		if (ImGui::Button("Spawn Player")) {
 
-			// Load player configuration from file
-			Player::PlayerConfig playerConfig;
-			playerConfig.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
+			//// Load player configuration from file
+			//Player::PlayerConfig playerConfig;
+			//playerConfig.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
 
-			// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
-			// Create transform with default position at center of screen
-			float centerX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
-			float centerY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
+			//// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
+			//// Create transform with default position at center of screen
+			//float centerX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
+			//float centerY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
 
-			// Create complete player entity using the config
-			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
-				engine_.getEntityManager(),
-				Math::eVec2<float>{centerX, centerY},
-				playerConfig
-			);
+			//// Create complete player entity using the config
+			//ECS::Entity player = Player::CreatePlayerEntityFromConfig(
+			//	engine_.getEntityManager(),
+			//	Math::eVec2<float>{centerX, centerY},
+			//	playerConfig
+			//);
 
-			// Store player ID for reference
-			playerEntityID_ = player.id();
-			playerSpawned_ = true;
+			//// Store player ID for reference
+			//playerEntityID_ = player.id();
+			//playerSpawned_ = true;
 
-			// Add player entity to scene tree as root node
-			sceneTree.createFromEntity(player, nullptr);
+			//// Add player entity to scene tree as root node
+			//sceneTree.createFromEntity(player, nullptr);
 
-			std::cout << "Player spawned at center (" << centerX << ", " << centerY << ")\n";
+			//std::cout << "Player spawned at center (" << centerX << ", " << centerY << ")\n";
 		}
 	}
 	else {
@@ -1311,7 +1297,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 			sceneTree,
 			entityManager,
-			newEntity
+			newEntity,
+			engine_.getGraphicsManager()
 		);
 		undoManager.executeCommand(std::move(createCmd));
 
@@ -1399,7 +1386,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 					sceneTree,
 					entityManager,
-					childEntity
+					childEntity,
+					engine_.getGraphicsManager()
 				);
 				undoManager.executeCommand(std::move(createCmd));
 
@@ -4907,51 +4895,51 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 
 	ImGui::Separator();
 
-	//YunQi Bookmark  (i believe this below section will have to be moved to Asset Prefabs)
-	// If texture selected
-	if (!selectedTexture.empty()) {
-		ImGui::Text("Selected: %s", selectedTexture.c_str());
+	////YunQi Bookmark  (i believe this below section will have to be moved to Asset Prefabs)
+	//// If texture selected
+	//if (!selectedTexture.empty()) {
+	//	ImGui::Text("Selected: %s", selectedTexture.c_str());
 
-		// Mode selector
-		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
-		ImGui::Combo("Input Mode", &mode, modes, IM_ARRAYSIZE(modes));
+	//	// Mode selector
+	//	const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
+	//	ImGui::Combo("Input Mode", &mode, modes, IM_ARRAYSIZE(modes));
 
-		if (mode == 0) {
-			// ROWS/COLS MODE
-			ImGui::InputInt("Rows", &inputRows);
-			ImGui::InputInt("Columns", &inputCols);
+	//	if (mode == 0) {
+	//		// ROWS/COLS MODE
+	//		ImGui::InputInt("Rows", &inputRows);
+	//		ImGui::InputInt("Columns", &inputCols);
 
-			if (ImGui::Button("Apply Texture (Rows/Cols)")) {
-				textureData.rows = std::max(1, inputRows);
-				textureData.cols = std::max(1, inputCols);
-				textureData.computeFrameSize();
+	//		if (ImGui::Button("Apply Texture (Rows/Cols)")) {
+	//			textureData.rows = std::max(1, inputRows);
+	//			textureData.cols = std::max(1, inputCols);
+	//			textureData.computeFrameSize();
 
-				if (g_game)
-					g_game->applyTextureToPlayer(textureData);
-			}
+	//			if (g_game)
+	//				g_game->applyTextureToPlayer(textureData);
+	//		}
 
-			ImGui::Text("Frame Size: %d x %d",
-				textureData.frameWidth, textureData.frameHeight);
-		}
-		else {
-			// PIXEL INPUT MODE
-			ImGui::InputInt("Frame Width", &inputFrameW);
-			ImGui::InputInt("Frame Height", &inputFrameH);
+	//		ImGui::Text("Frame Size: %d x %d",
+	//			textureData.frameWidth, textureData.frameHeight);
+	//	}
+	//	else {
+	//		// PIXEL INPUT MODE
+	//		ImGui::InputInt("Frame Width", &inputFrameW);
+	//		ImGui::InputInt("Frame Height", &inputFrameH);
 
-			if (ImGui::Button("Apply Texture (Pixels)")) {
-				textureData.rows = textureData.texture->getHeight() / std::max(1, inputFrameH);
-				textureData.cols = textureData.texture->getWidth() / std::max(1, inputFrameW);
-				textureData.frameWidth = inputFrameW;
-				textureData.frameHeight = inputFrameH;
+	//		if (ImGui::Button("Apply Texture (Pixels)")) {
+	//			textureData.rows = textureData.texture->getHeight() / std::max(1, inputFrameH);
+	//			textureData.cols = textureData.texture->getWidth() / std::max(1, inputFrameW);
+	//			textureData.frameWidth = inputFrameW;
+	//			textureData.frameHeight = inputFrameH;
 
-				if (g_game)
-					g_game->applyTextureToPlayer(textureData);
-			}
+	//			if (g_game)
+	//				g_game->applyTextureToPlayer(textureData);
+	//		}
 
-			ImGui::Text("Grid: %d rows × %d cols",
-				textureData.rows, textureData.cols);
-		}
-	}
+	//		ImGui::Text("Grid: %d rows × %d cols",
+	//			textureData.rows, textureData.cols);
+	//	}
+	//}
 
 
 	// Loading audio
@@ -5378,7 +5366,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				ImVec2(1, 0)
 			);
 
-			// Capture the editor view min/max coordinates and store them in GameApplication
+			// Capture the editor view min/max coordinates and store them in EditorApplication
 			ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
 			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
 			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
@@ -5522,7 +5510,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 								sceneTree,
 								entityManager,
-								newEntity
+								newEntity,
+								engine_.getGraphicsManager()
 							);
 							undoManager.executeCommand(std::move(createCmd));
 
@@ -5620,7 +5609,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 							sceneTree,
 							entityManager,
-							newEntity
+							newEntity,
+							engine_.getGraphicsManager()
 						);
 						undoManager.executeCommand(std::move(createCmd));
 
@@ -5660,7 +5650,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						auto deleteCmd = std::make_unique<Editor::DeleteEntityCommand>(
 							sceneTree,
 							entityManager,
-							clicked.value()
+							clicked.value(),
+							engine_.getGraphicsManager()
 						);
 
 						// Execute the deletion (also adds to undo history)

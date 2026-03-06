@@ -334,7 +334,7 @@ function(build_csharp_scripts TARGET_NAME CS_PROJECT_PATH OUTPUT_DIR)
     else()
         set(DLL_NAME ${TARGET_NAME})
     endif()
-    set(CONFIG_OUTPUT_DIR "${OUTPUT_DIR}/$<CONFIG>")
+    set(CONFIG_OUTPUT_DIR "${OUTPUT_DIR}")
 
     # Gather all C# source files in the project directory
     file(GLOB_RECURSE CS_FILES "${CS_PROJECT_PATH}/*.cs")

@@ -94,6 +94,23 @@ namespace Bridge {
 
         // ============= Mouse =============
         ENGINE_API bool __stdcall GetMouseWorldPosition(float* outX, float* outY);
+        ENGINE_API bool __stdcall IsMouseButtonDown(int button);
+
+        // ============= Button =============
+        ENGINE_API bool __stdcall IsButtonClicked(uint32_t entityID);
+
+        // ============= Scene Query =============
+        ENGINE_API const wchar_t* __stdcall GetCurrentScene();
+
+        // ============= Application =============
+        ENGINE_API void __stdcall QuitApplication();
+
+        // ============= Playing State =============
+        ENGINE_API void __stdcall SetIsPlaying(bool playing);
+        ENGINE_API bool __stdcall GetIsPlaying();
+
+        // ============= Script Invocation =============
+        ENGINE_API void __stdcall RunScriptMethod(const wchar_t* className, const wchar_t* methodName);
     }
 }
 

@@ -527,7 +527,7 @@ namespace Bridge
             return true;
         }
 
-        // Get the camera's world position (reads from engine's script camera)
+        // Get the camera's world position from the active CameraComponent
         ENGINE_API bool __stdcall GetCameraPosition(float* outX, float* outY)
         {
             if (!gEngine) {
@@ -535,13 +535,20 @@ namespace Bridge
                 return false;
             }
 
-            auto pos = gEngine->getScriptCameraPos();
-            *outX = pos.x;
-            *outY = pos.y;
-            return true;
+            auto& entityMng = gEngine->getEntityManager();
+            auto cameras = entityMng.findEntity<ECSComponents::CameraComponent>();
+            for (auto& cam : cameras)
+            {
+                auto& c = cam.get<ECSComponents::CameraComponent>(entityMng);
+                if (!c.isActive) continue;
+                *outX = c.position.x;
+                *outY = c.position.y;
+                return true;
+            }
+            return false;
         }
 
-        // Set the camera's world position (writes to engine's script camera)
+        // Set the camera's world position directly on the active CameraComponent
         ENGINE_API bool __stdcall SetCameraPosition(float x, float y)
         {
             if (!gEngine) {
@@ -549,8 +556,17 @@ namespace Bridge
                 return false;
             }
 
-            gEngine->setScriptCameraPos(x, y);
-            return true;
+            auto& entityMng = gEngine->getEntityManager();
+            auto cameras = entityMng.findEntity<ECSComponents::CameraComponent>();
+            for (auto& cam : cameras)
+            {
+                auto& c = cam.get<ECSComponents::CameraComponent>(entityMng);
+                if (!c.isActive) continue;
+                c.position.x = x;
+                c.position.y = y;
+                return true;
+            }
+            return false;
         }
     }
 }

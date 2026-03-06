@@ -1,16 +1,17 @@
 /*============================================================================================
-* @file         eno_engine.cpp
-* @author       Lee Zhe An (zhean.l@digipen.edu),
-* @author		Law Zong Han (zonghan.law@digipen.edu)
-* @date         03-10-2025
-* @brief		Implementation of the core engine systems and main game loop
-*				
-*				This file contains the implementation of the EnoEngine class which serves as
-*				the central coordinator for all engine subsystems. It manages the initialization,
-*				main game loop execution, resource loading, time management, and shutdown procedures.
-*				The engine follows a component-based architecture where each system (graphics, audio,
-*				input, etc.) is managed independently but coordinated through the main engine class.
-*//*========================================================================================*/
+ * @file         eno_engine.cpp
+ * @author       Lee Zhe An (zhean.l@digipen.edu),
+ * @author		Law Zong Han (zonghan.law@digipen.edu)
+ * @date         03-10-2025
+ * @brief		Implementation of the core engine systems and main game loop
+ *
+ *				This file contains the implementation of the EnoEngine class which serves as
+ *				the central coordinator for all engine subsystems. It manages the initialization,
+ *				main game loop execution, resource loading, time management, and shutdown procedures.
+ *				The engine follows a component-based architecture where each system (graphics, audio,
+ *				input, etc.) is managed independently but coordinated through the main engine class.
+ */
+/*========================================================================================*/
 
 #include "eno_engine.hpp"
 
@@ -32,29 +33,57 @@ namespace Engine
 
 		// Systems init
 		inputMng_.initialize();
-		physicsSys_ = std::make_unique<Physics::PhysicsSystem>(bus_);
 		stateMachineSys_ = std::make_unique<FSM::StateMachineSystem>(bus_);
+		physicsSys_ = std::make_unique<Physics::PhysicsSystem>(bus_);
 		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
 		particleSys_ = std::make_unique<Particles::ParticleSystem>(bus_);
-		graphicsMng_.initialize(window_);
 		audioMng_.init();
+		graphicsMng_.initialize(window_);
 
 		// Initialize editor after tilemap is created
 		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, coreHost_, *tilemapSystem_);
 
+		for (const auto &node : editor_->getSceneTree().getAllNodes())
+		{
+			if (node->script_)
+			{
+				for (const auto &org : node->script_->origin())
+				{
+					coreHost_.begin(org, node->sceneObjectID_);
+				}
+			}
+		}
+
 		Bridge::Bridge_Init(this);
 		setupResourceLoading();
+
+		// Mark animations dirty whenever a scene is cleared/loaded
+		bus_.subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)
+		{
+			graphicsMng_.markAnimationsDirty();
+		});
+
+		// Handle audio autoplay when scene enters play mode
+		bus_.subscribe<Editor::PlayScene>([this](const Editor::PlayScene&)
+		{
+			for (const auto& node : editor_->getSceneTree().getAllNodes())
+			{
+				if (!node->enabled_) continue;
+				if (!node->entity_.has<ECSComponents::AudioComponent>(entityMng_)) continue;
+				auto& audioComp = node->entity_.get<ECSComponents::AudioComponent>(entityMng_);
+				if (audioComp.audioMod_.name_[0] != '\0')
+					audioMng_.prepareMod(audioComp);
+				if (audioComp.isAutoplay_)
+					audioMng_.play(audioComp);
+			}
+		});
 	}
 
-	// Thats why i added a callback version
-	void EnoEngine::run(std::function<void()> gameUpdateCallback)
+	void EnoEngine::run()
 	{
 		while (!window_.shouldClose())
 		{
-			updateTime(1.0);
-			window_.pollEvents();
-
-			// Script watch
+			// Script watch (beginFrame also polls events / updates time)
 			bool modified = coreHost_.areScriptsModified();
 
 			if (modified)
@@ -71,50 +100,68 @@ namespace Engine
 					}
 				}
 			}
-
-			float deltaTime = static_cast<float>(dt_);
-
-			// Update physics system (gravity, forces, velocity integration)
-			// Only update physics when the game is playing and not runtime-paused
-			if (physicsSys_ && isPlaying_ && !isPaused_) {
-				physicsSys_->Update(entityMng_, deltaTime);
-			}
-
-			// Update all state machines
-			if (isPlaying_ && !isPaused_) stateMachineSys_->update(editor_->getSceneTree(), entityMng_);
-
-			// Update collision system (collision detection and response)
-			// Only update collision when the game is playing and not runtime-paused
-			if (collisionSys_ && isPlaying_ && !isPaused_) {
-				collisionSys_->Update(entityMng_);
-			}
-
-			// Update particle system (emission and physics)
-			// Only update particles when the game is playing and not runtime-paused
-			if (particleSys_ && isPlaying_ && !isPaused_) {
-				particleSys_->Update(entityMng_, deltaTime);
-			}
-
-			// Begin graphics frame
-			graphicsMng_.beginFrame(Graphics::Color::Black);  // Clear to black
-
-			// Update audio system
-			if (isPlaying_) audioMng_.process(deltaTime);
-
-			// Call game logic if provided
-			if (gameUpdateCallback) {
-				gameUpdateCallback();
-			}
-
-			// End graphics frame and present
-			graphicsMng_.endFrame(window_);
-
-			inputMng_.endFrame();
+			beginFrame();
+			renderFrame();
+			endFrame();
 		}
-
 	}
 
-	void EnoEngine::shutDown() {
+	void EnoEngine::beginFrame()
+	{
+		updateTime(1.0);
+		window_.pollEvents();
+
+		float deltaTime = static_cast<float>(dt_);
+
+		if (isPlaying_ && !isPaused_)
+		{
+			for (const auto &node : editor_->getSceneTree().getAllNodes())
+			{
+				if (node->script_)
+				{
+					for (const auto &org : node->script_->origin())
+					{
+						coreHost_.update(org, node->sceneObjectID_);
+					}
+				}
+			}
+		}
+
+		if (isPlaying_ && !isPaused_) {
+			stateMachineSys_->update(editor_->getSceneTree(), entityMng_);
+			physicsSys_->Update(entityMng_, deltaTime);
+			collisionSys_->Update(entityMng_);
+			particleSys_->Update(entityMng_, deltaTime);
+			buttonSys_.update(entityMng_, inputMng_, viewportMin_, viewportMax_, window_.getWindowSize());
+		}
+
+		// Update audio system (continues during runtime pause)
+		if (isPlaying_)
+			audioMng_.process(deltaTime);
+	}
+
+	void EnoEngine::renderFrame()
+	{
+		// Restore and tick animation controllers
+		graphicsMng_.updateAnimations(*this);
+
+		// Update camera projection matrix before rendering
+		graphicsMng_.updateCamera(*this);
+
+		// Clear screen and render
+		graphicsMng_.beginFrame(Graphics::Color::Black);
+		graphicsMng_.render(*this);
+	}
+
+	void EnoEngine::endFrame()
+	{
+		// Present frame and reset input state
+		graphicsMng_.endFrame(window_);
+		inputMng_.endFrame();
+	}
+
+	void EnoEngine::shutDown()
+	{
 		// Clean up graphics system resources
 		graphicsMng_.shutdown();
 	}
@@ -136,8 +183,8 @@ namespace Engine
 		loader_.loadFonts(loader_.getFontPath(), 48);
 	}
 
-
-	void EnoEngine::updateTime(double fps_calc_interval) {
+	void EnoEngine::updateTime(double fps_calc_interval)
+	{
 		// get elapsed time (in seconds) between previous and current frames
 		static double prev_time = glfwGetTime();
 		double curr_time = glfwGetTime();
@@ -155,7 +202,8 @@ namespace Engine
 		// update fps at least every 10 seconds ...
 		fps_calc_interval = (fps_calc_interval < 0.0) ? 0.0 : fps_calc_interval;
 		fps_calc_interval = (fps_calc_interval > 10.0) ? 10.0 : fps_calc_interval;
-		if (elapsed_time > fps_calc_interval) {
+		if (elapsed_time > fps_calc_interval)
+		{
 			fps_ = count / elapsed_time;
 			start_time = curr_time;
 			count = 0.0;

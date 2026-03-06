@@ -21,11 +21,11 @@
 #include <unordered_map>
 #include <algorithm>
 
-
-#include "player/player.hpp"
-#include "game_logic.hpp"
-#include "../../Engine/prefab/prefab.hpp"
-#include "../../Engine/raycast/raycast_renderer.hpp"
+#include "editor_logic.hpp"
+#include "prefab/prefab.hpp"
+#include "raycast/raycast_renderer.hpp"
+#include "editor/undo/undo_manager.hpp"
+#include "stateMachine_editor/stateMachine_editor.hpp"
 
 // Variables
 static std::mt19937 rng(std::random_device{}());
@@ -34,7 +34,7 @@ static std::mt19937 rng(std::random_device{}());
 // Access via engine_.getCollisionSystem(), engine_.getPhysicsSystem(), engine_.getPlayerSystem()
 
 extern bool showColliders_;
-extern GameApplication* g_game;
+extern EditorApplication* g_game;
 
 // Player entity ID to track player
 extern uint32_t playerEntityID_;
@@ -307,7 +307,7 @@ void clearSelectedEntity();
  * \param[in]   ECS::EntityManager& entityManager
  * \return      void
 *//*========================================================================================*/
-void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager);
+void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager, Graphics::EnoGraphicsManager& graphicsManager);
 
 /*============================================================================================
  * \brief       Displays the Raycast 3D View panel (Wolfenstein-style first-person renderer)

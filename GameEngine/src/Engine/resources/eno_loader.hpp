@@ -11,9 +11,6 @@
 *===========================================================================================*/
 
 #pragma once
-// STB_IMAGE
-#include "stb_image.h"
-
 // FMOD
 #include "fmod.hpp"
 #include "../audio/eno_audio_module.hpp"

@@ -104,6 +104,22 @@ namespace Audio
 			stopChannelGroup("BGM");
 			soundPlaying_ = false; // reset toggle state
 			});
+
+		setChannelGroup("BGM");
+		setChannelGroup("SFX");
+
+		Audio::SoundParameters sound;
+		Audio::ParamEQ eq;
+		Audio::SFXReverb reverb;
+		eq = Audio::ParamEQ{ 3.f, 1000.f, 1.f };
+		sound.volume = 0.1f;
+		sound.eq = Audio::EQ{};
+		sound.eq->type = FMOD_DSP_TYPE_PARAMEQ;
+		sound.eq->paramEQ = eq;
+		sound.reverb = Audio::Reverb{};
+		sound.reverb->type = FMOD_DSP_TYPE_SFXREVERB;
+		sound.reverb->sfx = reverb;
+		modifyChannelGroup("BGM", sound);
 	}
 
 	FMOD::System* EnoAudioManager::getSystem() const 

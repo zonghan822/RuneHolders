@@ -67,11 +67,11 @@ namespace Editor
 			//	});
 
 			// Subscribe to delete selected entity event
-			// NOTE: This is just a placeholder - actual deletion happens in GameApplication
-			// because entities are stored in GameApplication's sceneTree_
+			// NOTE: This is just a placeholder - actual deletion happens in EditorApplication
+			// because entities are stored in EditorApplication's sceneTree_
 			bus_.subscribe<Editor::DeleteSelectedEntity>([&](const Editor::DeleteSelectedEntity)
 				{	
-					// Event will be handled by GameApplication's subscriber
+					// Event will be handled by EditorApplication's subscriber
 				});
 		}
 

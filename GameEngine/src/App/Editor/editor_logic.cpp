@@ -1,0 +1,387 @@
+/*============================================================================================
+* All content ? 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         game_logic.cpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author		Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @date         05-11-2025
+* @brief        Game application layer that handles game-specific logic, entity management,
+*               rendering, and ImGui integration. Systems are now managed by EnoEngine.
+*//*========================================================================================*/
+
+#include "editor_logic.hpp"
+#include <GLFW/glfw3.h>
+#include <algorithm>
+#include "imGui.hpp"
+#include "math/math.hpp"
+#include "particle/particle_presets.hpp"
+#include "particle/particle_component.hpp"
+#include <typeindex>
+
+void EditorApplication::initialize() {
+	// Setup engine systems first (this now includes game systems)
+	engine_.setup();
+
+	// Setup all game content
+	setupPrefabs();
+	setupGameEvents();
+	setupImGui();
+
+	auto& tileMap = engine_.getTileMap();
+
+	// Set up tile map editor
+	mapEditor_ = std::make_unique<MapEditor>(tileMap);
+	Math::eVec2<float> worldSize = tileMap.getWorldSize();
+
+	stateMachineEditor_ = std::make_unique<Editor::StateMachineEditor>(engine_.getEnoEditor());
+
+	worldWidth_ = worldSize.x;
+	worldHeight_ = worldSize.y;
+
+	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
+	gameFramebuffer_->create(static_cast<int>(worldWidth_), static_cast<int>(worldHeight_)); // Fixed virtual resolution
+
+	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
+	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
+
+	// Center editor camera on the middle of the game world initially
+	editorCameraX_ = (worldWidth_ / 2.0f) - static_cast<float>(EDITOR_WIDTH) / 2.f;
+	editorCameraY_ = (worldHeight_ / 2.0f) - static_cast<float>(EDITOR_HEIGHT) / 2.f;
+
+	// Subscribe to delete selected entity event (using EditorApplication's scene tree)
+	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
+		{
+			extern void deleteSelectedEntity(Editor::EnoSceneTree&, ECS::EntityManager&, Editor::UndoManager&, Graphics::EnoGraphicsManager&);
+			deleteSelectedEntity(engine_.getEnoEditor().getSceneTree(), engine_.getEntityManager(), engine_.getEnoEditor().getUndoManager(), engine_.getGraphicsManager());
+		});
+
+	// Subscribe to scene cleared event to reset UI state
+	engine_.getEventBus().subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)
+		{
+			extern void clearSelectedEntity();
+			clearSelectedEntity();
+			engine_.markAnimationsDirty();
+			std::cout << "[EditorApplication] Scene cleared, reset selected entity" << std::endl;
+		});
+
+	std::cout << "Game initialized successfully!" << std::endl;
+}
+
+void EditorApplication::run() {
+	std::cout << "Starting game..." << std::endl;
+
+	while (!engine_.shouldClose())
+	{
+		// 1. Set playing state and run editor state BEFORE game logic so that
+		//    isPlaying_ and hot-reload/begin() are correct when beginFrame() runs.
+		bool isPlayMode = (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing ||
+		                   engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
+		engine_.setIsPlaying(isPlayMode);
+		updateEditorState();
+
+		// 2. Resize editor framebuffer if zoom changed.
+		if (editorFramebuffer_) {
+			int fbW = getEditorWidth();
+			int fbH = getEditorHeight();
+			if (fbW != lastEditorFbWidth_ || fbH != lastEditorFbHeight_) {
+				editorFramebuffer_->create(fbW, fbH);
+				lastEditorFbWidth_ = fbW;
+				lastEditorFbHeight_ = fbH;
+			}
+		}
+
+		// 3. Run all game-logic systems (scripts, physics, collision, particles, audio).
+		engine_.beginFrame();
+
+		// 4. Update editor camera AFTER physics/scripts have moved entities,
+		//    so the camera write-back to CameraComponent is current before rendering.
+		updateEditorCamera();
+
+		// 5. Render the game scene into the editor framebuffer.
+		//    In edit mode the CameraComponent belongs to the game scene and must not
+		//    be moved by WASD. Temporarily override it with the editor viewport so
+		//    renderFrame() draws from the editor's perspective, then restore it.
+		bool isEditMode = (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Stopped);
+
+		Math::eVec2<float> savedCamPos{};
+		float savedVpW = 0.f, savedVpH = 0.f;
+		bool  camOverridden = false;
+
+		if (isEditMode)
+		{
+			auto& entityMng = engine_.getEntityManager();
+			for (auto& camEnt : entityMng.findEntity<ECSComponents::CameraComponent>())
+			{
+				auto& c = camEnt.get<ECSComponents::CameraComponent>(entityMng);
+				if (!c.isActive) continue;
+				savedCamPos = c.position;
+				savedVpW    = c.viewportWidth;
+				savedVpH    = c.viewportHeight;
+				c.position.x    = editorCameraX_ + getEditorWidth()  * 0.5f;
+				c.position.y    = editorCameraY_ + getEditorHeight() * 0.5f;
+				c.viewportWidth  = static_cast<float>(getEditorWidth());
+				c.viewportHeight = static_cast<float>(getEditorHeight());
+				camOverridden = true;
+				break;
+			}
+		}
+
+		if (editorFramebuffer_) {
+			// Tell the graphics manager the pixel size of the FBO so updateCamera()
+			// sets glViewport correctly without knowing about the framebuffer.
+			engine_.getGraphicsManager().setRenderTargetSize(getEditorWidth(), getEditorHeight());
+			editorFramebuffer_->bind();
+		}
+		engine_.renderFrame();
+		if (editorFramebuffer_) {
+			editorFramebuffer_->unbind();
+			engine_.getGraphicsManager().setRenderTargetSize(0, 0); // revert to window size
+			auto [w, h] = engine_.getWindowManager().getFramebufferSize();
+			glViewport(0, 0, w, h);
+			engine_.getGraphicsManager().setProjectionMatrix(w, h);
+		}
+
+		// Restore the CameraComponent to its original scene position.
+		if (camOverridden)
+		{
+			auto& entityMng = engine_.getEntityManager();
+			for (auto& camEnt : entityMng.findEntity<ECSComponents::CameraComponent>())
+			{
+				auto& c = camEnt.get<ECSComponents::CameraComponent>(entityMng);
+				if (!c.isActive) continue;
+				c.position      = savedCamPos;
+				c.viewportWidth  = savedVpW;
+				c.viewportHeight = savedVpH;
+				break;
+			}
+		}
+
+		// 6. Draw ImGui panels (game viewport, inspector, etc.), then present.
+		updateEditorLogic();
+		engine_.endFrame();
+	}
+}
+
+void EditorApplication::shutdown() {
+	std::cout << "Terminating game..." << std::endl;
+	imGuiTerminate();
+	engine_.shutDown();
+}
+
+void EditorApplication::setupPrefabs() {
+	auto prefabManager = engine_.getPrefabManager();
+	prefabManager.registerPresets();
+
+	ECSComponents::Preset::saveAll(prefabManager);
+	ECSComponents::Preset::loadAll(prefabManager);
+}
+
+void EditorApplication::setupGameEvents() {
+
+	auto& inputMng = engine_.getInputManager();
+
+	// Setup Delete key for entity deletion
+	inputMng.setupKey("Delete Selected Entity", GLFW_KEY_DELETE, glfwGetKeyScancode(GLFW_KEY_DELETE), GLFW_RELEASE, 0);
+	inputMng.setupEvent<Editor::DeleteSelectedEntity>("Delete Selected Entity");
+
+	// Undo/Redo System
+	// Ctrl+Z for undo
+	inputMng.setupKey("Undo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL);
+	inputMng.setupEvent<Editor::UndoAction>("Undo");
+
+	// Ctrl+Shift+Z for redo
+	inputMng.setupKey("Redo", GLFW_KEY_Z, glfwGetKeyScancode(GLFW_KEY_Z), GLFW_RELEASE, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT);
+	inputMng.setupEvent<Editor::RedoAction>("Redo");
+}
+
+void EditorApplication::setupImGui() {
+	GLFWwindow* window = engine_.getWindowManager().getWindow();
+	imGuiInit(window);
+	extern EditorApplication* g_game;
+	g_game = this;
+}
+
+void EditorApplication::updateEditorLogic() {
+	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
+	// All game logic and camera updates have already run; just draw ImGui.
+	updateImGui();
+}
+
+void EditorApplication::updateEditorCamera() {
+	auto& tileMap = engine_.getTileMap();
+	Math::eVec2<float> worldSize = tileMap.getWorldSize();
+	worldWidth_ = worldSize.x;
+	worldHeight_ = worldSize.y;
+
+	float deltaTime = static_cast<float>(engine_.getDeltaTime());
+	auto  state     = engine_.getEnoEditor().getCurrentScene().getState();
+
+	if (state == Editor::State::Stopped)
+	{
+		// EDIT MODE ─────────────────────────────────────────────────────────────
+		// The editor camera (editorCameraX_/Y_) is a free viewport independent of
+		// the CameraComponent. WASD moves it; the CameraComponent stays at the
+		// position the user placed it in the scene. The blue overlay in the editor
+		// panel shows where the CameraComponent viewport sits in the world.
+		// run() handles the temporary CameraComponent override around renderFrame().
+		auto& inputManager = engine_.getInputManager();
+		float cameraDelta  = editorCameraSpeed_ * deltaTime;
+		if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
+		if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
+		if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
+		if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
+	}
+	else
+	{
+		// PLAY MODE ─────────────────────────────────────────────────────────────
+		// Trigger a room-transition pan with UP/DOWN keys.
+		if (state == Editor::State::Playing)
+		{
+			auto& inputManager = engine_.getInputManager();
+			if (inputManager.isKeyDown(GLFW_KEY_UP) && !isPanning_)
+				startCameraPan(editorCameraY_ - static_cast<float>(EDITOR_HEIGHT), 1.0f);
+			if (inputManager.isKeyDown(GLFW_KEY_DOWN) && !isPanning_)
+				startCameraPan(editorCameraY_ + static_cast<float>(EDITOR_HEIGHT), 1.0f);
+		}
+
+		int fbW = getEditorWidth();
+		int fbH = getEditorHeight();
+
+		if (isPanning_)
+		{
+			// Animate the editor camera toward the target room.
+			panTimer_ += deltaTime;
+			float progress = Math::min(panTimer_ / panDuration_, 1.0f);
+			float eased    = progress < 0.5f
+				? 2.0f * progress * progress
+				: 1.0f - Math::pow(-2.0f * progress + 2.0f, 2.0f) / 2.0f;
+			editorCameraY_ = panStartY_ + (panTargetY_ - panStartY_) * eased;
+			if (progress >= 1.0f) { isPanning_ = false; editorCameraY_ = panTargetY_; }
+
+			// Push the panned position into the CameraComponent so the game
+			// camera moves to the new room.
+			auto& entityMng = engine_.getEntityManager();
+			for (auto& camEnt : entityMng.findEntity<ECSComponents::CameraComponent>())
+			{
+				auto& c = camEnt.get<ECSComponents::CameraComponent>(entityMng);
+				if (!c.isActive) continue;
+				c.position.x    = editorCameraX_ + fbW * 0.5f;
+				c.position.y    = editorCameraY_ + fbH * 0.5f;
+				c.viewportWidth  = static_cast<float>(fbW);
+				c.viewportHeight = static_cast<float>(fbH);
+				break;
+			}
+		}
+		else
+		{
+			// Not panning: mirror the game camera position into the editor viewport
+			// so the editor panel shows exactly what the game camera sees.
+			auto& entityMng = engine_.getEntityManager();
+			for (auto& camEnt : entityMng.findEntity<ECSComponents::CameraComponent>())
+			{
+				auto& c = camEnt.get<ECSComponents::CameraComponent>(entityMng);
+				if (!c.isActive) continue;
+				editorCameraX_   = c.position.x - fbW * 0.5f;
+				editorCameraY_   = c.position.y - fbH * 0.5f;
+				c.viewportWidth  = static_cast<float>(fbW);
+				c.viewportHeight = static_cast<float>(fbH);
+				break;
+			}
+		}
+	}
+}
+
+
+void EditorApplication::updateEditorState() {
+	auto& inputManager = engine_.getInputManager();
+	static bool keyFrameMode = false;
+	static bool playAfterStop = true;
+	static bool hasBegun = false;
+	auto& coreHost = engine_.getCoreHost();
+
+	// Editor state = play game
+	switch (engine_.getEnoEditor().getCurrentScene().getState())
+	{
+	case Editor::State::Playing:
+		{
+			// Check that the last frame editor state was 'Stopped'
+			if (playAfterStop)
+			{
+				coreHost.hotReload();
+				// Re-register all scripts after hot reload to create fresh instances
+				// with the newly loaded assembly's types. Without this, the first play
+				// would use stale instances from the previous assembly.
+				engine_.getEnoEditor().getSceneTree().registerAllScripts();
+				// Toggle flag to make it a one time event
+				playAfterStop = false;
+			}
+
+			if (!hasBegun)
+			{
+				for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
+				{
+					if (node->script_ && !node->entity_.has<ECSComponents::ButtonComponent>(engine_.getEntityManager()))
+					{
+						for (const auto& org : node->script_->origin())
+						{
+							//coreHost.begin(org, node->entity_.id());  
+							coreHost.begin(org, node->sceneObjectID_);
+						}
+					}
+				}
+				hasBegun = true;
+			}
+			break;
+
+		}
+		case Editor::State::Paused:
+		{
+			// This toggles keyframe mode
+			keyFrameMode = true;
+			break;
+		}
+		case Editor::State::NextFrame:
+		{
+			// Check if key frame mode is true
+			if (keyFrameMode)
+			{
+				// Reset variables - transition back to Paused for next frame
+				// NOTE: Don't set state back to Paused here! It happens too early in the frame.
+				// The state will be reset to Paused at the end of this function after rendering.
+			}
+			engine_.getEnoEditor().getCurrentScene().pause();
+			break;
+		}
+		case Editor::State::Stopped:
+		{
+			// This condition ensures resetting of pos comes after play
+			if (!playAfterStop)
+			{
+
+				// Mark entities as dirty to refresh the rendering cache
+				markEntitiesDirty();
+				// Toggle flag
+				playAfterStop = true;
+				hasBegun = false;
+			}
+			break;
+		}
+	}
+}
+
+
+void EditorApplication::updateImGui() {
+	SystemTimer ImGuiTimer("ImGui", systemTimes_);
+	imGuiDisplay(engine_, engine_.getEnoEditor().getSceneTree(), engine_.getEnoEditor().getUndoManager());
+}
+
+
+// Camera panning for room transitions
+void EditorApplication::startCameraPan(float targetY, float duration)
+{
+	isPanning_ = true;
+	panStartY_ = editorCameraY_;
+	panTargetY_ = targetY;
+	panDuration_ = duration;
+	panTimer_ = 0.0f;
+}

@@ -29,7 +29,7 @@ echo Selected configuration: %CONFIG%
 echo.
 
 REM Detect existing executable
-if exist build\projects\App\%CONFIG%\Editor.exe (
+if exist build\projects\App\%CONFIG%\Editor\Editor.exe (
     echo Application found for %CONFIG%
     cd build
 
@@ -86,7 +86,7 @@ if exist build\projects\App\%CONFIG%\Editor.exe (
 REM ---------- RUN EDITOR ----------
 echo.
 echo Running ImGui Editor in %CONFIG% mode...
-cd projects\App\%CONFIG%
+cd projects\App\%CONFIG%\Editor
 Editor.exe
 
 if %errorlevel% neq 0 (

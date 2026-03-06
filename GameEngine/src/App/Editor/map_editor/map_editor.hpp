@@ -10,7 +10,7 @@
 
 #include "engine/eno_engine.hpp"
 
-class GameApplication;
+class EditorApplication;
 
 class MapEditor {
 public:
@@ -26,8 +26,8 @@ public:
 
 	void displayMenu();
 	void displayTilesetMenu(Resources::EnoLoader& loader);
-	void paint(GameApplication* g);
-	void draw(GameApplication* g, ImDrawList* drawList);
+	void paint(EditorApplication* g);
+	void draw(EditorApplication* g, ImDrawList* drawList);
 
 
 private:
