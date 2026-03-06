@@ -29,14 +29,21 @@ namespace Eno
 
         public void Begin()
         {
-            Console.WriteLine($"ID on script.cs: {this.ID}");
-            
-            Console.WriteLine(typeof(Node));
             // Testing getting a node/child
-            // childNodeID = Bridge.GetChild(0, 0);
-            uint node3_Z_INDEX = GetNode("Node3").z_index;
-            Console.WriteLine($"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ node3_Z_INDEX: {node3_Z_INDEX}");
+            // ----------------------------
+            // Testing GetNode
+            uint node3_z_index = GetNode<Node2D>("Node3").z_index;
+            Console.WriteLine($"1 Node3's z index: {node3_z_index}");
 
+            if (this.ID == 1)
+                GetChild<Node2D>(0).z_index = 860;
+
+            if (this.ID == 3)
+                Self<Node2D>().z_index = 720;
+
+            node3_z_index = GetNode<Node2D>("Node3").z_index;
+            Console.WriteLine($"2 Node3's z index: {node3_z_index}");
+            // ----------------------------
 
             // Creating a custom input
             ia1 = new InputAction("Jump")

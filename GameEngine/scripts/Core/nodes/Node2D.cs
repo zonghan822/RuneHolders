@@ -2,19 +2,19 @@ namespace Eno
 {
     public class Node2D : Node
     {
-        internal Node2D(uint id) : base(id) {}
+        public Node2D(uint id, NodeType type) : base(id, type) {}
 
         // Visibility
         public uint z_index
         {
-            get => Bridge.GetZIndex(id);
-            set => Bridge.SetZIndex(id, value);
+            get => Bridge.GetZIndex(ID);
+            set => Bridge.SetZIndex(ID, value);
         }
 
         public bool visible
         {
-            get => Bridge.GetVisibility(id);
-            set => Bridge.SetVisibility(id, value);
+            get => Bridge.GetVisibility(ID);
+            set => Bridge.SetVisibility(ID, value);
         }
     }
 }

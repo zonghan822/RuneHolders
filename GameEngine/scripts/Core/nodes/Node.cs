@@ -3,19 +3,20 @@ namespace Eno
     // Nodes with name, visibility and layer components
     public class Node
     {
-        public uint id;
+        public uint ID { get; }
+        public NodeType Type { get; }
 
-        public Node(uint id)
+        public Node(uint ID, NodeType type)
         {
-            this.id = id;
+            this.ID = ID;
+            this.Type = type;
         }
 
         public Node GetChild(uint index)
         {
-            uint childID = Bridge.GetChild(id, index);
+            uint childID = Bridge.GetChild(ID, index);
+            if (childID == 0) return null;
             return NodeFactory.Create(childID);
         }
-
-        public uint ID => id;
     }
 }
