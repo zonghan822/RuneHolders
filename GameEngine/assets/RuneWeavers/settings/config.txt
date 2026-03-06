@@ -1,4 +1,5 @@
 Engine Version: 0.0001a
+Window Title: RuneWeavers
 Window Width: 1280
 Window Height: 720
 Fullscreen: false

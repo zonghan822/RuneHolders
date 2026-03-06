@@ -51,11 +51,11 @@ endif()
 # Set per-app exe output directory
 set_target_properties(${APP_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY
-        "${CMAKE_BINARY_DIR}/projects/App/${APP_NAME}")
+        "${CMAKE_BINARY_DIR}/projects/App/$<CONFIG>/${APP_NAME}")
 
 # Build per-app C# scripts if scripts/<AppName>/ exists
 set(APP_SCRIPT_DIR    "${CMAKE_SOURCE_DIR}/scripts/${APP_NAME}")
-set(APP_SCRIPT_OUTPUT "${CMAKE_BINARY_DIR}/projects/App/${APP_NAME}")
+set(APP_SCRIPT_OUTPUT "${CMAKE_BINARY_DIR}/projects/App/$<CONFIG>/${APP_NAME}")
 if(EXISTS "${APP_SCRIPT_DIR}")
     build_csharp_scripts(
         ${APP_NAME}_GameScripts

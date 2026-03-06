@@ -417,11 +417,15 @@ namespace Editor
 			filename += ".txt";
 		}
 
+		// Ensure the parent directory exists
+		std::filesystem::create_directories(std::filesystem::path(filename).parent_path());
+
 		std::ofstream save{ filename };
 
 		if (!save)
 		{
-			throw std::runtime_error("Failed to create a save file for the scene tree!");
+			std::cerr << "[EnoSceneTree] Failed to create save file: " << filename << std::endl;
+			return;
 		}
 
 		// Format

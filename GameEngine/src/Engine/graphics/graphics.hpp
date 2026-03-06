@@ -25,6 +25,9 @@
 #include <array>
 #include <algorithm>
 
+// Forward declarations
+namespace Engine { class EnoEngine; }
+
 // Math constants
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -262,12 +265,35 @@ namespace Graphics
         void setProjectionMatrix(int windowWidth, int windowHeight);
         void setProjectionMatrix(const float* matrix);
 
+        // Override the pixel dimensions used for glViewport inside updateCamera().
+        // Call before renderFrame() when rendering into a framebuffer whose pixel
+        // size differs from the OS window (e.g. the editor FBO).
+        // Pass (0, 0) to revert to the OS window framebuffer size.
+        void setRenderTargetSize(int w, int h) { renderTargetW_ = w; renderTargetH_ = h; }
+
         // Getters
         bool isInitialized() const { return initialized_; }
         std::unordered_map<std::string, std::shared_ptr<EnoTexture>> texMap() const { return texMap_; }
 
         // Map texture
         void mapTexture(const TextureMapping& e);
+
+        // Restore animation controllers from serialized component data (when dirty),
+        // then tick all controllers. Call once per frame before updateCamera().
+        void updateAnimations(Engine::EnoEngine& engine);
+
+        // Mark animation controllers as dirty so they are restored next frame.
+        void markAnimationsDirty() { animationsDirty_ = true; }
+
+        // Update the projection matrix from the active CameraComponent.
+        // Also syncs the script camera position via the engine bridge.
+        // Call once per frame before render().
+        void updateCamera(Engine::EnoEngine& engine);
+
+        // Render all entities with graphics components, sorted by layer.
+        // Draws textured quads, shapes, and text components.
+        void render(Engine::EnoEngine& engine);
+
     private:
         // Core systems
         Event::EnoEventBus& bus_;
@@ -291,6 +317,13 @@ namespace Graphics
 
         // Projection matrix for 2D rendering
         std::array<float, 16> projectionMatrix_;
+
+        // Animation dirty flag — true on first frame and after scene load
+        bool animationsDirty_ = true;
+
+        // Pixel dimensions of the current render target.  0 = use OS window size.
+        int renderTargetW_ = 0;
+        int renderTargetH_ = 0;
 
         // Internal helper functions
         bool createDefaultShader();

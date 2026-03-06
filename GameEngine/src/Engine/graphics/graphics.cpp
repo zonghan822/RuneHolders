@@ -10,6 +10,9 @@
 #include "stb_image.h"
 
 #include "graphics.hpp"
+#include "../engine/eno_engine.hpp"
+#include "../component/component_registry.hpp"
+#include "../component/components/visibility.hpp"
 #include <iostream>
 #include <cmath>
 #include <fstream>
@@ -912,7 +915,7 @@ namespace Graphics
                 xCursor += (ch.advance >> 6) * scale;
             }
             catch (const std::out_of_range&) {
-                // Character wasn�t in the atlas, skip it
+                // Character wasn�t in the atlas, skip it
                 continue;
             }
         }
@@ -949,13 +952,13 @@ namespace Graphics
         float right = screenWidth;
         float bottom = screenHeight;
         float top = 0.0f;
-        float near = -1.0f;
-        float far = 1.0f;
+        float nearPlane = -1.0f;
+        float farPlane = 1.0f;
 
         uiProj.fill(0.0f);
         uiProj[0] = 2.0f / (right - left);
         uiProj[5] = 2.0f / (top - bottom);
-        uiProj[10] = -2.0f / (far - near);
+        uiProj[10] = -2.0f / (farPlane - nearPlane);
         uiProj[12] = -(right + left) / (right - left);
         uiProj[13] = -(top + bottom) / (top - bottom);
         uiProj[15] = 1.0f;
@@ -1130,17 +1133,17 @@ namespace Graphics
         float right = static_cast<float>(width);
         float bottom = static_cast<float>(height);
         float top = 0.0f;
-        float near = -1.0f;
-        float far = 1.0f;
+        float nearPlane = -1.0f;
+        float farPlane = 1.0f;
 
         // Fill projection matrix column-major order because openGL uses this shi
         projectionMatrix_.fill(0.0f);
         projectionMatrix_[0] = 2.0f / (right - left);
         projectionMatrix_[5] = 2.0f / (top - bottom);
-        projectionMatrix_[10] = -2.0f / (far - near);
+        projectionMatrix_[10] = -2.0f / (farPlane - nearPlane);
         projectionMatrix_[12] = -(right + left) / (right - left);
         projectionMatrix_[13] = -(top + bottom) / (top - bottom);
-        projectionMatrix_[14] = -(far + near) / (far - near);
+        projectionMatrix_[14] = -(farPlane + nearPlane) / (farPlane - nearPlane);
         projectionMatrix_[15] = 1.0f;
     }
 
@@ -1298,4 +1301,391 @@ namespace Graphics
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+
+    void EnoGraphicsManager::updateAnimations(Engine::EnoEngine& engine)
+    {
+        auto& entityMng  = engine.getEntityManager();
+        auto& loader     = engine.getResourceLoader();
+        auto& animReg    = engine.getAnimationRegistry();
+        float deltaTime  = static_cast<float>(engine.getDeltaTime());
+
+        auto entities = entityMng.findEntity<ECSComponents::AnimationControllerComponent>();
+
+        if (animationsDirty_)
+        {
+            animationsDirty_ = false;
+
+            for (auto& entity : entities)
+            {
+                auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityMng);
+
+                // Handle old format (backward compatibility) — single animation stored in legacy fields
+                if (animComp.animationCount == 0 && animComp.frameWidth > 0 && animComp.frameHeight > 0)
+                {
+                    if (entity.has<ECSComponents::DrawInfoComponent>(entityMng))
+                    {
+                        auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entityMng);
+                        const char* animName = (strlen(animComp.currentAnimationName) > 0)
+                            ? animComp.currentAnimationName : "Default";
+                        animComp.setAnimationData(
+                            animName,
+                            drawComp.texturePath,
+                            animComp.frameWidth,
+                            animComp.frameHeight,
+                            animComp.rows,
+                            animComp.cols,
+                            animComp.frameDuration,
+                            animComp.looping
+                        );
+                    }
+                }
+
+                // Restore all animations from the serialized animations array
+                if (animComp.animationCount > 0)
+                {
+                    Animation::AnimationController* ctrl = animReg.get(animComp.controllerID);
+                    if (!ctrl)
+                    {
+                        animComp.controllerID = animReg.createController();
+                        ctrl = animReg.get(animComp.controllerID);
+                    }
+                    else
+                    {
+                        ctrl->animations_.clear();
+                        ctrl->textures_.clear();
+                        ctrl->currentAnimation_     = nullptr;
+                        ctrl->currentTexture_       = nullptr;
+                        ctrl->currentAnimationName_.clear();
+                    }
+
+                    if (ctrl)
+                    {
+                        for (int i = 0; i < animComp.animationCount; ++i)
+                        {
+                            const auto& animData = animComp.animations[i];
+                            if (animData.frameWidth <= 0 || animData.frameHeight <= 0)
+                                continue;
+
+                            std::shared_ptr<EnoTexture> texture;
+                            if (strlen(animData.texturePath) > 0)
+                            {
+                                auto& textures = loader.getAllTextures();
+                                auto it = textures.find(animData.texturePath);
+                                if (it != textures.end())
+                                    texture = it->second;
+                            }
+
+                            if (texture)
+                            {
+                                Animation::EnoAnimation anim = Animation::createSpriteSheetAnimation(
+                                    animData.frameWidth,
+                                    animData.frameHeight,
+                                    texture->getWidth(),
+                                    texture->getHeight(),
+                                    0,
+                                    animData.rows * animData.cols,
+                                    animData.frameDuration
+                                );
+                                anim.setLooping(animData.looping);
+                                ctrl->addAnimation(animData.name, anim, texture);
+                            }
+                        }
+
+                        if (strlen(animComp.currentAnimationName) > 0)
+                            ctrl->setAnimation(animComp.currentAnimationName);
+
+                        // Sync texture back to DrawInfoComponent so the renderer picks it up
+                        if (entity.has<ECSComponents::DrawInfoComponent>(entityMng) && ctrl->currentTexture_)
+                        {
+                            auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entityMng);
+                            drawComp.texture = ctrl->currentTexture_;
+
+                            if (!ctrl->currentAnimationName_.empty())
+                            {
+                                for (int i = 0; i < animComp.animationCount; ++i)
+                                {
+                                    if (strcmp(animComp.animations[i].name, ctrl->currentAnimationName_.c_str()) == 0)
+                                    {
+                                        strncpy_s(drawComp.texturePath, animComp.animations[i].texturePath,
+                                            sizeof(drawComp.texturePath) - 1);
+                                        drawComp.texturePath[sizeof(drawComp.texturePath) - 1] = '\0';
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tick all controllers every frame
+        for (auto& entity : entities)
+        {
+            auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityMng);
+            Animation::AnimationController* ctrl = animReg.get(animComp.controllerID);
+            if (ctrl)
+                ctrl->update(deltaTime);
+        }
+    }
+
+    void EnoGraphicsManager::updateCamera(Engine::EnoEngine& engine)
+    {
+        auto& entityManager = engine.getEntityManager();
+        auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+
+        for (auto& cameraEntity : cameraEntities)
+        {
+            auto& camera = cameraEntity.get<ECSComponents::CameraComponent>(entityManager);
+            if (!camera.isActive) continue;
+
+            // Build orthographic projection matrix from camera bounds
+            float left   = camera.position.x - camera.viewportWidth  * 0.5f;
+            float right  = camera.position.x + camera.viewportWidth  * 0.5f;
+            float top    = camera.position.y - camera.viewportHeight * 0.5f;
+            float bottom = camera.position.y + camera.viewportHeight * 0.5f;
+
+            std::array<float, 16> proj{};
+            proj[0]  =  2.0f / (right - left);
+            proj[5]  =  2.0f / (top   - bottom);
+            proj[10] = -1.0f;
+            proj[12] = -(right + left)   / (right - left);
+            proj[13] = -(top   + bottom) / (top   - bottom);
+            proj[15] =  1.0f;
+
+            setProjectionMatrix(proj.data());
+
+            // Set GL viewport to the pixel dimensions of the render target.
+            // If the caller set a render target size (e.g. editor FBO), use that;
+            // otherwise fall back to the OS window framebuffer size.
+            int vpW, vpH;
+            if (renderTargetW_ > 0 && renderTargetH_ > 0)
+            {
+                vpW = renderTargetW_;
+                vpH = renderTargetH_;
+            }
+            else
+            {
+                auto [fw, fh] = engine.getWindowManager().getFramebufferSize();
+                vpW = fw;
+                vpH = fh;
+            }
+            glViewport(0, 0, vpW, vpH);
+
+            break; // Only the first active camera is used
+        }
+    }
+
+    void EnoGraphicsManager::render(Engine::EnoEngine& engine)
+    {
+        auto& entityManager  = engine.getEntityManager();
+        auto& loader         = engine.getResourceLoader();
+        auto& tileMap        = engine.getTileMap();
+
+        // ----------------------------------------------------------------
+        // TILEMAP — render all layers before entities (background first)
+        // Tiles are in world space; the camera projection matrix handles
+        // the visible region, so no explicit camera offset is needed.
+        // ----------------------------------------------------------------
+        {
+            const auto& layers = tileMap.layers();
+            float cellSize     = tileMap.cellSize();
+            int   mapW         = tileMap.width();
+            int   mapH         = tileMap.height();
+
+            for (const auto& layer : layers)
+            {
+                for (int y = 0; y < mapH; ++y)
+                {
+                    for (int x = 0; x < mapW; ++x)
+                    {
+                        const auto& tile = layer.tiles()[y][x];
+                        if (!tile.hasTexture) continue;
+
+                        auto tex = loader.getTexture(tile.textureName);
+                        if (!tex || !tex->isValid()) continue;
+
+                        drawTexturedQuadUV(
+                            Math::eVec2<float>{ x * cellSize, y * cellSize },
+                            Math::eVec2<float>{ cellSize, cellSize },
+                            tex,
+                            tile.uv0,
+                            tile.uv1,
+                            Color::White
+                        );
+                    }
+                }
+            }
+        }
+
+        auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+        if (cameraEntities.empty()) return;
+
+        auto& cam = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
+        float cameraX   = cam.position.x - cam.viewportWidth  * 0.5f;
+        float cameraY   = cam.position.y - cam.viewportHeight * 0.5f;
+        float viewportW = cam.viewportWidth;
+        float viewportH = cam.viewportHeight;
+        
+
+        // Collect all drawable entities sorted by z-index
+        std::vector<ECS::Entity> drawableEntities = entityManager.findEntity<ECSComponents::DrawInfoComponent>();
+        ECSComponents::collectObjectsByLayer(engine, drawableEntities);
+
+        // Draw all entities in layer order (lowest z_index = background)
+        for (auto& [layer, entities] : ECSComponents::sortedObjectLayers)
+        {
+            for (ECS::Entity* entityPtr : entities)
+            {
+                ECS::Entity& entity = *entityPtr;
+                try
+                {
+                    if (!entity.has<ECSComponents::DrawInfoComponent>(entityManager))
+                        continue;
+
+                    auto& transform  = entity.get<ECSComponents::TransformComponent>(entityManager);
+                    auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
+
+                    float scaledWidth  = renderInfo.width  * transform.scale.x;
+                    float scaledHeight = renderInfo.height * transform.scale.y;
+                    float rotation     = transform.rot.x;
+
+                    if (renderInfo.texture && renderInfo.texture->isValid())
+                    {
+                        Math::eVec2<float> topLeft = {
+                            transform.pos.x - (scaledWidth  * 0.5f),
+                            transform.pos.y - (scaledHeight * 0.5f)
+                        };
+
+                        Math::eVec2<float> uvStart{ 0.0f, 0.0f };
+                        Math::eVec2<float> uvEnd  { 1.0f, 1.0f };
+
+                        if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+                        {
+                            auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+                            Animation::AnimationController* ctrl =
+                                engine.getAnimationRegistry().get(animComp.controllerID);
+                            if (ctrl)
+                            {
+                                const auto& frame = ctrl->getCurrentFrame();
+                                uvStart = frame.uvStart;
+                                uvEnd   = frame.uvEnd;
+
+                                // Flip enemy sprite when moving right (enemy sprites face left by default)
+                                if (entity.has<ECSComponents::AIComponent>(entityManager) &&
+                                    entity.has<ECSComponents::PhysicsComponent>(entityManager))
+                                {
+                                    auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
+                                    if (physics.velocity.x > 0.1f)
+                                        std::swap(uvStart.x, uvEnd.x);
+                                }
+                                // Flip player sprite when moving left (player sprites face right by default)
+                                else if (entity.has<ECSComponents::PlayerComponent>(entityManager) &&
+                                         entity.has<ECSComponents::PhysicsComponent>(entityManager))
+                                {
+                                    auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
+                                    if (physics.velocity.x < -0.1f)
+                                        std::swap(uvStart.x, uvEnd.x);
+                                }
+                            }
+                        }
+
+                        drawTexturedQuadUV(topLeft, { scaledWidth, scaledHeight },
+                            renderInfo.texture, uvStart, uvEnd, renderInfo.color, rotation);
+                    }
+                    else if (strcmp(renderInfo.shape, "Circle") == 0)
+                    {
+                        float scaledRadius = scaledWidth * 0.5f;
+                        drawCircle(transform.pos, scaledRadius, renderInfo.color, true, 32);
+                    }
+                    else
+                    {
+                        float topLeftX = transform.pos.x - (scaledWidth  * 0.5f);
+                        float topLeftY = transform.pos.y - (scaledHeight * 0.5f);
+                        drawRect({ topLeftX, topLeftY }, { scaledWidth, scaledHeight },
+                            renderInfo.color, true, rotation);
+                    }
+                }
+                catch (const std::exception& e)
+                {
+                    std::cerr << "[Rendering] Exception for entity " << entity.id()
+                              << ": " << e.what() << std::endl;
+                }
+                catch (...)
+                {
+                    std::cerr << "[Rendering] Unknown exception for entity " << entity.id() << std::endl;
+                }
+            }
+        }
+
+        // Flush entity sprite batch
+        flush();
+
+        // Render particles on top of entities
+        auto* particleSys = engine.getParticleSystem();
+        if (particleSys)
+            particleSys->Render(*this, entityManager, { cameraX, cameraY });
+
+        // Flush particle batch before text (drawTextScreen switches shader)
+        flush();
+
+        // Draw TextComponent entities
+        auto textEntities = entityManager.findEntity<ECSComponents::TextComponent>();
+        for (auto& textEntity : textEntities)
+        {
+            if (textEntity.has<ECSComponents::VisibilityComponent>(entityManager))
+            {
+                if (!textEntity.get<ECSComponents::VisibilityComponent>(entityManager).visible)
+                    continue;
+            }
+
+            if (!ECSComponents::isAncestorVisible(textEntity.id(),
+                    engine.getEnoEditor().getSceneTree(), entityManager))
+                continue;
+
+            if (!textEntity.has<ECSComponents::TransformComponent>(entityManager))
+                continue;
+
+            auto& textComp  = textEntity.get<ECSComponents::TextComponent>(entityManager);
+            auto& transform = textEntity.get<ECSComponents::TransformComponent>(entityManager);
+
+            if (strlen(textComp.text) == 0) continue;
+
+            auto font = engine.getResourceLoader().getFont(std::string(textComp.fontName));
+            if (!font) continue;
+
+            Math::eVec2<float> screenPos = {
+                transform.pos.x - cameraX,
+                transform.pos.y - cameraY
+            };
+
+            // Support multi-line text
+            std::string fullText(textComp.text);
+            float lineHeight = 60.0f * textComp.fontSize;
+            float yOffset    = 0.0f;
+            size_t start     = 0;
+            while (start <= fullText.size())
+            {
+                size_t pos  = fullText.find('\n', start);
+                std::string line = (pos != std::string::npos)
+                    ? fullText.substr(start, pos - start)
+                    : fullText.substr(start);
+
+                if (!line.empty())
+                {
+                    drawTextScreen(font, line,
+                        { screenPos.x, screenPos.y + yOffset },
+                        textComp.fontSize, Color::White,
+                        viewportW, viewportH);
+                }
+                if (pos == std::string::npos) break;
+                yOffset += lineHeight;
+                start    = pos + 1;
+            }
+        }
+
+        // Restore default shader after text rendering
+        rebindDefaultShader();
+    }
+
 }

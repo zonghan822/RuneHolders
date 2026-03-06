@@ -48,6 +48,11 @@ namespace Core
 				cnameHandle_ = result2.value();
 		}
 
+		HRSetup();
+		defineBegin();
+		defineUpdate();
+		defineSMD();
+
 		bus_.subscribe<ScriptEvent>(
 			[&](const ScriptEvent& event) {
 				// Call the method using the proxy system
