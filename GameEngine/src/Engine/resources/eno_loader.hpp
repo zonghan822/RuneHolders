@@ -303,6 +303,19 @@ namespace Resources
 		}
 
 		/*============================================================================================
+		* \brief	Re-read all path members from the current FileSystem::GetAssetsDir().
+		*           Call this after FileSystem::Initialize() to keep paths in sync.
+		*//*========================================================================================*/
+		void reloadPaths() {
+			const auto& base = FileSystem::GetAssetsDir();
+			musicPath_  = (base / "sound/music").string();
+			sfxPath_    = (base / "sound/sfx").string();
+			imagePath_  = (base / "art").string();
+			shaderPath_ = (base / "shaders").string();
+			fontPath_   = (base / "fonts").string();
+		}
+
+		/*============================================================================================
 		* \brief	Load image textures (PNG/JPG) from a directory.
 		* \param[in] path	Directory path for textures.
 		*//*========================================================================================*/

@@ -76,9 +76,6 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool GetAIHealth(uint entityID, out int outHealth);
 
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern bool FindAndTriggerRuptureMark(uint entityID, int spellType, out float outDamage);
-
         // Entity Management
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool DestroyEntity(uint entityID);
@@ -103,6 +100,10 @@ namespace Eno
         // Entity Queries
         [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern uint FindEntityByName(string name);
+
+        // Find all entities whose name contains the given substring; fills outIDs array, returns count found
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
+        public static extern int FindAllEntitiesContainingName(string nameSubstr, uint[] outIDs, int maxCount);
 
         // Entity State
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
@@ -142,8 +143,35 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool AddEntityDamage(uint entityID, float damage);
 
-        // Mouse
+        // Mouse position
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern bool GetMouseWorldPosition(out float outX, out float outY);
+
+        // Mouse buttons (0=Left, 1=Right, 2=Middle)
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool IsMouseHeld(int button);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool IsMousePressed(int button);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool IsMouseReleased(int button);
+
+        // Rune line rendering — call from Update(), drawn by C++ render phase
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void ClearRuneLines();
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void AddRuneLine(float x1, float y1, float x2, float y2,
+                                              float r, float g, float b, float a, float width);
+
+        // Entity draw color (tints the sprite)
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool SetEntityDrawColor(uint entityID, float r, float g, float b, float a);
+
+        // Spell spawning — spellType: 1=ICE, 2=FIRE, 3=LIGHT
+        // Returns the sceneObjectID of the spawned entity (0 on failure)
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern uint SpawnRuptureMark(float x, float y, int spellType);
     }
 }

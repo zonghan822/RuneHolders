@@ -11,14 +11,21 @@
 #include "../component/components/text_component.hpp"
 #include "../component/components/combat_components.hpp"
 #include "../component/components/camera_component.hpp"
-#include "../component/components/buttons.hpp"
-#include "../component/components/collision_component.hpp"
+#include "../component/components/drawInfo.hpp"
+#include "../graphics/animation/animation.hpp"
 #include "../file/file_system.hpp"
 #include "../graphics/graphics.hpp"
-#include <GLFW/glfw3.h>
+#include <vector>
+#include <cmath>
 
 // gEngine is defined in eno_bridge.cpp
 extern Engine::EnoEngine* gEngine;
+
+// -----------------------------------------------------------------------
+// Line segment queue: C# fills this each frame via AddRuneLine(),
+// game_logic.cpp drains it via DrawQueuedRuneLines() during render.
+// -----------------------------------------------------------------------
+static std::vector<RuneLineSegment> g_runeLines;
 
 namespace Bridge
 {
@@ -235,102 +242,164 @@ namespace Bridge
             return true;
         }
 
-        ENGINE_API bool __stdcall IsMouseButtonDown(int button)
+        // ============= Mouse Buttons =============
+
+        ENGINE_API bool __stdcall IsMouseHeld(int button)
         {
             if (!gEngine) return false;
             return gEngine->getInputManager().isMousePressed(button);
         }
 
-        // ============= Button =============
-
-        ENGINE_API bool __stdcall IsButtonClicked(uint32_t entityID)
+        ENGINE_API bool __stdcall IsMousePressed(int button)
         {
             if (!gEngine) return false;
+            return gEngine->getInputManager().isMouseDown(button);
+        }
 
-            // Only fire on the frame the mouse button goes down
-            if (!gEngine->getInputManager().isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
-                return false;
+        ENGINE_API bool __stdcall IsMouseReleased(int button)
+        {
+            if (!gEngine) return false;
+            return gEngine->getInputManager().isMouseUp(button);
+        }
 
-            auto& entityMng = gEngine->getEntityManager();
-            ECS::Entity entity = ResolveEntity(entityID);
+        // ============= Rune Line Rendering =============
 
-            if (!entity.has<ECSComponents::ButtonComponent>(entityMng))   return false;
-            if (!entity.has<ECSComponents::TransformComponent>(entityMng)) return false;
-            if (!entity.has<ECSComponents::CollisionComponent>(entityMng)) return false;
+        ENGINE_API void __stdcall ClearRuneLines()
+        {
+            g_runeLines.clear();
+        }
 
-            auto& btn       = entity.get<ECSComponents::ButtonComponent>(entityMng);
-            auto& transform = entity.get<ECSComponents::TransformComponent>(entityMng);
-            auto& collision = entity.get<ECSComponents::CollisionComponent>(entityMng);
+        ENGINE_API void __stdcall AddRuneLine(float x1, float y1, float x2, float y2,
+                                              float r, float g, float b, float a, float width)
+        {
+            g_runeLines.push_back({ x1, y1, x2, y2, r, g, b, a, width });
+        }
 
-            // Get mouse world position using the same logic as GetMouseWorldPosition
-            float cameraX = 0.0f, cameraY = 0.0f;
-            float viewportWidth = 1920.0f, viewportHeight = 1080.0f;
-            auto cameraEntities = entityMng.findEntity<ECSComponents::CameraComponent>();
-            if (!cameraEntities.empty()) {
-                auto& cam = cameraEntities[0].get<ECSComponents::CameraComponent>(entityMng);
-                cameraX       = cam.position.x - cam.viewportWidth  * 0.5f;
-                cameraY       = cam.position.y - cam.viewportHeight * 0.5f;
-                viewportWidth  = cam.viewportWidth;
-                viewportHeight = cam.viewportHeight;
+        ENGINE_API void __stdcall DrawQueuedRuneLines()
+        {
+            if (!gEngine || g_runeLines.empty()) return;
+            auto& graphics = gEngine->getGraphicsManager();
+
+            for (const auto& seg : g_runeLines) {
+                float dx = seg.x2 - seg.x1;
+                float dy = seg.y2 - seg.y1;
+                float length = std::sqrt(dx * dx + dy * dy);
+                if (length < 0.1f) continue;
+
+                float angle = std::atan2(dy, dx);
+                Math::eVec2<float> topLeft = {
+                    (seg.x1 + seg.x2) * 0.5f - length * 0.5f,
+                    (seg.y1 + seg.y2) * 0.5f - seg.width * 0.5f
+                };
+
+                Graphics::Color color(seg.r, seg.g, seg.b, seg.a);
+                graphics.drawRect(topLeft, { length, seg.width }, color, true, angle);
             }
-            auto windowSize     = gEngine->getWindowManager().getWindowSize();
-            auto mouseScreenPos = gEngine->getInputManager().getMousePosition();
-            auto world = Graphics::screenToWorld(
-                { static_cast<float>(mouseScreenPos.first), static_cast<float>(mouseScreenPos.second) },
-                { 0.0f, 0.0f },
-                { static_cast<float>(windowSize.first), static_cast<float>(windowSize.second) },
-                viewportWidth, viewportHeight, cameraX, cameraY
-            );
-
-            // DrawInfoComponent is required by the signature but unused in hit-test logic
-            ECSComponents::DrawInfoComponent dummyDraw{};
-            const ECSComponents::DrawInfoComponent& drawRef =
-                entity.has<ECSComponents::DrawInfoComponent>(entityMng)
-                ? entity.get<ECSComponents::DrawInfoComponent>(entityMng)
-                : dummyDraw;
-
-            return btn.onClick({ world.x, world.y }, transform, drawRef, collision);
         }
 
-        // ============= Scene Query =============
+        // ============= Entity Draw Color =============
 
-        ENGINE_API const wchar_t* __stdcall GetCurrentScene()
-        {
-            static std::wstring cachedScene;
-            if (!gEngine) return L"";
-            std::string name = gEngine->getEnoEditor().getCurrentScene().getSceneName();
-            cachedScene = std::wstring(name.begin(), name.end());
-            return cachedScene.c_str();
-        }
-
-        // ============= Application =============
-
-        ENGINE_API void __stdcall QuitApplication()
-        {
-            if (!gEngine) return;
-            gEngine->getWindowManager().setShouldClose(true);
-        }
-
-        // ============= Playing State =============
-
-        ENGINE_API void __stdcall SetIsPlaying(bool playing)
-        {
-            if (!gEngine) return;
-            gEngine->setIsPlaying(playing);
-        }
-
-        ENGINE_API bool __stdcall GetIsPlaying()
+        ENGINE_API bool __stdcall SetEntityDrawColor(uint32_t entityID, float r, float g, float b, float a)
         {
             if (!gEngine) return false;
-            return gEngine->getIsPlaying();
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+            auto& entityMng = gEngine->getEntityManager();
+            Editor::Node* node = sceneTree.getNodeBySceneObjectID(entityID);
+            if (!node) return false;
+            if (!node->entity_.has<ECSComponents::DrawInfoComponent>(entityMng)) return false;
+            auto& draw = node->entity_.get<ECSComponents::DrawInfoComponent>(entityMng);
+            draw.color = Graphics::Color(r, g, b, a);
+            return true;
         }
 
-        // ============= Script Invocation =============
+        // ============= Entity Queries (name substring) =============
 
-        ENGINE_API void __stdcall RunScriptMethod(const wchar_t* className, const wchar_t* methodName)
+        ENGINE_API int __stdcall FindAllEntitiesContainingName(const wchar_t* nameSubstr, uint32_t* outIDs, int maxCount)
         {
-            if (!gEngine || !className || !methodName) return;
-            gEngine->getCoreHost().runScriptMethod(std::wstring(className), methodName);
+            if (!gEngine || !nameSubstr || !outIDs || maxCount <= 0) return 0;
+            std::wstring wsubstr(nameSubstr);
+            std::string  ssubstr(wsubstr.begin(), wsubstr.end());
+
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+            auto& entityMng = gEngine->getEntityManager();
+
+            int count = 0;
+            for (auto* node : sceneTree.getAllNodes()) {
+                if (!node || count >= maxCount) break;
+                if (node->entity_.has<ECSComponents::NameComponent>(entityMng)) {
+                    auto& nc = node->entity_.get<ECSComponents::NameComponent>(entityMng);
+                    if (std::string(nc.name).find(ssubstr) != std::string::npos) {
+                        outIDs[count++] = node->sceneObjectID_;
+                    }
+                }
+            }
+            return count;
+        }
+
+        // ============= Spell Spawning =============
+        // spellType: 1=ICE, 2=FIRE, 3=LIGHT
+        // Returns sceneObjectID of spawned entity so C# can track it; 0 on failure.
+
+        ENGINE_API uint32_t __stdcall SpawnRuptureMark(float x, float y, int spellType)
+        {
+            if (!gEngine || spellType < 1 || spellType > 3) return 0;
+
+            const char* spawnSheetName   = "";
+            const char* windupSheetName  = "";
+            const char* explodeSheetName = "";
+
+            switch (spellType) {
+            case 1: // ICE
+                spawnSheetName   = "RuptureMark-Ice-Spawn-Sheet";
+                windupSheetName  = "RuptureMark-Ice-Windup-Sheet";
+                explodeSheetName = "RuptureMark-Ice-Explosion-Sheet";
+                break;
+            case 2: // FIRE
+                spawnSheetName   = "RuptureMark-Fire-Spawn-Sheet";
+                windupSheetName  = "RuptureMark-Fire-Windup-Sheet";
+                explodeSheetName = "RuptureMark-Fire-Explosion-Sheet";
+                break;
+            case 3: // LIGHT
+                spawnSheetName   = "RuptureMark-Light-Spawn-Sheet";
+                windupSheetName  = "RuptureMark-Light-Windup-Sheet";
+                explodeSheetName = "RuptureMark-Light-Explosion-Sheet";
+                break;
+            }
+
+            auto& entityMng      = gEngine->getEntityManager();
+            auto& resourceLoader = gEngine->getResourceLoader();
+            auto& sceneTree      = gEngine->getEnoEditor().getSceneTree();
+
+            auto texture = resourceLoader.getTexture(spawnSheetName);
+
+            ECS::Entity mark = entityMng.create();
+            mark.add<ECSComponents::NameComponent>(entityMng, ECSComponents::NameComponent("RuptureMark"));
+            mark.add<ECSComponents::TransformComponent>(entityMng);
+            mark.add<ECSComponents::DrawInfoComponent>(entityMng);
+            mark.add<ECSComponents::AnimationControllerComponent>(entityMng);
+
+            auto& tf = mark.get<ECSComponents::TransformComponent>(entityMng);
+            tf.pos   = { x, y };
+            tf.scale = { 1.0f, 1.0f };
+
+            auto& draw = mark.get<ECSComponents::DrawInfoComponent>(entityMng);
+            draw.width   = 128.0f;
+            draw.height  = 128.0f;
+            draw.color   = Graphics::Color::White;
+            strcpy_s(draw.shape, "Rectangle");
+            draw.texture = texture;
+
+            auto& animComp = mark.get<ECSComponents::AnimationControllerComponent>(entityMng);
+            animComp.setAnimationData("spawn",     spawnSheetName,   128, 128, 1, 8, 0.1f, false);
+            animComp.setAnimationData("windup",    windupSheetName,  128, 128, 1, 5, 0.1f, false);
+            animComp.setAnimationData("explosion", explodeSheetName, 128, 128, 1, 4, 0.1f, false);
+            strcpy_s(animComp.currentAnimationName, "spawn");
+
+            // Register in scene tree so bridge functions (FindEntityByName, SetEntityAnimation, etc.) can find it
+            Editor::Node* node = sceneTree.createFromEntity(mark);
+            if (!node) return 0;
+
+            return node->sceneObjectID_;
         }
 
     } // extern "C"

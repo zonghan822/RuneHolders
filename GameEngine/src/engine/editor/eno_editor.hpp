@@ -434,6 +434,39 @@ namespace Editor
 			lastSceneSave.close();
 		}
 
+		/*============================================================================================
+		* \brief	Reload the editor for the project now pointed to by FileSystem::GetAssetsDir().
+		*           Clears the current scene list, rescans the new project's scenes directory,
+		*           and loads the last saved scene (or creates an empty one if none exists).
+		*           Call after FileSystem::Initialize(newProject).
+		*//*========================================================================================*/
+		void reloadProject()
+		{
+			scenes_.clear();
+
+			try
+			{
+				for (const auto& fileEntry : std::filesystem::directory_iterator(
+					FileSystem::GetAssetsDir().string() + "/saves/scenes"))
+				{
+					if (fileEntry.is_regular_file() &&
+						fileEntry.path().extension() == ".txt" &&
+						fileEntry.path().filename().string() != "LastSavedScene.txt")
+					{
+						std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
+						scene->setSceneName(fileEntry.path().filename().string());
+						scenes_.push_back(std::move(scene));
+					}
+				}
+			}
+			catch (const std::filesystem::filesystem_error& e)
+			{
+				std::cout << "[EnoEditor] reloadProject: " << e.what() << std::endl;
+			}
+
+			loadLastSavedScene();
+		}
+
 		EnoSceneTree& getSceneTree()
 		{
 			return tree_;

@@ -3,7 +3,6 @@
 #include "../component/components/player_component.hpp"
 #include "../component/components/ai_component.hpp"
 #include "../component/components/physics_component.hpp"
-#include "../component/components/rune_component.hpp"
 #include "../ai/ai_manager.hpp"
 #include "../ai/ai_events.hpp"
 #include <cmath>
@@ -381,65 +380,6 @@ namespace Bridge
             *outHealth = aiComp.health;
 
             return true;
-        }
-
-        // Find and trigger a nearby rupture mark of the given spell type
-        // spellType: 0=NONE, 1=ICE, 2=FIRE, 3=LIGHT
-        // Returns true if a mark was triggered, with its damage in outDamage
-        ENGINE_API bool __stdcall FindAndTriggerRuptureMark(uint32_t sceneObjectID, int spellType, float* outDamage)
-        {
-            if (!gEngine) {
-                std::cerr << "[AI Bridge] Engine not initialized!" << std::endl;
-                return false;
-            }
-
-            auto& entMng = gEngine->getEntityManager();
-            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            ECS::Entity entity = GetEntityFromSceneObjectID(sceneObjectID, sceneTree);
-
-            if (entity.id() == UINT32_MAX || !entity.has<ECSComponents::TransformComponent>(entMng)) {
-                return false;
-            }
-
-            auto& entityTransform = entity.get<ECSComponents::TransformComponent>(entMng);
-            ECSComponents::SpellType targetSpell = static_cast<ECSComponents::SpellType>(spellType);
-
-            // Scan all entities for rupture marks
-            for (const auto& [markId, markLoc] : entMng.getMap())
-            {
-                ECS::Entity markEntity(markId);
-                if (!markEntity.has<ECSComponents::RuptureMarkComponent>(entMng) ||
-                    !markEntity.has<ECSComponents::TransformComponent>(entMng))
-                    continue;
-
-                auto& mark = markEntity.get<ECSComponents::RuptureMarkComponent>(entMng);
-
-                // Only trigger IDLE marks of matching spell type
-                if (mark.state != ECSComponents::RuptureMarkState::IDLE)
-                    continue;
-                if (mark.spellType != targetSpell)
-                    continue;
-
-                auto& markTransform = markEntity.get<ECSComponents::TransformComponent>(entMng);
-                float dx = entityTransform.pos.x - markTransform.pos.x;
-                float dy = entityTransform.pos.y - markTransform.pos.y;
-                float dist = std::sqrt(dx * dx + dy * dy);
-
-                if (dist <= mark.detectionRadius)
-                {
-                    // Trigger the mark: IDLE -> WINDUP
-                    mark.state = ECSComponents::RuptureMarkState::WINDUP;
-                    mark.stateTimer = 0.0f;
-                    mark.triggeredByEntityID = entity.id();
-                    *outDamage = mark.damage;
-
-                    std::cout << "[AI Bridge] RuptureMark triggered by entity (sceneObj: " << sceneObjectID << ")" << std::endl;
-                    return true;
-                }
-            }
-
-            *outDamage = 0.0f;
-            return false;
         }
 
         // Destroy an entity (called by scripts when ready to be removed, e.g., after death animation)
