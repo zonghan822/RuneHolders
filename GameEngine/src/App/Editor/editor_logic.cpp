@@ -95,10 +95,26 @@ void EditorApplication::run() {
 		engine_.setIsPlaying(isPlayMode);
 		updateEditorState();
 
-		// 2. Resize editor framebuffer if zoom changed.
+		// 2. Resize editor framebuffer if zoom or camera viewport changed.
 		if (editorFramebuffer_) {
-			int fbW = getEditorWidth();
-			int fbH = getEditorHeight();
+			int fbW, fbH;
+			if (isPlayMode) {
+				// In play mode use the camera's own viewport — unaffected by editor zoom.
+				fbW = fbH = 0;
+				auto& entityMng = engine_.getEntityManager();
+				for (auto& camEnt : entityMng.findEntity<ECSComponents::CameraComponent>()) {
+					auto& c = camEnt.get<ECSComponents::CameraComponent>(entityMng);
+					if (!c.isActive) continue;
+					fbW = static_cast<int>(c.viewportWidth);
+					fbH = static_cast<int>(c.viewportHeight);
+					break;
+				}
+				if (fbW <= 0) fbW = EDITOR_WIDTH;
+				if (fbH <= 0) fbH = EDITOR_HEIGHT;
+			} else {
+				fbW = getEditorWidth();
+				fbH = getEditorHeight();
+			}
 			if (fbW != lastEditorFbWidth_ || fbH != lastEditorFbHeight_) {
 				editorFramebuffer_->create(fbW, fbH);
 				lastEditorFbWidth_ = fbW;
@@ -145,7 +161,7 @@ void EditorApplication::run() {
 		if (editorFramebuffer_) {
 			// Tell the graphics manager the pixel size of the FBO so updateCamera()
 			// sets glViewport correctly without knowing about the framebuffer.
-			engine_.getGraphicsManager().setRenderTargetSize(getEditorWidth(), getEditorHeight());
+			engine_.getGraphicsManager().setRenderTargetSize(lastEditorFbWidth_, lastEditorFbHeight_);
 			editorFramebuffer_->bind();
 		}
 		engine_.renderFrame();
@@ -260,9 +276,6 @@ void EditorApplication::updateEditorCamera() {
 				startCameraPan(editorCameraY_ + static_cast<float>(EDITOR_HEIGHT), 1.0f);
 		}
 
-		int fbW = getEditorWidth();
-		int fbH = getEditorHeight();
-
 		if (isPanning_)
 		{
 			// Animate the editor camera toward the target room.
@@ -275,16 +288,15 @@ void EditorApplication::updateEditorCamera() {
 			if (progress >= 1.0f) { isPanning_ = false; editorCameraY_ = panTargetY_; }
 
 			// Push the panned position into the CameraComponent so the game
-			// camera moves to the new room.
+			// camera moves to the new room.  Use the camera's own viewport
+			// dimensions to compute the center — do not overwrite them.
 			auto& entityMng = engine_.getEntityManager();
 			for (auto& camEnt : entityMng.findEntity<ECSComponents::CameraComponent>())
 			{
 				auto& c = camEnt.get<ECSComponents::CameraComponent>(entityMng);
 				if (!c.isActive) continue;
-				c.position.x    = editorCameraX_ + fbW * 0.5f;
-				c.position.y    = editorCameraY_ + fbH * 0.5f;
-				c.viewportWidth  = static_cast<float>(fbW);
-				c.viewportHeight = static_cast<float>(fbH);
+				c.position.x = editorCameraX_ + c.viewportWidth  * 0.5f;
+				c.position.y = editorCameraY_ + c.viewportHeight * 0.5f;
 				break;
 			}
 		}
@@ -292,15 +304,14 @@ void EditorApplication::updateEditorCamera() {
 		{
 			// Not panning: mirror the game camera position into the editor viewport
 			// so the editor panel shows exactly what the game camera sees.
+			// Use the camera's own viewport dimensions — do not overwrite them.
 			auto& entityMng = engine_.getEntityManager();
 			for (auto& camEnt : entityMng.findEntity<ECSComponents::CameraComponent>())
 			{
 				auto& c = camEnt.get<ECSComponents::CameraComponent>(entityMng);
 				if (!c.isActive) continue;
-				editorCameraX_   = c.position.x - fbW * 0.5f;
-				editorCameraY_   = c.position.y - fbH * 0.5f;
-				c.viewportWidth  = static_cast<float>(fbW);
-				c.viewportHeight = static_cast<float>(fbH);
+				editorCameraX_ = c.position.x - c.viewportWidth  * 0.5f;
+				editorCameraY_ = c.position.y - c.viewportHeight * 0.5f;
 				break;
 			}
 		}

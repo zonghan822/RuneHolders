@@ -5497,8 +5497,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 		if (ImGui::IsKeyPressed(ImGuiKey_R)) currentGizmoMode = GIZMO_SCALE;
 	}
 
-	// Keyboard shortcuts for zoom (+ and - keys)
-	if (g_game && !ImGui::GetIO().WantTextInput) {
+	// Keyboard shortcuts for zoom (+ and - keys) — edit mode only
+	if (g_game && !ImGui::GetIO().WantTextInput && !engine_.getIsPlaying()) {
 		if (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)) {
 			g_game->adjustEditorZoom(0.1f);  // Zoom in
 		}
@@ -5614,8 +5614,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
 			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
 
-			// ========== MOUSE WHEEL ZOOM ==========
-			if (ImGui::IsItemHovered()) {
+			// ========== MOUSE WHEEL ZOOM (edit mode only) ==========
+			if (ImGui::IsItemHovered() && !engine_.getIsPlaying()) {
 				float wheel = ImGui::GetIO().MouseWheel;
 				if (wheel != 0.0f) {
 					// Get mouse position in viewport before zoom
