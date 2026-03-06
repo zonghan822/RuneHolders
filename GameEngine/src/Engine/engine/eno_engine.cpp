@@ -24,7 +24,7 @@ namespace Engine
 		bool fullscreen = configMng_.getFullscreen();
 		bool vsync = configMng_.getVSync();
 
-		window_.initialize("RuneHolders", w, h, fullscreen, vsync);
+		window_.initialize(configMng_.getWindowTitle(), w, h, fullscreen, vsync);
 
 		auto [tmW, tmH, tmCell] = configMng_.getTilemapConfig();
 		tilemapSystem_ = std::make_unique<Map::TileMapSystem>(bus_, tmW, tmH, tmCell);

@@ -4,7 +4,7 @@
 * @date         10/3/2025
 * @brief        Declaration file for config manager
 * 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once
@@ -38,13 +38,14 @@ namespace Config
 		std::unordered_map<std::string, std::string> configMap_ =
 		{
 			{ "Engine Version",   "0"},
-			{ "Window Width",	    "0"},
-			{ "Window Height",	    "0"},
+			{ "Window Title",      "RuneHolders"},
+			{ "Window Width",	    "1280"},
+			{ "Window Height",	    "720"},
 			{ "Fullscreen",        "false"},
 			{ "VSync",             "true"},
-			{ "Tilemap Width",     "0"},
-			{ "Tilemap Height",    "0"},
-			{ "Tilemap CellSize",  "0"},
+			{ "Tilemap Width",     "64"},
+			{ "Tilemap Height",    "64"},
+			{ "Tilemap CellSize",  "64"},
 		};
 
 		static constexpr uint8_t COLON_OFFSET = 2;
@@ -57,6 +58,8 @@ namespace Config
 		 * \return				Window width and height respectively
 		*//*========================================================================================*/
 		std::pair<int, int> getWindowDim();
+
+		std::string getWindowTitle() const;
 
 		std::tuple<int, int, float> getTilemapConfig();
 
