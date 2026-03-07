@@ -5962,9 +5962,9 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				}
 			}
 
-			// Draw camera preview rectangle for all active cameras
-			auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
-			for (auto& camEntity : cameraEntities) {
+			// Draw camera preview rectangle for all active cameras (edit mode only)
+			if (sceneEditor.getCurrentScene().getState() == Editor::State::Stopped)
+			for (auto& camEntity : entityManager.findEntity<ECSComponents::CameraComponent>()) {
 				auto& cam = camEntity.get<ECSComponents::CameraComponent>(entityManager);
 
 				if (cam.isActive) {
