@@ -21,30 +21,22 @@ namespace Eno
         [Port()]
         public States state = States.Walking;
 
-        public float speed = 5.10f;
+        public float speed = 200f;
 
-        private static InputAction? ia1;
         private static InputAction? ia2;
 
         public void Begin()
         {
             Console.WriteLine($"ID on script.cs: {this.ID}");
 
-            // Creating a custom input
-            ia1 = new InputAction("Jump")
-                .AddBinding(KeyCode.Space)                  // Jumps when Space is triggered
-                .AddBinding(KeyCode.L, Mod.Control);        // Jumps when L + Shift is triggered
-
-            ia1.when += Jump;
-            ia1.when += Jump2;
-
             ia2 = new InputAction("Sprint")
                 .AddBinding(KeyCode.W, Mod.Shift);         // Sprints when W and left shift are pressed
 
             ia2.when += Sprint;
 
-            ia1.Enable();
             ia2.Enable();
+
+            Bridge.SetPlayerScriptedMovement(true);
 
             Console.WriteLine($"End of begin method for entity: {this.ID}");
         }
@@ -91,24 +83,16 @@ namespace Eno
             {
                 inputX /= length;
                 inputY /= length;
+
+                float dt = Bridge.GetDeltaTime();
+                Bridge.GetPlayerPosition(out float px, out float py);
+                Bridge.SetPlayerPosition(px + inputX * speed * dt, py + inputY * speed * dt);
             }
-
-            Bridge.SetEntityVelocity(this.ID, inputX * speed, inputY * speed);
-        }
-
-        private static void Jump()
-        {
-            Console.WriteLine("Jumping right now!");
         }
 
         private static void Sprint()
         {
             Console.WriteLine("Sprinting right now!");
-        }
-
-        private static void Jump2()
-        {
-            Console.WriteLine("Jump 2 right now!");
         }
     
 		public void _when_node1_started()

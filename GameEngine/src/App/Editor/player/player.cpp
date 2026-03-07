@@ -72,10 +72,24 @@ namespace Player
             ECSComponents::TransformComponent,
             ECSComponents::CollisionComponent>();
 
-        for (auto& entity : playerEntities) 
+        for (auto& entity : playerEntities)
         {
             auto& playerComp = entity.get<ECSComponents::PlayerComponent>(entityManager);
             auto& physicsComp = entity.get<ECSComponents::PhysicsComponent>(entityManager);
+
+            bool wasdHeld = inputManager.isKeyPressed(Input::KeyCode::W)
+                         || inputManager.isKeyPressed(Input::KeyCode::A)
+                         || inputManager.isKeyPressed(Input::KeyCode::S)
+                         || inputManager.isKeyPressed(Input::KeyCode::D);
+
+            if (wasdHeld)
+            {
+                std::cout << "[PlayerSystem] WASD held | entityID=" << entity.id()
+                          << " useScriptedMovement=" << playerComp.useScriptedMovement
+                          << " canMove=" << playerComp.canMove
+                          << " velocity=(" << physicsComp.velocity.x << ", " << physicsComp.velocity.y << ")"
+                          << std::endl;
+            }
 
             if (!playerComp.canMove)
                 continue;

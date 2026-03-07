@@ -93,9 +93,11 @@ namespace Eno
             {
                 inputX /= length;
                 inputY /= length;
-            }
 
-            Bridge.SetPlayerVelocity(inputX * speed, inputY * speed);
+                float dt = Bridge.GetDeltaTime();
+                Bridge.GetPlayerPosition(out float px, out float py);
+                Bridge.SetPlayerPosition(px + inputX * speed * dt, py + inputY * speed * dt);
+            }
         }
 
         private static void Jump()

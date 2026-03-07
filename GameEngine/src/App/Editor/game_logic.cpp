@@ -1524,7 +1524,8 @@ void GameApplication::updateEntities() {
 				{
 					for (const auto& org : node->script_->origin())
 					{
-						//coreHost.update(org, node->entity_.id());  
+						std::wcout << L"[GameLogic] Calling Update on: " << org << L" sceneObjectID=" << node->sceneObjectID_ << std::endl;
+						//coreHost.update(org, node->entity_.id());
 						coreHost.update(org, node->sceneObjectID_);
 					}
 				}
