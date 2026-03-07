@@ -110,6 +110,10 @@ static std::unique_ptr<Editor::MultiTransformCommand> pendingTransformCommand;  
 // Prefab placement
 static std::string g_selectedPrefabForPlacement = "";
 
+// Node preset selection (for Add Root/Child Node)
+static int  g_selectedNodePresetIdx  = 0;
+static std::string g_selectedNodePreset = "DEFAULT";
+
 // Entity deletion by click
 static bool g_waitingForEntityDeletion = false;
 
@@ -1290,68 +1294,69 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		}
 	}
 
+	// Preset selector for node spawning
+	{
+		auto& prefabMng = engine_.getPrefabManager();
+		auto presetNames = prefabMng.getPresetNames();
 
+		// Ensure g_selectedNodePreset is valid
+		if (g_selectedNodePreset.empty() && !presetNames.empty())
+			g_selectedNodePreset = presetNames[0];
+
+		ImGui::Text("Node Preset:");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(160.f);
+		if (ImGui::BeginCombo("##NodePreset", g_selectedNodePreset.c_str()))
+		{
+			for (int i = 0; i < static_cast<int>(presetNames.size()); ++i)
+			{
+				bool selected = (presetNames[i] == g_selectedNodePreset);
+				if (ImGui::Selectable(presetNames[i].c_str(), selected))
+				{
+					g_selectedNodePreset    = presetNames[i];
+					g_selectedNodePresetIdx = i;
+				}
+				if (selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+	}
 
 	if (ImGui::Button("Add Root Node")) {
 		auto& entityManager = engine_.getEntityManager();
+		auto& prefabMng     = engine_.getPrefabManager();
 
-		// Create transform with default position at center of screen
 		float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
 		float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
 
-		ECSComponents::TransformComponent transform{
-			{nodePosX, nodePosY}, // Center position
-			{0.0f, 0.0f},		  // Velocity
-			{1.0f, 1.0f}          // Scale
-		};
+		// Create entity with NameComponent as base (always required for naming)
+		ECS::Entity newEntity = entityManager.create<ECSComponents::NameComponent>();
 
-		// Create render component with default size and color
-		ECSComponents::RenderComponent renderComp{
-			50.0f,        // Width
-			50.0f,        // Height
-			"Rectangle",  // Shape
-			Color::Green  // Color
-		};
-
-		ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
-		newEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
-		newEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
+		// AnimationControllerComponent is always attached and is not part of any preset
 		newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
-		
 
-
-		// Add collision component for physics interactions
-		ECSComponents::CollisionComponent collisionComp;
-		if (strcmp(renderComp.shape, "Circle") == 0) {
-			// Auto-calculate circle collider from render dimensions
-			collisionComp = ECSComponents::CreateCircleFromRender(renderComp);
+		// Add all components from the selected preset (skips any already-present component)
+		if (const auto* presetComps = prefabMng.getPresetComponents(g_selectedNodePreset))
+		{
+			for (const auto& [compTypeIdx, compAny] : *presetComps)
+			{
+				ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+				{
+					if (!newEntity.template has<T>(entityManager))
+						newEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+				});
+			}
 		}
-		else {
-			// Auto-calculate rectangle collider from render dimensions
-			collisionComp.isActive = true;
-			collisionComp.isTrigger = false;
-			collisionComp.type = ECSComponents::ColliderType::RECTANGLE;
-			collisionComp.data.rectangle.width = renderComp.width;
-			collisionComp.data.rectangle.height = renderComp.height;
+
+		// If the preset included a TransformComponent, place it at screen centre
+		if (newEntity.has<ECSComponents::TransformComponent>(entityManager))
+		{
+			auto& transform = newEntity.get<ECSComponents::TransformComponent>(entityManager);
+			transform.pos = { nodePosX, nodePosY };
 		}
-		newEntity.add<ECSComponents::CollisionComponent>(entityManager,
-			collisionComp);
 
-		// Add physics component to enable pushing
-		ECSComponents::PhysicsComponent physicsComp;
-		physicsComp.mass = 2.0f;          // Mass (heavier = harder to push)
-		physicsComp.drag = 8.0f;          // Higher drag for quick stopping
-		physicsComp.isKinematic = false;  // NOT kinematic (can be pushed)
-		physicsComp.useGravity = false;   // No gravity for top-down game
-		newEntity.add<ECSComponents::PhysicsComponent>(entityManager,
-			physicsComp);
-
-		
-		
-		newEntity.add<ECSComponents::BoxComponent>(entityManager, ECSComponents::BoxComponent());
-
-
-		// Name root nodes as "Entity 1", "Entity 2", etc.
+		// Set entity name
 		auto& nameComp = newEntity.get<ECSComponents::NameComponent>(entityManager);
 		std::string entityName = "Entity " + std::to_string(entityCounter++);
 		strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
@@ -1359,7 +1364,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 		Node* createdNode = sceneTree.createFromEntity(newEntity, nullptr);
 
-		// Record creation for undo/redo with full snapshot
+		// Record creation for undo/redo
 		auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 			sceneTree,
 			entityManager,
@@ -1368,11 +1373,11 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		);
 		undoManager.executeCommand(std::move(createCmd));
 
-		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created\n";
+		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created with preset '" << g_selectedNodePreset << "'\n";
 		if (attachScript && selectedScriptIndex >= 0) {
 			std::wstring selectedScript = availableScripts[selectedScriptIndex];
 			std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-			auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+			auto script = scriptMng.loadScript(selectedScript);
 			if (script)
 				sceneTree.attachScript(createdNode, std::move(script));
 			else
@@ -1385,60 +1390,43 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 	if (ImGui::Button("Add Child Node")) {
 		if (selectedEntityID != UINT32_MAX) {
-			// Verify the parent node exists in the scene tree
 			if (!sceneTree.getNodeByEntityID(selectedEntityID)) {
 				std::cout << "[ERROR] Selected entity " << selectedEntityID << " not found in scene tree. Cannot add child.\n";
 			}
 			else {
 				auto& entityManager = engine_.getEntityManager();
+				auto& prefabMng     = engine_.getPrefabManager();
 
-				// Create transform with default position at center of screen
 				float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
 				float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
-				
-				// Create transform with default position at center of screen
-				ECSComponents::TransformComponent transform{
-					{nodePosX, nodePosY},  // Center position
-					{0.0f, 0.0f},      // Velocity
-					{1.0f, 1.0f}       // Scale
-				};
 
-				// Create render component with default size and color
-				ECSComponents::RenderComponent renderComp{
-					50.0f,        // Width
-					50.0f,        // Height
-					"Rectangle",  // Shape
-					Color::Red    // Color (different from root nodes)
-				};
+				// Create entity with NameComponent as base (always required for naming)
+				ECS::Entity childEntity = entityManager.create<ECSComponents::NameComponent>();
 
-				ECS::Entity childEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
-				childEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
-				childEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
+				// AnimationControllerComponent is always attached and is not part of any preset
 				childEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
-				
-				
-				// Add collision component for physics interactions
-				ECSComponents::CollisionComponent childCollisionComp;
-				childCollisionComp.isActive = true;
-				childCollisionComp.isTrigger = false;
-				childCollisionComp.type = ECSComponents::ColliderType::RECTANGLE;
-				childCollisionComp.data.rectangle.width = 50.0f;
-				childCollisionComp.data.rectangle.height = 50.0f;
-				childEntity.add<ECSComponents::CollisionComponent>(entityManager,
-					childCollisionComp);
 
-				// Add physics component to enable pushing
-				ECSComponents::PhysicsComponent childPhysicsComp;
-				childPhysicsComp.mass = 2.0f;
-				childPhysicsComp.drag = 8.0f;
-				childPhysicsComp.isKinematic = false;
-				childPhysicsComp.useGravity = false;
-				childEntity.add<ECSComponents::PhysicsComponent>(entityManager,
-					childPhysicsComp);
+				// Add all components from the selected preset (skips any already-present component)
+				if (const auto* presetComps = prefabMng.getPresetComponents(g_selectedNodePreset))
+				{
+					for (const auto& [compTypeIdx, compAny] : *presetComps)
+					{
+						ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+						{
+							if (!childEntity.template has<T>(entityManager))
+								childEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+						});
+					}
+				}
 
-				childEntity.add<ECSComponents::BoxComponent>(entityManager,
-					ECSComponents::BoxComponent());
-				// Name child nodes as "Entity #" using the same counter
+				// If the preset included a TransformComponent, place it at screen centre
+				if (childEntity.has<ECSComponents::TransformComponent>(entityManager))
+				{
+					auto& transform = childEntity.get<ECSComponents::TransformComponent>(entityManager);
+					transform.pos = { nodePosX, nodePosY };
+				}
+
+				// Set entity name
 				auto& nameComp = childEntity.get<ECSComponents::NameComponent>(entityManager);
 				std::string entityName = "Entity " + std::to_string(entityCounter++);
 				strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
@@ -1457,16 +1445,10 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				);
 				undoManager.executeCommand(std::move(createCmd));
 
-				//if (attachScript) {
-				//	auto script = scriptMng.selectScript(); // file picker
-				//	if (script) {
-				//		sceneTree.attachScript(childNode, std::move(script));
-				//	}
-				//}
 				if (attachScript && selectedScriptIndex >= 0) {
 					std::wstring selectedScript = availableScripts[selectedScriptIndex];
 					std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-					auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+					auto script = scriptMng.loadScript(selectedScript);
 					if (script)
 						sceneTree.attachScript(childNode, std::move(script));
 				}
@@ -1474,9 +1456,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				if (g_game) g_game->markEntitiesDirty();
 
 				std::cout << "Added child node " << childEntity.id() << " ('" << nameComp.name
-					<< "') to parent " << selectedEntityID << " with undo support\n";
+					<< "') to parent " << selectedEntityID << " with preset '" << g_selectedNodePreset << "'\n";
 
-				// Debug: verify the relationship was set
 				if (childNode) {
 					std::cout << "  -> Child's parent: " << (childNode->parent_ ? std::to_string(childNode->parent_->sceneObjectID_) : "none") << "\n";
 				}

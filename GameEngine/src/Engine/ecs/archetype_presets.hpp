@@ -392,6 +392,33 @@ namespace ECSComponents
 			}
 		}
 
+		// Returns all loaded preset names (sorted)
+		std::vector<std::string> getPresetNames() const
+		{
+			std::vector<std::string> names;
+			names.reserve(presets_.size());
+			for (const auto& [name, _] : presets_)
+				names.push_back(name);
+			std::sort(names.begin(), names.end());
+			return names;
+		}
+
+		// Returns a pointer to the component map for the named preset.
+		// Returns nullptr if the preset name is not found.
+		// Use EnoComponentRegistry::DeduceCompType to add each component to an entity.
+		const std::unordered_map<std::type_index, std::any>* getPresetComponents(const std::string& name) const
+		{
+			auto presetIt = presets_.find(name);
+			if (presetIt == presets_.end())
+				return nullptr;
+
+			auto prefabIt = prefabData_.find(presetIt->second);
+			if (prefabIt == prefabData_.end())
+				return nullptr;
+
+			return &prefabIt->second;
+		}
+
 	private:
 		// Preset | <Component, Component Fields>
 		std::unordered_map<std::type_index, std::unordered_map<std::type_index, std::any>> prefabData_;
