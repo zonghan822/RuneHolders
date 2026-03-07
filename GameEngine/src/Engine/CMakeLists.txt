@@ -72,7 +72,7 @@ target_link_libraries(${ENGINE_NAME}_static
 )
 _fmod_copy_dll(${ENGINE_NAME}_static)
 _dotnet_copy_dll(${ENGINE_NAME}_static)
-
+_ffmpeg_copy_dll(${ENGINE_NAME}_static)
 target_link_libraries(${ENGINE_NAME}_shared PRIVATE 
     ${ENGINE_NAME}_static
 )

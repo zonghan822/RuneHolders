@@ -177,13 +177,6 @@ namespace Editor
 				snapshot.components.emplace_back(comp);
 			}
 
-			// PrefabInstance
-			if (entity.has<ECSComponents::PrefabInstanceComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::PrefabInstanceComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
 			// Capture hierarchy information from scene tree
 			Node* node = sceneTree.getNodeByEntityID(entity.id());
 			if (node)
@@ -354,11 +347,6 @@ namespace Editor
 			{
 				auto& comp = snapshot.get<ECSComponents::PlayerComponent>();
 				entity.add<ECSComponents::PlayerComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::PrefabInstanceComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::PrefabInstanceComponent>();
-				entity.add<ECSComponents::PrefabInstanceComponent>(entityManager, comp);
 			}
 		}
 	};

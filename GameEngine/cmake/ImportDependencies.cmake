@@ -146,43 +146,6 @@ macro(import_stb_image)
     endif()
 endmacro()
 
-
-# ---------------------------------------------------------
-# FFmpeg (pre-built, placed under lib/ffmpeg/)
-# Expected layout:
-#   lib/ffmpeg/include/   -- headers
-#   lib/ffmpeg/lib/       -- import libraries (.lib on Windows)
-#   lib/ffmpeg/bin/       -- shared libraries (.dll on Windows)
-# ---------------------------------------------------------
-macro(import_ffmpeg)
-    if(NOT TARGET ffmpeg)
-        set(FFMPEG_DIR "${PROJECT_SOURCE_DIR}/lib/ffmpeg")
-
-        add_library(ffmpeg INTERFACE IMPORTED)
-        target_include_directories(ffmpeg INTERFACE ${FFMPEG_DIR}/include)
-        target_link_libraries(ffmpeg INTERFACE
-            ${FFMPEG_DIR}/lib/avcodec.lib
-            ${FFMPEG_DIR}/lib/avformat.lib
-            ${FFMPEG_DIR}/lib/avutil.lib
-            ${FFMPEG_DIR}/lib/swscale.lib
-            ${FFMPEG_DIR}/lib/swresample.lib
-        )
-
-        function(_ffmpeg_copy_dll TARGET)
-            file(GLOB FFMPEG_DLLS "${FFMPEG_DIR}/bin/*.dll")
-            foreach(DLL ${FFMPEG_DLLS})
-                add_custom_command(TARGET ${TARGET} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                        "${DLL}"
-                        "$<TARGET_FILE_DIR:${TARGET}>"
-                )
-            endforeach()
-        endfunction()
-
-        set_library_folder(ffmpeg)
-    endif()
-endmacro()
-
 # Macro to import all dependencies
 macro(importDependencies)
 message(STATUS "Starting to import dependencies...")
@@ -210,10 +173,6 @@ message(STATUS "Starting to import dependencies...")
     message(STATUS "Importing stb_image...")
     import_stb_image()
     message(STATUS "stb_image imported successfully.")
-
-    message(STATUS "Importing FFmpeg...")
-    import_ffmpeg()
-    message(STATUS "FFmpeg imported successfully.")
 
     message(STATUS "All dependencies have been imported successfully.")
 

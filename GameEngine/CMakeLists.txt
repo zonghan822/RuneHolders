@@ -19,6 +19,7 @@ importDependencies()
 
 # Set External Libraries
 set_fmod()
+set_ffmpeg()
 set(rapidjson_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/lib/rapidjson)
 set_dotnet()
 
