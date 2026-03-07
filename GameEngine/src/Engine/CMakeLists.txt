@@ -68,6 +68,7 @@ target_link_libraries(${ENGINE_NAME}_static
     freetype
     stb_image
     dotnet_host
+    ffmpeg
 )
 _fmod_copy_dll(${ENGINE_NAME}_static)
 _dotnet_copy_dll(${ENGINE_NAME}_static)
