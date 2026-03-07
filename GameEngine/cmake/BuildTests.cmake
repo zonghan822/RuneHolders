@@ -67,6 +67,7 @@ endif()
 
 # Inject app name as a compile-time string so FileSystem::Initialize can use it
 target_compile_definitions(${APP_NAME} PRIVATE ENO_APP_NAME="${APP_NAME}")
+target_compile_definitions(${APP_NAME} PRIVATE ENO_DOTNET_CMD="${DOTNET_CMD}")
 
 # Set common include directories
 target_include_directories(${APP_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
@@ -79,6 +80,7 @@ target_link_libraries(${APP_NAME} PUBLIC
 )
 _fmod_copy_dll(${APP_NAME})
 _dotnet_copy_dll(${APP_NAME})
+_ffmpeg_copy_dll(${APP_NAME})
 _engine_copy_dll(${APP_NAME})
 
 ENDMACRO(SETUP_APP)

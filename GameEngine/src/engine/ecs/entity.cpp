@@ -1,5 +1,4 @@
 #include "entity.hpp"
-#include "../prefab/prefab.hpp"
 
 
 namespace ECS
@@ -284,14 +283,6 @@ namespace ECS
 		else
 		{
 			std::cout << "[DEBUG TEXTURE LOAD] Entity " << entity.id() << " has no RenderComponent\n";
-		}
-
-		// After loading all components, check if this entity is a prefab instance
-		// If so, register it in the prefab tracking system
-		if (entity.has<ECSComponents::PrefabInstanceComponent>(entMng))
-		{
-			auto& prefabInstance = entity.get<ECSComponents::PrefabInstanceComponent>(entMng);
-			registerPrefabInstance(entity.id(), prefabInstance.prefabName);
 		}
 	}
 

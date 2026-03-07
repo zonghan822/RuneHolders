@@ -26,7 +26,6 @@
 #include "../math/math.hpp"
 #include "../tag/tag_registry.hpp"
 #include "../collision/collision.hpp"
-#include "../prefab/prefab.hpp"
 #include "../crashlog/crashlogger.hpp"
 #include "../graphics/animation/animation.hpp"
 #include "../ai/ai_manager.hpp"

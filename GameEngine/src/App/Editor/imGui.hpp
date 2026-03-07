@@ -22,7 +22,6 @@
 #include <algorithm>
 
 #include "editor_logic.hpp"
-#include "prefab/prefab.hpp"
 #include "raycast/raycast_renderer.hpp"
 #include "editor/undo/undo_manager.hpp"
 #include "stateMachine_editor/stateMachine_editor.hpp"
@@ -151,15 +150,6 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
  * \return      void
 *//*========================================================================================*/
 void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager, Editor::EnoSceneTree& sceneTree);
-
-/*============================================================================================
- * \brief       Displays Prefabs in Prefabs Tab
- * \param[in]   Engine::EnoEngine& engine_
- * \param[in]   Editor::EnoSceneTree& sceneTree
- * \param[in]   Editor::UndoManager& undoManager
- * \return      void
-*//*========================================================================================*/
-void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager);
 
 
 void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity);

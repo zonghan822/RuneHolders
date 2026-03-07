@@ -23,7 +23,6 @@
 #include "../component/components/ai_component.hpp"
 #include "../component/components/buttons.hpp"
 #include "../component/components/audio.hpp"
-#include "../component/components/prefab_instance.hpp"
 #include "../component/components/camera_component.hpp"
 #include "../component/components/combat_components.hpp"
 #include "../component/components/state_machine_component.hpp"
