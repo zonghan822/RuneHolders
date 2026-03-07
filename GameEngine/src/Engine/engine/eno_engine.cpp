@@ -86,6 +86,7 @@ namespace Engine
 		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getSFXPath());
 		loader_.loadImages(loader_.getImagePath());
 		loader_.loadFonts(loader_.getFontPath(), 48);
+		loader_.loadVideos(loader_.getVideoPath(), graphicsMng_);
 
 		// Mark animations dirty whenever a scene is cleared/loaded
 		bus_.subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)
@@ -168,6 +169,9 @@ namespace Engine
 		// Update audio system (continues during runtime pause)
 		if (isPlaying_)
 			audioMng_.process(deltaTime);
+
+		// Advance all video players (always, so the asset browser preview works in editor)
+		graphicsMng_.updateVideos(deltaTime);
 	}
 
 	void EnoEngine::renderFrame()

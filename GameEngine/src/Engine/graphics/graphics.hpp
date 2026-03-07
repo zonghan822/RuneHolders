@@ -24,9 +24,11 @@
 #include <memory>
 #include <array>
 #include <algorithm>
+#include <unordered_map>
 
 // Forward declarations
-namespace Engine { class EnoEngine; }
+namespace Engine  { class EnoEngine; }
+namespace Graphics { class VideoPlayer; }
 
 // Math constants
 #ifndef M_PI
@@ -89,6 +91,9 @@ namespace Graphics
 
         bool loadFromFile(const std::string& filepath);
         bool loadFromMemory(int width, int height, int channels, const unsigned char* data);
+        // Stream-update pixels in-place (no reallocation). Texture must already be valid.
+        // Used by VideoPlayer to upload decoded frames without creating a new GL texture.
+        void updatePixels(int width, int height, int channels, const unsigned char* data);
         void bind(unsigned int slot = 0) const;
         void unbind() const;
 
@@ -294,6 +299,25 @@ namespace Graphics
         // Draws textured quads, shapes, and text components.
         void render(Engine::EnoEngine& engine);
 
+        // --- Video management ---
+        // Load a video file by name. Returns false if FFmpeg fails to open the file.
+        bool loadVideo(const std::string& name, const std::string& path);
+
+        // Retrieve a loaded video player (nullptr if not found).
+        std::shared_ptr<VideoPlayer> getVideo(const std::string& name);
+
+        // Remove a video player and release its resources.
+        void removeVideo(const std::string& name);
+
+        // Tick all currently PLAYING video players. Call once per frame.
+        void updateVideos(float dt);
+
+        // Read-only access for the ImGui video browser.
+        const std::unordered_map<std::string, std::shared_ptr<VideoPlayer>>& getAllVideos() const { return videoMap_; }
+
+        // Mutable access needed for deletion from the ImGui video browser.
+        std::unordered_map<std::string, std::shared_ptr<VideoPlayer>>& getVideosMap() { return videoMap_; }
+
     private:
         // Core systems
         Event::EnoEventBus& bus_;
@@ -324,6 +348,9 @@ namespace Graphics
         // Pixel dimensions of the current render target.  0 = use OS window size.
         int renderTargetW_ = 0;
         int renderTargetH_ = 0;
+
+        // Video players: name -> player
+        std::unordered_map<std::string, std::shared_ptr<VideoPlayer>> videoMap_;
 
         // Internal helper functions
         bool createDefaultShader();

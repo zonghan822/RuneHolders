@@ -13,6 +13,7 @@
 #include <random>
 #include <unordered_map>
 #include "imGui.hpp"
+#include "graphics/video/video_player.hpp"
 
 
 #undef min
@@ -580,6 +581,11 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	// Assets Browser
 	ImGui::Begin("Assets Browser", nullptr, ImGuiWindowFlags_NoCollapse);
 	displayAssetTab(engine_);
+	ImGui::End();
+
+	// Video Browser
+	ImGui::Begin("Video Browser", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayVideoTab(engine_);
 	ImGui::End();
 
 	// FPS
@@ -6474,6 +6480,210 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 void imGuiEndDockspace() {
 	ImGui::End();
+}
+
+// ============================================================
+// Video Browser
+// ============================================================
+void displayVideoTab(Engine::EnoEngine& engine_)
+{
+	Graphics::EnoGraphicsManager& gfx = engine_.getGraphicsManager();
+	Resources::EnoLoader& loader      = engine_.getResourceLoader();
+	auto& droppedFiles                = Window::EnoWindow::GetDroppedFiles();
+
+	ImGui::Text("=== VIDEO ASSETS ===");
+	ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f),
+		"Drag & drop .mp4 / .avi / .mov / .webm / .mkv files to import.");
+	ImGui::Separator();
+
+	// Reload button
+	if (ImGui::Button("Reload Videos"))
+	{
+		loader.loadVideos(loader.getVideoPath(), gfx);
+	}
+	ImGui::SameLine();
+	ImGui::TextDisabled("(%zu loaded)", gfx.getAllVideos().size());
+
+	ImGui::Separator();
+
+	// --- Handle drag-and-drop ---
+	if (!droppedFiles.empty())
+	{
+		static const std::array<std::string_view, 5> videoExts = {
+			".mp4", ".avi", ".mov", ".webm", ".mkv" };
+
+		for (auto& rawPath : droppedFiles)
+		{
+			std::filesystem::path filePath(rawPath);
+			std::string ext = filePath.extension().string();
+			for (char& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+			bool isVideo = false;
+			for (auto& ve : videoExts) { if (ext == ve) { isVideo = true; break; } }
+			if (!isVideo) continue;
+
+			// Copy to assets/video/
+			std::string videoFolder = loader.getVideoPath();
+			std::filesystem::path destPath = std::filesystem::path(videoFolder) / filePath.filename();
+
+			try
+			{
+				std::filesystem::create_directories(videoFolder);
+
+				bool needsCopy = !std::filesystem::exists(destPath) ||
+					(std::filesystem::absolute(filePath) != std::filesystem::absolute(destPath));
+
+				if (needsCopy)
+				{
+					std::filesystem::copy_file(filePath, destPath,
+						std::filesystem::copy_options::overwrite_existing);
+					std::cout << "[Video Import] Copied " << filePath.filename().string()
+					          << " to video folder\n";
+				}
+
+				std::string name = filePath.stem().string();
+				if (gfx.loadVideo(name, destPath.string()))
+					std::cout << "[Video Import] Loaded: " << name << "\n";
+				else
+					std::cerr << "[Video Import] Failed to load: " << destPath.string() << "\n";
+			}
+			catch (const std::exception& e)
+			{
+				std::cerr << "[Video Import] Error: " << e.what() << "\n";
+			}
+		}
+	}
+
+	// --- Video list ---
+	static std::string selectedVideoName;
+	static bool        playPreview = false;
+
+	auto& videoMap = gfx.getVideosMap();
+
+	ImGui::BeginChild("VideoList", ImVec2(0, 200), true);
+	if (videoMap.empty())
+	{
+		ImGui::TextDisabled("(No videos loaded)");
+	}
+	else
+	{
+		for (auto& [name, player] : videoMap)
+		{
+			if (!player) continue;
+
+			bool isSelected = (selectedVideoName == name);
+			if (ImGui::Selectable(name.c_str(), isSelected,
+				ImGuiSelectableFlags_None, ImVec2(0, 0)))
+			{
+				selectedVideoName = name;
+				playPreview       = false;
+			}
+			ImGui::SameLine(200.f);
+			ImGui::TextDisabled("[%dx%d  %.1fs]",
+				player->getWidth(), player->getHeight(), player->getDuration());
+		}
+	}
+	ImGui::EndChild();
+
+	ImGui::Separator();
+
+	// --- Selected video controls & preview ---
+	if (!selectedVideoName.empty())
+	{
+		auto player = gfx.getVideo(selectedVideoName);
+		if (player && player->isLoaded())
+		{
+			ImGui::Text("Selected: %s", selectedVideoName.c_str());
+			ImGui::Text("Size: %d x %d  |  Duration: %.2f s",
+				player->getWidth(), player->getHeight(), player->getDuration());
+
+			// Progress bar
+			float progress = (player->getDuration() > 0.0f)
+				? player->getCurrentTime() / player->getDuration()
+				: 0.0f;
+			ImGui::ProgressBar(progress, ImVec2(-1.f, 0.f));
+
+			// Playback controls
+			if (ImGui::Button("Play"))
+			{
+				player->play();
+				playPreview = true;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Pause"))  player->pause();
+			ImGui::SameLine();
+			if (ImGui::Button("Stop"))
+			{
+				player->stop();
+				playPreview = false;
+			}
+			ImGui::SameLine();
+			bool looping = player->isLooping();
+			if (ImGui::Checkbox("Loop", &looping)) player->setLooping(looping);
+
+			// Thumbnail / live preview
+			auto tex = player->getTexture();
+			if (tex && tex->isValid())
+			{
+				float previewW = ImGui::GetContentRegionAvail().x;
+				float aspect   = (player->getHeight() > 0)
+					? static_cast<float>(player->getWidth()) / static_cast<float>(player->getHeight())
+					: 1.0f;
+				float previewH = previewW / aspect;
+				ImGui::Image(
+					(void*)(intptr_t)(tex->getID()),
+					ImVec2(previewW, previewH));
+			}
+
+			ImGui::Separator();
+
+			// Delete
+			ImGui::Text("----------- DELETION -----------");
+			if (ImGui::Button("Delete selected video"))
+				ImGui::OpenPopup("ConfirmDeleteVideo");
+
+			if (ImGui::BeginPopupModal("ConfirmDeleteVideo", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				ImGui::TextWrapped("Delete this video?\n\n%s", selectedVideoName.c_str());
+				ImGui::Spacing();
+				if (ImGui::Button("Delete", ImVec2(120, 0)))
+				{
+					// Remove from graphics manager
+					gfx.removeVideo(selectedVideoName);
+
+					// Delete file from disk
+					try
+					{
+						std::filesystem::path buildPath =
+							std::filesystem::path(loader.getVideoPath()) / (selectedVideoName);
+
+						// Try all extensions
+						for (auto& ext : std::array<std::string_view, 5>{".mp4",".avi",".mov",".webm",".mkv"})
+						{
+							std::filesystem::path p = std::filesystem::path(loader.getVideoPath())
+								/ (selectedVideoName + std::string(ext));
+							if (std::filesystem::exists(p))
+							{
+								std::filesystem::remove(p);
+								break;
+							}
+						}
+					}
+					catch (const std::exception& e)
+					{
+						std::cerr << "[Video Delete] " << e.what() << "\n";
+					}
+
+					selectedVideoName.clear();
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Cancel", ImVec2(120, 0)))
+					ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
+			}
+		}
+	}
 }
 
 void imGuiTerminate() {
