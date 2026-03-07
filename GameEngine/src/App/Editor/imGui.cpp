@@ -2290,6 +2290,27 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 						sounds.erase(it2);
 				}
 
+				// Clear the audio component on any entity that was referencing the deleted sound
+				{
+					auto& entityMgr = engine_.getEntityManager();
+					for (ECS::Entity& ent : entityMgr.findEntity<ECSComponents::AudioComponent>())
+					{
+						auto& ac = ent.get<ECSComponents::AudioComponent>(entityMgr);
+						if (std::string(ac.audioMod_.name_) == selectedName)
+						{
+							if (ac.isPlaying_)
+							{
+								engine_.getAudioManager().stopChannelGroup(ac.audioMod_.chGroup_);
+								ac.isPlaying_ = false;
+							}
+							ac.audioMod_.name_[0] = '\0';
+							ac.audioMod_.path_[0] = '\0';
+							ac.audioMod_.sound_   = nullptr;
+							ac.audioMod_.ch_      = nullptr;
+						}
+					}
+				}
+
 				// Delete the file from disk
 				bool deleted = false;
 				bool deletedRoot = false;
