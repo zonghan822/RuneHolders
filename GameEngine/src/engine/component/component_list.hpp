@@ -23,7 +23,6 @@
 	X(AIComponent) \
 	X(ButtonComponent) \
 	X(AudioComponent) \
-	X(PrefabInstanceComponent) \
 	X(AnimationControllerComponent)\
 	X(CameraComponent) \
 	X(HealthComponent) \
