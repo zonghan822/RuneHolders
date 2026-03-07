@@ -9,7 +9,8 @@
       "Bash(/mnt/c/Program Files/CMake/bin/cmake.exe:*)",
       "Bash(cmd.exe:*)",
       "Bash(\"/mnt/c/Program Files/CMake/bin/cmake.exe\" --build build --config Debug --target Engine_shared)",
-      "Bash(\"/mnt/c/Program Files/CMake/bin/cmake.exe\" --build:*)"
+      "Bash(\"/mnt/c/Program Files/CMake/bin/cmake.exe\" --build:*)",
+      "Bash(python3:*)"
     ]
   }
 }
