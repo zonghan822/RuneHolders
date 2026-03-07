@@ -1,4 +1,4 @@
-#include "game_logic.hpp"
+#include "engine/eno_engine.hpp"
 
 void EnableMemoryLeakChecking(int breakAlloc = -1)
 {
@@ -23,17 +23,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
         FileSystem::Initialize(ENO_APP_NAME);
 
-        // Create game instance
-        GameApplication game;
+        // Engine instance
+        Engine::EnoEngine engine_;
 
         // Initialize all game systems
-        game.initialize();
+        engine_.setup();
 
         // Run the game
-        game.run();
+        engine_.run();
 
         // Terminate game
-        game.shutdown();
+        engine_.shutDown();
 
     }
     catch (const std::exception& e) {

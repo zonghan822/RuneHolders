@@ -161,7 +161,7 @@ namespace Core
 		using GetScriptFieldsMethod = Script::PortedField* (__stdcall*)(const wchar_t* scriptName, int* count);
 		using GetFileClassNamesMethod = void* (*)(const wchar_t* pAssemblyPath, int* count);
 
-		EnoCoreHost(Event::EnoEventBus&);
+		EnoCoreHost(Event::EnoEventBus&, const std::filesystem::path& dllDir = {});
 		~EnoCoreHost();
 
 		EnoCoreHost(const EnoCoreHost&) = delete;
@@ -220,6 +220,12 @@ namespace Core
 		void HRSetup();
 		void hotReload();
 
+		// Reload delegate handles after switching to a different project's DLL.
+		// If newDllDir is non-empty, updates the DLL path in place before reloading.
+		// Use this when the editor is already initialized (post-setupLate) to avoid
+		// dangling references in EnoEditor. For pre-setupLate use EnoEngine::initScripting().
+		void reinitializeScripts(const std::filesystem::path& newDllDir = {});
+
 		// Script backend (compilation and reloading)
 
 		// Scripts frontend (user scripts)
@@ -250,6 +256,9 @@ namespace Core
 		void signalEmitted(uint32_t, const std::string&, const std::string&);
 
 	private:
+
+		// Directory containing GameScripts.dll and .runtimeconfig.json
+		std::filesystem::path dllDir_;
 
 		// .Net lib
 		HMODULE hfLib_;

@@ -1,5 +1,5 @@
 #include "map_editor.hpp"
-#include "../game_logic.hpp"
+#include "../editor_logic.hpp"
 
 void MapEditor::displayMenu() {
 	if (!editMode_) return;
@@ -385,7 +385,7 @@ void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
 	ImGui::End();
 }
 
-void MapEditor::paint(GameApplication* g) {
+void MapEditor::paint(EditorApplication* g) {
 	if (!editMode_) return;
 
 	// Safety check: ensure we have layers
@@ -399,8 +399,8 @@ void MapEditor::paint(GameApplication* g) {
 	float cameraHeight = static_cast<float>(g->getEditorHeight());
 	Math::eVec2<float> editorMin = g->getEditorViewMin();
 	Math::eVec2<float> editorMax = g->getEditorViewMax();
-	float camX = g_game->getEditorCameraX();
-	float camY = g_game->getEditorCameraY();
+	float camX = g->getEditorCameraX();
+	float camY = g->getEditorCameraY();
 
 	bool left = ImGui::IsItemHovered() && ImGui::IsMouseDown(0);
 
@@ -442,7 +442,7 @@ void MapEditor::paint(GameApplication* g) {
 	}
 }	
 
-void MapEditor::draw(GameApplication* g, ImDrawList* drawList) {
+void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {
 	if (!editMode_) return;
 
 	// Safety check: ensure we have layers
@@ -455,8 +455,8 @@ void MapEditor::draw(GameApplication* g, ImDrawList* drawList) {
 	float cameraHeight = static_cast<float>(g->getEditorHeight());
 	Math::eVec2<float> editorMin = g->getEditorViewMin();
 	Math::eVec2<float> editorMax = g->getEditorViewMax();
-	float camX = g_game->getEditorCameraX();
-	float camY = g_game->getEditorCameraY();
+	float camX = g->getEditorCameraX();
+	float camY = g->getEditorCameraY();
 
 	drawList->PushClipRect(ImVec2(editorMin.x, editorMin.y), ImVec2(editorMax.x, editorMax.y), true);
 

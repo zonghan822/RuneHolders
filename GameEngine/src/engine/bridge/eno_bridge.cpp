@@ -41,6 +41,77 @@ namespace Bridge
             return static_cast<float>(gEngine->getDeltaTime());
         }
 
+        ENGINE_API uint32_t __stdcall GetNode(const char* name)
+        {
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeByName(name);
+            if (!node)
+                return UINT32_MAX;
+
+            return node->sceneObjectID_;
+        }
+
+        ENGINE_API uint32_t __stdcall GetChild(uint32_t parentID, uint32_t index)
+        {
+            // Parent
+            Editor::Node* parent = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(parentID);
+            if (!parent)
+                return 0;
+
+            // Child
+            Editor::Node* child = gEngine->getEnoEditor().getSceneTree().getChild(parent, index);
+            if (!child)
+                return 0;
+
+            return child->sceneObjectID_;
+        }
+
+        ENGINE_API uint32_t __stdcall GetNodeType(uint32_t id)
+        {
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(id);
+            if (!node)
+                return static_cast<uint32_t>(Editor::NodeType::EMPTY);
+
+            return static_cast<uint32_t>(node->type_);
+        }
+
+        extern "C" __declspec(dllexport)
+            uint32_t __stdcall GetZIndex(uint32_t nodeID)
+        {
+            if (!gEngine)
+            {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+            }
+
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeByEntityID(nodeID);
+            if (!node)
+                return 0;
+
+            if (node->entity_.has<ECSComponents::VisibilityComponent>(gEngine->getEntityManager()))
+                return node->entity_.get<ECSComponents::VisibilityComponent>(gEngine->getEntityManager()).z_index;
+            else
+                throw std::runtime_error("No visibility component on the entity!");
+        }
+
+        ENGINE_API void __stdcall SetZIndex(uint32_t nodeID, uint32_t z)
+        {
+            if (!gEngine) 
+            {
+                std::cerr << "[Engine DLL] Bridge not initialized!" << std::endl;
+            }
+
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeByEntityID(nodeID);
+            if (!node)
+                return;
+
+            if (node->entity_.has<ECSComponents::VisibilityComponent>(gEngine->getEntityManager()))
+            {
+                auto& vis = node->entity_.get<ECSComponents::VisibilityComponent>(gEngine->getEntityManager());
+                vis.z_index = z;
+            }
+            else
+                throw std::runtime_error("No visibility component on the entity!");
+        }
+
         ENGINE_API bool __stdcall IsKeyPressed(int key)
         {
             if (!gEngine) {

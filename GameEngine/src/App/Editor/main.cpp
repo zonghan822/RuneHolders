@@ -1,4 +1,4 @@
-#include "game_logic.hpp"
+#include "editor_logic.hpp"
 
 void EnableMemoryLeakChecking(int breakAlloc = -1)
 {
@@ -24,20 +24,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         FileSystem::Initialize(ENO_APP_NAME);
 
         // Create game instance
-        GameApplication game;
+        EditorApplication editor;
 
         // Initialize all game systems
-        game.initialize();
+        editor.initialize();
 
         // Run the game
-        game.run();
+        editor.run();
 
         // Terminate game
-        game.shutdown();
+        editor.shutdown();
 
     }
     catch (const std::exception& e) {
-        std::cerr << "Game error: " << e.what() << std::endl;
+        std::cerr << "Editor error: " << e.what() << std::endl;
         CrashLogger::logError(e.what());
         return -1;
     }

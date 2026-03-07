@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Eno
 {
-    public class DialogueSystem : LogicSystem
+    public class DialogueSystem : ScriptBase
     {
         [Port(0.01f, 0.2f)]
         public float typeSpeed = 0.03f;

@@ -215,7 +215,7 @@ namespace ECS
 		* \return				Newly created Entity
 		*//*========================================================================================*/
 		template <typename Tuple>
-		Entity presetCreate(Tuple& componentsTuple)
+		Entity presetCreate(const Tuple& componentsTuple)
 		{
 			// decltype(comps) will indicate each component type passed
 			// but it will be a reference type (e.g AudioComponent&), 
