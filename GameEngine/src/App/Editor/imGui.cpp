@@ -9,6 +9,7 @@
 *				which includes the init, update and terminate functions.
 *     			There are also functions for spawning and counting entities.
 *//*========================================================================================*/
+#include <algorithm>
 #include <filesystem>
 #include <random>
 #include <unordered_map>
@@ -110,6 +111,10 @@ static std::unique_ptr<Editor::MultiTransformCommand> pendingTransformCommand;  
 // Prefab placement
 static std::string g_selectedPrefabForPlacement = "";
 
+// Node preset selection (for Add Root/Child Node)
+static int  g_selectedNodePresetIdx  = 0;
+static std::string g_selectedNodePreset = "DEFAULT";
+
 // Entity deletion by click
 static bool g_waitingForEntityDeletion = false;
 
@@ -123,8 +128,19 @@ static bool g_resetEntityCounter = false;  // Flag to reset entity counter when 
 // Scene deletion error tracking
 static bool g_cannotDeleteActiveScene = false;
 
-// Audio filesystems
-static std::vector<std::string> audioAssets;
+// Audio browser tree
+struct AudioEntry {
+	std::string displayName;         // filename with extension, e.g. "laser.wav"
+	std::string stemName;            // filename without extension, used for FMOD lookup
+	std::filesystem::path buildPath; // path in the build/runtime assets folder
+	std::filesystem::path rootPath;  // path in the source assets folder (for deletion)
+};
+struct AudioFolder {
+	std::string folderName;
+	std::vector<AudioFolder> subfolders;
+	std::vector<AudioEntry> files;
+};
+static AudioFolder g_audioTree;
 
 // Audio error tracking - using a queue to store all errors
 struct AudioErrorInfo {
@@ -528,6 +544,80 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		}
 		ImGui::Text("| %s", FileSystem::GetAssetsDir().filename().string().c_str());
 		ImGui::EndMainMenuBar();
+	}
+
+	// Project picker modal (opened from "Change Project..." while editor is running)
+	if (s_showProjectPicker) {
+		ImGui::OpenPopup("Open Project##modal");
+	}
+	if (ImGui::BeginPopupModal("Open Project##modal", nullptr,
+		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		const float itemW = 400.f;
+		const float pad   = ImGui::GetStyle().WindowPadding.x;
+
+		if (!s_creatingNewProject)
+		{
+			ImGui::Text("Select a project to open:");
+			ImGui::Spacing();
+			if (!s_availableProjects.empty()) {
+				std::vector<const char*> items;
+				items.reserve(s_availableProjects.size());
+				for (auto& p : s_availableProjects) items.push_back(p.c_str());
+				ImGui::SetNextItemWidth(itemW);
+				ImGui::Combo("##projects2", &s_selectedProjectIdx, items.data(), static_cast<int>(items.size()));
+			} else {
+				ImGui::TextDisabled("No projects found in assets/");
+			}
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x * 2.f) / 3.f;
+			if (ImGui::Button("Open", {btnW, 0}) && !s_availableProjects.empty()) {
+				applyProjectSelection(engine_, s_availableProjects[s_selectedProjectIdx]);
+				s_showProjectPicker = false;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("New Project", {btnW, 0})) {
+				s_creatingNewProject = true;
+				memset(s_newProjectNameBuf, 0, sizeof(s_newProjectNameBuf));
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", {btnW, 0})) {
+				s_showProjectPicker    = false;
+				s_creatingNewProject   = false;
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		else
+		{
+			ImGui::Text("Project name:");
+			ImGui::SetNextItemWidth(itemW);
+			ImGui::InputText("##newname2", s_newProjectNameBuf, sizeof(s_newProjectNameBuf));
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			bool nameValid = s_newProjectNameBuf[0] != '\0';
+			const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x) / 2.f;
+			if (!nameValid) ImGui::BeginDisabled();
+			if (ImGui::Button("Create", {btnW, 0})) {
+				createNewProject(engine_, s_newProjectNameBuf);
+				applyProjectSelection(engine_, s_newProjectNameBuf);
+				s_showProjectPicker  = false;
+				s_creatingNewProject = false;
+				ImGui::CloseCurrentPopup();
+			}
+			if (!nameValid) ImGui::EndDisabled();
+			ImGui::SameLine();
+			if (ImGui::Button("Back", {btnW, 0})) {
+				s_creatingNewProject = false;
+			}
+		}
+		ImGui::EndPopup();
 	}
 
 	// BEGIN DOCKSPACE
@@ -1284,68 +1374,69 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		}
 	}
 
+	// Preset selector for node spawning
+	{
+		auto& prefabMng = engine_.getPrefabManager();
+		auto presetNames = prefabMng.getPresetNames();
 
+		// Ensure g_selectedNodePreset is valid
+		if (g_selectedNodePreset.empty() && !presetNames.empty())
+			g_selectedNodePreset = presetNames[0];
+
+		ImGui::Text("Node Preset:");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(160.f);
+		if (ImGui::BeginCombo("##NodePreset", g_selectedNodePreset.c_str()))
+		{
+			for (int i = 0; i < static_cast<int>(presetNames.size()); ++i)
+			{
+				bool selected = (presetNames[i] == g_selectedNodePreset);
+				if (ImGui::Selectable(presetNames[i].c_str(), selected))
+				{
+					g_selectedNodePreset    = presetNames[i];
+					g_selectedNodePresetIdx = i;
+				}
+				if (selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+	}
 
 	if (ImGui::Button("Add Root Node")) {
 		auto& entityManager = engine_.getEntityManager();
+		auto& prefabMng     = engine_.getPrefabManager();
 
-		// Create transform with default position at center of screen
 		float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
 		float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
 
-		ECSComponents::TransformComponent transform{
-			{nodePosX, nodePosY}, // Center position
-			{0.0f, 0.0f},		  // Velocity
-			{1.0f, 1.0f}          // Scale
-		};
+		// Create entity with NameComponent as base (always required for naming)
+		ECS::Entity newEntity = entityManager.create<ECSComponents::NameComponent>();
 
-		// Create render component with default size and color
-		ECSComponents::RenderComponent renderComp{
-			50.0f,        // Width
-			50.0f,        // Height
-			"Rectangle",  // Shape
-			Color::Green  // Color
-		};
+		// AnimationControllerComponent is always attached and is not part of any preset
+		//newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
 
-		ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
-		newEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
-		newEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
-		newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
-		
-
-
-		// Add collision component for physics interactions
-		ECSComponents::CollisionComponent collisionComp;
-		if (strcmp(renderComp.shape, "Circle") == 0) {
-			// Auto-calculate circle collider from render dimensions
-			collisionComp = ECSComponents::CreateCircleFromRender(renderComp);
+		// Add all components from the selected preset (skips any already-present component)
+		if (const auto* presetComps = prefabMng.getPresetComponents(g_selectedNodePreset))
+		{
+			for (const auto& [compTypeIdx, compAny] : *presetComps)
+			{
+				ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+				{
+					if (!newEntity.template has<T>(entityManager))
+						newEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+				});
+			}
 		}
-		else {
-			// Auto-calculate rectangle collider from render dimensions
-			collisionComp.isActive = true;
-			collisionComp.isTrigger = false;
-			collisionComp.type = ECSComponents::ColliderType::RECTANGLE;
-			collisionComp.data.rectangle.width = renderComp.width;
-			collisionComp.data.rectangle.height = renderComp.height;
+
+		// If the preset included a TransformComponent, place it at screen centre
+		if (newEntity.has<ECSComponents::TransformComponent>(entityManager))
+		{
+			auto& transform = newEntity.get<ECSComponents::TransformComponent>(entityManager);
+			transform.pos = { nodePosX, nodePosY };
 		}
-		newEntity.add<ECSComponents::CollisionComponent>(entityManager,
-			collisionComp);
 
-		// Add physics component to enable pushing
-		ECSComponents::PhysicsComponent physicsComp;
-		physicsComp.mass = 2.0f;          // Mass (heavier = harder to push)
-		physicsComp.drag = 8.0f;          // Higher drag for quick stopping
-		physicsComp.isKinematic = false;  // NOT kinematic (can be pushed)
-		physicsComp.useGravity = false;   // No gravity for top-down game
-		newEntity.add<ECSComponents::PhysicsComponent>(entityManager,
-			physicsComp);
-
-		
-		
-		newEntity.add<ECSComponents::BoxComponent>(entityManager, ECSComponents::BoxComponent());
-
-
-		// Name root nodes as "Entity 1", "Entity 2", etc.
+		// Set entity name
 		auto& nameComp = newEntity.get<ECSComponents::NameComponent>(entityManager);
 		std::string entityName = "Entity " + std::to_string(entityCounter++);
 		strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
@@ -1353,7 +1444,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 		Node* createdNode = sceneTree.createFromEntity(newEntity, nullptr);
 
-		// Record creation for undo/redo with full snapshot
+		// Record creation for undo/redo
 		auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 			sceneTree,
 			entityManager,
@@ -1362,11 +1453,11 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		);
 		undoManager.executeCommand(std::move(createCmd));
 
-		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created\n";
+		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created with preset '" << g_selectedNodePreset << "'\n";
 		if (attachScript && selectedScriptIndex >= 0) {
 			std::wstring selectedScript = availableScripts[selectedScriptIndex];
 			std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-			auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+			auto script = scriptMng.loadScript(selectedScript);
 			if (script)
 				sceneTree.attachScript(createdNode, std::move(script));
 			else
@@ -1379,60 +1470,43 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 	if (ImGui::Button("Add Child Node")) {
 		if (selectedEntityID != UINT32_MAX) {
-			// Verify the parent node exists in the scene tree
 			if (!sceneTree.getNodeByEntityID(selectedEntityID)) {
 				std::cout << "[ERROR] Selected entity " << selectedEntityID << " not found in scene tree. Cannot add child.\n";
 			}
 			else {
 				auto& entityManager = engine_.getEntityManager();
+				auto& prefabMng     = engine_.getPrefabManager();
 
-				// Create transform with default position at center of screen
 				float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
 				float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
-				
-				// Create transform with default position at center of screen
-				ECSComponents::TransformComponent transform{
-					{nodePosX, nodePosY},  // Center position
-					{0.0f, 0.0f},      // Velocity
-					{1.0f, 1.0f}       // Scale
-				};
 
-				// Create render component with default size and color
-				ECSComponents::RenderComponent renderComp{
-					50.0f,        // Width
-					50.0f,        // Height
-					"Rectangle",  // Shape
-					Color::Red    // Color (different from root nodes)
-				};
+				// Create entity with NameComponent as base (always required for naming)
+				ECS::Entity childEntity = entityManager.create<ECSComponents::NameComponent>();
 
-				ECS::Entity childEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
-				childEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
-				childEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
+				// AnimationControllerComponent is always attached and is not part of any preset
 				childEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
-				
-				
-				// Add collision component for physics interactions
-				ECSComponents::CollisionComponent childCollisionComp;
-				childCollisionComp.isActive = true;
-				childCollisionComp.isTrigger = false;
-				childCollisionComp.type = ECSComponents::ColliderType::RECTANGLE;
-				childCollisionComp.data.rectangle.width = 50.0f;
-				childCollisionComp.data.rectangle.height = 50.0f;
-				childEntity.add<ECSComponents::CollisionComponent>(entityManager,
-					childCollisionComp);
 
-				// Add physics component to enable pushing
-				ECSComponents::PhysicsComponent childPhysicsComp;
-				childPhysicsComp.mass = 2.0f;
-				childPhysicsComp.drag = 8.0f;
-				childPhysicsComp.isKinematic = false;
-				childPhysicsComp.useGravity = false;
-				childEntity.add<ECSComponents::PhysicsComponent>(entityManager,
-					childPhysicsComp);
+				// Add all components from the selected preset (skips any already-present component)
+				if (const auto* presetComps = prefabMng.getPresetComponents(g_selectedNodePreset))
+				{
+					for (const auto& [compTypeIdx, compAny] : *presetComps)
+					{
+						ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+						{
+							if (!childEntity.template has<T>(entityManager))
+								childEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+						});
+					}
+				}
 
-				childEntity.add<ECSComponents::BoxComponent>(entityManager,
-					ECSComponents::BoxComponent());
-				// Name child nodes as "Entity #" using the same counter
+				// If the preset included a TransformComponent, place it at screen centre
+				if (childEntity.has<ECSComponents::TransformComponent>(entityManager))
+				{
+					auto& transform = childEntity.get<ECSComponents::TransformComponent>(entityManager);
+					transform.pos = { nodePosX, nodePosY };
+				}
+
+				// Set entity name
 				auto& nameComp = childEntity.get<ECSComponents::NameComponent>(entityManager);
 				std::string entityName = "Entity " + std::to_string(entityCounter++);
 				strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
@@ -1451,16 +1525,10 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				);
 				undoManager.executeCommand(std::move(createCmd));
 
-				//if (attachScript) {
-				//	auto script = scriptMng.selectScript(); // file picker
-				//	if (script) {
-				//		sceneTree.attachScript(childNode, std::move(script));
-				//	}
-				//}
 				if (attachScript && selectedScriptIndex >= 0) {
 					std::wstring selectedScript = availableScripts[selectedScriptIndex];
 					std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-					auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+					auto script = scriptMng.loadScript(selectedScript);
 					if (script)
 						sceneTree.attachScript(childNode, std::move(script));
 				}
@@ -1468,9 +1536,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				if (g_game) g_game->markEntitiesDirty();
 
 				std::cout << "Added child node " << childEntity.id() << " ('" << nameComp.name
-					<< "') to parent " << selectedEntityID << " with undo support\n";
+					<< "') to parent " << selectedEntityID << " with preset '" << g_selectedNodePreset << "'\n";
 
-				// Debug: verify the relationship was set
 				if (childNode) {
 					std::cout << "  -> Child's parent: " << (childNode->parent_ ? std::to_string(childNode->parent_->sceneObjectID_) : "none") << "\n";
 				}
@@ -1794,42 +1861,69 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 }
 
-void LoadAudioAssets(Engine::EnoEngine& engine_)
+// Recursively scans a directory and populates an AudioFolder tree.
+// buildBase / rootBase are the top-level paths so we can derive the matching root path for each file.
+static void BuildAudioTree(AudioFolder& folder,
+	const std::filesystem::path& buildBase,
+	const std::filesystem::path& rootBase,
+	const std::filesystem::path& currentPath)
 {
-	audioAssets.clear();
+	if (!std::filesystem::exists(currentPath)) return;
 
-	// Get the list of ACTUALLY loaded sounds from the loader
-	// This ensures we only show files that were successfully loaded by FMOD
-	const auto& loadedSounds = engine_.getResourceLoader().getSounds();
-
-	// Add only the successfully loaded sound names to our UI list
-	for (const auto& soundPair : loadedSounds)
+	for (const auto& entry : std::filesystem::directory_iterator(currentPath))
 	{
-		// soundPair.first is the sound name (filename without extension)
-		// We need to find the actual filename with extension
-		std::vector<std::string> folders = {
-			engine_.getResourceLoader().getMusicPath().c_str(),
-			engine_.getResourceLoader().getSFXPath().c_str(),
-		};
-
-		for (const auto& folder : folders)
+		if (entry.is_directory())
 		{
-			if (!std::filesystem::exists(folder))
-				continue;
-
-			for (const auto& entry : std::filesystem::directory_iterator(folder))
+			AudioFolder sub;
+			sub.folderName = entry.path().filename().string();
+			BuildAudioTree(sub, buildBase, rootBase, entry.path());
+			if (!sub.subfolders.empty() || !sub.files.empty())
+				folder.subfolders.push_back(std::move(sub));
+		}
+		else if (entry.is_regular_file())
+		{
+			auto ext = entry.path().extension().string();
+			if (ext == ".wav" || ext == ".mp3")
 			{
-				if (!entry.is_regular_file()) continue;
-
-				// Check if this file's stem (name without extension) matches the loaded sound
-				if (entry.path().stem().string() == soundPair.first)
-				{
-					audioAssets.push_back(entry.path().filename().string());
-					break; // Found it, move to next sound
-				}
+				AudioEntry e;
+				e.displayName = entry.path().filename().string();
+				e.stemName    = entry.path().stem().string();
+				e.buildPath   = entry.path();
+				// mirror the relative path onto the root (source) folder
+				auto rel  = std::filesystem::relative(entry.path(), buildBase);
+				e.rootPath = rootBase / rel;
+				folder.files.push_back(std::move(e));
 			}
 		}
 	}
+
+	std::sort(folder.subfolders.begin(), folder.subfolders.end(),
+		[](const AudioFolder& a, const AudioFolder& b) { return a.folderName < b.folderName; });
+	std::sort(folder.files.begin(), folder.files.end(),
+		[](const AudioEntry& a, const AudioEntry& b) { return a.displayName < b.displayName; });
+}
+
+void LoadAudioAssets(Engine::EnoEngine& engine_)
+{
+	Resources::EnoLoader& loader = engine_.getResourceLoader();
+	g_audioTree = AudioFolder{};
+	g_audioTree.folderName = "sound";
+
+	AudioFolder musicFolder;
+	musicFolder.folderName = "music";
+	BuildAudioTree(musicFolder,
+		loader.getMusicPath(), loader.getRootMusicPath(),
+		loader.getMusicPath());
+	if (!musicFolder.subfolders.empty() || !musicFolder.files.empty())
+		g_audioTree.subfolders.push_back(std::move(musicFolder));
+
+	AudioFolder sfxFolder;
+	sfxFolder.folderName = "sfx";
+	BuildAudioTree(sfxFolder,
+		loader.getSFXPath(), loader.getRootSFXPath(),
+		loader.getSFXPath());
+	if (!sfxFolder.subfolders.empty() || !sfxFolder.files.empty())
+		g_audioTree.subfolders.push_back(std::move(sfxFolder));
 }
 
 void displayAudioTab(Engine::EnoEngine& engine_)
@@ -1970,7 +2064,6 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 		}
 	}
 
-	static int selectedAsset = -1;
 	static std::string selectedName{};
 	static FMOD::Sound* selectedSound = nullptr;
 
@@ -1979,74 +2072,93 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	static std::filesystem::path selectedFullRootPath{};
 	static std::string selectedFilenameWithExt{};
 
-	// ============== FILE LIST ==============
-	ImGui::BeginChild("AudioAssetList", ImVec2(0, 150), true);
-
-	if (audioAssets.empty())
+	// ============== FILE TREE ==============
+	// Build entity->audio attachment map for indicators
+	auto& entMgr = engine_.getEntityManager();
+	std::vector<ECS::Entity> audioEntities = entMgr.findEntity<ECSComponents::AudioComponent>();
+	std::unordered_map<std::string, std::string> attachedAudioMap; // stemName -> entityName
+	for (ECS::Entity& ae : audioEntities)
 	{
-		ImGui::TextDisabled("(No audio loaded. Press button above)");
+		auto& ac = ae.get<ECSComponents::AudioComponent>(entMgr);
+		if (strlen(ac.audioMod_.name_) > 0)
+		{
+			std::string entityLabel;
+			if (ae.has<ECSComponents::NameComponent>(entMgr))
+				entityLabel = ae.get<ECSComponents::NameComponent>(entMgr).name;
+			else
+				entityLabel = std::to_string(ae.id());
+			attachedAudioMap[ac.audioMod_.name_] = entityLabel;
+		}
+	}
+
+	ImGui::BeginChild("AudioAssetTree", ImVec2(0, 200), true);
+
+	bool treeIsEmpty = g_audioTree.subfolders.empty() && g_audioTree.files.empty();
+	if (treeIsEmpty)
+	{
+		ImGui::TextDisabled("(No audio loaded. Press \"Load Audio Files\" above)");
 	}
 	else
 	{
-		for (int i = 0; i < audioAssets.size(); ++i)
+		// Recursive lambda to render each folder node
+		std::function<void(const AudioFolder&)> renderFolder = [&](const AudioFolder& folder)
 		{
-			if (ImGui::Selectable(audioAssets[i].c_str(), selectedAsset == i))
+			for (const AudioFolder& sub : folder.subfolders)
 			{
-				selectedAsset = i;
-
-				selectedName = audioAssets[i];
-				selectedName = selectedName.substr(0, selectedName.find_last_of('.'));
-				
-
-				// YunQi M4 addition for deletion of audio files
-				selectedFilenameWithExt = audioAssets[i]; // this has extension, e.g. "laser.wav" operator/ does an append for path and extension
-
-				std::cout << "[Audio Selection] File: " << selectedFilenameWithExt << "\n";
-				std::cout << "[Audio Selection] Build Music Path: " << loader.getMusicPath() << "\n";
-				std::cout << "[Audio Selection] Build SFX Path: " << loader.getSFXPath() << "\n";
-				std::cout << "[Audio Selection] Root Music Path: " << loader.getRootMusicPath() << "\n";
-				std::cout << "[Audio Selection] Root SFX Path: " << loader.getRootSFXPath() << "\n";
-
-				std::filesystem::path musicPath					 =  std::filesystem::path(loader.getMusicPath()) / selectedFilenameWithExt;
-				std::filesystem::path sfxPath					 =  std::filesystem::path(loader.getSFXPath()) / selectedFilenameWithExt;
-				std::filesystem::path rootMusicPath				 =  std::filesystem::path(loader.getRootMusicPath()) / selectedFilenameWithExt;
-				std::filesystem::path rootSfxPath				 =  std::filesystem::path(loader.getRootSFXPath()) / selectedFilenameWithExt;
-
-				std::cout << "[Audio Selection] Checking build music: " << musicPath << " (exists: " << std::filesystem::exists(musicPath) << ")\n";
-				std::cout << "[Audio Selection] Checking build sfx: " << sfxPath << " (exists: " << std::filesystem::exists(sfxPath) << ")\n";
-				std::cout << "[Audio Selection] Checking root music: " << rootMusicPath << " (exists: " << std::filesystem::exists(rootMusicPath) << ")\n";
-				std::cout << "[Audio Selection] Checking root sfx: " << rootSfxPath << " (exists: " << std::filesystem::exists(rootSfxPath) << ")\n";
-
-				if (std::filesystem::exists(musicPath))			    selectedFullPath = musicPath;
-				else if (std::filesystem::exists(sfxPath))		    selectedFullPath = sfxPath;
-				else											    selectedFullPath.clear();
-				if (std::filesystem::exists(rootMusicPath))         selectedFullRootPath = rootMusicPath;
-				else if (std::filesystem::exists(rootSfxPath))		selectedFullRootPath = rootSfxPath;
-				else												selectedFullRootPath.clear();
-
-				std::cout << "[Audio Selection] Selected BUILD path: " << (selectedFullPath.empty() ? "(empty)" : selectedFullPath.string()) << "\n";
-				std::cout << "[Audio Selection] Selected ROOT path: " << (selectedFullRootPath.empty() ? "(empty)" : selectedFullRootPath.string()) << "\n";
-
-				std::cout << "[Audio] User selected: " << selectedName << "\n";
-
-				// Request engine to load this sound
-				bus.publish(Audio::RequestSound{ selectedName });
-
-				auto& sounds = loader.getSounds();
-				auto it = sounds.find(selectedName);
-
-				if (it != sounds.end())
+				ImGuiTreeNodeFlags folderFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+				if (ImGui::TreeNodeEx(sub.folderName.c_str(), folderFlags))
 				{
-					selectedSound = it->second;
-					std::cout << "[Audio] Loaded Sound: " << selectedName << "\n";
-				}
-				else
-				{
-					selectedSound = nullptr;
-					std::cout << "[Audio] ERROR: Sound not found after request.\n";
+					renderFolder(sub);
+					ImGui::TreePop();
 				}
 			}
-		}
+
+			for (const AudioEntry& entry : folder.files)
+			{
+				bool isSelected = (selectedFullPath == entry.buildPath);
+
+				std::string label = entry.displayName;
+				auto attachIt = attachedAudioMap.find(entry.stemName);
+				if (attachIt != attachedAudioMap.end())
+					label += "  -> [" + attachIt->second + "]";
+
+				// Grey out files not yet loaded into FMOD
+				bool isLoaded = loader.getSounds().count(entry.stemName) > 0;
+				if (!isLoaded)
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+
+				ImGuiSelectableFlags selFlags = ImGuiSelectableFlags_SpanAllColumns;
+				if (ImGui::Selectable(label.c_str(), isSelected, selFlags))
+				{
+					selectedName            = entry.stemName;
+					selectedFilenameWithExt = entry.displayName;
+					selectedFullPath        = entry.buildPath;
+					selectedFullRootPath    = entry.rootPath;
+
+					std::cout << "[Audio] User selected: " << selectedName << "\n";
+
+					bus.publish(Audio::RequestSound{ selectedName });
+
+					const auto& sounds = loader.getSounds();
+					auto it = sounds.find(selectedName);
+					if (it != sounds.end())
+					{
+						selectedSound = it->second;
+						std::cout << "[Audio] Loaded Sound: " << selectedName << "\n";
+					}
+					else
+					{
+						selectedSound = nullptr;
+						std::cout << "[Audio] Sound not in FMOD yet (not loaded): " << selectedName << "\n";
+					}
+				}
+
+				if (!isLoaded)
+					ImGui::PopStyleColor();
+			}
+		};
+
+		renderFolder(g_audioTree);
 	}
 
 	ImGui::EndChild();
@@ -2106,12 +2218,79 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			bus.publish(Audio::StopBGM{});
 		}
 
-		auto& map = engine_.getEntityManager().getMap();
-		auto it = map.find(selectedEntityID);
+		// --- Entity target selection for audio attachment ---
+		static uint32_t audioTargetEntityID = UINT32_MAX;
+		static std::string audioAttachStatusMsg{};
+		static float audioAttachStatusTimer = 0.0f;
 
-		if (it == map.end())
+		auto& entityManager = engine_.getEntityManager();
+
+		// Default to the globally selected entity if no audio target has been picked yet
+		if (audioTargetEntityID == UINT32_MAX)
+			audioTargetEntityID = selectedEntityID;
+
+		// Build the label for the currently targeted entity
+		std::string targetLabel = "(No entity selected)";
 		{
-			ImGui::TextDisabled("Invalid entity selected");
+			auto& map = entityManager.getMap();
+			auto it = map.find(audioTargetEntityID);
+			if (it != map.end())
+			{
+				ECS::Entity targetEnt{ audioTargetEntityID };
+				if (targetEnt.has<ECSComponents::NameComponent>(entityManager))
+				{
+					const auto& nc = targetEnt.get<ECSComponents::NameComponent>(entityManager);
+					targetLabel = std::to_string(audioTargetEntityID) + ": " + nc.name;
+				}
+				else
+				{
+					targetLabel = std::to_string(audioTargetEntityID) + ": (unnamed)";
+				}
+			}
+		}
+
+		ImGui::Text("Target Entity:");
+		ImGui::SameLine();
+
+		// Combo dropdown to pick target entity
+		ImGui::SetNextItemWidth(-1);
+		if (ImGui::BeginCombo("##AudioTargetEntity", targetLabel.c_str()))
+		{
+			std::vector<ECS::Entity> namedEntities = entityManager.findEntity<ECSComponents::NameComponent>();
+			for (ECS::Entity& e : namedEntities)
+			{
+				const auto& nc = e.get<ECSComponents::NameComponent>(entityManager);
+				std::string label = std::to_string(e.id()) + ": " + nc.name;
+
+				// Show indicator if entity already has audio attached
+				if (e.has<ECSComponents::AudioComponent>(entityManager))
+				{
+					auto& ac = e.get<ECSComponents::AudioComponent>(entityManager);
+					if (strlen(ac.audioMod_.name_) > 0)
+						label += " [audio: " + std::string(ac.audioMod_.name_) + "]";
+				}
+
+				bool isSelected = (audioTargetEntityID == e.id());
+				if (ImGui::Selectable(label.c_str(), isSelected))
+				{
+					audioTargetEntityID = e.id();
+				}
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		// Validate target entity
+		bool validTarget = false;
+		{
+			auto& map = entityManager.getMap();
+			validTarget = (map.find(audioTargetEntityID) != map.end());
+		}
+
+		if (!validTarget)
+		{
+			ImGui::TextDisabled("Select a valid target entity above.");
 		}
 		else
 		{
@@ -2122,28 +2301,40 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			ImGui::Text("Channel Group:");
 			ImGui::Combo("##ChannelGroup", &selectedChannelGroup, channelGroups, IM_ARRAYSIZE(channelGroups));
 
-			if (ImGui::Button("Attach Audio to Selected Entity"))
+			if (ImGui::Button("Attach Audio"))
 			{
-				ECS::Entity selectedEntity{ selectedEntityID };
+				ECS::Entity targetEntity{ audioTargetEntityID };
 
 				// Add component if missing
-				if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
-					selectedEntity.add<ECSComponents::AudioComponent>(engine_.getEntityManager());
+				if (!targetEntity.has<ECSComponents::AudioComponent>(entityManager)) {
+					targetEntity.add<ECSComponents::AudioComponent>(entityManager);
 					std::cout << "[Audio] Added AudioComponent.\n";
 				}
 
 				// Fill it
-				ECSComponents::AudioComponent& ac = selectedEntity.get<ECSComponents::AudioComponent>(engine_.getEntityManager());
+				ECSComponents::AudioComponent& ac = targetEntity.get<ECSComponents::AudioComponent>(entityManager);
 
 				strncpy(ac.audioMod_.name_, selectedName.c_str(), sizeof(ac.audioMod_.name_) - 1);
 				strncpy(ac.audioMod_.chGroup_, channelGroups[selectedChannelGroup], sizeof(ac.audioMod_.chGroup_) - 1);
 
 				ac.audioMod_.sound_ = selectedSound;
 
+				// Build status message
+				audioAttachStatusMsg = "Attached '" + selectedName + "' to " + targetLabel;
+				audioAttachStatusTimer = 3.0f; // show for ~3 seconds
+
 				std::cout << "[Audio] Attached '" << selectedName
-					<< "' to entity " << selectedEntityID
+					<< "' to entity " << audioTargetEntityID
 					<< " with channel group '" << channelGroups[selectedChannelGroup] << "'\n";
 			}
+		}
+
+		// Show attach confirmation message (fades out)
+		if (audioAttachStatusTimer > 0.0f)
+		{
+			float alpha = (audioAttachStatusTimer > 1.0f) ? 1.0f : audioAttachStatusTimer;
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.3f, alpha), "%s", audioAttachStatusMsg.c_str());
+			audioAttachStatusTimer -= ImGui::GetIO().DeltaTime;
 		}
 
 		//Current state of audio deletion takes out the audio file from the build folder only.
@@ -2177,6 +2368,27 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 					auto it2 = sounds.find(selectedName);
 					if (it2 != sounds.end())
 						sounds.erase(it2);
+				}
+
+				// Clear the audio component on any entity that was referencing the deleted sound
+				{
+					auto& entityMgr = engine_.getEntityManager();
+					for (ECS::Entity& ent : entityMgr.findEntity<ECSComponents::AudioComponent>())
+					{
+						auto& ac = ent.get<ECSComponents::AudioComponent>(entityMgr);
+						if (std::string(ac.audioMod_.name_) == selectedName)
+						{
+							if (ac.isPlaying_)
+							{
+								engine_.getAudioManager().stopChannelGroup(ac.audioMod_.chGroup_);
+								ac.isPlaying_ = false;
+							}
+							ac.audioMod_.name_[0] = '\0';
+							ac.audioMod_.path_[0] = '\0';
+							ac.audioMod_.sound_   = nullptr;
+							ac.audioMod_.ch_      = nullptr;
+						}
+					}
 				}
 
 				// Delete the file from disk
@@ -2249,7 +2461,6 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 				LoadAudioAssets(engine_);
 
 				// Clear selection so UI doesn’t reference deleted item
-				selectedAsset = -1;
 				selectedName.clear();
 				selectedFilenameWithExt.clear();
 				selectedFullPath.clear();
@@ -2305,6 +2516,77 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			ECSComponents::NameComponent nc;
 
 			entity.add<ECSComponents::NameComponent>(entMng, nc);
+		}
+	}
+
+	// --- Script ---
+	auto& smEditor = g_game->getStateMachineEditor();
+
+	Node* node = sceneTree.getNodeByEntityID(entity.id());
+	if (node) {
+		ImGui::SeparatorText("Script");
+		smEditor.renderScriptSection(node);
+	}
+
+	// --- StateMachine ---
+	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
+		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
+		ImGui::SeparatorText("State Machine");
+
+		Node* node = sceneTree.getNodeByEntityID(entity.id());
+		smEditor.renderStateMachineUI(node, smc);
+	}
+	else {
+		ImGui::SeparatorText("State Machine");
+		ImGui::TextDisabled("No State Machine attached");
+
+		// Allow adding state machine component if the entity doesn't have one
+		if (ImGui::Button("Add State Machine")) {
+			entity.add<ECSComponents::StateMachineComponent>(entMng);
+
+			Node* node = sceneTree.getNodeByEntityID(entity.id());
+			if (node && node->script_) {
+				std::string scriptPath = node->script_->path();
+				auto scriptStates = Script::StateMachineScriptGenerator::extractStatesFromScript(scriptPath);
+				auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entMng);
+				for (const auto& state : scriptStates) {
+					smComp.addState(state.c_str());
+					if (smComp.numStates == 1) {
+						strncpy(smComp.currentState, state.c_str(), sizeof(smComp.currentState) - 1);
+						smComp.currentState[sizeof(smComp.currentState) - 1] = '\0';
+					}
+				}
+			}
+		}
+	}
+
+	// --- AIComponent ---
+	if (entity.has<ECSComponents::AIComponent>(entMng)) {
+		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
+		ImGui::SeparatorText("AI");
+
+		// ----------------------------
+		// Core AI Behavior Params
+		// ----------------------------
+		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
+		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
+		ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal);
+
+		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
+		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
+
+		ImGui::DragInt("Health", &ai.health, 1, 0, 9999);
+	}
+	else {
+		// Allow adding AI component if the entity doesn't have one
+		ImGui::SeparatorText("AI");
+		ImGui::TextDisabled("No AI attached");
+
+		if (ImGui::Button("Add AI")) {
+			// Add a default AI component
+			entity.add<ECSComponents::AIComponent>(entMng);
 		}
 	}
 
@@ -2854,70 +3136,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	}
 #endif
 	
-	// --- AIComponent ---
-	if (entity.has<ECSComponents::AIComponent>(entMng)) {
-		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
-		ImGui::SeparatorText("AI");
-
-		// ----------------------------
-		// Core AI Behavior Params
-		// ----------------------------
-		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
-		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
-		ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal);
-
-		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
-		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
-		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
-		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
-
-		ImGui::DragInt("Health", &ai.health, 1, 0, 9999);
-	}
-	else {
-		// Allow adding AI component if the entity doesn't have one
-		ImGui::SeparatorText("AI");
-		ImGui::TextDisabled("No AI attached");
-
-		if (ImGui::Button("Add AI")) {
-			// Add a default AI component
-			entity.add<ECSComponents::AIComponent>(entMng);
-		}
-	}
-
-	auto& smEditor = g_game->getStateMachineEditor();
-	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
-		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
-		ImGui::SeparatorText("State Machine");
-
-		Node* node = sceneTree.getNodeByEntityID(entity.id());
-		smEditor.renderStateMachineUI(node, smc);
-	}
-	else {
-		ImGui::SeparatorText("State Machine");
-
-		// Allow adding state machine component if the entity doesn't have one
-		if (ImGui::Button("Add State Machine")) {
-			// Add a default state machine component
-			entity.add<ECSComponents::StateMachineComponent>(entMng);
-
-			// Add existing state in script
-			Node* node = sceneTree.getNodeByEntityID(entity.id());
-			if (node->script_) {
-				std::string scriptPath = node->script_->path();
-				auto scriptStates = Script::StateMachineScriptGenerator::extractStatesFromScript(scriptPath);
-				auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entMng);
-				for (const auto& state : scriptStates) {
-					smComp.addState(state.c_str());
-
-					// Set as current state if it's the first state
-					if (smComp.numStates == 1) {
-						strncpy(smComp.currentState, state.c_str(), sizeof(smComp.currentState) - 1);
-						smComp.currentState[sizeof(smComp.currentState) - 1] = '\0';
-					}
-				}
-			}
-		}
-	}
 
 	//for dropdown selection of Looping menu.
 	const char* loopOptions[] = { "Disabled","Forward","PingPong" };
