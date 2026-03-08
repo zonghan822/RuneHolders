@@ -26,7 +26,6 @@ namespace Eno
         // Called every frame while in the art1 state
         public void art1_update()
         {
-            Console.WriteLine("Art1");
             _timer += Bridge.GetDeltaTime();
             if (_timer >= SwapInterval)
                 Bridge.ChangeState(ID, "art2");
@@ -46,7 +45,6 @@ namespace Eno
         // Called every frame while in the art2 state
         public void art2_update()
         {
-            Console.WriteLine("Art2");
             _timer += Bridge.GetDeltaTime();
             if (_timer >= SwapInterval)
                 Bridge.ChangeState(ID, "art1");

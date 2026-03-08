@@ -167,7 +167,6 @@ namespace Bridge
             }
 
             uint32_t entityID = node->entity_.id();
-            std::cout << "[Bridge] ChangeState: sceneObjectID " << sceneObjectID << " -> entityID " << entityID << " -> state '" << state << "'" << std::endl;
 
             // Request state change through the system (uses ECS entity ID)
             gEngine->getStateMachineSys().requestStateChange(entityID, state);

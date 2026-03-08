@@ -126,6 +126,9 @@ namespace Engine
 
 	void EnoEngine::run()
 	{
+		// Standalone game is always in play mode
+		setIsPlaying(true);
+
 		while (!window_.shouldClose())
 		{
 			// Script watch (beginFrame also polls events / updates time)
