@@ -3874,24 +3874,26 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 				{
 					if (ctrl->animations_.count(state))
 					{
-						ctrl->setAnimation(state);
-
-						// Also update the texture when switching animations
-						if (entity.has<ECSComponents::DrawInfoComponent>(entMng))
+						// Drive via currentState so updateAnimations() renders this
+						// animation every frame instead of reverting to whatever state
+						// the state machine was in before the button was clicked.
+						if (entity.has<ECSComponents::StateMachineComponent>(entMng))
 						{
-							auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entMng);
-							if (auto tex = ctrl->getCurrentTexture())
-							{
-								drawComp.texture = tex;
-							}
+							auto& sm = entity.get<ECSComponents::StateMachineComponent>(entMng);
+							std::strncpy(sm.currentState, state.c_str(), sizeof(sm.currentState) - 1);
+							sm.currentState[sizeof(sm.currentState) - 1] = '\0';
 						}
+
+						ctrl->setAnimation(state);
+						std::strncpy(animComp.currentAnimationName, state.c_str(),
+							sizeof(animComp.currentAnimationName) - 1);
+						animComp.currentAnimationName[sizeof(animComp.currentAnimationName) - 1] = '\0';
 					}
 					else
 					{
 						std::cout << "[ImGui] " << state << " animation not found!\n";
 					}
 				}
-
 			}
 
 			ImGui::NewLine(); // clean line break after loop
