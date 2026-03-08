@@ -2513,6 +2513,77 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 	}
 
+	// --- Script ---
+	auto& smEditor = g_game->getStateMachineEditor();
+
+	Node* node = sceneTree.getNodeByEntityID(entity.id());
+	if (node) {
+		ImGui::SeparatorText("Script");
+		smEditor.renderScriptSection(node);
+	}
+
+	// --- StateMachine ---
+	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
+		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
+		ImGui::SeparatorText("State Machine");
+
+		Node* node = sceneTree.getNodeByEntityID(entity.id());
+		smEditor.renderStateMachineUI(node, smc);
+	}
+	else {
+		ImGui::SeparatorText("State Machine");
+		ImGui::TextDisabled("No State Machine attached");
+
+		// Allow adding state machine component if the entity doesn't have one
+		if (ImGui::Button("Add State Machine")) {
+			entity.add<ECSComponents::StateMachineComponent>(entMng);
+
+			Node* node = sceneTree.getNodeByEntityID(entity.id());
+			if (node && node->script_) {
+				std::string scriptPath = node->script_->path();
+				auto scriptStates = Script::StateMachineScriptGenerator::extractStatesFromScript(scriptPath);
+				auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entMng);
+				for (const auto& state : scriptStates) {
+					smComp.addState(state.c_str());
+					if (smComp.numStates == 1) {
+						strncpy(smComp.currentState, state.c_str(), sizeof(smComp.currentState) - 1);
+						smComp.currentState[sizeof(smComp.currentState) - 1] = '\0';
+					}
+				}
+			}
+		}
+	}
+
+	// --- AIComponent ---
+	if (entity.has<ECSComponents::AIComponent>(entMng)) {
+		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
+		ImGui::SeparatorText("AI");
+
+		// ----------------------------
+		// Core AI Behavior Params
+		// ----------------------------
+		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
+		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
+		ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal);
+
+		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
+		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
+
+		ImGui::DragInt("Health", &ai.health, 1, 0, 9999);
+	}
+	else {
+		// Allow adding AI component if the entity doesn't have one
+		ImGui::SeparatorText("AI");
+		ImGui::TextDisabled("No AI attached");
+
+		if (ImGui::Button("Add AI")) {
+			// Add a default AI component
+			entity.add<ECSComponents::AIComponent>(entMng);
+		}
+	}
+
 	// ---------- Visibility Component ---------
 	if (entity.has<ECSComponents::VisibilityComponent>(entMng))
 	{
@@ -3059,70 +3130,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	}
 #endif
 	
-	// --- AIComponent ---
-	if (entity.has<ECSComponents::AIComponent>(entMng)) {
-		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
-		ImGui::SeparatorText("AI");
-
-		// ----------------------------
-		// Core AI Behavior Params
-		// ----------------------------
-		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
-		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
-		ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal);
-
-		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
-		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
-		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
-		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
-
-		ImGui::DragInt("Health", &ai.health, 1, 0, 9999);
-	}
-	else {
-		// Allow adding AI component if the entity doesn't have one
-		ImGui::SeparatorText("AI");
-		ImGui::TextDisabled("No AI attached");
-
-		if (ImGui::Button("Add AI")) {
-			// Add a default AI component
-			entity.add<ECSComponents::AIComponent>(entMng);
-		}
-	}
-
-	auto& smEditor = g_game->getStateMachineEditor();
-	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
-		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
-		ImGui::SeparatorText("State Machine");
-
-		Node* node = sceneTree.getNodeByEntityID(entity.id());
-		smEditor.renderStateMachineUI(node, smc);
-	}
-	else {
-		ImGui::SeparatorText("State Machine");
-
-		// Allow adding state machine component if the entity doesn't have one
-		if (ImGui::Button("Add State Machine")) {
-			// Add a default state machine component
-			entity.add<ECSComponents::StateMachineComponent>(entMng);
-
-			// Add existing state in script
-			Node* node = sceneTree.getNodeByEntityID(entity.id());
-			if (node->script_) {
-				std::string scriptPath = node->script_->path();
-				auto scriptStates = Script::StateMachineScriptGenerator::extractStatesFromScript(scriptPath);
-				auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entMng);
-				for (const auto& state : scriptStates) {
-					smComp.addState(state.c_str());
-
-					// Set as current state if it's the first state
-					if (smComp.numStates == 1) {
-						strncpy(smComp.currentState, state.c_str(), sizeof(smComp.currentState) - 1);
-						smComp.currentState[sizeof(smComp.currentState) - 1] = '\0';
-					}
-				}
-			}
-		}
-	}
 
 	//for dropdown selection of Looping menu.
 	const char* loopOptions[] = { "Disabled","Forward","PingPong" };

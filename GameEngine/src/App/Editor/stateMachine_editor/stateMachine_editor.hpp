@@ -16,16 +16,22 @@ namespace Editor {
             : scriptManager_(editor.getScriptManager()), sceneTree_(editor.getSceneTree()), entMng_(editor.getEntityManager()) {
         }
 
+    private:
+        Script::EnoScriptManager& scriptManager_;
+        EnoSceneTree& sceneTree_;
+        ECS::EntityManager& entMng_;
+        char newStateName_[64] = "";
+        char newScriptName_[64] = "";
+        std::string warningBuf_ = "";
+        bool showScriptDialog_ = false;
+        bool showAttachDialog_ = false;
+
+    public:
         // Main editor UI for state machine component
         void renderStateMachineUI(Editor::Node* node, ECSComponents::StateMachineComponent& smComp) {
             if (!node) return;
 
             ImGui::PushID(node->sceneObjectID_);
-
-            // Script attachment section
-            renderScriptSection(node);
-
-            ImGui::Separator();
 
             // State list section
             renderStateList(node, smComp);
@@ -38,17 +44,7 @@ namespace Editor {
             ImGui::PopID();
         }
 
-    private:
-        Script::EnoScriptManager& scriptManager_;
-        EnoSceneTree& sceneTree_;
-        ECS::EntityManager& entMng_;
-        char newStateName_[64] = "";
-        char newScriptName_[64] = "";
-        std::string warningBuf_ = "";
-        bool showScriptDialog_ = false;
-        bool showAttachDialog_ = false;
-
-        // Render script attachment UI
+        // Render script attachment UI — available for all nodes, not just state machine nodes
         void renderScriptSection(Editor::Node* node) {
             ImGui::Text("Script Attachment");
             ImGui::Spacing();
@@ -87,9 +83,6 @@ namespace Editor {
                 if (ImGui::Button("Attach Existing Script")) {
                     showAttachDialog_ = true;
                 }
-
-                ImGui::SameLine();
-                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.0f, 1.0f), "Add script to use state machine");
             }
 
             // Script creation dialog
