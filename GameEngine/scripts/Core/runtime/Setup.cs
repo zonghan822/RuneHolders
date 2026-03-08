@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -11,9 +12,46 @@ namespace Eno
 {
     public static class ScriptSetup
     {
+        private static bool s_resolverRegistered = false;
+
+        // Ensure Engine_shared.dll P/Invoke always resolves to the copy loaded by the
+        // C++ host process (the exe directory), not a project-specific copy that may
+        // exist in the project's DLL directory.  Without this, the editor loads Core.dll
+        // from e.g. RuneWeavers/ where Engine_shared.dll also lives — a second independent
+        // copy would be loaded with its own gEngine = null, causing
+        // "[Engine DLL] Bridge not initialized!" even though the C++ side set gEngine.
+        private static void RegisterNativeResolver()
+        {
+            if (s_resolverRegistered) return;
+            s_resolverRegistered = true;
+
+            NativeLibrary.SetDllImportResolver(typeof(Bridge).Assembly,
+                (name, assembly, searchPath) =>
+                {
+                    if (!name.Contains("Engine_shared", StringComparison.OrdinalIgnoreCase))
+                        return IntPtr.Zero;
+
+                    // Prefer the copy that lives next to the host executable so we share
+                    // the same gEngine pointer that Bridge_Init set from C++.
+                    string? processDir = Path.GetDirectoryName(Environment.ProcessPath);
+                    if (processDir != null)
+                    {
+                        string fullPath = Path.Combine(processDir, "Engine_shared.dll");
+                        if (NativeLibrary.TryLoad(fullPath, out IntPtr h))
+                            return h;
+                    }
+
+                    // Fallback: let the runtime find it by name (may return already-loaded module).
+                    NativeLibrary.TryLoad("Engine_shared.dll", out IntPtr fallback);
+                    return fallback;
+                });
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "Initialize")]
         public static void Initialize(IntPtr pUSPath, IntPtr pDLLPath)
         {
+            RegisterNativeResolver();
+
             // Conversion to managed string
             string? usPath = Marshal.PtrToStringUni(pUSPath);
             string? dllPath = Marshal.PtrToStringUni(pDLLPath);
