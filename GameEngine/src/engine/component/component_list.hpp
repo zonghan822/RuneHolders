@@ -16,7 +16,6 @@
 	X(TransformComponent) \
 	X(RenderComponent) \
 	X(LayerComponent) \
-    X(PlayerComponent) \
 	X(CollisionComponent) \
 	X(PhysicsComponent) \
 	X(BoxComponent) \
@@ -38,7 +37,7 @@
 	PRESET(DEFAULT, NameComponent, VisibilityComponent, LayerComponent) \
 	PRESET(AUDIO, AudioComponent, LayerComponent) \
 	PRESET(PUSHABLE_BOX, TransformComponent, PhysicsComponent, CollisionComponent, BoxComponent, RenderComponent, NameComponent) \
-	PRESET(PLAYER, TransformComponent, NameComponent, PlayerComponent, CollisionComponent, PhysicsComponent, RenderComponent) \
+	PRESET(PLAYER, TransformComponent, NameComponent, CollisionComponent, PhysicsComponent, RenderComponent) \
 	PRESET(EXIT_BUTTON, TransformComponent, ButtonComponent, DrawInfoComponent, VisibilityComponent, CollisionComponent) \
 
 

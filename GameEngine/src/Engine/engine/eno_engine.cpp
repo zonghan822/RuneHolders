@@ -17,6 +17,11 @@
 
 namespace Engine
 {
+	void EnoEngine::reinitBridge()
+	{
+		Bridge::Bridge_Init(this);
+	}
+
 	void EnoEngine::setup()
 	{
 		setupEarly();
@@ -48,6 +53,10 @@ namespace Engine
 
 		// Shaders are project-agnostic enough to load immediately
 		loader_.loadShaders(loader_.getShaderPath());
+
+		// Give the entity manager a reference to the loader so loadJson can
+		// resolve textures by name instead of reconstructing file paths.
+		entityMng_.setLoader(loader_);
 	}
 
 	void EnoEngine::initScripting(const std::filesystem::path& dllDir)
@@ -61,12 +70,23 @@ namespace Engine
 
 	void EnoEngine::setupLate()
 	{
+		// Load project-specific assets BEFORE the editor so that textures are
+		// already in the loader when the scene loads and loadJson resolves them.
+		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getMusicPath());
+		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getSFXPath());
+		loader_.loadImages(loader_.getImagePath());
+		loader_.loadFonts(loader_.getFontPath(), 48);
+
 		// Initialize scripting if not already done by initScripting() (e.g. Editor project picker)
 		if (!coreHost_)
 			coreHost_ = std::make_unique<Core::EnoCoreHost>(bus_);
 
 		// Initialize editor (loads saves/scenes from the current project)
 		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_);
+
+		// Bridge must be initialized before Begin() so that Bridge.* calls inside
+		// script Begin() methods resolve correctly.
+		Bridge::Bridge_Init(this);
 
 		for (const auto &node : editor_->getSceneTree().getAllNodes())
 		{
@@ -78,14 +98,6 @@ namespace Engine
 				}
 			}
 		}
-
-		Bridge::Bridge_Init(this);
-
-		// Load project-specific assets
-		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getMusicPath());
-		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getSFXPath());
-		loader_.loadImages(loader_.getImagePath());
-		loader_.loadFonts(loader_.getFontPath(), 48);
 
 		// Mark animations dirty whenever a scene is cleared/loaded
 		bus_.subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)

@@ -46,7 +46,7 @@ void EditorApplication::initialize() {
 	auto& tileMap = engine_.getTileMap();
 
 	// Set up tile map editor
-	mapEditor_ = std::make_unique<MapEditor>(tileMap);
+	mapEditor_ = std::make_unique<MapEditor>(tileMap, engine_.getEntityManager());
 	Math::eVec2<float> worldSize = tileMap.getWorldSize();
 
 	stateMachineEditor_ = std::make_unique<Editor::StateMachineEditor>(engine_.getEnoEditor());
@@ -54,15 +54,12 @@ void EditorApplication::initialize() {
 	worldWidth_ = worldSize.x;
 	worldHeight_ = worldSize.y;
 
-	gameFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
-	gameFramebuffer_->create(static_cast<int>(worldWidth_), static_cast<int>(worldHeight_)); // Fixed virtual resolution
-
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
-	editorFramebuffer_->create(EDITOR_WIDTH, EDITOR_HEIGHT); // Zoomed in editor view
+	editorFramebuffer_->create(1, 1); // Resized to panel size on first frame
 
 	// Center editor camera on the middle of the game world initially
-	editorCameraX_ = (worldWidth_ / 2.0f) - static_cast<float>(EDITOR_WIDTH) / 2.f;
-	editorCameraY_ = (worldHeight_ / 2.0f) - static_cast<float>(EDITOR_HEIGHT) / 2.f;
+	editorCameraX_ = worldWidth_  / 2.0f - static_cast<float>(editorPanelWidth_)  / 2.f;
+	editorCameraY_ = worldHeight_ / 2.0f - static_cast<float>(editorPanelHeight_) / 2.f;
 
 	// Subscribe to delete selected entity event (using EditorApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
@@ -77,6 +74,12 @@ void EditorApplication::initialize() {
 			extern void clearSelectedEntity();
 			clearSelectedEntity();
 			engine_.markAnimationsDirty();
+			// The old tile collider entities are gone after scene reload — clear cache and rebuild
+			if (mapEditor_)
+			{
+				mapEditor_->clearColliderCache();
+				mapEditor_->rebuildAllTileColliders();
+			}
 			std::cout << "[EditorApplication] Scene cleared, reset selected entity" << std::endl;
 		});
 
@@ -109,11 +112,13 @@ void EditorApplication::run() {
 					fbH = static_cast<int>(c.viewportHeight);
 					break;
 				}
-				if (fbW <= 0) fbW = EDITOR_WIDTH;
-				if (fbH <= 0) fbH = EDITOR_HEIGHT;
+				if (fbW <= 0) fbW = editorPanelWidth_;
+				if (fbH <= 0) fbH = editorPanelHeight_;
 			} else {
-				fbW = getEditorWidth();
-				fbH = getEditorHeight();
+				// Edit mode: FBO = actual panel size so the image fills the view without letterboxing.
+				// The camera viewport override (getEditorWidth/Height) divides panel size by zoom.
+				fbW = getEditorPanelWidth();
+				fbH = getEditorPanelHeight();
 			}
 			if (fbW != lastEditorFbWidth_ || fbH != lastEditorFbHeight_) {
 				editorFramebuffer_->create(fbW, fbH);
@@ -141,6 +146,15 @@ void EditorApplication::run() {
 
 		if (isEditMode)
 		{
+			// Always push the editor viewport as a fallback so the graphics
+			// system can render entities even when no CameraComponent node exists.
+			engine_.getGraphicsManager().setFallbackCamera(
+				editorCameraX_ + getEditorWidth()  * 0.5f,
+				editorCameraY_ + getEditorHeight() * 0.5f,
+				static_cast<float>(getEditorWidth()),
+				static_cast<float>(getEditorHeight())
+			);
+
 			auto& entityMng = engine_.getEntityManager();
 			for (auto& camEnt : entityMng.findEntity<ECSComponents::CameraComponent>())
 			{
@@ -258,10 +272,12 @@ void EditorApplication::updateEditorCamera() {
 		// run() handles the temporary CameraComponent override around renderFrame().
 		auto& inputManager = engine_.getInputManager();
 		float cameraDelta  = editorCameraSpeed_ * deltaTime;
-		if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
-		if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
-		if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
-		if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
+		if (!ImGui::GetIO().WantTextInput) {
+			if (inputManager.isKeyPressed(GLFW_KEY_W)) editorCameraY_ -= cameraDelta;
+			if (inputManager.isKeyPressed(GLFW_KEY_S)) editorCameraY_ += cameraDelta;
+			if (inputManager.isKeyPressed(GLFW_KEY_A)) editorCameraX_ -= cameraDelta;
+			if (inputManager.isKeyPressed(GLFW_KEY_D)) editorCameraX_ += cameraDelta;
+		}
 	}
 	else
 	{
@@ -271,9 +287,9 @@ void EditorApplication::updateEditorCamera() {
 		{
 			auto& inputManager = engine_.getInputManager();
 			if (inputManager.isKeyDown(GLFW_KEY_UP) && !isPanning_)
-				startCameraPan(editorCameraY_ - static_cast<float>(EDITOR_HEIGHT), 1.0f);
+				startCameraPan(editorCameraY_ - static_cast<float>(editorPanelHeight_), 1.0f);
 			if (inputManager.isKeyDown(GLFW_KEY_DOWN) && !isPanning_)
-				startCameraPan(editorCameraY_ + static_cast<float>(EDITOR_HEIGHT), 1.0f);
+				startCameraPan(editorCameraY_ + static_cast<float>(editorPanelHeight_), 1.0f);
 		}
 
 		if (isPanning_)
@@ -335,6 +351,10 @@ void EditorApplication::updateEditorState() {
 			if (playAfterStop)
 			{
 				coreHost.hotReload();
+				// Re-initialize the bridge after hot reload: the DLL is replaced so
+				// gEngine becomes null; every Bridge.* call silently fails until
+				// we point it at the engine again.
+				engine_.reinitBridge();
 				// Re-register all scripts after hot reload to create fresh instances
 				// with the newly loaded assembly's types. Without this, the first play
 				// would use stale instances from the previous assembly.

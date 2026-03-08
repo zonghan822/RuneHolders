@@ -45,6 +45,10 @@
 #include <variant>
 
 
+// Forward declaration so EntityManager can hold a loader pointer without
+// pulling in the full eno_loader.hpp header (which would create circular includes)
+namespace Resources { class EnoLoader; }
+
 namespace ECS
 {
 	//(YunQi)
@@ -69,10 +73,14 @@ namespace ECS
 	public:
 
 		EntityManager(Memory::EnoECSArena& arena, Event::EnoEventBus& bus)
-			: 
+			:
 			arena_{ arena },
 			bus_{ bus }
 		{}
+
+		// Provide the loader so loadJson can resolve textures by name
+		// instead of reconstructing a file path that may be wrong.
+		void setLoader(Resources::EnoLoader& loader) { loader_ = &loader; }
 
 		/*============================================================================================
 		* \brief			Entity id to be set
@@ -487,6 +495,8 @@ namespace ECS
 		Memory::EnoECSArena& arena_;
 
 		Event::EnoEventBus& bus_;
+
+		Resources::EnoLoader* loader_ = nullptr;
 
 		/*============================================================================================
 			* \brief		Helper for getting all entities from the entity map

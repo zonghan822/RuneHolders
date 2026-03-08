@@ -139,9 +139,6 @@ namespace Resources {
 				if (texture->loadFromFile(entry.path().string()))
 				{
 					textures_[entry.path().stem().string()] = texture;
-#ifdef _DEBUG
-					std::cout << "Loaded texture: " << entry.path().stem().string() << std::endl;
-#endif
 				}
 				else
 				{

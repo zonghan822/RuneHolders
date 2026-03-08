@@ -262,6 +262,12 @@ namespace Engine
 		void setIsPlaying(bool isPlaying) { isPlaying_ = isPlaying; }
 
 		/*============================================================================================
+		* \brief		Re-initializes the C# bridge after a hot-reload. Call this immediately after
+		*               EnoCoreHost::hotReload() so Bridge.GetDeltaTime() etc. work in scripts.
+		*//*========================================================================================*/
+		void reinitBridge();
+
+		/*============================================================================================
 		* \brief		Sets the screen-space bounds of the rendered game viewport (imageMin/Max for
 		*               screen-to-world conversion). In full-screen mode this is (0,0)-(w,h); in
 		*               editor mode it is the ImGui game-panel bounds.

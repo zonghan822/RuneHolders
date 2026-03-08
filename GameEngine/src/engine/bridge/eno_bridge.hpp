@@ -11,13 +11,6 @@
     #define ENGINE_API
 #endif
 
-// Data passed from C# scripts to C++ render phase for rune connection lines
-struct RuneLineSegment {
-    float x1, y1, x2, y2;
-    float r, g, b, a;
-    float width;
-};
-
 namespace Bridge {
 
     extern "C" {
@@ -31,6 +24,10 @@ namespace Bridge {
         // ================= Time =================
         ENGINE_API float __stdcall GetDeltaTime();
 
+        // ============= Visibility Component =============
+        ENGINE_API uint32_t __stdcall GetZIndex(uint32_t nodeID);
+        ENGINE_API void __stdcall SetZIndex(uint32_t nodeID, uint32_t z);
+
         // ================= Input =================
         ENGINE_API bool __stdcall IsKeyPressed(int key);
         ENGINE_API bool __stdcall IsKeyHeld(int key);
@@ -39,95 +36,6 @@ namespace Bridge {
 
         // ============= State Change ==============
         ENGINE_API void __stdcall ChangeState(uint32_t entityID, const wchar_t* stateName);
-        
-        // ================= Animation =================
-        ENGINE_API bool __stdcall SetEntityAnimation(uint32_t entityID, const wchar_t* animationName);
-
-        // ================= AI =================
-        ENGINE_API const wchar_t* __stdcall GetEntityAIState(uint32_t entityID);
-
-        // ================= Scene =================
-        ENGINE_API void __stdcall LoadScene(const wchar_t* sceneName);
-
-        // ============= AI Pathfinding =============
-        ENGINE_API bool __stdcall GetPlayerPosition(float* outX, float* outY);
-        ENGINE_API bool __stdcall GetEntityPosition(uint32_t entityID, float* outX, float* outY);
-        ENGINE_API bool __stdcall SetEntityVelocity(uint32_t entityID, float vx, float vy);
-        ENGINE_API bool __stdcall RequestPathToPosition(uint32_t entityID, float targetX, float targetY, bool allowDiagonal);
-        ENGINE_API bool __stdcall GetNextWaypoint(uint32_t entityID, float* outX, float* outY);
-        ENGINE_API float __stdcall CalculateDistance(float x1, float y1, float x2, float y2);
-        ENGINE_API bool __stdcall MoveTowards(uint32_t entityID, float targetX, float targetY, float speed);
-        ENGINE_API bool __stdcall IsNearPosition(uint32_t entityID, float targetX, float targetY, float threshold);
-        ENGINE_API bool __stdcall ClearPath(uint32_t entityID);
-        ENGINE_API bool __stdcall GetAIComponent(uint32_t entityID, float* outAwarenessRadius, float* outChaseSpeed,
-            float* outAttackRange, float* outWindupTime, float* outAttackDuration, float* outHurtDuration,
-            int* outHealth, bool* outAllowDiagonal);
-        ENGINE_API bool __stdcall SetAIHealth(uint32_t entityID, int health);
-        ENGINE_API bool __stdcall GetAIHealth(uint32_t entityID, int* outHealth);
-        // ============= Entity Management =============
-        ENGINE_API bool __stdcall DestroyEntity(uint32_t entityID);
-
-        // ============= Entity Transform =============
-        ENGINE_API bool __stdcall SetEntityPosition(uint32_t entityID, float x, float y);
-        ENGINE_API bool __stdcall SetPlayerPosition(float x, float y);
-
-        // ================= Camera =================
-        ENGINE_API bool __stdcall GetCameraPosition(float* outX, float* outY);
-        ENGINE_API bool __stdcall SetCameraPosition(float x, float y);
-
-        // ================= Audio =================
-        ENGINE_API void __stdcall PlayInstantAudio(const wchar_t* groupName, const wchar_t* soundName);
-        ENGINE_API bool __stdcall PlayEntityAudio(uint32_t entityID);
-        ENGINE_API bool __stdcall StopEntityAudio(uint32_t entityID);
-
-        // ============= Entity Queries =============
-        ENGINE_API uint32_t __stdcall FindEntityByName(const wchar_t* name);
-        ENGINE_API int      __stdcall FindAllEntitiesContainingName(const wchar_t* nameSubstr, uint32_t* outIDs, int maxCount);
-
-        // ============= Entity State =============
-        ENGINE_API bool __stdcall SetEntityVisible(uint32_t entityID, bool visible);
-        ENGINE_API bool __stdcall SetEntityScale(uint32_t entityID, float x, float y);
-        ENGINE_API bool __stdcall GetEntityScale(uint32_t entityID, float* outX, float* outY);
-
-        // ============= Game Pause =============
-        ENGINE_API void __stdcall PauseGame();
-        ENGINE_API void __stdcall ResumeGame();
-        ENGINE_API bool __stdcall IsGamePaused();
-
-        // ============= Text =============
-        ENGINE_API bool __stdcall SetEntityText(uint32_t entityID, const wchar_t* text);
-
-        // ============= Assets =============
-        ENGINE_API const wchar_t* __stdcall GetAssetsDir();
-
-        // ============= Combat =============
-        ENGINE_API float __stdcall GetEntityHealth(uint32_t entityID);
-        ENGINE_API bool  __stdcall SetEntityHealth(uint32_t entityID, float hp);
-        ENGINE_API bool  __stdcall AddEntityDamage(uint32_t entityID, float damage);
-
-        // ============= Mouse =============
-        ENGINE_API bool __stdcall GetMouseWorldPosition(float* outX, float* outY);
-
-        // ============= Mouse Buttons =============
-        ENGINE_API bool __stdcall IsMouseHeld(int button);
-        ENGINE_API bool __stdcall IsMousePressed(int button);
-        ENGINE_API bool __stdcall IsMouseReleased(int button);
-
-        // ============= Rune Line Rendering =============
-        // C# script calls ClearRuneLines() + AddRuneLine() each frame during Update().
-        // C++ game logic calls DrawQueuedRuneLines() during the render phase.
-        ENGINE_API void __stdcall ClearRuneLines();
-        ENGINE_API void __stdcall AddRuneLine(float x1, float y1, float x2, float y2,
-                                              float r, float g, float b, float a, float width);
-        ENGINE_API void __stdcall DrawQueuedRuneLines();
-
-        // ============= Entity Draw Color =============
-        ENGINE_API bool __stdcall SetEntityDrawColor(uint32_t entityID, float r, float g, float b, float a);
-
-        // ============= Spell Spawning =============
-        // spellType: 1=ICE, 2=FIRE, 3=LIGHT
-        // Returns the sceneObjectID of the spawned entity (0 on failure)
-        ENGINE_API uint32_t __stdcall SpawnRuptureMark(float x, float y, int spellType);
     }
 }
 

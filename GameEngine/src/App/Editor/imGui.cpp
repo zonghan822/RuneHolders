@@ -32,10 +32,6 @@ bool showColliders_ = true;
 
 EditorApplication* g_game = nullptr;
 
-// Player entity ID (to track the player)
-uint32_t playerEntityID_ = 0;
-bool playerSpawned_ = false;
-
 // Game viewport tracking (for button click detection)
 ImVec2 lastGameViewportPos(0, 0);
 ImVec2 lastGameViewportSize(0, 0);
@@ -67,8 +63,6 @@ float pScaleX = 1.0f;
 float pScaleY = 1.0f;
 
 // Keeping track of animations
-static std::vector<AnimationPreset> presets;
-static int selectedPresetIndex = 0; // for ImGui dropdown
 static Graphics::TextureData selectedTexData;
 
 // Time
@@ -229,6 +223,17 @@ static void applyProjectSelection(Engine::EnoEngine& engine_, const std::string&
 	}
 
 	engine_.getResourceLoader().reloadPaths();
+
+	// Reload all assets into the loader BEFORE reloading the project so that
+	// loadJson can resolve textures by name when scenes are parsed.
+	{
+		auto& loader = engine_.getResourceLoader();
+		auto& audio  = engine_.getAudioManager();
+		loader.loadImages(loader.getImagePath());
+		loader.loadSound(audio.getSystem(), loader.getSoundExtensions(), loader.getMusicPath());
+		loader.loadSound(audio.getSystem(), loader.getSoundExtensions(), loader.getSFXPath());
+		loader.loadFonts(loader.getFontPath(), 48);
+	}
 
 	if (engine_.isEditorReady())
 	{
@@ -456,19 +461,6 @@ void displayRaycastVisualizerTab(Engine::EnoEngine& engine_)
         initialized = true;
     }
 
-    // --- Sync camera to player entity (position only; direction stays manual) ---
-    ImGui::Checkbox("Sync to Player", &syncToPlayer);
-    if (syncToPlayer) {
-        auto& em = engine_.getEntityManager();
-        auto players = em.findEntity<ECSComponents::PlayerComponent,
-                                     ECSComponents::TransformComponent>();
-        if (!players.empty()) {
-            auto& tf = players[0].get<ECSComponents::TransformComponent>(em);
-            float cs = engine_.getTileMap().cellSize();
-            renderer.playerPos = { tf.pos.x / cs, tf.pos.y / cs };
-        }
-    }
-
     // --- Render (GPU: the fragment shader does all the ray casting) ---
     renderer.render();
 
@@ -624,23 +616,20 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 	// Apply default layout once after dockspace is created
 	static bool layoutApplied = false;
+	static int  focusCountdown = 0;
 	if (!layoutApplied) {
 		imGuiSetupDefaultLayout();
 		layoutApplied = true;
+		focusCountdown = 2; // give ImGui 2 frames to register the docked windows
+	}
+	if (focusCountdown > 0) {
+		if (--focusCountdown == 0) {
+			ImGui::SetWindowFocus("Editor View");
+		}
 	}
 
 	// Get ImGui IO for FPS display
 	ImGuiIO& io = ImGui::GetIO();
-
-	// Assuming that there will only be 1 entity with player component
-	bool playerFound = false;
-	for (ECS::Entity player : entityManager.findEntity<ECSComponents::PlayerComponent>())
-	{
-		playerEntityID_ = player.id();
-		playerFound = true;
-	}
-	// Sync playerSpawned_ flag with actual player existence in ECS
-	playerSpawned_ = playerFound;
 
 	// FPS display throttling
 	double now = ImGui::GetTime();
@@ -671,11 +660,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displayEditTab(engine_, sceneTree);
 	displayAllEntitiesTab(engine_, sceneTree, undoManager);
 	ImGui::End();
-
-	//// Mini Map (full scene, bottom-right)
-	//ImGui::Begin("Mini Map", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-	//displayGameView();
-	//ImGui::End();
 
 	// Editor View (zoomed in, center - replaces old Game View behavior)
 	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
@@ -891,7 +875,6 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 				bool found = false;
 				for (auto& e : entityManager.findEntity<>()) {
 					if (e.id() == lastID) {
-						if (playerEntityID_ == lastID) playerSpawned_ = false;
 						toDelete.push_back(e);
 						found = true;
 						if (g_game) g_game->markEntitiesDirty();
@@ -926,7 +909,6 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 			for (auto& e : entityManager.findEntity<>()) {
 				toDelete.push_back(e);
 			}
-			playerSpawned_ = false;
 		}
 
 	}
@@ -1233,58 +1215,6 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager)
 {
 	ImGui::Text("=== Scene Hierarchy ===");
-	ImGui::Separator();
-
-	// ==================== SPAWN PLAYER ====================
-	ImGui::Text("=== PLAYER CONTROLS ===");
-	ImGui::Text("WASD to move player");
-
-	if (!playerSpawned_) {
-		if (ImGui::Button("Spawn Player")) {
-
-			//// Load player configuration from file
-			//Player::PlayerConfig playerConfig;
-			//playerConfig.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
-
-			//// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
-			//// Create transform with default position at center of screen
-			//float centerX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
-			//float centerY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
-
-			//// Create complete player entity using the config
-			//ECS::Entity player = Player::CreatePlayerEntityFromConfig(
-			//	engine_.getEntityManager(),
-			//	Math::eVec2<float>{centerX, centerY},
-			//	playerConfig
-			//);
-
-			//// Store player ID for reference
-			//playerEntityID_ = player.id();
-			//playerSpawned_ = true;
-
-			//// Add player entity to scene tree as root node
-			//sceneTree.createFromEntity(player, nullptr);
-
-			//std::cout << "Player spawned at center (" << centerX << ", " << centerY << ")\n";
-		}
-	}
-	else {
-		ImGui::Text("Player Active (ID: %u)", playerEntityID_);
-		if (ImGui::Button("Destroy Player")) {
-			if (playerSpawned_ == true) {
-				// Remove from scene hierarchy and destroy children
-				Editor::Node* node = sceneTree.getNodeByEntityID(playerEntityID_);
-				if (node) {
-					destroyChildrenRecursive(node, engine_.getEntityManager());
-					sceneTree.kill(node);
-				}
-				engine_.getEntityManager().destroyEntity(playerEntityID_);
-			}
-			playerSpawned_ = false;
-			if (g_game) g_game->markEntitiesDirty();
-			std::cout << "Player and all children destroyed\n";
-		}
-	}
 	ImGui::Separator();
 
 	// ==================== HIERARCHY CONTROLS ====================
@@ -1640,21 +1570,6 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		// Check if scene list contains at least one scene
 		if (!sceneNames.empty())
 		{
-			// Check that no scene was recently deleted
-			//auto it = std::find_if(sceneNames.begin(), sceneNames.end(),
-			//	[&](const std::string& scenename)
-			//	{
-			//		return scenename == currScene;
-			//	});
-
-			//if (it == sceneNames.end())
-			//{
-			//	std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
-			//	// Scene deleted, load the first available scene instead
-			//	editor_.selectScene(sceneList.front()->getSceneName());
-
-			//	g_game->markEntitiesDirty();
-			//}
 			sceneNames.clear();
 		} 
 
@@ -1677,19 +1592,25 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	
 	ImGui::Separator();
 
+	// Cache start scene name for this frame
+	const std::string& startScene = editor_.getStartScene();
+
 	// Display scene names
 	for (auto& name : sceneNames)
 	{
-
 		std::string sceneName = name;
+		bool isStartScene = (sceneName == startScene);
 
 		// Give it an id
 		ImGui::PushID(sceneName.c_str());
 
+		// Build display label: prefix [S] for start scene
+		std::string displayLabel = isStartScene ? ("[S] " + sceneName) : sceneName;
+
 		// Create an invisible button over the text
-		// Size of invisible button
-		ImVec2 textSize = ImGui::CalcTextSize(sceneName.c_str());
-		ImGui::InvisibleButton("##scene", textSize);
+		ImVec2 textSize = ImGui::CalcTextSize(displayLabel.c_str());
+		float rowWidth = ImGui::GetContentRegionAvail().x;
+		ImGui::InvisibleButton("##scene", ImVec2(rowWidth, textSize.y));
 
 		// Left click loads scene
 		// IsItemClicked checks the click on the most recent pushed imgui item aka invisible button
@@ -1723,7 +1644,25 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		if (ImGui::BeginPopup("scene_menu"))
 		{
 			ImGui::Text("%s", sceneName.c_str());
+			if (isStartScene)
+				ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.0f), "(Start Scene)");
 			static std::string warningBuf;
+			ImGui::Separator();
+
+			// Set as start scene
+			if (isStartScene)
+			{
+				ImGui::TextDisabled("Already the start scene");
+			}
+			else
+			{
+				if (ImGui::Button("Set as Start Scene"))
+				{
+					editor_.setStartScene(sceneName);
+					ImGui::CloseCurrentPopup();
+				}
+			}
+
 			ImGui::Separator();
 
 			// Input box to change name
@@ -1817,10 +1756,13 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 		// Aligning text to invisible button
 		ImGui::SameLine(0, 0);
-		// Minus button size offset
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() - textSize.x);
-		// Display file name as text
-		ImGui::Text("%s", sceneName.c_str());
+		// Go back to the start of the invisible button
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() - rowWidth);
+		// Display file name as text (green if this is the start scene)
+		if (isStartScene)
+			ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f), "%s", displayLabel.c_str());
+		else
+			ImGui::Text("%s", displayLabel.c_str());
 
 		if (ImGui::IsItemHovered())
 		{
@@ -1841,8 +1783,6 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		// Save scene
 		auto const& assetPath = FileSystem::GetAssetsDir().string();
 		editor_.getSceneTree().save(assetPath + "/saves/scenes/" + sceneName);
-		// Update last saved scene
-		editor_.updateLastSavedScene();
 	}
 
 	if (ImGui::Button("Create new scene"))
@@ -2752,9 +2692,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 	}
 
-	// Check if this is a player entity
-	bool isPlayer = entity.has<ECSComponents::PlayerComponent>(entMng);
-
 	// --- TransformComponent ---
 	if (entity.has<ECSComponents::TransformComponent>(entMng)) {
 		auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
@@ -2794,69 +2731,35 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		float oldWidth = draw.width;
 		float oldHeight = draw.height;
 
-		// Special handling for player: uniform scaling
-		if (isPlayer) {
-			// For player, use a single scale slider that affects both width and height uniformly
-			static float playerScale = 1.0f;
+		
+		// Allow independent width/height scaling
+		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
 
-			// Calculate current scale from transform (more reliable than draw info)
-			if (entity.has<ECSComponents::TransformComponent>(entMng)) {
-				auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
-				playerScale = transform.scale.x;
-			}
+		// Scale multiplier for both width and height
+		static std::unordered_map<uint32_t, float> entityScales;
+		static std::unordered_map<uint32_t, std::pair<float, float>> entityBaseSizes;
 
-			if (ImGui::DragFloat("Scale", &playerScale, 0.01f, 0.1f, 10.0f)) {
-				// Update transform scale for rendering
-				if (entity.has<ECSComponents::TransformComponent>(entMng)) {
-					auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
-					transform.scale.x = playerScale;
-					transform.scale.y = playerScale;
-				}
+		uint32_t entityID = entity.id();
 
-				// Keep DrawInfo at base size - rendering uses transform.scale
-				draw.width = 48.0f;
-				draw.height = 48.0f;
-
-				// Keep collision at base size - collision system uses transform.scale
-				if (entity.has<ECSComponents::CollisionComponent>(entMng)) {
-					auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
-					collision.data.rectangle.width = 48.0f;
-					collision.data.rectangle.height = 48.0f;
-				}
-
-				if (g_game) g_game->markEntitiesDirty();
-			}
+		// Initialize base size and scale if not stored
+		if (entityBaseSizes.find(entityID) == entityBaseSizes.end()) {
+			entityBaseSizes[entityID] = {draw.width, draw.height};
+			entityScales[entityID] = 1.0f;
 		}
-		else {
-			// For non-player entities, allow independent width/height scaling
-			ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
-			ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
 
-			// Scale multiplier for both width and height
-			static std::unordered_map<uint32_t, float> entityScales;
-			static std::unordered_map<uint32_t, std::pair<float, float>> entityBaseSizes;
+		float& scale = entityScales[entityID];
+		auto& baseSize = entityBaseSizes[entityID];
 
-			uint32_t entityID = entity.id();
+		if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.1f, 10.0f)) {
+			// Apply scale to base size
+			draw.width = baseSize.first * scale;
+			draw.height = baseSize.second * scale;
+		}
 
-			// Initialize base size and scale if not stored
-			if (entityBaseSizes.find(entityID) == entityBaseSizes.end()) {
-				entityBaseSizes[entityID] = {draw.width, draw.height};
-				entityScales[entityID] = 1.0f;
-			}
-
-			float& scale = entityScales[entityID];
-			auto& baseSize = entityBaseSizes[entityID];
-
-			if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.1f, 10.0f)) {
-				// Apply scale to base size
-				draw.width = baseSize.first * scale;
-				draw.height = baseSize.second * scale;
-			}
-
-			// Update base size if width/height changed directly
-			if (oldWidth != draw.width || oldHeight != draw.height) {
-				baseSize = {draw.width / scale, draw.height / scale};
-			}
+		// Update base size if width/height changed directly
+		if (oldWidth != draw.width || oldHeight != draw.height) {
+			baseSize = {draw.width / scale, draw.height / scale};
 		}
 
 		// Auto-update collision when width/height changes
@@ -2893,12 +2796,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (ImGui::DragFloat("Rotation", &rotationDegrees, 1.0f, -360.0f, 360.0f, "%.1f deg")) {
 				// Convert degrees back to radians
 				transform.rot.x = rotationDegrees * (3.14159265f / 180.0f);
-
-				// Update collision component rotation for player
-				if (isPlayer && entity.has<ECSComponents::CollisionComponent>(entMng)) {
-					auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
-					collision.rotation = transform.rot.x;
-				}
 
 				if (g_game) g_game->markEntitiesDirty();
 			}
@@ -2973,7 +2870,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	}
 
 	// --- PhysicsComponent --- (skip for player)
-	if (!isPlayer && entity.has<ECSComponents::PhysicsComponent>(entMng)) {
+	if (entity.has<ECSComponents::PhysicsComponent>(entMng)) {
 		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
 		ImGui::SeparatorText("Physics");
 		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
@@ -3671,8 +3568,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	//Node* entNode = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id());
 	auto& entMng = engine_.getEntityManager();
 
-	// Read states from StateMachineComponent if available
-	std::vector<std::string> states{ "Idle", "Walk", "Attack", "Death" };
+	// Read states exclusively from StateMachineComponent; fall back to "Default" if empty
+	std::vector<std::string> states;
 	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
 		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
 		for (int i = 0; i < smc.numStates; ++i) {
@@ -3680,6 +3577,12 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 				states.push_back(smc.states[i].name);
 			}
 		}
+		if (states.empty()) {
+			smc.addState("Default");
+			states.push_back("Default");
+		}
+	} else {
+		states.push_back("Default");
 	}
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	const auto& textures = loader.getAllTextures();
@@ -4384,66 +4287,6 @@ void imGuiBeginDockspace() {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
 
-void displayGameView() {
-	ImVec2 contentSize = ImGui::GetContentRegionAvail();
-
-	if (g_game && g_game->getGameFramebuffer()) {
-		auto* fb = g_game->getGameFramebuffer();
-
-		if (contentSize.x > 0 && contentSize.y > 0) {
-			// Get fixed virtual resolution from game
-			float virtualAspect = g_game->getWorldWidth() / g_game->getWorldHeight();
-
-			// Calculate aspect-ratio-preserving size to fit in the Game View
-			float contentAspect = contentSize.x / contentSize.y;
-			ImVec2 displaySize;
-			ImVec2 offset(0, 0);
-
-			if (contentAspect > virtualAspect) {
-				// Content is wider - fit to height, add horizontal letterboxing
-				displaySize.y = contentSize.y;
-				displaySize.x = contentSize.y * virtualAspect;
-				offset.x = (contentSize.x - displaySize.x) * 0.5f; // Center horizontally
-			}
-			else {
-				// Content is taller - fit to width, add vertical letterboxing
-				displaySize.x = contentSize.x;
-				displaySize.y = contentSize.x / virtualAspect;
-				offset.y = (contentSize.y - displaySize.y) * 0.5f; // Center vertically
-			}
-
-			// Draw black letterbox bars
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-			ImVec2 windowPos = ImGui::GetCursorScreenPos();
-
-			// Fill entire content area with black
-			drawList->AddRectFilled(
-				windowPos,
-				ImVec2(windowPos.x + contentSize.x, windowPos.y + contentSize.y),
-				IM_COL32(0, 0, 0, 255)
-			);
-
-			// Position the image with offset (centered with letterboxing)
-			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
-
-			// Store viewport position and size for button click detection
-			lastGameViewportPos = ImVec2(windowPos.x + offset.x, windowPos.y + offset.y);
-			lastGameViewportSize = displaySize;
-
-			// Display the framebuffer texture scaled to fit (READ-ONLY - no interactions)
-			ImGui::Image(
-				(void*)(intptr_t)fb->getTextureID(),
-				displaySize,
-				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
-				ImVec2(1, 0)
-			);
-
-			// Note: All interactions (drag-drop, delete, prefab placement) have been moved to Editor View
-			// This window is now read-only for observing the full game scene
-		}
-	}
-}
-
 // Draw gizmos for selected entity
 void drawGizmos(ImDrawList* drawList, ImVec2 entityCenter, float gizmoSize, GizmoMode mode) {
 	const float handleSize = 8.0f;
@@ -4566,7 +4409,6 @@ bool isMouseOverGizmoHandle(ImVec2 mousePos, ImVec2 entityCenter, float gizmoSiz
 void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
 	auto& entityManager = engine_.getEntityManager();
 	auto& sceneEditor = engine_.getEnoEditor();
-	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
 	// Display toolbar for PLAY/PAUSE/STOP
 	static bool isPlaying = false;
@@ -4685,56 +4527,41 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	}
 	ImGui::Separator();
 
+	// Remaining space below the toolbar
+	ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+
+	// Feed panel size back so the FBO is resized to match next frame
+	if (g_game && viewportSize.x > 0 && viewportSize.y > 0)
+		g_game->setEditorPanelSize(static_cast<int>(viewportSize.x), static_cast<int>(viewportSize.y));
+
+	// World-unit viewport dimensions (panel size ÷ zoom), used by screen↔world conversions
+	float editorWidth  = g_game ? static_cast<float>(g_game->getEditorWidth())  : viewportSize.x;
+	float editorHeight = g_game ? static_cast<float>(g_game->getEditorHeight()) : viewportSize.y;
+
+	// Child window fills remaining space; NoScrollWithMouse keeps the toolbar from scrolling away
+	ImGui::BeginChild("##editorViewport", viewportSize, false,
+		ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
 	if (g_game && g_game->getEditorFramebuffer()) {
 		auto* fb = g_game->getEditorFramebuffer();
 
-		if (contentSize.x > 0 && contentSize.y > 0) {
-			// Get editor resolution from game
-			float editorWidth = static_cast<float>(g_game->getEditorWidth());
-			float editorHeight = static_cast<float>(g_game->getEditorHeight());
-			float editorAspect = editorWidth / editorHeight;
+		ImVec2 childSize = ImGui::GetContentRegionAvail();
+		// Display the framebuffer stretched to fill the viewport child window.
+		ImGui::Image(
+			(void*)(intptr_t)fb->getTextureID(),
+			childSize,
+			ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
+			ImVec2(1, 0)
+		);
 
-			// Calculate aspect-ratio-preserving size to fit in the Editor View
-			float contentAspect = contentSize.x / contentSize.y;
-			ImVec2 displaySize;
-			ImVec2 offset(0, 0);
+		// Capture the editor view min/max coordinates and store them in EditorApplication
+		ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
+		ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
+		g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
 
-			if (contentAspect > editorAspect) {
-				displaySize.y = contentSize.y;
-				displaySize.x = contentSize.y * editorAspect;
-				offset.x = (contentSize.x - displaySize.x) * 0.5f;
-			}
-			else {
-				displaySize.x = contentSize.x;
-				displaySize.y = contentSize.x / editorAspect;
-				offset.y = (contentSize.y - displaySize.y) * 0.5f;
-			}
-
-			// Draw black letterbox bars
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-			ImVec2 windowPos = ImGui::GetCursorScreenPos();
-
-			drawList->AddRectFilled(
-				windowPos,
-				ImVec2(windowPos.x + contentSize.x, windowPos.y + contentSize.y),
-				IM_COL32(0, 0, 0, 255)
-			);
-
-			// Position the image with offset (centered with letterboxing)
-			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
-
-			// Display the editor framebuffer texture scaled to fit
-			ImGui::Image(
-				(void*)(intptr_t)fb->getTextureID(),
-				displaySize,
-				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
-				ImVec2(1, 0)
-			);
-
-			// Capture the editor view min/max coordinates and store them in EditorApplication
-			ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
-			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
-			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
+		ImDrawList* drawList = ImGui::GetWindowDrawList();
+		// Clip all overlay drawing to the viewport image area
+		drawList->PushClipRect(imGuiImageMin, imGuiImageMax, true);
 
 			// ========== MOUSE WHEEL ZOOM (edit mode only) ==========
 			if (ImGui::IsItemHovered() && !engine_.getIsPlaying()) {
@@ -4848,25 +4675,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							uint32_t controllerID = engine_.getAnimationRegistry().createController();
 							newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
 
-							// Get the controller and add a simple 1x1 animation
-							Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(controllerID);
-							if (ctrl)
-							{
-								// Create a single-frame animation (1x1 grid, UV 0,0 to 1,1)
-								Animation::EnoAnimation singleFrameAnim = Animation::createSpriteSheetAnimation(
-									texture->getWidth(),   // frame width = full texture width
-									texture->getHeight(),  // frame height = full texture height
-									texture->getWidth(),   // sheet width
-									texture->getHeight(),  // sheet height
-									0,                     // start frame
-									1,                     // frame count (single frame)
-									0.1f                   // frame duration (doesn't matter for single frame)
-								);
-
-								ctrl->addAnimation("Idle", singleFrameAnim);
-								ctrl->setAnimation("Idle");
-							}
-
 							// Add to scene tree
 							Node* node = sceneTree.createFromEntity(newEntity, nullptr);
 							node->name_ = textureName;
@@ -4946,25 +4754,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						// Create animation controller
 						uint32_t controllerID = engine_.getAnimationRegistry().createController();
 						newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
-
-						// Get the controller and add a simple 1x1 animation
-						Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(controllerID);
-						if (ctrl)
-						{
-							// Create a single-frame animation (1x1 grid, UV 0,0 to 1,1)
-							Animation::EnoAnimation singleFrameAnim = Animation::createSpriteSheetAnimation(
-								texture->getWidth(),   // frame width = full texture width
-								texture->getHeight(),  // frame height = full texture height
-								texture->getWidth(),   // sheet width
-								texture->getHeight(),  // sheet height
-								0,                     // start frame
-								1,                     // frame count (single frame)
-								0.1f                   // frame duration (doesn't matter for single frame)
-							);
-
-							ctrl->addAnimation("Idle", singleFrameAnim);
-							ctrl->setAnimation("Idle");
-						}
 
 						// Add to scene tree
 						Node* node = sceneTree.createFromEntity(newEntity, nullptr);
@@ -5409,40 +5198,27 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							tc.scale.y = newScaleY;
 							lastScale = ImVec2(newScaleX, newScaleY);
 
-							// Check if this is a player entity
-							bool isPlayerEntity = e.has<ECSComponents::PlayerComponent>(entityManager);
-
 							// Update DrawInfo width and height to reflect the scale
 							if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
 								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 
-								if (isPlayerEntity) {
-									// For player, keep DrawInfo at base size (48x48)
-									dc.width = 48.0f;
-									dc.height = 48.0f;
-								} else {
-									// For non-player entities, scale DrawInfo
-									dc.width = dc.width * scaleFactorX;
-									dc.height = dc.height * scaleFactorY;
-								}
+								// scale DrawInfo
+								dc.width = dc.width * scaleFactorX;
+								dc.height = dc.height * scaleFactorY;
+								
 
 								// Auto-update collision component if it exists
 								if (e.has<ECSComponents::CollisionComponent>(entityManager)) {
 									auto& collision = e.get<ECSComponents::CollisionComponent>(entityManager);
 
-									if (isPlayerEntity) {
-										// For player, keep collision at base size (48x48)
-										collision.data.rectangle.width = 48.0f;
-										collision.data.rectangle.height = 48.0f;
-									} else {
-										// For non-player entities, update collision from DrawInfo
-										if (collision.type == ECSComponents::ColliderType::CIRCLE) {
-											collision.data.circle.radius = dc.width * 0.5f;
-										} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
-											collision.data.rectangle.width = dc.width;
-											collision.data.rectangle.height = dc.height;
-										}
+									// update collision from DrawInfo
+									if (collision.type == ECSComponents::ColliderType::CIRCLE) {
+										collision.data.circle.radius = dc.width * 0.5f;
+									} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
+										collision.data.rectangle.width = dc.width;
+										collision.data.rectangle.height = dc.height;
 									}
+									
 								}
 							}
 
@@ -5517,8 +5293,9 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					ImGui::EndTooltip();
 				}
 			}
-		}
+		drawList->PopClipRect();
 	}
+	ImGui::EndChild();
 }
 
 void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of space the docking takes
