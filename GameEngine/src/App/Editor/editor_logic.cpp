@@ -201,7 +201,7 @@ void EditorApplication::shutdown() {
 }
 
 void EditorApplication::setupPrefabs() {
-	auto prefabManager = engine_.getPrefabManager();
+	auto& prefabManager = engine_.getPrefabManager();
 	prefabManager.registerPresets();
 
 	ECSComponents::Preset::saveAll(prefabManager);

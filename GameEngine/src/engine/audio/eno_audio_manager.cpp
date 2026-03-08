@@ -169,7 +169,13 @@ namespace Audio
 		auto it = sounds_.find(audioComp.audioMod_.name_);
 		if (it == sounds_.end())
 		{
-			// Instead of throwing, publish an error event and log to console
+			// Sound not yet in audio manager - request it from the loader (synchronous event)
+			bus_.publish(RequestSound{ std::string(audioComp.audioMod_.name_) });
+			it = sounds_.find(audioComp.audioMod_.name_);
+		}
+		if (it == sounds_.end())
+		{
+			// Still not found after request - publish error
 			std::cerr << "[Audio Error] Unknown sound requested: " << audioComp.audioMod_.name_ << std::endl;
 			bus_.publish(AudioLoadError{
 				audioComp.audioMod_.name_,
@@ -196,6 +202,11 @@ namespace Audio
 			return; // Audio already playing, nothing to do
 		}
 
+		// Since isPlaying_ is false, the stored channel pointer may be stale
+		// (FMOD invalidates channels on game stop but doesn't null the pointer).
+		// Clear it now so the ch->stop() below doesn't touch freed memory.
+		audioComp.audioMod_.ch_ = nullptr;
+
 		// Auto-prepare if sound pointer is null but name is set
 		// This handles cases where audio was deserialized from a save file
 		if (audioComp.audioMod_.sound_ == nullptr && audioComp.audioMod_.name_[0] != '\0')
@@ -207,7 +218,7 @@ namespace Audio
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
 		FMOD::Channel* ch{ audioComp.audioMod_.ch_ };
-		
+
 		FMOD::ChannelGroup* chGroup{ nullptr };
 
 		auto it = channelGroups_.find(group);

@@ -102,7 +102,10 @@ namespace Engine
 				if (!node->entity_.has<ECSComponents::AudioComponent>(entityMng_)) continue;
 				auto& audioComp = node->entity_.get<ECSComponents::AudioComponent>(entityMng_);
 				if (audioComp.audioMod_.name_[0] != '\0')
+				{
+					bus_.publish(Audio::RequestSound{ std::string(audioComp.audioMod_.name_) });
 					audioMng_.prepareMod(audioComp);
+				}
 				if (audioComp.isAutoplay_)
 					audioMng_.play(audioComp);
 			}
@@ -168,6 +171,20 @@ namespace Engine
 		// Update audio system (continues during runtime pause)
 		if (isPlaying_)
 			audioMng_.process(deltaTime);
+
+		// Sync isPlaying_ flag with actual FMOD channel state so the inspector
+		// indicator clears automatically when a sound finishes playing naturally.
+		for (auto& ent : entityMng_.findEntity<ECSComponents::AudioComponent>())
+		{
+			auto& ac = ent.get<ECSComponents::AudioComponent>(entityMng_);
+			if (ac.isPlaying_ && ac.audioMod_.ch_)
+			{
+				bool fmodIsPlaying = false;
+				ac.audioMod_.ch_->isPlaying(&fmodIsPlaying);
+				if (!fmodIsPlaying)
+					ac.isPlaying_ = false;
+			}
+		}
 	}
 
 	void EnoEngine::renderFrame()

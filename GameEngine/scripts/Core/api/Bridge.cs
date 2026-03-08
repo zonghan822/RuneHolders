@@ -107,6 +107,12 @@ namespace Eno
         [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern void PlayInstantAudio(string groupName, string soundName);
 
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool PlayEntityAudio(uint entityID);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern bool StopEntityAudio(uint entityID);
+
         // Entity Queries
         [DllImport("Engine_shared.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         public static extern uint FindEntityByName(string name);
