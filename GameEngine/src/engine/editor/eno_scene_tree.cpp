@@ -35,12 +35,11 @@ namespace Editor
 		node->nestedLayer_ = 0;
 		node->entity_ = entMng_.create<
 			ECSComponents::CollisionComponent, ECSComponents::RenderComponent,
-			ECSComponents::PhysicsComponent, ECSComponents::PlayerComponent,
-			ECSComponents::TransformComponent, ECSComponents::VisibilityComponent>(
+			ECSComponents::PhysicsComponent, ECSComponents::TransformComponent, 
+			ECSComponents::VisibilityComponent>(
 				ECSComponents::CollisionComponent{ 10.f, 10.f, Math::eVec2{5.f, 5.f}, true },
 				ECSComponents::RenderComponent{ 20.f, 20.f, "Trapezoid", 0},
 				ECSComponents::PhysicsComponent{ 1.f },
-				ECSComponents::PlayerComponent{  },
 				ECSComponents::TransformComponent{ Math::eVec2{7.f, 7.f }, Math::eVec2{9.f, 9.f }, Math::eVec2{11.f, 11.f } },
 				ECSComponents::VisibilityComponent{}
 				);

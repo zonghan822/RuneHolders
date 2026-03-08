@@ -35,10 +35,6 @@ static std::mt19937 rng(std::random_device{}());
 extern bool showColliders_;
 extern EditorApplication* g_game;
 
-// Player entity ID to track player
-extern uint32_t playerEntityID_;
-extern bool playerSpawned_;
-
 // Containers to store system timings
 extern std::unordered_map<std::string, double> systemTimes_; //actual system time
 extern std::unordered_map<std::string, double> throttledTimes_; //used for displaying throttled timing(more user friendly)
@@ -59,15 +55,6 @@ struct SystemTimer {
         auto end = Clock::now();
         systemTimes[name] = std::chrono::duration<double, std::micro>(end - start).count();
     }
-};
-
-//YunQi
-struct AnimationPreset {
-    std::string name;
-
-    Graphics::TextureData idleTex;
-    Graphics::TextureData walkTex;
-    Graphics::TextureData attackTex;
 };
 
 // ImGui functions

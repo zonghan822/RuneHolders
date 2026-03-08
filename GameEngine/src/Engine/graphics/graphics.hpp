@@ -276,6 +276,18 @@ namespace Graphics
         // Pass (0, 0) to revert to the OS window framebuffer size.
         void setRenderTargetSize(int w, int h) { renderTargetW_ = w; renderTargetH_ = h; }
 
+        // Set a fallback camera used by updateCamera() and render() when no
+        // CameraComponent entity exists in the scene.  The editor calls this
+        // every frame so entities are visible even without a camera node.
+        // centerX/Y is the world-space centre of the viewport.
+        void setFallbackCamera(float centerX, float centerY, float width, float height)
+        {
+            fallbackCamCenterX_ = centerX;
+            fallbackCamCenterY_ = centerY;
+            fallbackCamWidth_   = width;
+            fallbackCamHeight_  = height;
+        }
+
         // Getters
         bool isInitialized() const { return initialized_; }
         std::unordered_map<std::string, std::shared_ptr<EnoTexture>> texMap() const { return texMap_; }
@@ -351,6 +363,11 @@ namespace Graphics
 
         // Video players: name -> player
         std::unordered_map<std::string, std::shared_ptr<VideoPlayer>> videoMap_;
+        // Fallback camera used when no CameraComponent entity is present.
+        float fallbackCamCenterX_ = 0.f;
+        float fallbackCamCenterY_ = 0.f;
+        float fallbackCamWidth_   = 0.f;
+        float fallbackCamHeight_  = 0.f;
 
         // Internal helper functions
         bool createDefaultShader();

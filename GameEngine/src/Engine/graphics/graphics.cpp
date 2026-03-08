@@ -46,8 +46,6 @@ namespace Graphics
 
     bool EnoTexture::loadFromFile(const std::string& filepath)
     {
-        std::cout << "Attempting to load texture from: " << filepath << std::endl;
-
         // Check if file exists first
         std::ifstream fileCheck(filepath);
         if (!fileCheck.good())
@@ -57,15 +55,9 @@ namespace Graphics
         }
         fileCheck.close();
 
-        // Check if texture already has a shared pointer mapped
-
-        std::cout << "File exists, attempting stbi_load..." << std::endl;
-
         // Load image using stb_image
         stbi_set_flip_vertically_on_load(false);
         unsigned char* data = stbi_load(filepath.c_str(), &width_, &height_, &channels_, 0);
-
-        std::cout << "stbi_load returned, checking data..." << std::endl;
 
         if (!data)
         {
@@ -75,24 +67,18 @@ namespace Graphics
             return false;
         }
 
-        std::cout << "Data loaded successfully: " << width_ << "x" << height_ << " with " << channels_ << " channels" << std::endl;
-
         // Generate OpenGL texture
-        std::cout << "Generating OpenGL texture..." << std::endl;
         glGenTextures(1, &textureID_);
-        std::cout << "Texture ID: " << textureID_ << std::endl;
 
         glBindTexture(GL_TEXTURE_2D, textureID_);
 
         // Set texture parameters for sprite sheets
-        std::cout << "Setting texture parameters..." << std::endl;
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // Prevent wrapping
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);  // Prevent wrapping
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);    // No interpolation
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);    // No interpolation
 
         // Determine format based on channels
-        std::cout << "Determining texture format..." << std::endl;
         GLenum format = GL_RGB;
         if (channels_ == 1)
             format = GL_RED;
@@ -101,23 +87,17 @@ namespace Graphics
         else if (channels_ == 4)
             format = GL_RGBA;
 
-        std::cout << "Format determined (format=" << format << "), uploading texture data..." << std::endl;
 
         // Upload texture data
         glTexImage2D(GL_TEXTURE_2D, 0, format, width_, height_, 0, format, GL_UNSIGNED_BYTE, data);
 
-        std::cout << "Freeing image data..." << std::endl;
 
         if (data != nullptr)
         {
             stbi_image_free(data);
-            std::cout << "Image data freed successfully" << std::endl;
         }
 
-        std::cout << "Unbinding texture..." << std::endl;
         glBindTexture(GL_TEXTURE_2D, 0);
-
-        std::cout << "Loaded texture successfully: " << filepath << " (" << width_ << "x" << height_ << ", " << channels_ << " channels)" << std::endl;
         return true;
     }
 
@@ -1436,8 +1416,49 @@ namespace Graphics
         {
             auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityMng);
             Animation::AnimationController* ctrl = animReg.get(animComp.controllerID);
-            if (ctrl)
-                ctrl->update(deltaTime);
+            if (!ctrl) continue;
+
+            // Drive the animation from the current state machine state (if present),
+            // or fall back to "Default" when there is no state machine.
+            const char* targetAnim = nullptr;
+            if (entity.has<ECSComponents::StateMachineComponent>(entityMng))
+            {
+                const char* state = entity.get<ECSComponents::StateMachineComponent>(entityMng).currentState;
+                if (state[0] != '\0' && strcmp(state, "None") != 0 && ctrl->animations_.count(state))
+                    targetAnim = state;
+            }
+            else if (ctrl->animations_.count("Default"))
+            {
+                targetAnim = "Default";
+            }
+
+            if (targetAnim && ctrl->getCurrentAnimationName() != targetAnim)
+            {
+                ctrl->setAnimation(targetAnim);
+
+                // Sync texture back to DrawInfoComponent so the renderer sees the new texture
+                if (entity.has<ECSComponents::DrawInfoComponent>(entityMng) && ctrl->currentTexture_)
+                {
+                    auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entityMng);
+                    drawComp.texture = ctrl->currentTexture_;
+                    for (int i = 0; i < animComp.animationCount; ++i)
+                    {
+                        if (strcmp(animComp.animations[i].name, targetAnim) == 0)
+                        {
+                            strncpy_s(drawComp.texturePath, animComp.animations[i].texturePath,
+                                sizeof(drawComp.texturePath) - 1);
+                            drawComp.texturePath[sizeof(drawComp.texturePath) - 1] = '\0';
+                            break;
+                        }
+                    }
+                }
+
+                strncpy_s(animComp.currentAnimationName, targetAnim,
+                    sizeof(animComp.currentAnimationName) - 1);
+                animComp.currentAnimationName[sizeof(animComp.currentAnimationName) - 1] = '\0';
+            }
+
+            ctrl->update(deltaTime);
         }
     }
 
@@ -1446,46 +1467,72 @@ namespace Graphics
         auto& entityManager = engine.getEntityManager();
         auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
 
+        // Resolve camera centre and viewport size — prefer a CameraComponent entity,
+        // fall back to the editor-supplied fallback camera if none exists.
+        float centerX = 0.f, centerY = 0.f, vpW = 0.f, vpH = 0.f;
+        bool foundCamera = false;
+
         for (auto& cameraEntity : cameraEntities)
         {
             auto& camera = cameraEntity.get<ECSComponents::CameraComponent>(entityManager);
             if (!camera.isActive) continue;
+            centerX = camera.position.x;
+            centerY = camera.position.y;
+            vpW     = camera.viewportWidth;
+            vpH     = camera.viewportHeight;
+            foundCamera = true;
+            break;
+        }
 
-            // Build orthographic projection matrix from camera bounds
-            float left   = camera.position.x - camera.viewportWidth  * 0.5f;
-            float right  = camera.position.x + camera.viewportWidth  * 0.5f;
-            float top    = camera.position.y - camera.viewportHeight * 0.5f;
-            float bottom = camera.position.y + camera.viewportHeight * 0.5f;
-
-            std::array<float, 16> proj{};
-            proj[0]  =  2.0f / (right - left);
-            proj[5]  =  2.0f / (top   - bottom);
-            proj[10] = -1.0f;
-            proj[12] = -(right + left)   / (right - left);
-            proj[13] = -(top   + bottom) / (top   - bottom);
-            proj[15] =  1.0f;
-
-            setProjectionMatrix(proj.data());
-
-            // Set GL viewport to the pixel dimensions of the render target.
-            // If the caller set a render target size (e.g. editor FBO), use that;
-            // otherwise fall back to the OS window framebuffer size.
-            int vpW, vpH;
-            if (renderTargetW_ > 0 && renderTargetH_ > 0)
+        if (!foundCamera)
+        {
+            if (fallbackCamWidth_ > 0.f && fallbackCamHeight_ > 0.f)
             {
-                vpW = renderTargetW_;
-                vpH = renderTargetH_;
+                centerX = fallbackCamCenterX_;
+                centerY = fallbackCamCenterY_;
+                vpW     = fallbackCamWidth_;
+                vpH     = fallbackCamHeight_;
             }
             else
             {
                 auto [fw, fh] = engine.getWindowManager().getFramebufferSize();
-                vpW = fw;
-                vpH = fh;
+                vpW = static_cast<float>(fw);
+                vpH = static_cast<float>(fh);
+                centerX = vpW * 0.5f;
+                centerY = vpH * 0.5f;
             }
-            glViewport(0, 0, vpW, vpH);
-
-            break; // Only the first active camera is used
         }
+
+        // Build orthographic projection matrix
+        float left   = centerX - vpW * 0.5f;
+        float right  = centerX + vpW * 0.5f;
+        float top    = centerY - vpH * 0.5f;
+        float bottom = centerY + vpH * 0.5f;
+
+        std::array<float, 16> proj{};
+        proj[0]  =  2.0f / (right - left);
+        proj[5]  =  2.0f / (top   - bottom);
+        proj[10] = -1.0f;
+        proj[12] = -(right + left)   / (right - left);
+        proj[13] = -(top   + bottom) / (top   - bottom);
+        proj[15] =  1.0f;
+
+        setProjectionMatrix(proj.data());
+
+        // Set GL viewport to render target pixel dimensions
+        int pixW, pixH;
+        if (renderTargetW_ > 0 && renderTargetH_ > 0)
+        {
+            pixW = renderTargetW_;
+            pixH = renderTargetH_;
+        }
+        else
+        {
+            auto [fw, fh] = engine.getWindowManager().getFramebufferSize();
+            pixW = fw;
+            pixH = fh;
+        }
+        glViewport(0, 0, pixW, pixH);
     }
 
     void EnoGraphicsManager::render(Engine::EnoEngine& engine)
@@ -1530,14 +1577,42 @@ namespace Graphics
             }
         }
 
-        auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
-        if (cameraEntities.empty()) return;
-
-        auto& cam = cameraEntities[0].get<ECSComponents::CameraComponent>(entityManager);
-        float cameraX   = cam.position.x - cam.viewportWidth  * 0.5f;
-        float cameraY   = cam.position.y - cam.viewportHeight * 0.5f;
-        float viewportW = cam.viewportWidth;
-        float viewportH = cam.viewportHeight;
+        // Resolve camera corner and viewport dimensions from the first active
+        // CameraComponent, falling back to the editor fallback camera (set by
+        // the editor each frame) so entities render even without a camera node.
+        float cameraX = 0.f, cameraY = 0.f, viewportW = 0.f, viewportH = 0.f;
+        {
+            auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+            bool found = false;
+            for (auto& ce : cameraEntities)
+            {
+                auto& cam = ce.get<ECSComponents::CameraComponent>(entityManager);
+                if (!cam.isActive) continue;
+                cameraX   = cam.position.x - cam.viewportWidth  * 0.5f;
+                cameraY   = cam.position.y - cam.viewportHeight * 0.5f;
+                viewportW = cam.viewportWidth;
+                viewportH = cam.viewportHeight;
+                found = true;
+                break;
+            }
+            if (!found)
+            {
+                if (fallbackCamWidth_ > 0.f && fallbackCamHeight_ > 0.f)
+                {
+                    cameraX   = fallbackCamCenterX_ - fallbackCamWidth_  * 0.5f;
+                    cameraY   = fallbackCamCenterY_ - fallbackCamHeight_ * 0.5f;
+                    viewportW = fallbackCamWidth_;
+                    viewportH = fallbackCamHeight_;
+                }
+                else
+                {
+                    viewportW = renderTargetW_ > 0 ? static_cast<float>(renderTargetW_) : 800.f;
+                    viewportH = renderTargetH_ > 0 ? static_cast<float>(renderTargetH_) : 600.f;
+                    cameraX   = 0.f;
+                    cameraY   = 0.f;
+                }
+            }
+        }
         
 
         // Collect all drawable entities sorted by z-index
@@ -1583,20 +1658,11 @@ namespace Graphics
                                 uvStart = frame.uvStart;
                                 uvEnd   = frame.uvEnd;
 
-                                // Flip enemy sprite when moving right (enemy sprites face left by default)
-                                if (entity.has<ECSComponents::AIComponent>(entityManager) &&
-                                    entity.has<ECSComponents::PhysicsComponent>(entityManager))
+                                // Flip sprite when moving right (sprites face left by default)
+                                if (entity.has<ECSComponents::PhysicsComponent>(entityManager))
                                 {
                                     auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
                                     if (physics.velocity.x > 0.1f)
-                                        std::swap(uvStart.x, uvEnd.x);
-                                }
-                                // Flip player sprite when moving left (player sprites face right by default)
-                                else if (entity.has<ECSComponents::PlayerComponent>(entityManager) &&
-                                         entity.has<ECSComponents::PhysicsComponent>(entityManager))
-                                {
-                                    auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
-                                    if (physics.velocity.x < -0.1f)
                                         std::swap(uvStart.x, uvEnd.x);
                                 }
                             }

@@ -239,9 +239,6 @@ namespace Resources
 					{
 						// Store the sound obtained
 						sounds_[entry.path().filename().stem().string()] = sound;
-#ifdef _DEBUG
-						std::cout << entry.path().filename().stem().string() << " was retrieved!" << std::endl;
-#endif
 					}
 					else
 					{

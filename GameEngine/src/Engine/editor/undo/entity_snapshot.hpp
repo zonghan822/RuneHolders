@@ -163,13 +163,6 @@ namespace Editor
 				snapshot.components.emplace_back(comp);
 			}
 
-			// Player
-			if (entity.has<ECSComponents::PlayerComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::PlayerComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
 			// Box (Pushable)
 			if (entity.has<ECSComponents::BoxComponent>(entityManager))
 			{
@@ -342,11 +335,6 @@ namespace Editor
 			{
 				auto& comp = snapshot.get<ECSComponents::AIComponent>();
 				entity.add<ECSComponents::AIComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::PlayerComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::PlayerComponent>();
-				entity.add<ECSComponents::PlayerComponent>(entityManager, comp);
 			}
 		}
 	};
