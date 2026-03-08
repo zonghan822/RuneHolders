@@ -529,6 +529,80 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		ImGui::EndMainMenuBar();
 	}
 
+	// Project picker modal (opened from "Change Project..." while editor is running)
+	if (s_showProjectPicker) {
+		ImGui::OpenPopup("Open Project##modal");
+	}
+	if (ImGui::BeginPopupModal("Open Project##modal", nullptr,
+		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		const float itemW = 400.f;
+		const float pad   = ImGui::GetStyle().WindowPadding.x;
+
+		if (!s_creatingNewProject)
+		{
+			ImGui::Text("Select a project to open:");
+			ImGui::Spacing();
+			if (!s_availableProjects.empty()) {
+				std::vector<const char*> items;
+				items.reserve(s_availableProjects.size());
+				for (auto& p : s_availableProjects) items.push_back(p.c_str());
+				ImGui::SetNextItemWidth(itemW);
+				ImGui::Combo("##projects2", &s_selectedProjectIdx, items.data(), static_cast<int>(items.size()));
+			} else {
+				ImGui::TextDisabled("No projects found in assets/");
+			}
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x * 2.f) / 3.f;
+			if (ImGui::Button("Open", {btnW, 0}) && !s_availableProjects.empty()) {
+				applyProjectSelection(engine_, s_availableProjects[s_selectedProjectIdx]);
+				s_showProjectPicker = false;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("New Project", {btnW, 0})) {
+				s_creatingNewProject = true;
+				memset(s_newProjectNameBuf, 0, sizeof(s_newProjectNameBuf));
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", {btnW, 0})) {
+				s_showProjectPicker    = false;
+				s_creatingNewProject   = false;
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		else
+		{
+			ImGui::Text("Project name:");
+			ImGui::SetNextItemWidth(itemW);
+			ImGui::InputText("##newname2", s_newProjectNameBuf, sizeof(s_newProjectNameBuf));
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			bool nameValid = s_newProjectNameBuf[0] != '\0';
+			const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x) / 2.f;
+			if (!nameValid) ImGui::BeginDisabled();
+			if (ImGui::Button("Create", {btnW, 0})) {
+				createNewProject(engine_, s_newProjectNameBuf);
+				applyProjectSelection(engine_, s_newProjectNameBuf);
+				s_showProjectPicker  = false;
+				s_creatingNewProject = false;
+				ImGui::CloseCurrentPopup();
+			}
+			if (!nameValid) ImGui::EndDisabled();
+			ImGui::SameLine();
+			if (ImGui::Button("Back", {btnW, 0})) {
+				s_creatingNewProject = false;
+			}
+		}
+		ImGui::EndPopup();
+	}
+
 	// BEGIN DOCKSPACE
 	imGuiBeginDockspace();
 
