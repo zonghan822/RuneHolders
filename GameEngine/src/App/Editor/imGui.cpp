@@ -1198,7 +1198,6 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 				// Display inspector for all entities (including root nodes)
 				displayEntityInspector(engine_, e, undoManager, sceneTree);
 				//assetPresetsTab(engine_, e);
-				assetPresetsTab(engine_, e);
 				entityFound = true;
 				break;
 			}
@@ -2453,6 +2452,10 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 	}
 
+	assetPresetsTab(engine_, entity);
+
+
+
 	// --- Script ---
 	auto& smEditor = g_game->getStateMachineEditor();
 
@@ -3596,13 +3599,12 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	const std::string& selectedState = states[selectedStateIdx];
 
 
-	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::SeparatorText("Asset Presets");
 
 	// Check if the selected entity has an AnimationControllerComponent
 	if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng))
 	{
 		ImGui::TextWrapped("The currently selected entity does not have an Animation Controller component.");
-		ImGui::End();
 		return;
 	}
 
@@ -3866,6 +3868,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 		if (ctrl)
 		{
+#if 0
 			for (const std::string& state : states)
 			{
 				std::string label = "Play " + state;
@@ -3897,6 +3900,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			}
 
 			ImGui::NewLine(); // clean line break after loop
+#endif
 		}
 	}
 	else
@@ -3906,7 +3910,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 
-	ImGui::End();
 }
 
 void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
