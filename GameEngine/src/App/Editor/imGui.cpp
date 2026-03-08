@@ -1334,7 +1334,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		ECS::Entity newEntity = entityManager.create<ECSComponents::NameComponent>();
 
 		// AnimationControllerComponent is always attached and is not part of any preset
-		newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
+		//newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
 
 		// Add all components from the selected preset (skips any already-present component)
 		if (const auto* presetComps = prefabMng.getPresetComponents(g_selectedNodePreset))
