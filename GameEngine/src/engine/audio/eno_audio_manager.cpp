@@ -169,7 +169,13 @@ namespace Audio
 		auto it = sounds_.find(audioComp.audioMod_.name_);
 		if (it == sounds_.end())
 		{
-			// Instead of throwing, publish an error event and log to console
+			// Sound not yet in audio manager - request it from the loader (synchronous event)
+			bus_.publish(RequestSound{ std::string(audioComp.audioMod_.name_) });
+			it = sounds_.find(audioComp.audioMod_.name_);
+		}
+		if (it == sounds_.end())
+		{
+			// Still not found after request - publish error
 			std::cerr << "[Audio Error] Unknown sound requested: " << audioComp.audioMod_.name_ << std::endl;
 			bus_.publish(AudioLoadError{
 				audioComp.audioMod_.name_,

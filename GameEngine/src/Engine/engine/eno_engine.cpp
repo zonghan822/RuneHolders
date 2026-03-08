@@ -102,7 +102,10 @@ namespace Engine
 				if (!node->entity_.has<ECSComponents::AudioComponent>(entityMng_)) continue;
 				auto& audioComp = node->entity_.get<ECSComponents::AudioComponent>(entityMng_);
 				if (audioComp.audioMod_.name_[0] != '\0')
+				{
+					bus_.publish(Audio::RequestSound{ std::string(audioComp.audioMod_.name_) });
 					audioMng_.prepareMod(audioComp);
+				}
 				if (audioComp.isAutoplay_)
 					audioMng_.play(audioComp);
 			}
