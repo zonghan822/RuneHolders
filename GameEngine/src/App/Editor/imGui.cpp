@@ -3858,7 +3858,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	ImGui::Separator();
-	ImGui::Text("Animation Test");
 
 	if (entity.has<ECSComponents::AnimationControllerComponent>(entMng))
 	{
