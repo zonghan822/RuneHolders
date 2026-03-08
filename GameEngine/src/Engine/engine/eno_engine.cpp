@@ -53,18 +53,12 @@ namespace Engine
 
 		// Shaders are project-agnostic enough to load immediately
 		loader_.loadShaders(loader_.getShaderPath());
-
-		// Give the entity manager a reference to the loader so loadJson can
-		// resolve textures by name instead of reconstructing file paths.
-		entityMng_.setLoader(loader_);
 	}
 
 	void EnoEngine::initScripting(const std::filesystem::path& dllDir)
 	{
 		auto dir = dllDir.empty() ? FileSystem::GetExecutableDir() : dllDir;
 		auto dll = dir / "GameScripts.dll";
-		std::cout << "[initScripting] DLL path: " << dll << " - "
-		          << (std::filesystem::exists(dll) ? "EXISTS" : "NOT FOUND") << "\n";
 		coreHost_ = std::make_unique<Core::EnoCoreHost>(bus_, dir);
 	}
 
@@ -72,10 +66,7 @@ namespace Engine
 	{
 		// Load project-specific assets BEFORE the editor so that textures are
 		// already in the loader when the scene loads and loadJson resolves them.
-		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getMusicPath());
-		loader_.loadSound(audioMng_.getSystem(), loader_.getSoundExtensions(), loader_.getSFXPath());
-		loader_.loadImages(loader_.getImagePath());
-		loader_.loadFonts(loader_.getFontPath(), 48);
+		setupResourceLoading();
 
 		// Initialize scripting if not already done by initScripting() (e.g. Editor project picker)
 		if (!coreHost_)

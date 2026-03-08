@@ -319,7 +319,7 @@ namespace Engine
 		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
 		Memory::EnoECSArena ecsArena_{ 8ull * 1024 * 1024 };
-		ECS::EntityManager entityMng_{ ecsArena_, bus_ };
+		ECS::EntityManager entityMng_{ loader_, ecsArena_, bus_ };
 		ECSComponents::EnoPrefabManager prefabMng_{ bus_ };
 		std::unique_ptr<Core::EnoCoreHost> coreHost_;
 		std::unique_ptr<Map::TileMapSystem> tilemapSystem_;

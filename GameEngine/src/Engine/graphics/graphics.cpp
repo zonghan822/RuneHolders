@@ -459,10 +459,6 @@ namespace Graphics
         }
 
         initialized_ = true;
-
-#ifdef _DEBUG
-        std::cout << "Graphics system initialized successfully!" << std::endl;
-#endif
     }
 
     void EnoGraphicsManager::shutdown()

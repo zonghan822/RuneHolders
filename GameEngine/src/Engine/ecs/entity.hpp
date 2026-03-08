@@ -72,15 +72,14 @@ namespace ECS
 	{
 	public:
 
-		EntityManager(Memory::EnoECSArena& arena, Event::EnoEventBus& bus)
+		EntityManager(Resources::EnoLoader& loader, Memory::EnoECSArena& arena, Event::EnoEventBus& bus)
 			:
+			loader_{ loader },
 			arena_{ arena },
 			bus_{ bus }
-		{}
+		{
+		};
 
-		// Provide the loader so loadJson can resolve textures by name
-		// instead of reconstructing a file path that may be wrong.
-		void setLoader(Resources::EnoLoader& loader) { loader_ = &loader; }
 
 		/*============================================================================================
 		* \brief			Entity id to be set
@@ -492,11 +491,12 @@ namespace ECS
 
 		std::vector<uint32_t> destroyedEntityIDs_;									// For the purpose of reusing ids
 
+		Resources::EnoLoader& loader_;
+
 		Memory::EnoECSArena& arena_;
 
 		Event::EnoEventBus& bus_;
-
-		Resources::EnoLoader* loader_ = nullptr;
+		
 
 		/*============================================================================================
 			* \brief		Helper for getting all entities from the entity map

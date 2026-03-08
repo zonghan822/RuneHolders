@@ -43,7 +43,6 @@ namespace Editor
 					{
 						std::unique_ptr<EnoScene> scene = std::make_unique<EnoScene>(bus_);
 						scene->setSceneName(fileEntry.path().filename().string());
-						std::cout << "[Eno_Editor] appending scene: " << scene->getSceneName() << std::endl;
 						scenes_.push_back(std::move(scene));
 					}
 				}
@@ -485,7 +484,6 @@ namespace Editor
 						selectedScene_ = it->get();
 						tree_.load(fullPath);
 						tree_.registerAllScripts();
-						std::cout << "[EnoEditor] Loaded start scene: " << startSceneName_ << std::endl;
 						return;
 					}
 				}
