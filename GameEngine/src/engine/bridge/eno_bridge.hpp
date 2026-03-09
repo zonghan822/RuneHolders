@@ -176,5 +176,27 @@ namespace Bridge {
         ENGINE_API void        __stdcall SetText(uint32_t sceneObjectID, const char* text);
         ENGINE_API float       __stdcall GetFontSize(uint32_t sceneObjectID);
         ENGINE_API void        __stdcall SetFontSize(uint32_t sceneObjectID, float size);
+
+        // =========================================================================
+        // Window — resolution, vsync, fullscreen, FPS, pause, close
+        // Implemented in: eno_bridge_window.cpp
+        // =========================================================================
+        ENGINE_API int   __stdcall GetWindowWidth();
+        ENGINE_API int   __stdcall GetWindowHeight();
+
+        ENGINE_API void  __stdcall SetResolution(int width, int height);
+        ENGINE_API void  __stdcall IncreaseResolution();
+        ENGINE_API void  __stdcall DecreaseResolution();
+
+        ENGINE_API void  __stdcall SetVSync(bool enabled);
+        ENGINE_API void  __stdcall ToggleFullscreen();
+
+        ENGINE_API float __stdcall GetFPS();
+
+        ENGINE_API void  __stdcall SetPaused(bool paused);
+        ENGINE_API bool  __stdcall GetIsPaused();
+
+        ENGINE_API bool  __stdcall GetShouldClose();
+        ENGINE_API void  __stdcall RequestClose();
     }
 }

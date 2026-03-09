@@ -86,6 +86,7 @@
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }
+		"NodeType": { 3 }
 	}
 
 	[Logo]
@@ -135,6 +136,7 @@
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }
+		"NodeType": { 3 }
 	}
 
 }

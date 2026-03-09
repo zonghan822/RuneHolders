@@ -557,6 +557,10 @@ namespace Editor
 			appendIndent(save, jsonLevel);
 			save << "\"Enabled\": { " << (it->second->enabled_ ? "true" : "false") << " }\n";
 
+			// Node Type
+			appendIndent(save, jsonLevel);
+			save << "\"NodeType\": { " << static_cast<uint32_t>(it->second->type_) << " }\n";
+
 			// Closing brace (for node properties)
 			appendIndent(save, --jsonLevel);
 			save << "}\n\n";
@@ -809,6 +813,12 @@ namespace Editor
 				std::cerr << "[EnoSceneTree] Warning: Enabled field missing for node, defaulting to false" << std::endl;
 			}
 			node->enabled_ = any.value_or(false);
+
+			// Node Type (absent in old scenes, defaults to EMPTY)
+			any = extract<uint32_t>(data, "NodeType", nodeStart, nodeEnd);
+			node->type_ = any.has_value()
+				? static_cast<NodeType>(any.value())
+				: NodeType::EMPTY;
 
 			if (missingData) {
 				std::cerr << "[EnoSceneTree] Warning: Some fields missing for node " << node->name_ << ", using defaults" << std::endl;

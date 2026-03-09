@@ -1379,6 +1379,14 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			}
 		}
 
+		// If the preset includes AnimationControllerComponent, assign a proper registry controller ID
+		// (controllerID is not serialized, so it arrives as 0 from the prefab file)
+		if (newEntity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+		{
+			auto& animCtrl = newEntity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+			animCtrl.controllerID = engine_.getAnimationRegistry().createController();
+		}
+
 		// If the preset included a TransformComponent, place it at screen centre
 		if (newEntity.has<ECSComponents::TransformComponent>(entityManager))
 		{
@@ -1452,6 +1460,13 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 								childEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
 						});
 					}
+				}
+
+				// If the preset includes AnimationControllerComponent, assign a proper registry controller ID
+				if (childEntity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+				{
+					auto& animCtrl = childEntity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+					animCtrl.controllerID = engine_.getAnimationRegistry().createController();
 				}
 
 				// If the preset included a TransformComponent, place it at screen centre
