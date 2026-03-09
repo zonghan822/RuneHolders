@@ -3700,6 +3700,10 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	//auto& entMng = engine_.getEntityManager();
 	//auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;  //This can be useful later on to find the behaviors/entity states available
 
+	// No StateMachineComponent — fall back to a single "Default" animation state
+	if (states.empty())
+		states.push_back("Default");
+
 	//Dynamically allow player to choose the state that they want to edit.
 	static int selectedStateIdx = 0;
 	selectedStateIdx = std::clamp(selectedStateIdx, 0, (int)states.size() - 1);
@@ -4830,31 +4834,52 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 								g_game->getEditorCameraY()
 							);
 
-							// Create entity at drop location
-							ECSComponents::TransformComponent transform;
-							transform.pos = worldPos;
-							transform.rot = Math::eVec2<float>(0.0f, 0.0f);
-							transform.scale = Math::eVec2<float>(1.0f, 1.0f);
+							auto& prefabMng = engine_.getPrefabManager();
 
-							ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
+							// Create entity from SPRITE preset
+							ECS::Entity newEntity = entityManager.create<>();
+							if (const auto* presetComps = prefabMng.getPresetComponents("SPRITE"))
+							{
+								for (const auto& [compTypeIdx, compAny] : *presetComps)
+								{
+									ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+									{
+										if (!newEntity.template has<T>(entityManager))
+											newEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+									});
+								}
+							}
 
-							// Add render component with texture
-							ECSComponents::RenderComponent render;
-							render.texture = texture;
-							render.width = static_cast<float>(texture->getWidth());
-							render.height = static_cast<float>(texture->getHeight());
-							strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
-							render.texturePath[sizeof(render.texturePath) - 1] = '\0';
-							render.color = Graphics::Color::White;
-							newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
+							// Place at drop position
+							if (newEntity.has<ECSComponents::TransformComponent>(entityManager))
+							{
+								auto& transform = newEntity.get<ECSComponents::TransformComponent>(entityManager);
+								transform.pos = worldPos;
+							}
 
-							// Create animation controller
-							uint32_t controllerID = engine_.getAnimationRegistry().createController();
-							newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
+							// Apply texture to RenderComponent
+							if (newEntity.has<ECSComponents::RenderComponent>(entityManager))
+							{
+								auto& render = newEntity.get<ECSComponents::RenderComponent>(entityManager);
+								render.texture = texture;
+								render.width   = static_cast<float>(texture->getWidth());
+								render.height  = static_cast<float>(texture->getHeight());
+								strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
+								render.texturePath[sizeof(render.texturePath) - 1] = '\0';
+								render.color = Graphics::Color::White;
+							}
 
-							// Add to scene tree
+							// Assign a valid animation controller ID
+							if (newEntity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+							{
+								auto& animCtrl = newEntity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+								animCtrl.controllerID = engine_.getAnimationRegistry().createController();
+							}
+
+							// Add to scene tree as SPRITE node
 							Node* node = sceneTree.createFromEntity(newEntity, nullptr);
 							node->name_ = textureName;
+							node->type_ = Editor::NodeType::SPRITE;
 
 							// Record creation for undo/redo
 							auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
@@ -4864,9 +4889,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 								engine_.getGraphicsManager()
 							);
 							undoManager.executeCommand(std::move(createCmd));
-
-							std::cout << "[Drag-Drop] Created entity '" << textureName
-									  << "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
 
 							if (g_game) g_game->markEntitiesDirty();
 						}
@@ -4888,11 +4910,9 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					std::string textureName = (const char*)payload->Data;
 					Resources::EnoLoader& loader = engine_.getResourceLoader();
 
-					// Get the texture from the loader
 					auto texture = loader.getTexture(textureName);
 					if (texture && texture->isValid())
 					{
-						// Get mouse position and convert to world coordinates
 						ImVec2 mousePos = ImGui::GetMousePos();
 						Math::eVec2<float> worldPos = Graphics::screenToWorld(
 							{ mousePos.x, mousePos.y },
@@ -4904,33 +4924,53 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							g_game->getEditorCameraY()
 						);
 
-						// Create entity at drop location
-						ECSComponents::TransformComponent transform;
-						transform.pos = worldPos;
-						transform.rot = Math::eVec2<float>(0.0f, 0.0f);
-						transform.scale = Math::eVec2<float>(1.0f, 1.0f);
+						auto& prefabMng = engine_.getPrefabManager();
 
-						ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
+						// Create entity from SPRITE preset
+						ECS::Entity newEntity = entityManager.create<>();
+						if (const auto* presetComps = prefabMng.getPresetComponents("SPRITE"))
+						{
+							for (const auto& [compTypeIdx, compAny] : *presetComps)
+							{
+								ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+								{
+									if (!newEntity.template has<T>(entityManager))
+										newEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+								});
+							}
+						}
 
-						// Add render component with texture
-						ECSComponents::RenderComponent render;
-						render.texture = texture;
-						render.width = static_cast<float>(texture->getWidth());
-						render.height = static_cast<float>(texture->getHeight());
-						strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
-						render.texturePath[sizeof(render.texturePath) - 1] = '\0';
-						render.color = Graphics::Color::White;
-						newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
+						// Place at drop position
+						if (newEntity.has<ECSComponents::TransformComponent>(entityManager))
+						{
+							auto& transform = newEntity.get<ECSComponents::TransformComponent>(entityManager);
+							transform.pos = worldPos;
+						}
 
-						// Create animation controller
-						uint32_t controllerID = engine_.getAnimationRegistry().createController();
-						newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
+						// Apply texture to RenderComponent
+						if (newEntity.has<ECSComponents::RenderComponent>(entityManager))
+						{
+							auto& render = newEntity.get<ECSComponents::RenderComponent>(entityManager);
+							render.texture = texture;
+							render.width   = static_cast<float>(texture->getWidth());
+							render.height  = static_cast<float>(texture->getHeight());
+							strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
+							render.texturePath[sizeof(render.texturePath) - 1] = '\0';
+							render.color = Graphics::Color::White;
+						}
 
-						// Add to scene tree
+						// Assign a valid animation controller ID
+						if (newEntity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+						{
+							auto& animCtrl = newEntity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+							animCtrl.controllerID = engine_.getAnimationRegistry().createController();
+						}
+
+						// Add to scene tree as SPRITE node
 						Node* node = sceneTree.createFromEntity(newEntity, nullptr);
 						node->name_ = textureName;
+						node->type_ = Editor::NodeType::SPRITE;
 
-						// Record creation for undo/redo
 						auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 							sceneTree,
 							entityManager,
@@ -4938,9 +4978,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							engine_.getGraphicsManager()
 						);
 						undoManager.executeCommand(std::move(createCmd));
-
-						std::cout << "[Drag-Drop] Created entity '" << textureName
-								  << "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
 
 						if (g_game) g_game->markEntitiesDirty();
 					}
