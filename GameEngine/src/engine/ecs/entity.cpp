@@ -242,7 +242,10 @@ namespace ECS
 			auto& renderComp = entity.get<ECSComponents::RenderComponent>(entMng);
 
 			// If texturePath is set but texture is null, resolve it by name from the loader
-			if (renderComp.texturePath[0] != '\0' && !renderComp.texture)
+			// strnlen guards against an uninitialized (non-null-terminated) buffer
+			const bool hasValidPath = strnlen(renderComp.texturePath, FILE_PATH_LEN) > 0
+			                       && strnlen(renderComp.texturePath, FILE_PATH_LEN) < FILE_PATH_LEN;
+			if (hasValidPath && !renderComp.texture)
 			{
 				std::string texName = std::string(renderComp.texturePath);
 				std::shared_ptr<Graphics::EnoTexture> tex;
@@ -259,10 +262,6 @@ namespace ECS
 				{
 					std::cerr << "[EntityManager] FAILED to find texture in loader: " << texName << "\n";
 				}
-			}
-			else if (renderComp.texturePath[0] == '\0')
-			{
-				std::cout << "[DEBUG TEXTURE LOAD] texturePath is empty, skipping\n";
 			}
 			else if (renderComp.texture != nullptr)
 			{
