@@ -13,6 +13,7 @@ namespace Map {
         Math::eVec2<float> uv0 = { 0, 0 };   // top-left UV
         Math::eVec2<float> uv1 = { 0, 0 };   // bottom-right UV
         bool hasTexture = false;
+        int rotation = 0;  // clockwise degrees: 0, 90, 180, 270
     };
 
     class TileLayer {
@@ -26,7 +27,8 @@ namespace Map {
         bool hasTileTexture(int x, int y) const;
         const Tile& getTile(int x, int y) const;
         Tile& getTile(int x, int y);
-        void setTile(int x, int y, const std::string& textureName, Math::eVec2<float> uv0, Math::eVec2<float> uv1);
+        void setTile(int x, int y, const std::string& textureName, Math::eVec2<float> uv0, Math::eVec2<float> uv1, int rotation = 0);
+        void clearTile(int x, int y);
 
         // Accessor
         std::string name() const;

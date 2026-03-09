@@ -273,7 +273,23 @@ void MapEditor::displayMenu() {
 
 	// Instructions
 	ImGui::Text("Load and Select Tile from Tileset");
-	ImGui::Text("Left-click: Paint");
+	ImGui::Text("Left-click: Paint  |  Right-click: Erase");
+
+	ImGui::Separator();
+
+	// --- Tile rotation ---
+	ImGui::Text("Tile Rotation: %d deg", tileRotation_);
+	if (ImGui::Button("Rotate 90 CW")) {
+		tileRotation_ = (tileRotation_ + 90) % 360;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Rotate 90 CCW")) {
+		tileRotation_ = (tileRotation_ + 270) % 360;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Reset Rotation")) {
+		tileRotation_ = 0;
+	}
 
 	ImGui::End();
 }
@@ -406,7 +422,8 @@ void MapEditor::paint(EditorApplication* g) {
 	float camX = g->getEditorCameraX();
 	float camY = g->getEditorCameraY();
 
-	bool left = ImGui::IsItemHovered() && ImGui::IsMouseDown(0);
+	bool left  = ImGui::IsItemHovered() && ImGui::IsMouseDown(0);
+	bool right = ImGui::IsItemHovered() && ImGui::IsMouseDown(1);
 
 	if (!tilesetReady_) {
 		// default walkability mode
@@ -440,9 +457,23 @@ void MapEditor::paint(EditorApplication* g) {
 				tile.x, tile.y,
 				tilesetName_,
 				{ u0, v0 },
-				{ u1, v1 }
+				{ u1, v1 },
+				tileRotation_
 			);
 
+			g->markEntitiesDirty();
+		}
+	}
+
+	// ERASE MODE — right-click clears tile texture and resets to walkable
+	if (right) {
+		auto world = Graphics::screenToWorld(mousePos, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+		auto tile = tilemap_.worldToTile(world);
+
+		if (tilemap_.inBounds(tile.x, tile.y)) {
+			tilemap_.clearTile(selectedLayer_, tile.x, tile.y);
+			tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, true);
+			syncTileCollider(selectedLayer_, tile.x, tile.y);
 			g->markEntitiesDirty();
 		}
 	}
@@ -553,20 +584,48 @@ void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {
 		for (int y = 0; y < tilemap_.height(); ++y) {
 			for (int x = 0; x < tilemap_.width(); ++x) {
 				if (!layer.hasTileTexture(x, y)) continue;
-				auto tile = layer.getTile(x, y);
+				const auto& tile = layer.getTile(x, y);
 
-				Math::eVec2<float> p1 = Graphics::worldToScreen(
+				Math::eVec2<float> sp1 = Graphics::worldToScreen(
 					{ x * cs, y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
-
-				Math::eVec2<float> p2 = Graphics::worldToScreen(
+				Math::eVec2<float> sp2 = Graphics::worldToScreen(
 					{ (x + 1) * cs, (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
 
-				ImGui::GetWindowDrawList()->AddImage(
+				// Screen corners: TL, TR, BR, BL
+				ImVec2 sTL(sp1.x, sp1.y);
+				ImVec2 sTR(sp2.x, sp1.y);
+				ImVec2 sBR(sp2.x, sp2.y);
+				ImVec2 sBL(sp1.x, sp2.y);
+
+				// UV corners remapped by rotation (clockwise)
+				float u0 = tile.uv0.x, v0 = tile.uv0.y;
+				float u1 = tile.uv1.x, v1 = tile.uv1.y;
+
+				ImVec2 uvTL, uvTR, uvBR, uvBL;
+				switch (tile.rotation) {
+				default:
+				case 0:
+					uvTL = { u0, v0 }; uvTR = { u1, v0 };
+					uvBR = { u1, v1 }; uvBL = { u0, v1 };
+					break;
+				case 90:
+					uvTL = { u0, v1 }; uvTR = { u0, v0 };
+					uvBR = { u1, v0 }; uvBL = { u1, v1 };
+					break;
+				case 180:
+					uvTL = { u1, v1 }; uvTR = { u0, v1 };
+					uvBR = { u0, v0 }; uvBL = { u1, v0 };
+					break;
+				case 270:
+					uvTL = { u1, v0 }; uvTR = { u1, v1 };
+					uvBR = { u0, v1 }; uvBL = { u0, v0 };
+					break;
+				}
+
+				ImGui::GetWindowDrawList()->AddImageQuad(
 					(ImTextureID)(intptr_t)tilesetTexture_->getID(),
-					ImVec2(p1.x, p1.y),
-					ImVec2(p2.x, p2.y),
-					ImVec2(tile.uv0.x, tile.uv0.y),
-					ImVec2(tile.uv1.x, tile.uv1.y)
+					sTL, sTR, sBR, sBL,
+					uvTL, uvTR, uvBR, uvBL
 				);
 			}
 		}
