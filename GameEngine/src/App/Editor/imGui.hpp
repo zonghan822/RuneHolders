@@ -307,25 +307,4 @@ void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& e
 *//*========================================================================================*/
 void displayRaycastVisualizerTab(Engine::EnoEngine& engine_);
 
-// ============================================================
-// Project Picker
-// ============================================================
-
-/*============================================================================================
- * \brief       Renders the project picker dialog (owns its own ImGui frame).
- *              Call instead of imGuiDisplay() when isProjectPickerOpen() is true.
- * \param[in]   engine_  Engine reference (needed for project switching)
- * \return      void
-*//*========================================================================================*/
-void imGuiProjectPicker(Engine::EnoEngine& engine_);
-
-/*============================================================================================
- * \brief       Returns true if the project picker dialog is currently open.
-*//*========================================================================================*/
-bool isProjectPickerOpen();
-
-/*============================================================================================
- * \brief       Opens or closes the project picker dialog.
- *              Passing true also rescans available projects and pre-selects the current one.
-*//*========================================================================================*/
-void setProjectPickerOpen(bool open);
+#include "project_picker/project_picker.hpp"

@@ -12,8 +12,7 @@
 
 #include "engine/eno_engine.hpp"
 
-// Forward declaration to avoid circular include with imGui.hpp
-void setProjectPickerOpen(bool open);
+#include "project_picker/project_picker.hpp"
 #include <iostream>
 #include <memory>
 #include <set>
