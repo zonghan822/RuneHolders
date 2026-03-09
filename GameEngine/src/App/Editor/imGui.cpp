@@ -160,265 +160,7 @@ static std::vector<AudioErrorInfo> g_audioErrorQueue;
 
 #pragma endregion
 
-// ============================================================
-// Project Picker — file-scope state and helpers
-// ============================================================
-
-static bool                  s_showProjectPicker  = true;
-static std::vector<std::string> s_availableProjects;
-static int                   s_selectedProjectIdx = 0;
-static char                  s_newProjectNameBuf[128] = {};
-static bool                  s_creatingNewProject = false;
-
-static void scanAvailableProjects() {
-	s_availableProjects.clear();
-	std::filesystem::path assetsRoot = FileSystem::GetRootDir() / "assets";
-	if (!std::filesystem::exists(assetsRoot)) return;
-	for (auto& entry : std::filesystem::directory_iterator(assetsRoot)) {
-		if (entry.is_directory() && entry.path().filename().string() != "Editor")
-			s_availableProjects.push_back(entry.path().filename().string());
-	}
-	std::sort(s_availableProjects.begin(), s_availableProjects.end());
-}
-
-static void applyProjectSelection(Engine::EnoEngine& engine_, const std::string& projectName) {
-	if (projectName == ENO_APP_NAME) {
-		std::cout << "[ProjectPicker] Keeping current project: " << projectName << std::endl;
-		return;
-	}
-	std::cout << "[ProjectPicker] Switching to project: " << projectName << std::endl;
-
-	// Ensure scripts directories exist before switching
-	std::filesystem::path scriptsBase = FileSystem::GetRootDir() / "scripts" / projectName;
-	std::filesystem::create_directories(scriptsBase / "user_scripts");
-	{
-		std::filesystem::path src = FileSystem::GetRootDir() / "scripts" / "RuneWeavers" / "GameScripts.csproj";
-		std::filesystem::path dst = scriptsBase / "GameScripts.csproj";
-		if (std::filesystem::exists(src) && !std::filesystem::exists(dst))
-			std::filesystem::copy_file(src, dst);
-	}
-
-	FileSystem::Initialize(projectName);
-
-	// The project's GameScripts.dll lives in a sibling directory of the Editor exe.
-	std::filesystem::path projectDllDir =
-		FileSystem::GetExecutableDir().parent_path() / projectName;
-
-	// Build the project scripts only if they haven't been built yet.
-	{
-		std::filesystem::path csproj        = scriptsBase / "GameScripts.csproj";
-		std::filesystem::path gameScriptsDll = projectDllDir / "GameScripts.dll";
-		if (std::filesystem::exists(csproj) && !std::filesystem::exists(gameScriptsDll))
-		{
-			std::filesystem::create_directories(projectDllDir);
-			std::cout << "[ProjectPicker] Building scripts for " << projectName << "...\n";
-			std::string cmd = std::string(ENO_DOTNET_CMD) + " publish \""
-				+ csproj.string() + "\" -f net8.0 --self-contained false --output \""
-				+ projectDllDir.string() + "\" --nologo -v minimal";
-			int rc = system(cmd.c_str());
-			if (rc != 0)
-				std::cerr << "[ProjectPicker] Script build failed (exit code " << rc
-				          << "). Scripting may be unavailable.\n";
-			else
-				std::cout << "[ProjectPicker] Scripts built successfully.\n";
-		}
-	}
-
-	if (!engine_.isEditorReady())
-	{
-		// Pre-setup: create a fresh EnoCoreHost pointed at the project's DLL.
-		// setupLate() will see it's already set and skip recreation.
-		engine_.initScripting(projectDllDir);
-	}
-	else
-	{
-		// Post-setup: update the existing coreHost in-place so EnoEditor's
-		// reference stays valid, then reload delegates for the new project.
-		engine_.getCoreHost().reinitializeScripts(projectDllDir);
-	}
-
-	engine_.getResourceLoader().reloadPaths();
-
-	// Reload all assets into the loader BEFORE reloading the project so that
-	// loadJson can resolve textures by name when scenes are parsed.
-	{
-		auto& loader = engine_.getResourceLoader();
-		auto& audio  = engine_.getAudioManager();
-		loader.loadImages(loader.getImagePath());
-		loader.loadSound(audio.getSystem(), loader.getSoundExtensions(), loader.getMusicPath());
-		loader.loadSound(audio.getSystem(), loader.getSoundExtensions(), loader.getSFXPath());
-		loader.loadFonts(loader.getFontPath(), 48);
-	}
-
-	if (engine_.isEditorReady())
-	{
-		engine_.getEnoEditor().reloadProject();
-		if (g_game) g_game->markEntitiesDirty();
-	}
-	std::cout << "[ProjectPicker] Switched to: " << FileSystem::GetAssetsDir() << std::endl;
-}
-
-static void createNewProject(const std::string& name) {
-	namespace fs = std::filesystem;
-	fs::path projectRoot = FileSystem::GetRootDir() / "assets" / name;
-	fs::path editorRoot  = FileSystem::GetRootDir() / "assets" / "Editor";
-
-	auto copyTemplate = [&](const fs::path& relPath) {
-		fs::path src = editorRoot / relPath;
-		fs::path dst = projectRoot / relPath;
-		if (fs::exists(src) && !fs::exists(dst))
-			fs::copy_file(src, dst);
-	};
-
-	auto copyDir = [&](const fs::path& relDir) {
-		fs::path src = editorRoot / relDir;
-		fs::path dst = projectRoot / relDir;
-		fs::create_directories(dst);
-		if (!fs::exists(src)) return;
-		for (auto& entry : fs::directory_iterator(src)) {
-			if (entry.is_regular_file())
-				fs::copy_file(entry.path(), dst / entry.path().filename(),
-					fs::copy_options::skip_existing);
-		}
-	};
-
-	fs::create_directories(projectRoot / "saves" / "scenes");
-	fs::create_directories(projectRoot / "saves" / "prefabs");
-	fs::create_directories(projectRoot / "settings");
-	fs::create_directories(projectRoot / "shaders");
-	fs::create_directories(projectRoot / "crashlogs");
-	fs::create_directories(projectRoot / "fonts");
-	fs::create_directories(projectRoot / "art");
-	fs::create_directories(projectRoot / "sound" / "music");
-	fs::create_directories(projectRoot / "sound" / "sfx");
-
-	fs::path scriptsRoot = FileSystem::GetRootDir() / "scripts" / name;
-	fs::create_directories(scriptsRoot / "user_scripts");
-	{
-		fs::path srcCsproj = FileSystem::GetRootDir() / "scripts" / "RuneWeavers" / "GameScripts.csproj";
-		fs::path dstCsproj = scriptsRoot / "GameScripts.csproj";
-		if (fs::exists(srcCsproj) && !fs::exists(dstCsproj))
-			fs::copy_file(srcCsproj, dstCsproj);
-	}
-
-	copyDir("shaders");
-	copyTemplate(fs::path("settings") / "config.txt");
-	copyDir(fs::path("saves") / "prefabs");
-
-	{
-		fs::path logFile = projectRoot / "crashlogs" / "crash_log.txt";
-		if (!fs::exists(logFile)) std::ofstream{ logFile };
-	}
-
-	scanAvailableProjects();
-	auto it = std::find(s_availableProjects.begin(), s_availableProjects.end(), name);
-	if (it != s_availableProjects.end())
-		s_selectedProjectIdx = static_cast<int>(std::distance(s_availableProjects.begin(), it));
-
-	std::cout << "[ProjectPicker] Created new project: " << name << std::endl;
-}
-
-bool isProjectPickerOpen() { return s_showProjectPicker; }
-
-void setProjectPickerOpen(bool open) {
-	s_showProjectPicker = open;
-	if (open) {
-		scanAvailableProjects();
-		auto it = std::find(s_availableProjects.begin(), s_availableProjects.end(), std::string(ENO_APP_NAME));
-		if (it != s_availableProjects.end())
-			s_selectedProjectIdx = static_cast<int>(std::distance(s_availableProjects.begin(), it));
-	}
-}
-
-void imGuiProjectPicker(Engine::EnoEngine& engine_) {
-	// Lazy init on first display
-	static bool initialized = false;
-	if (!initialized) {
-		initialized = true;
-		setProjectPickerOpen(true);  // scans projects and pre-selects current
-	}
-
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-
-	ImGuiIO& io = ImGui::GetIO();
-
-	const ImVec2 dlgSize = {460.f, s_creatingNewProject ? 210.f : 240.f};
-	ImGui::SetNextWindowPos(
-		{(io.DisplaySize.x - dlgSize.x) * 0.5f, (io.DisplaySize.y - dlgSize.y) * 0.5f},
-		ImGuiCond_Always);
-	ImGui::SetNextWindowSize(dlgSize, ImGuiCond_Always);
-	ImGui::SetNextWindowBgAlpha(1.0f);
-
-	ImGui::Begin(s_creatingNewProject ? "Create New Project" : "Open Project", nullptr,
-		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
-		ImGuiWindowFlags_NoBringToFrontOnFocus);
-
-	const float pad   = ImGui::GetStyle().WindowPadding.x;
-	const float itemW = dlgSize.x - pad * 2.f;
-
-	if (!s_creatingNewProject) {
-		ImGui::Text("Select a project to open:");
-		ImGui::Spacing();
-
-		if (!s_availableProjects.empty()) {
-			std::vector<const char*> items;
-			items.reserve(s_availableProjects.size());
-			for (auto& p : s_availableProjects) items.push_back(p.c_str());
-			ImGui::SetNextItemWidth(itemW);
-			ImGui::Combo("##projects", &s_selectedProjectIdx, items.data(), static_cast<int>(items.size()));
-		} else {
-			ImGui::TextDisabled("No projects found in assets/");
-		}
-
-		ImGui::Spacing();
-		ImGui::Separator();
-		ImGui::Spacing();
-
-		const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x * 2.f) / 3.f;
-		if (ImGui::Button("Open", {btnW, 0}) && !s_availableProjects.empty()) {
-			applyProjectSelection(engine_, s_availableProjects[s_selectedProjectIdx]);
-			s_showProjectPicker = false;
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("New Project", {btnW, 0})) {
-			s_creatingNewProject = true;
-			memset(s_newProjectNameBuf, 0, sizeof(s_newProjectNameBuf));
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", {btnW, 0})) {
-			s_showProjectPicker = false;
-			engine_.requestClose();
-		}
-	} else {
-		ImGui::Text("Project name:");
-		ImGui::SetNextItemWidth(itemW);
-		ImGui::InputText("##newname", s_newProjectNameBuf, sizeof(s_newProjectNameBuf));
-		ImGui::Spacing();
-		ImGui::Separator();
-		ImGui::Spacing();
-
-		bool nameValid = s_newProjectNameBuf[0] != '\0';
-		const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x) / 2.f;
-		if (!nameValid) ImGui::BeginDisabled();
-		if (ImGui::Button("Create", {btnW, 0})) {
-			createNewProject(s_newProjectNameBuf);
-			applyProjectSelection(engine_, s_newProjectNameBuf);
-			s_showProjectPicker = false;
-		}
-		if (!nameValid) ImGui::EndDisabled();
-		ImGui::SameLine();
-		if (ImGui::Button("Back", {btnW, 0})) {
-			s_creatingNewProject = false;
-		}
-	}
-
-	ImGui::End();
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
+#include "project_picker/project_picker.hpp"
 
 /*============================================================================================
 * \\brief   Helper function for undo/redo system to mark entities dirty
@@ -545,82 +287,65 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 			}
 			ImGui::EndMenu();
 		}
+
+		if (ImGui::BeginMenu("Settings")) {
+			auto& win = engine_.getWindowManager();
+			auto& cfg = engine_.getConfigManager();
+
+			// Resolution
+			auto [w, h] = win.getWindowSize();
+			ImGui::Text("Resolution");
+			ImGui::SameLine();
+			ImGui::TextDisabled("%dx%d", w, h);
+			if (ImGui::Button("- ##res")) {
+				win.decreaseResolution();
+				auto [nw, nh] = win.getWindowSize();
+				cfg.set("Window Width",  std::to_string(nw));
+				cfg.set("Window Height", std::to_string(nh));
+				cfg.write();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("+ ##res")) {
+				win.increaseResolution();
+				auto [nw, nh] = win.getWindowSize();
+				cfg.set("Window Width",  std::to_string(nw));
+				cfg.set("Window Height", std::to_string(nh));
+				cfg.write();
+			}
+
+			ImGui::Separator();
+
+			// VSync — initialise from config on first open
+			static bool vsync     = cfg.getVSync();
+			static bool fullscreen = cfg.getFullscreen();
+
+			if (ImGui::Checkbox("VSync", &vsync)) {
+				win.setVSync(vsync);
+				cfg.set("VSync", vsync ? "true" : "false");
+				cfg.write();
+			}
+
+			if (ImGui::Checkbox("Fullscreen", &fullscreen)) {
+				win.toggleFullscreen();
+				cfg.set("Fullscreen", fullscreen ? "true" : "false");
+				cfg.write();
+			}
+
+			ImGui::EndMenu();
+		}
+
+		// Shutdown button on the right side of the menu bar
+		float shutdownW = ImGui::CalcTextSize("Shut Down").x + ImGui::GetStyle().FramePadding.x * 2.f;
+		ImGui::SetCursorPosX(ImGui::GetContentRegionMax().x - shutdownW);
+		if (ImGui::MenuItem("Shut Down"))
+			engine_.requestClose();
+
 		ImGui::Text("| %s", FileSystem::GetAssetsDir().filename().string().c_str());
 		ImGui::EndMainMenuBar();
 	}
 
 	// Project picker modal (opened from "Change Project..." while editor is running)
-	if (s_showProjectPicker) {
-		ImGui::OpenPopup("Open Project##modal");
-	}
-	if (ImGui::BeginPopupModal("Open Project##modal", nullptr,
-		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
-		ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		const float itemW = 400.f;
-
-		if (!s_creatingNewProject)
-		{
-			ImGui::Text("Select a project to open:");
-			ImGui::Spacing();
-			if (!s_availableProjects.empty()) {
-				std::vector<const char*> items;
-				items.reserve(s_availableProjects.size());
-				for (auto& p : s_availableProjects) items.push_back(p.c_str());
-				ImGui::SetNextItemWidth(itemW);
-				ImGui::Combo("##projects2", &s_selectedProjectIdx, items.data(), static_cast<int>(items.size()));
-			} else {
-				ImGui::TextDisabled("No projects found in assets/");
-			}
-			ImGui::Spacing();
-			ImGui::Separator();
-			ImGui::Spacing();
-
-			const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x * 2.f) / 3.f;
-			if (ImGui::Button("Open", {btnW, 0}) && !s_availableProjects.empty()) {
-				applyProjectSelection(engine_, s_availableProjects[s_selectedProjectIdx]);
-				s_showProjectPicker = false;
-				ImGui::CloseCurrentPopup();
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("New Project", {btnW, 0})) {
-				s_creatingNewProject = true;
-				memset(s_newProjectNameBuf, 0, sizeof(s_newProjectNameBuf));
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Cancel", {btnW, 0})) {
-				s_showProjectPicker    = false;
-				s_creatingNewProject   = false;
-				ImGui::CloseCurrentPopup();
-			}
-		}
-		else
-		{
-			ImGui::Text("Project name:");
-			ImGui::SetNextItemWidth(itemW);
-			ImGui::InputText("##newname2", s_newProjectNameBuf, sizeof(s_newProjectNameBuf));
-			ImGui::Spacing();
-			ImGui::Separator();
-			ImGui::Spacing();
-
-			bool nameValid = s_newProjectNameBuf[0] != '\0';
-			const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x) / 2.f;
-			if (!nameValid) ImGui::BeginDisabled();
-			if (ImGui::Button("Create", {btnW, 0})) {
-				createNewProject(s_newProjectNameBuf);
-				applyProjectSelection(engine_, s_newProjectNameBuf);
-				s_showProjectPicker  = false;
-				s_creatingNewProject = false;
-				ImGui::CloseCurrentPopup();
-			}
-			if (!nameValid) ImGui::EndDisabled();
-			ImGui::SameLine();
-			if (ImGui::Button("Back", {btnW, 0})) {
-				s_creatingNewProject = false;
-			}
-		}
-		ImGui::EndPopup();
-	}
+	imGuiProjectPickerPopup(engine_);
 
 	// BEGIN DOCKSPACE
 	imGuiBeginDockspace();
@@ -2922,13 +2647,52 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImVec4 colorVec(draw.color.r, draw.color.g, draw.color.b, draw.color.a);
 		ImGui::ColorButton("##color", colorVec, 0, ImVec2(20, 20));
 
-		// Display texture info if present
+		// Display texture info / drag-drop target
 		if (draw.texture != nullptr && draw.texture->isValid()) {
-			ImGui::Text("Texture ID: %d", draw.texID);
+			ImGui::Text("Texture: %s", draw.texturePath);
 			ImGui::Image((void*)(intptr_t)draw.texture->getID(), ImVec2(64, 64));
+			if (ImGui::BeginDragDropTarget()) {
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME")) {
+					std::string textureName(static_cast<const char*>(payload->Data), payload->DataSize - 1);
+					auto tex = engine_.getResourceLoader().getTexture(textureName);
+					if (tex) {
+						draw.texture = tex;
+						draw.width   = static_cast<float>(tex->getWidth());
+						draw.height  = static_cast<float>(tex->getHeight());
+						strncpy_s(draw.texturePath, textureName.c_str(), sizeof(draw.texturePath) - 1);
+						draw.texturePath[sizeof(draw.texturePath) - 1] = '\0';
+						if (g_game) g_game->markEntitiesDirty();
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
 		}
 		else {
-			ImGui::TextDisabled("No texture assigned");
+			// Drop zone when no texture is assigned
+			ImVec2 dropSize(120.f, 40.f);
+			ImVec2 cursor = ImGui::GetCursorScreenPos();
+			ImGui::InvisibleButton("##texdrop", dropSize);
+			ImU32 borderCol = ImGui::IsItemHovered() ? IM_COL32(255, 255, 100, 200) : IM_COL32(180, 180, 180, 120);
+			ImGui::GetWindowDrawList()->AddRect(cursor, ImVec2(cursor.x + dropSize.x, cursor.y + dropSize.y), borderCol, 4.f);
+			ImVec2 textSize = ImGui::CalcTextSize("Drop texture here");
+			ImGui::GetWindowDrawList()->AddText(
+				ImVec2(cursor.x + (dropSize.x - textSize.x) * 0.5f, cursor.y + (dropSize.y - textSize.y) * 0.5f),
+				IM_COL32(180, 180, 180, 200), "Drop texture here");
+			if (ImGui::BeginDragDropTarget()) {
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME")) {
+					std::string textureName(static_cast<const char*>(payload->Data), payload->DataSize - 1);
+					auto tex = engine_.getResourceLoader().getTexture(textureName);
+					if (tex) {
+						draw.texture = tex;
+						draw.width   = static_cast<float>(tex->getWidth());
+						draw.height  = static_cast<float>(tex->getHeight());
+						strncpy_s(draw.texturePath, textureName.c_str(), sizeof(draw.texturePath) - 1);
+						draw.texturePath[sizeof(draw.texturePath) - 1] = '\0';
+						if (g_game) g_game->markEntitiesDirty();
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
 		}
 	}
 
@@ -3840,13 +3604,17 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	//auto& entMng = engine_.getEntityManager();
 	//auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;  //This can be useful later on to find the behaviors/entity states available
 
+	// No StateMachineComponent — fall back to a single "Default" animation state
+	if (states.empty())
+		states.push_back("Default");
+
 	//Dynamically allow player to choose the state that they want to edit.
 	static int selectedStateIdx = 0;
 	selectedStateIdx = std::clamp(selectedStateIdx, 0, (int)states.size() - 1);
 	const std::string& selectedState = states[selectedStateIdx];
 
 
-	ImGui::SeparatorText("Asset Presets");
+	ImGui::SeparatorText("Animations");
 
 	// Check if the selected entity has an AnimationControllerComponent
 	if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng))
@@ -3873,49 +3641,123 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 
 	//================================= SELECTED STATE ANIMATION CONTROLLER ===================================
-	ImGui::Text("%s", selectedState.c_str());
-
 	static Graphics::TextureData selectedTextureData;
 	static int selectedMode = 1;              // 0 = rows/cols, 1 = pixel size
 	static int selectedRows = 1;
 	static int selectedCols = 1;
 	static int selectedFrameW = 96;
 	static int selectedFrameH = 96;
+	static float  previewTimer    = 0.f;
+	static size_t previewFrameIdx = 0;
 
+	// Sync selected texture when the entity or state changes
+	{
+		static uint32_t prevEntityID   = UINT32_MAX;
+		static std::string prevState;
+		if (selectedEntityID != prevEntityID || selectedState != prevState)
+		{
+			prevEntityID    = selectedEntityID;
+			prevState       = selectedState;
+			selected        = "";
+			selectedTexData.texture = nullptr;
+			previewTimer    = 0.f;
+			previewFrameIdx = 0;
 
-	// LEFT SIDE PREVIEW
+			if (entity.has<ECSComponents::AnimationControllerComponent>(entMng))
+			{
+				auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entMng);
+				for (int i = 0; i < animComp.animationCount; ++i)
+				{
+					if (strcmp(animComp.animations[i].name, selectedState.c_str()) == 0
+						&& animComp.animations[i].texturePath[0] != '\0')
+					{
+						selected = animComp.animations[i].texturePath;
+						auto it  = textures.find(selected);
+						if (it != textures.end())
+							selectedTexData.texture = it->second;
+						// Restore frame settings
+						selectedFrameW = animComp.animations[i].frameWidth  > 0 ? animComp.animations[i].frameWidth  : selectedFrameW;
+						selectedFrameH = animComp.animations[i].frameHeight > 0 ? animComp.animations[i].frameHeight : selectedFrameH;
+						selectedRows   = animComp.animations[i].rows > 0 ? animComp.animations[i].rows : selectedRows;
+						selectedCols   = animComp.animations[i].cols > 0 ? animComp.animations[i].cols : selectedCols;
+						selectedMode   = 1; // pixel size mode
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	// LEFT SIDE PREVIEW — animated frame
+	const ImVec2 previewSize(180.f, 150.f);
+
+	// Fetch controller once for the preview
+	Animation::AnimationController* previewCtrl = nullptr;
+	{
+		auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entMng);
+		previewCtrl = engine_.getAnimationRegistry().get(animComp.controllerID);
+	}
+
 	if (!selected.empty())
 	{
 		auto it = textures.find(selected);
 		if (it != textures.end())
 		{
-			auto tex = it->second;   // shared_ptr<EnoTexture>
-			ImTextureID texID = (ImTextureID)(intptr_t)tex->getID();
+			auto texID = (ImTextureID)(intptr_t)it->second->getID();
+			bool showedFrame = false;
 
-			ImGui::Image(texID, ImVec2(180, 150));
+			if (previewCtrl && previewCtrl->animations_.count(selectedState))
+			{
+				auto& frames = previewCtrl->animations_.at(selectedState).getFrames();
+				if (!frames.empty())
+				{
+					// Advance preview timer independently of the game
+					previewTimer += ImGui::GetIO().DeltaTime;
+					if (previewFrameIdx >= frames.size()) previewFrameIdx = 0;
+					while (previewTimer >= frames[previewFrameIdx].duration)
+					{
+						previewTimer -= frames[previewFrameIdx].duration;
+						previewFrameIdx = (previewFrameIdx + 1) % frames.size();
+					}
+					const auto& frame = frames[previewFrameIdx];
+					ImGui::Image(texID, previewSize,
+						ImVec2(frame.uvStart.x, frame.uvStart.y),
+						ImVec2(frame.uvEnd.x,   frame.uvEnd.y));
+					showedFrame = true;
+				}
+			}
+
+			if (!showedFrame)
+				ImGui::Image(texID, previewSize); // fallback: full spritesheet
 		}
 		else
 		{
-			ImGui::Button("Missing Texture", ImVec2(180, 150));
+			ImGui::Button("Missing Texture", previewSize);
 		}
 	}
 	else
 	{
-		ImGui::Button("##SelectedPreview", ImVec2(180, 150));
+		// Drop zone
+		ImVec2 cursor = ImGui::GetCursorScreenPos();
+		ImGui::InvisibleButton("##spritedrop", previewSize);
+		ImU32 borderCol = ImGui::IsItemHovered() ? IM_COL32(255, 255, 100, 200) : IM_COL32(180, 180, 180, 120);
+		ImGui::GetWindowDrawList()->AddRect(cursor, ImVec2(cursor.x + previewSize.x, cursor.y + previewSize.y), borderCol, 4.f);
+		const char* hint = "Drop spritesheet here";
+		ImVec2 textSize  = ImGui::CalcTextSize(hint);
+		ImGui::GetWindowDrawList()->AddText(
+			ImVec2(cursor.x + (previewSize.x - textSize.x) * 0.5f, cursor.y + (previewSize.y - textSize.y) * 0.5f),
+			IM_COL32(180, 180, 180, 200), hint);
 	}
 
-	//Drag and Drop target
+	// Drag-drop target (works on Image, Missing Texture button, and drop zone)
 	if (ImGui::BeginDragDropTarget())
 	{
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
 		{
-			selected = (const char*)payload->Data;
-
-			auto it = textures.find(selected);
+			selected = std::string(static_cast<const char*>(payload->Data), payload->DataSize - 1);
+			auto it  = textures.find(selected);
 			if (it != textures.end())
-			{
-				selectedTexData.texture = it->second; // shared_ptr<EnoTexture>
-			}
+				selectedTexData.texture = it->second;
 		}
 		ImGui::EndDragDropTarget();
 	}
@@ -4970,31 +4812,52 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 								g_game->getEditorCameraY()
 							);
 
-							// Create entity at drop location
-							ECSComponents::TransformComponent transform;
-							transform.pos = worldPos;
-							transform.rot = Math::eVec2<float>(0.0f, 0.0f);
-							transform.scale = Math::eVec2<float>(1.0f, 1.0f);
+							auto& prefabMng = engine_.getPrefabManager();
 
-							ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
+							// Create entity from SPRITE preset
+							ECS::Entity newEntity = entityManager.create<>();
+							if (const auto* presetComps = prefabMng.getPresetComponents("SPRITE"))
+							{
+								for (const auto& [compTypeIdx, compAny] : *presetComps)
+								{
+									ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+									{
+										if (!newEntity.template has<T>(entityManager))
+											newEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+									});
+								}
+							}
 
-							// Add render component with texture
-							ECSComponents::RenderComponent render;
-							render.texture = texture;
-							render.width = static_cast<float>(texture->getWidth());
-							render.height = static_cast<float>(texture->getHeight());
-							strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
-							render.texturePath[sizeof(render.texturePath) - 1] = '\0';
-							render.color = Graphics::Color::White;
-							newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
+							// Place at drop position
+							if (newEntity.has<ECSComponents::TransformComponent>(entityManager))
+							{
+								auto& transform = newEntity.get<ECSComponents::TransformComponent>(entityManager);
+								transform.pos = worldPos;
+							}
 
-							// Create animation controller
-							uint32_t controllerID = engine_.getAnimationRegistry().createController();
-							newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
+							// Apply texture to RenderComponent
+							if (newEntity.has<ECSComponents::RenderComponent>(entityManager))
+							{
+								auto& render = newEntity.get<ECSComponents::RenderComponent>(entityManager);
+								render.texture = texture;
+								render.width   = static_cast<float>(texture->getWidth());
+								render.height  = static_cast<float>(texture->getHeight());
+								strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
+								render.texturePath[sizeof(render.texturePath) - 1] = '\0';
+								render.color = Graphics::Color::White;
+							}
 
-							// Add to scene tree
+							// Assign a valid animation controller ID
+							if (newEntity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+							{
+								auto& animCtrl = newEntity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+								animCtrl.controllerID = engine_.getAnimationRegistry().createController();
+							}
+
+							// Add to scene tree as SPRITE node
 							Node* node = sceneTree.createFromEntity(newEntity, nullptr);
 							node->name_ = textureName;
+							node->type_ = Editor::NodeType::SPRITE;
 
 							// Record creation for undo/redo
 							auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
@@ -5004,9 +4867,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 								engine_.getGraphicsManager()
 							);
 							undoManager.executeCommand(std::move(createCmd));
-
-							std::cout << "[Drag-Drop] Created entity '" << textureName
-									  << "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
 
 							if (g_game) g_game->markEntitiesDirty();
 						}
@@ -5028,11 +4888,9 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					std::string textureName = (const char*)payload->Data;
 					Resources::EnoLoader& loader = engine_.getResourceLoader();
 
-					// Get the texture from the loader
 					auto texture = loader.getTexture(textureName);
 					if (texture && texture->isValid())
 					{
-						// Get mouse position and convert to world coordinates
 						ImVec2 mousePos = ImGui::GetMousePos();
 						Math::eVec2<float> worldPos = Graphics::screenToWorld(
 							{ mousePos.x, mousePos.y },
@@ -5044,33 +4902,53 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							g_game->getEditorCameraY()
 						);
 
-						// Create entity at drop location
-						ECSComponents::TransformComponent transform;
-						transform.pos = worldPos;
-						transform.rot = Math::eVec2<float>(0.0f, 0.0f);
-						transform.scale = Math::eVec2<float>(1.0f, 1.0f);
+						auto& prefabMng = engine_.getPrefabManager();
 
-						ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
+						// Create entity from SPRITE preset
+						ECS::Entity newEntity = entityManager.create<>();
+						if (const auto* presetComps = prefabMng.getPresetComponents("SPRITE"))
+						{
+							for (const auto& [compTypeIdx, compAny] : *presetComps)
+							{
+								ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+								{
+									if (!newEntity.template has<T>(entityManager))
+										newEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+								});
+							}
+						}
 
-						// Add render component with texture
-						ECSComponents::RenderComponent render;
-						render.texture = texture;
-						render.width = static_cast<float>(texture->getWidth());
-						render.height = static_cast<float>(texture->getHeight());
-						strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
-						render.texturePath[sizeof(render.texturePath) - 1] = '\0';
-						render.color = Graphics::Color::White;
-						newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
+						// Place at drop position
+						if (newEntity.has<ECSComponents::TransformComponent>(entityManager))
+						{
+							auto& transform = newEntity.get<ECSComponents::TransformComponent>(entityManager);
+							transform.pos = worldPos;
+						}
 
-						// Create animation controller
-						uint32_t controllerID = engine_.getAnimationRegistry().createController();
-						newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
+						// Apply texture to RenderComponent
+						if (newEntity.has<ECSComponents::RenderComponent>(entityManager))
+						{
+							auto& render = newEntity.get<ECSComponents::RenderComponent>(entityManager);
+							render.texture = texture;
+							render.width   = static_cast<float>(texture->getWidth());
+							render.height  = static_cast<float>(texture->getHeight());
+							strncpy_s(render.texturePath, textureName.c_str(), sizeof(render.texturePath) - 1);
+							render.texturePath[sizeof(render.texturePath) - 1] = '\0';
+							render.color = Graphics::Color::White;
+						}
 
-						// Add to scene tree
+						// Assign a valid animation controller ID
+						if (newEntity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+						{
+							auto& animCtrl = newEntity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+							animCtrl.controllerID = engine_.getAnimationRegistry().createController();
+						}
+
+						// Add to scene tree as SPRITE node
 						Node* node = sceneTree.createFromEntity(newEntity, nullptr);
 						node->name_ = textureName;
+						node->type_ = Editor::NodeType::SPRITE;
 
-						// Record creation for undo/redo
 						auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 							sceneTree,
 							entityManager,
@@ -5078,9 +4956,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							engine_.getGraphicsManager()
 						);
 						undoManager.executeCommand(std::move(createCmd));
-
-						std::cout << "[Drag-Drop] Created entity '" << textureName
-								  << "' at world position (" << worldPos.x << ", " << worldPos.y << ")\n";
 
 						if (g_game) g_game->markEntitiesDirty();
 					}

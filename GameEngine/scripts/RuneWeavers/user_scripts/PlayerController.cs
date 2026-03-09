@@ -26,7 +26,7 @@ namespace Eno
             // Build direction vector from held keys
             float dx = 0f;
             float dy = 0f;
-
+            
             if (Bridge.IsKeyHeld(KeyCode.W)) dy -= 1f;
             if (Bridge.IsKeyHeld(KeyCode.S)) dy += 1f;
             if (Bridge.IsKeyHeld(KeyCode.A)) dx -= 1f;
@@ -43,10 +43,48 @@ namespace Eno
             _player.velocity = new Vector2(dx * speed, dy * speed);
         }
     
-        // Called when entering the default state
+        // Called when entering the idle state
+        public void idle_enter()
+        {
+            // TODO: Add enter logic for idle state
+        }
 
-        // Called every frame while in the default state
+        // Called every frame while in the idle state
+        public void idle_update()
+        {
+            if (IsMoving())
+                Bridge.ChangeState(ID, "walk");
+        }
 
-        // Called when exiting the default state
+        // Called when exiting the idle state
+        public void idle_exit()
+        {
+            // TODO: Add exit logic for idle state
+        }
+
+        // Called when entering the walk state
+        public void walk_enter()
+        {
+            // TODO: Add enter logic for walk state
+        }
+
+        // Called every frame while in the walk state
+        public void walk_update()
+        {
+            if (!IsMoving())
+                Bridge.ChangeState(ID, "idle");
+        }
+
+        // Called when exiting the walk state
+        public void walk_exit()
+        {
+            // TODO: Add exit logic for walk state
+        }
+
+        private bool IsMoving()
+        {
+            return Bridge.IsKeyHeld(KeyCode.W) || Bridge.IsKeyHeld(KeyCode.S) ||
+                   Bridge.IsKeyHeld(KeyCode.A) || Bridge.IsKeyHeld(KeyCode.D);
+        }
     }
 }

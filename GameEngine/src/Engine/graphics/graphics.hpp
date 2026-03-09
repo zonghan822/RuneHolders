@@ -251,6 +251,16 @@ namespace Graphics
             const Color& tint = Color::White,
             float rotation = 0.0f);
 
+        // Per-corner UV variant — used for tile rotation
+        void drawTexturedQuadUVCorners(const Math::eVec2<float>& position,
+            const Math::eVec2<float>& size,
+            std::shared_ptr<EnoTexture> texture,
+            const Math::eVec2<float>& uvTL,
+            const Math::eVec2<float>& uvTR,
+            const Math::eVec2<float>& uvBR,
+            const Math::eVec2<float>& uvBL,
+            const Color& tint = Color::White);
+
         // Text drawing function
         void drawText(const std::shared_ptr<Font::EnoFont>& font,
             const std::string& text,

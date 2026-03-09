@@ -68,6 +68,24 @@ namespace Physics
             // Integrate velocity into position (with collision response)
             IntegrateVelocity(entity.id(), transform, physics, collision, entityManager, deltaTime);
         }
+
+        // PHASE 3: Integrate velocities into positions for physics entities WITHOUT collision
+        // Allows script-driven movement on entities that don't have a CollisionComponent
+        auto allPhysicsEntities = entityManager.findEntity<ECSComponents::PhysicsComponent, ECSComponents::TransformComponent>();
+        for (auto& entity : allPhysicsEntities)
+        {
+            // Skip entities handled in Phase 2 (those that have CollisionComponent)
+            if (entity.has<ECSComponents::CollisionComponent>(entityManager))
+                continue;
+
+            auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
+            if (physics.isKinematic)
+                continue;
+
+            auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
+            transform.pos.x += physics.velocity.x * deltaTime;
+            transform.pos.y += physics.velocity.y * deltaTime;
+        }
     }
 
     /*============================================================================================

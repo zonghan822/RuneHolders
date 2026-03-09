@@ -48,8 +48,8 @@ namespace ECSComponents
 	struct RenderComponent
 	{
 		// Rendering properties - DECLARED FIRST to match initialization order
-		float width = 10.0f;
-		float height = 10.0f;
+		float width = 64.0f;
+		float height = 64.0f;
 		char shape[32] = "Rectangle";
 		Graphics::Color color = Graphics::Color::White;
 
