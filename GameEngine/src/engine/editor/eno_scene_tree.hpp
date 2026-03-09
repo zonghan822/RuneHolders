@@ -34,10 +34,9 @@ namespace Editor
 	enum class NodeType : uint32_t
 	{
 		EMPTY,
-		CUSTOM,
 		PRESET_LIST
 	};
-#undef
+#undef PRESET
 
 	struct Node
 	{
@@ -78,7 +77,9 @@ namespace Editor
 		std::vector<Node*> getAllNodes();
 
 		// Create a node
-		Node* create(Node* parent = nullptr);
+		Node* create();
+		Node* create(Node* parent);
+		Node* create(NodeType);
 
 		// Create a node from an existing entity (for ImGui integration)
 		Node* createFromEntity(ECS::Entity entity, Node* parent = nullptr);
@@ -101,6 +102,15 @@ namespace Editor
 		// Nest a node
 		void nest(Node*);
 		void nest(Node*, Node*);
+		void nest(uint32_t, uint32_t);
+		
+		// Detach a node from its parent
+		void unparent(Node* node);
+		void unparent(uint32_t);
+
+		// Attach a node to a new parent
+		void reparent(Node*, Node* dst = nullptr);
+		void reparent(uint32_t, uint32_t dst = 0);
 
 		// Select a node and display all information
 		void select(const uint32_t&);
@@ -111,6 +121,7 @@ namespace Editor
 		// Delete a node and all of its children
 		void kill();
 		void kill(Node*);
+		void kill(uint32_t);
 
 		// Toggle the use of a node
 		void toggleEnable();

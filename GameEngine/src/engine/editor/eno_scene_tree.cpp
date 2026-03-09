@@ -25,6 +25,11 @@ namespace Editor
 		return nodes;
 	}
 
+	Node* EnoSceneTree::create()
+	{
+		return create(NodeType::DEFAULT);
+	}
+
 	Node* EnoSceneTree::create(Node* parent)
 	{
 		auto node = std::make_unique<Node>();
@@ -55,6 +60,26 @@ namespace Editor
 			parent->children_.push_back(unode);
 
 		return unode;
+	}
+
+	Node* EnoSceneTree::create(NodeType type)
+	{
+		auto node = std::make_unique<Node>();
+		uint32_t id = generateID();
+
+		node->name_ = "Node" + std::to_string(id);
+		node->sceneObjectID_ = id;
+		node->nestedLayer_ = 0;
+		modNodeType(node.get(), type);
+		node->type_ = type;
+		node->parent_ = nullptr;
+		node->enabled_ = true;
+		node->script_ = nullptr;
+
+		Node* unode = node.get();
+		tree_[node->sceneObjectID_] = std::move(node);
+
+		return node.get();
 	}
 
 	// Create a node from an existing entity (for ImGui integration)
@@ -185,6 +210,107 @@ namespace Editor
 		}
 	}
 
+	void EnoSceneTree::nest(uint32_t src, uint32_t dst)
+	{
+		auto it1 = tree_.find(src);
+		auto it2 = tree_.find(dst);
+
+		if (it1 == tree_.end() || it2 == tree_.end())
+			return;
+
+		nest(it1->second.get(), it2->second.get());
+	}
+
+	// Detach a node from its parent
+	void EnoSceneTree::unparent(Node* node)
+	{
+		if (!node->parent_)
+			return;
+
+		auto& children = node->parent_->children_;
+
+		auto it = std::find_if(children.begin(), children.end(),
+			[node](Node* c) { return c->sceneObjectID_ == node->sceneObjectID_; });
+
+		if (it != children.end())
+			children.erase(it);
+
+		node->parent_ = nullptr;
+
+		int oldDepth = node->nestedLayer_;
+		int newDepth = 0;
+		int diff = oldDepth - newDepth;
+
+		updateNestedLayer(node, diff);
+	}
+
+	// (Overload) Detach a node from its parent
+	void EnoSceneTree::unparent(uint32_t id)
+	{
+		auto itID = tree_.find(id);
+
+		if (itID == tree_.end())
+			return;
+
+		Node* node = itID->second.get();
+
+		unparent(node);
+	}
+
+	void EnoSceneTree::reparent(Node* node, Node* newParent)
+	{
+		if (!node) return;
+
+		// Prevent cycles
+		Node* p = newParent;
+		while (p)
+		{
+			if (p == node) return;
+			p = p->parent_;
+		}
+
+		// Remove from old parent
+		if (node->parent_)
+		{
+			auto& siblings = node->parent_->children_;
+			siblings.erase(std::remove(siblings.begin(), siblings.end(), node), siblings.end());
+		}
+
+		int32_t prevDepth = node->nestedLayer_;
+
+		node->parent_ = newParent;
+
+		if (newParent)
+		{
+			newParent->children_.push_back(node);
+			node->nestedLayer_ = newParent->nestedLayer_ + 1;
+		}
+		else
+		{
+			// Root
+			node->nestedLayer_ = 0;
+		}
+
+		int32_t diff = prevDepth - node->nestedLayer_;
+
+		for (Node* child : node->children_)
+			updateNestedLayer(child, diff);
+	}
+
+	// (Overload) Attach a node to a new parent
+	void EnoSceneTree::reparent(uint32_t node, uint32_t newParent)
+	{
+		auto it1 = tree_.find(node);
+		auto it2 = tree_.find(newParent);
+
+		if (it1 == tree_.end() || it2 == tree_.end()) return;
+
+		Node* cnode = it1->second.get();
+		Node* pnode = it2->second.get();
+
+		reparent(cnode, pnode);
+	}
+
 	// Select a node and display all information
 	void EnoSceneTree::select(const uint32_t& sceneID)
 	{
@@ -296,6 +422,15 @@ namespace Editor
 		// Save the ID for reuse before erasing
 		salvagedID_.push_back(node->sceneObjectID_);
 		tree_.erase(node->sceneObjectID_);
+	}
+
+	void EnoSceneTree::kill(uint32_t id)
+	{
+		auto it = tree_.find(id);
+		if (it == tree_.end())
+			return;
+
+		kill(it->second.get());
 	}
 
 	// Toggle a node (to enable or disable)
