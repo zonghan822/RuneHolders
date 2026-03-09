@@ -184,6 +184,13 @@ void LoadAudioAssets(Engine::EnoEngine& engine_);
 *//*========================================================================================*/
 void displayAudioTab(Engine::EnoEngine& engine_);
 
+/*============================================================================================
+ * \brief       Displays Video Browser (import, preview, delete video assets)
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayVideoTab(Engine::EnoEngine& engine_);
+
 
 /*============================================================================================
  * \brief       Display game view inside of imgui

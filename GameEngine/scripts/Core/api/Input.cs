@@ -175,11 +175,11 @@ namespace Eno
         public bool Trigger()
         {
             // Get current active modifiers from engine
-            var mods = (Mod)Input.ModsApplied();
+            var mods = (Mod)Bridge.ModsApplied();
 
             // Check if the main key is pressed or held
-            bool keyHeld = Input.IsKeyHeld(Key);
-            bool keyPressed = Input.IsKeyPressed(Key);
+            bool keyHeld = Bridge.IsKeyHeld(Key);
+            bool keyPressed = Bridge.IsKeyPressed(Key);
 
             // Check if the required modifier flag(s) are active (if any)
             bool modActive = Mod == null || (mods & Mod.Value) == Mod.Value;

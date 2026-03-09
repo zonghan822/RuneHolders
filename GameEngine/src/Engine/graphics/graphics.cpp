@@ -10,6 +10,7 @@
 #include "stb_image.h"
 
 #include "graphics.hpp"
+#include "video/video_player.hpp"
 #include "../engine/eno_engine.hpp"
 #include "../component/component_registry.hpp"
 #include "../component/components/visibility.hpp"
@@ -128,6 +129,17 @@ namespace Graphics
         return true;
     }
 
+
+    void EnoTexture::updatePixels(int width, int height, int channels, const unsigned char* data)
+    {
+        if (textureID_ == 0 || !data) return;
+        GLenum fmt = GL_RGBA;
+        if      (channels == 1) fmt = GL_RED;
+        else if (channels == 3) fmt = GL_RGB;
+        glBindTexture(GL_TEXTURE_2D, textureID_);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, fmt, GL_UNSIGNED_BYTE, data);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
     void EnoTexture::bind(unsigned int slot) const
     {
@@ -1626,6 +1638,25 @@ namespace Graphics
                     float scaledHeight = renderInfo.height * transform.scale.y;
                     float rotation     = transform.rot.x;
 
+                    // If entity has a VideoComponent, pull the current decoded frame
+                    // into the render slot so it draws like any other textured entity.
+                    // Playback state (play/pause/stop) is driven by eno_engine.cpp,
+                    // not here — the render loop only reads the texture.
+                    if (entity.has<ECSComponents::VideoComponent>(entityManager))
+                    {
+                        auto& videoComp = entity.get<ECSComponents::VideoComponent>(entityManager);
+                        if (strlen(videoComp.videoName) > 0)
+                        {
+                            auto player = getVideo(std::string(videoComp.videoName));
+                            if (player && player->isLoaded())
+                            {
+                                auto videoTex = player->getTexture();
+                                if (videoTex && videoTex->isValid())
+                                    renderInfo.texture = videoTex;
+                            }
+                        }
+                    }
+
                     if (renderInfo.texture && renderInfo.texture->isValid())
                     {
                         Math::eVec2<float> topLeft = {
@@ -1753,6 +1784,38 @@ namespace Graphics
 
         // Restore default shader after text rendering
         rebindDefaultShader();
+    }
+
+    // =========================================================================
+    // Video management
+    // =========================================================================
+
+    bool EnoGraphicsManager::loadVideo(const std::string& name, const std::string& path)
+    {
+        auto player = std::make_shared<VideoPlayer>();
+        if (!player->load(path))
+            return false;
+        videoMap_[name] = std::move(player);
+        return true;
+    }
+
+    std::shared_ptr<VideoPlayer> EnoGraphicsManager::getVideo(const std::string& name)
+    {
+        auto it = videoMap_.find(name);
+        return (it != videoMap_.end()) ? it->second : nullptr;
+    }
+
+    void EnoGraphicsManager::removeVideo(const std::string& name)
+    {
+        videoMap_.erase(name);
+    }
+
+    void EnoGraphicsManager::updateVideos(float dt)
+    {
+        for (auto& [name, player] : videoMap_)
+        {
+            if (player) player->update(dt);
+        }
     }
 
 }

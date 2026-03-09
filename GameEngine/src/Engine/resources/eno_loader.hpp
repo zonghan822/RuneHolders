@@ -55,6 +55,9 @@ namespace Resources
 		std::string sfxPath_;
 		std::string rootMusicPath_;
 		std::string rootSfxPath_;
+
+		// Videos
+		std::string videoPath_;
 		static constexpr std::array<std::string_view, 2> soundExtensions_ = { ".wav", ".mp3" };
 		std::unordered_map<std::string, FMOD::Sound*> sounds_;
 		std::vector<std::unique_ptr<Audio::EnoAudioModule>> audioMods_;
@@ -311,7 +314,22 @@ namespace Resources
 			imagePath_  = (base / "art").string();
 			shaderPath_ = (base / "shaders").string();
 			fontPath_   = (base / "fonts").string();
+			videoPath_  = (base / "video").string();
 		}
+
+		/*============================================================================================
+		* \brief	Get the video directory path.
+		* \return	String reference to the video path.
+		*//*========================================================================================*/
+		const std::string& getVideoPath() const { return videoPath_; }
+
+		/*============================================================================================
+		* \brief	Scan the video directory and load all recognised video files into the graphics
+		*           manager (mp4, avi, mov, webm, mkv).
+		* \param[in] path				Directory to scan.
+		* \param[in] graphicsManager	Graphics manager that will own the VideoPlayer objects.
+		*//*========================================================================================*/
+		void loadVideos(const std::string& path, Graphics::EnoGraphicsManager& graphicsManager);
 
 		/*============================================================================================
 		* \brief	Load image textures (PNG/JPG) from a directory.
