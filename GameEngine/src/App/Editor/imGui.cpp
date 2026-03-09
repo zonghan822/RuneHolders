@@ -646,9 +646,34 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displaySceneTab(engine_.getEnoEditor());
 	ImGui::End();
 
-	// Audio select
-	ImGui::Begin("Audio Browser", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayAudioTab(engine_);
+	// Tabbed Browser (Audio, Assets, Video, FPS)
+	ImGui::Begin("Browser", nullptr, ImGuiWindowFlags_NoCollapse);
+	if (ImGui::BeginTabBar("BrowserTabs"))
+	{
+		if (ImGui::BeginTabItem("Audio"))
+		{
+			displayAudioTab(engine_);
+			ImGui::EndTabItem();
+		}
+		if (ImGui::BeginTabItem("Assets"))
+		{
+			displayAssetTab(engine_);
+			ImGui::EndTabItem();
+		}
+		if (ImGui::BeginTabItem("Video"))
+		{
+			displayVideoTab(engine_);
+			ImGui::EndTabItem();
+		}
+		if (ImGui::BeginTabItem("FPS"))
+		{
+			displayFPSTab(engine_);
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
+	// Clear dropped files here so it runs regardless of which tab is active
+	Window::EnoWindow::GetDroppedFiles().clear();
 	ImGui::End();
 
 
@@ -661,21 +686,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	// Editor View (zoomed in, center - replaces old Game View behavior)
 	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	displayEditorView(engine_, sceneTree, undoManager);
-	ImGui::End();
-
-	// Assets Browser
-	ImGui::Begin("Assets Browser", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayAssetTab(engine_);
-	ImGui::End();
-
-	// Video Browser
-	ImGui::Begin("Video Browser", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayVideoTab(engine_);
-	ImGui::End();
-
-	// FPS
-	ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayFPSTab(engine_);
 	ImGui::End();
 
 	// Raycast 3D View
@@ -5370,10 +5380,8 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	// Right side bottom - Mini Map
 	ImGui::DockBuilderDockWindow("Mini Map", dock_id_right_bottom);
 
-	// Bottom - FPS
-	ImGui::DockBuilderDockWindow("FPS", dock_id_bottom);
-	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_bottom);
-	ImGui::DockBuilderDockWindow("Audio Browser", dock_id_bottom);
+	// Bottom - Browser (Audio, Assets, Video, FPS tabs)
+	ImGui::DockBuilderDockWindow("Browser", dock_id_bottom);
 
 	ImGui::DockBuilderFinish(dockspace_id);
 
@@ -5589,8 +5597,6 @@ void displayVideoTab(Engine::EnoEngine& engine_)
 		}
 	}
 
-	// Clear dropped files after all browser tabs have had a chance to process them.
-	droppedFiles.clear();
 }
 
 void imGuiTerminate() {
