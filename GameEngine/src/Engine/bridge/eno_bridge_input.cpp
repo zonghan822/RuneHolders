@@ -6,11 +6,42 @@
 *//*========================================================================================*/
 
 #include "eno_bridge.hpp"
+#include "../graphics/graphics.hpp"
+#include "../component/components/camera_component.hpp"
 
 namespace Bridge
 {
     extern "C"
     {
+        // Shared helper: converts current mouse screen position to world coordinates.
+        static Math::eVec2<float> mouseToWorld()
+        {
+            float cameraX = 0.f, cameraY = 0.f, vpW = 1920.f, vpH = 1080.f;
+            auto& entityMng = gEngine->getEntityManager();
+            auto cams = entityMng.findEntity<ECSComponents::CameraComponent>();
+            if (!cams.empty())
+            {
+                auto& cam = cams[0].get<ECSComponents::CameraComponent>(entityMng);
+                cameraX = cam.position.x - cam.viewportWidth  * 0.5f;
+                cameraY = cam.position.y - cam.viewportHeight * 0.5f;
+                vpW     = cam.viewportWidth;
+                vpH     = cam.viewportHeight;
+            }
+
+            auto viewportMin = gEngine->getViewportMin();
+            auto viewportMax = gEngine->getViewportMax();
+            if (viewportMax.x == 0.f && viewportMax.y == 0.f)
+            {
+                auto [winW, winH] = gEngine->getWindowManager().getWindowSize();
+                viewportMax = { static_cast<float>(winW), static_cast<float>(winH) };
+            }
+
+            auto mouse = gEngine->getInputManager().getMousePosition();
+            return Graphics::screenToWorld(
+                { static_cast<float>(mouse.first), static_cast<float>(mouse.second) },
+                viewportMin, viewportMax, vpW, vpH, cameraX, cameraY
+            );
+        }
         // ============= Keyboard =============
 
         ENGINE_API bool __stdcall IsKeyPressed(int key)
@@ -67,6 +98,18 @@ namespace Bridge
         {
             if (!gEngine) return 0.0f;
             return static_cast<float>(gEngine->getInputManager().getMousePosition().second);
+        }
+
+        ENGINE_API float __stdcall GetMouseWorldX()
+        {
+            if (!gEngine) return 0.0f;
+            return mouseToWorld().x;
+        }
+
+        ENGINE_API float __stdcall GetMouseWorldY()
+        {
+            if (!gEngine) return 0.0f;
+            return mouseToWorld().y;
         }
     }
 }

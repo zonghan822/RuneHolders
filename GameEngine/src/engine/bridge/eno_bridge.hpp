@@ -111,6 +111,8 @@ namespace Bridge {
         ENGINE_API bool    __stdcall IsMouseReleased(int button);
         ENGINE_API float   __stdcall GetMouseX();
         ENGINE_API float   __stdcall GetMouseY();
+        ENGINE_API float   __stdcall GetMouseWorldX();
+        ENGINE_API float   __stdcall GetMouseWorldY();
 
         // =========================================================================
         // Audio Component
