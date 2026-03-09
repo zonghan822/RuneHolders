@@ -25,6 +25,7 @@
 #include "../component/components/audio.hpp"
 #include "../component/components/prefab_instance.hpp"
 #include "../component/components/camera_component.hpp"
+#include "../component/components/canvas.hpp"
 #include "../component/components/rune_component.hpp"
 #include "../component/components/combat_components.hpp"
 #include "../component/components/state_machine_component.hpp"

@@ -149,6 +149,7 @@ private:
     void drawPlayerAndIndicator();
 
     void drawShapes();
+    void renderCanvas();  // Render canvas entities with 1-5 layer system
     void displayFPS();
 
     // Rune system methods

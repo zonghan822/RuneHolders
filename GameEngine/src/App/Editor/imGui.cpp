@@ -1325,6 +1325,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				Editor::Node* parentNode = sceneTree.getNodeByEntityID(selectedEntityID);
 				Editor::Node* childNode = sceneTree.createFromEntity(childEntity, parentNode);
 
+
 				// Record creation for undo/redo
 				auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 					sceneTree,
@@ -2361,10 +2362,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	// Check if this is a player entity
 	bool isPlayer = entity.has<ECSComponents::PlayerComponent>(entMng);
 
-	// --- TransformComponent ---
+	// --- Transform Component ---
 	if (entity.has<ECSComponents::TransformComponent>(entMng)) {
 		auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
 		ImGui::SeparatorText("Transform");
+
+		// Label differs for root vs child — both edit transform.pos directly
+		Editor::Node* transformNode = sceneTree.getNodeByEntityID(entity.id());
+		bool isChild = transformNode && transformNode->parent_ != nullptr;
+		const char* posLabel = isChild ? "Position (local)" : "Position";
 
 		// Track position editing for undo
 		static Math::eVec2<float> oldPosInspector;
@@ -2375,13 +2381,11 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			editingPosInspector = true;
 		}
 
-		ImGui::DragFloat2("Position", (float*)&transform.pos, 0.5f);
+		ImGui::DragFloat2(posLabel, (float*)&transform.pos, 0.5f);
 
 		if (editingPosInspector && !ImGui::IsItemActive()) {
-			// Record undo when user finishes editing
-			if (oldPosInspector.x != transform.pos.x || oldPosInspector.y != transform.pos.y) {
+			if (oldPosInspector.x != transform.pos.x || oldPosInspector.y != transform.pos.y)
 				undoManager.recordMove(entity, oldPosInspector, transform.pos);
-			}
 			editingPosInspector = false;
 		}
 
@@ -3328,6 +3332,79 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			}
 
 			entity.add<ECSComponents::ButtonComponent>(entMng, button);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+
+	// --- Canvas Component ---
+	if (entity.has<ECSComponents::CanvasComponent>(entMng)) {
+		auto& canvas = entity.get<ECSComponents::CanvasComponent>(entMng);
+		ImGui::SeparatorText("Canvas");
+
+		ImGui::Checkbox("Is Active##canvas", &canvas.isActive);
+
+		ImGui::DragFloat("Viewport Width##canvas", &canvas.viewportWidth, 10.0f, 100.0f, 7680.0f);
+		ImGui::DragFloat("Viewport Height##canvas", &canvas.viewportHeight, 10.0f, 100.0f, 4320.0f);
+
+		int canvasLayerInt = static_cast<int>(canvas.canvasLayer);
+		if (ImGui::SliderInt("Canvas Layer##canvas", &canvasLayerInt, 1, 5))
+			canvas.canvasLayer = static_cast<uint32_t>(canvasLayerInt);
+
+		// Follow Camera toggle + entity dropdown
+		ImGui::Checkbox("Follow Camera##canvas", &canvas.followCamera);
+		{
+			auto cameraEntities = entMng.findEntity<ECSComponents::CameraComponent>();
+
+			// Resolve preview name from stored sceneObjectID
+			std::string currentCamName = "None";
+			if (canvas.followCameraEntityID != static_cast<uint32_t>(-1)) {
+				for (auto& camEnt : cameraEntities) {
+					Editor::Node* camNode = sceneTree.getNodeByEntityID(camEnt.id());
+					if (camNode && camNode->sceneObjectID_ == canvas.followCameraEntityID) {
+						if (camEnt.has<ECSComponents::NameComponent>(entMng))
+							currentCamName = camEnt.get<ECSComponents::NameComponent>(entMng).getName();
+						else
+							currentCamName = "Camera " + std::to_string(camEnt.id());
+						break;
+					}
+				}
+			}
+
+			if (ImGui::BeginCombo("Select Camera##canvas", currentCamName.c_str())) {
+				if (ImGui::Selectable("None", canvas.followCameraEntityID == static_cast<uint32_t>(-1)))
+					canvas.followCameraEntityID = static_cast<uint32_t>(-1);
+
+				for (auto& camEnt : cameraEntities) {
+					Editor::Node* camNode = sceneTree.getNodeByEntityID(camEnt.id());
+					if (!camNode) continue;
+
+					std::string camName;
+					if (camEnt.has<ECSComponents::NameComponent>(entMng))
+						camName = camEnt.get<ECSComponents::NameComponent>(entMng).getName();
+					else
+						camName = "Camera " + std::to_string(camEnt.id());
+
+					bool isSelected = (canvas.followCameraEntityID == camNode->sceneObjectID_);
+					if (ImGui::Selectable(camName.c_str(), isSelected))
+						canvas.followCameraEntityID = camNode->sceneObjectID_;
+				}
+				ImGui::EndCombo();
+			}
+		}
+
+		ImGui::Spacing();
+		if (ImGui::Button("Remove Canvas##canvas")) {
+			entity.remove<ECSComponents::CanvasComponent>(entMng);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+	else {
+		ImGui::SeparatorText("Canvas");
+		ImGui::TextDisabled("No canvas attached");
+
+		if (ImGui::Button("Add Canvas##canvas")) {
+			ECSComponents::CanvasComponent canvas;
+			entity.add<ECSComponents::CanvasComponent>(entMng, canvas);
 			if (g_game) g_game->markEntitiesDirty();
 		}
 	}
@@ -5637,7 +5714,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
 
 						// Convert entity position to screen coordinates          
-						Math::eVec2<float> entityWorldPos = {tc.pos.x, tc.pos.y}; 
+						Math::eVec2<float> entityWorldPos = tc.pos;
 						Math::eVec2<float> screenPos = Graphics::worldToScreen(
 														entityWorldPos,
 														g_game->getEditorViewMin(),
@@ -5735,6 +5812,65 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						ImVec2(topLeft.x + 5, topLeft.y + 5),
 						IM_COL32(0, 255, 255, 255),
 						label
+					);
+				}
+			}
+
+			// Draw canvas viewport rectangle for all active canvases
+			auto canvasEntities = entityManager.findEntity<ECSComponents::CanvasComponent>();
+			for (auto& canvasEntity : canvasEntities) {
+				auto& canvas = canvasEntity.get<ECSComponents::CanvasComponent>(entityManager);
+
+				if (canvas.isActive && canvasEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+					auto& tc = canvasEntity.get<ECSComponents::TransformComponent>(entityManager);
+
+					// Canvas viewport is centered at the entity's transform position
+					float cvLeft   = tc.pos.x - canvas.viewportWidth  * 0.5f;
+					float cvRight  = tc.pos.x + canvas.viewportWidth  * 0.5f;
+					float cvTop    = tc.pos.y - canvas.viewportHeight * 0.5f;
+					float cvBottom = tc.pos.y + canvas.viewportHeight * 0.5f;
+
+					Math::eVec2<float> cvTopLeft = Graphics::worldToScreen(
+						{ cvLeft, cvTop },
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY()
+					);
+
+					Math::eVec2<float> cvBottomRight = Graphics::worldToScreen(
+						{ cvRight, cvBottom },
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY()
+					);
+
+					// Draw canvas viewport rectangle (green border, semi-transparent fill)
+					drawList->AddRectFilled(
+						ImVec2(cvTopLeft.x, cvTopLeft.y),
+						ImVec2(cvBottomRight.x, cvBottomRight.y),
+						IM_COL32(0, 255, 0, 20)  // Green fill with low alpha
+					);
+					drawList->AddRect(
+						ImVec2(cvTopLeft.x, cvTopLeft.y),
+						ImVec2(cvBottomRight.x, cvBottomRight.y),
+						IM_COL32(0, 255, 0, 255),  // Solid green border
+						0.0f, 0, 2.0f  // 2px thick border
+					);
+
+					// Draw label
+					char canvasLabel[128];
+					snprintf(canvasLabel, sizeof(canvasLabel), "Canvas %.0fx%.0f (Layer %u)",
+						canvas.viewportWidth, canvas.viewportHeight, canvas.canvasLayer);
+					drawList->AddText(
+						ImVec2(cvTopLeft.x + 5, cvTopLeft.y + 5),
+						IM_COL32(0, 255, 0, 255),
+						canvasLabel
 					);
 				}
 			}

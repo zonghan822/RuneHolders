@@ -964,19 +964,20 @@ void GameApplication::updateGameLogic() {
 							continue; // Skip player, drawn separately
 						}
 
-					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
+					auto& tc = entity.get<ECSComponents::TransformComponent>(entityManager);
+					Math::eVec2<float> worldPos = tc.pos;
 
 					// Apply scale to width and height
-					float scaledWidth = renderInfo.width * transform.scale.x;
-					float scaledHeight = renderInfo.height * transform.scale.y;
+					float scaledWidth = renderInfo.width * tc.scale.x;
+					float scaledHeight = renderInfo.height * tc.scale.y;
 
 					// Get rotation from transform component
-					float rotation = transform.rot.x;
+					float rotation = tc.rot.x;
 
 					// Convert world position to screen position (relative to camera)
-					float screenX = transform.pos.x - editorCameraX_;
-					float screenY = transform.pos.y - editorCameraY_;
+					float screenX = worldPos.x - editorCameraX_;
+					float screenY = worldPos.y - editorCameraY_;
 
 					// Calculate half dimensions for rendering
 					float halfW = scaledWidth * 0.5f;
@@ -1171,15 +1172,15 @@ void GameApplication::updateGameLogic() {
 					continue;
 				if (textEntity.has<ECSComponents::TransformComponent>(entityManager)) {
 					auto& textComp  = textEntity.get<ECSComponents::TextComponent>(entityManager);
-					auto& transform = textEntity.get<ECSComponents::TransformComponent>(entityManager);
 					if (strlen(textComp.text) == 0) continue;
 
 					auto font = engine_.getResourceLoader().getFont(std::string(textComp.fontName));
 					if (!font) continue;
 
+					Math::eVec2<float> worldPos = textEntity.get<ECSComponents::TransformComponent>(entityManager).pos;
 					Math::eVec2<float> screenPos = {
-						transform.pos.x - editorCameraX_,
-						transform.pos.y - editorCameraY_
+						worldPos.x - editorCameraX_,
+						worldPos.y - editorCameraY_
 					};
 
 					// Draw each line separately to support newlines
@@ -1229,6 +1230,16 @@ void GameApplication::updateGameLogic() {
 				Math::eVec2<float> cameraOffset = { editorCameraX_, editorCameraY_ };
 				collisionSystem->VisualizeColliders(graphics_, engine_.getEntityManager(), cameraOffset);
 			}
+		}
+
+		// Render UI canvases on top
+		{
+			/*Math::eVec2<float> editorCamCenter{
+				editorCameraX_ + static_cast<float>(EDITOR_WIDTH) * 0.5f,
+				editorCameraY_ + static_cast<float>(EDITOR_HEIGHT) * 0.5f
+			};*/
+			Math::eVec2<float> cameraOffset = { editorCameraX_, editorCameraY_ };
+			ECSComponents::renderAllCanvases(engine_, cachedDrawableEntities_, cameraOffset);
 		}
 
 		engine_.getGraphicsManager().flush();
@@ -1849,16 +1860,15 @@ void GameApplication::drawShapes() {
 				continue;
 			if (textEntity.has<ECSComponents::TransformComponent>(entityManager)) {
 				auto& textComp  = textEntity.get<ECSComponents::TextComponent>(entityManager);
-				auto& transform = textEntity.get<ECSComponents::TransformComponent>(entityManager);
 				if (strlen(textComp.text) == 0) continue;
 
 				auto font = engine_.getResourceLoader().getFont(std::string(textComp.fontName));
 				if (!font) continue;
 
-				// Convert world position to camera-relative position for rendering
+				Math::eVec2<float> worldPos = textEntity.get<ECSComponents::TransformComponent>(entityManager).pos;
 				Math::eVec2<float> screenPos = {
-					transform.pos.x - cameraX,
-					transform.pos.y - cameraY
+					worldPos.x - cameraX,
+					worldPos.y - cameraY
 				};
 
 				// Draw each line separately to support newlines

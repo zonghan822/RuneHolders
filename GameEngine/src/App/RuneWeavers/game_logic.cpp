@@ -1007,6 +1007,16 @@ void GameApplication::updateGameLogic() {
 		}
 	}
 
+	// Render UI canvases on top of world entities
+	{
+		Math::eVec2<float> canvasCamPos{ 0.0f, 0.0f };
+		auto camEnts = entityManager.findEntity<ECSComponents::CameraComponent>();
+		if (!camEnts.empty()) {
+			canvasCamPos = camEnts[0].get<ECSComponents::CameraComponent>(entityManager).position;
+		}
+		ECSComponents::renderAllCanvases(engine_, cachedDrawableEntities_, canvasCamPos);
+	}
+
 	graphics_.flush();
 	displayFPS();
 }
@@ -1404,26 +1414,25 @@ void GameApplication::drawShapes() {
 						continue; // Skip player, drawn separately
 					}
 
-					// Get position from TransformComponent (spatial data)
-					// Get rendering info from DrawInfoComponent (size, color, etc.)
-					auto& transform = entity.get<ECSComponents::TransformComponent>(entityManager);
 					auto& renderInfo = entity.get<drawInfo>(entityManager);
+					auto& tc = entity.get<ECSComponents::TransformComponent>(entityManager);
+					Math::eVec2<float> worldPos = tc.pos;
 
 
 					// Apply scale to width and height
-					float scaledWidth = renderInfo.width * transform.scale.x;
-					float scaledHeight = renderInfo.height * transform.scale.y;
+					float scaledWidth = renderInfo.width * tc.scale.x;
+					float scaledHeight = renderInfo.height * tc.scale.y;
 
 					// Get rotation from transform component
-					float rotation = transform.rot.x;
+					float rotation = tc.rot.x;
 
 					// Check if entity has a texture (sprite)
 					if (renderInfo.texture && renderInfo.texture->isValid())
 					{
 
 						Math::eVec2<float> topLeft = {
-							transform.pos.x - (scaledWidth * 0.5f),
-							transform.pos.y - (scaledHeight * 0.5f)
+							worldPos.x - (scaledWidth * 0.5f),
+							worldPos.y - (scaledHeight * 0.5f)
 						};
 
 						// Default UVs (full texture)
@@ -1496,7 +1505,7 @@ void GameApplication::drawShapes() {
 						// Draw circle at center position with scale applied to radius
 						float scaledRadius = (scaledWidth * 0.5f);
 						graphics.drawCircle(
-							transform.pos,
+							worldPos,
 							scaledRadius,
 							renderInfo.color,
 							true,
@@ -1505,8 +1514,8 @@ void GameApplication::drawShapes() {
 					}
 					else {
 						// Draw rectangle with rotation and scale applied
-						float topLeftX = transform.pos.x - (scaledWidth * 0.5f);
-						float topLeftY = transform.pos.y - (scaledHeight * 0.5f);
+						float topLeftX = worldPos.x - (scaledWidth * 0.5f);
+						float topLeftY = worldPos.y - (scaledHeight * 0.5f);
 
 						graphics.drawRect(
 							Math::eVec2<float>{topLeftX, topLeftY},
@@ -1571,14 +1580,12 @@ void GameApplication::drawShapes() {
 				continue;
 			if (textEntity.has<ECSComponents::TransformComponent>(entityManager)) {
 				auto& textComp  = textEntity.get<ECSComponents::TextComponent>(entityManager);
-				auto& transform = textEntity.get<ECSComponents::TransformComponent>(entityManager);
 				if (strlen(textComp.text) == 0) continue;
 
 				auto font = engine_.getResourceLoader().getFont(std::string(textComp.fontName));
 				if (!font) continue;
 
-				// Use transform.pos directly (same as sprite rendering - no parent accumulation)
-				Math::eVec2<float> worldPos = transform.pos;
+				Math::eVec2<float> worldPos = textEntity.get<ECSComponents::TransformComponent>(entityManager).pos;
 
 				// Convert world position to camera-relative position for rendering
 				Math::eVec2<float> screenPos = {
