@@ -147,7 +147,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity);
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void displayPrefabEditor(Engine::EnoEngine& engine_);
+void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
 //void assetPresetsTab(Engine::EnoEngine& engine_, Node* Node);
 
 /*============================================================================================

@@ -424,7 +424,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 	// Prefab Editor
 	ImGui::Begin("Prefabs", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayPrefabEditor(engine_);
+	displayPrefabEditor(engine_, sceneTree);
 	ImGui::End();
 
 	// Editor View (zoomed in, center - replaces old Game View behavior)
@@ -3443,7 +3443,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 }
 
 
-void displayPrefabEditor(Engine::EnoEngine& engine_)
+void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 {
 	auto& prefabMng = engine_.getPrefabManager();
 	auto presetNames = prefabMng.getPresetNames();
@@ -3571,9 +3571,54 @@ void displayPrefabEditor(Engine::EnoEngine& engine_)
 	if (s_savedPopup)
 	{
 		ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f), "Saved '%s'!", s_selectedPreset.c_str());
-		// Clear feedback after ~2 seconds of frames
 		static int s_savedFrames = 0;
 		if (++s_savedFrames > 120) { s_savedPopup = false; s_savedFrames = 0; }
+	}
+
+	ImGui::Spacing();
+	ImGui::TextUnformatted("CHANGE ALL EXISTING INSTANCES");
+
+	static bool s_propagatedPopup = false;
+	if (ImGui::Button("Apply to All Instances", ImVec2(-1, 0)))
+	{
+		#undef PRESET
+		#define PRESET(Name, ...) {#Name, Editor::NodeType::Name},
+		static const std::unordered_map<std::string, Editor::NodeType> s_nameToType = {
+			{"EMPTY", Editor::NodeType::EMPTY},
+			PRESET_LIST
+		};
+		#undef PRESET
+
+		auto typeIt = s_nameToType.find(s_selectedPreset);
+		if (typeIt != s_nameToType.end())
+		{
+			Editor::NodeType targetType = typeIt->second;
+			auto& entMng = engine_.getEntityManager();
+
+			for (Editor::Node* node : sceneTree.getAllNodes())
+			{
+				if (node->type_ != targetType)
+					continue;
+
+				for (auto& [compTypeIdx, compAny] : *comps)
+				{
+					ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+					{
+						if (node->entity_.has<T>(entMng))
+							node->entity_.get<T>(entMng) = std::any_cast<T>(compAny);
+					});
+				}
+			}
+		}
+
+		s_propagatedPopup = true;
+	}
+
+	if (s_propagatedPopup)
+	{
+		ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f), "Applied to all '%s' instances!", s_selectedPreset.c_str());
+		static int s_propagatedFrames = 0;
+		if (++s_propagatedFrames > 120) { s_propagatedPopup = false; s_propagatedFrames = 0; }
 	}
 }
 
