@@ -74,22 +74,11 @@ namespace Engine
 			coreHost_ = std::make_unique<Core::EnoCoreHost>(bus_);
 
 		// Initialize editor (loads saves/scenes from the current project)
-		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_);
+		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_, prefabMng_);
 
 		// Bridge must be initialized before Begin() so that Bridge.* calls inside
 		// script Begin() methods resolve correctly.
 		Bridge::Bridge_Init(this);
-
-		for (const auto &node : editor_->getSceneTree().getAllNodes())
-		{
-			if (node->script_)
-			{
-				for (const auto &org : node->script_->origin())
-				{
-					coreHost_->begin(org, node->sceneObjectID_);
-				}
-			}
-		}
 
 		// Handle audio autoplay when scene enters play mode
 		bus_.subscribe<Editor::PlayScene>([this](const Editor::PlayScene&)
@@ -148,6 +137,26 @@ namespace Engine
 		window_.pollEvents();
 
 		float deltaTime = static_cast<float>(dt_);
+
+		// Call Begin() once on the first frame after play starts; reset when play stops
+		if (isPlaying_ && !hasBegun_)
+		{
+			for (const auto& node : editor_->getSceneTree().getAllNodes())
+			{
+				if (node->script_)
+				{
+					for (const auto& org : node->script_->origin())
+					{
+						coreHost_->begin(org, node->sceneObjectID_);
+					}
+				}
+			}
+			hasBegun_ = true;
+		}
+		else if (!isPlaying_)
+		{
+			hasBegun_ = false;
+		}
 
 		if (isPlaying_ && !isPaused_)
 		{
@@ -313,7 +322,10 @@ namespace Engine
 		// Loading fonts
 		loader_.loadFonts(loader_.getFontPath(), 48);
 
-		// Note: shaders are loaded in setupEarly() and are not reloaded here.
+		// Load Presets
+		prefabMng_.registerPresets();
+		ECSComponents::Preset::saveAll(prefabMng_);
+		ECSComponents::Preset::loadAll(prefabMng_);
 	}
 
 	void EnoEngine::updateTime(double fps_calc_interval)

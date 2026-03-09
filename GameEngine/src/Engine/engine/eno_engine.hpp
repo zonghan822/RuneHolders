@@ -351,6 +351,7 @@ namespace Engine
 		// Game state
 		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)
 		bool isPaused_  = false;  // Runtime pause (dialogue, menus) - pauses physics/AI/collision
+		bool hasBegun_  = false;  // Guards the one-shot Begin() call at the start of each play session
 		Math::eVec2<float> viewportMin_{ 0.f, 0.f };  // Screen-space game viewport bounds (set by editor/app)
 		Math::eVec2<float> viewportMax_{ 0.f, 0.f };  // Zero max = fall back to full window size
 

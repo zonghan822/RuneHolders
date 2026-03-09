@@ -70,7 +70,7 @@ namespace Editor
 
 		enum BraceType { Open, Close };
 
-		EnoSceneTree(ECS::EntityManager&, Core::EnoCoreHost&, Map::TileMapSystem&);
+		EnoSceneTree(ECS::EntityManager&, Core::EnoCoreHost&, Map::TileMapSystem&, ECSComponents::EnoPrefabManager&);
 		EnoSceneTree(const EnoSceneTree&) = delete;
 		EnoSceneTree(EnoSceneTree&&) = delete;
 
@@ -196,6 +196,7 @@ namespace Editor
 		ECS::EntityManager& entMng_;
 		Core::EnoCoreHost& coreHost_;
 		Map::TileMapSystem& tileMap_;
+		ECSComponents::EnoPrefabManager& prefabMng_;
 
 		std::unordered_map<uint32_t, std::unique_ptr<Node>> tree_;
 		Node* selectedNode_{ nullptr };

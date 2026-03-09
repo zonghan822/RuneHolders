@@ -6,11 +6,12 @@
 
 namespace Editor
 {
-	EnoSceneTree::EnoSceneTree(ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost, Map::TileMapSystem& tileMap)
+	EnoSceneTree::EnoSceneTree(ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost, Map::TileMapSystem& tileMap, ECSComponents::EnoPrefabManager& prefabMng)
 		:
 		entMng_{ entMng },
 		coreHost_{ coreHost },
-		tileMap_{ tileMap }
+		tileMap_{ tileMap },
+		prefabMng_{ prefabMng }
 	{}
 
 	std::vector<Node*> EnoSceneTree::getAllNodes()
@@ -64,7 +65,6 @@ namespace Editor
 
 	Node* EnoSceneTree::create(NodeType type)
 	{
-		std::cout << "Start create..." << std::endl;
 		std::cout << static_cast<int>(type) << std::endl;
 		auto node = std::make_unique<Node>();
 		uint32_t id = generateID();
@@ -80,7 +80,6 @@ namespace Editor
 
 		Node* unode = node.get();
 		tree_[node->sceneObjectID_] = std::move(node);
-		std::cout << "End create..." << std::endl;
 
 		return unode;
 	}
@@ -161,7 +160,7 @@ namespace Editor
 		{
 #define PRESET(name, ...) \
 		case NodeType::name: \
-			node->entity_ = entMng_.presetCreate(ECSComponents::Preset::name{});
+			node->entity_ = entMng_.presetCreate(prefabMng_.retrieve<ECSComponents::Preset::name>()); \
 			break;
 			PRESET_LIST
 #undef PRESET

@@ -39,8 +39,6 @@ void EditorApplication::initialize() {
 	// Phase 2: editor/scene loading + project-specific assets.
 	engine_.setupLate();
 
-	// Setup all game content
-	setupPrefabs();
 	setupGameEvents();
 
 	auto& tileMap = engine_.getTileMap();
@@ -231,14 +229,6 @@ void EditorApplication::shutdown() {
 	engine_.shutDown();
 }
 
-void EditorApplication::setupPrefabs() {
-	auto& prefabManager = engine_.getPrefabManager();
-	prefabManager.registerPresets();
-
-	ECSComponents::Preset::saveAll(prefabManager);
-	ECSComponents::Preset::loadAll(prefabManager);
-}
-
 void EditorApplication::setupGameEvents() {
 
 	auto& inputMng = engine_.getInputManager();
@@ -354,7 +344,6 @@ void EditorApplication::updateEditorCamera() {
 void EditorApplication::updateEditorState() {
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
-	static bool hasBegun = false;
 	auto& coreHost = engine_.getCoreHost();
 
 	// Editor state = play game
@@ -377,24 +366,6 @@ void EditorApplication::updateEditorState() {
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
 			}
-
-			if (!hasBegun)
-			{
-				for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
-				{
-					if (node->script_ && !node->entity_.has<ECSComponents::ButtonComponent>(engine_.getEntityManager()))
-					{
-						for (const auto& org : node->script_->origin())
-						{
-							//coreHost.begin(org, node->entity_.id());  
-							coreHost.begin(org, node->sceneObjectID_);
-						}
-					}
-				}
-				hasBegun = true;
-			}
-			break;
-
 		}
 		case Editor::State::Paused:
 		{
@@ -419,12 +390,10 @@ void EditorApplication::updateEditorState() {
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
-
 				// Mark entities as dirty to refresh the rendering cache
 				markEntitiesDirty();
 				// Toggle flag
 				playAfterStop = true;
-				hasBegun = false;
 			}
 			break;
 		}

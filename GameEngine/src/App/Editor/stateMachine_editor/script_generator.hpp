@@ -156,7 +156,6 @@ namespace Script {
     private:
         static std::string generateEnterMethod(const std::string& stateName) {
             return R"(
-        // Called when entering the )" + stateName + R"( state
         public void )" + stateName + R"(_enter()
         {
             // TODO: Add enter logic for )" + stateName + R"( state
@@ -166,7 +165,6 @@ namespace Script {
 
         static std::string generateUpdateMethod(const std::string& stateName) {
             return R"(
-        // Called every frame while in the )" + stateName + R"( state
         public void )" + stateName + R"(_update()
         {
             // TODO: Add update logic for )" + stateName + R"( state
@@ -176,7 +174,6 @@ namespace Script {
 
         static std::string generateExitMethod(const std::string& stateName) {
             return R"(
-        // Called when exiting the )" + stateName + R"( state
         public void )" + stateName + R"(_exit()
         {
             // TODO: Add exit logic for )" + stateName + R"( state

@@ -13,7 +13,6 @@ namespace Bridge
     {
         ENGINE_API uint32_t __stdcall CreateNode(uint32_t type)
         {
-            std::cout << "Creating node..." << std::endl;
             Editor::Node* node = gEngine->getEnoEditor().getSceneTree().create(Editor::NodeType(type));
             if (!node)
                 return UINT32_MAX;

@@ -25,13 +25,14 @@ namespace Editor
 		EnoEditor(const EnoEditor&) = delete;
 		EnoEditor(EnoEditor&&) = delete;
 
-		EnoEditor(Event::EnoEventBus& bus, ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost, Map::TileMapSystem& tileMap)
+		EnoEditor(Event::EnoEventBus& bus, ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost, Map::TileMapSystem& tileMap, ECSComponents::EnoPrefabManager& prefabMng)
 			:
 			bus_ { bus },
 			entMng_{ entMng },
 			coreHost_{ coreHost },
+			prefabMng_{ prefabMng },
 			undoManager_{ bus, entMng, 20 },
-			tree_{ entMng, coreHost, tileMap }
+			tree_{ entMng, coreHost, tileMap, prefabMng }
 		{
 
 			// Get all available scenes
@@ -519,6 +520,9 @@ namespace Editor
 
 		// Core Host
 		Core::EnoCoreHost& coreHost_;
+
+		// Prefab Manager
+		ECSComponents::EnoPrefabManager& prefabMng_;
 
 		// Scripting
 		Script::EnoScriptManager scriptMng_{ coreHost_ };

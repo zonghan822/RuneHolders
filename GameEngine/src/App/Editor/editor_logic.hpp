@@ -141,7 +141,6 @@ public:
 
 private:
     // Setup (called during initialize())
-    void setupPrefabs();        // Prefab instantiation
     void setupGameEvents();     // event bus setup code
     void setupImGui();          // setup ImGui code
 
