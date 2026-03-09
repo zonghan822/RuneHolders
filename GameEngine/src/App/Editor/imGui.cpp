@@ -136,6 +136,20 @@ struct AudioFolder {
 };
 static AudioFolder g_audioTree;
 
+// Texture browser tree
+struct TextureEntry {
+	std::string displayName;          // filename with extension, e.g. "player.png"
+	std::string stemName;             // filename without extension, key in textures_ map
+	std::filesystem::path buildPath;  // path in the runtime assets folder
+	std::filesystem::path rootPath;   // path in the source assets folder (for deletion)
+};
+struct TextureFolder {
+	std::string folderName;
+	std::vector<TextureFolder> subfolders;
+	std::vector<TextureEntry> files;
+};
+static TextureFolder g_textureTree;
+
 // Audio error tracking - using a queue to store all errors
 struct AudioErrorInfo {
 	std::string filename;
@@ -4036,12 +4050,64 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 	}
 }
 
+// Recursively scans a directory and populates a TextureFolder tree.
+static void BuildTextureTree(TextureFolder& folder,
+	const std::filesystem::path& buildBase,
+	const std::filesystem::path& rootBase,
+	const std::filesystem::path& currentPath)
+{
+	if (!std::filesystem::exists(currentPath)) return;
+
+	for (const auto& entry : std::filesystem::directory_iterator(currentPath))
+	{
+		if (entry.is_directory())
+		{
+			TextureFolder sub;
+			sub.folderName = entry.path().filename().string();
+			BuildTextureTree(sub, buildBase, rootBase, entry.path());
+			if (!sub.subfolders.empty() || !sub.files.empty())
+				folder.subfolders.push_back(std::move(sub));
+		}
+		else if (entry.is_regular_file())
+		{
+			auto ext = entry.path().extension().string();
+			if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+			{
+				TextureEntry e;
+				e.displayName = entry.path().filename().string();
+				e.stemName    = entry.path().stem().string();
+				e.buildPath   = entry.path();
+				auto rel      = std::filesystem::relative(entry.path(), buildBase);
+				e.rootPath    = rootBase / rel;
+				folder.files.push_back(std::move(e));
+			}
+		}
+	}
+
+	std::sort(folder.subfolders.begin(), folder.subfolders.end(),
+		[](const TextureFolder& a, const TextureFolder& b) { return a.folderName < b.folderName; });
+	std::sort(folder.files.begin(), folder.files.end(),
+		[](const TextureEntry& a, const TextureEntry& b) { return a.displayName < b.displayName; });
+}
+
+void LoadTextureAssets(Engine::EnoEngine& engine_)
+{
+	Resources::EnoLoader& loader = engine_.getResourceLoader();
+	g_textureTree = TextureFolder{};
+	g_textureTree.folderName = "art";
+	BuildTextureTree(g_textureTree,
+		loader.getImagePath(),
+		FileSystem::GetRootDir() / "assets/art",
+		loader.getImagePath());
+}
+
 void displayAssetTab(Engine::EnoEngine& engine_) {
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	const auto& textures = loader.getAllTextures();
 	auto& g_droppedFiles = Window::EnoWindow::GetDroppedFiles();
 
-	ImGui::Text("=== Loaded Textures ===");
+	ImGui::Text("=== Texture Assets ===");
+	ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Drag & drop .png or .jpg files here to import!");
 	ImGui::Separator();
 
 	static std::string selectedTexture;
@@ -4049,6 +4115,8 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 	static int inputRows = 1, inputCols = 1;
 	static int inputFrameW = 96, inputFrameH = 96;
 	static int mode = 0; // 0 = Rows/Cols, 1 = Pixels
+	static std::filesystem::path selectedTextureBuildPath;
+	static std::filesystem::path selectedTextureRootPath;
 
 	// --- Handle dropped files ---
 	if (!g_droppedFiles.empty()) {
@@ -4090,6 +4158,7 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 						loader.addTexture(name, tex);
 						std::cout << "[DEBUG] Imported texture: " << name << std::endl;
 					}
+					LoadTextureAssets(engine_);
 				}
 				catch (const std::filesystem::filesystem_error& e) {
 					std::cerr << "[Asset Import] Failed to copy file: " << e.what() << std::endl;
@@ -4098,31 +4167,74 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 		}
 	}
 
-	// Texture list
-	for (auto& [name, texture] : textures) {
-		if (!texture || !texture->isValid())
-			continue;
-
-		ImGui::Image((void*)(intptr_t)texture->getID(), ImVec2(48, 48));
-		ImGui::SameLine();
-		bool isSelected = (selectedTexture == name);
-		if (ImGui::Selectable(name.c_str(), isSelected, 0, ImVec2(200, 48))) {
-			selectedTexture = name;
-			textureData.texture = texture;
-		}
-		if (ImGui::BeginDragDropSource())
-		{
-			// Store C-string name inside drag payload
-			ImGui::SetDragDropPayload("TEXTURE_NAME", name.c_str(), name.size() + 1);
-
-			ImGui::Text("%s", name.c_str());
-
-			ImGui::EndDragDropSource();
-		}
-
-		ImGui::Spacing();
-		ImGui::Separator();
+	// Reload button
+	if (ImGui::Button("Reload Texture Files"))
+	{
+		LoadTextureAssets(engine_);
 	}
+
+	ImGui::Separator();
+
+	// --- Texture Tree Browser ---
+	ImGui::BeginChild("TextureAssetTree", ImVec2(0, 300), true);
+
+	bool textureTreeIsEmpty = g_textureTree.subfolders.empty() && g_textureTree.files.empty();
+	if (textureTreeIsEmpty)
+	{
+		ImGui::TextDisabled("(No textures loaded. Press \"Reload Texture Files\" above)");
+	}
+	else
+	{
+		std::function<void(const TextureFolder&)> renderTextureFolder = [&](const TextureFolder& folder)
+		{
+			for (const TextureFolder& sub : folder.subfolders)
+			{
+				ImGuiTreeNodeFlags folderFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+				if (ImGui::TreeNodeEx(sub.folderName.c_str(), folderFlags))
+				{
+					renderTextureFolder(sub);
+					ImGui::TreePop();
+				}
+			}
+
+			for (const TextureEntry& entry : folder.files)
+			{
+				auto it = textures.find(entry.stemName);
+				if (it == textures.end() || !it->second || !it->second->isValid())
+					continue;
+
+				auto& texture = it->second;
+
+				ImGui::Image((void*)(intptr_t)texture->getID(), ImVec2(48, 48));
+				ImGui::SameLine();
+
+				bool isSelected = (selectedTexture == entry.stemName);
+				if (ImGui::Selectable(entry.displayName.c_str(), isSelected, 0, ImVec2(0, 48)))
+				{
+					selectedTexture          = entry.stemName;
+					textureData.texture      = texture;
+					selectedTextureBuildPath = entry.buildPath;
+					selectedTextureRootPath  = entry.rootPath;
+				}
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload("TEXTURE_NAME", entry.stemName.c_str(), entry.stemName.size() + 1);
+					ImGui::Image((void*)(intptr_t)texture->getID(), ImVec2(32, 32));
+					ImGui::SameLine();
+					ImGui::Text("%s", entry.stemName.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				ImGui::Spacing();
+				ImGui::Separator();
+			}
+		};
+
+		renderTextureFolder(g_textureTree);
+	}
+
+	ImGui::EndChild();
 
 	ImGui::Separator();
 
@@ -4164,32 +4276,29 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 
 			try
 			{
-				// Build folder path
-				std::filesystem::path buildPath = std::filesystem::path(loader.getImagePath()) / (selectedTexture + ".png");
-				std::filesystem::path buildPathJpg = std::filesystem::path(loader.getImagePath()) / (selectedTexture + ".jpg");
-
-				// Root folder path
-				std::filesystem::path rootPath = FileSystem::GetRootDir() / "assets/art" / (selectedTexture + ".png");
-				std::filesystem::path rootPathJpg = FileSystem::GetRootDir() / "assets/art" / (selectedTexture + ".jpg");
-
-				// Delete from BUILD folder (try PNG first, then JPG)
-				if (std::filesystem::exists(buildPath))
+				// Use stored exact paths when available (supports subdirectories)
+				if (!selectedTextureBuildPath.empty() && std::filesystem::exists(selectedTextureBuildPath))
 				{
-					deleted = std::filesystem::remove(buildPath);
+					deleted = std::filesystem::remove(selectedTextureBuildPath);
 				}
-				else if (std::filesystem::exists(buildPathJpg))
+				else
 				{
-					deleted = std::filesystem::remove(buildPathJpg);
+					std::filesystem::path buildPath = std::filesystem::path(loader.getImagePath()) / (selectedTexture + ".png");
+					std::filesystem::path buildPathJpg = std::filesystem::path(loader.getImagePath()) / (selectedTexture + ".jpg");
+					if (std::filesystem::exists(buildPath)) deleted = std::filesystem::remove(buildPath);
+					else if (std::filesystem::exists(buildPathJpg)) deleted = std::filesystem::remove(buildPathJpg);
 				}
 
-				// Delete from ROOT folder (try PNG first, then JPG)
-				if (std::filesystem::exists(rootPath))
+				if (!selectedTextureRootPath.empty() && std::filesystem::exists(selectedTextureRootPath))
 				{
-					deletedRoot = std::filesystem::remove(rootPath);
+					deletedRoot = std::filesystem::remove(selectedTextureRootPath);
 				}
-				else if (std::filesystem::exists(rootPathJpg))
+				else
 				{
-					deletedRoot = std::filesystem::remove(rootPathJpg);
+					std::filesystem::path rootPath = FileSystem::GetRootDir() / "assets/art" / (selectedTexture + ".png");
+					std::filesystem::path rootPathJpg = FileSystem::GetRootDir() / "assets/art" / (selectedTexture + ".jpg");
+					if (std::filesystem::exists(rootPath)) deletedRoot = std::filesystem::remove(rootPath);
+					else if (std::filesystem::exists(rootPathJpg)) deletedRoot = std::filesystem::remove(rootPathJpg);
 				}
 
 				if (!deleted && !deletedRoot)
@@ -4214,6 +4323,9 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 			// Clear selection
 			selectedTexture.clear();
 			textureData.texture.reset();
+			selectedTextureBuildPath.clear();
+			selectedTextureRootPath.clear();
+			LoadTextureAssets(engine_);
 
 			ImGui::CloseCurrentPopup();
 		}

@@ -178,6 +178,13 @@ void displaySceneTab(Editor::EnoEditor& editor_);
 void LoadAudioAssets(Engine::EnoEngine& engine_);
 
 /*============================================================================================
+ * \brief       Helper function to build texture folder tree for Assets Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void LoadTextureAssets(Engine::EnoEngine& engine_);
+
+/*============================================================================================
  * \brief       Displays Audio Tab
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
