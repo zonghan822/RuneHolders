@@ -26,5 +26,19 @@ namespace Eno
         // pitch: 1.0 = normal
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetAudioPitch(uint sceneObjectID, float pitch);
+
+        // groupName: "BGM" or "SFX", volume: 0 – 100
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetGroupVolume(string groupName, float volume);
+
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern float GetGroupVolume(string groupName);
+
+        // Master channel group volume: 0 – 100
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetMasterVolume(float volume);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern float GetMasterVolume();
     }
 }

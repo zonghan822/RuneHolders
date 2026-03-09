@@ -123,6 +123,14 @@ namespace Bridge {
         ENGINE_API float   __stdcall GetAudioPitch(uint32_t sceneObjectID);
         ENGINE_API void    __stdcall SetAudioPitch(uint32_t sceneObjectID, float pitch);
 
+        // Channel group volume (groupName: "BGM" or "SFX"), range 0-100
+        ENGINE_API void    __stdcall SetGroupVolume(const char* groupName, float volume);
+        ENGINE_API float   __stdcall GetGroupVolume(const char* groupName);
+
+        // Master (FMOD master channel group) volume, range 0-100
+        ENGINE_API void    __stdcall SetMasterVolume(float volume);
+        ENGINE_API float   __stdcall GetMasterVolume();
+
         // =========================================================================
         // Animation Component
         // Implemented in: eno_bridge_animation.cpp

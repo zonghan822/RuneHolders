@@ -66,5 +66,49 @@ namespace Bridge
             if (auto* a = getAudio(sceneObjectID))
                 a->pitchScale_ = static_cast<double>(pitch);
         }
+
+        ENGINE_API void __stdcall SetGroupVolume(const char* groupName, float volume)
+        {
+            if (!gEngine) return;
+            try
+            {
+                FMOD::ChannelGroup* group = gEngine->getAudioManager().getChannelGroup(std::string(groupName));
+                group->setVolume(volume / 100.0f);
+            }
+            catch (...) {}
+        }
+
+        ENGINE_API float __stdcall GetGroupVolume(const char* groupName)
+        {
+            if (!gEngine) return 0.0f;
+            try
+            {
+                FMOD::ChannelGroup* group = gEngine->getAudioManager().getChannelGroup(std::string(groupName));
+                float vol = 0.0f;
+                group->getVolume(&vol);
+                return vol * 100.0f;
+            }
+            catch (...) {}
+            return 0.0f;
+        }
+
+        ENGINE_API void __stdcall SetMasterVolume(float volume)
+        {
+            if (!gEngine) return;
+            FMOD::ChannelGroup* master = nullptr;
+            gEngine->getAudioManager().getSystem()->getMasterChannelGroup(&master);
+            if (master) master->setVolume(volume / 100.0f);
+        }
+
+        ENGINE_API float __stdcall GetMasterVolume()
+        {
+            if (!gEngine) return 0.0f;
+            FMOD::ChannelGroup* master = nullptr;
+            gEngine->getAudioManager().getSystem()->getMasterChannelGroup(&master);
+            if (!master) return 0.0f;
+            float vol = 0.0f;
+            master->getVolume(&vol);
+            return vol * 100.0f;
+        }
     }
 }
