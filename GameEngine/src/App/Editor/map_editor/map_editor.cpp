@@ -402,6 +402,64 @@ void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
 	ImGui::Separator();
 	ImGui::Text("Selected Tile: (%d, %d)", selectedTileX_, selectedTileY_);
 
+	// ================================
+	// ROTATED TILE PREVIEW
+	// ================================
+	if (selectedTileX_ >= 0) {
+		ImGui::Separator();
+		ImGui::Text("Preview (rotation: %d deg)", tileRotation_);
+
+		const float previewSize = 96.0f;
+		ImVec2 cursor = ImGui::GetCursorScreenPos();
+
+		// Reserve space
+		ImGui::Dummy(ImVec2(previewSize, previewSize));
+
+		// UV corners for the selected tile
+		float u0 = (float)selectedTileX_       / tilesetCols_;
+		float v0 = (float)selectedTileY_       / tilesetRows_;
+		float u1 = (float)(selectedTileX_ + 1) / tilesetCols_;
+		float v1 = (float)(selectedTileY_ + 1) / tilesetRows_;
+
+		// Screen corners (TL, TR, BR, BL)
+		ImVec2 sTL(cursor.x,               cursor.y);
+		ImVec2 sTR(cursor.x + previewSize,  cursor.y);
+		ImVec2 sBR(cursor.x + previewSize,  cursor.y + previewSize);
+		ImVec2 sBL(cursor.x,               cursor.y + previewSize);
+
+		// Remap UV corners by rotation
+		ImVec2 uvTL, uvTR, uvBR, uvBL;
+		switch (tileRotation_) {
+		default:
+		case 0:
+			uvTL = { u0, v0 }; uvTR = { u1, v0 };
+			uvBR = { u1, v1 }; uvBL = { u0, v1 };
+			break;
+		case 90:
+			uvTL = { u0, v1 }; uvTR = { u0, v0 };
+			uvBR = { u1, v0 }; uvBL = { u1, v1 };
+			break;
+		case 180:
+			uvTL = { u1, v1 }; uvTR = { u0, v1 };
+			uvBR = { u0, v0 }; uvBL = { u1, v0 };
+			break;
+		case 270:
+			uvTL = { u1, v0 }; uvTR = { u1, v1 };
+			uvBR = { u0, v1 }; uvBL = { u0, v0 };
+			break;
+		}
+
+		ImDrawList* pdl = ImGui::GetWindowDrawList();
+		pdl->AddImageQuad(
+			(ImTextureID)(intptr_t)tilesetTexture_->getID(),
+			sTL, sTR, sBR, sBL,
+			uvTL, uvTR, uvBR, uvBL
+		);
+
+		// Border around preview
+		pdl->AddRect(sTL, sBR, IM_COL32(255, 255, 255, 120));
+	}
+
 	ImGui::End();
 }
 
