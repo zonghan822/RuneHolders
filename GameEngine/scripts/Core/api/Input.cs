@@ -88,52 +88,6 @@ namespace Eno
         }
     }
 
-    public static class Input
-    {
-        // // [Engine-Level] Used to receive raw input from engine end
-        // [UnmanagedCallersOnly]
-        // private static void InputBoarding(int key, int scancode, int action, int mods)
-        // {
-        //     // // Account for keys not mapped
-        //     // if (!keys.ContainsKey((KeyCode)key))
-        //     // {
-        //     //     Console.WriteLine($"{ key } is currently not supported!");
-        //     //     return;
-        //     // }
-
-        //     // var state = keys[(InputKey)key];
-
-        //     // // When input is received, save the state
-        //     // if (action == (int)InputAction.Press)
-        //     // {
-        //     //     state.isHeld = true;
-        //     //     state.pressedThisFrame = true;
-        //     // }
-        //     // else if (action == (int)InputAction.Release)
-        //     // {
-        //     //     state.isHeld = false;
-        //     //     state.releasedThisFrame = true;
-        //     // }
-
-        //     // keys[(InputKey)key] = state;
-
-        //     // Console.WriteLine($"InputBoarding: Key={(InputKey)key}, Action={(InputAction)action}, Held={state.isHeld}, PressedThisFrame={state.pressedThisFrame}, ReleasedThisFrame={state.releasedThisFrame}");
-        // }
-
-        // ============= Imported functions =============
-        [DllImport("Engine_shared.dll")]
-        public static extern bool IsKeyReleased(KeyCode key);
-
-        [DllImport("Engine_shared.dll")]
-        public static extern bool IsKeyPressed(KeyCode key);
-
-        [DllImport("Engine_shared.dll")]
-        public static extern bool IsKeyHeld(KeyCode key);
-
-        [DllImport("Engine_shared.dll")]
-        public static extern int ModsApplied();
-    }
-
     // For custom inputs
     // Defines a single action which can be triggered multiple ways through specified bindings
     // Inspiration:

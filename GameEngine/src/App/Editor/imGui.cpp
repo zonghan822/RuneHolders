@@ -1320,6 +1320,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	{
 		auto& prefabMng = engine_.getPrefabManager();
 		auto presetNames = prefabMng.getPresetNames();
+		presetNames.insert(presetNames.begin(), "EMPTY");
 
 		// Ensure g_selectedNodePreset is valid
 		if (g_selectedNodePreset.empty() && !presetNames.empty())
@@ -1355,9 +1356,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		// Create entity
 		ECS::Entity newEntity = entityManager.create<>();
 
-		// AnimationControllerComponent is always attached and is not part of any preset
-		//newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
-
 		// Add all components from the selected preset (skips any already-present component)
 		if (const auto* presetComps = prefabMng.getPresetComponents(g_selectedNodePreset))
 		{
@@ -1379,9 +1377,20 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		}
 
 		// Create node and set its name
-		std::string entityName = "Entity " + std::to_string(entityCounter++);
+		std::string entityName = g_selectedNodePreset + " " + std::to_string(entityCounter++);
 		Node* createdNode = sceneTree.createFromEntity(newEntity, nullptr);
 		createdNode->name_ = entityName;
+
+		// Set node type — generated from PRESET_LIST X-macro so it stays in sync with new presets
+		#undef PRESET
+		#define PRESET(Name, ...) {#Name, Editor::NodeType::Name},
+		static const std::unordered_map<std::string, Editor::NodeType> s_rootPresetToType = {
+			{"EMPTY", Editor::NodeType::EMPTY},
+			PRESET_LIST
+		};
+		#undef PRESET
+		if (auto it = s_rootPresetToType.find(g_selectedNodePreset); it != s_rootPresetToType.end())
+			createdNode->type_ = it->second;
 
 		// Record creation for undo/redo
 		auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
@@ -1422,9 +1431,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				// Create entity
 				ECS::Entity childEntity = entityManager.create<>();
 
-				// AnimationControllerComponent is always attached and is not part of any preset
-				childEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
-
 				// Add all components from the selected preset (skips any already-present component)
 				if (const auto* presetComps = prefabMng.getPresetComponents(g_selectedNodePreset))
 				{
@@ -1445,13 +1451,24 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 					transform.pos = { nodePosX, nodePosY };
 				}
 
-				// Set entity name on the node
-				std::string entityName = "Entity " + std::to_string(entityCounter++);
+				// Set entity name on the node as "<PRESET> <counter>"
+				std::string entityName = g_selectedNodePreset + " " + std::to_string(entityCounter++);
 
 				// Get parent node and add child entity to scene tree
 				Editor::Node* parentNode = sceneTree.getNodeByEntityID(selectedEntityID);
 				Editor::Node* childNode = sceneTree.createFromEntity(childEntity, parentNode);
 				childNode->name_ = entityName;
+
+				// Set node type — generated from PRESET_LIST X-macro so it stays in sync with new presets
+				#undef PRESET
+				#define PRESET(Name, ...) {#Name, Editor::NodeType::Name},
+				static const std::unordered_map<std::string, Editor::NodeType> s_childPresetToType = {
+					{"EMPTY", Editor::NodeType::EMPTY},
+					PRESET_LIST
+				};
+				#undef PRESET
+				if (auto it = s_childPresetToType.find(g_selectedNodePreset); it != s_childPresetToType.end())
+					childNode->type_ = it->second;
 
 				// Record creation for undo/redo
 				auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
