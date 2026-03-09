@@ -3,7 +3,6 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <algorithm>
 
 namespace Script {
 
@@ -23,18 +22,15 @@ namespace Script {
             std::string content = buffer.str();
             file.close();
 
-            // Convert state name to lowercase for method names
-            std::string lowerStateName = toLower(stateName);
-
             // Generate the three methods
-            std::string enterMethod = generateEnterMethod(lowerStateName);
-            std::string updateMethod = generateUpdateMethod(lowerStateName);
-            std::string exitMethod = generateExitMethod(lowerStateName);
+            std::string enterMethod = generateEnterMethod(stateName);
+            std::string updateMethod = generateUpdateMethod(stateName);
+            std::string exitMethod = generateExitMethod(stateName);
 
             // Check if methods already exist
-            std::string enterMethodSig = "void " + lowerStateName + "_enter()";
-            std::string updateMethodSig = "void " + lowerStateName + "_update()";
-            std::string exitMethodSig = "void " + lowerStateName + "_exit()";
+            std::string enterMethodSig = "void " + stateName + "_enter()";
+            std::string updateMethodSig = "void " + stateName + "_update()";
+            std::string exitMethodSig = "void " + stateName + "_exit()";
 
             bool enterExists = content.find(enterMethodSig) != std::string::npos;
             bool updateExists = content.find(updateMethodSig) != std::string::npos;
@@ -79,12 +75,10 @@ namespace Script {
             std::string content = buffer.str();
             file.close();
 
-            std::string lowerStateName = toLower(stateName);
-
             // Remove all three methods
-            removeMethod(content, lowerStateName + "_enter");
-            removeMethod(content, lowerStateName + "_update");
-            removeMethod(content, lowerStateName + "_exit");
+            removeMethod(content, stateName + "_enter");
+            removeMethod(content, stateName + "_update");
+            removeMethod(content, stateName + "_exit");
 
             // Write back
             std::ofstream outFile(scriptPath, std::ios::trunc);
@@ -109,11 +103,9 @@ namespace Script {
             buffer << file.rdbuf();
             std::string content = buffer.str();
 
-            std::string lowerStateName = toLower(stateName);
-
-            bool hasEnter = content.find(lowerStateName + "_enter()") != std::string::npos;
-            bool hasUpdate = content.find(lowerStateName + "_update()") != std::string::npos;
-            bool hasExit = content.find(lowerStateName + "_exit()") != std::string::npos;
+            bool hasEnter = content.find(stateName + "_enter()") != std::string::npos;
+            bool hasUpdate = content.find(stateName + "_update()") != std::string::npos;
+            bool hasExit = content.find(stateName + "_exit()") != std::string::npos;
 
             return hasEnter && hasUpdate && hasExit;
         }
@@ -162,12 +154,6 @@ namespace Script {
         }
 
     private:
-        static std::string toLower(const std::string& str) {
-            std::string result = str;
-            std::transform(result.begin(), result.end(), result.begin(), ::tolower);
-            return result;
-        }
-
         static std::string generateEnterMethod(const std::string& stateName) {
             return R"(
         // Called when entering the )" + stateName + R"( state

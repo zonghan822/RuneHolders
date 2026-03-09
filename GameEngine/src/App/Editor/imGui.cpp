@@ -2873,22 +2873,28 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (g_game) g_game->markEntitiesDirty();
 		}
 
-		// Color selector (Red or Green)
-		const char* colorTypes[] = { "Green", "Red" };
+		// Color selector (White, Red or Green)
+		const char* colorTypes[] = { "White", "Green", "Red" };
 		int currentColorIndex = 0;
 		if (draw.color.r == 1.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
-			currentColorIndex = 1; // Red
+			currentColorIndex = 2; // Red
 		}
 		else if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
-			currentColorIndex = 0; // Green
+			currentColorIndex = 1; // Green
+		}
+		else if (draw.color.r == 1.0f && draw.color.g == 1.0f && draw.color.b == 1.0f) {
+			currentColorIndex = 0; // White
 		}
 
 		if (ImGui::Combo("Color", &currentColorIndex, colorTypes, IM_ARRAYSIZE(colorTypes))) {
-			if (currentColorIndex == 0) {
+			if (currentColorIndex == 1) {
 				draw.color = Graphics::Color::Green;
 			}
-			else {
+			else if (currentColorIndex == 2) {
 				draw.color = Graphics::Color::Red;
+			} 
+			else {
+				draw.color = Graphics::Color::White;
 			}
 			if (g_game) g_game->markEntitiesDirty();
 		}
@@ -3672,9 +3678,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			smc.addState("Default");
 			states.push_back("Default");
 		}
-	} else {
-		states.push_back("Default");
-	}
+	} 
+
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	const auto& textures = loader.getAllTextures();
 	static std::string selected = "";  //currently selected

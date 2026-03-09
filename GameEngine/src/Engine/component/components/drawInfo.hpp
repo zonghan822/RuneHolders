@@ -55,7 +55,7 @@ namespace ECSComponents
 
 		// Texture support
 		std::shared_ptr<Graphics::EnoTexture> texture = nullptr;
-		char texturePath[FILE_PATH_LEN];
+		char texturePath[FILE_PATH_LEN] = "";
 		int texID = 0;  // For sprite sheet indexing
 
 		// Default constructor
