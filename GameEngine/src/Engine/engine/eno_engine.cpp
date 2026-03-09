@@ -14,6 +14,7 @@
 /*========================================================================================*/
 
 #include "eno_engine.hpp"
+#include "../graphics/video/video_player.hpp"
 
 namespace Engine
 {
@@ -207,6 +208,50 @@ namespace Engine
 
 		// Advance all video players (always, so the asset browser preview works in editor)
 		graphicsMng_.updateVideos(deltaTime);
+
+		// --- Video entity playback: driven by game state ---
+		// Entity videos (those with a VideoComponent) follow play/pause/stop mode.
+		// Browser-preview videos are unaffected because they are not entity-owned.
+		{
+			for (auto& ent : entityMng_.findEntity<ECSComponents::VideoComponent>())
+			{
+				auto& vc = ent.get<ECSComponents::VideoComponent>(entityMng_);
+				if (strlen(vc.videoName) == 0) continue;
+				auto player = graphicsMng_.getVideo(std::string(vc.videoName));
+				if (!player || !player->isLoaded()) continue;
+
+				if (!isPlaying_)
+				{
+					// Stopped: reset to initial serialised state (IDLE)
+					if (player->getState() != Graphics::VideoState::IDLE)
+						player->stop();
+					vc.pausedByEngine_ = false;
+				}
+				else if (isPaused_)
+				{
+					// Game paused: pause any playing entity video and remember it
+					if (player->getState() == Graphics::VideoState::PLAYING)
+					{
+						player->pause();
+						vc.pausedByEngine_ = true;
+					}
+				}
+				else
+				{
+					// Playing: resume engine-paused videos; auto-start on first frame
+					if (vc.pausedByEngine_ && player->getState() == Graphics::VideoState::PAUSED)
+					{
+						player->play();
+						vc.pausedByEngine_ = false;
+					}
+					else if (vc.autoPlay && player->getState() == Graphics::VideoState::IDLE)
+					{
+						player->setLooping(vc.loop);
+						player->play();
+					}
+				}
+			}
+		}
 		
 		// Sync isPlaying_ flag with actual FMOD channel state so the inspector
 		// indicator clears automatically when a sound finishes playing naturally.

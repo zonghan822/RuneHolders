@@ -1638,6 +1638,25 @@ namespace Graphics
                     float scaledHeight = renderInfo.height * transform.scale.y;
                     float rotation     = transform.rot.x;
 
+                    // If entity has a VideoComponent, pull the current decoded frame
+                    // into the render slot so it draws like any other textured entity.
+                    // Playback state (play/pause/stop) is driven by eno_engine.cpp,
+                    // not here — the render loop only reads the texture.
+                    if (entity.has<ECSComponents::VideoComponent>(entityManager))
+                    {
+                        auto& videoComp = entity.get<ECSComponents::VideoComponent>(entityManager);
+                        if (strlen(videoComp.videoName) > 0)
+                        {
+                            auto player = getVideo(std::string(videoComp.videoName));
+                            if (player && player->isLoaded())
+                            {
+                                auto videoTex = player->getTexture();
+                                if (videoTex && videoTex->isValid())
+                                    renderInfo.texture = videoTex;
+                            }
+                        }
+                    }
+
                     if (renderInfo.texture && renderInfo.texture->isValid())
                     {
                         Math::eVec2<float> topLeft = {

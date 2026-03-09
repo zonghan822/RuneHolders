@@ -148,6 +148,19 @@ namespace Bridge {
         ENGINE_API void    __stdcall HealEntity(uint32_t sceneObjectID, float amount);
 
         // =========================================================================
+        // Video Component
+        // Implemented in: eno_bridge_video.cpp
+        // =========================================================================
+        ENGINE_API void    __stdcall VideoPlay(uint32_t sceneObjectID);
+        ENGINE_API void    __stdcall VideoPause(uint32_t sceneObjectID);
+        ENGINE_API void    __stdcall VideoStop(uint32_t sceneObjectID);
+        ENGINE_API bool    __stdcall IsVideoPlaying(uint32_t sceneObjectID);
+        ENGINE_API float   __stdcall GetVideoTime(uint32_t sceneObjectID);
+        ENGINE_API float   __stdcall GetVideoDuration(uint32_t sceneObjectID);
+        ENGINE_API void    __stdcall SetVideoLoop(uint32_t sceneObjectID, bool loop);
+        ENGINE_API bool    __stdcall GetVideoLoop(uint32_t sceneObjectID);
+
+        // =========================================================================
         // Render Component
         // Implemented in: eno_bridge_render.cpp
         // =========================================================================

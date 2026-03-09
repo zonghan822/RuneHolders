@@ -51,7 +51,7 @@ namespace ECSComponents
 		float width = 10.0f;
 		float height = 10.0f;
 		char shape[32] = "Rectangle";
-		Graphics::Color color = Graphics::Color::Green;
+		Graphics::Color color = Graphics::Color::White;
 
 		// Texture support
 		std::shared_ptr<Graphics::EnoTexture> texture = nullptr;

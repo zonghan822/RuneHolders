@@ -29,6 +29,7 @@
 	X(VulnerabilityComponent) \
 	X(ParticleEmitterComponent) \
 	X(TextComponent) \
+	X(VideoComponent) \
 
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
@@ -55,6 +56,8 @@
 	PRESET(TEXT,         TransformComponent, TextComponent, VisibilityComponent, LayerComponent) \
 	/* Particle emitter */ \
 	PRESET(PARTICLE,     TransformComponent, ParticleEmitterComponent, VisibilityComponent, LayerComponent) \
+	/* Video player */ \
+	PRESET(VIDEO,        TransformComponent, RenderComponent, VideoComponent, VisibilityComponent, LayerComponent) \
 
 
 // Expanding PRESET_LIST within the component namespace

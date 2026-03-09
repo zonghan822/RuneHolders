@@ -3551,6 +3551,63 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 	}
 
+	// --- VideoComponent ---
+	if (entity.has<ECSComponents::VideoComponent>(entMng))
+	{
+		auto& vid = entity.get<ECSComponents::VideoComponent>(entMng);
+		ImGui::SeparatorText("Video");
+
+		// Dropdown: pick from videos already loaded in the browser
+		Graphics::EnoGraphicsManager& gfxMgr = engine_.getGraphicsManager();
+		const auto& videoMap = gfxMgr.getAllVideos();
+
+		const char* currentName = (strlen(vid.videoName) > 0) ? vid.videoName : "(none)";
+		if (ImGui::BeginCombo("Video##vid_combo", currentName))
+		{
+			// Option to clear selection
+			if (ImGui::Selectable("(none)", strlen(vid.videoName) == 0))
+				memset(vid.videoName, 0, sizeof(vid.videoName));
+
+			for (auto& [name, player] : videoMap)
+			{
+				bool isSelected = (strcmp(vid.videoName, name.c_str()) == 0);
+				if (ImGui::Selectable(name.c_str(), isSelected))
+				{
+					strncpy_s(vid.videoName, name.c_str(), sizeof(vid.videoName) - 1);
+					vid.videoName[sizeof(vid.videoName) - 1] = '\0';
+				}
+				if (isSelected) ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		ImGui::Checkbox("Auto Play##vid", &vid.autoPlay);
+		ImGui::Checkbox("Loop##vid",      &vid.loop);
+
+		auto player = gfxMgr.getVideo(std::string(vid.videoName));
+		if (player && player->isLoaded())
+		{
+			ImGui::Text("Status: %s",
+				player->getState() == Graphics::VideoState::PLAYING ? "Playing" :
+				player->getState() == Graphics::VideoState::PAUSED  ? "Paused"  :
+				player->getState() == Graphics::VideoState::ENDED   ? "Ended"   : "Idle");
+		}
+		else if (strlen(vid.videoName) > 0)
+		{
+			ImGui::TextDisabled("(video not loaded)");
+		}
+	}
+	else
+	{
+		ImGui::SeparatorText("Video");
+		ImGui::TextDisabled("No video component attached");
+		if (ImGui::Button("Add Video Component"))
+		{
+			entity.add<ECSComponents::VideoComponent>(entMng);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+	}
+
 	ImGui::End();
 }
 
@@ -4220,7 +4277,6 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 		ImGui::Text("Selected: %s", selectedAudio.c_str());
 	}
 
-	g_droppedFiles.clear();
 }
 
 // Docking shi
@@ -5477,25 +5533,27 @@ void displayVideoTab(Engine::EnoEngine& engine_)
 				ImGui::Spacing();
 				if (ImGui::Button("Delete", ImVec2(120, 0)))
 				{
+					// Grab the exact file path from the player BEFORE removing it from the map
+					std::string filePathOnDisk;
+					{
+						auto playerToDelete = gfx.getVideo(selectedVideoName);
+						if (playerToDelete)
+							filePathOnDisk = playerToDelete->getFilePath();
+					}
+
 					// Remove from graphics manager
 					gfx.removeVideo(selectedVideoName);
 
-					// Delete file from disk
+					// Delete file from disk using the stored path
 					try
 					{
-						std::filesystem::path buildPath =
-							std::filesystem::path(loader.getVideoPath()) / (selectedVideoName);
-
-						// Try all extensions
-						for (auto& ext : std::array<std::string_view, 5>{".mp4",".avi",".mov",".webm",".mkv"})
+						if (!filePathOnDisk.empty())
 						{
-							std::filesystem::path p = std::filesystem::path(loader.getVideoPath())
-								/ (selectedVideoName + std::string(ext));
+							std::filesystem::path p(filePathOnDisk);
 							if (std::filesystem::exists(p))
-							{
 								std::filesystem::remove(p);
-								break;
-							}
+							else
+								std::cerr << "[Video Delete] File not found: " << filePathOnDisk << "\n";
 						}
 					}
 					catch (const std::exception& e)
@@ -5513,6 +5571,9 @@ void displayVideoTab(Engine::EnoEngine& engine_)
 			}
 		}
 	}
+
+	// Clear dropped files after all browser tabs have had a chance to process them.
+	droppedFiles.clear();
 }
 
 void imGuiTerminate() {
