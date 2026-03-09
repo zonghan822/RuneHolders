@@ -697,6 +697,11 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displayAllEntitiesTab(engine_, sceneTree, undoManager);
 	ImGui::End();
 
+	// Prefab Editor
+	ImGui::Begin("Prefabs", nullptr, ImGuiWindowFlags_NoCollapse);
+	displayPrefabEditor(engine_);
+	ImGui::End();
+
 	// Editor View (zoomed in, center - replaces old Game View behavior)
 	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	displayEditorView(engine_, sceneTree, undoManager);
@@ -3671,6 +3676,141 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	}
 
 	ImGui::End();
+}
+
+
+void displayPrefabEditor(Engine::EnoEngine& engine_)
+{
+	auto& prefabMng = engine_.getPrefabManager();
+	auto presetNames = prefabMng.getPresetNames();
+
+	static std::string s_selectedPreset;
+	if (s_selectedPreset.empty() && !presetNames.empty())
+		s_selectedPreset = presetNames[0];
+
+	// Preset selector
+	ImGui::Text("Preset:");
+	ImGui::SetNextItemWidth(-1);
+	if (ImGui::BeginListBox("##PrefabPresetList", ImVec2(-1, 140)))
+	{
+		for (const auto& name : presetNames)
+		{
+			bool isSelected = (name == s_selectedPreset);
+			if (ImGui::Selectable(name.c_str(), isSelected))
+				s_selectedPreset = name;
+			if (isSelected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndListBox();
+	}
+
+	ImGui::Separator();
+
+	if (s_selectedPreset.empty())
+		return;
+
+	ImGui::Text("Editing: %s", s_selectedPreset.c_str());
+	ImGui::Spacing();
+
+	auto* comps = prefabMng.getPresetComponentsMutable(s_selectedPreset);
+	if (!comps)
+	{
+		ImGui::TextDisabled("No data for this preset.");
+		return;
+	}
+
+	// Render each component as a collapsing section
+	for (auto& [compTypeIdx, compAny] : *comps)
+	{
+		ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+		{
+			T& comp = std::any_cast<T&>(compAny);
+
+			// Derive a readable name from the mangled type name
+			std::string rawName = compTypeIdx.name();
+			size_t ns = rawName.rfind("::");
+			std::string displayName = (ns != std::string::npos) ? rawName.substr(ns + 2) : rawName;
+
+			ImGui::PushID(static_cast<int>(compTypeIdx.hash_code()));
+			if (ImGui::CollapsingHeader(displayName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::Indent();
+				comp.reflect([&](const std::string& fieldName, auto& fieldVal, const std::string& /*fieldType*/)
+				{
+					using FieldType = std::remove_reference_t<decltype(fieldVal)>;
+
+					ImGui::PushID(fieldName.c_str());
+
+					if constexpr (std::is_same_v<FieldType, float>)
+					{
+						ImGui::DragFloat(fieldName.c_str(), &fieldVal, 0.1f);
+					}
+					else if constexpr (std::is_same_v<FieldType, int>)
+					{
+						ImGui::DragInt(fieldName.c_str(), &fieldVal);
+					}
+					else if constexpr (std::is_same_v<FieldType, bool>)
+					{
+						ImGui::Checkbox(fieldName.c_str(), &fieldVal);
+					}
+					else if constexpr (std::is_same_v<FieldType, uint32_t>)
+					{
+						int tmp = static_cast<int>(fieldVal);
+						if (ImGui::DragInt(fieldName.c_str(), &tmp, 1, 0, 9999))
+							fieldVal = static_cast<uint32_t>(tmp);
+					}
+					else if constexpr (std::is_same_v<FieldType, Math::eVec2<float>>)
+					{
+						float vals[2] = { fieldVal.x, fieldVal.y };
+						if (ImGui::DragFloat2(fieldName.c_str(), vals, 0.1f))
+						{
+							fieldVal.x = vals[0];
+							fieldVal.y = vals[1];
+						}
+					}
+					else if constexpr (std::is_same_v<FieldType, Graphics::Color>)
+					{
+						float col[4] = { fieldVal.r, fieldVal.g, fieldVal.b, fieldVal.a };
+						if (ImGui::ColorEdit4(fieldName.c_str(), col))
+						{
+							fieldVal.r = col[0];
+							fieldVal.g = col[1];
+							fieldVal.b = col[2];
+							fieldVal.a = col[3];
+						}
+					}
+					else if constexpr (std::is_array_v<FieldType> &&
+					                   std::is_same_v<std::remove_extent_t<FieldType>, char>)
+					{
+						ImGui::InputText(fieldName.c_str(), fieldVal, std::extent_v<FieldType>);
+					}
+					// Unsupported types are silently skipped
+
+					ImGui::PopID();
+				});
+				ImGui::Unindent();
+			}
+			ImGui::PopID();
+		});
+	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	static bool s_savedPopup = false;
+	if (ImGui::Button("Save Prefab", ImVec2(-1, 0)))
+	{
+		prefabMng.saveForcedToDisk(s_selectedPreset);
+		s_savedPopup = true;
+	}
+
+	if (s_savedPopup)
+	{
+		ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f), "Saved '%s'!", s_selectedPreset.c_str());
+		// Clear feedback after ~2 seconds of frames
+		static int s_savedFrames = 0;
+		if (++s_savedFrames > 120) { s_savedPopup = false; s_savedFrames = 0; }
+	}
 }
 
 
