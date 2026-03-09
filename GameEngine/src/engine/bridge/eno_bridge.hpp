@@ -119,6 +119,8 @@ namespace Bridge {
         ENGINE_API bool    __stdcall IsMouseReleased(int button);
         ENGINE_API float   __stdcall GetMouseX();
         ENGINE_API float   __stdcall GetMouseY();
+        ENGINE_API float   __stdcall GetMouseWorldX();
+        ENGINE_API float   __stdcall GetMouseWorldY();
 
         // =========================================================================
         // Audio Component
@@ -130,6 +132,14 @@ namespace Bridge {
         ENGINE_API void    __stdcall SetAudioVolume(uint32_t sceneObjectID, float volume);
         ENGINE_API float   __stdcall GetAudioPitch(uint32_t sceneObjectID);
         ENGINE_API void    __stdcall SetAudioPitch(uint32_t sceneObjectID, float pitch);
+
+        // Channel group volume (groupName: "BGM" or "SFX"), range 0-100
+        ENGINE_API void    __stdcall SetGroupVolume(const char* groupName, float volume);
+        ENGINE_API float   __stdcall GetGroupVolume(const char* groupName);
+
+        // Master (FMOD master channel group) volume, range 0-100
+        ENGINE_API void    __stdcall SetMasterVolume(float volume);
+        ENGINE_API float   __stdcall GetMasterVolume();
 
         // =========================================================================
         // Animation Component

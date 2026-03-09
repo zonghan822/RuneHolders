@@ -275,6 +275,8 @@ namespace Engine
 		*               editor mode it is the ImGui game-panel bounds.
 		*//*========================================================================================*/
 		void setViewportBounds(Math::eVec2<float> min, Math::eVec2<float> max) { viewportMin_ = min; viewportMax_ = max; }
+		Math::eVec2<float> getViewportMin() const { return viewportMin_; }
+		Math::eVec2<float> getViewportMax() const { return viewportMax_; }
 
 		/*============================================================================================
 		* \brief		Marks animation controllers as dirty so they are restored on the next frame.

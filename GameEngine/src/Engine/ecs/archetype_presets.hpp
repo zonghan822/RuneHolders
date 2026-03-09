@@ -424,6 +424,79 @@ namespace ECSComponents
 			return &prefabIt->second;
 		}
 
+		// Returns a mutable pointer to the component map for the named preset.
+		// Used by the prefab editor to modify default component values in-memory.
+		std::unordered_map<std::type_index, std::any>* getPresetComponentsMutable(const std::string& name)
+		{
+			auto presetIt = presets_.find(name);
+			if (presetIt == presets_.end())
+				return nullptr;
+
+			auto prefabIt = prefabData_.find(presetIt->second);
+			if (prefabIt == prefabData_.end())
+				return nullptr;
+
+			return &prefabIt->second;
+		}
+
+		// Force-overwrites the prefab file on disk with the current in-memory data.
+		void saveForcedToDisk(const std::string& name)
+		{
+			auto presetIt = presets_.find(name);
+			if (presetIt == presets_.end())
+				return;
+
+			auto prefabIt = prefabData_.find(presetIt->second);
+			if (prefabIt == prefabData_.end())
+				return;
+
+			std::string filename = FileSystem::GetAssetsDir().string() + "/saves/prefabs/" + name + ".txt";
+
+			std::ofstream save{ filename, std::ios::trunc };
+			if (!save)
+			{
+				std::cout << "[Prefab] Failed to open file for writing: " << filename << "\n";
+				return;
+			}
+
+			save << "{\n";
+
+			for (auto& [compTypeIdx, compAny] : prefabIt->second)
+			{
+				EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+				{
+					T& comp = std::any_cast<T&>(compAny);
+
+					save << "\t\"" << compTypeIdx.name() << "\": {\n";
+
+					std::vector<std::string> fields;
+					comp.reflect([&](const std::string& fname, const auto& fvalue, const std::string& ftype)
+						{
+							std::ostringstream line;
+							line << "\"" << fname << "\": {\n"
+								<< "\t\t\t\"value\": \"" << fvalue << "\",\n"
+								<< "\t\t\t\"type\": \"" << ftype << "\"\n"
+								<< "\t\t}";
+							fields.push_back(line.str());
+						});
+
+					for (size_t i = 0; i < fields.size(); i++)
+					{
+						save << "\t\t" << fields[i];
+						if (i + 1 < fields.size())
+							save << ",\n";
+						else
+							save << "\n";
+					}
+
+					save << "\t},\n";
+				});
+			}
+
+			save << "}";
+			std::cout << "[Prefab] Saved prefab '" << name << "' to " << filename << "\n";
+		}
+
 	private:
 		// Preset | <Component, Component Fields>
 		std::unordered_map<std::type_index, std::unordered_map<std::type_index, std::any>> prefabData_;

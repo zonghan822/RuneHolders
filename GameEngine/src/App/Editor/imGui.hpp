@@ -140,6 +140,14 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 
 void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity);
+
+/*============================================================================================
+ * \brief       Displays Prefab Editor panel – lets you inspect and edit the default
+ *              component values for each prefab preset and save them back to disk.
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
 //void assetPresetsTab(Engine::EnoEngine& engine_, Node* Node);
 
 /*============================================================================================
