@@ -1,10 +1,4 @@
 {
-	"struct ECSComponents::NameComponent": {
-		"Name": {
-			"value": "DefaultName",
-			"type": "char32"
-		}
-	},
 	"struct ECSComponents::VisibilityComponent": {
 		"Z Index": {
 			"value": "3",

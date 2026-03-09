@@ -17,12 +17,6 @@
 			"type": "eVec2(float)"
 		}
 	},
-	"struct ECSComponents::NameComponent": {
-		"Name": {
-			"value": "DefaultName",
-			"type": "char32"
-		}
-	},
 	"struct ECSComponents::CollisionComponent": {
 		"Type": {
 			"value": "Circle",

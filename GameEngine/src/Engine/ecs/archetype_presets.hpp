@@ -156,6 +156,11 @@ namespace ECSComponents
 			}
 
 			std::filesystem::create_directories(FileSystem::GetAssetsDir() / "saves/prefabs");
+
+			// Don't overwrite an existing prefab file — it may have been modified
+			if (std::filesystem::exists(filename))
+				return;
+
 			std::ofstream save{ filename };
 			if (!save)
 			{

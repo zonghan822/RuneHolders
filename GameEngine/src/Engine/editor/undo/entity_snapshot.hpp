@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         entity_snapshot.hpp
 * @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         2025-11-29
@@ -86,12 +86,10 @@ namespace Editor
 		{
 			EntitySnapshot snapshot(entity.id());
 
-			// Capture name if it exists
-			if (entity.has<ECSComponents::NameComponent>(entityManager))
-			{
-				auto& nameComp = entity.get<ECSComponents::NameComponent>(entityManager);
-				snapshot.name = nameComp.name;
-			}
+			// Capture name from the scene node
+			Node* nameNode = sceneTree.getNodeByEntityID(entity.id());
+			if (nameNode)
+				snapshot.name = nameNode->name_;
 
 			// Capture all components
 			// Transform
@@ -254,19 +252,7 @@ namespace Editor
 				restoreComponent(newEntity, compSnapshot, entityManager);
 			}
 
-			// Restore name - ensure NameComponent exists
-			if (!snapshot.name.empty())
-			{
-				if (!newEntity.has<ECSComponents::NameComponent>(entityManager))
-				{
-					// Add NameComponent if it wasn't in the snapshot
-					newEntity.add<ECSComponents::NameComponent>(entityManager);
-				}
-
-				auto& nameComp = newEntity.get<ECSComponents::NameComponent>(entityManager);
-				strncpy(nameComp.name, snapshot.name.c_str(), sizeof(nameComp.name) - 1);
-				nameComp.name[sizeof(nameComp.name) - 1] = '\0';
-			}
+			// Note: node->name_ is restored by the caller (entity_commands) after createFromEntity()
 
 			return newEntity;
 		}
@@ -295,11 +281,6 @@ namespace Editor
 			{
 				auto& comp = snapshot.get<ECSComponents::AnimationControllerComponent>();
 				entity.add<ECSComponents::AnimationControllerComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::NameComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::NameComponent>();
-				entity.add<ECSComponents::NameComponent>(entityManager, comp);
 			}
 			else if (snapshot.type == typeid(ECSComponents::CollisionComponent))
 			{

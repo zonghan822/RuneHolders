@@ -842,7 +842,6 @@ namespace Editor
 		// Load tilemap data embedded in scene file
 		size_t tilemapPos = data.find("\"TileMap\"");
 		if (tilemapPos != std::string::npos) {
-			std::cout << "[EnoSceneTree] Loading tilemap data..." << std::endl;
 
 			size_t tilemapStart = data.find('{', tilemapPos);
 			if (tilemapStart == std::string::npos) {
@@ -858,9 +857,6 @@ namespace Editor
 					auto width = extract<uint32_t>(data, "Width", tilemapStart, tilemapEnd);
 					auto height = extract<uint32_t>(data, "Height", tilemapStart, tilemapEnd);
 
-					std::cout << "[EnoSceneTree] Width: " << (width.has_value() ? std::to_string(width.value()) : "missing")
-							  << ", Height: " << (height.has_value() ? std::to_string(height.value()) : "missing") << std::endl;
-
 					if (!width.has_value() || !height.has_value()) {
 						std::cerr << "[EnoSceneTree] Warning: TileMap dimensions missing, using defaults" << std::endl;
 					}
@@ -868,9 +864,7 @@ namespace Editor
 						std::cerr << "[EnoSceneTree] Warning: TileMap dimensions empty, using defaults" << std::endl;
 					}
 					else {
-						std::cout << "[EnoSceneTree] Loading tilemap with dimensions " << width.value() << "x" << height.value() << std::endl;
 						loadTilemapData(data, tilemapStart, tilemapEnd, width.value(), height.value());
-						std::cout << "[EnoSceneTree] Tilemap loaded, layers count: " << tileMap_.layers().size() << std::endl;
 					}
 				}
 			}
@@ -890,7 +884,6 @@ namespace Editor
 		// Load layer metadata (availableLayers)
 		size_t layerMetadataPos = data.find("\"LayerMetadata\"");
 		if (layerMetadataPos != std::string::npos) {
-			std::cout << "[EnoSceneTree] Loading layer metadata..." << std::endl;
 
 			size_t metadataStart = data.find('{', layerMetadataPos);
 			if (metadataStart != std::string::npos) {
@@ -900,7 +893,6 @@ namespace Editor
 					auto availLayers = extract<uint32_t>(data, "AvailableLayers", metadataStart, metadataEnd);
 					if (availLayers.has_value() && availLayers.value() > 0 && availLayers.value() <= static_cast<uint32_t>(ECSComponents::MAX_LAYERS)) {
 						ECSComponents::availableLayers = static_cast<int>(availLayers.value());
-						std::cout << "[EnoSceneTree] Restored availableLayers to: " << ECSComponents::availableLayers << std::endl;
 					}
 					else {
 						std::cerr << "[EnoSceneTree] Warning: Invalid AvailableLayers value, using default" << std::endl;

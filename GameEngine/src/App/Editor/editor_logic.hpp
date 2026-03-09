@@ -34,7 +34,6 @@ private:
     // For delta time calculation
     float lastFrameTime_ = 0.0f;
 
-    std::unique_ptr<Graphics::EnoFramebuffer> gameFramebuffer_;
     std::unique_ptr<Graphics::EnoFramebuffer> editorFramebuffer_;
 
     float worldWidth_;

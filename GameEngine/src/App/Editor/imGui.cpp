@@ -244,7 +244,7 @@ static void applyProjectSelection(Engine::EnoEngine& engine_, const std::string&
 	std::cout << "[ProjectPicker] Switched to: " << FileSystem::GetAssetsDir() << std::endl;
 }
 
-static void createNewProject(Engine::EnoEngine& engine_, const std::string& name) {
+static void createNewProject(const std::string& name) {
 	namespace fs = std::filesystem;
 	fs::path projectRoot = FileSystem::GetRootDir() / "assets" / name;
 	fs::path editorRoot  = FileSystem::GetRootDir() / "assets" / "Editor";
@@ -270,7 +270,6 @@ static void createNewProject(Engine::EnoEngine& engine_, const std::string& name
 
 	fs::create_directories(projectRoot / "saves" / "scenes");
 	fs::create_directories(projectRoot / "saves" / "prefabs");
-	fs::create_directories(projectRoot / "saves" / "player");
 	fs::create_directories(projectRoot / "settings");
 	fs::create_directories(projectRoot / "shaders");
 	fs::create_directories(projectRoot / "crashlogs");
@@ -290,7 +289,6 @@ static void createNewProject(Engine::EnoEngine& engine_, const std::string& name
 
 	copyDir("shaders");
 	copyTemplate(fs::path("settings") / "config.txt");
-	copyTemplate(fs::path("saves") / "player" / "player_config.txt");
 	copyDir(fs::path("saves") / "prefabs");
 
 	{
@@ -392,7 +390,7 @@ void imGuiProjectPicker(Engine::EnoEngine& engine_) {
 		const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x) / 2.f;
 		if (!nameValid) ImGui::BeginDisabled();
 		if (ImGui::Button("Create", {btnW, 0})) {
-			createNewProject(engine_, s_newProjectNameBuf);
+			createNewProject(s_newProjectNameBuf);
 			applyProjectSelection(engine_, s_newProjectNameBuf);
 			s_showProjectPicker = false;
 		}
@@ -504,7 +502,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	ImGui::NewFrame();
 
 	// get engine systems
-	auto& entityManager = engine_.getEntityManager();
 	auto& loader = engine_.getResourceLoader();
 
 	// Subscribe to audio error events early (only once)
@@ -547,7 +544,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		const float itemW = 400.f;
-		const float pad   = ImGui::GetStyle().WindowPadding.x;
 
 		if (!s_creatingNewProject)
 		{
@@ -597,7 +593,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 			const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x) / 2.f;
 			if (!nameValid) ImGui::BeginDisabled();
 			if (ImGui::Button("Create", {btnW, 0})) {
-				createNewProject(engine_, s_newProjectNameBuf);
+				createNewProject(s_newProjectNameBuf);
 				applyProjectSelection(engine_, s_newProjectNameBuf);
 				s_showProjectPicker  = false;
 				s_creatingNewProject = false;
@@ -815,32 +811,57 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 }
 
 void displayFPSTab(Engine::EnoEngine& engine_) {
-	ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
-	ImGui::Text("Frame (%.1f FPS)", shown_fps);
-	ImGui::Text("=== PER SYSTEM TIMING IN MS ===");
-	for (auto& time : throttledTimes_) {
+	double totalUs = throttledTimes_.count("totalTimePerFrame") ? throttledTimes_.at("totalTimePerFrame") : 0.0;
+	double totalMs = totalUs / 1000.0;
 
-		if (time.first != "totalTimePerFrame") {
-			ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);// divide by 1000 to show microseconds as milliseconds
-		}
+	// Header: FPS and total frame time
+	ImGui::Text("FPS: %.1f  |  Frame: %.3f ms", shown_fps, totalMs);
+	ImGui::Separator();
 
-	}
-	ImGui::Text("=== PER SYSTEM TIMING IN PERCENTAGE ===");
-	for (auto& time : throttledTimes_)
+	// Collect and sort sub-system entries by time (descending), skip total frame key
+	std::vector<std::pair<std::string, double>> entries;
+	entries.reserve(throttledTimes_.size());
+	for (auto& [name, us] : throttledTimes_)
 	{
-		if (time.first != "totalTimePerFrame") {
-			ImGui::Text("%s: %.0f%%", time.first.c_str(), percentage(time.second, throttledTimes_["totalTimePerFrame"]));
-		}
+		if (name != "totalTimePerFrame")
+			entries.emplace_back(name, us);
+	}
+	std::sort(entries.begin(), entries.end(),
+		[](const auto& a, const auto& b) { return a.second > b.second; });
+
+	// Per-system progress bars with color coding
+	ImGui::Text("System Timings");
+	ImGui::Separator();
+	for (auto& [name, us] : entries)
+	{
+		double ms  = us / 1000.0;
+		float  frac = (totalUs > 0.0) ? static_cast<float>(us / totalUs) : 0.f;
+		frac = std::clamp(frac, 0.f, 1.f);
+
+		// Color: green < 33%, yellow < 67%, red >= 67%
+		ImVec4 barColor;
+		if (frac < 0.33f)
+			barColor = ImVec4(0.2f, 0.8f, 0.2f, 1.0f);
+		else if (frac < 0.67f)
+			barColor = ImVec4(0.9f, 0.8f, 0.1f, 1.0f);
+		else
+			barColor = ImVec4(0.9f, 0.2f, 0.2f, 1.0f);
+
+		ImGui::Text("%-20s", name.c_str());
+		ImGui::SameLine();
+		char overlay[64];
+		std::snprintf(overlay, sizeof(overlay), "%.3f ms (%.0f%%)", ms, frac * 100.f);
+		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, barColor);
+		ImGui::ProgressBar(frac, ImVec2(-1, 0), overlay);
+		ImGui::PopStyleColor();
 	}
 
-	if (ImGui::Button("Show Entity Count")) {
+	ImGui::Separator();
+	if (ImGui::Button("Log Entity Count"))
 		displayEntityCount(engine_);
-	}
-
-	if (ImGui::Button("Show Entity Characteristics")) {
+	ImGui::SameLine();
+	if (ImGui::Button("Log Entity Info"))
 		displayEntityCharacteristics(engine_);
-	}
-
 }
 
 void displayEntityCount(Engine::EnoEngine& engine_) {
@@ -1171,23 +1192,20 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 {
 	auto& entityManager = engine_.getEntityManager();
 
-	// Get all entities that have a NameComponent
-	std::vector<ECS::Entity> NamedEntityList = entityManager.findEntity<ECSComponents::NameComponent>();
+	// Get all nodes from the scene tree
+	auto allNodes = sceneTree.getAllNodes();
 
-	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
+	ImGui::Text("Total Entities: %d", static_cast<int>(allNodes.size()));
 	ImGui::Separator();
 
 	// --- Entity selection list ---
-	for (ECS::Entity& e : NamedEntityList)
+	for (Editor::Node* n : allNodes)
 	{
-		const auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-		std::string name = nameComp.name;
-		bool selected = (selectedEntityID == e.id());
-
-		std::string label = std::to_string(e.id()) + ": " + name;
+		bool selected = (selectedEntityID == n->entity_.id());
+		std::string label = std::to_string(n->entity_.id()) + ": " + n->name_;
 		if (ImGui::Selectable(label.c_str(), selected))
 		{
-			selectedEntityID = e.id();
+			selectedEntityID = n->entity_.id();
 		}
 	}
 
@@ -1197,14 +1215,11 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 	{
 		// Find and display the selected entity
 		bool entityFound = false;
-		for (ECS::Entity& e : NamedEntityList)
+		for (Editor::Node* n : allNodes)
 		{
-			if (e.id() == selectedEntityID)
+			if (n->entity_.id() == selectedEntityID)
 			{
-				// Display inspector for all entities (including root nodes)
-				displayEntityInspector(engine_, e, undoManager, sceneTree);
-				//assetPresetsTab(engine_, e);
-				assetPresetsTab(engine_, e);
+				displayEntityInspector(engine_, n->entity_, undoManager, sceneTree);
 				entityFound = true;
 				break;
 			}
@@ -1246,21 +1261,18 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		int maxEntityNumber = 0;
 		auto& entityManager = engine_.getEntityManager();
 
-		// Scan all entities with NameComponent to find the highest "Entity N" number
-		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
-			auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-			std::string name(nameComp.name);
-
-			// Check if name matches pattern "Entity <number>"
+		// Scan all scene nodes to find the highest "Entity N" number
+		for (Editor::Node* n : sceneTree.getAllNodes()) {
+			const std::string& name = n->name_;
 			if (name.find("Entity ") == 0) {
 				try {
-					int num = std::stoi(name.substr(7));  // Extract number after "Entity "
+					int num = std::stoi(name.substr(7));
 					if (num > maxEntityNumber) {
 						maxEntityNumber = num;
 					}
 				}
 				catch (...) {
-					// Ignore entities with non-numeric suffixes like "Entity ABC"
+					// Ignore nodes with non-numeric suffixes like "Entity ABC"
 				}
 			}
 		}
@@ -1340,8 +1352,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
 		float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
 
-		// Create entity with NameComponent as base (always required for naming)
-		ECS::Entity newEntity = entityManager.create<ECSComponents::NameComponent>();
+		// Create entity
+		ECS::Entity newEntity = entityManager.create<>();
 
 		// AnimationControllerComponent is always attached and is not part of any preset
 		//newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
@@ -1366,13 +1378,10 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			transform.pos = { nodePosX, nodePosY };
 		}
 
-		// Set entity name
-		auto& nameComp = newEntity.get<ECSComponents::NameComponent>(entityManager);
+		// Create node and set its name
 		std::string entityName = "Entity " + std::to_string(entityCounter++);
-		strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
-		nameComp.name[sizeof(nameComp.name) - 1] = '\0';
-
 		Node* createdNode = sceneTree.createFromEntity(newEntity, nullptr);
+		createdNode->name_ = entityName;
 
 		// Record creation for undo/redo
 		auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
@@ -1410,8 +1419,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 				float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
 				float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
 
-				// Create entity with NameComponent as base (always required for naming)
-				ECS::Entity childEntity = entityManager.create<ECSComponents::NameComponent>();
+				// Create entity
+				ECS::Entity childEntity = entityManager.create<>();
 
 				// AnimationControllerComponent is always attached and is not part of any preset
 				childEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
@@ -1436,15 +1445,13 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 					transform.pos = { nodePosX, nodePosY };
 				}
 
-				// Set entity name
-				auto& nameComp = childEntity.get<ECSComponents::NameComponent>(entityManager);
+				// Set entity name on the node
 				std::string entityName = "Entity " + std::to_string(entityCounter++);
-				strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
-				nameComp.name[sizeof(nameComp.name) - 1] = '\0';
 
 				// Get parent node and add child entity to scene tree
 				Editor::Node* parentNode = sceneTree.getNodeByEntityID(selectedEntityID);
 				Editor::Node* childNode = sceneTree.createFromEntity(childEntity, parentNode);
+				childNode->name_ = entityName;
 
 				// Record creation for undo/redo
 				auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
@@ -1465,7 +1472,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 				if (g_game) g_game->markEntitiesDirty();
 
-				std::cout << "Added child node " << childEntity.id() << " ('" << nameComp.name
+				std::cout << "Added child node " << childEntity.id() << " ('" << entityName
 					<< "') to parent " << selectedEntityID << " with preset '" << g_selectedNodePreset << "'\n";
 
 				if (childNode) {
@@ -2023,10 +2030,10 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 		if (strlen(ac.audioMod_.name_) > 0)
 		{
 			std::string entityLabel;
-			if (ae.has<ECSComponents::NameComponent>(entMgr))
-				entityLabel = ae.get<ECSComponents::NameComponent>(entMgr).name;
-			else
-				entityLabel = std::to_string(ae.id());
+			{
+				auto* n = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(ae.id());
+				entityLabel = n ? n->name_ : std::to_string(ae.id());
+			}
 			attachedAudioMap[ac.audioMod_.name_] = entityLabel;
 		}
 	}
@@ -2176,16 +2183,8 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			auto it = map.find(audioTargetEntityID);
 			if (it != map.end())
 			{
-				ECS::Entity targetEnt{ audioTargetEntityID };
-				if (targetEnt.has<ECSComponents::NameComponent>(entityManager))
-				{
-					const auto& nc = targetEnt.get<ECSComponents::NameComponent>(entityManager);
-					targetLabel = std::to_string(audioTargetEntityID) + ": " + nc.name;
-				}
-				else
-				{
-					targetLabel = std::to_string(audioTargetEntityID) + ": (unnamed)";
-				}
+				auto* n = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(audioTargetEntityID);
+				targetLabel = std::to_string(audioTargetEntityID) + ": " + (n ? n->name_ : "(unnamed)");
 			}
 		}
 
@@ -2196,11 +2195,11 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 		ImGui::SetNextItemWidth(-1);
 		if (ImGui::BeginCombo("##AudioTargetEntity", targetLabel.c_str()))
 		{
-			std::vector<ECS::Entity> namedEntities = entityManager.findEntity<ECSComponents::NameComponent>();
-			for (ECS::Entity& e : namedEntities)
+			auto& audioSceneTree = engine_.getEnoEditor().getSceneTree();
+			for (Editor::Node* n : audioSceneTree.getAllNodes())
 			{
-				const auto& nc = e.get<ECSComponents::NameComponent>(entityManager);
-				std::string label = std::to_string(e.id()) + ": " + nc.name;
+				ECS::Entity e = n->entity_;
+				std::string label = std::to_string(e.id()) + ": " + n->name_;
 
 				// Show indicator if entity already has audio attached
 				if (e.has<ECSComponents::AudioComponent>(entityManager))
@@ -2439,30 +2438,23 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		lastInspectedID = entity.id();
 	}
 
-	// --- NameComponent ---
-	if (entity.has<ECSComponents::NameComponent>(entMng)) {
-		auto& nameComp = entity.get<ECSComponents::NameComponent>(entMng);
+	// --- Node Name ---
+	Node* node = sceneTree.getNodeByEntityID(entity.id());
+	if (node) {
 		ImGui::SeparatorText("Name");
-		ImGui::InputText("##Name", nameComp.name, sizeof(nameComp.name));
-	}
-	else
-	{	
-		// Add name component
-		ImGui::SeparatorText("Name Component");
-		ImGui::TextDisabled("No name component attached");
-
-		if (ImGui::Button("Add name Component"))
-		{
-			ECSComponents::NameComponent nc;
-
-			entity.add<ECSComponents::NameComponent>(entMng, nc);
+		static char nameBuf[128] = {};
+		static uint32_t nameNodeID = UINT32_MAX;
+		if (nameNodeID != entity.id()) {
+			nameNodeID = entity.id();
+			strncpy_s(nameBuf, node->name_.c_str(), sizeof(nameBuf) - 1);
+			nameBuf[sizeof(nameBuf) - 1] = '\0';
 		}
+		if (ImGui::InputText("##Name", nameBuf, sizeof(nameBuf)))
+			node->name_ = nameBuf;
 	}
 
 	// --- Script ---
 	auto& smEditor = g_game->getStateMachineEditor();
-
-	Node* node = sceneTree.getNodeByEntityID(entity.id());
 	if (node) {
 		ImGui::SeparatorText("Script");
 		smEditor.renderScriptSection(node);
@@ -2473,7 +2465,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
 		ImGui::SeparatorText("State Machine");
 
-		Node* node = sceneTree.getNodeByEntityID(entity.id());
 		smEditor.renderStateMachineUI(node, smc);
 	}
 	else {
@@ -2484,7 +2475,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::Button("Add State Machine")) {
 			entity.add<ECSComponents::StateMachineComponent>(entMng);
 
-			Node* node = sceneTree.getNodeByEntityID(entity.id());
 			if (node && node->script_) {
 				std::string scriptPath = node->script_->path();
 				auto scriptStates = Script::StateMachineScriptGenerator::extractStatesFromScript(scriptPath);
@@ -2725,7 +2715,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// Scale removed - doesn't do anything currently
 	}
 
-	
+	assetPresetsTab(engine_, entity);
 
 	// --- DrawInfoComponent ---
 	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
@@ -3446,13 +3436,9 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			// Only include nodes with scripts attached
 			if (!node->script_) continue;
 
-			std::string displayName;
-			if (node->entity_.has<ECSComponents::NameComponent>(entMng)) {
-				auto& nameComp = node->entity_.get<ECSComponents::NameComponent>(entMng);
-				displayName = std::string(nameComp.name);
-			} else {
-				displayName = "Node_" + std::to_string(node->sceneObjectID_);
-			}
+			std::string displayName = node->name_.empty()
+				? "Node_" + std::to_string(node->sceneObjectID_)
+				: node->name_;
 
 			// Add script name to display
 			displayName += " (" + Conversion::wideToUtf8(node->script_->getName()) + ")";
@@ -3602,13 +3588,12 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	const std::string& selectedState = states[selectedStateIdx];
 
 
-	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::SeparatorText("Asset Presets");
 
 	// Check if the selected entity has an AnimationControllerComponent
 	if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng))
 	{
 		ImGui::TextWrapped("The currently selected entity does not have an Animation Controller component.");
-		ImGui::End();
 		return;
 	}
 
@@ -3862,7 +3847,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	ImGui::Separator();
-	ImGui::Text("Animation Test");
 
 	if (entity.has<ECSComponents::AnimationControllerComponent>(entMng))
 	{
@@ -3872,6 +3856,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 		if (ctrl)
 		{
+#if 0
 			for (const std::string& state : states)
 			{
 				std::string label = "Play " + state;
@@ -3903,6 +3888,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			}
 
 			ImGui::NewLine(); // clean line break after loop
+#endif
 		}
 	}
 	else
@@ -3912,7 +3898,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 
-	ImGui::End();
 }
 
 void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
@@ -3921,35 +3906,10 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 	Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
 	if (!node) return;
 
-	// Get entity name from NameComponent if it exists
-	std::string label = "Entity " + std::to_string(node->entity_.id());
-#if 1
-	// Try to get the actual name from the entity
-	try {
-		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
-			if (e.id() == node->entity_.id()) {
-				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-				label = nameComp.name;
-				break;
-			}
-		}
-	}
-	catch (...) {
-		// If we can't get the name, use the default
-	}
-#else
-	try {
-		for (Node* node : sceneTree.getAllNodes()) {
-			label = node->name_;
-			break;
-		}
-	}
-	catch (...) {
-		// If we can't get the name, use the default
-	}
-
-
-#endif
+	// Use node name directly from the scene tree
+	std::string label = node->name_.empty()
+		? "Entity " + std::to_string(node->entity_.id())
+		: node->name_;
 	// If node has children -> use TreeNodeEx
 	if (node->children_.empty()) {
 		bool selected = (selectedEntityID == node->entity_.id());
@@ -4673,12 +4633,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							render.color = Graphics::Color::White;
 							newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
 
-							// Add name component
-							ECSComponents::NameComponent nameComp;
-							strncpy_s(nameComp.name, textureName.c_str(), sizeof(nameComp.name) - 1);
-							nameComp.name[sizeof(nameComp.name) - 1] = '\0';
-							newEntity.add<ECSComponents::NameComponent>(entityManager, nameComp);
-
 							// Create animation controller
 							uint32_t controllerID = engine_.getAnimationRegistry().createController();
 							newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
@@ -4752,12 +4706,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						render.texturePath[sizeof(render.texturePath) - 1] = '\0';
 						render.color = Graphics::Color::White;
 						newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
-
-						// Add name component
-						ECSComponents::NameComponent nameComp;
-						strncpy_s(nameComp.name, textureName.c_str(), sizeof(nameComp.name) - 1);
-						nameComp.name[sizeof(nameComp.name) - 1] = '\0';
-						newEntity.add<ECSComponents::NameComponent>(entityManager, nameComp);
 
 						// Create animation controller
 						uint32_t controllerID = engine_.getAnimationRegistry().createController();

@@ -241,10 +241,6 @@ namespace ECS
 		{
 			auto& renderComp = entity.get<ECSComponents::RenderComponent>(entMng);
 
-			std::cout << "[DEBUG TEXTURE LOAD] Entity " << entity.id()
-					  << " - texturePath: '" << renderComp.texturePath << "'"
-					  << " - texture ptr null: " << (renderComp.texture == nullptr ? "YES" : "NO") << "\n";
-
 			// If texturePath is set but texture is null, resolve it by name from the loader
 			if (renderComp.texturePath[0] != '\0' && !renderComp.texture)
 			{
@@ -252,14 +248,12 @@ namespace ECS
 				std::shared_ptr<Graphics::EnoTexture> tex;
 
 				// Look up by name in the already-loaded resource cache
-				if (loader_)
-					tex = loader_->getTexture(texName);
+				tex = loader_.getTexture(texName);
 
 				if (tex)
 				{
 					renderComp.texture = tex;
 					bus_.publish<Graphics::TextureMapping>(Graphics::TextureMapping{ texName, tex });
-					std::cout << "[EntityManager] Resolved texture from loader: " << texName << "\n";
 				}
 				else
 				{
