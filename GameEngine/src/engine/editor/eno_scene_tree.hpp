@@ -34,6 +34,7 @@ namespace Editor
 	enum class NodeType : uint32_t
 	{
 		EMPTY,
+		CUSTOM,
 		PRESET_LIST
 	};
 #undef PRESET

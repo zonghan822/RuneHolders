@@ -13,6 +13,7 @@ namespace Eno
         public void Begin()
         {
             _player = Self<Actor>();
+            Actor a = CreateNode<Actor>();
 
             // ACTOR nodes have physics — keep gravity off for top-down movement
             _player.useGravity  = false;
@@ -86,5 +87,17 @@ namespace Eno
             return Bridge.IsKeyHeld(KeyCode.W) || Bridge.IsKeyHeld(KeyCode.S) ||
                    Bridge.IsKeyHeld(KeyCode.A) || Bridge.IsKeyHeld(KeyCode.D);
         }
+    
+        // Called when entering the Default state
+
+        // Called every frame while in the Default state
+
+        // Called when exiting the Default state
+    
+        // Called when entering the Default state
+
+        // Called every frame while in the Default state
+
+        // Called when exiting the Default state
     }
 }

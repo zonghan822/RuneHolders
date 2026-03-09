@@ -9,12 +9,13 @@ namespace Eno
             { typeof(KinematicBody2D),      NodeType.KINEMATIC },
             { typeof(RigidBody2D),          NodeType.RIGIDBODY },
             { typeof(Actor),                NodeType.ACTOR },
-            { typeof(RigidBody2D),          NodeType.PUSHABLE_BOX },
-            { typeof(Node2D),               NodeType.BUTTON },
+            { typeof(Box2D),                NodeType.PUSHABLE_BOX },
+            { typeof(Button),               NodeType.BUTTON },
             { typeof(AudioNode),            NodeType.AUDIO },
             { typeof(Camera),               NodeType.CAMERA },
             { typeof(Label),                NodeType.TEXT },
-            { typeof(ParticleEmitter),      NodeType.PARTICLE }
+            { typeof(ParticleEmitter),      NodeType.PARTICLE },
+            { typeof(VideoNode),            NodeType.VIDEO }
         };
 
         private static readonly Dictionary<NodeType, Func<uint, Node>> ctorMap = new()
@@ -25,11 +26,12 @@ namespace Eno
             { NodeType.RIGIDBODY, id        => new RigidBody2D(id, NodeType.RIGIDBODY) },
             { NodeType.ACTOR, id            => new Actor(id, NodeType.ACTOR) },
             { NodeType.PUSHABLE_BOX, id     => new Box2D(id, NodeType.PUSHABLE_BOX) },
-            { NodeType.BUTTON, id           => new Node2D(id, NodeType.BUTTON) },
+            { NodeType.BUTTON, id           => new Button(id, NodeType.BUTTON) },
             { NodeType.AUDIO, id            => new AudioNode(id, NodeType.AUDIO) },
             { NodeType.CAMERA, id           => new Camera(id, NodeType.CAMERA) },
             { NodeType.TEXT, id             => new Label(id, NodeType.TEXT) },
-            { NodeType.PARTICLE, id         => new ParticleEmitter(id, NodeType.PARTICLE) }
+            { NodeType.PARTICLE, id         => new ParticleEmitter(id, NodeType.PARTICLE) },
+            { NodeType.VIDEO, id            => new VideoNode(id, NodeType.VIDEO) }
         };
 
         public static Node? Create(uint id)
@@ -56,37 +58,5 @@ namespace Eno
 
             return (T)new Node(id, type);
         }
-
-        // // Create a typed node wrapper from an existing scene object ID
-        // public static Node Create(uint id)
-        // {
-        //     if (id == 0 || id == uint.MaxValue)
-        //         return null;
-
-        //     NodeType type = (NodeType)Bridge.GetNodeType(id);
-
-        //     return type switch
-        //     {
-        //         NodeType.DEFAULT     => new Node2D(id, type),
-        //         NodeType.SPRITE      => new Sprite2D(id, type),
-        //         NodeType.KINEMATIC   => new KinematicBody2D(id, type),
-        //         NodeType.RIGIDBODY   => new RigidBody2D(id, type),
-        //         NodeType.ACTOR       => new Actor(id, type),
-        //         NodeType.PUSHABLE_BOX => new RigidBody2D(id, type),
-        //         NodeType.BUTTON      => new Node2D(id, type),
-        //         NodeType.AUDIO       => new AudioNode(id, type),
-        //         NodeType.CAMERA      => new Camera(id, type),
-        //         NodeType.TEXT        => new Label(id, type),
-        //         NodeType.PARTICLE    => new ParticleEmitter(id, type),
-        //         _                    => new Node(id, type),
-        //     };
-        // }
-
-        // // Spawn a new node from a preset name, optionally as a child of parentID
-        // public static Node Spawn(string preset, string name, uint parentID = uint.MaxValue)
-        // {
-        //     uint id = Bridge.SpawnNode(preset, name, parentID);
-        //     return Create(id);
-        // }
     }
 }

@@ -64,6 +64,8 @@ namespace Editor
 
 	Node* EnoSceneTree::create(NodeType type)
 	{
+		std::cout << "Start create..." << std::endl;
+		std::cout << static_cast<int>(type) << std::endl;
 		auto node = std::make_unique<Node>();
 		uint32_t id = generateID();
 
@@ -78,8 +80,9 @@ namespace Editor
 
 		Node* unode = node.get();
 		tree_[node->sceneObjectID_] = std::move(node);
+		std::cout << "End create..." << std::endl;
 
-		return node.get();
+		return unode;
 	}
 
 	// Create a node from an existing entity (for ImGui integration)
@@ -159,7 +162,7 @@ namespace Editor
 #define PRESET(name, ...) \
 		case NodeType::name: \
 			node->entity_ = entMng_.presetCreate(ECSComponents::Preset::name{});
-
+			break;
 			PRESET_LIST
 #undef PRESET
 		}

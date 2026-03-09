@@ -7,10 +7,10 @@ namespace Eno
         // -----------------------------------------------------------------------
         // Node Management  (implemented in eno_bridge_node.cpp)
         // -----------------------------------------------------------------------
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern uint CreateNode(uint id);
 
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void FreeNode(uint id);
 
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -25,16 +25,16 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern uint GetNodeType(uint id);
 
-        [DllImport("EnoEngine.exe")]
-        public static extern uint AddChild(uint cid, uint pid);
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void AddChild(uint cid, uint pid);
 
-        [DllImport("EnoEngine.exe")]
-        public static extern uint Unparent(uint cid);
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void Unparent(uint cid);
 
-        [DllImport("EnoEngine.exe")]
-        public static extern uint Reparent(uint cid, uint pid);
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void Reparent(uint cid, uint pid);
 
-        [DllImport("EnoEngine.exe")]
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern uint GetChildCount(uint id);
 
 

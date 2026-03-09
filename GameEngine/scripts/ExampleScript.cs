@@ -110,20 +110,20 @@ namespace Eno
         public void Update()
         {
             // Triggers when pressing B
-            if (Input.IsKeyPressed(KeyCode.Num1))
+            if (Bridge.IsKeyPressed(KeyCode.Num1))
             {
                 Console.WriteLine("Pressed 1!");
             }
 
             // Triggers when holding C
-            if (Input.IsKeyHeld(KeyCode.C))
+            if (Bridge.IsKeyHeld(KeyCode.C))
             {
                 Console.WriteLine("Held C!");
             }
 
             // Testing if the right entity is affected
             // by changing the audio volume the entity is on
-            if (Input.IsKeyPressed(KeyCode.V))
+            if (Bridge.IsKeyPressed(KeyCode.V))
             {
                 Console.WriteLine("Pressed V, volume should be modified on entity 1 now!");
                 //ModifyVolume(5);

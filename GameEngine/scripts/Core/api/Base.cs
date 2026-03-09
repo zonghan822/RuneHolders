@@ -31,16 +31,7 @@ namespace Eno
                 if (nodeBase == null)
                     throw new InvalidOperationException($"Node '{ID}' could not be created.");
 
-                switch(nodeBase.Type)
-                {
-                    case NodeType.DEFAULT:
-                        _self = new Node2D(nodeBase.ID, nodeBase.Type);
-                        break;
-                    default:
-                        _self = nodeBase;
-                        break;
-                }
-
+                _self = nodeBase;
                 return _self;
             }
         }

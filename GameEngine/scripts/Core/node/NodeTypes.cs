@@ -15,5 +15,6 @@ namespace Eno
         CAMERA      = 10,   // TransformComponent + CameraComponent
         TEXT        = 11,   // TransformComponent + TextComponent + Visibility + Layer
         PARTICLE    = 12,   // TransformComponent + ParticleEmitter + Visibility + Layer
+        VIDEO       = 13,   // TransformComponent + RenderComponent + VideoComponent + Visibility + Layer
     }
 }
