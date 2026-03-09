@@ -91,6 +91,8 @@ void EditorApplication::run() {
 
 	while (!engine_.shouldClose())
 	{
+		SystemTimer totalFrameTimer("totalTimePerFrame", systemTimes_);
+
 		// 1. Set playing state and run editor state BEFORE game logic so that
 		//    isPlaying_ and hot-reload/begin() are correct when beginFrame() runs.
 		bool isPlayMode = (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing ||
@@ -128,11 +130,20 @@ void EditorApplication::run() {
 		}
 
 		// 3. Run all game-logic systems (scripts, physics, collision, particles, audio).
-		engine_.beginFrame();
+		{
+			SystemTimer t("Game Logic", systemTimes_);
+			engine_.beginFrame();
+		}
+		// Merge per-subsystem timings from the engine
+		for (auto& [k, v] : engine_.getTimings())
+			systemTimes_[k] = v;
 
 		// 4. Update editor camera AFTER physics/scripts have moved entities,
 		//    so the camera write-back to CameraComponent is current before rendering.
-		updateEditorCamera();
+		{
+			SystemTimer t("Editor Camera", systemTimes_);
+			updateEditorCamera();
+		}
 
 		// 5. Render the game scene into the editor framebuffer.
 		//    In edit mode the CameraComponent belongs to the game scene and must not
@@ -172,20 +183,26 @@ void EditorApplication::run() {
 			}
 		}
 
-		if (editorFramebuffer_) {
-			// Tell the graphics manager the pixel size of the FBO so updateCamera()
-			// sets glViewport correctly without knowing about the framebuffer.
-			engine_.getGraphicsManager().setRenderTargetSize(lastEditorFbWidth_, lastEditorFbHeight_);
-			editorFramebuffer_->bind();
+		{
+			SystemTimer t("Render Frame", systemTimes_);
+			if (editorFramebuffer_) {
+				// Tell the graphics manager the pixel size of the FBO so updateCamera()
+				// sets glViewport correctly without knowing about the framebuffer.
+				engine_.getGraphicsManager().setRenderTargetSize(lastEditorFbWidth_, lastEditorFbHeight_);
+				editorFramebuffer_->bind();
+			}
+			engine_.renderFrame();
+			if (editorFramebuffer_) {
+				editorFramebuffer_->unbind();
+				engine_.getGraphicsManager().setRenderTargetSize(0, 0); // revert to window size
+				auto [w, h] = engine_.getWindowManager().getFramebufferSize();
+				glViewport(0, 0, w, h);
+				engine_.getGraphicsManager().setProjectionMatrix(w, h);
+			}
 		}
-		engine_.renderFrame();
-		if (editorFramebuffer_) {
-			editorFramebuffer_->unbind();
-			engine_.getGraphicsManager().setRenderTargetSize(0, 0); // revert to window size
-			auto [w, h] = engine_.getWindowManager().getFramebufferSize();
-			glViewport(0, 0, w, h);
-			engine_.getGraphicsManager().setProjectionMatrix(w, h);
-		}
+		// Merge render sub-system timings from the engine
+		for (auto& [k, v] : engine_.getTimings())
+			systemTimes_[k] = v;
 
 		// Restore the CameraComponent to its original scene position.
 		if (camOverridden)
@@ -248,7 +265,6 @@ void EditorApplication::setupImGui() {
 }
 
 void EditorApplication::updateEditorLogic() {
-	SystemTimer totalTimePerFrame("totalTimePerFrame", systemTimes_);
 	// All game logic and camera updates have already run; just draw ImGui.
 	updateImGui();
 }

@@ -40,6 +40,8 @@
 #include <chrono>
 #include <algorithm>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #if defined(ENGINE_BUILD_DLL)
 	#define ENGINE_API __declspec(dllexport)
@@ -299,6 +301,12 @@ namespace Engine
 		*//*========================================================================================*/
 		bool getIsPaused() const { return isPaused_; }
 
+		/*============================================================================================
+		* \brief		Gets the per-subsystem timing data collected during the last frame.
+		*               Keys are system names (e.g. "Scripts", "Physics"), values are microseconds.
+		*//*========================================================================================*/
+		const std::unordered_map<std::string, double>& getTimings() const { return timings_; }
+
 	private:
 
 		/*============================================================================================
@@ -349,5 +357,8 @@ namespace Engine
 		// Time
 		double dt_ = 0.0;
 		double fps_ = 0.0;
+
+		// Per-subsystem timing (microseconds), populated each frame
+		std::unordered_map<std::string, double> timings_;
 	};
 }

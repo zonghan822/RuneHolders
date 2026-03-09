@@ -1,15 +1,11 @@
 {
 
-	[Title-Art-1]
+	[Background]
 	{
 		"ID": { 31 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { Background }
-			}
 
 			[struct ECSComponents::VisibilityComponent]
 			{
@@ -93,17 +89,12 @@
 		"Enabled": { true }
 	}
 
-	[Logo-M5]
+	[Logo]
 	{
 		"ID": { 32 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
-			[struct ECSComponents::NameComponent]
-			{
-				"Name": <char32> { Logo-M5 }
-			}
-
 			[struct ECSComponents::VisibilityComponent]
 			{
 				"Z Index": <uint32_t> { 3 }

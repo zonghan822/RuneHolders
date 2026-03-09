@@ -90,12 +90,6 @@ namespace Engine
 			}
 		}
 
-		// Mark animations dirty whenever a scene is cleared/loaded
-		bus_.subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)
-		{
-			graphicsMng_.markAnimationsDirty();
-		});
-
 		// Handle audio autoplay when scene enters play mode
 		bus_.subscribe<Editor::PlayScene>([this](const Editor::PlayScene&)
 		{
@@ -147,6 +141,8 @@ namespace Engine
 
 	void EnoEngine::beginFrame()
 	{
+		using Clock = std::chrono::high_resolution_clock;
+
 		updateTime(1.0);
 		window_.pollEvents();
 
@@ -154,6 +150,7 @@ namespace Engine
 
 		if (isPlaying_ && !isPaused_)
 		{
+			auto t0 = Clock::now();
 			for (const auto &node : editor_->getSceneTree().getAllNodes())
 			{
 				if (node->script_)
@@ -164,19 +161,49 @@ namespace Engine
 					}
 				}
 			}
+			timings_["Scripts"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+		}
+		else
+		{
+			timings_["Scripts"] = 0.0;
 		}
 
 		if (isPlaying_ && !isPaused_) {
+			auto t0 = Clock::now();
 			stateMachineSys_->update(editor_->getSceneTree(), entityMng_);
+			timings_["State Machine"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+
+			t0 = Clock::now();
 			physicsSys_->Update(entityMng_, deltaTime);
+			timings_["Physics"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+
+			t0 = Clock::now();
 			collisionSys_->Update(entityMng_);
+			timings_["Collision"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+
+			t0 = Clock::now();
 			particleSys_->Update(entityMng_, deltaTime);
+			timings_["Particles"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+
+			t0 = Clock::now();
 			buttonSys_.update(entityMng_, inputMng_, viewportMin_, viewportMax_, window_.getWindowSize());
+			timings_["UI Buttons"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+		}
+		else
+		{
+			timings_["State Machine"] = 0.0;
+			timings_["Physics"]       = 0.0;
+			timings_["Collision"]     = 0.0;
+			timings_["Particles"]     = 0.0;
+			timings_["UI Buttons"]    = 0.0;
 		}
 
 		// Update audio system (continues during runtime pause)
+		auto t0 = Clock::now();
 		if (isPlaying_)
 			audioMng_.process(deltaTime);
+		timings_["Audio"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+		
 
 		// Sync isPlaying_ flag with actual FMOD channel state so the inspector
 		// indicator clears automatically when a sound finishes playing naturally.
@@ -195,15 +222,21 @@ namespace Engine
 
 	void EnoEngine::renderFrame()
 	{
+		using Clock = std::chrono::high_resolution_clock;
+
 		// Restore and tick animation controllers
+		auto t0 = Clock::now();
 		graphicsMng_.updateAnimations(*this);
+		timings_["Animations"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 
 		// Update camera projection matrix before rendering
 		graphicsMng_.updateCamera(*this);
 
 		// Clear screen and render
+		t0 = Clock::now();
 		graphicsMng_.beginFrame(Graphics::Color::Black);
 		graphicsMng_.render(*this);
+		timings_["Draw"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 	}
 
 	void EnoEngine::endFrame()

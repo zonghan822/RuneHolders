@@ -440,6 +440,11 @@ namespace Graphics
             }
         );
 
+        bus_.subscribe<Editor::SceneCleared>(
+            [this](const Editor::SceneCleared&) {
+                markAnimationsDirty();
+            });
+
         // Create vertex buffer for batch rendering
         vertexBuffer_ = std::make_unique<EnoVertexBuffer>();
 

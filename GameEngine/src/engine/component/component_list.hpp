@@ -11,7 +11,6 @@
 
 
 #define COMPONENT_LIST \
-	X(NameComponent) \
 	X(VisibilityComponent) \
 	X(TransformComponent) \
 	X(RenderComponent) \
@@ -34,10 +33,10 @@
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
 #define PRESET_LIST \
-	PRESET(DEFAULT, NameComponent, VisibilityComponent, LayerComponent) \
+	PRESET(DEFAULT, VisibilityComponent, LayerComponent) \
 	PRESET(AUDIO, AudioComponent, LayerComponent) \
-	PRESET(PUSHABLE_BOX, TransformComponent, PhysicsComponent, CollisionComponent, BoxComponent, RenderComponent, NameComponent) \
-	PRESET(PLAYER, TransformComponent, NameComponent, CollisionComponent, PhysicsComponent, RenderComponent) \
+	PRESET(PUSHABLE_BOX, TransformComponent, PhysicsComponent, CollisionComponent, BoxComponent, RenderComponent) \
+	PRESET(PLAYER, TransformComponent, CollisionComponent, PhysicsComponent, RenderComponent) \
 	PRESET(EXIT_BUTTON, TransformComponent, ButtonComponent, DrawInfoComponent, VisibilityComponent, CollisionComponent) \
 
 
