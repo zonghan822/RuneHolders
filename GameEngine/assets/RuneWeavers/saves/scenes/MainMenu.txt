@@ -6,7 +6,6 @@
 		"Layer": { 0 }
 		"Entity Data"
 		{
-
 			[struct ECSComponents::VisibilityComponent]
 			{
 				"Z Index": <uint32_t> { 3 }
