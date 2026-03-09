@@ -83,3 +83,5 @@
 [2025-11-30 14:57:45] Failed to find dropped in sound!
 [2025-11-30 14:59:40] Failed to find dropped in sound!
 [2026-02-26 13:20:50] Failed to locate hostfxr
+[2026-03-08 15:40:07] Unknown component passed to be deduced!
+[2026-03-08 15:40:50] Unknown component passed to be deduced!

@@ -148,17 +148,24 @@ namespace ECSComponents
 		void save(const std::string& name, Tuple&& tuple)
 		{
 			std::string filename = FileSystem::GetAssetsDir().string() + "/saves/prefabs/" + name;
-			
+
 			// Append preferred extension for save file format
 			if (filename.find(".txt") == std::string::npos)
 			{
 				filename += ".txt";
 			}
 
+			std::filesystem::create_directories(FileSystem::GetAssetsDir() / "saves/prefabs");
+
+			// Don't overwrite an existing prefab file — it may have been modified
+			if (std::filesystem::exists(filename))
+				return;
+
 			std::ofstream save{ filename };
 			if (!save)
 			{
-				throw std::runtime_error("Failed to create a save file for the scene tree!");
+				std::cout << "[Prefab] Failed to create save file: " << filename << "\n";
+				return;
 			}
 
 			// Opening brace
@@ -219,7 +226,10 @@ namespace ECSComponents
 
 			std::ifstream file{ filePath };
 			if (!file)
-				throw std::runtime_error("Failed to open file at " + filePath.string());
+			{
+				std::cout << "[Prefab] File not found, skipping: " << filePath.string() << "\n";
+				return;
+			}
 
 			std::string presetName = filePath.stem().string();
 
@@ -385,6 +395,33 @@ namespace ECSComponents
 				std::cout << "Preset name: " << ptname << "has a type of " <<
 					std::endl << ptype.name() << std::endl;
 			}
+		}
+
+		// Returns all loaded preset names (sorted)
+		std::vector<std::string> getPresetNames() const
+		{
+			std::vector<std::string> names;
+			names.reserve(presets_.size());
+			for (const auto& [name, _] : presets_)
+				names.push_back(name);
+			std::sort(names.begin(), names.end());
+			return names;
+		}
+
+		// Returns a pointer to the component map for the named preset.
+		// Returns nullptr if the preset name is not found.
+		// Use EnoComponentRegistry::DeduceCompType to add each component to an entity.
+		const std::unordered_map<std::type_index, std::any>* getPresetComponents(const std::string& name) const
+		{
+			auto presetIt = presets_.find(name);
+			if (presetIt == presets_.end())
+				return nullptr;
+
+			auto prefabIt = prefabData_.find(presetIt->second);
+			if (prefabIt == prefabData_.end())
+				return nullptr;
+
+			return &prefabIt->second;
 		}
 
 	private:

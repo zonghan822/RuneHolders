@@ -9,15 +9,13 @@
 *				which includes the init, update and terminate functions.
 *     			There are also functions for spawning and counting entities.
 *//*========================================================================================*/
+#include <algorithm>
 #include <filesystem>
 #include <random>
 #include <unordered_map>
 #include "imGui.hpp"
-#include "game_logic.hpp"
-#include "player/player_config.hpp"
-#include "player/player_archetype_config.hpp"
-#include "editor/undo/undo_manager.hpp"
-#include "stateMachine_editor/stateMachine_editor.hpp"
+#include "graphics/video/video_player.hpp"
+
 
 #undef min
 #undef max
@@ -33,11 +31,7 @@ using Editor::Node;
 
 bool showColliders_ = true;
 
-GameApplication* g_game = nullptr;
-
-// Player entity ID (to track the player)
-uint32_t playerEntityID_ = 0;
-bool playerSpawned_ = false;
+EditorApplication* g_game = nullptr;
 
 // Game viewport tracking (for button click detection)
 ImVec2 lastGameViewportPos(0, 0);
@@ -70,8 +64,6 @@ float pScaleX = 1.0f;
 float pScaleY = 1.0f;
 
 // Keeping track of animations
-static std::vector<AnimationPreset> presets;
-static int selectedPresetIndex = 0; // for ImGui dropdown
 static Graphics::TextureData selectedTexData;
 
 // Time
@@ -113,6 +105,10 @@ static std::unique_ptr<Editor::MultiTransformCommand> pendingTransformCommand;  
 // Prefab placement
 static std::string g_selectedPrefabForPlacement = "";
 
+// Node preset selection (for Add Root/Child Node)
+static int  g_selectedNodePresetIdx  = 0;
+static std::string g_selectedNodePreset = "DEFAULT";
+
 // Entity deletion by click
 static bool g_waitingForEntityDeletion = false;
 
@@ -126,8 +122,19 @@ static bool g_resetEntityCounter = false;  // Flag to reset entity counter when 
 // Scene deletion error tracking
 static bool g_cannotDeleteActiveScene = false;
 
-// Audio filesystems
-static std::vector<std::string> audioAssets;
+// Audio browser tree
+struct AudioEntry {
+	std::string displayName;         // filename with extension, e.g. "laser.wav"
+	std::string stemName;            // filename without extension, used for FMOD lookup
+	std::filesystem::path buildPath; // path in the build/runtime assets folder
+	std::filesystem::path rootPath;  // path in the source assets folder (for deletion)
+};
+struct AudioFolder {
+	std::string folderName;
+	std::vector<AudioFolder> subfolders;
+	std::vector<AudioEntry> files;
+};
+static AudioFolder g_audioTree;
 
 // Audio error tracking - using a queue to store all errors
 struct AudioErrorInfo {
@@ -138,6 +145,266 @@ struct AudioErrorInfo {
 static std::vector<AudioErrorInfo> g_audioErrorQueue;
 
 #pragma endregion
+
+// ============================================================
+// Project Picker — file-scope state and helpers
+// ============================================================
+
+static bool                  s_showProjectPicker  = true;
+static std::vector<std::string> s_availableProjects;
+static int                   s_selectedProjectIdx = 0;
+static char                  s_newProjectNameBuf[128] = {};
+static bool                  s_creatingNewProject = false;
+
+static void scanAvailableProjects() {
+	s_availableProjects.clear();
+	std::filesystem::path assetsRoot = FileSystem::GetRootDir() / "assets";
+	if (!std::filesystem::exists(assetsRoot)) return;
+	for (auto& entry : std::filesystem::directory_iterator(assetsRoot)) {
+		if (entry.is_directory() && entry.path().filename().string() != "Editor")
+			s_availableProjects.push_back(entry.path().filename().string());
+	}
+	std::sort(s_availableProjects.begin(), s_availableProjects.end());
+}
+
+static void applyProjectSelection(Engine::EnoEngine& engine_, const std::string& projectName) {
+	if (projectName == ENO_APP_NAME) {
+		std::cout << "[ProjectPicker] Keeping current project: " << projectName << std::endl;
+		return;
+	}
+	std::cout << "[ProjectPicker] Switching to project: " << projectName << std::endl;
+
+	// Ensure scripts directories exist before switching
+	std::filesystem::path scriptsBase = FileSystem::GetRootDir() / "scripts" / projectName;
+	std::filesystem::create_directories(scriptsBase / "user_scripts");
+	{
+		std::filesystem::path src = FileSystem::GetRootDir() / "scripts" / "RuneWeavers" / "GameScripts.csproj";
+		std::filesystem::path dst = scriptsBase / "GameScripts.csproj";
+		if (std::filesystem::exists(src) && !std::filesystem::exists(dst))
+			std::filesystem::copy_file(src, dst);
+	}
+
+	FileSystem::Initialize(projectName);
+
+	// The project's GameScripts.dll lives in a sibling directory of the Editor exe.
+	std::filesystem::path projectDllDir =
+		FileSystem::GetExecutableDir().parent_path() / projectName;
+
+	// Build the project scripts only if they haven't been built yet.
+	{
+		std::filesystem::path csproj        = scriptsBase / "GameScripts.csproj";
+		std::filesystem::path gameScriptsDll = projectDllDir / "GameScripts.dll";
+		if (std::filesystem::exists(csproj) && !std::filesystem::exists(gameScriptsDll))
+		{
+			std::filesystem::create_directories(projectDllDir);
+			std::cout << "[ProjectPicker] Building scripts for " << projectName << "...\n";
+			std::string cmd = std::string(ENO_DOTNET_CMD) + " publish \""
+				+ csproj.string() + "\" -f net8.0 --self-contained false --output \""
+				+ projectDllDir.string() + "\" --nologo -v minimal";
+			int rc = system(cmd.c_str());
+			if (rc != 0)
+				std::cerr << "[ProjectPicker] Script build failed (exit code " << rc
+				          << "). Scripting may be unavailable.\n";
+			else
+				std::cout << "[ProjectPicker] Scripts built successfully.\n";
+		}
+	}
+
+	if (!engine_.isEditorReady())
+	{
+		// Pre-setup: create a fresh EnoCoreHost pointed at the project's DLL.
+		// setupLate() will see it's already set and skip recreation.
+		engine_.initScripting(projectDllDir);
+	}
+	else
+	{
+		// Post-setup: update the existing coreHost in-place so EnoEditor's
+		// reference stays valid, then reload delegates for the new project.
+		engine_.getCoreHost().reinitializeScripts(projectDllDir);
+	}
+
+	engine_.getResourceLoader().reloadPaths();
+
+	// Reload all assets into the loader BEFORE reloading the project so that
+	// loadJson can resolve textures by name when scenes are parsed.
+	{
+		auto& loader = engine_.getResourceLoader();
+		auto& audio  = engine_.getAudioManager();
+		loader.loadImages(loader.getImagePath());
+		loader.loadSound(audio.getSystem(), loader.getSoundExtensions(), loader.getMusicPath());
+		loader.loadSound(audio.getSystem(), loader.getSoundExtensions(), loader.getSFXPath());
+		loader.loadFonts(loader.getFontPath(), 48);
+	}
+
+	if (engine_.isEditorReady())
+	{
+		engine_.getEnoEditor().reloadProject();
+		if (g_game) g_game->markEntitiesDirty();
+	}
+	std::cout << "[ProjectPicker] Switched to: " << FileSystem::GetAssetsDir() << std::endl;
+}
+
+static void createNewProject(const std::string& name) {
+	namespace fs = std::filesystem;
+	fs::path projectRoot = FileSystem::GetRootDir() / "assets" / name;
+	fs::path editorRoot  = FileSystem::GetRootDir() / "assets" / "Editor";
+
+	auto copyTemplate = [&](const fs::path& relPath) {
+		fs::path src = editorRoot / relPath;
+		fs::path dst = projectRoot / relPath;
+		if (fs::exists(src) && !fs::exists(dst))
+			fs::copy_file(src, dst);
+	};
+
+	auto copyDir = [&](const fs::path& relDir) {
+		fs::path src = editorRoot / relDir;
+		fs::path dst = projectRoot / relDir;
+		fs::create_directories(dst);
+		if (!fs::exists(src)) return;
+		for (auto& entry : fs::directory_iterator(src)) {
+			if (entry.is_regular_file())
+				fs::copy_file(entry.path(), dst / entry.path().filename(),
+					fs::copy_options::skip_existing);
+		}
+	};
+
+	fs::create_directories(projectRoot / "saves" / "scenes");
+	fs::create_directories(projectRoot / "saves" / "prefabs");
+	fs::create_directories(projectRoot / "settings");
+	fs::create_directories(projectRoot / "shaders");
+	fs::create_directories(projectRoot / "crashlogs");
+	fs::create_directories(projectRoot / "fonts");
+	fs::create_directories(projectRoot / "art");
+	fs::create_directories(projectRoot / "sound" / "music");
+	fs::create_directories(projectRoot / "sound" / "sfx");
+
+	fs::path scriptsRoot = FileSystem::GetRootDir() / "scripts" / name;
+	fs::create_directories(scriptsRoot / "user_scripts");
+	{
+		fs::path srcCsproj = FileSystem::GetRootDir() / "scripts" / "RuneWeavers" / "GameScripts.csproj";
+		fs::path dstCsproj = scriptsRoot / "GameScripts.csproj";
+		if (fs::exists(srcCsproj) && !fs::exists(dstCsproj))
+			fs::copy_file(srcCsproj, dstCsproj);
+	}
+
+	copyDir("shaders");
+	copyTemplate(fs::path("settings") / "config.txt");
+	copyDir(fs::path("saves") / "prefabs");
+
+	{
+		fs::path logFile = projectRoot / "crashlogs" / "crash_log.txt";
+		if (!fs::exists(logFile)) std::ofstream{ logFile };
+	}
+
+	scanAvailableProjects();
+	auto it = std::find(s_availableProjects.begin(), s_availableProjects.end(), name);
+	if (it != s_availableProjects.end())
+		s_selectedProjectIdx = static_cast<int>(std::distance(s_availableProjects.begin(), it));
+
+	std::cout << "[ProjectPicker] Created new project: " << name << std::endl;
+}
+
+bool isProjectPickerOpen() { return s_showProjectPicker; }
+
+void setProjectPickerOpen(bool open) {
+	s_showProjectPicker = open;
+	if (open) {
+		scanAvailableProjects();
+		auto it = std::find(s_availableProjects.begin(), s_availableProjects.end(), std::string(ENO_APP_NAME));
+		if (it != s_availableProjects.end())
+			s_selectedProjectIdx = static_cast<int>(std::distance(s_availableProjects.begin(), it));
+	}
+}
+
+void imGuiProjectPicker(Engine::EnoEngine& engine_) {
+	// Lazy init on first display
+	static bool initialized = false;
+	if (!initialized) {
+		initialized = true;
+		setProjectPickerOpen(true);  // scans projects and pre-selects current
+	}
+
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	const ImVec2 dlgSize = {460.f, s_creatingNewProject ? 210.f : 240.f};
+	ImGui::SetNextWindowPos(
+		{(io.DisplaySize.x - dlgSize.x) * 0.5f, (io.DisplaySize.y - dlgSize.y) * 0.5f},
+		ImGuiCond_Always);
+	ImGui::SetNextWindowSize(dlgSize, ImGuiCond_Always);
+	ImGui::SetNextWindowBgAlpha(1.0f);
+
+	ImGui::Begin(s_creatingNewProject ? "Create New Project" : "Open Project", nullptr,
+		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_NoBringToFrontOnFocus);
+
+	const float pad   = ImGui::GetStyle().WindowPadding.x;
+	const float itemW = dlgSize.x - pad * 2.f;
+
+	if (!s_creatingNewProject) {
+		ImGui::Text("Select a project to open:");
+		ImGui::Spacing();
+
+		if (!s_availableProjects.empty()) {
+			std::vector<const char*> items;
+			items.reserve(s_availableProjects.size());
+			for (auto& p : s_availableProjects) items.push_back(p.c_str());
+			ImGui::SetNextItemWidth(itemW);
+			ImGui::Combo("##projects", &s_selectedProjectIdx, items.data(), static_cast<int>(items.size()));
+		} else {
+			ImGui::TextDisabled("No projects found in assets/");
+		}
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x * 2.f) / 3.f;
+		if (ImGui::Button("Open", {btnW, 0}) && !s_availableProjects.empty()) {
+			applyProjectSelection(engine_, s_availableProjects[s_selectedProjectIdx]);
+			s_showProjectPicker = false;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("New Project", {btnW, 0})) {
+			s_creatingNewProject = true;
+			memset(s_newProjectNameBuf, 0, sizeof(s_newProjectNameBuf));
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", {btnW, 0})) {
+			s_showProjectPicker = false;
+			engine_.requestClose();
+		}
+	} else {
+		ImGui::Text("Project name:");
+		ImGui::SetNextItemWidth(itemW);
+		ImGui::InputText("##newname", s_newProjectNameBuf, sizeof(s_newProjectNameBuf));
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		bool nameValid = s_newProjectNameBuf[0] != '\0';
+		const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x) / 2.f;
+		if (!nameValid) ImGui::BeginDisabled();
+		if (ImGui::Button("Create", {btnW, 0})) {
+			createNewProject(s_newProjectNameBuf);
+			applyProjectSelection(engine_, s_newProjectNameBuf);
+			s_showProjectPicker = false;
+		}
+		if (!nameValid) ImGui::EndDisabled();
+		ImGui::SameLine();
+		if (ImGui::Button("Back", {btnW, 0})) {
+			s_creatingNewProject = false;
+		}
+	}
+
+	ImGui::End();
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
 
 /*============================================================================================
 * \\brief   Helper function for undo/redo system to mark entities dirty
@@ -193,19 +460,6 @@ void displayRaycastVisualizerTab(Engine::EnoEngine& engine_)
         initialized = true;
     }
 
-    // --- Sync camera to player entity (position only; direction stays manual) ---
-    ImGui::Checkbox("Sync to Player", &syncToPlayer);
-    if (syncToPlayer) {
-        auto& em = engine_.getEntityManager();
-        auto players = em.findEntity<ECSComponents::PlayerComponent,
-                                     ECSComponents::TransformComponent>();
-        if (!players.empty()) {
-            auto& tf = players[0].get<ECSComponents::TransformComponent>(em);
-            float cs = engine_.getTileMap().cellSize();
-            renderer.playerPos = { tf.pos.x / cs, tf.pos.y / cs };
-        }
-    }
-
     // --- Render (GPU: the fragment shader does all the ray casting) ---
     renderer.render();
 
@@ -248,7 +502,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	ImGui::NewFrame();
 
 	// get engine systems
-	auto& entityManager = engine_.getEntityManager();
 	auto& loader = engine_.getResourceLoader();
 
 	// Subscribe to audio error events early (only once)
@@ -270,41 +523,110 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		std::cout << "[ImGui Audio] Subscribed to audio error events" << std::endl;
 	}
 
+	// Main menu bar
+	if (ImGui::BeginMainMenuBar()) {
+		if (ImGui::BeginMenu("File")) {
+			if (ImGui::MenuItem("Change Project...")) {
+				setProjectPickerOpen(true);
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::Text("| %s", FileSystem::GetAssetsDir().filename().string().c_str());
+		ImGui::EndMainMenuBar();
+	}
+
+	// Project picker modal (opened from "Change Project..." while editor is running)
+	if (s_showProjectPicker) {
+		ImGui::OpenPopup("Open Project##modal");
+	}
+	if (ImGui::BeginPopupModal("Open Project##modal", nullptr,
+		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		const float itemW = 400.f;
+
+		if (!s_creatingNewProject)
+		{
+			ImGui::Text("Select a project to open:");
+			ImGui::Spacing();
+			if (!s_availableProjects.empty()) {
+				std::vector<const char*> items;
+				items.reserve(s_availableProjects.size());
+				for (auto& p : s_availableProjects) items.push_back(p.c_str());
+				ImGui::SetNextItemWidth(itemW);
+				ImGui::Combo("##projects2", &s_selectedProjectIdx, items.data(), static_cast<int>(items.size()));
+			} else {
+				ImGui::TextDisabled("No projects found in assets/");
+			}
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x * 2.f) / 3.f;
+			if (ImGui::Button("Open", {btnW, 0}) && !s_availableProjects.empty()) {
+				applyProjectSelection(engine_, s_availableProjects[s_selectedProjectIdx]);
+				s_showProjectPicker = false;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("New Project", {btnW, 0})) {
+				s_creatingNewProject = true;
+				memset(s_newProjectNameBuf, 0, sizeof(s_newProjectNameBuf));
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", {btnW, 0})) {
+				s_showProjectPicker    = false;
+				s_creatingNewProject   = false;
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		else
+		{
+			ImGui::Text("Project name:");
+			ImGui::SetNextItemWidth(itemW);
+			ImGui::InputText("##newname2", s_newProjectNameBuf, sizeof(s_newProjectNameBuf));
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			bool nameValid = s_newProjectNameBuf[0] != '\0';
+			const float btnW = (itemW - ImGui::GetStyle().ItemSpacing.x) / 2.f;
+			if (!nameValid) ImGui::BeginDisabled();
+			if (ImGui::Button("Create", {btnW, 0})) {
+				createNewProject(s_newProjectNameBuf);
+				applyProjectSelection(engine_, s_newProjectNameBuf);
+				s_showProjectPicker  = false;
+				s_creatingNewProject = false;
+				ImGui::CloseCurrentPopup();
+			}
+			if (!nameValid) ImGui::EndDisabled();
+			ImGui::SameLine();
+			if (ImGui::Button("Back", {btnW, 0})) {
+				s_creatingNewProject = false;
+			}
+		}
+		ImGui::EndPopup();
+	}
+
 	// BEGIN DOCKSPACE
 	imGuiBeginDockspace();
 
 	// Apply default layout once after dockspace is created
 	static bool layoutApplied = false;
+	static int  focusCountdown = 0;
 	if (!layoutApplied) {
 		imGuiSetupDefaultLayout();
 		layoutApplied = true;
+		focusCountdown = 2; // give ImGui 2 frames to register the docked windows
 	}
-
-	// Load player config once
-	static Player::PlayerConfig playerConfig;
-	static bool configLoaded = false;
-	if (!configLoaded) {
-		configLoaded = playerConfig.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
-		if (configLoaded) {
-			std::cout << "[ImGui] Player config loaded successfully" << std::endl;
-		}
-		else {
-			std::cout << "[ImGui] Using defauly player config values" << std::endl;
+	if (focusCountdown > 0) {
+		if (--focusCountdown == 0) {
+			ImGui::SetWindowFocus("Editor View");
 		}
 	}
 
 	// Get ImGui IO for FPS display
 	ImGuiIO& io = ImGui::GetIO();
-
-	// Assuming that there will only be 1 entity with player component
-	bool playerFound = false;
-	for (ECS::Entity player : entityManager.findEntity<ECSComponents::PlayerComponent>())
-	{
-		playerEntityID_ = player.id();
-		playerFound = true;
-	}
-	// Sync playerSpawned_ flag with actual player existence in ECS
-	playerSpawned_ = playerFound;
 
 	// FPS display throttling
 	double now = ImGui::GetTime();
@@ -324,9 +646,34 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displaySceneTab(engine_.getEnoEditor());
 	ImGui::End();
 
-	// Audio select
-	ImGui::Begin("Audio Browser", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayAudioTab(engine_);
+	// Tabbed Browser (Audio, Assets, Video, FPS)
+	ImGui::Begin("Browser", nullptr, ImGuiWindowFlags_NoCollapse);
+	if (ImGui::BeginTabBar("BrowserTabs"))
+	{
+		if (ImGui::BeginTabItem("Audio"))
+		{
+			displayAudioTab(engine_);
+			ImGui::EndTabItem();
+		}
+		if (ImGui::BeginTabItem("Assets"))
+		{
+			displayAssetTab(engine_);
+			ImGui::EndTabItem();
+		}
+		if (ImGui::BeginTabItem("Video"))
+		{
+			displayVideoTab(engine_);
+			ImGui::EndTabItem();
+		}
+		if (ImGui::BeginTabItem("FPS"))
+		{
+			displayFPSTab(engine_);
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
+	// Clear dropped files here so it runs regardless of which tab is active
+	Window::EnoWindow::GetDroppedFiles().clear();
 	ImGui::End();
 
 
@@ -336,29 +683,9 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	displayAllEntitiesTab(engine_, sceneTree, undoManager);
 	ImGui::End();
 
-	// Prefabs
-	ImGui::Begin("Prefabs", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayPrefabsTab(engine_, sceneTree, undoManager);
-	ImGui::End();
-
-	//// Mini Map (full scene, bottom-right)
-	//ImGui::Begin("Mini Map", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-	//displayGameView();
-	//ImGui::End();
-
 	// Editor View (zoomed in, center - replaces old Game View behavior)
 	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	displayEditorView(engine_, sceneTree, undoManager);
-	ImGui::End();
-
-	// Assets Browser
-	ImGui::Begin("Assets Browser", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayAssetTab(engine_);
-	ImGui::End();
-
-	// FPS
-	ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoCollapse);
-	displayFPSTab(engine_);
 	ImGui::End();
 
 	// Raycast 3D View
@@ -494,32 +821,57 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 }
 
 void displayFPSTab(Engine::EnoEngine& engine_) {
-	ImGui::Text("Application average %.3f ms", 1000.0f / shown_fps);
-	ImGui::Text("Frame (%.1f FPS)", shown_fps);
-	ImGui::Text("=== PER SYSTEM TIMING IN MS ===");
-	for (auto& time : throttledTimes_) {
+	double totalUs = throttledTimes_.count("totalTimePerFrame") ? throttledTimes_.at("totalTimePerFrame") : 0.0;
+	double totalMs = totalUs / 1000.0;
 
-		if (time.first != "totalTimePerFrame") {
-			ImGui::Text("%s: %.3f ms", time.first.c_str(), time.second / 1000.0);// divide by 1000 to show microseconds as milliseconds
-		}
+	// Header: FPS and total frame time
+	ImGui::Text("FPS: %.1f  |  Frame: %.3f ms", shown_fps, totalMs);
+	ImGui::Separator();
 
-	}
-	ImGui::Text("=== PER SYSTEM TIMING IN PERCENTAGE ===");
-	for (auto& time : throttledTimes_)
+	// Collect and sort sub-system entries by time (descending), skip total frame key
+	std::vector<std::pair<std::string, double>> entries;
+	entries.reserve(throttledTimes_.size());
+	for (auto& [name, us] : throttledTimes_)
 	{
-		if (time.first != "totalTimePerFrame") {
-			ImGui::Text("%s: %.0f%%", time.first.c_str(), percentage(time.second, throttledTimes_["totalTimePerFrame"]));
-		}
+		if (name != "totalTimePerFrame")
+			entries.emplace_back(name, us);
+	}
+	std::sort(entries.begin(), entries.end(),
+		[](const auto& a, const auto& b) { return a.second > b.second; });
+
+	// Per-system progress bars with color coding
+	ImGui::Text("System Timings");
+	ImGui::Separator();
+	for (auto& [name, us] : entries)
+	{
+		double ms  = us / 1000.0;
+		float  frac = (totalUs > 0.0) ? static_cast<float>(us / totalUs) : 0.f;
+		frac = std::clamp(frac, 0.f, 1.f);
+
+		// Color: green < 33%, yellow < 67%, red >= 67%
+		ImVec4 barColor;
+		if (frac < 0.33f)
+			barColor = ImVec4(0.2f, 0.8f, 0.2f, 1.0f);
+		else if (frac < 0.67f)
+			barColor = ImVec4(0.9f, 0.8f, 0.1f, 1.0f);
+		else
+			barColor = ImVec4(0.9f, 0.2f, 0.2f, 1.0f);
+
+		ImGui::Text("%-20s", name.c_str());
+		ImGui::SameLine();
+		char overlay[64];
+		std::snprintf(overlay, sizeof(overlay), "%.3f ms (%.0f%%)", ms, frac * 100.f);
+		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, barColor);
+		ImGui::ProgressBar(frac, ImVec2(-1, 0), overlay);
+		ImGui::PopStyleColor();
 	}
 
-	if (ImGui::Button("Show Entity Count")) {
+	ImGui::Separator();
+	if (ImGui::Button("Log Entity Count"))
 		displayEntityCount(engine_);
-	}
-
-	if (ImGui::Button("Show Entity Characteristics")) {
+	ImGui::SameLine();
+	if (ImGui::Button("Log Entity Info"))
 		displayEntityCharacteristics(engine_);
-	}
-
 }
 
 void displayEntityCount(Engine::EnoEngine& engine_) {
@@ -560,7 +912,6 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 				bool found = false;
 				for (auto& e : entityManager.findEntity<>()) {
 					if (e.id() == lastID) {
-						if (playerEntityID_ == lastID) playerSpawned_ = false;
 						toDelete.push_back(e);
 						found = true;
 						if (g_game) g_game->markEntitiesDirty();
@@ -595,7 +946,6 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 			for (auto& e : entityManager.findEntity<>()) {
 				toDelete.push_back(e);
 			}
-			playerSpawned_ = false;
 		}
 
 	}
@@ -800,7 +1150,7 @@ void collectEntityIDs(Editor::Node* node, std::vector<uint32_t>& entityIDs)
 	}
 }
 
-void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager)
+void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager, Graphics::EnoGraphicsManager& graphicsManager)
 {
 	if (selectedEntityID == UINT32_MAX) {
 		std::cout << "[DEBUG] No entity selected for deletion\n";
@@ -829,7 +1179,8 @@ void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& e
 		auto deleteCmd = std::make_unique<Editor::DeleteEntityCommand>(
 			sceneTree,
 			entityManager,
-			entity
+			entity,
+			graphicsManager
 		);
 
 		// Execute the deletion (also adds to undo history)
@@ -846,230 +1197,25 @@ void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& e
 	}
 }
 
-ECS::Entity spawnPrefabAt(float x, float y, std::string name, Engine::EnoEngine& engine, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager)
-{
-	auto& entityManager = engine.getEntityManager();
-
-	// Use the new snapshot-based prefab system
-	ECS::Entity e = instantiatePrefabFromSnapshot(name, entityManager);
-
-	// Override the position to where the user clicked (treat x,y as CENTER)
-	if (e.has<ECSComponents::TransformComponent>(entityManager))
-	{
-		auto& transform = e.get<ECSComponents::TransformComponent>(entityManager);
-		transform.pos.x = x;
-		transform.pos.y = y;
-	}
-
-	// Add entity to scene hierarchy as root node (must be done before CreateEntityCommand)
-	Node* node = sceneTree.createFromEntity(e, nullptr);
-
-	// Update node name from entity's NameComponent if it exists
-	if (e.has<ECSComponents::NameComponent>(entityManager))
-	{
-		auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-		node->name_ = nameComp.name;
-	}
-
-	// Record creation for undo/redo with full snapshot
-	auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
-		sceneTree,
-		entityManager,
-		e
-	);
-	undoManager.executeCommand(std::move(createCmd));
-
-	// update render cache
-	if (g_game) g_game->markEntitiesDirty();
-
-	std::cout << "Spawned prefab '" << name
-		<< "' at (" << x << ", " << y << ")\n";
-
-	return e;
-}
-
-void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
-
-	auto& entityManager = engine_.getEntityManager();
-
-	static PrefabData currentPrefab{};  // local editable prefab
-	static char prefabName[64] = "";
-	static bool hasCollider = false;
-	static int shapeIndex = 1;  // 1 = Rectangle (default), 0 = Circle
-	static int colorIndex = Color::Green;
-
-	// New implementation for dropdown scrollable UI for prefabs
-	static std::string statusMessage{};
-	static std::string selectedPrefabName{};
-
-
-
-	ImGui::Text("==========PREFABS TAB==========");
-
-	ImGui::Text("Prefab name:");
-	ImGui::InputText("##Prefab Name", prefabName, sizeof(prefabName));
-	currentPrefab.name = prefabName;
-
-	ImGui::Separator();
-	ImGui::Text("Transform / Size");
-	ImGui::DragFloat("Position X", &currentPrefab.x, 1.0f);
-	ImGui::DragFloat("Position Y", &currentPrefab.y, 1.0f);
-	ImGui::DragFloat("Width", &currentPrefab.width, 0.5f, 1.0f, 200.0f);
-	ImGui::DragFloat("Height", &currentPrefab.height, 0.5f, 1.0f, 200.0f);
-
-
-	ImGui::Combo("Shape", &shapeIndex, shapes, IM_ARRAYSIZE(shapes));
-	currentPrefab.shape = shapeIndex;
-
-	ImGui::Combo("Color", &colorIndex, colors, IM_ARRAYSIZE(colors));
-	currentPrefab.color = colorIndex;
-
-	ImGui::Checkbox("Has Collider", &hasCollider);
-	currentPrefab.hasCollider = hasCollider;
-
-
-	// Save a new prefab or edit existing value
-	if (ImGui::Button("Save New or Existing Prefabs:")) {
-		// Check if prefab name is not empty
-		if (currentPrefab.name.empty() || currentPrefab.name == "Empty") {
-			std::cerr << "[UI] Cannot save prefab: Please enter a valid prefab name\n";
-			statusMessage = "Error: Please enter a valid prefab name";
-		}
-		else {
-			savePrefab(currentPrefab);
-			prefabRegistry[currentPrefab.name] = currentPrefab; //puts the prefab's data into a registry
-			statusMessage = "Saved prefab: " + currentPrefab.name;
-			std::cout << "[UI] Saved prefab: " << currentPrefab.name << "\n";
-		}
-	}
-
-	// Display status message
-	if (!statusMessage.empty()) {
-		if (statusMessage.find("Error") != std::string::npos) {
-			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s", statusMessage.c_str());
-		}
-		else {
-			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "%s", statusMessage.c_str());
-		}
-	}
-
-	ImGui::Separator();
-
-	// Load performs a "read all file in directory" now
-	if (ImGui::Button("Load Existing Prefab")) {
-		try {
-			// Clear old entries so deleted files don't persist
-			prefabRegistry.clear();  
-			for (auto& entry : std::filesystem::directory_iterator(FileSystem::GetAssetsDir().string() + "/saves/prefabs/")) {
-				if (entry.path().extension() == ".txt") {
-					try {
-						PrefabData loaded = loadPrefab(entry.path().string());
-						if (!loaded.name.empty()) {
-							prefabRegistry[loaded.name] = loaded;
-						}
-					}
-					catch (const std::exception& e) {
-						std::cerr << " Failed to load prefab from " << entry.path() << ": " << e.what() << "\n";
-					}
-				}
-			}
-		}
-		catch (const std::exception& e) {
-			std::cerr << " Failed to read prefab directory: " << e.what() << "\n";
-		}
-	}
-
-	//Drop down and selectable list of loaded prefabs
-	ImGui::Text("Available Prefabs:");
-	if (ImGui::BeginListBox("##PrefabList", ImVec2(200, 150))) {
-		for (auto& [name, data] : prefabRegistry) {
-			bool selected = (selectedPrefabName == name);
-			if (ImGui::Selectable(name.c_str(), selected)) {
-				selectedPrefabName = name;
-				currentPrefab = data;  // load into editor fields
-				statusMessage = "Loaded prefab: " + name;
-				strncpy(prefabName, name.c_str(), sizeof(prefabName));
-				prefabName[sizeof(prefabName) - 1] = '\0';
-				g_selectedPrefabForPlacement = name;
-			}
-		}
-		ImGui::EndListBox();
-	}
-
-	// Show selected prefab status
-	if (!selectedPrefabName.empty()) {
-		ImGui::Text("Selected: %s", selectedPrefabName.c_str());
-		if (!g_selectedPrefabForPlacement.empty()) {
-			ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Click in Game View to place");
-			if (ImGui::Button("Cancel Placement")) {
-				g_selectedPrefabForPlacement.clear();
-			}
-		}
-	}
-
-	//Spawn desired prefab
-	ImGui::Separator();
-	if (ImGui::Button("Spawn Prefab")) {
-		if (prefabRegistry.count(selectedPrefabName)) {
-			ECS::Entity e = instantiatePrefabFromSnapshot(selectedPrefabName, entityManager);
-
-			// Add entity to scene hierarchy as root node
-			sceneTree.createFromEntity(e, nullptr);
-
-			// Record creation for undo/redo with full snapshot
-			auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
-				sceneTree,
-				entityManager,
-				e
-			);
-			undoManager.executeCommand(std::move(createCmd));
-
-			if (g_game) g_game->markEntitiesDirty();
-			std::cout << "Spawned prefab: " << selectedPrefabName << "\n";
-
-		}
-	}
-
-	//std::vector<ECS::Entity> NamedEntityList = entityManager.findEntity<ECSComponents::NameComponent>();
-
-	//ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
-	//ImGui::Separator();
-
-	//// Iterate through each entity
-	//for (ECS::Entity& e : NamedEntityList)
-	//{
-	//	const auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-	//	std::string name = nameComp.name;
-	//	bool selected = (selectedEntityID == e.id());
-	//	std::string label = std::to_string(e.id()) + ": " + name;
-	//	if (ImGui::Selectable(label.c_str(), selected))
-	//	{
-	//		selectedEntityID = e.id();
-	//	}
-	//}
-}
 
 void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager)
 {
 	auto& entityManager = engine_.getEntityManager();
 
-	// Get all entities that have a NameComponent
-	std::vector<ECS::Entity> NamedEntityList = entityManager.findEntity<ECSComponents::NameComponent>();
+	// Get all nodes from the scene tree
+	auto allNodes = sceneTree.getAllNodes();
 
-	ImGui::Text("Total Entities: %d", static_cast<int>(NamedEntityList.size()));
+	ImGui::Text("Total Entities: %d", static_cast<int>(allNodes.size()));
 	ImGui::Separator();
 
 	// --- Entity selection list ---
-	for (ECS::Entity& e : NamedEntityList)
+	for (Editor::Node* n : allNodes)
 	{
-		const auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-		std::string name = nameComp.name;
-		bool selected = (selectedEntityID == e.id());
-
-		std::string label = std::to_string(e.id()) + ": " + name;
+		bool selected = (selectedEntityID == n->entity_.id());
+		std::string label = std::to_string(n->entity_.id()) + ": " + n->name_;
 		if (ImGui::Selectable(label.c_str(), selected))
 		{
-			selectedEntityID = e.id();
+			selectedEntityID = n->entity_.id();
 		}
 	}
 
@@ -1079,14 +1225,11 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 	{
 		// Find and display the selected entity
 		bool entityFound = false;
-		for (ECS::Entity& e : NamedEntityList)
+		for (Editor::Node* n : allNodes)
 		{
-			if (e.id() == selectedEntityID)
+			if (n->entity_.id() == selectedEntityID)
 			{
-				// Display inspector for all entities (including root nodes)
-				displayEntityInspector(engine_, e, undoManager, sceneTree);
-				//assetPresetsTab(engine_, e);
-				assetPresetsTab(engine_, e);
+				displayEntityInspector(engine_, n->entity_, undoManager, sceneTree);
 				entityFound = true;
 				break;
 			}
@@ -1103,58 +1246,6 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager)
 {
 	ImGui::Text("=== Scene Hierarchy ===");
-	ImGui::Separator();
-
-	// ==================== SPAWN PLAYER ====================
-	ImGui::Text("=== PLAYER CONTROLS ===");
-	ImGui::Text("WASD to move player");
-
-	if (!playerSpawned_) {
-		if (ImGui::Button("Spawn Player")) {
-
-			// Load player configuration from file
-			Player::PlayerConfig playerConfig;
-			playerConfig.LoadFromFile(FileSystem::GetAssetsDir().string() + "/saves/player/player_config.txt");
-
-			// Spawn player at center of virtual world (1280x720 / 2 = 640, 360)
-			// Create transform with default position at center of screen
-			float centerX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
-			float centerY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
-
-			// Create complete player entity using the config
-			ECS::Entity player = Player::CreatePlayerEntityFromConfig(
-				engine_.getEntityManager(),
-				Math::eVec2<float>{centerX, centerY},
-				playerConfig
-			);
-
-			// Store player ID for reference
-			playerEntityID_ = player.id();
-			playerSpawned_ = true;
-
-			// Add player entity to scene tree as root node
-			sceneTree.createFromEntity(player, nullptr);
-
-			std::cout << "Player spawned at center (" << centerX << ", " << centerY << ")\n";
-		}
-	}
-	else {
-		ImGui::Text("Player Active (ID: %u)", playerEntityID_);
-		if (ImGui::Button("Destroy Player")) {
-			if (playerSpawned_ == true) {
-				// Remove from scene hierarchy and destroy children
-				Editor::Node* node = sceneTree.getNodeByEntityID(playerEntityID_);
-				if (node) {
-					destroyChildrenRecursive(node, engine_.getEntityManager());
-					sceneTree.kill(node);
-				}
-				engine_.getEntityManager().destroyEntity(playerEntityID_);
-			}
-			playerSpawned_ = false;
-			if (g_game) g_game->markEntitiesDirty();
-			std::cout << "Player and all children destroyed\n";
-		}
-	}
 	ImGui::Separator();
 
 	// ==================== HIERARCHY CONTROLS ====================
@@ -1180,21 +1271,18 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		int maxEntityNumber = 0;
 		auto& entityManager = engine_.getEntityManager();
 
-		// Scan all entities with NameComponent to find the highest "Entity N" number
-		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
-			auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-			std::string name(nameComp.name);
-
-			// Check if name matches pattern "Entity <number>"
+		// Scan all scene nodes to find the highest "Entity N" number
+		for (Editor::Node* n : sceneTree.getAllNodes()) {
+			const std::string& name = n->name_;
 			if (name.find("Entity ") == 0) {
 				try {
-					int num = std::stoi(name.substr(7));  // Extract number after "Entity "
+					int num = std::stoi(name.substr(7));
 					if (num > maxEntityNumber) {
 						maxEntityNumber = num;
 					}
 				}
 				catch (...) {
-					// Ignore entities with non-numeric suffixes like "Entity ABC"
+					// Ignore nodes with non-numeric suffixes like "Entity ABC"
 				}
 			}
 		}
@@ -1238,88 +1326,104 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		}
 	}
 
+	// Preset selector for node spawning
+	{
+		auto& prefabMng = engine_.getPrefabManager();
+		auto presetNames = prefabMng.getPresetNames();
+		presetNames.insert(presetNames.begin(), "EMPTY");
 
+		// Ensure g_selectedNodePreset is valid
+		if (g_selectedNodePreset.empty() && !presetNames.empty())
+			g_selectedNodePreset = presetNames[0];
+
+		ImGui::Text("Node Preset:");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(160.f);
+		if (ImGui::BeginCombo("##NodePreset", g_selectedNodePreset.c_str()))
+		{
+			for (int i = 0; i < static_cast<int>(presetNames.size()); ++i)
+			{
+				bool selected = (presetNames[i] == g_selectedNodePreset);
+				if (ImGui::Selectable(presetNames[i].c_str(), selected))
+				{
+					g_selectedNodePreset    = presetNames[i];
+					g_selectedNodePresetIdx = i;
+				}
+				if (selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+	}
 
 	if (ImGui::Button("Add Root Node")) {
 		auto& entityManager = engine_.getEntityManager();
+		auto& prefabMng     = engine_.getPrefabManager();
 
-		// Create transform with default position at center of screen
 		float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
 		float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
 
-		ECSComponents::TransformComponent transform{
-			{nodePosX, nodePosY}, // Center position
-			{0.0f, 0.0f},		  // Velocity
-			{1.0f, 1.0f}          // Scale
-		};
+		// Create entity
+		ECS::Entity newEntity = entityManager.create<>();
 
-		// Create render component with default size and color
-		ECSComponents::RenderComponent renderComp{
-			50.0f,        // Width
-			50.0f,        // Height
-			"Rectangle",  // Shape
-			Color::Green  // Color
-		};
-
-		ECS::Entity newEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
-		newEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
-		newEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
-		newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
-		
-
-
-		// Add collision component for physics interactions
-		ECSComponents::CollisionComponent collisionComp;
-		if (strcmp(renderComp.shape, "Circle") == 0) {
-			// Auto-calculate circle collider from render dimensions
-			collisionComp = ECSComponents::CreateCircleFromRender(renderComp);
+		// Add all components from the selected preset (skips any already-present component)
+		if (const auto* presetComps = prefabMng.getPresetComponents(g_selectedNodePreset))
+		{
+			for (const auto& [compTypeIdx, compAny] : *presetComps)
+			{
+				ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+				{
+					if (!newEntity.template has<T>(entityManager))
+						newEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+				});
+			}
 		}
-		else {
-			// Auto-calculate rectangle collider from render dimensions
-			collisionComp.isActive = true;
-			collisionComp.isTrigger = false;
-			collisionComp.type = ECSComponents::ColliderType::RECTANGLE;
-			collisionComp.data.rectangle.width = renderComp.width;
-			collisionComp.data.rectangle.height = renderComp.height;
+
+		// If the preset includes AnimationControllerComponent, assign a proper registry controller ID
+		// (controllerID is not serialized, so it arrives as 0 from the prefab file)
+		if (newEntity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+		{
+			auto& animCtrl = newEntity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+			animCtrl.controllerID = engine_.getAnimationRegistry().createController();
 		}
-		newEntity.add<ECSComponents::CollisionComponent>(entityManager,
-			collisionComp);
 
-		// Add physics component to enable pushing
-		ECSComponents::PhysicsComponent physicsComp;
-		physicsComp.mass = 2.0f;          // Mass (heavier = harder to push)
-		physicsComp.drag = 8.0f;          // Higher drag for quick stopping
-		physicsComp.isKinematic = false;  // NOT kinematic (can be pushed)
-		physicsComp.useGravity = false;   // No gravity for top-down game
-		newEntity.add<ECSComponents::PhysicsComponent>(entityManager,
-			physicsComp);
+		// If the preset included a TransformComponent, place it at screen centre
+		if (newEntity.has<ECSComponents::TransformComponent>(entityManager))
+		{
+			auto& transform = newEntity.get<ECSComponents::TransformComponent>(entityManager);
+			transform.pos = { nodePosX, nodePosY };
+		}
 
-		
-		
-		newEntity.add<ECSComponents::BoxComponent>(entityManager, ECSComponents::BoxComponent());
-
-
-		// Name root nodes as "Entity 1", "Entity 2", etc.
-		auto& nameComp = newEntity.get<ECSComponents::NameComponent>(entityManager);
-		std::string entityName = "Entity " + std::to_string(entityCounter++);
-		strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
-		nameComp.name[sizeof(nameComp.name) - 1] = '\0';
-
+		// Create node and set its name
+		std::string entityName = g_selectedNodePreset + " " + std::to_string(entityCounter++);
 		Node* createdNode = sceneTree.createFromEntity(newEntity, nullptr);
+		createdNode->name_ = entityName;
 
-		// Record creation for undo/redo with full snapshot
+		// Set node type — generated from PRESET_LIST X-macro so it stays in sync with new presets
+		#undef PRESET
+		#define PRESET(Name, ...) {#Name, Editor::NodeType::Name},
+		static const std::unordered_map<std::string, Editor::NodeType> s_rootPresetToType = {
+			{"EMPTY", Editor::NodeType::EMPTY},
+			PRESET_LIST
+		};
+		#undef PRESET
+		if (auto it = s_rootPresetToType.find(g_selectedNodePreset); it != s_rootPresetToType.end())
+			createdNode->type_ = it->second;
+
+		// Record creation for undo/redo
 		auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 			sceneTree,
 			entityManager,
-			newEntity
+			newEntity,
+			engine_.getGraphicsManager()
 		);
 		undoManager.executeCommand(std::move(createCmd));
 
-		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created\n";
+		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created with preset '" << g_selectedNodePreset << "'\n";
 		if (attachScript && selectedScriptIndex >= 0) {
 			std::wstring selectedScript = availableScripts[selectedScriptIndex];
 			std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-			auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+			auto script = scriptMng.loadScript(selectedScript);
 			if (script)
 				sceneTree.attachScript(createdNode, std::move(script));
 			else
@@ -1332,97 +1436,87 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 	if (ImGui::Button("Add Child Node")) {
 		if (selectedEntityID != UINT32_MAX) {
-			// Verify the parent node exists in the scene tree
 			if (!sceneTree.getNodeByEntityID(selectedEntityID)) {
 				std::cout << "[ERROR] Selected entity " << selectedEntityID << " not found in scene tree. Cannot add child.\n";
 			}
 			else {
 				auto& entityManager = engine_.getEntityManager();
+				auto& prefabMng     = engine_.getPrefabManager();
 
-				// Create transform with default position at center of screen
 				float nodePosX = g_game->getEditorCameraX() + static_cast<float>(g_game->getEditorWidth()) / 2.f;
 				float nodePosY = g_game->getEditorCameraY() + static_cast<float>(g_game->getEditorHeight()) / 2.f;
-				
-				// Create transform with default position at center of screen
-				ECSComponents::TransformComponent transform{
-					{nodePosX, nodePosY},  // Center position
-					{0.0f, 0.0f},      // Velocity
-					{1.0f, 1.0f}       // Scale
-				};
 
-				// Create render component with default size and color
-				ECSComponents::RenderComponent renderComp{
-					50.0f,        // Width
-					50.0f,        // Height
-					"Rectangle",  // Shape
-					Color::Red    // Color (different from root nodes)
-				};
+				// Create entity
+				ECS::Entity childEntity = entityManager.create<>();
 
-				ECS::Entity childEntity = entityManager.create<ECSComponents::TransformComponent>(transform);
-				childEntity.add<ECSComponents::DrawInfoComponent>(entityManager, renderComp);
-				childEntity.add<ECSComponents::NameComponent>(entityManager, ECSComponents::NameComponent());
-				childEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, engine_.getAnimationRegistry().createController());
-				
-				
-				// Add collision component for physics interactions
-				ECSComponents::CollisionComponent childCollisionComp;
-				childCollisionComp.isActive = true;
-				childCollisionComp.isTrigger = false;
-				childCollisionComp.type = ECSComponents::ColliderType::RECTANGLE;
-				childCollisionComp.data.rectangle.width = 50.0f;
-				childCollisionComp.data.rectangle.height = 50.0f;
-				childEntity.add<ECSComponents::CollisionComponent>(entityManager,
-					childCollisionComp);
+				// Add all components from the selected preset (skips any already-present component)
+				if (const auto* presetComps = prefabMng.getPresetComponents(g_selectedNodePreset))
+				{
+					for (const auto& [compTypeIdx, compAny] : *presetComps)
+					{
+						ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+						{
+							if (!childEntity.template has<T>(entityManager))
+								childEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+						});
+					}
+				}
 
-				// Add physics component to enable pushing
-				ECSComponents::PhysicsComponent childPhysicsComp;
-				childPhysicsComp.mass = 2.0f;
-				childPhysicsComp.drag = 8.0f;
-				childPhysicsComp.isKinematic = false;
-				childPhysicsComp.useGravity = false;
-				childEntity.add<ECSComponents::PhysicsComponent>(entityManager,
-					childPhysicsComp);
+				// If the preset includes AnimationControllerComponent, assign a proper registry controller ID
+				if (childEntity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+				{
+					auto& animCtrl = childEntity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+					animCtrl.controllerID = engine_.getAnimationRegistry().createController();
+				}
 
-				childEntity.add<ECSComponents::BoxComponent>(entityManager,
-					ECSComponents::BoxComponent());
-				// Name child nodes as "Entity #" using the same counter
-				auto& nameComp = childEntity.get<ECSComponents::NameComponent>(entityManager);
-				std::string entityName = "Entity " + std::to_string(entityCounter++);
-				strncpy_s(nameComp.name, entityName.c_str(), sizeof(nameComp.name) - 1);
-				nameComp.name[sizeof(nameComp.name) - 1] = '\0';
+				// If the preset included a TransformComponent, place it at screen centre
+				if (childEntity.has<ECSComponents::TransformComponent>(entityManager))
+				{
+					auto& transform = childEntity.get<ECSComponents::TransformComponent>(entityManager);
+					transform.pos = { nodePosX, nodePosY };
+				}
+
+				// Set entity name on the node as "<PRESET> <counter>"
+				std::string entityName = g_selectedNodePreset + " " + std::to_string(entityCounter++);
 
 				// Get parent node and add child entity to scene tree
 				Editor::Node* parentNode = sceneTree.getNodeByEntityID(selectedEntityID);
 				Editor::Node* childNode = sceneTree.createFromEntity(childEntity, parentNode);
+				childNode->name_ = entityName;
+
+				// Set node type — generated from PRESET_LIST X-macro so it stays in sync with new presets
+				#undef PRESET
+				#define PRESET(Name, ...) {#Name, Editor::NodeType::Name},
+				static const std::unordered_map<std::string, Editor::NodeType> s_childPresetToType = {
+					{"EMPTY", Editor::NodeType::EMPTY},
+					PRESET_LIST
+				};
+				#undef PRESET
+				if (auto it = s_childPresetToType.find(g_selectedNodePreset); it != s_childPresetToType.end())
+					childNode->type_ = it->second;
 
 				// Record creation for undo/redo
 				auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 					sceneTree,
 					entityManager,
-					childEntity
+					childEntity,
+					engine_.getGraphicsManager()
 				);
 				undoManager.executeCommand(std::move(createCmd));
 
-				//if (attachScript) {
-				//	auto script = scriptMng.selectScript(); // file picker
-				//	if (script) {
-				//		sceneTree.attachScript(childNode, std::move(script));
-				//	}
-				//}
 				if (attachScript && selectedScriptIndex >= 0) {
 					std::wstring selectedScript = availableScripts[selectedScriptIndex];
 					std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-					auto script = scriptMng.loadScript(selectedScript); // Replace selectScript() with this new call
+					auto script = scriptMng.loadScript(selectedScript);
 					if (script)
 						sceneTree.attachScript(childNode, std::move(script));
 				}
 
 				if (g_game) g_game->markEntitiesDirty();
 
-				std::cout << "Added child node " << childEntity.id() << " ('" << nameComp.name
-					<< "') to parent " << selectedEntityID << " with undo support\n";
+				std::cout << "Added child node " << childEntity.id() << " ('" << entityName
+					<< "') to parent " << selectedEntityID << " with preset '" << g_selectedNodePreset << "'\n";
 
-				// Debug: verify the relationship was set
 				if (childNode) {
 					std::cout << "  -> Child's parent: " << (childNode->parent_ ? std::to_string(childNode->parent_->sceneObjectID_) : "none") << "\n";
 				}
@@ -1531,21 +1625,6 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		// Check if scene list contains at least one scene
 		if (!sceneNames.empty())
 		{
-			// Check that no scene was recently deleted
-			//auto it = std::find_if(sceneNames.begin(), sceneNames.end(),
-			//	[&](const std::string& scenename)
-			//	{
-			//		return scenename == currScene;
-			//	});
-
-			//if (it == sceneNames.end())
-			//{
-			//	std::cout << "[ImGui] file does not exist: " << currScene << std::endl;
-			//	// Scene deleted, load the first available scene instead
-			//	editor_.selectScene(sceneList.front()->getSceneName());
-
-			//	g_game->markEntitiesDirty();
-			//}
 			sceneNames.clear();
 		} 
 
@@ -1568,19 +1647,25 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 	
 	ImGui::Separator();
 
+	// Cache start scene name for this frame
+	const std::string& startScene = editor_.getStartScene();
+
 	// Display scene names
 	for (auto& name : sceneNames)
 	{
-
 		std::string sceneName = name;
+		bool isStartScene = (sceneName == startScene);
 
 		// Give it an id
 		ImGui::PushID(sceneName.c_str());
 
+		// Build display label: prefix [S] for start scene
+		std::string displayLabel = isStartScene ? ("[S] " + sceneName) : sceneName;
+
 		// Create an invisible button over the text
-		// Size of invisible button
-		ImVec2 textSize = ImGui::CalcTextSize(sceneName.c_str());
-		ImGui::InvisibleButton("##scene", textSize);
+		ImVec2 textSize = ImGui::CalcTextSize(displayLabel.c_str());
+		float rowWidth = ImGui::GetContentRegionAvail().x;
+		ImGui::InvisibleButton("##scene", ImVec2(rowWidth, textSize.y));
 
 		// Left click loads scene
 		// IsItemClicked checks the click on the most recent pushed imgui item aka invisible button
@@ -1614,7 +1699,25 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		if (ImGui::BeginPopup("scene_menu"))
 		{
 			ImGui::Text("%s", sceneName.c_str());
+			if (isStartScene)
+				ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.0f), "(Start Scene)");
 			static std::string warningBuf;
+			ImGui::Separator();
+
+			// Set as start scene
+			if (isStartScene)
+			{
+				ImGui::TextDisabled("Already the start scene");
+			}
+			else
+			{
+				if (ImGui::Button("Set as Start Scene"))
+				{
+					editor_.setStartScene(sceneName);
+					ImGui::CloseCurrentPopup();
+				}
+			}
+
 			ImGui::Separator();
 
 			// Input box to change name
@@ -1708,10 +1811,13 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 		// Aligning text to invisible button
 		ImGui::SameLine(0, 0);
-		// Minus button size offset
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() - textSize.x);
-		// Display file name as text
-		ImGui::Text("%s", sceneName.c_str());
+		// Go back to the start of the invisible button
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() - rowWidth);
+		// Display file name as text (green if this is the start scene)
+		if (isStartScene)
+			ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f), "%s", displayLabel.c_str());
+		else
+			ImGui::Text("%s", displayLabel.c_str());
 
 		if (ImGui::IsItemHovered())
 		{
@@ -1732,8 +1838,6 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		// Save scene
 		auto const& assetPath = FileSystem::GetAssetsDir().string();
 		editor_.getSceneTree().save(assetPath + "/saves/scenes/" + sceneName);
-		// Update last saved scene
-		editor_.updateLastSavedScene();
 	}
 
 	if (ImGui::Button("Create new scene"))
@@ -1746,42 +1850,69 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 }
 
-void LoadAudioAssets(Engine::EnoEngine& engine_)
+// Recursively scans a directory and populates an AudioFolder tree.
+// buildBase / rootBase are the top-level paths so we can derive the matching root path for each file.
+static void BuildAudioTree(AudioFolder& folder,
+	const std::filesystem::path& buildBase,
+	const std::filesystem::path& rootBase,
+	const std::filesystem::path& currentPath)
 {
-	audioAssets.clear();
+	if (!std::filesystem::exists(currentPath)) return;
 
-	// Get the list of ACTUALLY loaded sounds from the loader
-	// This ensures we only show files that were successfully loaded by FMOD
-	const auto& loadedSounds = engine_.getResourceLoader().getSounds();
-
-	// Add only the successfully loaded sound names to our UI list
-	for (const auto& soundPair : loadedSounds)
+	for (const auto& entry : std::filesystem::directory_iterator(currentPath))
 	{
-		// soundPair.first is the sound name (filename without extension)
-		// We need to find the actual filename with extension
-		std::vector<std::string> folders = {
-			engine_.getResourceLoader().getMusicPath().c_str(),
-			engine_.getResourceLoader().getSFXPath().c_str(),
-		};
-
-		for (const auto& folder : folders)
+		if (entry.is_directory())
 		{
-			if (!std::filesystem::exists(folder))
-				continue;
-
-			for (const auto& entry : std::filesystem::directory_iterator(folder))
+			AudioFolder sub;
+			sub.folderName = entry.path().filename().string();
+			BuildAudioTree(sub, buildBase, rootBase, entry.path());
+			if (!sub.subfolders.empty() || !sub.files.empty())
+				folder.subfolders.push_back(std::move(sub));
+		}
+		else if (entry.is_regular_file())
+		{
+			auto ext = entry.path().extension().string();
+			if (ext == ".wav" || ext == ".mp3")
 			{
-				if (!entry.is_regular_file()) continue;
-
-				// Check if this file's stem (name without extension) matches the loaded sound
-				if (entry.path().stem().string() == soundPair.first)
-				{
-					audioAssets.push_back(entry.path().filename().string());
-					break; // Found it, move to next sound
-				}
+				AudioEntry e;
+				e.displayName = entry.path().filename().string();
+				e.stemName    = entry.path().stem().string();
+				e.buildPath   = entry.path();
+				// mirror the relative path onto the root (source) folder
+				auto rel  = std::filesystem::relative(entry.path(), buildBase);
+				e.rootPath = rootBase / rel;
+				folder.files.push_back(std::move(e));
 			}
 		}
 	}
+
+	std::sort(folder.subfolders.begin(), folder.subfolders.end(),
+		[](const AudioFolder& a, const AudioFolder& b) { return a.folderName < b.folderName; });
+	std::sort(folder.files.begin(), folder.files.end(),
+		[](const AudioEntry& a, const AudioEntry& b) { return a.displayName < b.displayName; });
+}
+
+void LoadAudioAssets(Engine::EnoEngine& engine_)
+{
+	Resources::EnoLoader& loader = engine_.getResourceLoader();
+	g_audioTree = AudioFolder{};
+	g_audioTree.folderName = "sound";
+
+	AudioFolder musicFolder;
+	musicFolder.folderName = "music";
+	BuildAudioTree(musicFolder,
+		loader.getMusicPath(), loader.getRootMusicPath(),
+		loader.getMusicPath());
+	if (!musicFolder.subfolders.empty() || !musicFolder.files.empty())
+		g_audioTree.subfolders.push_back(std::move(musicFolder));
+
+	AudioFolder sfxFolder;
+	sfxFolder.folderName = "sfx";
+	BuildAudioTree(sfxFolder,
+		loader.getSFXPath(), loader.getRootSFXPath(),
+		loader.getSFXPath());
+	if (!sfxFolder.subfolders.empty() || !sfxFolder.files.empty())
+		g_audioTree.subfolders.push_back(std::move(sfxFolder));
 }
 
 void displayAudioTab(Engine::EnoEngine& engine_)
@@ -1922,7 +2053,6 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 		}
 	}
 
-	static int selectedAsset = -1;
 	static std::string selectedName{};
 	static FMOD::Sound* selectedSound = nullptr;
 
@@ -1931,74 +2061,93 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	static std::filesystem::path selectedFullRootPath{};
 	static std::string selectedFilenameWithExt{};
 
-	// ============== FILE LIST ==============
-	ImGui::BeginChild("AudioAssetList", ImVec2(0, 150), true);
-
-	if (audioAssets.empty())
+	// ============== FILE TREE ==============
+	// Build entity->audio attachment map for indicators
+	auto& entMgr = engine_.getEntityManager();
+	std::vector<ECS::Entity> audioEntities = entMgr.findEntity<ECSComponents::AudioComponent>();
+	std::unordered_map<std::string, std::string> attachedAudioMap; // stemName -> entityName
+	for (ECS::Entity& ae : audioEntities)
 	{
-		ImGui::TextDisabled("(No audio loaded. Press button above)");
+		auto& ac = ae.get<ECSComponents::AudioComponent>(entMgr);
+		if (strlen(ac.audioMod_.name_) > 0)
+		{
+			std::string entityLabel;
+			{
+				auto* n = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(ae.id());
+				entityLabel = n ? n->name_ : std::to_string(ae.id());
+			}
+			attachedAudioMap[ac.audioMod_.name_] = entityLabel;
+		}
+	}
+
+	ImGui::BeginChild("AudioAssetTree", ImVec2(0, 200), true);
+
+	bool treeIsEmpty = g_audioTree.subfolders.empty() && g_audioTree.files.empty();
+	if (treeIsEmpty)
+	{
+		ImGui::TextDisabled("(No audio loaded. Press \"Load Audio Files\" above)");
 	}
 	else
 	{
-		for (int i = 0; i < audioAssets.size(); ++i)
+		// Recursive lambda to render each folder node
+		std::function<void(const AudioFolder&)> renderFolder = [&](const AudioFolder& folder)
 		{
-			if (ImGui::Selectable(audioAssets[i].c_str(), selectedAsset == i))
+			for (const AudioFolder& sub : folder.subfolders)
 			{
-				selectedAsset = i;
-
-				selectedName = audioAssets[i];
-				selectedName = selectedName.substr(0, selectedName.find_last_of('.'));
-				
-
-				// YunQi M4 addition for deletion of audio files
-				selectedFilenameWithExt = audioAssets[i]; // this has extension, e.g. "laser.wav" operator/ does an append for path and extension
-
-				std::cout << "[Audio Selection] File: " << selectedFilenameWithExt << "\n";
-				std::cout << "[Audio Selection] Build Music Path: " << loader.getMusicPath() << "\n";
-				std::cout << "[Audio Selection] Build SFX Path: " << loader.getSFXPath() << "\n";
-				std::cout << "[Audio Selection] Root Music Path: " << loader.getRootMusicPath() << "\n";
-				std::cout << "[Audio Selection] Root SFX Path: " << loader.getRootSFXPath() << "\n";
-
-				std::filesystem::path musicPath					 =  std::filesystem::path(loader.getMusicPath()) / selectedFilenameWithExt;
-				std::filesystem::path sfxPath					 =  std::filesystem::path(loader.getSFXPath()) / selectedFilenameWithExt;
-				std::filesystem::path rootMusicPath				 =  std::filesystem::path(loader.getRootMusicPath()) / selectedFilenameWithExt;
-				std::filesystem::path rootSfxPath				 =  std::filesystem::path(loader.getRootSFXPath()) / selectedFilenameWithExt;
-
-				std::cout << "[Audio Selection] Checking build music: " << musicPath << " (exists: " << std::filesystem::exists(musicPath) << ")\n";
-				std::cout << "[Audio Selection] Checking build sfx: " << sfxPath << " (exists: " << std::filesystem::exists(sfxPath) << ")\n";
-				std::cout << "[Audio Selection] Checking root music: " << rootMusicPath << " (exists: " << std::filesystem::exists(rootMusicPath) << ")\n";
-				std::cout << "[Audio Selection] Checking root sfx: " << rootSfxPath << " (exists: " << std::filesystem::exists(rootSfxPath) << ")\n";
-
-				if (std::filesystem::exists(musicPath))			    selectedFullPath = musicPath;
-				else if (std::filesystem::exists(sfxPath))		    selectedFullPath = sfxPath;
-				else											    selectedFullPath.clear();
-				if (std::filesystem::exists(rootMusicPath))         selectedFullRootPath = rootMusicPath;
-				else if (std::filesystem::exists(rootSfxPath))		selectedFullRootPath = rootSfxPath;
-				else												selectedFullRootPath.clear();
-
-				std::cout << "[Audio Selection] Selected BUILD path: " << (selectedFullPath.empty() ? "(empty)" : selectedFullPath.string()) << "\n";
-				std::cout << "[Audio Selection] Selected ROOT path: " << (selectedFullRootPath.empty() ? "(empty)" : selectedFullRootPath.string()) << "\n";
-
-				std::cout << "[Audio] User selected: " << selectedName << "\n";
-
-				// Request engine to load this sound
-				bus.publish(Audio::RequestSound{ selectedName });
-
-				auto& sounds = loader.getSounds();
-				auto it = sounds.find(selectedName);
-
-				if (it != sounds.end())
+				ImGuiTreeNodeFlags folderFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+				if (ImGui::TreeNodeEx(sub.folderName.c_str(), folderFlags))
 				{
-					selectedSound = it->second;
-					std::cout << "[Audio] Loaded Sound: " << selectedName << "\n";
-				}
-				else
-				{
-					selectedSound = nullptr;
-					std::cout << "[Audio] ERROR: Sound not found after request.\n";
+					renderFolder(sub);
+					ImGui::TreePop();
 				}
 			}
-		}
+
+			for (const AudioEntry& entry : folder.files)
+			{
+				bool isSelected = (selectedFullPath == entry.buildPath);
+
+				std::string label = entry.displayName;
+				auto attachIt = attachedAudioMap.find(entry.stemName);
+				if (attachIt != attachedAudioMap.end())
+					label += "  -> [" + attachIt->second + "]";
+
+				// Grey out files not yet loaded into FMOD
+				bool isLoaded = loader.getSounds().count(entry.stemName) > 0;
+				if (!isLoaded)
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+
+				ImGuiSelectableFlags selFlags = ImGuiSelectableFlags_SpanAllColumns;
+				if (ImGui::Selectable(label.c_str(), isSelected, selFlags))
+				{
+					selectedName            = entry.stemName;
+					selectedFilenameWithExt = entry.displayName;
+					selectedFullPath        = entry.buildPath;
+					selectedFullRootPath    = entry.rootPath;
+
+					std::cout << "[Audio] User selected: " << selectedName << "\n";
+
+					bus.publish(Audio::RequestSound{ selectedName });
+
+					const auto& sounds = loader.getSounds();
+					auto it = sounds.find(selectedName);
+					if (it != sounds.end())
+					{
+						selectedSound = it->second;
+						std::cout << "[Audio] Loaded Sound: " << selectedName << "\n";
+					}
+					else
+					{
+						selectedSound = nullptr;
+						std::cout << "[Audio] Sound not in FMOD yet (not loaded): " << selectedName << "\n";
+					}
+				}
+
+				if (!isLoaded)
+					ImGui::PopStyleColor();
+			}
+		};
+
+		renderFolder(g_audioTree);
 	}
 
 	ImGui::EndChild();
@@ -2058,12 +2207,71 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			bus.publish(Audio::StopBGM{});
 		}
 
-		auto& map = engine_.getEntityManager().getMap();
-		auto it = map.find(selectedEntityID);
+		// --- Entity target selection for audio attachment ---
+		static uint32_t audioTargetEntityID = UINT32_MAX;
+		static std::string audioAttachStatusMsg{};
+		static float audioAttachStatusTimer = 0.0f;
 
-		if (it == map.end())
+		auto& entityManager = engine_.getEntityManager();
+
+		// Default to the globally selected entity if no audio target has been picked yet
+		if (audioTargetEntityID == UINT32_MAX)
+			audioTargetEntityID = selectedEntityID;
+
+		// Build the label for the currently targeted entity
+		std::string targetLabel = "(No entity selected)";
 		{
-			ImGui::TextDisabled("Invalid entity selected");
+			auto& map = entityManager.getMap();
+			auto it = map.find(audioTargetEntityID);
+			if (it != map.end())
+			{
+				auto* n = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(audioTargetEntityID);
+				targetLabel = std::to_string(audioTargetEntityID) + ": " + (n ? n->name_ : "(unnamed)");
+			}
+		}
+
+		ImGui::Text("Target Entity:");
+		ImGui::SameLine();
+
+		// Combo dropdown to pick target entity
+		ImGui::SetNextItemWidth(-1);
+		if (ImGui::BeginCombo("##AudioTargetEntity", targetLabel.c_str()))
+		{
+			auto& audioSceneTree = engine_.getEnoEditor().getSceneTree();
+			for (Editor::Node* n : audioSceneTree.getAllNodes())
+			{
+				ECS::Entity e = n->entity_;
+				std::string label = std::to_string(e.id()) + ": " + n->name_;
+
+				// Show indicator if entity already has audio attached
+				if (e.has<ECSComponents::AudioComponent>(entityManager))
+				{
+					auto& ac = e.get<ECSComponents::AudioComponent>(entityManager);
+					if (strlen(ac.audioMod_.name_) > 0)
+						label += " [audio: " + std::string(ac.audioMod_.name_) + "]";
+				}
+
+				bool isSelected = (audioTargetEntityID == e.id());
+				if (ImGui::Selectable(label.c_str(), isSelected))
+				{
+					audioTargetEntityID = e.id();
+				}
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		// Validate target entity
+		bool validTarget = false;
+		{
+			auto& map = entityManager.getMap();
+			validTarget = (map.find(audioTargetEntityID) != map.end());
+		}
+
+		if (!validTarget)
+		{
+			ImGui::TextDisabled("Select a valid target entity above.");
 		}
 		else
 		{
@@ -2074,28 +2282,40 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 			ImGui::Text("Channel Group:");
 			ImGui::Combo("##ChannelGroup", &selectedChannelGroup, channelGroups, IM_ARRAYSIZE(channelGroups));
 
-			if (ImGui::Button("Attach Audio to Selected Entity"))
+			if (ImGui::Button("Attach Audio"))
 			{
-				ECS::Entity selectedEntity{ selectedEntityID };
+				ECS::Entity targetEntity{ audioTargetEntityID };
 
 				// Add component if missing
-				if (!selectedEntity.has<ECSComponents::AudioComponent>(engine_.getEntityManager())) {
-					selectedEntity.add<ECSComponents::AudioComponent>(engine_.getEntityManager());
+				if (!targetEntity.has<ECSComponents::AudioComponent>(entityManager)) {
+					targetEntity.add<ECSComponents::AudioComponent>(entityManager);
 					std::cout << "[Audio] Added AudioComponent.\n";
 				}
 
 				// Fill it
-				ECSComponents::AudioComponent& ac = selectedEntity.get<ECSComponents::AudioComponent>(engine_.getEntityManager());
+				ECSComponents::AudioComponent& ac = targetEntity.get<ECSComponents::AudioComponent>(entityManager);
 
 				strncpy(ac.audioMod_.name_, selectedName.c_str(), sizeof(ac.audioMod_.name_) - 1);
 				strncpy(ac.audioMod_.chGroup_, channelGroups[selectedChannelGroup], sizeof(ac.audioMod_.chGroup_) - 1);
 
 				ac.audioMod_.sound_ = selectedSound;
 
+				// Build status message
+				audioAttachStatusMsg = "Attached '" + selectedName + "' to " + targetLabel;
+				audioAttachStatusTimer = 3.0f; // show for ~3 seconds
+
 				std::cout << "[Audio] Attached '" << selectedName
-					<< "' to entity " << selectedEntityID
+					<< "' to entity " << audioTargetEntityID
 					<< " with channel group '" << channelGroups[selectedChannelGroup] << "'\n";
 			}
+		}
+
+		// Show attach confirmation message (fades out)
+		if (audioAttachStatusTimer > 0.0f)
+		{
+			float alpha = (audioAttachStatusTimer > 1.0f) ? 1.0f : audioAttachStatusTimer;
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.3f, alpha), "%s", audioAttachStatusMsg.c_str());
+			audioAttachStatusTimer -= ImGui::GetIO().DeltaTime;
 		}
 
 		//Current state of audio deletion takes out the audio file from the build folder only.
@@ -2129,6 +2349,27 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 					auto it2 = sounds.find(selectedName);
 					if (it2 != sounds.end())
 						sounds.erase(it2);
+				}
+
+				// Clear the audio component on any entity that was referencing the deleted sound
+				{
+					auto& entityMgr = engine_.getEntityManager();
+					for (ECS::Entity& ent : entityMgr.findEntity<ECSComponents::AudioComponent>())
+					{
+						auto& ac = ent.get<ECSComponents::AudioComponent>(entityMgr);
+						if (std::string(ac.audioMod_.name_) == selectedName)
+						{
+							if (ac.isPlaying_)
+							{
+								engine_.getAudioManager().stopChannelGroup(ac.audioMod_.chGroup_);
+								ac.isPlaying_ = false;
+							}
+							ac.audioMod_.name_[0] = '\0';
+							ac.audioMod_.path_[0] = '\0';
+							ac.audioMod_.sound_   = nullptr;
+							ac.audioMod_.ch_      = nullptr;
+						}
+					}
 				}
 
 				// Delete the file from disk
@@ -2201,7 +2442,6 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 				LoadAudioAssets(engine_);
 
 				// Clear selection so UI doesn’t reference deleted item
-				selectedAsset = -1;
 				selectedName.clear();
 				selectedFilenameWithExt.clear();
 				selectedFullPath.clear();
@@ -2240,23 +2480,85 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		lastInspectedID = entity.id();
 	}
 
-	// --- NameComponent ---
-	if (entity.has<ECSComponents::NameComponent>(entMng)) {
-		auto& nameComp = entity.get<ECSComponents::NameComponent>(entMng);
+	// --- Node Name ---
+	Node* node = sceneTree.getNodeByEntityID(entity.id());
+	if (node) {
 		ImGui::SeparatorText("Name");
-		ImGui::InputText("##Name", nameComp.name, sizeof(nameComp.name));
+		static char nameBuf[128] = {};
+		static uint32_t nameNodeID = UINT32_MAX;
+		if (nameNodeID != entity.id()) {
+			nameNodeID = entity.id();
+			strncpy_s(nameBuf, node->name_.c_str(), sizeof(nameBuf) - 1);
+			nameBuf[sizeof(nameBuf) - 1] = '\0';
+		}
+		if (ImGui::InputText("##Name", nameBuf, sizeof(nameBuf)))
+			node->name_ = nameBuf;
 	}
-	else
-	{	
-		// Add name component
-		ImGui::SeparatorText("Name Component");
-		ImGui::TextDisabled("No name component attached");
 
-		if (ImGui::Button("Add name Component"))
-		{
-			ECSComponents::NameComponent nc;
+	// --- Script ---
+	auto& smEditor = g_game->getStateMachineEditor();
+	if (node) {
+		ImGui::SeparatorText("Script");
+		smEditor.renderScriptSection(node);
+	}
 
-			entity.add<ECSComponents::NameComponent>(entMng, nc);
+	// --- StateMachine ---
+	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
+		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
+		ImGui::SeparatorText("State Machine");
+
+		smEditor.renderStateMachineUI(node, smc);
+	}
+	else {
+		ImGui::SeparatorText("State Machine");
+		ImGui::TextDisabled("No State Machine attached");
+
+		// Allow adding state machine component if the entity doesn't have one
+		if (ImGui::Button("Add State Machine")) {
+			entity.add<ECSComponents::StateMachineComponent>(entMng);
+
+			if (node && node->script_) {
+				std::string scriptPath = node->script_->path();
+				auto scriptStates = Script::StateMachineScriptGenerator::extractStatesFromScript(scriptPath);
+				auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entMng);
+				for (const auto& state : scriptStates) {
+					smComp.addState(state.c_str());
+					if (smComp.numStates == 1) {
+						strncpy(smComp.currentState, state.c_str(), sizeof(smComp.currentState) - 1);
+						smComp.currentState[sizeof(smComp.currentState) - 1] = '\0';
+					}
+				}
+			}
+		}
+	}
+
+	// --- AIComponent ---
+	if (entity.has<ECSComponents::AIComponent>(entMng)) {
+		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
+		ImGui::SeparatorText("AI");
+
+		// ----------------------------
+		// Core AI Behavior Params
+		// ----------------------------
+		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
+		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
+		ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal);
+
+		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
+		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
+		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
+
+		ImGui::DragInt("Health", &ai.health, 1, 0, 9999);
+	}
+	else {
+		// Allow adding AI component if the entity doesn't have one
+		ImGui::SeparatorText("AI");
+		ImGui::TextDisabled("No AI attached");
+
+		if (ImGui::Button("Add AI")) {
+			// Add a default AI component
+			entity.add<ECSComponents::AIComponent>(entMng);
 		}
 	}
 
@@ -2428,9 +2730,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 	}
 
-	// Check if this is a player entity
-	bool isPlayer = entity.has<ECSComponents::PlayerComponent>(entMng);
-
 	// --- TransformComponent ---
 	if (entity.has<ECSComponents::TransformComponent>(entMng)) {
 		auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
@@ -2458,7 +2757,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// Scale removed - doesn't do anything currently
 	}
 
-	
+	assetPresetsTab(engine_, entity);
 
 	// --- DrawInfoComponent ---
 	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
@@ -2470,69 +2769,35 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		float oldWidth = draw.width;
 		float oldHeight = draw.height;
 
-		// Special handling for player: uniform scaling
-		if (isPlayer) {
-			// For player, use a single scale slider that affects both width and height uniformly
-			static float playerScale = 1.0f;
+		
+		// Allow independent width/height scaling
+		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
 
-			// Calculate current scale from transform (more reliable than draw info)
-			if (entity.has<ECSComponents::TransformComponent>(entMng)) {
-				auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
-				playerScale = transform.scale.x;
-			}
+		// Scale multiplier for both width and height
+		static std::unordered_map<uint32_t, float> entityScales;
+		static std::unordered_map<uint32_t, std::pair<float, float>> entityBaseSizes;
 
-			if (ImGui::DragFloat("Scale", &playerScale, 0.01f, 0.1f, 10.0f)) {
-				// Update transform scale for rendering
-				if (entity.has<ECSComponents::TransformComponent>(entMng)) {
-					auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
-					transform.scale.x = playerScale;
-					transform.scale.y = playerScale;
-				}
+		uint32_t entityID = entity.id();
 
-				// Keep DrawInfo at base size - rendering uses transform.scale
-				draw.width = 48.0f;
-				draw.height = 48.0f;
-
-				// Keep collision at base size - collision system uses transform.scale
-				if (entity.has<ECSComponents::CollisionComponent>(entMng)) {
-					auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
-					collision.data.rectangle.width = 48.0f;
-					collision.data.rectangle.height = 48.0f;
-				}
-
-				if (g_game) g_game->markEntitiesDirty();
-			}
+		// Initialize base size and scale if not stored
+		if (entityBaseSizes.find(entityID) == entityBaseSizes.end()) {
+			entityBaseSizes[entityID] = {draw.width, draw.height};
+			entityScales[entityID] = 1.0f;
 		}
-		else {
-			// For non-player entities, allow independent width/height scaling
-			ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
-			ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
 
-			// Scale multiplier for both width and height
-			static std::unordered_map<uint32_t, float> entityScales;
-			static std::unordered_map<uint32_t, std::pair<float, float>> entityBaseSizes;
+		float& scale = entityScales[entityID];
+		auto& baseSize = entityBaseSizes[entityID];
 
-			uint32_t entityID = entity.id();
+		if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.1f, 10.0f)) {
+			// Apply scale to base size
+			draw.width = baseSize.first * scale;
+			draw.height = baseSize.second * scale;
+		}
 
-			// Initialize base size and scale if not stored
-			if (entityBaseSizes.find(entityID) == entityBaseSizes.end()) {
-				entityBaseSizes[entityID] = {draw.width, draw.height};
-				entityScales[entityID] = 1.0f;
-			}
-
-			float& scale = entityScales[entityID];
-			auto& baseSize = entityBaseSizes[entityID];
-
-			if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.1f, 10.0f)) {
-				// Apply scale to base size
-				draw.width = baseSize.first * scale;
-				draw.height = baseSize.second * scale;
-			}
-
-			// Update base size if width/height changed directly
-			if (oldWidth != draw.width || oldHeight != draw.height) {
-				baseSize = {draw.width / scale, draw.height / scale};
-			}
+		// Update base size if width/height changed directly
+		if (oldWidth != draw.width || oldHeight != draw.height) {
+			baseSize = {draw.width / scale, draw.height / scale};
 		}
 
 		// Auto-update collision when width/height changes
@@ -2569,12 +2834,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (ImGui::DragFloat("Rotation", &rotationDegrees, 1.0f, -360.0f, 360.0f, "%.1f deg")) {
 				// Convert degrees back to radians
 				transform.rot.x = rotationDegrees * (3.14159265f / 180.0f);
-
-				// Update collision component rotation for player
-				if (isPlayer && entity.has<ECSComponents::CollisionComponent>(entMng)) {
-					auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
-					collision.rotation = transform.rot.x;
-				}
 
 				if (g_game) g_game->markEntitiesDirty();
 			}
@@ -2649,7 +2908,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	}
 
 	// --- PhysicsComponent --- (skip for player)
-	if (!isPlayer && entity.has<ECSComponents::PhysicsComponent>(entMng)) {
+	if (entity.has<ECSComponents::PhysicsComponent>(entMng)) {
 		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
 		ImGui::SeparatorText("Physics");
 		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
@@ -2806,70 +3065,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	}
 #endif
 	
-	// --- AIComponent ---
-	if (entity.has<ECSComponents::AIComponent>(entMng)) {
-		auto& ai = entity.get<ECSComponents::AIComponent>(entMng);
-		ImGui::SeparatorText("AI");
-
-		// ----------------------------
-		// Core AI Behavior Params
-		// ----------------------------
-		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
-		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
-		ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal);
-
-		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
-		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
-		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
-		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
-
-		ImGui::DragInt("Health", &ai.health, 1, 0, 9999);
-	}
-	else {
-		// Allow adding AI component if the entity doesn't have one
-		ImGui::SeparatorText("AI");
-		ImGui::TextDisabled("No AI attached");
-
-		if (ImGui::Button("Add AI")) {
-			// Add a default AI component
-			entity.add<ECSComponents::AIComponent>(entMng);
-		}
-	}
-
-	auto& smEditor = g_game->getStateMachineEditor();
-	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
-		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
-		ImGui::SeparatorText("State Machine");
-
-		Node* node = sceneTree.getNodeByEntityID(entity.id());
-		smEditor.renderStateMachineUI(node, smc);
-	}
-	else {
-		ImGui::SeparatorText("State Machine");
-
-		// Allow adding state machine component if the entity doesn't have one
-		if (ImGui::Button("Add State Machine")) {
-			// Add a default state machine component
-			entity.add<ECSComponents::StateMachineComponent>(entMng);
-
-			// Add existing state in script
-			Node* node = sceneTree.getNodeByEntityID(entity.id());
-			if (node->script_) {
-				std::string scriptPath = node->script_->path();
-				auto scriptStates = Script::StateMachineScriptGenerator::extractStatesFromScript(scriptPath);
-				auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entMng);
-				for (const auto& state : scriptStates) {
-					smComp.addState(state.c_str());
-
-					// Set as current state if it's the first state
-					if (smComp.numStates == 1) {
-						strncpy(smComp.currentState, state.c_str(), sizeof(smComp.currentState) - 1);
-						smComp.currentState[sizeof(smComp.currentState) - 1] = '\0';
-					}
-				}
-			}
-		}
-	}
 
 	//for dropdown selection of Looping menu.
 	const char* loopOptions[] = { "Disabled","Forward","PingPong" };
@@ -3283,13 +3478,9 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			// Only include nodes with scripts attached
 			if (!node->script_) continue;
 
-			std::string displayName;
-			if (node->entity_.has<ECSComponents::NameComponent>(entMng)) {
-				auto& nameComp = node->entity_.get<ECSComponents::NameComponent>(entMng);
-				displayName = std::string(nameComp.name);
-			} else {
-				displayName = "Node_" + std::to_string(node->sceneObjectID_);
-			}
+			std::string displayName = node->name_.empty()
+				? "Node_" + std::to_string(node->sceneObjectID_)
+				: node->name_;
 
 			// Add script name to display
 			displayName += " (" + Conversion::wideToUtf8(node->script_->getName()) + ")";
@@ -3402,915 +3593,65 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 	}
 
-	// --- Prefab Section ---
-	ImGui::SeparatorText("Prefab");
+	// --- VideoComponent ---
+	if (entity.has<ECSComponents::VideoComponent>(entMng))
+	{
+		auto& vid = entity.get<ECSComponents::VideoComponent>(entMng);
+		ImGui::SeparatorText("Video");
 
-	// Check if this entity is a prefab instance
-	bool isPrefabInstance = entity.has<ECSComponents::PrefabInstanceComponent>(entMng);
-	std::string currentPrefabName;
+		// Dropdown: pick from videos already loaded in the browser
+		Graphics::EnoGraphicsManager& gfxMgr = engine_.getGraphicsManager();
+		const auto& videoMap = gfxMgr.getAllVideos();
 
-	if (isPrefabInstance) {
-		auto& prefabInstance = entity.get<ECSComponents::PrefabInstanceComponent>(entMng);
-		currentPrefabName = prefabInstance.prefabName;
-		ImGui::Text("Instance of: %s", currentPrefabName.c_str());
-	}
-	else {
-		ImGui::TextDisabled("Not a prefab instance");
-	}
+		const char* currentName = (strlen(vid.videoName) > 0) ? vid.videoName : "(none)";
+		if (ImGui::BeginCombo("Video##vid_combo", currentName))
+		{
+			// Option to clear selection
+			if (ImGui::Selectable("(none)", strlen(vid.videoName) == 0))
+				memset(vid.videoName, 0, sizeof(vid.videoName));
 
-	// Input field for prefab name
-	static char prefabNameBuffer[64] = "";
-
-	// If this is a prefab instance, pre-fill with current prefab name
-	if (isPrefabInstance && prefabNameBuffer[0] == '\0') {
-		strncpy_s(prefabNameBuffer, currentPrefabName.c_str(), sizeof(prefabNameBuffer) - 1);
-	}
-
-	ImGui::InputText("Prefab Name", prefabNameBuffer, sizeof(prefabNameBuffer));
-
-	// Save as Prefab button
-	if (ImGui::Button("Save as Prefab")) {
-		if (strlen(prefabNameBuffer) > 0) {
-			try {
-				createPrefabFromEntity(entity, prefabNameBuffer, entMng, sceneTree);
-
-				// Add or update PrefabInstanceComponent
-				if (!isPrefabInstance) {
-					entity.add<ECSComponents::PrefabInstanceComponent>(entMng, prefabNameBuffer);
+			for (auto& [name, player] : videoMap)
+			{
+				bool isSelected = (strcmp(vid.videoName, name.c_str()) == 0);
+				if (ImGui::Selectable(name.c_str(), isSelected))
+				{
+					strncpy_s(vid.videoName, name.c_str(), sizeof(vid.videoName) - 1);
+					vid.videoName[sizeof(vid.videoName) - 1] = '\0';
 				}
-				else {
-					auto& prefabInstance = entity.get<ECSComponents::PrefabInstanceComponent>(entMng);
-					strncpy_s(prefabInstance.prefabName, prefabNameBuffer, sizeof(prefabInstance.prefabName) - 1);
-					prefabInstance.prefabName[sizeof(prefabInstance.prefabName) - 1] = '\0';
-				}
-
-				// Register this entity as an instance
-				registerPrefabInstance(entity.id(), prefabNameBuffer);
-
-				std::cout << "[UI] Saved prefab: " << prefabNameBuffer << "\n";
+				if (isSelected) ImGui::SetItemDefaultFocus();
 			}
-			catch (const std::exception& e) {
-				std::cerr << "[UI] Failed to save prefab: " << e.what() << "\n";
-			}
+			ImGui::EndCombo();
 		}
-		else {
-			std::cerr << "[UI] Please enter a prefab name\n";
+
+		ImGui::Checkbox("Auto Play##vid", &vid.autoPlay);
+		ImGui::Checkbox("Loop##vid",      &vid.loop);
+
+		auto player = gfxMgr.getVideo(std::string(vid.videoName));
+		if (player && player->isLoaded())
+		{
+			ImGui::Text("Status: %s",
+				player->getState() == Graphics::VideoState::PLAYING ? "Playing" :
+				player->getState() == Graphics::VideoState::PAUSED  ? "Paused"  :
+				player->getState() == Graphics::VideoState::ENDED   ? "Ended"   : "Idle");
+		}
+		else if (strlen(vid.videoName) > 0)
+		{
+			ImGui::TextDisabled("(video not loaded)");
 		}
 	}
-
-	ImGui::SameLine();
-
-	// Update All Instances button (only show if this is a prefab instance)
-	if (isPrefabInstance) {
-		if (ImGui::Button("Update All Instances")) {
-			try {
-				int count = updateAllPrefabInstances(currentPrefabName, entity, entMng, sceneTree);
-				std::cout << "[UI] Updated " << count << " instances of " << currentPrefabName << "\n";
-
-				// Mark entities as dirty to refresh visuals
-				if (g_game) g_game->markEntitiesDirty();
-			}
-			catch (const std::exception& e) {
-				std::cerr << "[UI] Failed to update instances: " << e.what() << "\n";
-			}
-		}
-
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("Updates all instances of '%s' with this entity's components", currentPrefabName.c_str());
+	else
+	{
+		ImGui::SeparatorText("Video");
+		ImGui::TextDisabled("No video component attached");
+		if (ImGui::Button("Add Video Component"))
+		{
+			entity.add<ECSComponents::VideoComponent>(entMng);
+			if (g_game) g_game->markEntitiesDirty();
 		}
 	}
 
 	ImGui::End();
 }
-
-#if 0
-void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
-
-	Resources::EnoLoader& loader = engine_.getResourceLoader();
-	const auto& textures = loader.getAllTextures();
-	static std::string idleSelected = "";
-	static std::string walkSelected = "";
-	static std::string attackSelected = "";
-	static std::string activeSlot = ""; // identifies which box you're assigning assets to
-	auto& entMng = engine_.getEntityManager();
-	auto& entityScript = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id())->script_;
-
-
-
-	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-	// Check if the selected entity has an AnimationControllerComponent
-	if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng))
-	{
-		ImGui::TextWrapped("The currently selected entity does not have an Animation Controller component.");
-		ImGui::End();
-		return;
-	}
-#if 0
-	//this will be activated later on when I can read states from a script. First I will try to access and amend anims to a state with a vector
-	if (entityScript) {
-		//for (const auto& var : entityScript->vars()) {
-		for (const auto& [state, value] : entityScript->vars()) { //Yun Qi: by assuming that everything is a state, i will be able to start work on assigning my animations.
-			
-			
-
-		}
-	}
-#endif
-
-
-	//================================= IDLE ANIMATION ===================================
-	ImGui::Text("IDLE");
-
-
-	static Graphics::TextureData idleTextureData;
-	static int idleMode = 1;              // 0 = rows/cols, 1 = pixel size
-	static int idleRows = 1;
-	static int idleCols = 1;
-	static int idleFrameW = 96;
-	static int idleFrameH = 96;
-
-
-	// LEFT SIDE PREVIEW
-	if (!idleSelected.empty())
-	{
-		auto it = textures.find(idleSelected);
-		if (it != textures.end())
-		{
-			auto tex = it->second;   // shared_ptr<EnoTexture>
-			ImTextureID texID = (ImTextureID)(intptr_t)tex->getID();
-
-			ImGui::Image(texID, ImVec2(180, 150));
-		}
-		else
-		{
-			ImGui::Button("Missing Texture", ImVec2(180, 150));
-		}
-	}
-	else
-	{
-		ImGui::Button("##IdlePreview", ImVec2(180, 150));
-	}
-
-	//Drag and Drop target
-	if (ImGui::BeginDragDropTarget())
-	{
-		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
-		{
-			idleSelected = (const char*)payload->Data;
-
-			auto it = textures.find(idleSelected);
-			if (it != textures.end())
-			{
-				idleTexData.texture = it->second; // shared_ptr<EnoTexture>
-			}
-		}
-		ImGui::EndDragDropTarget();
-	}
-
-	ImGui::Text("Assigned: %s", idleSelected.empty() ? "(none)" : idleSelected.c_str());
-
-
-	// RIGHT SIDE SETTINGS
-	if (!idleSelected.empty())
-	{
-		ImGui::Separator();
-		ImGui::Text("Animation Settings");
-
-		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
-		ImGui::Combo("Input Mode##Idle", &idleMode, modes, IM_ARRAYSIZE(modes));
-
-		auto it = textures.find(idleSelected);
-		if (it != textures.end())
-		{
-			auto tex = it->second;
-			
-
-			if (idleMode == 0)
-			{
-				// ROWS / COLUMNS MODE
-				ImGui::InputInt("Rows##Idle", &idleRows);
-				ImGui::InputInt("Columns##Idle", &idleCols);
-
-				idleRows = std::max(1, idleRows);
-				idleCols = std::max(1, idleCols);
-
-				ImGui::Text("Frame Size: %d × %d", idleFrameW, idleFrameH);
-			}
-			else if (idleMode == 1)
-			{
-				// PIXEL MODE
-				ImGui::InputInt("Frame Width##Idle", &idleFrameW);
-				ImGui::InputInt("Frame Height##Idle", &idleFrameH);
-
-				idleFrameW = std::max(1, idleFrameW);
-				idleFrameH = std::max(1, idleFrameH);
-
-				ImGui::Text("Grid: %d rows × %d cols", idleRows, idleCols);
-			}
-
-			idleTexData.frameWidth = idleFrameW;
-			idleTexData.frameHeight = idleFrameH;
-			idleTexData.rows = idleRows;
-			idleTexData.cols = idleCols;
-		}
-	}
-
-	ImGui::Spacing();
-
-	// ================== APPLY BUTTON FOR IDLE ANIMATION ==================
-	// Disable button if no texture is selected
-	bool idleHasTexture = idleTexData.texture != nullptr && !idleSelected.empty();
-	if (!idleHasTexture)
-	{
-		ImGui::BeginDisabled();
-	}
-
-	if (ImGui::Button("APPLY IDLE"))
-	{
-		ECS::Entity e{ selectedEntityID };
-
-		// Comprehensive validation checks
-		try {
-			if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) {
-				std::cerr << "[APPLY IDLE] Entity missing AnimationControllerComponent" << std::endl;
-				if (!idleHasTexture) ImGui::EndDisabled();
-				return;
-			}
-			if (!e.has<ECSComponents::DrawInfoComponent>(entMng)) {
-				std::cerr << "[APPLY IDLE] Entity missing DrawInfoComponent" << std::endl;
-				if (!idleHasTexture) ImGui::EndDisabled();
-				return;
-			}
-		} catch (const std::exception& ex) {
-			std::cerr << "[APPLY IDLE] Exception during validation: " << ex.what() << std::endl;
-			if (!idleHasTexture) ImGui::EndDisabled();
-			return;
-		} catch (...) {
-			std::cerr << "[APPLY IDLE] Unknown exception during validation" << std::endl;
-			if (!idleHasTexture) ImGui::EndDisabled();
-			return;
-		}
-
-		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
-		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
-
-		// Get or create animation controller
-		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-
-		if (!ctrl || animComp.controllerID == 0) {
-			// Controller doesn't exist, create a new one
-			std::cerr << "[APPLY IDLE] Animation controller is null or invalid (ID: " << animComp.controllerID << "), creating new one" << std::endl;
-			animComp.controllerID = engine_.getAnimationRegistry().createController();
-			ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-
-			if (!ctrl) {
-				std::cerr << "[APPLY IDLE] Failed to create animation controller" << std::endl;
-				if (!idleHasTexture) ImGui::EndDisabled();
-				return;
-			}
-			std::cout << "[APPLY IDLE] Created new animation controller with ID: " << animComp.controllerID << std::endl;
-		}
-
-		// Safety check: Ensure texture is valid before proceeding
-		if (!idleTexData.texture || !idleTexData.texture->isValid())
-		{
-			std::cerr << "[APPLY IDLE] Invalid texture data" << std::endl;
-			ImGui::OpenPopup("Error##IdleNoTexture");
-			if (!idleHasTexture) ImGui::EndDisabled();
-			return;
-		}
-
-		//drawComp.texture = idleTexData.texture;
-		//drawComp.color = Graphics::Color::White;
-		drawComp.setTexture(idleTexData.texture, idleSelected);
-		drawComp.color = Graphics::Color::White;
-
-
-		//std::strncpy(drawComp.texturePath, ctrl->currentAnimation_->.c_str(), sizeof(drawComp.texturePath) - 1);
-		//drawComp.texturePath[sizeof(drawComp.texturePath) - 1] = '\0';
-
-		drawComp.texID = 0;
-
-		//checkpoint
-		if (idleMode == 0)   // rows/cols mode
-		{
-			idleTexData.rows = std::max(1, idleRows);
-			idleTexData.cols = std::max(1, idleCols);
-			idleTexData.computeFrameSize();
-		}
-		else                 // pixel mode
-		{
-			idleTexData.rows = idleTexData.texture->getHeight() / std::max(1, idleFrameH);
-			idleTexData.cols = idleTexData.texture->getWidth()  / std::max(1, idleFrameW);
-			idleTexData.frameWidth = idleFrameW;
-			idleTexData.frameHeight = idleFrameH;
-		}
-
-
-		// Create animation with explicit frame calculation
-		Animation::EnoAnimation idleAnim = Animation::createSpriteSheetAnimation(
-			idleTexData.frameWidth,
-			idleTexData.frameHeight,
-			idleTexData.texture->getWidth(),
-			idleTexData.texture->getHeight(),
-			0,                                  // start frame
-			idleTexData.rows * idleTexData.cols,// total frames
-			0.1f                                // duration per frame
-		);
-
-		// Optional: Print out frame UV coordinates for debugging
-			//const auto& frame = idleAnim.getCurrentFrame();
-			//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
-			//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
-
-
-
-		idleAnim.setLooping(true);
-		ctrl->addAnimation("Idle", idleAnim, idleTexData.texture); // Pass the texture
-		ctrl->setAnimation("Idle");
-
-		// Save animation configuration to component for serialization
-		std::strncpy(animComp.currentAnimationName, "Idle", sizeof(animComp.currentAnimationName) - 1);
-		animComp.setAnimationData(
-			"Idle",
-			idleSelected.c_str(),
-			idleTexData.frameWidth,
-			idleTexData.frameHeight,
-			idleTexData.rows,
-			idleTexData.cols,
-			0.1f,
-			true
-		);
-	}
-
-	if (!idleHasTexture)
-	{
-		ImGui::EndDisabled();
-		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-		{
-			ImGui::SetTooltip("Please select a texture first");
-		}
-	}
-
-	// Error popup for missing texture
-	if (ImGui::BeginPopupModal("Error##IdleNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		ImGui::Text("Error: No texture selected!");
-		ImGui::Text("Please drag and drop a texture onto the preview box first.");
-		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
-		ImGui::EndPopup();
-	}
-
-
-	//================================= WALKING ANIMATION ===================================
-	ImGui::Text("WALKING");
-
-	static Graphics::TextureData walkTextureData;
-	static int walkMode = 1;              // 0 = rows/cols, 1 = pixel size
-	static int walkRows = 1;
-	static int walkCols = 1;
-	static int walkFrameW = 96;
-	static int walkFrameH = 96;
-
-
-	if (!walkSelected.empty())
-	{
-		auto it = textures.find(walkSelected);
-		if (it != textures.end())
-		{
-			auto tex = it->second;
-			ImTextureID texID = (ImTextureID)(intptr_t)tex->getID();
-			ImGui::Image(texID, ImVec2(180, 150));
-		}
-		else {
-			ImGui::Button("Missing Texture", ImVec2(180, 150));
-		}
-	}
-	else
-	{
-		ImGui::Button("##WalkPreview", ImVec2(180, 150));
-	}
-
-	if (ImGui::BeginDragDropTarget())
-	{
-		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
-		{
-			walkSelected = (const char*)payload->Data;
-
-			auto it = textures.find(walkSelected);
-			if (it != textures.end())
-			{
-				walkTexData.texture = it->second; // shared_ptr<EnoTexture>
-			}
-		}
-		ImGui::EndDragDropTarget();
-	}
-
-	ImGui::Text("Assigned: %s", walkSelected.empty() ? "(none)" : walkSelected.c_str());
-
-	// RIGHT SIDE SETTINGS
-	if (!walkSelected.empty())
-	{
-		ImGui::Separator();
-		ImGui::Text("Animation Settings");
-
-		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
-		ImGui::Combo("Input Mode##walk", &walkMode, modes, IM_ARRAYSIZE(modes));
-
-		auto it = textures.find(walkSelected);
-		if (it != textures.end())
-		{
-			auto tex = it->second;
-
-			if (walkMode == 0)
-			{
-				// ROWS / COLUMNS MODE
-				ImGui::InputInt("Rows##Walk", &walkRows);
-				ImGui::InputInt("Columns##Walk", &walkCols);
-
-				walkRows = std::max(1, walkRows);
-				walkCols = std::max(1, walkCols);
-
-				ImGui::Text("Frame Size: %d × %d", walkFrameW, walkFrameH);
-			}
-			else if (walkMode == 1)
-			{
-				// PIXEL MODE
-				ImGui::InputInt("Frame Width##Walk", &walkFrameW);
-				ImGui::InputInt("Frame Height##Walk", &walkFrameH);
-
-				walkFrameW = std::max(1, walkFrameW);
-				walkFrameH = std::max(1, walkFrameH);
-
-				ImGui::Text("Grid: %d rows × %d cols", walkRows, walkCols);
-			}
-
-			walkTexData.frameWidth = walkFrameW;
-			walkTexData.frameHeight = walkFrameH;
-			walkTexData.rows = walkRows;
-			walkTexData.cols = walkCols;
-		}
-	}
-
-	//  ================== APPLY BUTTON FOR WALK ANIMATION ==================
-	// Disable button if no texture is selected
-	bool walkHasTexture = walkTexData.texture != nullptr && !walkSelected.empty();
-	if (!walkHasTexture)
-	{
-		ImGui::BeginDisabled();
-	}
-
-	if (ImGui::Button("APPLY WALK"))
-	{
-		ECS::Entity e{ selectedEntityID };
-
-		// Comprehensive validation checks
-		try {
-			if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) {
-				std::cerr << "[APPLY WALK] Entity missing AnimationControllerComponent" << std::endl;
-				if (!walkHasTexture) ImGui::EndDisabled();
-				return;
-			}
-			if (!e.has<ECSComponents::DrawInfoComponent>(entMng)) {
-				std::cerr << "[APPLY WALK] Entity missing DrawInfoComponent" << std::endl;
-				if (!walkHasTexture) ImGui::EndDisabled();
-				return;
-			}
-		} catch (const std::exception& ex) {
-			std::cerr << "[APPLY WALK] Exception during validation: " << ex.what() << std::endl;
-			if (!walkHasTexture) ImGui::EndDisabled();
-			return;
-		} catch (...) {
-			std::cerr << "[APPLY WALK] Unknown exception during validation" << std::endl;
-			if (!walkHasTexture) ImGui::EndDisabled();
-			return;
-		}
-
-		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
-		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
-
-		// Get or create animation controller
-		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-
-		if (!ctrl || animComp.controllerID == 0) {
-			// Controller doesn't exist, create a new one
-			std::cerr << "[APPLY WALK] Animation controller is null or invalid (ID: " << animComp.controllerID << "), creating new one" << std::endl;
-			animComp.controllerID = engine_.getAnimationRegistry().createController();
-			ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-
-			if (!ctrl) {
-				std::cerr << "[APPLY WALK] Failed to create animation controller" << std::endl;
-				if (!walkHasTexture) ImGui::EndDisabled();
-				return;
-			}
-			std::cout << "[APPLY WALK] Created new animation controller with ID: " << animComp.controllerID << std::endl;
-		}
-
-		// Safety check: Ensure texture is valid before proceeding
-		if (!walkTexData.texture || !walkTexData.texture->isValid())
-		{
-			std::cerr << "[APPLY WALK] Invalid texture data" << std::endl;
-			ImGui::OpenPopup("Error##WalkNoTexture");
-			if (!walkHasTexture) ImGui::EndDisabled();
-			return;
-		}
-
-		//drawComp.texture = walkTexData.texture;
-		drawComp.setTexture(walkTexData.texture, walkSelected);
-		drawComp.color = Graphics::Color::White;
-
-
-		drawComp.texID = 0;
-
-		//checkpoint
-		if (walkMode == 0)   // rows/cols mode
-		{
-			walkTexData.rows = std::max(1, walkRows);
-			walkTexData.cols = std::max(1, walkCols);
-			walkTexData.computeFrameSize();
-		}
-		else                 // pixel mode
-		{
-			walkTexData.rows = walkTexData.texture->getHeight() / std::max(1, walkFrameH);
-			walkTexData.cols = walkTexData.texture->getWidth() / std::max(1,  walkFrameW);
-			walkTexData.frameWidth = walkFrameW;
-			walkTexData.frameHeight = walkFrameH;
-		}
-
-
-		// Create animation with explicit frame calculation
-		Animation::EnoAnimation walkAnim = Animation::createSpriteSheetAnimation(
-			walkTexData.frameWidth,
-			walkTexData.frameHeight,
-			walkTexData.texture->getWidth(),
-			walkTexData.texture->getHeight(),
-			0,                                  // start frame
-			walkTexData.rows * walkTexData.cols,// total frames
-			0.1f                                // duration per frame
-		);
-
-		// Optional: Print out frame UV coordinates for debugging
-		//const auto& frame = walkAnim.getCurrentFrame();
-		//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
-		//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
-
-		walkAnim.setLooping(true);
-		ctrl->addAnimation("Walk", walkAnim, walkTexData.texture); // Pass the texture
-		ctrl->setAnimation("Walk");
-
-		// Save animation configuration to component for serialization
-		std::strncpy(animComp.currentAnimationName, "Walk", sizeof(animComp.currentAnimationName) - 1);
-		animComp.setAnimationData(
-			"Walk",
-			walkSelected.c_str(),
-			walkTexData.frameWidth,
-			walkTexData.frameHeight,
-			walkTexData.rows,
-			walkTexData.cols,
-			0.1f,
-			true
-		);
-	}
-
-	if (!walkHasTexture)
-	{
-		ImGui::EndDisabled();
-		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-		{
-			ImGui::SetTooltip("Please select a texture first");
-		}
-	}
-
-	// Error popup for missing texture
-	if (ImGui::BeginPopupModal("Error##WalkNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		ImGui::Text("Error: No texture selected!");
-		ImGui::Text("Please drag and drop a texture onto the preview box first.");
-		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
-		ImGui::EndPopup();
-	}
-
-
-	//================================= ATTACK ANIMATION ===================================
-	ImGui::Text("ATTACK");
-
-	static Graphics::TextureData attackTextureData;
-	static int attackMode = 1;              // 0 = rows/cols, 1 = pixel size
-	static int attackRows = 1;
-	static int attackCols = 1;
-	static int attackFrameW = 96;
-	static int attackFrameH = 96;
-
-
-	if (!attackSelected.empty())
-	{
-		auto it = textures.find(attackSelected);
-		if (it != textures.end())
-		{
-			auto tex = it->second;
-			ImTextureID texID = (ImTextureID)(intptr_t)tex->getID();
-			ImGui::Image(texID, ImVec2(180, 150));
-		}
-		else {
-			ImGui::Button("Missing Texture", ImVec2(180, 150));
-		}
-	}
-	else
-	{
-		ImGui::Button("##AttackPreview", ImVec2(180, 150));
-	}
-
-	if (ImGui::BeginDragDropTarget())
-	{
-		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_NAME"))
-		{
-			
-			attackSelected = (const char*)payload->Data;
-
-			auto it = textures.find(attackSelected);
-			if (it != textures.end())
-			{
-				attackTexData.texture = it->second; // shared_ptr<EnoTexture>
-			}
-			
-		}
-		ImGui::EndDragDropTarget();
-	}
-
-	ImGui::Text("Assigned: %s", attackSelected.empty() ? "(none)" : attackSelected.c_str());
-
-	// RIGHT SIDE SETTINGS
-	if (!attackSelected.empty())
-	{
-		ImGui::Separator();
-		ImGui::Text("Animation Settings");
-
-		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
-		ImGui::Combo("Input Mode##attack", &attackMode, modes, IM_ARRAYSIZE(modes));
-
-		auto it = textures.find(attackSelected);
-		if (it != textures.end())
-		{
-			auto tex = it->second;
-
-			if (attackMode == 0)
-			{
-				// ROWS / COLUMNS MODE
-				ImGui::InputInt("Rows##Attack", &attackRows);
-				ImGui::InputInt("Columns##Attack", &attackCols);
-
-				attackRows = std::max(1, attackRows);
-				attackCols = std::max(1, attackCols);
-
-				ImGui::Text("Frame Size: %d × %d", attackFrameW, attackFrameH);
-			}
-			else if (attackMode == 1)
-			{
-				// PIXEL MODE
-				ImGui::InputInt("Frame Width##Attack", &attackFrameW);
-				ImGui::InputInt("Frame Height##Attack", &attackFrameH);
-
-				attackFrameW = std::max(1, attackFrameW);
-				attackFrameH = std::max(1, attackFrameH);
-
-				ImGui::Text("Grid: %d rows × %d cols", attackRows, attackCols);
-			}
-
-			attackTexData.frameWidth = attackFrameW;
-			attackTexData.frameHeight = attackFrameH;
-			attackTexData.rows = attackRows;
-			attackTexData.cols = attackCols;
-		}
-	}
-
-
-	// Disable button if no texture is selected
-	bool attackHasTexture = attackTexData.texture != nullptr && !attackSelected.empty();
-	if (!attackHasTexture)
-	{
-		ImGui::BeginDisabled();
-	}
-
-	if (ImGui::Button("APPLY ATTACK"))
-	{
-		ECS::Entity e{ selectedEntityID };
-
-		// Comprehensive validation checks
-		try {
-			if (!e.has<ECSComponents::AnimationControllerComponent>(entMng)) {
-				std::cerr << "[APPLY ATTACK] Entity missing AnimationControllerComponent" << std::endl;
-				if (!attackHasTexture) ImGui::EndDisabled();
-				return;
-			}
-			if (!e.has<ECSComponents::DrawInfoComponent>(entMng)) {
-				std::cerr << "[APPLY ATTACK] Entity missing DrawInfoComponent" << std::endl;
-				if (!attackHasTexture) ImGui::EndDisabled();
-				return;
-			}
-		} catch (const std::exception& ex) {
-			std::cerr << "[APPLY ATTACK] Exception during validation: " << ex.what() << std::endl;
-			if (!attackHasTexture) ImGui::EndDisabled();
-			return;
-		} catch (...) {
-			std::cerr << "[APPLY ATTACK] Unknown exception during validation" << std::endl;
-			if (!attackHasTexture) ImGui::EndDisabled();
-			return;
-		}
-
-		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
-		auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
-
-		// Get or create animation controller
-		Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-
-		if (!ctrl || animComp.controllerID == 0) {
-			// Controller doesn't exist, create a new one
-			std::cerr << "[APPLY ATTACK] Animation controller is null or invalid (ID: " << animComp.controllerID << "), creating new one" << std::endl;
-			animComp.controllerID = engine_.getAnimationRegistry().createController();
-			ctrl = engine_.getAnimationRegistry().get(animComp.controllerID);
-
-			if (!ctrl) {
-				std::cerr << "[APPLY ATTACK] Failed to create animation controller" << std::endl;
-				if (!attackHasTexture) ImGui::EndDisabled();
-				return;
-			}
-			std::cout << "[APPLY ATTACK] Created new animation controller with ID: " << animComp.controllerID << std::endl;
-		}
-
-		// Safety check: Ensure texture is valid before proceeding
-		if (!attackTexData.texture || !attackTexData.texture->isValid())
-		{
-			std::cerr << "[APPLY ATTACK] Invalid texture data" << std::endl;
-			ImGui::OpenPopup("Error##AttackNoTexture");
-			if (!attackHasTexture) ImGui::EndDisabled();
-			return;
-		}
-
-		//drawComp.texture = attackTexData.texture;
-		drawComp.setTexture(attackTexData.texture, attackSelected);
-		drawComp.color = Graphics::Color::White;
-
-
-		drawComp.texID = 0;
-
-		//checkpoint
-		if (attackMode == 0)   // rows/cols mode
-		{
-			attackTexData.rows = std::max(1, attackRows);
-			attackTexData.cols = std::max(1, attackCols);
-			attackTexData.computeFrameSize();
-		}
-		else                 // pixel mode
-		{
-			attackTexData.rows = attackTexData.texture->getHeight() / std::max(1, attackFrameH);
-			attackTexData.cols = attackTexData.texture->getWidth() / std::max(1, attackFrameW);
-			attackTexData.frameWidth = attackFrameW;
-			attackTexData.frameHeight = attackFrameH;
-		}
-
-
-		// Create animation with explicit frame calculation
-		Animation::EnoAnimation attackAnim = Animation::createSpriteSheetAnimation(
-			attackTexData.frameWidth,
-			attackTexData.frameHeight,
-			attackTexData.texture->getWidth(),
-			attackTexData.texture->getHeight(),
-			0,                                  // start frame
-			attackTexData.rows * attackTexData.cols,// total frames
-			0.1f                                // duration per frame
-		);
-
-		// Optional: Print out frame UV coordinates for debugging
-		//const auto& frame = attackAnim.getCurrentFrame();
-		//std::cout << "Frame " << 0 << " UV Start: (" << frame.uvStart.x << ", " << frame.uvStart.y
-		//	<< ") UV End: (" << frame.uvEnd.x << ", " << frame.uvEnd.y << ")" << std::endl;
-		attackAnim.setLooping(true);
-		ctrl->addAnimation("Attack", attackAnim, attackTexData.texture); // Pass the texture
-		ctrl->setAnimation("Attack");
-
-		// Save animation configuration to component for serialization
-		std::strncpy(animComp.currentAnimationName, "Attack", sizeof(animComp.currentAnimationName) - 1);
-		animComp.setAnimationData(
-			"Attack",
-			attackSelected.c_str(),
-			attackTexData.frameWidth,
-			attackTexData.frameHeight,
-			attackTexData.rows,
-			attackTexData.cols,
-			0.1f,
-			true
-		);
-	}
-
-	if (!attackHasTexture)
-	{
-		ImGui::EndDisabled();
-		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-		{
-			ImGui::SetTooltip("Please select a texture first");
-		}
-	}
-
-	// Error popup for missing texture
-	if (ImGui::BeginPopupModal("Error##AttackNoTexture", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		ImGui::Text("Error: No texture selected!");
-		ImGui::Text("Please drag and drop a texture onto the preview box first.");
-		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
-		ImGui::EndPopup();
-	}
-
-	ImGui::Separator();
-
-	ImGui::Separator();
-	ImGui::Text("Quick Animation Test");
-
-	ECS::Entity e{ selectedEntityID };
-	if (e.has<ECSComponents::AnimationControllerComponent>(entMng))
-	{
-		auto& animComp = e.get<ECSComponents::AnimationControllerComponent>(entMng);
-		Animation::AnimationController* ctrl =
-			engine_.getAnimationRegistry().get(animComp.controllerID);
-
-		if (ctrl)
-		{
-			if (ImGui::Button("Play IDLE"))
-			{
-				if (ctrl->animations_.count("Idle"))
-				{
-					ctrl->setAnimation("Idle");
-					// Also update the texture when switching animations
-					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
-					{
-						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
-						auto tex = ctrl->getCurrentTexture();
-						if (tex) {
-							drawComp.texture = tex;
-						}
-					}
-				}
-				else
-					std::cout << "[ImGui] Idle animation not found!\n";
-			}
-
-			ImGui::SameLine();
-
-			if (ImGui::Button("Play WALK"))
-			{
-				if (ctrl->animations_.count("Walk"))
-				{
-					ctrl->setAnimation("Walk");
-					// Also update the texture when switching animations
-					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
-					{
-						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
-						auto tex = ctrl->getCurrentTexture();
-						if (tex) {
-							drawComp.texture = tex;
-						}
-					}
-				}
-				else
-					std::cout << "[ImGui] Walk animation not found!\n";
-			}
-
-			ImGui::SameLine();
-
-			if (ImGui::Button("Play ATTACK"))
-			{
-				if (ctrl->animations_.count("Attack"))
-				{
-					ctrl->setAnimation("Attack");
-					// Also update the texture when switching animations
-					if (e.has<ECSComponents::DrawInfoComponent>(entMng))
-					{
-						auto& drawComp = e.get<ECSComponents::DrawInfoComponent>(entMng);
-						auto tex = ctrl->getCurrentTexture();
-						if (tex) {
-							drawComp.texture = tex;
-						}
-					}
-				}
-				else
-					std::cout << "[ImGui] Attack animation not found!\n";
-			}
-		}
-		else
-		{
-			ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), "Invalid Animation Controller!");
-		}
-	}
-	else
-	{
-		ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1),
-			"This entity has no AnimationController component!");
-	}
-
-
-	ImGui::End();
-}
-#endif
 
 
 // Read states from entity's StateMachineComponent
@@ -4318,8 +3659,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	//Node* entNode = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id());
 	auto& entMng = engine_.getEntityManager();
 
-	// Read states from StateMachineComponent if available
-	std::vector<std::string> states{ "Idle", "Walk", "Attack", "Death" };
+	// Read states exclusively from StateMachineComponent; fall back to "Default" if empty
+	std::vector<std::string> states;
 	if (entity.has<ECSComponents::StateMachineComponent>(entMng)) {
 		auto& smc = entity.get<ECSComponents::StateMachineComponent>(entMng);
 		for (int i = 0; i < smc.numStates; ++i) {
@@ -4327,6 +3668,12 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 				states.push_back(smc.states[i].name);
 			}
 		}
+		if (states.empty()) {
+			smc.addState("Default");
+			states.push_back("Default");
+		}
+	} else {
+		states.push_back("Default");
 	}
 	Resources::EnoLoader& loader = engine_.getResourceLoader();
 	const auto& textures = loader.getAllTextures();
@@ -4340,13 +3687,12 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	const std::string& selectedState = states[selectedStateIdx];
 
 
-	ImGui::Begin("Assets Presets", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::SeparatorText("Asset Presets");
 
 	// Check if the selected entity has an AnimationControllerComponent
 	if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng))
 	{
 		ImGui::TextWrapped("The currently selected entity does not have an Animation Controller component.");
-		ImGui::End();
 		return;
 	}
 
@@ -4600,7 +3946,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 	ImGui::Separator();
-	ImGui::Text("Animation Test");
 
 	if (entity.has<ECSComponents::AnimationControllerComponent>(entMng))
 	{
@@ -4610,6 +3955,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 		if (ctrl)
 		{
+#if 0
 			for (const std::string& state : states)
 			{
 				std::string label = "Play " + state;
@@ -4618,27 +3964,30 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 				{
 					if (ctrl->animations_.count(state))
 					{
-						ctrl->setAnimation(state);
-
-						// Also update the texture when switching animations
-						if (entity.has<ECSComponents::DrawInfoComponent>(entMng))
+						// Drive via currentState so updateAnimations() renders this
+						// animation every frame instead of reverting to whatever state
+						// the state machine was in before the button was clicked.
+						if (entity.has<ECSComponents::StateMachineComponent>(entMng))
 						{
-							auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entMng);
-							if (auto tex = ctrl->getCurrentTexture())
-							{
-								drawComp.texture = tex;
-							}
+							auto& sm = entity.get<ECSComponents::StateMachineComponent>(entMng);
+							std::strncpy(sm.currentState, state.c_str(), sizeof(sm.currentState) - 1);
+							sm.currentState[sizeof(sm.currentState) - 1] = '\0';
 						}
+
+						ctrl->setAnimation(state);
+						std::strncpy(animComp.currentAnimationName, state.c_str(),
+							sizeof(animComp.currentAnimationName) - 1);
+						animComp.currentAnimationName[sizeof(animComp.currentAnimationName) - 1] = '\0';
 					}
 					else
 					{
 						std::cout << "[ImGui] " << state << " animation not found!\n";
 					}
 				}
-
 			}
 
 			ImGui::NewLine(); // clean line break after loop
+#endif
 		}
 	}
 	else
@@ -4648,7 +3997,6 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	}
 
 
-	ImGui::End();
 }
 
 void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
@@ -4657,35 +4005,10 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 	Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
 	if (!node) return;
 
-	// Get entity name from NameComponent if it exists
-	std::string label = "Entity " + std::to_string(node->entity_.id());
-#if 1
-	// Try to get the actual name from the entity
-	try {
-		for (ECS::Entity& e : entityManager.findEntity<ECSComponents::NameComponent>()) {
-			if (e.id() == node->entity_.id()) {
-				auto& nameComp = e.get<ECSComponents::NameComponent>(entityManager);
-				label = nameComp.name;
-				break;
-			}
-		}
-	}
-	catch (...) {
-		// If we can't get the name, use the default
-	}
-#else
-	try {
-		for (Node* node : sceneTree.getAllNodes()) {
-			label = node->name_;
-			break;
-		}
-	}
-	catch (...) {
-		// If we can't get the name, use the default
-	}
-
-
-#endif
+	// Use node name directly from the scene tree
+	std::string label = node->name_.empty()
+		? "Entity " + std::to_string(node->entity_.id())
+		: node->name_;
 	// If node has children -> use TreeNodeEx
 	if (node->children_.empty()) {
 		bool selected = (selectedEntityID == node->entity_.id());
@@ -4907,51 +4230,51 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 
 	ImGui::Separator();
 
-	//YunQi Bookmark  (i believe this below section will have to be moved to Asset Prefabs)
-	// If texture selected
-	if (!selectedTexture.empty()) {
-		ImGui::Text("Selected: %s", selectedTexture.c_str());
+	////YunQi Bookmark  (i believe this below section will have to be moved to Asset Prefabs)
+	//// If texture selected
+	//if (!selectedTexture.empty()) {
+	//	ImGui::Text("Selected: %s", selectedTexture.c_str());
 
-		// Mode selector
-		const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
-		ImGui::Combo("Input Mode", &mode, modes, IM_ARRAYSIZE(modes));
+	//	// Mode selector
+	//	const char* modes[] = { "Use Rows / Columns", "Use Pixel Width / Height" };
+	//	ImGui::Combo("Input Mode", &mode, modes, IM_ARRAYSIZE(modes));
 
-		if (mode == 0) {
-			// ROWS/COLS MODE
-			ImGui::InputInt("Rows", &inputRows);
-			ImGui::InputInt("Columns", &inputCols);
+	//	if (mode == 0) {
+	//		// ROWS/COLS MODE
+	//		ImGui::InputInt("Rows", &inputRows);
+	//		ImGui::InputInt("Columns", &inputCols);
 
-			if (ImGui::Button("Apply Texture (Rows/Cols)")) {
-				textureData.rows = std::max(1, inputRows);
-				textureData.cols = std::max(1, inputCols);
-				textureData.computeFrameSize();
+	//		if (ImGui::Button("Apply Texture (Rows/Cols)")) {
+	//			textureData.rows = std::max(1, inputRows);
+	//			textureData.cols = std::max(1, inputCols);
+	//			textureData.computeFrameSize();
 
-				if (g_game)
-					g_game->applyTextureToPlayer(textureData);
-			}
+	//			if (g_game)
+	//				g_game->applyTextureToPlayer(textureData);
+	//		}
 
-			ImGui::Text("Frame Size: %d x %d",
-				textureData.frameWidth, textureData.frameHeight);
-		}
-		else {
-			// PIXEL INPUT MODE
-			ImGui::InputInt("Frame Width", &inputFrameW);
-			ImGui::InputInt("Frame Height", &inputFrameH);
+	//		ImGui::Text("Frame Size: %d x %d",
+	//			textureData.frameWidth, textureData.frameHeight);
+	//	}
+	//	else {
+	//		// PIXEL INPUT MODE
+	//		ImGui::InputInt("Frame Width", &inputFrameW);
+	//		ImGui::InputInt("Frame Height", &inputFrameH);
 
-			if (ImGui::Button("Apply Texture (Pixels)")) {
-				textureData.rows = textureData.texture->getHeight() / std::max(1, inputFrameH);
-				textureData.cols = textureData.texture->getWidth() / std::max(1, inputFrameW);
-				textureData.frameWidth = inputFrameW;
-				textureData.frameHeight = inputFrameH;
+	//		if (ImGui::Button("Apply Texture (Pixels)")) {
+	//			textureData.rows = textureData.texture->getHeight() / std::max(1, inputFrameH);
+	//			textureData.cols = textureData.texture->getWidth() / std::max(1, inputFrameW);
+	//			textureData.frameWidth = inputFrameW;
+	//			textureData.frameHeight = inputFrameH;
 
-				if (g_game)
-					g_game->applyTextureToPlayer(textureData);
-			}
+	//			if (g_game)
+	//				g_game->applyTextureToPlayer(textureData);
+	//		}
 
-			ImGui::Text("Grid: %d rows × %d cols",
-				textureData.rows, textureData.cols);
-		}
-	}
+	//		ImGui::Text("Grid: %d rows × %d cols",
+	//			textureData.rows, textureData.cols);
+	//	}
+	//}
 
 
 	// Loading audio
@@ -4996,7 +4319,6 @@ void displayAssetTab(Engine::EnoEngine& engine_) {
 		ImGui::Text("Selected: %s", selectedAudio.c_str());
 	}
 
-	g_droppedFiles.clear();
 }
 
 // Docking shi
@@ -5029,66 +4351,6 @@ void imGuiBeginDockspace() {
 	// Create the dockspace
 	ImGuiID dockspace_id = ImGui::GetID("MainDockspace");
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
-}
-
-void displayGameView() {
-	ImVec2 contentSize = ImGui::GetContentRegionAvail();
-
-	if (g_game && g_game->getGameFramebuffer()) {
-		auto* fb = g_game->getGameFramebuffer();
-
-		if (contentSize.x > 0 && contentSize.y > 0) {
-			// Get fixed virtual resolution from game
-			float virtualAspect = g_game->getWorldWidth() / g_game->getWorldHeight();
-
-			// Calculate aspect-ratio-preserving size to fit in the Game View
-			float contentAspect = contentSize.x / contentSize.y;
-			ImVec2 displaySize;
-			ImVec2 offset(0, 0);
-
-			if (contentAspect > virtualAspect) {
-				// Content is wider - fit to height, add horizontal letterboxing
-				displaySize.y = contentSize.y;
-				displaySize.x = contentSize.y * virtualAspect;
-				offset.x = (contentSize.x - displaySize.x) * 0.5f; // Center horizontally
-			}
-			else {
-				// Content is taller - fit to width, add vertical letterboxing
-				displaySize.x = contentSize.x;
-				displaySize.y = contentSize.x / virtualAspect;
-				offset.y = (contentSize.y - displaySize.y) * 0.5f; // Center vertically
-			}
-
-			// Draw black letterbox bars
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-			ImVec2 windowPos = ImGui::GetCursorScreenPos();
-
-			// Fill entire content area with black
-			drawList->AddRectFilled(
-				windowPos,
-				ImVec2(windowPos.x + contentSize.x, windowPos.y + contentSize.y),
-				IM_COL32(0, 0, 0, 255)
-			);
-
-			// Position the image with offset (centered with letterboxing)
-			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
-
-			// Store viewport position and size for button click detection
-			lastGameViewportPos = ImVec2(windowPos.x + offset.x, windowPos.y + offset.y);
-			lastGameViewportSize = displaySize;
-
-			// Display the framebuffer texture scaled to fit (READ-ONLY - no interactions)
-			ImGui::Image(
-				(void*)(intptr_t)fb->getTextureID(),
-				displaySize,
-				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
-				ImVec2(1, 0)
-			);
-
-			// Note: All interactions (drag-drop, delete, prefab placement) have been moved to Editor View
-			// This window is now read-only for observing the full game scene
-		}
-	}
 }
 
 // Draw gizmos for selected entity
@@ -5213,7 +4475,6 @@ bool isMouseOverGizmoHandle(ImVec2 mousePos, ImVec2 entityCenter, float gizmoSiz
 void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
 	auto& entityManager = engine_.getEntityManager();
 	auto& sceneEditor = engine_.getEnoEditor();
-	ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
 	// Display toolbar for PLAY/PAUSE/STOP
 	static bool isPlaying = false;
@@ -5266,8 +4527,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 		if (ImGui::IsKeyPressed(ImGuiKey_R)) currentGizmoMode = GIZMO_SCALE;
 	}
 
-	// Keyboard shortcuts for zoom (+ and - keys)
-	if (g_game && !ImGui::GetIO().WantTextInput) {
+	// Keyboard shortcuts for zoom (+ and - keys) — edit mode only
+	if (g_game && !ImGui::GetIO().WantTextInput && !engine_.getIsPlaying()) {
 		if (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)) {
 			g_game->adjustEditorZoom(0.1f);  // Zoom in
 		}
@@ -5332,59 +4593,44 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	}
 	ImGui::Separator();
 
+	// Remaining space below the toolbar
+	ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+
+	// Feed panel size back so the FBO is resized to match next frame
+	if (g_game && viewportSize.x > 0 && viewportSize.y > 0)
+		g_game->setEditorPanelSize(static_cast<int>(viewportSize.x), static_cast<int>(viewportSize.y));
+
+	// World-unit viewport dimensions (panel size ÷ zoom), used by screen↔world conversions
+	float editorWidth  = g_game ? static_cast<float>(g_game->getEditorWidth())  : viewportSize.x;
+	float editorHeight = g_game ? static_cast<float>(g_game->getEditorHeight()) : viewportSize.y;
+
+	// Child window fills remaining space; NoScrollWithMouse keeps the toolbar from scrolling away
+	ImGui::BeginChild("##editorViewport", viewportSize, false,
+		ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
 	if (g_game && g_game->getEditorFramebuffer()) {
 		auto* fb = g_game->getEditorFramebuffer();
 
-		if (contentSize.x > 0 && contentSize.y > 0) {
-			// Get editor resolution from game
-			float editorWidth = static_cast<float>(g_game->getEditorWidth());
-			float editorHeight = static_cast<float>(g_game->getEditorHeight());
-			float editorAspect = editorWidth / editorHeight;
+		ImVec2 childSize = ImGui::GetContentRegionAvail();
+		// Display the framebuffer stretched to fill the viewport child window.
+		ImGui::Image(
+			(void*)(intptr_t)fb->getTextureID(),
+			childSize,
+			ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
+			ImVec2(1, 0)
+		);
 
-			// Calculate aspect-ratio-preserving size to fit in the Editor View
-			float contentAspect = contentSize.x / contentSize.y;
-			ImVec2 displaySize;
-			ImVec2 offset(0, 0);
+		// Capture the editor view min/max coordinates and store them in EditorApplication
+		ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
+		ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
+		g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
 
-			if (contentAspect > editorAspect) {
-				displaySize.y = contentSize.y;
-				displaySize.x = contentSize.y * editorAspect;
-				offset.x = (contentSize.x - displaySize.x) * 0.5f;
-			}
-			else {
-				displaySize.x = contentSize.x;
-				displaySize.y = contentSize.x / editorAspect;
-				offset.y = (contentSize.y - displaySize.y) * 0.5f;
-			}
+		ImDrawList* drawList = ImGui::GetWindowDrawList();
+		// Clip all overlay drawing to the viewport image area
+		drawList->PushClipRect(imGuiImageMin, imGuiImageMax, true);
 
-			// Draw black letterbox bars
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-			ImVec2 windowPos = ImGui::GetCursorScreenPos();
-
-			drawList->AddRectFilled(
-				windowPos,
-				ImVec2(windowPos.x + contentSize.x, windowPos.y + contentSize.y),
-				IM_COL32(0, 0, 0, 255)
-			);
-
-			// Position the image with offset (centered with letterboxing)
-			ImGui::SetCursorScreenPos(ImVec2(windowPos.x + offset.x, windowPos.y + offset.y));
-
-			// Display the editor framebuffer texture scaled to fit
-			ImGui::Image(
-				(void*)(intptr_t)fb->getTextureID(),
-				displaySize,
-				ImVec2(0, 1),  // UV coordinates (flipped Y for OpenGL)
-				ImVec2(1, 0)
-			);
-
-			// Capture the editor view min/max coordinates and store them in GameApplication
-			ImVec2 imGuiImageMin = ImGui::GetItemRectMin();
-			ImVec2 imGuiImageMax = ImGui::GetItemRectMax();
-			g_game->setEditorViewRect({imGuiImageMin.x, imGuiImageMin.y}, {imGuiImageMax.x, imGuiImageMax.y});
-
-			// ========== MOUSE WHEEL ZOOM ==========
-			if (ImGui::IsItemHovered()) {
+			// ========== MOUSE WHEEL ZOOM (edit mode only) ==========
+			if (ImGui::IsItemHovered() && !engine_.getIsPlaying()) {
 				float wheel = ImGui::GetIO().MouseWheel;
 				if (wheel != 0.0f) {
 					// Get mouse position in viewport before zoom
@@ -5485,34 +4731,9 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							render.color = Graphics::Color::White;
 							newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
 
-							// Add name component
-							ECSComponents::NameComponent nameComp;
-							strncpy_s(nameComp.name, textureName.c_str(), sizeof(nameComp.name) - 1);
-							nameComp.name[sizeof(nameComp.name) - 1] = '\0';
-							newEntity.add<ECSComponents::NameComponent>(entityManager, nameComp);
-
 							// Create animation controller
 							uint32_t controllerID = engine_.getAnimationRegistry().createController();
 							newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
-
-							// Get the controller and add a simple 1x1 animation
-							Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(controllerID);
-							if (ctrl)
-							{
-								// Create a single-frame animation (1x1 grid, UV 0,0 to 1,1)
-								Animation::EnoAnimation singleFrameAnim = Animation::createSpriteSheetAnimation(
-									texture->getWidth(),   // frame width = full texture width
-									texture->getHeight(),  // frame height = full texture height
-									texture->getWidth(),   // sheet width
-									texture->getHeight(),  // sheet height
-									0,                     // start frame
-									1,                     // frame count (single frame)
-									0.1f                   // frame duration (doesn't matter for single frame)
-								);
-
-								ctrl->addAnimation("Idle", singleFrameAnim);
-								ctrl->setAnimation("Idle");
-							}
 
 							// Add to scene tree
 							Node* node = sceneTree.createFromEntity(newEntity, nullptr);
@@ -5522,7 +4743,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 								sceneTree,
 								entityManager,
-								newEntity
+								newEntity,
+								engine_.getGraphicsManager()
 							);
 							undoManager.executeCommand(std::move(createCmd));
 
@@ -5583,34 +4805,9 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						render.color = Graphics::Color::White;
 						newEntity.add<ECSComponents::RenderComponent>(entityManager, render);
 
-						// Add name component
-						ECSComponents::NameComponent nameComp;
-						strncpy_s(nameComp.name, textureName.c_str(), sizeof(nameComp.name) - 1);
-						nameComp.name[sizeof(nameComp.name) - 1] = '\0';
-						newEntity.add<ECSComponents::NameComponent>(entityManager, nameComp);
-
 						// Create animation controller
 						uint32_t controllerID = engine_.getAnimationRegistry().createController();
 						newEntity.add<ECSComponents::AnimationControllerComponent>(entityManager, controllerID);
-
-						// Get the controller and add a simple 1x1 animation
-						Animation::AnimationController* ctrl = engine_.getAnimationRegistry().get(controllerID);
-						if (ctrl)
-						{
-							// Create a single-frame animation (1x1 grid, UV 0,0 to 1,1)
-							Animation::EnoAnimation singleFrameAnim = Animation::createSpriteSheetAnimation(
-								texture->getWidth(),   // frame width = full texture width
-								texture->getHeight(),  // frame height = full texture height
-								texture->getWidth(),   // sheet width
-								texture->getHeight(),  // sheet height
-								0,                     // start frame
-								1,                     // frame count (single frame)
-								0.1f                   // frame duration (doesn't matter for single frame)
-							);
-
-							ctrl->addAnimation("Idle", singleFrameAnim);
-							ctrl->setAnimation("Idle");
-						}
 
 						// Add to scene tree
 						Node* node = sceneTree.createFromEntity(newEntity, nullptr);
@@ -5620,7 +4817,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 							sceneTree,
 							entityManager,
-							newEntity
+							newEntity,
+							engine_.getGraphicsManager()
 						);
 						undoManager.executeCommand(std::move(createCmd));
 
@@ -5660,7 +4858,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						auto deleteCmd = std::make_unique<Editor::DeleteEntityCommand>(
 							sceneTree,
 							entityManager,
-							clicked.value()
+							clicked.value(),
+							engine_.getGraphicsManager()
 						);
 
 						// Execute the deletion (also adds to undo history)
@@ -5676,26 +4875,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				}
 
 				g_waitingForEntityDeletion = false;
-			}
-
-			// --- Handle prefab placement ---                                                
-
-			if (!g_selectedPrefabForPlacement.empty() && ImGui::IsItemHovered() && ImGui::IsMouseReleased(0)) {                                                                                         
-
-				Math::eVec2<float> worldPos = Graphics::screenToWorld(
-											{ ImGui::GetMousePos().x, ImGui::GetMousePos().y },
-											g_game->getEditorViewMin(),
-											g_game->getEditorViewMax(),
-											editorWidth,
-											editorHeight,
-											g_game->getEditorCameraX(),
-											g_game->getEditorCameraY());
-
-				// Spawn prefab at clicked position
-				spawnPrefabAt(worldPos.x, worldPos.y, g_selectedPrefabForPlacement, engine_, sceneTree, undoManager);
-				g_selectedPrefabForPlacement.clear();
-
-				std::cout << "Placed prefab at world coords (" << worldPos.x << ", " << worldPos.y << ")\n";
 			}
 
 			// --- Gizmo-based entity transformation logic ---
@@ -5728,9 +4907,9 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				}
 			}
 
-			// Draw camera preview rectangle for all active cameras
-			auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
-			for (auto& camEntity : cameraEntities) {
+			// Draw camera preview rectangle for all active cameras (edit mode only)
+			if (sceneEditor.getCurrentScene().getState() == Editor::State::Stopped)
+			for (auto& camEntity : entityManager.findEntity<ECSComponents::CameraComponent>()) {
 				auto& cam = camEntity.get<ECSComponents::CameraComponent>(entityManager);
 
 				if (cam.isActive) {
@@ -6073,40 +5252,27 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							tc.scale.y = newScaleY;
 							lastScale = ImVec2(newScaleX, newScaleY);
 
-							// Check if this is a player entity
-							bool isPlayerEntity = e.has<ECSComponents::PlayerComponent>(entityManager);
-
 							// Update DrawInfo width and height to reflect the scale
 							if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) {
 								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 
-								if (isPlayerEntity) {
-									// For player, keep DrawInfo at base size (48x48)
-									dc.width = 48.0f;
-									dc.height = 48.0f;
-								} else {
-									// For non-player entities, scale DrawInfo
-									dc.width = dc.width * scaleFactorX;
-									dc.height = dc.height * scaleFactorY;
-								}
+								// scale DrawInfo
+								dc.width = dc.width * scaleFactorX;
+								dc.height = dc.height * scaleFactorY;
+								
 
 								// Auto-update collision component if it exists
 								if (e.has<ECSComponents::CollisionComponent>(entityManager)) {
 									auto& collision = e.get<ECSComponents::CollisionComponent>(entityManager);
 
-									if (isPlayerEntity) {
-										// For player, keep collision at base size (48x48)
-										collision.data.rectangle.width = 48.0f;
-										collision.data.rectangle.height = 48.0f;
-									} else {
-										// For non-player entities, update collision from DrawInfo
-										if (collision.type == ECSComponents::ColliderType::CIRCLE) {
-											collision.data.circle.radius = dc.width * 0.5f;
-										} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
-											collision.data.rectangle.width = dc.width;
-											collision.data.rectangle.height = dc.height;
-										}
+									// update collision from DrawInfo
+									if (collision.type == ECSComponents::ColliderType::CIRCLE) {
+										collision.data.circle.radius = dc.width * 0.5f;
+									} else if (collision.type == ECSComponents::ColliderType::RECTANGLE) {
+										collision.data.rectangle.width = dc.width;
+										collision.data.rectangle.height = dc.height;
 									}
+									
 								}
 							}
 
@@ -6181,8 +5347,9 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					ImGui::EndTooltip();
 				}
 			}
-		}
+		drawList->PopClipRect();
 	}
+	ImGui::EndChild();
 }
 
 void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of space the docking takes
@@ -6228,10 +5395,8 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	// Right side bottom - Mini Map
 	ImGui::DockBuilderDockWindow("Mini Map", dock_id_right_bottom);
 
-	// Bottom - FPS
-	ImGui::DockBuilderDockWindow("FPS", dock_id_bottom);
-	ImGui::DockBuilderDockWindow("Assets Browser", dock_id_bottom);
-	ImGui::DockBuilderDockWindow("Audio Browser", dock_id_bottom);
+	// Bottom - Browser (Audio, Assets, Video, FPS tabs)
+	ImGui::DockBuilderDockWindow("Browser", dock_id_bottom);
 
 	ImGui::DockBuilderFinish(dockspace_id);
 
@@ -6240,6 +5405,213 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 
 void imGuiEndDockspace() {
 	ImGui::End();
+}
+
+// ============================================================
+// Video Browser
+// ============================================================
+void displayVideoTab(Engine::EnoEngine& engine_)
+{
+	Graphics::EnoGraphicsManager& gfx = engine_.getGraphicsManager();
+	Resources::EnoLoader& loader      = engine_.getResourceLoader();
+	auto& droppedFiles                = Window::EnoWindow::GetDroppedFiles();
+
+	ImGui::Text("=== VIDEO ASSETS ===");
+	ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f),
+		"Drag & drop .mp4 / .avi / .mov / .webm / .mkv files to import.");
+	ImGui::Separator();
+
+	// Reload button
+	if (ImGui::Button("Reload Videos"))
+	{
+		loader.loadVideos(loader.getVideoPath(), gfx);
+	}
+	ImGui::SameLine();
+	ImGui::TextDisabled("(%zu loaded)", gfx.getAllVideos().size());
+
+	ImGui::Separator();
+
+	// --- Handle drag-and-drop ---
+	if (!droppedFiles.empty())
+	{
+		static const std::array<std::string_view, 5> videoExts = {
+			".mp4", ".avi", ".mov", ".webm", ".mkv" };
+
+		for (auto& rawPath : droppedFiles)
+		{
+			std::filesystem::path filePath(rawPath);
+			std::string ext = filePath.extension().string();
+			for (char& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+			bool isVideo = false;
+			for (auto& ve : videoExts) { if (ext == ve) { isVideo = true; break; } }
+			if (!isVideo) continue;
+
+			// Copy to assets/video/
+			std::string videoFolder = loader.getVideoPath();
+			std::filesystem::path destPath = std::filesystem::path(videoFolder) / filePath.filename();
+
+			try
+			{
+				std::filesystem::create_directories(videoFolder);
+
+				bool needsCopy = !std::filesystem::exists(destPath) ||
+					(std::filesystem::absolute(filePath) != std::filesystem::absolute(destPath));
+
+				if (needsCopy)
+				{
+					std::filesystem::copy_file(filePath, destPath,
+						std::filesystem::copy_options::overwrite_existing);
+					std::cout << "[Video Import] Copied " << filePath.filename().string()
+					          << " to video folder\n";
+				}
+
+				std::string name = filePath.stem().string();
+				if (gfx.loadVideo(name, destPath.string()))
+					std::cout << "[Video Import] Loaded: " << name << "\n";
+				else
+					std::cerr << "[Video Import] Failed to load: " << destPath.string() << "\n";
+			}
+			catch (const std::exception& e)
+			{
+				std::cerr << "[Video Import] Error: " << e.what() << "\n";
+			}
+		}
+	}
+
+	// --- Video list ---
+	static std::string selectedVideoName;
+	static bool        playPreview = false;
+
+	auto& videoMap = gfx.getVideosMap();
+
+	ImGui::BeginChild("VideoList", ImVec2(0, 200), true);
+	if (videoMap.empty())
+	{
+		ImGui::TextDisabled("(No videos loaded)");
+	}
+	else
+	{
+		for (auto& [name, player] : videoMap)
+		{
+			if (!player) continue;
+
+			bool isSelected = (selectedVideoName == name);
+			if (ImGui::Selectable(name.c_str(), isSelected,
+				ImGuiSelectableFlags_None, ImVec2(0, 0)))
+			{
+				selectedVideoName = name;
+				playPreview       = false;
+			}
+			ImGui::SameLine(200.f);
+			ImGui::TextDisabled("[%dx%d  %.1fs]",
+				player->getWidth(), player->getHeight(), player->getDuration());
+		}
+	}
+	ImGui::EndChild();
+
+	ImGui::Separator();
+
+	// --- Selected video controls & preview ---
+	if (!selectedVideoName.empty())
+	{
+		auto player = gfx.getVideo(selectedVideoName);
+		if (player && player->isLoaded())
+		{
+			ImGui::Text("Selected: %s", selectedVideoName.c_str());
+			ImGui::Text("Size: %d x %d  |  Duration: %.2f s",
+				player->getWidth(), player->getHeight(), player->getDuration());
+
+			// Progress bar
+			float progress = (player->getDuration() > 0.0f)
+				? player->getCurrentTime() / player->getDuration()
+				: 0.0f;
+			ImGui::ProgressBar(progress, ImVec2(-1.f, 0.f));
+
+			// Playback controls
+			if (ImGui::Button("Play"))
+			{
+				player->play();
+				playPreview = true;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Pause"))  player->pause();
+			ImGui::SameLine();
+			if (ImGui::Button("Stop"))
+			{
+				player->stop();
+				playPreview = false;
+			}
+			ImGui::SameLine();
+			bool looping = player->isLooping();
+			if (ImGui::Checkbox("Loop", &looping)) player->setLooping(looping);
+
+			// Thumbnail / live preview
+			auto tex = player->getTexture();
+			if (tex && tex->isValid())
+			{
+				float previewW = ImGui::GetContentRegionAvail().x;
+				float aspect   = (player->getHeight() > 0)
+					? static_cast<float>(player->getWidth()) / static_cast<float>(player->getHeight())
+					: 1.0f;
+				float previewH = previewW / aspect;
+				ImGui::Image(
+					(void*)(intptr_t)(tex->getID()),
+					ImVec2(previewW, previewH));
+			}
+
+			ImGui::Separator();
+
+			// Delete
+			ImGui::Text("----------- DELETION -----------");
+			if (ImGui::Button("Delete selected video"))
+				ImGui::OpenPopup("ConfirmDeleteVideo");
+
+			if (ImGui::BeginPopupModal("ConfirmDeleteVideo", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				ImGui::TextWrapped("Delete this video?\n\n%s", selectedVideoName.c_str());
+				ImGui::Spacing();
+				if (ImGui::Button("Delete", ImVec2(120, 0)))
+				{
+					// Grab the exact file path from the player BEFORE removing it from the map
+					std::string filePathOnDisk;
+					{
+						auto playerToDelete = gfx.getVideo(selectedVideoName);
+						if (playerToDelete)
+							filePathOnDisk = playerToDelete->getFilePath();
+					}
+
+					// Remove from graphics manager
+					gfx.removeVideo(selectedVideoName);
+
+					// Delete file from disk using the stored path
+					try
+					{
+						if (!filePathOnDisk.empty())
+						{
+							std::filesystem::path p(filePathOnDisk);
+							if (std::filesystem::exists(p))
+								std::filesystem::remove(p);
+							else
+								std::cerr << "[Video Delete] File not found: " << filePathOnDisk << "\n";
+						}
+					}
+					catch (const std::exception& e)
+					{
+						std::cerr << "[Video Delete] " << e.what() << "\n";
+					}
+
+					selectedVideoName.clear();
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Cancel", ImVec2(120, 0)))
+					ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
+			}
+		}
+	}
+
 }
 
 void imGuiTerminate() {

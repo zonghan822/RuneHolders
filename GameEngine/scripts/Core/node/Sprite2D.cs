@@ -1,0 +1,45 @@
+namespace Eno
+{
+    // Preset: SPRITE — TransformComponent + RenderComponent + Visibility + Layer
+    public class Sprite2D : Node2D
+    {
+        public Sprite2D(uint id, NodeType type) : base(id, type) {}
+
+        public Vector2 position
+        {
+            get => new Vector2(Bridge.GetPositionX(ID), Bridge.GetPositionY(ID));
+            set => Bridge.SetPosition(ID, value.x, value.y);
+        }
+
+        // Engine stores rotation as Vec2 (x = horizontal angle component, y = vertical).
+        public Vector2 rotation
+        {
+            get => new Vector2(Bridge.GetRotationX(ID), Bridge.GetRotationY(ID));
+            set => Bridge.SetRotation(ID, value.x, value.y);
+        }
+
+        public Vector2 scale
+        {
+            get => new Vector2(Bridge.GetScaleX(ID), Bridge.GetScaleY(ID));
+            set => Bridge.SetScale(ID, value.x, value.y);
+        }
+
+        public float width
+        {
+            get => Bridge.GetRenderWidth(ID);
+        }
+
+        public float height
+        {
+            get => Bridge.GetRenderHeight(ID);
+        }
+
+        public void setSize(float w, float h) => Bridge.SetRenderSize(ID, w, h);
+
+        public string animation
+        {
+            get => Bridge.GetCurrentAnimation(ID);
+            set => Bridge.SetAnimation(ID, value);
+        }
+    }
+}

@@ -104,6 +104,22 @@ namespace Audio
 			stopChannelGroup("BGM");
 			soundPlaying_ = false; // reset toggle state
 			});
+
+		setChannelGroup("BGM");
+		setChannelGroup("SFX");
+
+		Audio::SoundParameters sound;
+		Audio::ParamEQ eq;
+		Audio::SFXReverb reverb;
+		eq = Audio::ParamEQ{ 3.f, 1000.f, 1.f };
+		sound.volume = 0.1f;
+		sound.eq = Audio::EQ{};
+		sound.eq->type = FMOD_DSP_TYPE_PARAMEQ;
+		sound.eq->paramEQ = eq;
+		sound.reverb = Audio::Reverb{};
+		sound.reverb->type = FMOD_DSP_TYPE_SFXREVERB;
+		sound.reverb->sfx = reverb;
+		modifyChannelGroup("BGM", sound);
 	}
 
 	FMOD::System* EnoAudioManager::getSystem() const 
@@ -125,7 +141,7 @@ namespace Audio
 			{
 				int count{};
 				it->group_->getNumChannels(&count);
-				for (size_t i = 0; i < count; i++)
+				for (int i = 0; i < count; i++)
 				{
 					FMOD::Channel* ch{};
 					it->group_->getChannel(i, &ch);
@@ -153,7 +169,13 @@ namespace Audio
 		auto it = sounds_.find(audioComp.audioMod_.name_);
 		if (it == sounds_.end())
 		{
-			// Instead of throwing, publish an error event and log to console
+			// Sound not yet in audio manager - request it from the loader (synchronous event)
+			bus_.publish(RequestSound{ std::string(audioComp.audioMod_.name_) });
+			it = sounds_.find(audioComp.audioMod_.name_);
+		}
+		if (it == sounds_.end())
+		{
+			// Still not found after request - publish error
 			std::cerr << "[Audio Error] Unknown sound requested: " << audioComp.audioMod_.name_ << std::endl;
 			bus_.publish(AudioLoadError{
 				audioComp.audioMod_.name_,
@@ -180,6 +202,11 @@ namespace Audio
 			return; // Audio already playing, nothing to do
 		}
 
+		// Since isPlaying_ is false, the stored channel pointer may be stale
+		// (FMOD invalidates channels on game stop but doesn't null the pointer).
+		// Clear it now so the ch->stop() below doesn't touch freed memory.
+		audioComp.audioMod_.ch_ = nullptr;
+
 		// Auto-prepare if sound pointer is null but name is set
 		// This handles cases where audio was deserialized from a save file
 		if (audioComp.audioMod_.sound_ == nullptr && audioComp.audioMod_.name_[0] != '\0')
@@ -191,7 +218,7 @@ namespace Audio
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
 		FMOD::Channel* ch{ audioComp.audioMod_.ch_ };
-		
+
 		FMOD::ChannelGroup* chGroup{ nullptr };
 
 		auto it = channelGroups_.find(group);
@@ -463,6 +490,7 @@ namespace Audio
 		const std::string& groupName,
 		float fadeInTime, float fadeOutTime, float duration)
 	{
+		
 		auto group = channelGroups_.find(groupName);
 
 		if (group == channelGroups_.end())

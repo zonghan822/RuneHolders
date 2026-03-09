@@ -1,5 +1,5 @@
 #include "map_editor.hpp"
-#include "../game_logic.hpp"
+#include "../editor_logic.hpp"
 
 void MapEditor::displayMenu() {
 	if (!editMode_) return;
@@ -137,7 +137,9 @@ void MapEditor::displayMenu() {
 	ImGui::InputFloat("Cell Size", &newCellSize);
 
 	if (ImGui::Button("Resize Tilemap")) {
+		clearAllTileColliders();
 		tilemap_.resize(newW, newH, newCellSize);
+		rebuildAllTileColliders();
 	}
 
 	ImGui::Separator();
@@ -242,7 +244,9 @@ void MapEditor::displayMenu() {
 				if (ImGui::Selectable(files[i].c_str(), isSelected)) {
 					selected = i;
 					std::string full = mapsDir + files[selected];
+					clearAllTileColliders();
 					tilemap_.loadFromFile(full);
+					rebuildAllTileColliders();
 					currentFile_ = full;
 					selected = -1;
 					selectedLayer_ = 0;
@@ -385,7 +389,7 @@ void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
 	ImGui::End();
 }
 
-void MapEditor::paint(GameApplication* g) {
+void MapEditor::paint(EditorApplication* g) {
 	if (!editMode_) return;
 
 	// Safety check: ensure we have layers
@@ -399,8 +403,8 @@ void MapEditor::paint(GameApplication* g) {
 	float cameraHeight = static_cast<float>(g->getEditorHeight());
 	Math::eVec2<float> editorMin = g->getEditorViewMin();
 	Math::eVec2<float> editorMax = g->getEditorViewMax();
-	float camX = g_game->getEditorCameraX();
-	float camY = g_game->getEditorCameraY();
+	float camX = g->getEditorCameraX();
+	float camY = g->getEditorCameraY();
 
 	bool left = ImGui::IsItemHovered() && ImGui::IsMouseDown(0);
 
@@ -411,6 +415,7 @@ void MapEditor::paint(GameApplication* g) {
 			auto tile = tilemap_.worldToTile(world);
 			if (tilemap_.inBounds(tile.x, tile.y)) {
 				tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, (brush_ == 1));
+				syncTileCollider(selectedLayer_, tile.x, tile.y);
 				g->markEntitiesDirty();
 			}
 		}
@@ -429,6 +434,7 @@ void MapEditor::paint(GameApplication* g) {
 			float v1 = (float)(selectedTileY_ + 1) / tilesetRows_;
 
 			tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, (brush_ == 1));
+			syncTileCollider(selectedLayer_, tile.x, tile.y);
 			tilemap_.setTile(
 				selectedLayer_,
 				tile.x, tile.y,
@@ -436,13 +442,92 @@ void MapEditor::paint(GameApplication* g) {
 				{ u0, v0 },
 				{ u1, v1 }
 			);
-			
+
 			g->markEntitiesDirty();
 		}
 	}
 }	
 
-void MapEditor::draw(GameApplication* g, ImDrawList* drawList) {
+void MapEditor::syncTileCollider(int layer, int x, int y)
+{
+	float cs = tilemap_.cellSize();
+	bool walkable = tilemap_.layers()[layer].isWalkable(x, y);
+	uint64_t key = tileKey(layer, x, y);
+
+	auto it = tileColliders_.find(key);
+
+	if (!walkable)
+	{
+		if (it == tileColliders_.end())
+		{
+			float cx = (x + 0.5f) * cs;
+			float cy = (y + 0.5f) * cs;
+			ECS::Entity e = entMng_.create<
+				ECSComponents::TransformComponent,
+				ECSComponents::CollisionComponent>(
+					ECSComponents::TransformComponent{
+						Math::eVec2<float>{ cx, cy },
+						Math::eVec2<float>{ 0.f, 0.f },
+						Math::eVec2<float>{ 1.f, 1.f }
+					},
+					ECSComponents::CollisionComponent{ cs, cs }
+				);
+			tileColliders_[key] = e.id();
+		}
+	}
+	else
+	{
+		if (it != tileColliders_.end())
+		{
+			ECS::Entity(it->second).destroy(entMng_);
+			tileColliders_.erase(it);
+		}
+	}
+}
+
+void MapEditor::clearAllTileColliders()
+{
+	for (auto& [key, entityID] : tileColliders_)
+	{
+		ECS::Entity(entityID).destroy(entMng_);
+	}
+	tileColliders_.clear();
+}
+
+void MapEditor::rebuildAllTileColliders()
+{
+	float cs = tilemap_.cellSize();
+	int layerIdx = 0;
+	for (auto& layer : tilemap_.layers())
+	{
+		for (int y = 0; y < tilemap_.height(); ++y)
+		{
+			for (int x = 0; x < tilemap_.width(); ++x)
+			{
+				if (!layer.isWalkable(x, y))
+				{
+					uint64_t key = tileKey(layerIdx, x, y);
+					float cx = (x + 0.5f) * cs;
+					float cy = (y + 0.5f) * cs;
+					ECS::Entity e = entMng_.create<
+						ECSComponents::TransformComponent,
+						ECSComponents::CollisionComponent>(
+							ECSComponents::TransformComponent{
+								Math::eVec2<float>{ cx, cy },
+								Math::eVec2<float>{ 0.f, 0.f },
+								Math::eVec2<float>{ 1.f, 1.f }
+							},
+							ECSComponents::CollisionComponent{ cs, cs }
+						);
+					tileColliders_[key] = e.id();
+				}
+			}
+		}
+		++layerIdx;
+	}
+}
+
+void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {
 	if (!editMode_) return;
 
 	// Safety check: ensure we have layers
@@ -455,8 +540,8 @@ void MapEditor::draw(GameApplication* g, ImDrawList* drawList) {
 	float cameraHeight = static_cast<float>(g->getEditorHeight());
 	Math::eVec2<float> editorMin = g->getEditorViewMin();
 	Math::eVec2<float> editorMax = g->getEditorViewMax();
-	float camX = g_game->getEditorCameraX();
-	float camY = g_game->getEditorCameraY();
+	float camX = g->getEditorCameraX();
+	float camY = g->getEditorCameraY();
 
 	drawList->PushClipRect(ImVec2(editorMin.x, editorMin.y), ImVec2(editorMax.x, editorMax.y), true);
 

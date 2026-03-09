@@ -1,123 +1,52 @@
 using System;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace Eno
 {
     public class PlayerController : ScriptBase
     {
-        [Port("The player's display name")]
-        public string playerName = "Player1";
+        // Movement speed in world units per second
+        public float speed = 300f;
 
-        [Port(0, 200)]
-        public int health = 120;
-
-        [Port(50, 300)]
-        public int mana = 70;
-
-        public enum States : int {
-            Walking, Idle, Attacking
-        };
-
-        [Port()]
-        public States state = States.Walking;
-
-        public float speed = 200f;
-
-        private static InputAction? ia1;
-        private static InputAction? ia2;
+        private Actor _player;
 
         public void Begin()
         {
-            Console.WriteLine($"ID on script.cs: {this.ID}");
+            _player = Self<Actor>();
 
-            // Creating a custom input
-            ia1 = new InputAction("Jump")
-                .AddBinding(KeyCode.Space)                  // Jumps when Space is triggered
-                .AddBinding(KeyCode.L, Mod.Control);        // Jumps when L + Shift is triggered
-
-            ia1.when += Jump;
-            ia1.when += Jump2;
-
-            ia2 = new InputAction("Sprint")
-                .AddBinding(KeyCode.W, Mod.Shift);         // Sprints when W and left shift are pressed
-
-            ia2.when += Sprint;
-
-            ia1.Enable();
-            ia2.Enable();
-
-            Console.WriteLine($"End of begin method for entity: {this.ID}");
-
-            Bridge.SetPlayerScriptedMovement(true);
+            // ACTOR nodes have physics — keep gravity off for top-down movement
+            _player.useGravity  = false;
+            _player.isKinematic = false;
         }
 
         public void Update()
         {
-            Console.WriteLine("Calling update!");
+            float dt = Bridge.GetDeltaTime();
 
-            // Triggers when releasing A
-            if (Input.IsKeyReleased(KeyCode.A))
+            // Build direction vector from held keys
+            float dx = 0f;
+            float dy = 0f;
+
+            if (Bridge.IsKeyHeld(KeyCode.W)) dy -= 1f;
+            if (Bridge.IsKeyHeld(KeyCode.S)) dy += 1f;
+            if (Bridge.IsKeyHeld(KeyCode.A)) dx -= 1f;
+            if (Bridge.IsKeyHeld(KeyCode.D)) dx += 1f;
+
+            // Normalize diagonal movement so speed is consistent in all directions
+            if (dx != 0f && dy != 0f)
             {
-                Console.WriteLine("Released A!");
+                float inv = 1f / MathF.Sqrt(dx * dx + dy * dy);
+                dx *= inv;
+                dy *= inv;
             }
 
-            // Triggers when pressing B
-            if (Input.IsKeyPressed(KeyCode.Num1))
-            {
-                Console.WriteLine("Pressed 1!");
-            }
-
-            // Triggers when holding C
-            if (Input.IsKeyHeld(KeyCode.C))
-            {
-                Console.WriteLine("Held C!");
-            }
-
-            // Testing if the right entity is affected
-            // by changing the audio volume the entity is on
-            if (Input.IsKeyPressed(KeyCode.V))
-            {
-                Console.WriteLine("Pressed V, volume should be modified on entity 1 now!");
-            }
-
-            float inputX = 0f;
-            float inputY = 0f;
-
-            if (Input.IsKeyHeld(KeyCode.W)) inputY -= 1f;
-            if (Input.IsKeyHeld(KeyCode.S)) inputY += 1f;
-            if (Input.IsKeyHeld(KeyCode.A)) inputX -= 1f;
-            if (Input.IsKeyHeld(KeyCode.D)) inputX += 1f;
-
-            float length = (float)Math.Sqrt(inputX * inputX + inputY * inputY);
-            if (length > 0.001f)
-            {
-                inputX /= length;
-                inputY /= length;
-
-                float dt = Bridge.GetDeltaTime();
-                Bridge.GetPlayerPosition(out float px, out float py);
-                Bridge.SetPlayerPosition(px + inputX * speed * dt, py + inputY * speed * dt);
-            }
-        }
-
-        private static void Jump()
-        {
-            Console.WriteLine("Jumping right now!");
-        }
-
-        private static void Sprint()
-        {
-            Console.WriteLine("Sprinting right now!");
-        }
-
-        private static void Jump2()
-        {
-            Console.WriteLine("Jump 2 right now!");
+            _player.velocity = new Vector2(dx * speed, dy * speed);
         }
     
-		public void _when_node1_started()
-        {
+        // Called when entering the default state
 
-        }
+        // Called every frame while in the default state
+
+        // Called when exiting the default state
     }
 }

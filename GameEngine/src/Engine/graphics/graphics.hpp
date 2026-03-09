@@ -24,6 +24,11 @@
 #include <memory>
 #include <array>
 #include <algorithm>
+#include <unordered_map>
+
+// Forward declarations
+namespace Engine  { class EnoEngine; }
+namespace Graphics { class VideoPlayer; }
 
 // Math constants
 #ifndef M_PI
@@ -86,6 +91,9 @@ namespace Graphics
 
         bool loadFromFile(const std::string& filepath);
         bool loadFromMemory(int width, int height, int channels, const unsigned char* data);
+        // Stream-update pixels in-place (no reallocation). Texture must already be valid.
+        // Used by VideoPlayer to upload decoded frames without creating a new GL texture.
+        void updatePixels(int width, int height, int channels, const unsigned char* data);
         void bind(unsigned int slot = 0) const;
         void unbind() const;
 
@@ -262,12 +270,66 @@ namespace Graphics
         void setProjectionMatrix(int windowWidth, int windowHeight);
         void setProjectionMatrix(const float* matrix);
 
+        // Override the pixel dimensions used for glViewport inside updateCamera().
+        // Call before renderFrame() when rendering into a framebuffer whose pixel
+        // size differs from the OS window (e.g. the editor FBO).
+        // Pass (0, 0) to revert to the OS window framebuffer size.
+        void setRenderTargetSize(int w, int h) { renderTargetW_ = w; renderTargetH_ = h; }
+
+        // Set a fallback camera used by updateCamera() and render() when no
+        // CameraComponent entity exists in the scene.  The editor calls this
+        // every frame so entities are visible even without a camera node.
+        // centerX/Y is the world-space centre of the viewport.
+        void setFallbackCamera(float centerX, float centerY, float width, float height)
+        {
+            fallbackCamCenterX_ = centerX;
+            fallbackCamCenterY_ = centerY;
+            fallbackCamWidth_   = width;
+            fallbackCamHeight_  = height;
+        }
+
         // Getters
         bool isInitialized() const { return initialized_; }
         std::unordered_map<std::string, std::shared_ptr<EnoTexture>> texMap() const { return texMap_; }
 
         // Map texture
         void mapTexture(const TextureMapping& e);
+
+        // Restore animation controllers from serialized component data (when dirty),
+        // then tick all controllers. Call once per frame before updateCamera().
+        void updateAnimations(Engine::EnoEngine& engine);
+
+        // Mark animation controllers as dirty so they are restored next frame.
+        void markAnimationsDirty() { animationsDirty_ = true; }
+
+        // Update the projection matrix from the active CameraComponent.
+        // Also syncs the script camera position via the engine bridge.
+        // Call once per frame before render().
+        void updateCamera(Engine::EnoEngine& engine);
+
+        // Render all entities with graphics components, sorted by layer.
+        // Draws textured quads, shapes, and text components.
+        void render(Engine::EnoEngine& engine);
+
+        // --- Video management ---
+        // Load a video file by name. Returns false if FFmpeg fails to open the file.
+        bool loadVideo(const std::string& name, const std::string& path);
+
+        // Retrieve a loaded video player (nullptr if not found).
+        std::shared_ptr<VideoPlayer> getVideo(const std::string& name);
+
+        // Remove a video player and release its resources.
+        void removeVideo(const std::string& name);
+
+        // Tick all currently PLAYING video players. Call once per frame.
+        void updateVideos(float dt);
+
+        // Read-only access for the ImGui video browser.
+        const std::unordered_map<std::string, std::shared_ptr<VideoPlayer>>& getAllVideos() const { return videoMap_; }
+
+        // Mutable access needed for deletion from the ImGui video browser.
+        std::unordered_map<std::string, std::shared_ptr<VideoPlayer>>& getVideosMap() { return videoMap_; }
+
     private:
         // Core systems
         Event::EnoEventBus& bus_;
@@ -291,6 +353,21 @@ namespace Graphics
 
         // Projection matrix for 2D rendering
         std::array<float, 16> projectionMatrix_;
+
+        // Animation dirty flag — true on first frame and after scene load
+        bool animationsDirty_ = true;
+
+        // Pixel dimensions of the current render target.  0 = use OS window size.
+        int renderTargetW_ = 0;
+        int renderTargetH_ = 0;
+
+        // Video players: name -> player
+        std::unordered_map<std::string, std::shared_ptr<VideoPlayer>> videoMap_;
+        // Fallback camera used when no CameraComponent entity is present.
+        float fallbackCamCenterX_ = 0.f;
+        float fallbackCamCenterY_ = 0.f;
+        float fallbackCamWidth_   = 0.f;
+        float fallbackCamHeight_  = 0.f;
 
         // Internal helper functions
         bool createDefaultShader();
