@@ -56,6 +56,7 @@ private:
 	int selectedTileX_ = -1;
 	int selectedTileY_ = -1;
 	bool tilesetReady_ = false;
+	int tileRotation_ = 0;  // current brush rotation: 0, 90, 180, 270
 
 	// --- Serializing ---
 	std::string currentFile_;

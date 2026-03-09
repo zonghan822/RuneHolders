@@ -81,5 +81,16 @@ namespace Config
 		 * \brief				Set engine version
 		*//*========================================================================================*/
 		void setEngineVer();
+
+		/*============================================================================================
+		 * \brief				Update a single key in the in-memory config map
+		*//*========================================================================================*/
+		void set(const std::string& key, const std::string& value) { configMap_[key] = value; }
+
+		/*============================================================================================
+		 * \brief				Write the current config map back to config.txt,
+		 *						preserving line order and any unrecognised lines.
+		*//*========================================================================================*/
+		void write();
 	};
 }

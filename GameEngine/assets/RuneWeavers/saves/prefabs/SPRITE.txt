@@ -19,11 +19,11 @@
 	},
 	"struct ECSComponents::RenderComponent": {
 		"Width": {
-			"value": "10",
+			"value": "64",
 			"type": "float"
 		},
 		"Height": {
-			"value": "10",
+			"value": "64",
 			"type": "float"
 		},
 		"Shape": {

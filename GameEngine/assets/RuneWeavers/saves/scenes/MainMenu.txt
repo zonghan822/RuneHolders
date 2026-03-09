@@ -83,7 +83,7 @@
 		}
 		"Script": { MainMenu_Background_Script.cs }
 		"Parent": { }
-		"Children": { }
+		"Children": { 34 }
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
@@ -91,8 +91,8 @@
 
 	[Logo]
 	{
-		"ID": { 32 }
-		"Layer": { 0 }
+		"ID": { 34 }
+		"Layer": { 1 }
 		"Entity Data"
 		{
 			[struct ECSComponents::VisibilityComponent]
@@ -103,7 +103,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 378.028 | y : 314.092 }
+				"Position": <eVec2(float)> { x : 379.421 | y : 313.184 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -119,6 +119,11 @@
 				"TexID": <int> { 0 }
 			}
 
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
 			[struct ECSComponents::AnimationControllerComponent]
 			{
 				"Frame Width": <int> { 0 }
@@ -132,7 +137,7 @@
 			}
 		}
 		"Script": { }
-		"Parent": { }
+		"Parent": { 31 }
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }

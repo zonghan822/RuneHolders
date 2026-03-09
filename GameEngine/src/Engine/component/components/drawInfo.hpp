@@ -48,14 +48,14 @@ namespace ECSComponents
 	struct RenderComponent
 	{
 		// Rendering properties - DECLARED FIRST to match initialization order
-		float width = 10.0f;
-		float height = 10.0f;
+		float width = 64.0f;
+		float height = 64.0f;
 		char shape[32] = "Rectangle";
 		Graphics::Color color = Graphics::Color::White;
 
 		// Texture support
 		std::shared_ptr<Graphics::EnoTexture> texture = nullptr;
-		char texturePath[FILE_PATH_LEN];
+		char texturePath[FILE_PATH_LEN] = "";
 		int texID = 0;  // For sprite sheet indexing
 
 		// Default constructor

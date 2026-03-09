@@ -89,6 +89,31 @@ namespace Config {
 		}
 	}
 
+	void EnoConfigManager::write() {
+		// Read existing lines so we preserve ordering and unknown entries
+		std::vector<std::string> lines;
+		{
+			std::ifstream in(cfgFileName_);
+			std::string line;
+			while (std::getline(in, line))
+				lines.push_back(line);
+		}
+
+		// Replace lines whose key prefix matches a known config entry
+		for (auto& line : lines) {
+			for (auto& [key, val] : configMap_) {
+				if (line.rfind(key + ":", 0) == 0) {
+					line = key + ": " + val;
+					break;
+				}
+			}
+		}
+
+		std::ofstream out(cfgFileName_);
+		for (auto& l : lines)
+			out << l << "\n";
+	}
+
 	void EnoConfigManager::setEngineVer() {
 		auto it = configMap_.find("Engine Version");
 		if (it == configMap_.end()) return;

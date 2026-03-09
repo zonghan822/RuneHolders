@@ -834,6 +834,44 @@ namespace Graphics
         }
     }
 
+    void EnoGraphicsManager::drawTexturedQuadUVCorners(
+        const Math::eVec2<float>& position,
+        const Math::eVec2<float>& size,
+        std::shared_ptr<EnoTexture> texture,
+        const Math::eVec2<float>& uvTL,
+        const Math::eVec2<float>& uvTR,
+        const Math::eVec2<float>& uvBR,
+        const Math::eVec2<float>& uvBL,
+        const Color& tint)
+    {
+        if (!texture || !texture->isValid()) return;
+
+        if (!batchVertices_.empty() && currentBatchPrimitiveType_ != GL_TRIANGLES)
+            flushBatch(currentBatchPrimitiveType_);
+
+        currentBatchPrimitiveType_ = GL_TRIANGLES;
+
+        int texSlot = getTextureSlot(texture);
+        float texID = static_cast<float>(texSlot);
+
+        Math::eVec2<float> topLeft     = position;
+        Math::eVec2<float> topRight    = { position.x + size.x, position.y };
+        Math::eVec2<float> bottomRight = { position.x + size.x, position.y + size.y };
+        Math::eVec2<float> bottomLeft  = { position.x,          position.y + size.y };
+
+        batchVertices_.reserve(batchVertices_.size() + 6);
+        batchVertices_.emplace_back(topLeft,     tint, uvTL, texID);
+        batchVertices_.emplace_back(topRight,    tint, uvTR, texID);
+        batchVertices_.emplace_back(bottomLeft,  tint, uvBL, texID);
+
+        batchVertices_.emplace_back(topRight,    tint, uvTR, texID);
+        batchVertices_.emplace_back(bottomRight, tint, uvBR, texID);
+        batchVertices_.emplace_back(bottomLeft,  tint, uvBL, texID);
+
+        if (batchVertices_.size() >= MAX_BATCH_SIZE - 6)
+            flushBatch(currentBatchPrimitiveType_);
+    }
+
     void EnoGraphicsManager::drawText(const std::shared_ptr<Font::EnoFont>& font,
         const std::string& text,
         const Math::eVec2<float>& position,
@@ -1565,12 +1603,35 @@ namespace Graphics
                         auto tex = loader.getTexture(tile.textureName);
                         if (!tex || !tex->isValid()) continue;
 
-                        drawTexturedQuadUV(
+                        float u0 = tile.uv0.x, v0 = tile.uv0.y;
+                        float u1 = tile.uv1.x, v1 = tile.uv1.y;
+
+                        Math::eVec2<float> uvTL, uvTR, uvBR, uvBL;
+                        switch (tile.rotation) {
+                        default:
+                        case 0:
+                            uvTL = { u0, v0 }; uvTR = { u1, v0 };
+                            uvBR = { u1, v1 }; uvBL = { u0, v1 };
+                            break;
+                        case 90:
+                            uvTL = { u0, v1 }; uvTR = { u0, v0 };
+                            uvBR = { u1, v0 }; uvBL = { u1, v1 };
+                            break;
+                        case 180:
+                            uvTL = { u1, v1 }; uvTR = { u0, v1 };
+                            uvBR = { u0, v0 }; uvBL = { u1, v0 };
+                            break;
+                        case 270:
+                            uvTL = { u1, v0 }; uvTR = { u1, v1 };
+                            uvBR = { u0, v1 }; uvBL = { u0, v0 };
+                            break;
+                        }
+
+                        drawTexturedQuadUVCorners(
                             Math::eVec2<float>{ x * cellSize, y * cellSize },
                             Math::eVec2<float>{ cellSize, cellSize },
                             tex,
-                            tile.uv0,
-                            tile.uv1,
+                            uvTL, uvTR, uvBR, uvBL,
                             Color::White
                         );
                     }

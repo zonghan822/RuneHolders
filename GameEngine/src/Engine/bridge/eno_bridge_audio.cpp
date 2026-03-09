@@ -23,14 +23,24 @@ namespace Bridge
     {
         ENGINE_API void __stdcall AudioPlay(uint32_t sceneObjectID)
         {
-            if (auto* a = getAudio(sceneObjectID))
-                a->isPlaying_ = true;
+            auto* a = getAudio(sceneObjectID);
+            if (!a) return;
+            // Reset flag so audioMgr.play() doesn't skip via its already-playing guard.
+            // This mirrors the old PlayEntityAudio behaviour.
+            a->isPlaying_ = false;
+            gEngine->getAudioManager().play(*a);
         }
 
         ENGINE_API void __stdcall AudioStop(uint32_t sceneObjectID)
         {
-            if (auto* a = getAudio(sceneObjectID))
-                a->isPlaying_ = false;
+            auto* a = getAudio(sceneObjectID);
+            if (!a) return;
+            if (a->audioMod_.ch_)
+            {
+                a->audioMod_.ch_->stop();
+                a->audioMod_.ch_ = nullptr;
+            }
+            a->isPlaying_ = false;
         }
 
         ENGINE_API float __stdcall GetAudioVolume(uint32_t sceneObjectID)

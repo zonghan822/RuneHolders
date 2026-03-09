@@ -31,8 +31,12 @@ namespace Map {
         layers_[layerIndex].setWalkable(x, y, value);
     }
 
-    void TileMapSystem::setTile(int layerIndex, int x, int y, const std::string& textureName, Math::eVec2<float> uv0, Math::eVec2<float> uv1) {
-        layers_[layerIndex].setTile(x, y, textureName, uv0, uv1);
+    void TileMapSystem::setTile(int layerIndex, int x, int y, const std::string& textureName, Math::eVec2<float> uv0, Math::eVec2<float> uv1, int rotation) {
+        layers_[layerIndex].setTile(x, y, textureName, uv0, uv1, rotation);
+    }
+
+    void TileMapSystem::clearTile(int layerIndex, int x, int y) {
+        layers_[layerIndex].clearTile(x, y);
     }
 
     void TileMapSystem::paintRectangle(int layerIndex,
@@ -132,6 +136,7 @@ namespace Map {
                     tile.AddMember("uv1", uv1, alloc);
 
                     tile.AddMember("hasTex", t.hasTexture, alloc);
+                    tile.AddMember("rot", t.rotation, alloc);
 
                     row.PushBack(tile, alloc);
                 }
@@ -205,6 +210,7 @@ namespace Map {
                         t.uv0 = { jt["uv0"][0].GetFloat(), jt["uv0"][1].GetFloat() };
                         t.uv1 = { jt["uv1"][0].GetFloat(), jt["uv1"][1].GetFloat() };
                     }
+                    t.rotation = jt.HasMember("rot") ? jt["rot"].GetInt() : 0;
                 }
             }
 
