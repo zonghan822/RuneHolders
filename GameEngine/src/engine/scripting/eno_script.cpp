@@ -20,14 +20,24 @@ namespace Script
 		// Source: https://stackoverflow.com/questions/10055607/when-using-cotaskmemalloc-should-i-always-call-cotaskmemfree
 		
 
+		if (!coreHost_.cname())
+		{
+			std::wcerr << L"[EnoScript] cname() delegate is null — GameScripts.dll may not be loaded. Skipping script: " << path << std::endl;
+			return;
+		}
+
 		// Get all script variables
 		int count{};
 		void* names = (coreHost_.cname())(path.c_str(), &count);
-		
+
+		if (!names || count <= 0)
+			return;
+
 		// Map script variables
 		wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
-		for (size_t i = 0; i < count; i++)
+		for (size_t i = 0; i < static_cast<size_t>(count); i++)
 		{
+			if (!classNames[i]) continue;
 			std::wstring org = classNames[i];
 			std::wstring cname = extrClassName(classNames[i]);
 
@@ -119,7 +129,13 @@ namespace Script
 	}
 #endif
 
-
+	void EnoScript::registerInst(uint32_t id)
+	{
+		for (const std::wstring& org : origin_)
+		{
+			coreHost_.setMetaData(org, id, true);
+		}
+	}
 
 	// Extract the class name
 	std::wstring EnoScript::extrClassName(wchar_t* name)

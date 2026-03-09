@@ -1,5 +1,5 @@
 #include "entity.hpp"
-#include "../prefab/prefab.hpp"
+#include "../resources/eno_loader.hpp"
 
 
 namespace ECS
@@ -155,74 +155,72 @@ namespace ECS
 			{
 				entity.add<T>(entMng);
 
-				// Packaging the data
+				// Packaging the data.
+				// Call reflect() ONCE so fields are visited in declaration order.
+				// This is critical for components whose reflect() contains loops
+				// driven by a previously-declared counter (e.g. StateMachineComponent
+				// loops over states[0..numStates-1]): iterating dataMap per-entry and
+				// calling reflect() each time could visit state fields before numStates
+				// is set, silently dropping them.
 				T component{};
-				for (const auto& [fname, fvalue] : dataMap)
-				{
-					// Modify each component mapped
-					//
-					// Every component will have a reflect function defined!
-					// Use the reflect function in each component to print
-					// 
-					// (further reflect-related documentation can be found in components with
-					// reflect defined e.g the visibility component in visibility.hpp)
-					component.reflect([&](const std::string& name, auto& value, auto)
+				component.reflect([&](const std::string& name, auto& value, auto)
+					{
+						auto it = dataMap.find(name);
+						if (it == dataMap.end()) return;
+						const auto& fvalue = it->second;
+
+						using ValueType = std::remove_reference_t<decltype(value)>;
+
+						// Char types are true pain, must make exception...
+						// Check if value is a char array
+						if constexpr (std::is_array_v<ValueType> && std::is_same_v<std::remove_extent_t<ValueType>, char>)
 						{
-							if (name != fname) return;
+							// Variant must hold a string type
+							std::visit([&](auto&& val) {
+								using T = std::decay_t<decltype(val)>;
 
-							using ValueType = std::remove_reference_t<decltype(value)>;
+								if constexpr (std::is_same_v<T, std::string>)
+								{
+									std::strncpy(value, val.c_str(), sizeof(value));
+									value[sizeof(value) - 1] = '\0';
+								}
+								else if constexpr (std::is_same_v<T, const char*>)
+								{
+									std::strncpy(value, val, sizeof(value));
+									value[sizeof(value) - 1] = '\0';
+								}
+								else
+								{
+									// empty by design
+									// silently skip non-string variant values
+								}
+								}, fvalue);
+						}
+						else
+						{
+							// normal assignment for other types (particularly arithmetic types)
+							std::visit([&](auto&& val) {
+								using V = std::decay_t<decltype(val)>;
+								using F = std::decay_t<decltype(value)>;
 
-							// Char types are true pain, must make exception...
-							// Check if value is a char array
-							if constexpr (std::is_array_v<ValueType> && std::is_same_v<std::remove_extent_t<ValueType>, char>)
-							{
-								// Variant must hold a string type
-								std::visit([&](auto&& val) {
-									using T = std::decay_t<decltype(val)>;
+								if constexpr (std::is_same_v<F, V>)
+								{
+									value = val;
+								}
+								else if constexpr (std::is_arithmetic_v<F> && std::is_arithmetic_v<V>)
+								{
+									value = static_cast<F>(val);
+								}
+								else
+								{
+									std::cerr << "Skipping assignment: variant type " << typeid(V).name()
+										<< " does not match field type " << typeid(F).name() << "\n";
+								}
+								}, fvalue);
+						}
+					});
 
-									if constexpr (std::is_same_v<T, std::string>)
-									{
-										std::strncpy(value, val.c_str(), sizeof(value));
-										value[sizeof(value) - 1] = '\0';
-									}
-									else if constexpr (std::is_same_v<T, const char*>)
-									{
-										std::strncpy(value, val, sizeof(value));
-										value[sizeof(value) - 1] = '\0';
-									}
-									else
-									{
-										// empty by design
-										// silently skip non-string variant values
-									}
-									}, fvalue);
-							}
-							else
-							{
-								// normal assignment for other types (particularly arithmetic types)
-								std::visit([&](auto&& val) {
-									using V = std::decay_t<decltype(val)>;
-									using F = std::decay_t<decltype(value)>;
-
-									if constexpr (std::is_same_v<F, V>)
-									{
-										value = val;
-									}
-									else if constexpr (std::is_arithmetic_v<F> && std::is_arithmetic_v<V>)
-									{
-										value = static_cast<F>(val);
-									}
-									else
-									{
-										std::cerr << "Skipping assignment: variant type " << typeid(V).name()
-											<< " does not match field type " << typeid(F).name() << "\n";
-									}
-									}, fvalue);
-							}
-						});
-
-					entity.set<T>(entMng, component);
-				}
+				entity.set<T>(entMng, component);
 			});
 
 			pos = data.find('[', compScopeEnd + 1);
@@ -243,38 +241,27 @@ namespace ECS
 		{
 			auto& renderComp = entity.get<ECSComponents::RenderComponent>(entMng);
 
-			std::cout << "[DEBUG TEXTURE LOAD] Entity " << entity.id()
-					  << " - texturePath: '" << renderComp.texturePath << "'"
-					  << " - texture ptr null: " << (renderComp.texture == nullptr ? "YES" : "NO") << "\n";
-
-			// If texturePath is set but texture is null, load the texture
-			if (renderComp.texturePath[0] != '\0' && !renderComp.texture)
+			// If texturePath is set but texture is null, resolve it by name from the loader
+			// strnlen guards against an uninitialized (non-null-terminated) buffer
+			const bool hasValidPath = strnlen(renderComp.texturePath, FILE_PATH_LEN) > 0
+			                       && strnlen(renderComp.texturePath, FILE_PATH_LEN) < FILE_PATH_LEN;
+			if (hasValidPath && !renderComp.texture)
 			{
-				auto tex = std::make_shared<Graphics::EnoTexture>();
-				std::string fullpath = FileSystem::GetAssetsDir().string() + "/art/" + std::string(renderComp.texturePath) + ".png";
+				std::string texName = std::string(renderComp.texturePath);
+				std::shared_ptr<Graphics::EnoTexture> tex;
 
-				std::cout << "[DEBUG TEXTURE LOAD] Attempting to load: " << fullpath << "\n";
+				// Look up by name in the already-loaded resource cache
+				tex = loader_.getTexture(texName);
 
-				if (tex->loadFromFile(fullpath))
+				if (tex)
 				{
 					renderComp.texture = tex;
-
-					// Map texture for graphics system
-					bus_.publish<Graphics::TextureMapping>(Graphics::TextureMapping{
-						std::string(renderComp.texturePath),
-						tex
-					});
-
-					std::cout << "[EntityManager] SUCCESS - Loaded texture: " << renderComp.texturePath << "\n";
+					bus_.publish<Graphics::TextureMapping>(Graphics::TextureMapping{ texName, tex });
 				}
 				else
 				{
-					std::cerr << "[EntityManager] FAILED to load texture: " << fullpath << "\n";
+					std::cerr << "[EntityManager] FAILED to find texture in loader: " << texName << "\n";
 				}
-			}
-			else if (renderComp.texturePath[0] == '\0')
-			{
-				std::cout << "[DEBUG TEXTURE LOAD] texturePath is empty, skipping\n";
 			}
 			else if (renderComp.texture != nullptr)
 			{
@@ -284,14 +271,6 @@ namespace ECS
 		else
 		{
 			std::cout << "[DEBUG TEXTURE LOAD] Entity " << entity.id() << " has no RenderComponent\n";
-		}
-
-		// After loading all components, check if this entity is a prefab instance
-		// If so, register it in the prefab tracking system
-		if (entity.has<ECSComponents::PrefabInstanceComponent>(entMng))
-		{
-			auto& prefabInstance = entity.get<ECSComponents::PrefabInstanceComponent>(entMng);
-			registerPrefabInstance(entity.id(), prefabInstance.prefabName);
 		}
 	}
 

@@ -104,6 +104,22 @@ namespace Audio
 			stopChannelGroup("BGM");
 			soundPlaying_ = false; // reset toggle state
 			});
+
+		setChannelGroup("BGM");
+		setChannelGroup("SFX");
+
+		Audio::SoundParameters sound;
+		Audio::ParamEQ eq;
+		Audio::SFXReverb reverb;
+		eq = Audio::ParamEQ{ 3.f, 1000.f, 1.f };
+		sound.volume = 0.1f;
+		sound.eq = Audio::EQ{};
+		sound.eq->type = FMOD_DSP_TYPE_PARAMEQ;
+		sound.eq->paramEQ = eq;
+		sound.reverb = Audio::Reverb{};
+		sound.reverb->type = FMOD_DSP_TYPE_SFXREVERB;
+		sound.reverb->sfx = reverb;
+		modifyChannelGroup("BGM", sound);
 	}
 
 	FMOD::System* EnoAudioManager::getSystem() const 
@@ -115,8 +131,31 @@ namespace Audio
 	/*============================================================================================
 	 * \brief				Update internal FMOD system
 	*//*========================================================================================*/
-	void EnoAudioManager::process()
+	void EnoAudioManager::process(float dt)
 	{
+		for (auto it = pendingStops_.begin(); it != pendingStops_.end();)
+		{
+			it->timeRemaining_ -= dt;
+
+			if (it->timeRemaining_ <= 0.f)
+			{
+				int count{};
+				it->group_->getNumChannels(&count);
+				for (int i = 0; i < count; i++)
+				{
+					FMOD::Channel* ch{};
+					it->group_->getChannel(i, &ch);
+					if (ch)
+						ch->stop();
+				}
+				it = pendingStops_.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+
 		system->update();
 	}
 
@@ -130,7 +169,13 @@ namespace Audio
 		auto it = sounds_.find(audioComp.audioMod_.name_);
 		if (it == sounds_.end())
 		{
-			// Instead of throwing, publish an error event and log to console
+			// Sound not yet in audio manager - request it from the loader (synchronous event)
+			bus_.publish(RequestSound{ std::string(audioComp.audioMod_.name_) });
+			it = sounds_.find(audioComp.audioMod_.name_);
+		}
+		if (it == sounds_.end())
+		{
+			// Still not found after request - publish error
 			std::cerr << "[Audio Error] Unknown sound requested: " << audioComp.audioMod_.name_ << std::endl;
 			bus_.publish(AudioLoadError{
 				audioComp.audioMod_.name_,
@@ -157,6 +202,11 @@ namespace Audio
 			return; // Audio already playing, nothing to do
 		}
 
+		// Since isPlaying_ is false, the stored channel pointer may be stale
+		// (FMOD invalidates channels on game stop but doesn't null the pointer).
+		// Clear it now so the ch->stop() below doesn't touch freed memory.
+		audioComp.audioMod_.ch_ = nullptr;
+
 		// Auto-prepare if sound pointer is null but name is set
 		// This handles cases where audio was deserialized from a save file
 		if (audioComp.audioMod_.sound_ == nullptr && audioComp.audioMod_.name_[0] != '\0')
@@ -167,6 +217,8 @@ namespace Audio
 
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
+		FMOD::Channel* ch{ audioComp.audioMod_.ch_ };
+
 		FMOD::ChannelGroup* chGroup{ nullptr };
 
 		auto it = channelGroups_.find(group);
@@ -180,31 +232,39 @@ namespace Audio
 		{
 			// Channel group exists and will be used
 			chGroup = it->second;
+
+			chGroup->removeFadePoints(0, ULLONG_MAX);
+			chGroup->setDelay(0, 0, false);
+			chGroup->setVolume(1.f);
 		}
+
+		if (ch)
+			ch->stop();
 
 		// Apply loop settings to the sound before playing
 		applyLoopSettings(sound, audioComp);
 
 		// Play the sound (channel is created here)
-		FMOD::Channel* channel{ nullptr };
 		system->playSound(
 			audioComp.audioMod_.sound_,
 			chGroup,
 			true,  // Start paused so we can apply settings first
-			&channel);
+			&ch);
+
+		audioComp.audioMod_.ch_ = ch;
 
 		// Now that channel exists, apply volume/pitch/pan
-		if (channel)
+		if (ch)
 		{
-			modifyBasic(channel, createSP(audioComp));
+			modifyBasic(ch, createSP(audioComp));
 
 			// CRITICAL FIX: Always unpause when play() is called
 			// The play() function is meant to START playback
 			// isAutoplay_ should only control scene-start behavior, not manual play
-			channel->setPaused(false);
+			ch->setPaused(false);
 
 			// Store the channel for later use
-			channels_.push_back(channel);
+			channels_.push_back(ch);
 
 			// Mark as playing AFTER successfully starting playback
 			audioComp.isPlaying_ = true;
@@ -241,6 +301,8 @@ namespace Audio
 
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
+		FMOD::Channel* ch{ audioComp.audioMod_.ch_ };
+
 		FMOD::ChannelGroup* chGroup{ nullptr };
 
 		auto it = channelGroups_.find(group);
@@ -254,35 +316,45 @@ namespace Audio
 		{
 			// Channel group exists and will be used
 			chGroup = it->second;
+			
+			// Clear previous fades and scheduled stops
+			chGroup->removeFadePoints(0, ULLONG_MAX);
+			chGroup->setDelay(0, 0, false);
+			chGroup->setVolume(1.f);
 		}
+
+		if (ch)
+			ch->stop();
 
 		// Apply loop settings to the sound before playing
 		applyLoopSettings(sound, audioComp);
 
 		// Play the sound (channel is created here)
-		FMOD::Channel* channel{ nullptr };
-		system->playSound(
+		FMOD_RESULT result;
+		result = system->playSound(
 			audioComp.audioMod_.sound_,
 			chGroup,
 			true,  // Start paused so we can apply settings first
-			&channel);
+			&ch);
+
+		channels_.push_back(ch);
 
 		// Now that channel exists, apply volume/pitch/pan
-		if (channel)
+		if (ch)
 		{
 			// Modify volume/pan based on cam pos
 			audioComp.volume_ -= 0.125 * camPos.x;
 			audioComp.panScale_ -= 0.125 * camPos.x;
 
-			modifyBasic(channel, createSP(audioComp));
+			modifyBasic(ch, createSP(audioComp));
 
 			// CRITICAL FIX: Always unpause when play() is called
 			// The play() function is meant to START playback
 			// isAutoplay_ should only control scene-start behavior, not manual play
-			channel->setPaused(false);
+			ch->setPaused(false);
 
 			// Store the channel for later use
-			channels_.push_back(channel);
+			channels_.push_back(ch);
 
 			// Mark as playing AFTER successfully starting playback
 			audioComp.isPlaying_ = true;
@@ -416,8 +488,9 @@ namespace Audio
 	*//*========================================================================================*/
 	void EnoAudioManager::scheduleGroupFade(
 		const std::string& groupName,
-		const float& fadeInTime, const float& fadeOutTime, const float& duration)
+		float fadeInTime, float fadeOutTime, float duration)
 	{
+		
 		auto group = channelGroups_.find(groupName);
 
 		if (group == channelGroups_.end())
@@ -436,17 +509,17 @@ namespace Audio
 		system->getSoftwareFormat(&sampleRate, nullptr, nullptr);
 
 		// Convert seconds to sample count
-		unsigned long long fadeInSamples = static_cast<unsigned long long>(fadeInTime * sampleRate);
+		//unsigned long long fadeInSamples = static_cast<unsigned long long>(fadeInTime * sampleRate);
 		unsigned long long fadeOutSamples = static_cast<unsigned long long>(fadeOutTime * sampleRate);
 		unsigned long long totalSamples = static_cast<unsigned long long>(duration * sampleRate);
 
-		// Schedule fade in
-		group->second->addFadePoint(dspClock, 0.0f);
-		group->second->addFadePoint(dspClock + fadeInSamples, 1.0f);
+		unsigned long long endDSP = dspClock + totalSamples;
 
 		// Schedule fade out
 		group->second->addFadePoint(dspClock + totalSamples - fadeOutSamples, 1.0f);
 		group->second->addFadePoint(dspClock + totalSamples, 0.0f);
+
+		group->second->setDelay(0, endDSP, true);
 	}
 
 	/*============================================================================================
@@ -622,6 +695,10 @@ namespace Audio
 	*//*========================================================================================*/
 	void EnoAudioManager::stopChannelGroup(const std::string& name)
 	{
+		constexpr float FADE_IN_TIME = 0.f;
+		constexpr float FADE_OUT_TIME = 2.f;
+		constexpr float DURATION = 1.f;
+
 		auto group = channelGroups_.find(name);
 		if (group == channelGroups_.end())
 		{
@@ -629,7 +706,28 @@ namespace Audio
 			return;
 		}
 
-		group->second->stop();
+		// Fade out sound
+		scheduleGroupFade(name, FADE_IN_TIME, FADE_OUT_TIME, DURATION);
+		pendingStops_.push_back({ group->second, FADE_OUT_TIME });
+	}
+
+	/*============================================================================================
+	* \brief				Stop all channels within a channel group
+	* \param[in]			Channel group name
+	*//*========================================================================================*/
+	void EnoAudioManager::stopAllChannels(FMOD::ChannelGroup* group)
+	{
+		int channelCount{};
+		group->getNumChannels(&channelCount);
+
+		for (size_t i = 0; i < channelCount; i++)
+		{
+			FMOD::Channel* channel{};
+			group->getChannel(i, &channel);
+
+			if (channel)
+				channel->stop();
+		}
 	}
 
 	/*============================================================================================

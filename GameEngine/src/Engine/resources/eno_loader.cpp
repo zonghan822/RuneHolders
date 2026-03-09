@@ -29,6 +29,7 @@ namespace Resources {
 		imagePath_     = (base / "art").string();
 		shaderPath_    = (base / "shaders").string();
 		fontPath_      = (base / "fonts").string();
+		videoPath_     = (base / "video").string();
 		rootMusicPath_ = (root / "assets/sound/music").string();
 		rootSfxPath_   = (root / "assets/sound/sfx").string();
 
@@ -139,9 +140,6 @@ namespace Resources {
 				if (texture->loadFromFile(entry.path().string()))
 				{
 					textures_[entry.path().stem().string()] = texture;
-#ifdef _DEBUG
-					std::cout << "Loaded texture: " << entry.path().stem().string() << std::endl;
-#endif
 				}
 				else
 				{
@@ -203,6 +201,40 @@ namespace Resources {
 			if (!entry.is_regular_file()) continue;
 			if (entry.path().extension() == ".ttf" || entry.path().extension() == ".otf") {
 				fontManager_.loadFont(entry.path().stem().string(), entry.path().string(), pixelSize);
+			}
+		}
+	}
+
+	void EnoLoader::loadVideos(const std::string& path, Graphics::EnoGraphicsManager& graphicsManager)
+	{
+		if (!std::filesystem::exists(path))
+		{
+			std::cout << "[Loader] Video path does not exist, skipping: " << path << "\n";
+			return;
+		}
+
+		static const std::array<std::string_view, 5> videoExts = { ".mp4", ".avi", ".mov", ".webm", ".mkv" };
+
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(path))
+		{
+			if (!entry.is_regular_file()) continue;
+
+			std::string ext = entry.path().extension().string();
+			// Lowercase the extension for case-insensitive matching
+			for (char& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+			bool isVideo = false;
+			for (auto& ve : videoExts) { if (ext == ve) { isVideo = true; break; } }
+			if (!isVideo) continue;
+
+			std::string name = entry.path().stem().string();
+			if (graphicsManager.loadVideo(name, entry.path().string()))
+			{
+				std::cout << "[Loader] Loaded video: " << name << "\n";
+			}
+			else
+			{
+				std::cerr << "[Loader] Failed to load video: " << entry.path().string() << "\n";
 			}
 		}
 	}

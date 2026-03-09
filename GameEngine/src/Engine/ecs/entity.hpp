@@ -45,6 +45,10 @@
 #include <variant>
 
 
+// Forward declaration so EntityManager can hold a loader pointer without
+// pulling in the full eno_loader.hpp header (which would create circular includes)
+namespace Resources { class EnoLoader; }
+
 namespace ECS
 {
 	//(YunQi)
@@ -68,11 +72,14 @@ namespace ECS
 	{
 	public:
 
-		EntityManager(Memory::EnoECSArena& arena, Event::EnoEventBus& bus)
-			: 
+		EntityManager(Resources::EnoLoader& loader, Memory::EnoECSArena& arena, Event::EnoEventBus& bus)
+			:
+			loader_{ loader },
 			arena_{ arena },
 			bus_{ bus }
-		{}
+		{
+		};
+
 
 		/*============================================================================================
 		* \brief			Entity id to be set
@@ -215,7 +222,7 @@ namespace ECS
 		* \return				Newly created Entity
 		*//*========================================================================================*/
 		template <typename Tuple>
-		Entity presetCreate(Tuple& componentsTuple)
+		Entity presetCreate(const Tuple& componentsTuple)
 		{
 			// decltype(comps) will indicate each component type passed
 			// but it will be a reference type (e.g AudioComponent&), 
@@ -484,9 +491,12 @@ namespace ECS
 
 		std::vector<uint32_t> destroyedEntityIDs_;									// For the purpose of reusing ids
 
+		Resources::EnoLoader& loader_;
+
 		Memory::EnoECSArena& arena_;
 
 		Event::EnoEventBus& bus_;
+		
 
 		/*============================================================================================
 			* \brief		Helper for getting all entities from the entity map

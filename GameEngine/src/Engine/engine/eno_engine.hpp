@@ -26,7 +26,6 @@
 #include "../math/math.hpp"
 #include "../tag/tag_registry.hpp"
 #include "../collision/collision.hpp"
-#include "../prefab/prefab.hpp"
 #include "../crashlog/crashlogger.hpp"
 #include "../graphics/animation/animation.hpp"
 #include "../ai/ai_manager.hpp"
@@ -34,13 +33,15 @@
 #include "../tilemap/tilemap.hpp"
 #include "../state_machine/state_machine_system.hpp"
 #include "../particle/particle_system.hpp"
+#include "../ui/button_system.hpp"
 
 
 // stds
-#include <functional>
 #include <chrono>
 #include <algorithm>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #if defined(ENGINE_BUILD_DLL)
 	#define ENGINE_API __declspec(dllexport)
@@ -65,16 +66,66 @@ namespace Engine
 	public:
 
 		/*============================================================================================
-		* \brief		Initializes all engine systems and sets up the application window
+		* \brief		Initializes all engine systems and sets up the application window.
+		*               Equivalent to calling setupEarly() then setupLate().
+		*               Use for standalone game builds where no project picker is needed.
 		*//*========================================================================================*/
 		void setup();
 
 		/*============================================================================================
-		* \brief		Starts the main game loop with the provided update callback
-		* \param[in]	gameUpdateCallback 
-		*		Function called each frame for game logic updates
+		* \brief		Phase 1 of initialization: config, window, all engine systems, and shaders.
+		*               Safe to call before a project is selected. After this returns the window is
+		*               open and ImGui can be rendered (e.g. for a project picker).
 		*//*========================================================================================*/
-		void run(std::function<void()> gameUpdateCallback);
+		void setupEarly();
+
+		/*============================================================================================
+		* \brief		Phase 2 of initialization: editor/scene loading, sounds, images, fonts, and
+		*               event subscriptions. Must be called after a project has been selected so
+		*               FileSystem::GetAssetsDir() points to the correct project.
+		*//*========================================================================================*/
+		void setupLate();
+
+		/*============================================================================================
+		* \brief		Returns true once setupLate() has been called (editor_ is initialized).
+		*//*========================================================================================*/
+		bool isEditorReady() const { return editor_ != nullptr; }
+
+		/*============================================================================================
+		* \brief		Starts a fully self-contained game loop (no C++ callback needed).
+		*               Use this when all game logic lives in registered C# Logic Systems.
+		*//*========================================================================================*/
+		void run();
+
+		/*============================================================================================
+		* \brief		Returns true when the window has been requested to close.
+		*               Use in a custom game loop together with beginFrame() / endFrame().
+		*//*========================================================================================*/
+		bool shouldClose() const { return window_.shouldClose(); }
+		void requestClose() { window_.setShouldClose(true); }
+
+		// Returns true once initScripting() or setupLate() has created the script host.
+		bool isScriptingReady() const { return coreHost_ != nullptr; }
+
+		/*============================================================================================
+		* \brief		Executes the logic half of a frame: time, input polling, script/physics/
+		*               collision/particle/button/audio updates. Does NOT render.
+		*               Call before updateEditorCamera() and renderFrame().
+		*//*========================================================================================*/
+		void beginFrame();
+
+		/*============================================================================================
+		* \brief		Renders the current frame into whatever framebuffer is currently bound:
+		*               updates animations, camera, clears the screen, and issues draw calls.
+		*               Call after beginFrame() and any editor-side camera updates.
+		*//*========================================================================================*/
+		void renderFrame();
+
+		/*============================================================================================
+		* \brief		Presents the rendered frame and resets per-frame input state.
+		*               Call after renderFrame() and any ImGui rendering.
+		*//*========================================================================================*/
+		void endFrame();
 
 		/*============================================================================================
 		* \brief		Shuts down all engine systems and cleans up resources
@@ -147,7 +198,16 @@ namespace Engine
 		* \brief		Gets the Core Host for scripting operations
 		* \return		Reference to the EnoCoreHost instance
 		*//*========================================================================================*/
-		Core::EnoCoreHost& getCoreHost() { return coreHost_; }
+		Core::EnoCoreHost& getCoreHost() { return *coreHost_; }
+
+		/*============================================================================================
+		* \brief		Initializes (or re-initializes) the scripting system from the specified DLL
+		*               directory. If dllDir is empty, uses FileSystem::GetExecutableDir().
+		*               For the Editor, call this with the selected project's exe directory
+		*               (e.g. GetExecutableDir().parent_path() / projectName) BEFORE setupLate().
+		*               setupLate() will skip re-creating the host if this has already been called.
+		*//*========================================================================================*/
+		void initScripting(const std::filesystem::path& dllDir = {});
 
 		/*============================================================================================
 		* \brief		Gets the Eno Editor for scripting operations
@@ -204,17 +264,48 @@ namespace Engine
 		void setIsPlaying(bool isPlaying) { isPlaying_ = isPlaying; }
 
 		/*============================================================================================
+		* \brief		Re-initializes the C# bridge after a hot-reload. Call this immediately after
+		*               EnoCoreHost::hotReload() so Bridge.GetDeltaTime() etc. work in scripts.
+		*//*========================================================================================*/
+		void reinitBridge();
+
+		/*============================================================================================
+		* \brief		Sets the screen-space bounds of the rendered game viewport (imageMin/Max for
+		*               screen-to-world conversion). In full-screen mode this is (0,0)-(w,h); in
+		*               editor mode it is the ImGui game-panel bounds.
+		*//*========================================================================================*/
+		void setViewportBounds(Math::eVec2<float> min, Math::eVec2<float> max) { viewportMin_ = min; viewportMax_ = max; }
+
+		/*============================================================================================
+		* \brief		Marks animation controllers as dirty so they are restored on the next frame.
+		*               Call this after spawning entities with AnimationControllerComponent,
+		*               after hot reload, or any time animation state needs to be re-initialized.
+		*//*========================================================================================*/
+		void markAnimationsDirty() { graphicsMng_.markAnimationsDirty(); }
+
+		/*============================================================================================
 		* \brief		Gets whether the game is in playing mode
 		* \return		True if game is playing, false if in editor mode
 		*//*========================================================================================*/
 		bool getIsPlaying() const { return isPlaying_; }
 
-		// Script-accessible camera position (world-space center of viewport).
-		// The bridge reads/writes this; the App layer syncs it with its own camera.
-		void setScriptCameraPos(float x, float y) { scriptCameraPos_ = {x, y}; scriptCameraDirty_ = true; }
-		Math::eVec2<float> getScriptCameraPos() const { return scriptCameraPos_; }
-		bool consumeScriptCameraDirty() { bool d = scriptCameraDirty_; scriptCameraDirty_ = false; return d; }
-		void syncScriptCameraPos(float x, float y) { scriptCameraPos_ = {x, y}; }
+		/*============================================================================================
+		* \brief		Sets the runtime pause state (pauses physics/AI/collision but keeps audio)
+		* \param[in]	paused - True to pause game systems, false to resume
+		*//*========================================================================================*/
+		void setPaused(bool paused) { isPaused_ = paused; }
+
+		/*============================================================================================
+		* \brief		Gets whether the game is runtime-paused (dialogue, menus, etc.)
+		* \return		True if game systems are paused, false otherwise
+		*//*========================================================================================*/
+		bool getIsPaused() const { return isPaused_; }
+
+		/*============================================================================================
+		* \brief		Gets the per-subsystem timing data collected during the last frame.
+		*               Keys are system names (e.g. "Scripts", "Physics"), values are microseconds.
+		*//*========================================================================================*/
+		const std::unordered_map<std::string, double>& getTimings() const { return timings_; }
 
 	private:
 
@@ -225,7 +316,7 @@ namespace Engine
 
 		/*============================================================================================
 		* \brief		Updates time calculations including delta time and FPS
-		* \param[in] fpsCalcInt 
+		* \param[in] fpsCalcInt
 		*		Interval in seconds for FPS calculation
 		*//*========================================================================================*/
 		void updateTime(double fpsCalcInt = 1.0);
@@ -236,9 +327,9 @@ namespace Engine
 		Window::EnoWindow window_{ bus_ };
 		Resources::EnoLoader loader_{ bus_ };
 		Memory::EnoECSArena ecsArena_{ 8ull * 1024 * 1024 };
-		ECS::EntityManager entityMng_{ ecsArena_, bus_ };
+		ECS::EntityManager entityMng_{ loader_, ecsArena_, bus_ };
 		ECSComponents::EnoPrefabManager prefabMng_{ bus_ };
-		Core::EnoCoreHost coreHost_{ bus_ };
+		std::unique_ptr<Core::EnoCoreHost> coreHost_;
 		std::unique_ptr<Map::TileMapSystem> tilemapSystem_;
 		std::unique_ptr<AI::PathfindingSystem> pathfinder_;
 		std::unique_ptr<Editor::EnoEditor> editor_;
@@ -254,15 +345,20 @@ namespace Engine
 		std::unique_ptr<Collision::CollisionSystem> collisionSys_;
 		std::unique_ptr<Particles::ParticleSystem> particleSys_;
 
+		// UI Systems
+		UI::ButtonSystem buttonSys_;
+
 		// Game state
 		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)
-
-		// Script camera (center of viewport in world space)
-		Math::eVec2<float> scriptCameraPos_{ 0.0f, 0.0f };
-		bool scriptCameraDirty_{ false };
+		bool isPaused_  = false;  // Runtime pause (dialogue, menus) - pauses physics/AI/collision
+		Math::eVec2<float> viewportMin_{ 0.f, 0.f };  // Screen-space game viewport bounds (set by editor/app)
+		Math::eVec2<float> viewportMax_{ 0.f, 0.f };  // Zero max = fall back to full window size
 
 		// Time
 		double dt_ = 0.0;
 		double fps_ = 0.0;
+
+		// Per-subsystem timing (microseconds), populated each frame
+		std::unordered_map<std::string, double> timings_;
 	};
 }

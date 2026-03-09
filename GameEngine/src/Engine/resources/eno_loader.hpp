@@ -11,9 +11,6 @@
 *===========================================================================================*/
 
 #pragma once
-// STB_IMAGE
-#include "stb_image.h"
-
 // FMOD
 #include "fmod.hpp"
 #include "../audio/eno_audio_module.hpp"
@@ -58,6 +55,9 @@ namespace Resources
 		std::string sfxPath_;
 		std::string rootMusicPath_;
 		std::string rootSfxPath_;
+
+		// Videos
+		std::string videoPath_;
 		static constexpr std::array<std::string_view, 2> soundExtensions_ = { ".wav", ".mp3" };
 		std::unordered_map<std::string, FMOD::Sound*> sounds_;
 		std::vector<std::unique_ptr<Audio::EnoAudioModule>> audioMods_;
@@ -209,7 +209,8 @@ namespace Resources
 		void loadSound(FMOD::System* system, const Container& extensions, const std::string& path) {
 			if (!std::filesystem::exists(path))
 			{
-				throw std::runtime_error("Specified path does not exist!");
+				std::cout << "[Loader] Sound path does not exist, skipping: " << path << "\n";
+				return;
 			}
 
 			// Iterate through a folder through the given path
@@ -238,9 +239,6 @@ namespace Resources
 					{
 						// Store the sound obtained
 						sounds_[entry.path().filename().stem().string()] = sound;
-#ifdef _DEBUG
-						std::cout << entry.path().filename().stem().string() << " was retrieved!" << std::endl;
-#endif
 					}
 					else
 					{
@@ -304,6 +302,34 @@ namespace Resources
 		{
 			sounds_[name] = sound;
 		}
+
+		/*============================================================================================
+		* \brief	Re-read all path members from the current FileSystem::GetAssetsDir().
+		*           Call this after FileSystem::Initialize() to keep paths in sync.
+		*//*========================================================================================*/
+		void reloadPaths() {
+			const auto& base = FileSystem::GetAssetsDir();
+			musicPath_  = (base / "sound/music").string();
+			sfxPath_    = (base / "sound/sfx").string();
+			imagePath_  = (base / "art").string();
+			shaderPath_ = (base / "shaders").string();
+			fontPath_   = (base / "fonts").string();
+			videoPath_  = (base / "video").string();
+		}
+
+		/*============================================================================================
+		* \brief	Get the video directory path.
+		* \return	String reference to the video path.
+		*//*========================================================================================*/
+		const std::string& getVideoPath() const { return videoPath_; }
+
+		/*============================================================================================
+		* \brief	Scan the video directory and load all recognised video files into the graphics
+		*           manager (mp4, avi, mov, webm, mkv).
+		* \param[in] path				Directory to scan.
+		* \param[in] graphicsManager	Graphics manager that will own the VideoPlayer objects.
+		*//*========================================================================================*/
+		void loadVideos(const std::string& path, Graphics::EnoGraphicsManager& graphicsManager);
 
 		/*============================================================================================
 		* \brief	Load image textures (PNG/JPG) from a directory.

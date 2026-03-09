@@ -35,16 +35,15 @@ namespace Editor
 		node->nestedLayer_ = 0;
 		node->entity_ = entMng_.create<
 			ECSComponents::CollisionComponent, ECSComponents::RenderComponent,
-			ECSComponents::PhysicsComponent, ECSComponents::PlayerComponent,
-			ECSComponents::TransformComponent, ECSComponents::VisibilityComponent>(
+			ECSComponents::PhysicsComponent, ECSComponents::TransformComponent, 
+			ECSComponents::VisibilityComponent>(
 				ECSComponents::CollisionComponent{ 10.f, 10.f, Math::eVec2{5.f, 5.f}, true },
 				ECSComponents::RenderComponent{ 20.f, 20.f, "Trapezoid", 0},
 				ECSComponents::PhysicsComponent{ 1.f },
-				ECSComponents::PlayerComponent{  },
 				ECSComponents::TransformComponent{ Math::eVec2{7.f, 7.f }, Math::eVec2{9.f, 9.f }, Math::eVec2{11.f, 11.f } },
 				ECSComponents::VisibilityComponent{}
 				);
-
+		node->type_ = NodeType::EMPTY;
 		node->parent_ = parent;
 		node->enabled_ = true;
 		node->script_ = nullptr;
@@ -86,6 +85,19 @@ namespace Editor
 
 		return unode;
 	}
+	
+	// Find and get a node by name
+	Node* EnoSceneTree::getNodeByName(const std::string& name)
+	{
+		for (const auto& node : tree_)
+		{
+			if (node.second->name_ == name)
+			{
+				// Found node
+				return node.second.get();
+			}
+		}
+	}
 
 	// Get a node by entity ID
 	Node* EnoSceneTree::getNodeByEntityID(uint32_t entityID)
@@ -103,6 +115,29 @@ namespace Editor
 	{
 		auto it = tree_.find(sceneObjID);
 		return it != tree_.end() ? it->second.get() : nullptr;
+	}
+
+	// Get a child by index
+	Node* EnoSceneTree::getChild(Node* node, uint32_t idx)
+	{
+		if (node->children_.empty())
+			return nullptr;
+
+		return node->children_[idx];
+	}
+
+	void EnoSceneTree::modNodeType(Node* node, NodeType type)
+	{
+		node->type_ = type;
+		switch (type)
+		{
+#define PRESET(name, ...) \
+		case NodeType::name: \
+			node->entity_ = entMng_.presetCreate(ECSComponents::Preset::name{});
+
+			PRESET_LIST
+#undef PRESET
+		}
 	}
 
 	// Nest a node
@@ -381,11 +416,15 @@ namespace Editor
 			filename += ".txt";
 		}
 
+		// Ensure the parent directory exists
+		std::filesystem::create_directories(std::filesystem::path(filename).parent_path());
+
 		std::ofstream save{ filename };
 
 		if (!save)
 		{
-			throw std::runtime_error("Failed to create a save file for the scene tree!");
+			std::cerr << "[EnoSceneTree] Failed to create save file: " << filename << std::endl;
+			return;
 		}
 
 		// Format
@@ -517,6 +556,10 @@ namespace Editor
 			// Enabled
 			appendIndent(save, jsonLevel);
 			save << "\"Enabled\": { " << (it->second->enabled_ ? "true" : "false") << " }\n";
+
+			// Node Type
+			appendIndent(save, jsonLevel);
+			save << "\"NodeType\": { " << static_cast<uint32_t>(it->second->type_) << " }\n";
 
 			// Closing brace (for node properties)
 			appendIndent(save, --jsonLevel);
@@ -771,6 +814,12 @@ namespace Editor
 			}
 			node->enabled_ = any.value_or(false);
 
+			// Node Type (absent in old scenes, defaults to EMPTY)
+			any = extract<uint32_t>(data, "NodeType", nodeStart, nodeEnd);
+			node->type_ = any.has_value()
+				? static_cast<NodeType>(any.value())
+				: NodeType::EMPTY;
+
 			if (missingData) {
 				std::cerr << "[EnoSceneTree] Warning: Some fields missing for node " << node->name_ << ", using defaults" << std::endl;
 			}
@@ -803,7 +852,6 @@ namespace Editor
 		// Load tilemap data embedded in scene file
 		size_t tilemapPos = data.find("\"TileMap\"");
 		if (tilemapPos != std::string::npos) {
-			std::cout << "[EnoSceneTree] Loading tilemap data..." << std::endl;
 
 			size_t tilemapStart = data.find('{', tilemapPos);
 			if (tilemapStart == std::string::npos) {
@@ -819,9 +867,6 @@ namespace Editor
 					auto width = extract<uint32_t>(data, "Width", tilemapStart, tilemapEnd);
 					auto height = extract<uint32_t>(data, "Height", tilemapStart, tilemapEnd);
 
-					std::cout << "[EnoSceneTree] Width: " << (width.has_value() ? std::to_string(width.value()) : "missing")
-							  << ", Height: " << (height.has_value() ? std::to_string(height.value()) : "missing") << std::endl;
-
 					if (!width.has_value() || !height.has_value()) {
 						std::cerr << "[EnoSceneTree] Warning: TileMap dimensions missing, using defaults" << std::endl;
 					}
@@ -829,9 +874,7 @@ namespace Editor
 						std::cerr << "[EnoSceneTree] Warning: TileMap dimensions empty, using defaults" << std::endl;
 					}
 					else {
-						std::cout << "[EnoSceneTree] Loading tilemap with dimensions " << width.value() << "x" << height.value() << std::endl;
 						loadTilemapData(data, tilemapStart, tilemapEnd, width.value(), height.value());
-						std::cout << "[EnoSceneTree] Tilemap loaded, layers count: " << tileMap_.layers().size() << std::endl;
 					}
 				}
 			}
@@ -851,7 +894,6 @@ namespace Editor
 		// Load layer metadata (availableLayers)
 		size_t layerMetadataPos = data.find("\"LayerMetadata\"");
 		if (layerMetadataPos != std::string::npos) {
-			std::cout << "[EnoSceneTree] Loading layer metadata..." << std::endl;
 
 			size_t metadataStart = data.find('{', layerMetadataPos);
 			if (metadataStart != std::string::npos) {
@@ -861,7 +903,6 @@ namespace Editor
 					auto availLayers = extract<uint32_t>(data, "AvailableLayers", metadataStart, metadataEnd);
 					if (availLayers.has_value() && availLayers.value() > 0 && availLayers.value() <= static_cast<uint32_t>(ECSComponents::MAX_LAYERS)) {
 						ECSComponents::availableLayers = static_cast<int>(availLayers.value());
-						std::cout << "[EnoSceneTree] Restored availableLayers to: " << ECSComponents::availableLayers << std::endl;
 					}
 					else {
 						std::cerr << "[EnoSceneTree] Warning: Invalid AvailableLayers value, using default" << std::endl;

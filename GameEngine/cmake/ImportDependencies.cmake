@@ -146,7 +146,6 @@ macro(import_stb_image)
     endif()
 endmacro()
 
-
 # Macro to import all dependencies
 macro(importDependencies)
 message(STATUS "Starting to import dependencies...")
@@ -176,5 +175,5 @@ message(STATUS "Starting to import dependencies...")
     message(STATUS "stb_image imported successfully.")
 
     message(STATUS "All dependencies have been imported successfully.")
-    
+
 endmacro()

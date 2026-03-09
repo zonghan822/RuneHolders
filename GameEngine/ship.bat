@@ -12,7 +12,7 @@ echo ===============================================
 echo.
 
 set BUILD_DIR=build
-set BUILD_OUTPUT=%BUILD_DIR%\projects\App\Release
+set BUILD_OUTPUT=%BUILD_DIR%\projects\App\Release\RuneWeavers
 set SHIP_DIR=RuneWeavers
 
 REM ---------- BUILD (skip if Release exe already exists) ----------
@@ -96,7 +96,7 @@ if %errorlevel% gtr 7 (
 
 REM Copy assets directly from source
 echo Copying assets...
-robocopy "assets" "%SHIP_DIR%\assets" /E /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy "assets" "%SHIP_DIR%\assets\RuneWeavers" /E /NFL /NDL /NJH /NJS /nc /ns /np
 if %errorlevel% gtr 7 (
     echo ERROR: Failed to copy assets!
     pause
@@ -105,7 +105,7 @@ if %errorlevel% gtr 7 (
 
 REM Copy scripts directly from source
 echo Copying scripts...
-robocopy "scripts" "%SHIP_DIR%\scripts" /E /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy "scripts" "%SHIP_DIR%\scripts\RuneWeavers" /E /NFL /NDL /NJH /NJS /nc /ns /np
 if %errorlevel% gtr 7 (
     echo ERROR: Failed to copy scripts!
     pause

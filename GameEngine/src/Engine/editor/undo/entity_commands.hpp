@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         entity_commands.
 * @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         2025-11-29
@@ -12,27 +12,13 @@
 #include "entity_snapshot.hpp"
 #include "../eno_scene_tree.hpp"
 #include "../../ecs/entity.hpp"
+#include "../../graphics/graphics.hpp"
 #include <sstream>
 #include <vector>
 #include <unordered_map>
 
-// Forward declaration to avoid circular dependency
-class GameApplication;
-
-// Forward declarations for global symbols defined in imGui.cpp
-extern GameApplication* g_game;
-extern void markGameEntitiesDirty();
-
 namespace Editor
 {
-	// Helper function to mark entities dirty (implementation in imGui.cpp)
-	inline void markEntitiesDirtyIfNeeded()
-	{
-		if (::g_game)
-		{
-			::markGameEntitiesDirty();
-		}
-	}
 
 	/*============================================================================================
 	* \class	CreateEntityCommand
@@ -46,10 +32,12 @@ namespace Editor
 		CreateEntityCommand(
 			EnoSceneTree& sceneTree,
 			ECS::EntityManager& entityManager,
-			ECS::Entity entity
+			ECS::Entity entity,
+			Graphics::EnoGraphicsManager& graphicsManager
 		)
 			: sceneTree_(sceneTree)
 			, entityManager_(entityManager)
+			, graphicsMng_(graphicsManager)
 			, entityExists_(true)
 		{
 			// Capture the entity and all its children
@@ -159,8 +147,8 @@ namespace Editor
 				// TODO: Restore script if needed
 			}
 
-			// Mark entities dirty so render cache updates
-			markEntitiesDirtyIfNeeded();
+			// Mark animations dirty so render cache updates
+			graphicsMng_.markAnimationsDirty();
 
 			entityExists_ = true;
 			std::cout << "[CreateEntityCommand] Successfully recreated entity tree\n";
@@ -198,8 +186,8 @@ namespace Editor
 				}
 			}
 
-			// Mark entities dirty so render cache updates
-			markEntitiesDirtyIfNeeded();
+			// Mark animations dirty so render cache updates
+			graphicsMng_.markAnimationsDirty();
 
 			entityExists_ = false;
 		}
@@ -222,6 +210,7 @@ namespace Editor
 	private:
 		EnoSceneTree& sceneTree_;
 		ECS::EntityManager& entityManager_;
+		Graphics::EnoGraphicsManager& graphicsMng_;
 		std::vector<EntitySnapshot> snapshots_;  // Snapshots of entity and all children
 		std::vector<uint32_t> currentEntityIDs_;  // Current entity IDs (for deletion during undo)
 		bool entityExists_;
@@ -239,10 +228,12 @@ namespace Editor
 		DeleteEntityCommand(
 			EnoSceneTree& sceneTree,
 			ECS::EntityManager& entityManager,
-			ECS::Entity entity
+			ECS::Entity entity,
+			Graphics::EnoGraphicsManager& graphicsManager
 		)
 			: sceneTree_(sceneTree)
 			, entityManager_(entityManager)
+			, graphicsMng_(graphicsManager)
 			, deleted_(false)
 		{
 			// Capture the entity and all its children BEFORE deletion
@@ -306,8 +297,8 @@ namespace Editor
 				}
 			}
 
-			// Mark entities dirty so render cache updates
-			markEntitiesDirtyIfNeeded();
+			// Mark animations dirty so render cache updates
+			graphicsMng_.markAnimationsDirty();
 
 			deleted_ = true;
 		}
@@ -389,8 +380,8 @@ namespace Editor
 				// TODO: Restore script if needed
 			}
 
-			// Mark entities dirty so render cache updates
-			markEntitiesDirtyIfNeeded();
+			// Mark animations dirty so render cache updates
+			graphicsMng_.markAnimationsDirty();
 
 			deleted_ = false;
 			std::cout << "[DeleteEntityCommand] Successfully restored entity tree\n";
@@ -414,6 +405,7 @@ namespace Editor
 	private:
 		EnoSceneTree& sceneTree_;
 		ECS::EntityManager& entityManager_;
+		Graphics::EnoGraphicsManager& graphicsMng_;
 		std::vector<EntitySnapshot> snapshots_;  // Snapshots of entity and all children
 		std::vector<uint32_t> entitiesToDelete_;  // Entity IDs to delete (updated after undo recreates them)
 		bool deleted_;

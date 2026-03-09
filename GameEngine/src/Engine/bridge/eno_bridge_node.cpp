@@ -1,0 +1,84 @@
+/*============================================================================================
+* @file         eno_bridge_node.cpp
+* @brief        Node management bridge — spawn, destroy, lookup.
+*
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+*//*========================================================================================*/
+
+#include "eno_bridge.hpp"
+
+namespace Bridge
+{
+    extern "C"
+    {
+        ENGINE_API uint32_t __stdcall GetNode(const char* name)
+        {
+            if (!gEngine) return UINT32_MAX;
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeByName(name);
+            return node ? node->sceneObjectID_ : UINT32_MAX;
+        }
+
+        ENGINE_API uint32_t __stdcall GetChild(uint32_t parentID, uint32_t index)
+        {
+            if (!gEngine) return UINT32_MAX;
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+            Editor::Node* parent = sceneTree.getNodeBySceneObjectID(parentID);
+            if (!parent) return UINT32_MAX;
+            Editor::Node* child = sceneTree.getChild(parent, index);
+            return child ? child->sceneObjectID_ : UINT32_MAX;
+        }
+
+        ENGINE_API uint32_t __stdcall GetNodeType(uint32_t id)
+        {
+            if (!gEngine) return static_cast<uint32_t>(Editor::NodeType::EMPTY);
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(id);
+            if (!node) return static_cast<uint32_t>(Editor::NodeType::EMPTY);
+            return static_cast<uint32_t>(node->type_);
+        }
+
+        ENGINE_API uint32_t __stdcall SpawnNode(const char* presetName, const char* nodeName, uint32_t parentID)
+        {
+            if (!gEngine) return UINT32_MAX;
+
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+
+            Editor::Node* parent = (parentID != UINT32_MAX)
+                ? sceneTree.getNodeBySceneObjectID(parentID)
+                : nullptr;
+
+            Editor::Node* node = sceneTree.create(parent);
+            if (!node) return UINT32_MAX;
+
+            node->name_ = nodeName;
+
+            static const std::unordered_map<std::string, Editor::NodeType> presetMap = {
+                {"DEFAULT",      Editor::NodeType::DEFAULT},
+                {"SPRITE",       Editor::NodeType::SPRITE},
+                {"KINEMATIC",    Editor::NodeType::KINEMATIC},
+                {"RIGIDBODY",    Editor::NodeType::RIGIDBODY},
+                {"ACTOR",        Editor::NodeType::ACTOR},
+                {"PUSHABLE_BOX", Editor::NodeType::PUSHABLE_BOX},
+                {"BUTTON",       Editor::NodeType::BUTTON},
+                {"AUDIO",        Editor::NodeType::AUDIO},
+                {"CAMERA",       Editor::NodeType::CAMERA},
+                {"TEXT",         Editor::NodeType::TEXT},
+                {"PARTICLE",     Editor::NodeType::PARTICLE},
+            };
+
+            auto it = presetMap.find(presetName);
+            if (it != presetMap.end())
+                sceneTree.modNodeType(node, it->second);
+
+            return node->sceneObjectID_;
+        }
+
+        ENGINE_API void __stdcall DestroyNode(uint32_t sceneObjectID)
+        {
+            if (!gEngine) return;
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+            Editor::Node* node = sceneTree.getNodeBySceneObjectID(sceneObjectID);
+            if (node)
+                sceneTree.kill(node);
+        }
+    }
+}

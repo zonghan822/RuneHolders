@@ -21,10 +21,10 @@
 #include <unordered_map>
 #include <algorithm>
 
-
-#include "player/player.hpp"
-#include "game_logic.hpp"
-#include "../../Engine/prefab/prefab.hpp"
+#include "editor_logic.hpp"
+#include "raycast/raycast_renderer.hpp"
+#include "editor/undo/undo_manager.hpp"
+#include "stateMachine_editor/stateMachine_editor.hpp"
 
 // Variables
 static std::mt19937 rng(std::random_device{}());
@@ -33,11 +33,7 @@ static std::mt19937 rng(std::random_device{}());
 // Access via engine_.getCollisionSystem(), engine_.getPhysicsSystem(), engine_.getPlayerSystem()
 
 extern bool showColliders_;
-extern GameApplication* g_game;
-
-// Player entity ID to track player
-extern uint32_t playerEntityID_;
-extern bool playerSpawned_;
+extern EditorApplication* g_game;
 
 // Containers to store system timings
 extern std::unordered_map<std::string, double> systemTimes_; //actual system time
@@ -59,15 +55,6 @@ struct SystemTimer {
         auto end = Clock::now();
         systemTimes[name] = std::chrono::duration<double, std::micro>(end - start).count();
     }
-};
-
-//YunQi
-struct AnimationPreset {
-    std::string name;
-
-    Graphics::TextureData idleTex;
-    Graphics::TextureData walkTex;
-    Graphics::TextureData attackTex;
 };
 
 // ImGui functions
@@ -151,15 +138,6 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 *//*========================================================================================*/
 void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager, Editor::EnoSceneTree& sceneTree);
 
-/*============================================================================================
- * \brief       Displays Prefabs in Prefabs Tab
- * \param[in]   Engine::EnoEngine& engine_
- * \param[in]   Editor::EnoSceneTree& sceneTree
- * \param[in]   Editor::UndoManager& undoManager
- * \return      void
-*//*========================================================================================*/
-void displayPrefabsTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager);
-
 
 void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity);
 //void assetPresetsTab(Engine::EnoEngine& engine_, Node* Node);
@@ -200,11 +178,25 @@ void displaySceneTab(Editor::EnoEditor& editor_);
 void LoadAudioAssets(Engine::EnoEngine& engine_);
 
 /*============================================================================================
+ * \brief       Helper function to build texture folder tree for Assets Tab
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void LoadTextureAssets(Engine::EnoEngine& engine_);
+
+/*============================================================================================
  * \brief       Displays Audio Tab
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
 void displayAudioTab(Engine::EnoEngine& engine_);
+
+/*============================================================================================
+ * \brief       Displays Video Browser (import, preview, delete video assets)
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayVideoTab(Engine::EnoEngine& engine_);
 
 
 /*============================================================================================
@@ -306,4 +298,13 @@ void clearSelectedEntity();
  * \param[in]   ECS::EntityManager& entityManager
  * \return      void
 *//*========================================================================================*/
-void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager);
+void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager, Graphics::EnoGraphicsManager& graphicsManager);
+
+/*============================================================================================
+ * \brief       Displays the Raycast 3D View panel (Wolfenstein-style first-person renderer)
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayRaycastVisualizerTab(Engine::EnoEngine& engine_);
+
+#include "project_picker/project_picker.hpp"

@@ -43,7 +43,8 @@ namespace Map {
         int x, int y,
         const std::string& textureName,
         Math::eVec2<float> uv0,
-        Math::eVec2<float> uv1)
+        Math::eVec2<float> uv1,
+        int rotation)
     {
         if (x < 0 || y < 0 || x >= width_ || y >= height_) return;
 
@@ -52,6 +53,19 @@ namespace Map {
         t.uv0 = uv0;
         t.uv1 = uv1;
         t.hasTexture = true;
+        t.rotation = rotation;
+    }
+
+    void TileLayer::clearTile(int x, int y)
+    {
+        if (x < 0 || y < 0 || x >= width_ || y >= height_) return;
+
+        Tile& t = tiles_[y][x];
+        t.textureName.clear();
+        t.uv0 = { 0, 0 };
+        t.uv1 = { 0, 0 };
+        t.hasTexture = false;
+        t.rotation = 0;
     }
 
     std::string TileLayer::name() const { return name_; }
