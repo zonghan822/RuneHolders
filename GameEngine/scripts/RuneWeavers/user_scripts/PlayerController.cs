@@ -52,7 +52,8 @@ namespace Eno
         // Called every frame while in the idle state
         public void idle_update()
         {
-            // TODO: Add update logic for idle state
+            if (IsMoving())
+                Bridge.ChangeState(ID, "walk");
         }
 
         // Called when exiting the idle state
@@ -60,7 +61,7 @@ namespace Eno
         {
             // TODO: Add exit logic for idle state
         }
-    
+
         // Called when entering the walk state
         public void walk_enter()
         {
@@ -70,13 +71,20 @@ namespace Eno
         // Called every frame while in the walk state
         public void walk_update()
         {
-            // TODO: Add update logic for walk state
+            if (!IsMoving())
+                Bridge.ChangeState(ID, "idle");
         }
 
         // Called when exiting the walk state
         public void walk_exit()
         {
             // TODO: Add exit logic for walk state
+        }
+
+        private bool IsMoving()
+        {
+            return Bridge.IsKeyHeld(KeyCode.W) || Bridge.IsKeyHeld(KeyCode.S) ||
+                   Bridge.IsKeyHeld(KeyCode.A) || Bridge.IsKeyHeld(KeyCode.D);
         }
     }
 }
