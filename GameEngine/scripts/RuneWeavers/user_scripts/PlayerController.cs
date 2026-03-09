@@ -42,11 +42,5 @@ namespace Eno
 
             _player.velocity = new Vector2(dx * speed, dy * speed);
         }
-    
-        // Called when entering the default state
-
-        // Called every frame while in the default state
-
-        // Called when exiting the default state
     }
 }
