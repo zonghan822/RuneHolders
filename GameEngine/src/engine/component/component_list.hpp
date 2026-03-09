@@ -33,11 +33,28 @@
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
 #define PRESET_LIST \
-	PRESET(DEFAULT, VisibilityComponent, LayerComponent) \
-	PRESET(AUDIO, AudioComponent, LayerComponent) \
-	PRESET(PUSHABLE_BOX, TransformComponent, PhysicsComponent, CollisionComponent, BoxComponent, RenderComponent) \
-	PRESET(PLAYER, TransformComponent, CollisionComponent, PhysicsComponent, RenderComponent) \
-	PRESET(EXIT_BUTTON, TransformComponent, ButtonComponent, DrawInfoComponent, VisibilityComponent, CollisionComponent) \
+	/* Blank node — layer ordering + visibility only */ \
+	PRESET(DEFAULT,      VisibilityComponent, LayerComponent) \
+	/* Static visual — no physics or collision */ \
+	PRESET(SPRITE,       TransformComponent, RenderComponent, VisibilityComponent, LayerComponent) \
+	/* Visual with collision but no physics (walls, platforms, triggers) */ \
+	PRESET(KINEMATIC,    TransformComponent, RenderComponent, CollisionComponent, VisibilityComponent, LayerComponent) \
+	/* Full physics object */ \
+	PRESET(RIGIDBODY,    TransformComponent, RenderComponent, CollisionComponent, PhysicsComponent, VisibilityComponent, LayerComponent) \
+	/* Full character setup (player / enemy) */ \
+	PRESET(ACTOR,        TransformComponent, RenderComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, VulnerabilityComponent, VisibilityComponent, LayerComponent) \
+	/* Object that can be pushed around */ \
+	PRESET(PUSHABLE_BOX, TransformComponent, RenderComponent, CollisionComponent, PhysicsComponent, BoxComponent, VisibilityComponent, LayerComponent) \
+	/* UI button */ \
+	PRESET(BUTTON,       TransformComponent, ButtonComponent, DrawInfoComponent, VisibilityComponent, CollisionComponent) \
+	/* Audio source */ \
+	PRESET(AUDIO,        AudioComponent, LayerComponent) \
+	/* Camera */ \
+	PRESET(CAMERA,       TransformComponent, CameraComponent) \
+	/* World or UI text */ \
+	PRESET(TEXT,         TransformComponent, TextComponent, VisibilityComponent, LayerComponent) \
+	/* Particle emitter */ \
+	PRESET(PARTICLE,     TransformComponent, ParticleEmitterComponent, VisibilityComponent, LayerComponent) \
 
 
 // Expanding PRESET_LIST within the component namespace
