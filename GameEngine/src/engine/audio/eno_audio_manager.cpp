@@ -141,7 +141,7 @@ namespace Audio
 			{
 				int count{};
 				it->group_->getNumChannels(&count);
-				for (size_t i = 0; i < count; i++)
+				for (int i = 0; i < count; i++)
 				{
 					FMOD::Channel* ch{};
 					it->group_->getChannel(i, &ch);
@@ -490,6 +490,7 @@ namespace Audio
 		const std::string& groupName,
 		float fadeInTime, float fadeOutTime, float duration)
 	{
+		
 		auto group = channelGroups_.find(groupName);
 
 		if (group == channelGroups_.end())

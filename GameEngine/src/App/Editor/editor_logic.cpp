@@ -352,7 +352,6 @@ void EditorApplication::updateEditorCamera() {
 
 
 void EditorApplication::updateEditorState() {
-	auto& inputManager = engine_.getInputManager();
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
 	static bool hasBegun = false;

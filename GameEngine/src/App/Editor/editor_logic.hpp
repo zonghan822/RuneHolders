@@ -36,8 +36,8 @@ private:
 
     std::unique_ptr<Graphics::EnoFramebuffer> editorFramebuffer_;
 
-    float worldWidth_;
-    float worldHeight_;
+    float worldWidth_ = 64.f;
+    float worldHeight_ = 64.f;
 
     // Editor camera settings
     float editorCameraX_ = 0.0f;  // Camera offset X
