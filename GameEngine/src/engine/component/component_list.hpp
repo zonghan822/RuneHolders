@@ -59,7 +59,8 @@
 	PRESET(PARTICLE,     TransformComponent, ParticleEmitterComponent, VisibilityComponent, LayerComponent) \
 	/* Video player */ \
 	PRESET(VIDEO,        TransformComponent, RenderComponent, VideoComponent, VisibilityComponent, LayerComponent) \
-
+	/* Canvas */ \
+	PRESET(CANVAS,		 TransformComponent, RenderComponent, CanvasComponent, VisibilityComponent, LayerComponent) \
 
 // Expanding PRESET_LIST within the component namespace
 // to make use of the PRESET using macro

@@ -17,7 +17,7 @@
 #include <algorithm>
 
 // External function for marking entities dirty
-extern void markGameEntitiesDirty();
+//extern void markGameEntitiesDirty();
 
 namespace ECSComponents
 {
@@ -259,7 +259,7 @@ namespace ECSComponents
 				}
 				catch (...) 
 				{
-					markGameEntitiesDirty();
+					//markGameEntitiesDirty();
 					continue;
 				}
 			}
@@ -357,7 +357,7 @@ namespace ECSComponents
 			}
 			catch (...)
 			{
-				markGameEntitiesDirty();
+				//markGameEntitiesDirty();
 				continue;
 			}
 		}
@@ -422,23 +422,20 @@ namespace ECSComponents
 					renderCanvasEntities(engine, cachedEntities, canvasEntity, canvas,
 						Math::eVec2<float>{ 0.0f, 0.0f });
 
-					// Text: drawTextScreen expects screen-space [0, fbW] coords;
-					// convert by subtracting the camera's top-left corner
-					Math::eVec2<float> camTopLeft = {
-						resolvedCameraPos.x - canvas.viewportWidth  * 0.5f,
-						resolvedCameraPos.y - canvas.viewportHeight * 0.5f
-					};
-					renderCanvasText(engine, cachedEntities, canvasEntity, canvas, camTopLeft);
+					// Text: drawTextScreen expects screen-space [0, fbW] coords.
+					// cameraPos is always the camera top-left from graphics.cpp — use it directly.
+					renderCanvasText(engine, cachedEntities, canvasEntity, canvas, cameraPos);
 				}
 				else {
-					// Editor: resolvedCameraPos is already the camera top-left (editorCameraX/Y)
-					renderCanvasEntities(engine, cachedEntities, canvasEntity, canvas, resolvedCameraPos);
+					// Editor: world-space projection handles the camera; shapes need no manual offset.
+					// Text uses screen-space projection so it still needs the camera top-left.
+					renderCanvasEntities(engine, cachedEntities, canvasEntity, canvas, { 0.0f, 0.0f });
 					renderCanvasText(engine, cachedEntities, canvasEntity, canvas, resolvedCameraPos);
 				}
 			}
 			catch (...)
 			{
-				markGameEntitiesDirty();
+				//markGameEntitiesDirty();
 				continue;
 			}
 		}

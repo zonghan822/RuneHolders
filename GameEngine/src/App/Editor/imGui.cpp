@@ -2696,13 +2696,24 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	}
 
 	// --- PhysicsComponent --- (skip for player)
-	if (entity.has<ECSComponents::PhysicsComponent>(entMng)) {
+	if (entity.has<ECSComponents::PhysicsComponent>(entMng)) 
+	{
 		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
 		ImGui::SeparatorText("Physics");
 		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
 		ImGui::DragFloat("Mass", &physics.mass, 0.1f, 0.1f, 100.0f);
 		ImGui::DragFloat("Drag", &physics.drag, 0.01f, 0.0f, 1.0f);
 		ImGui::Checkbox("Use Gravity", &physics.useGravity);
+	}
+	else 
+	{
+		ImGui::SeparatorText("Physics");
+		ImGui::TextDisabled("No physics attached");
+		if (ImGui::Button("Add Physics")) 
+		{
+			entity.add<ECSComponents::PhysicsComponent>(entMng);
+			if (g_game) g_game->markEntitiesDirty();
+		}
 	}
 
 	// --- CollisionComponent ---
@@ -3249,7 +3260,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			ImGui::Separator();
 		}
 
-		// Section B: Create New Connection UI
+		// Create New Connection UI
 		ImGui::Text("Create New Connection:");
 		ImGui::Spacing();
 
@@ -3344,14 +3355,16 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			}
 		}
 
-		if (!canConnect) {
+		if (!canConnect) 
+		{
 			ImGui::EndDisabled();
 		}
 
-		// Section C: Remove Button
+		// Remove Button
 		ImGui::Separator();
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 60.0f);
-		if (ImGui::Button("Remove##button")) {
+		if (ImGui::Button("Remove##button")) 
+		{
 			entity.remove<ECSComponents::ButtonComponent>(entMng);
 			if (g_game) g_game->markEntitiesDirty();
 		}
@@ -3557,6 +3570,10 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng))
 	{
 		ImGui::TextWrapped("The currently selected entity does not have an Animation Controller component.");
+		if (ImGui::Button("Add Animation Controller")) {
+			entity.add<ECSComponents::AnimationControllerComponent>(entMng);
+			if (g_game) g_game->markEntitiesDirty();
+		}
 		return;
 	}
 
@@ -5057,62 +5074,65 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				}
 			}
 
-			// Draw canvas viewport rectangle for all active canvases
-			auto canvasEntities = entityManager.findEntity<ECSComponents::CanvasComponent>();
-			for (auto& canvasEntity : canvasEntities) {
-				auto& canvas = canvasEntity.get<ECSComponents::CanvasComponent>(entityManager);
+			// Draw canvas viewport rectangle for all active canvases (edit mode only)
+			if (sceneEditor.getCurrentScene().getState() == Editor::State::Stopped)
+			{
+				auto canvasEntities = entityManager.findEntity<ECSComponents::CanvasComponent>();
+				for (auto& canvasEntity : canvasEntities) {
+					auto& canvas = canvasEntity.get<ECSComponents::CanvasComponent>(entityManager);
 
-				if (canvas.isActive && canvasEntity.has<ECSComponents::TransformComponent>(entityManager)) {
-					auto& tc = canvasEntity.get<ECSComponents::TransformComponent>(entityManager);
+					if (canvas.isActive && canvasEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+						auto& tc = canvasEntity.get<ECSComponents::TransformComponent>(entityManager);
 
-					// Canvas viewport is centered at the entity's transform position
-					float cvLeft   = tc.pos.x - canvas.viewportWidth  * 0.5f;
-					float cvRight  = tc.pos.x + canvas.viewportWidth  * 0.5f;
-					float cvTop    = tc.pos.y - canvas.viewportHeight * 0.5f;
-					float cvBottom = tc.pos.y + canvas.viewportHeight * 0.5f;
+						// Canvas viewport is centered at the entity's transform position
+						float cvLeft = tc.pos.x - canvas.viewportWidth * 0.5f;
+						float cvRight = tc.pos.x + canvas.viewportWidth * 0.5f;
+						float cvTop = tc.pos.y - canvas.viewportHeight * 0.5f;
+						float cvBottom = tc.pos.y + canvas.viewportHeight * 0.5f;
 
-					Math::eVec2<float> cvTopLeft = Graphics::worldToScreen(
-						{ cvLeft, cvTop },
-						g_game->getEditorViewMin(),
-						g_game->getEditorViewMax(),
-						editorWidth,
-						editorHeight,
-						g_game->getEditorCameraX(),
-						g_game->getEditorCameraY()
-					);
+						Math::eVec2<float> cvTopLeft = Graphics::worldToScreen(
+							{ cvLeft, cvTop },
+							g_game->getEditorViewMin(),
+							g_game->getEditorViewMax(),
+							editorWidth,
+							editorHeight,
+							g_game->getEditorCameraX(),
+							g_game->getEditorCameraY()
+						);
 
-					Math::eVec2<float> cvBottomRight = Graphics::worldToScreen(
-						{ cvRight, cvBottom },
-						g_game->getEditorViewMin(),
-						g_game->getEditorViewMax(),
-						editorWidth,
-						editorHeight,
-						g_game->getEditorCameraX(),
-						g_game->getEditorCameraY()
-					);
+						Math::eVec2<float> cvBottomRight = Graphics::worldToScreen(
+							{ cvRight, cvBottom },
+							g_game->getEditorViewMin(),
+							g_game->getEditorViewMax(),
+							editorWidth,
+							editorHeight,
+							g_game->getEditorCameraX(),
+							g_game->getEditorCameraY()
+						);
 
-					// Draw canvas viewport rectangle (green border, semi-transparent fill)
-					drawList->AddRectFilled(
-						ImVec2(cvTopLeft.x, cvTopLeft.y),
-						ImVec2(cvBottomRight.x, cvBottomRight.y),
-						IM_COL32(0, 255, 0, 20)  // Green fill with low alpha
-					);
-					drawList->AddRect(
-						ImVec2(cvTopLeft.x, cvTopLeft.y),
-						ImVec2(cvBottomRight.x, cvBottomRight.y),
-						IM_COL32(0, 255, 0, 255),  // Solid green border
-						0.0f, 0, 2.0f  // 2px thick border
-					);
+						// Draw canvas viewport rectangle (green border, semi-transparent fill)
+						drawList->AddRectFilled(
+							ImVec2(cvTopLeft.x, cvTopLeft.y),
+							ImVec2(cvBottomRight.x, cvBottomRight.y),
+							IM_COL32(0, 255, 0, 20)  // Green fill with low alpha
+						);
+						drawList->AddRect(
+							ImVec2(cvTopLeft.x, cvTopLeft.y),
+							ImVec2(cvBottomRight.x, cvBottomRight.y),
+							IM_COL32(0, 255, 0, 255),  // Solid green border
+							0.0f, 0, 2.0f  // 2px thick border
+						);
 
-					// Draw label
-					char canvasLabel[128];
-					snprintf(canvasLabel, sizeof(canvasLabel), "Canvas %.0fx%.0f (Layer %u)",
-						canvas.viewportWidth, canvas.viewportHeight, canvas.canvasLayer);
-					drawList->AddText(
-						ImVec2(cvTopLeft.x + 5, cvTopLeft.y + 5),
-						IM_COL32(0, 255, 0, 255),
-						canvasLabel
-					);
+						// Draw label
+						char canvasLabel[128];
+						snprintf(canvasLabel, sizeof(canvasLabel), "Canvas %.0fx%.0f (Layer %u)",
+							canvas.viewportWidth, canvas.viewportHeight, canvas.canvasLayer);
+						drawList->AddText(
+							ImVec2(cvTopLeft.x + 5, cvTopLeft.y + 5),
+							IM_COL32(0, 255, 0, 255),
+							canvasLabel
+						);
+					}
 				}
 			}
 
