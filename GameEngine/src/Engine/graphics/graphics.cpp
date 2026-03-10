@@ -1517,6 +1517,12 @@ namespace Graphics
         {
             auto& camera = cameraEntity.get<ECSComponents::CameraComponent>(entityManager);
             if (!camera.isActive) continue;
+            // Sync camera position from TransformComponent (play mode only; editor handles it separately)
+            if (engine.getIsPlaying() && camera.followTransform && cameraEntity.has<ECSComponents::TransformComponent>(entityManager))
+            {
+                auto& transform = cameraEntity.get<ECSComponents::TransformComponent>(entityManager);
+                camera.position = transform.pos;
+            }
             centerX = camera.position.x;
             centerY = camera.position.y;
             vpW     = camera.viewportWidth;

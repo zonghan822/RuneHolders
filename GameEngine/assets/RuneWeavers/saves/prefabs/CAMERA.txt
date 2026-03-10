@@ -33,6 +33,10 @@
 		"Is Active": {
 			"value": "1",
 			"type": "bool"
+		},
+		"Follow Transform": {
+			"value": "0",
+			"type": "bool"
 		}
 	},
 }
