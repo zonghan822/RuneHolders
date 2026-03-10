@@ -54,6 +54,14 @@ void MapEditor::displayMenu() {
 		ImGui::Text("Change layer name");
 		ImGui::InputText("##Rename_Layer", renameBuf, sizeof(renameBuf));
 
+		int zIdx = tilemap_.layers()[selectedLayer_].zIndex();
+		ImGui::Text("Z Index");
+		ImGui::SameLine();
+		if (ImGui::InputInt("##LayerZIndex", &zIdx)) {
+			if (zIdx < 0) zIdx = 0;
+			tilemap_.setLayerZIndex(selectedLayer_, zIdx);
+		}
+
 		if (!warningBuf.empty())
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf.c_str());
 
@@ -550,7 +558,7 @@ void MapEditor::syncTileCollider(int layer, int x, int y)
 		if (it == tileColliders_.end())
 		{
 			float cx = (x + 0.5f) * cs;
-			float cy = (y + 0.5f) * cs;
+			float cy = tilemap_.worldOriginY() + (y + 0.5f) * cs;
 			ECS::Entity e = entMng_.create<
 				ECSComponents::TransformComponent,
 				ECSComponents::CollisionComponent>(
@@ -597,7 +605,7 @@ void MapEditor::rebuildAllTileColliders()
 				{
 					uint64_t key = tileKey(layerIdx, x, y);
 					float cx = (x + 0.5f) * cs;
-					float cy = (y + 0.5f) * cs;
+					float cy = tilemap_.worldOriginY() + (y + 0.5f) * cs;
 					ECS::Entity e = entMng_.create<
 						ECSComponents::TransformComponent,
 						ECSComponents::CollisionComponent>(
@@ -639,15 +647,16 @@ void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {
 	// Draw tileset-based tiles
 	if (tilesetReady_) {
 		float cs = tilemap_.cellSize();
+		float originY = tilemap_.worldOriginY();
 		for (int y = 0; y < tilemap_.height(); ++y) {
 			for (int x = 0; x < tilemap_.width(); ++x) {
 				if (!layer.hasTileTexture(x, y)) continue;
 				const auto& tile = layer.getTile(x, y);
 
 				Math::eVec2<float> sp1 = Graphics::worldToScreen(
-					{ x * cs, y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+					{ x * cs, originY + y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
 				Math::eVec2<float> sp2 = Graphics::worldToScreen(
-					{ (x + 1) * cs, (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+					{ (x + 1) * cs, originY + (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
 
 				// Screen corners: TL, TR, BR, BL
 				ImVec2 sTL(sp1.x, sp1.y);
@@ -689,14 +698,16 @@ void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {
 		}
 	}
 
+	{
+		float cs = tilemap_.cellSize();
+		float originY = tilemap_.worldOriginY();
 	for (int y = 0; y < tilemap_.height(); ++y) {
 		for (int x = 0; x < tilemap_.width(); ++x) {
-			float cs = tilemap_.cellSize();
 			Math::eVec2<float> pt1 = Graphics::worldToScreen(
-				{ x * cs, y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY
+				{ x * cs, originY + y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY
 			);
 			Math::eVec2<float> pt2 = Graphics::worldToScreen(
-				{ (x + 1) * cs, (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY
+				{ (x + 1) * cs, originY + (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY
 			);
 
 			ImVec2 p1{ pt1.x, pt1.y }, p2{ pt2.x, pt2.y };
@@ -711,6 +722,7 @@ void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {
 			drawList->AddRectFilled(p1, p2, col);
 			drawList->AddRect(p1, p2, IM_COL32(255, 255, 255, 20));
 		}
+	}
 	}
 	drawList->PopClipRect();
 }

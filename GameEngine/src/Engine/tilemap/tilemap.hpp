@@ -42,11 +42,13 @@ namespace Map {
         const std::vector<TileLayer>& layers() const;
 
         Math::eVec2<float> getWorldSize() const;
+        float worldOriginY() const;
 
         // Modifier
         void resize(int newWidth, int newHeight, float newCellSize = -1.0f, bool preserveData = true);
         void renameLayer(int id, std::string const& newName);
         void setNavLayer(int id, bool);
+        void setLayerZIndex(int id, int z);
 
         // Serialize
         bool saveToFile(const std::string& filepath) const;
@@ -56,6 +58,7 @@ namespace Map {
         int width_;
         int height_;
         float cellSize_;
+        float worldOriginY_ = 0.0f;
         std::vector<TileLayer> layers_;
 
         Event::EnoEventBus& bus_;

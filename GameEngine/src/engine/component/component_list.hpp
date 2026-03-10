@@ -26,7 +26,6 @@
 	X(HealthComponent) \
 	X(DamageComponent) \
 	X(StateMachineComponent) \
-	X(VulnerabilityComponent) \
 	X(ParticleEmitterComponent) \
 	X(CanvasComponent) \
 	X(TextComponent) \
@@ -44,7 +43,7 @@
 	/* Full physics object */ \
 	PRESET(RIGIDBODY,    TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, VisibilityComponent, LayerComponent) \
 	/* Full character setup (player / enemy) */ \
-	PRESET(ACTOR,        TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, VulnerabilityComponent, VisibilityComponent, LayerComponent) \
+	PRESET(ACTOR,        TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, VisibilityComponent, LayerComponent) \
 	/* Object that can be pushed around */ \
 	PRESET(PUSHABLE_BOX, TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, BoxComponent, VisibilityComponent, LayerComponent) \
 	/* UI button */ \

@@ -8,7 +8,7 @@ namespace Eno
         SPRITE      = 3,    // TransformComponent + RenderComponent + Visibility + Layer
         KINEMATIC   = 4,    // TransformComponent + Render + Collision + Visibility + Layer
         RIGIDBODY   = 5,    // TransformComponent + Render + Collision + Physics + Visibility + Layer
-        ACTOR       = 6,    // TransformComponent + Render + Collision + Physics + StateMachine + Health + Damage + Vulnerability + Visibility + Layer
+        ACTOR       = 6,    // TransformComponent + Render + Collision + Physics + StateMachine + Health + Damage + Visibility + Layer
         PUSHABLE_BOX = 7,   // TransformComponent + Render + Collision + Physics + Box + Visibility + Layer
         BUTTON      = 8,    // TransformComponent + Button + DrawInfo + Visibility + Collision
         AUDIO       = 9,    // AudioComponent + Layer

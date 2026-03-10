@@ -382,7 +382,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 	// Scene select
 	ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoCollapse);
-	displaySceneTab(engine_.getEnoEditor());
+	displaySceneTab(engine_.getEnoEditor(), engine_.getIsPlaying());
 	ImGui::End();
 
 	// Tabbed Browser (Audio, Assets, Video, FPS)
@@ -1100,6 +1100,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		}
 	}
 
+	ImGui::BeginDisabled(engine_.getIsPlaying());
 	if (ImGui::Button("Add Root Node")) {
 		auto& entityManager = engine_.getEntityManager();
 		auto& prefabMng     = engine_.getPrefabManager();
@@ -1301,6 +1302,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			std::cout << "[WARN] Selected node " << selectedEntityID << " not found in scene tree\n";
 		}
 	}
+	ImGui::EndDisabled();
 
 
 	ImGui::Separator();
@@ -1310,7 +1312,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	bool anyNode = false;
 	for (Editor::Node* node : allNodes) {
 		if (node->parent_ == nullptr) {  // nullptr means no parent (root node)
-			drawNodeRecursive(sceneTree, node->entity_.id(), entityManager);
+			drawNodeRecursive(sceneTree, node->entity_.id(), entityManager, engine_.getIsPlaying());
 			anyNode = true;
 		}
 	}
@@ -1332,7 +1334,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	}
 }
 
-void displaySceneTab(Editor::EnoEditor& editor_)
+void displaySceneTab(Editor::EnoEditor& editor_, bool isPlaying)
 {
 	// Heading
 	ImGui::Text("=== Scene Select===");
@@ -1414,7 +1416,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 
 		// Left click loads scene
 		// IsItemClicked checks the click on the most recent pushed imgui item aka invisible button
-		if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+		if (!isPlaying && ImGui::IsItemClicked(ImGuiMouseButton_Left))
 		{
 			// Load scene
 			std::cout << "current scene: " << editor_.getCurrentScene().getSceneName() << ", filename: " << sceneName << std::endl;
@@ -1434,7 +1436,7 @@ void displaySceneTab(Editor::EnoEditor& editor_)
 		}
 
 		// Right click opens a panel to allow you to change and delete scene name
-		if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+		if (!isPlaying && ImGui::IsItemClicked(ImGuiMouseButton_Right))
 		{
 			// Open popup
 			ImGui::OpenPopup("scene_menu");
@@ -2293,8 +2295,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
 		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
 		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
-
-		ImGui::DragInt("Health", &ai.health, 1, 0, 9999);
 	}
 	else {
 		// Allow adding AI component if the entity doesn't have one
@@ -4139,7 +4139,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 
 }
 
-void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager)
+void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::EntityManager& entityManager, bool isPlaying)
 {
 	using namespace Editor;
 	Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
@@ -4154,8 +4154,10 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 		bool selected = (selectedEntityID == node->entity_.id());
 		// Use ## to separate visible label from unique ID
 		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
-		if (ImGui::Selectable(uniqueLabel.c_str(), selected))
+		if (!isPlaying && ImGui::Selectable(uniqueLabel.c_str(), selected))
 			selectedEntityID = node->entity_.id();
+		else if (isPlaying)
+			ImGui::Selectable(uniqueLabel.c_str(), selected);
 	}
 	else {
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
@@ -4165,12 +4167,12 @@ void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t entityID, ECS::
 		// Use ## to separate visible label from unique ID
 		std::string uniqueLabel = label + "##" + std::to_string(node->entity_.id());
 		bool open = ImGui::TreeNodeEx(uniqueLabel.c_str(), flags);
-		if (ImGui::IsItemClicked())
+		if (!isPlaying && ImGui::IsItemClicked())
 			selectedEntityID = node->entity_.id();
 
 		if (open) {
 			for (Editor::Node* child : node->children_)
-				drawNodeRecursive(sceneTree, child->entity_.id(), entityManager);
+				drawNodeRecursive(sceneTree, child->entity_.id(), entityManager, isPlaying);
 			ImGui::TreePop();
 		}
 	}

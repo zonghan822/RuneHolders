@@ -18,6 +18,7 @@
 #include <iostream>
 #include <cmath>
 #include <fstream>
+#include <set>
 
 namespace Graphics
 {
@@ -1582,23 +1583,29 @@ namespace Graphics
         auto& tileMap        = engine.getTileMap();
 
         // ----------------------------------------------------------------
-        // TILEMAP — render all layers before entities (background first)
-        // Tiles are in world space; the camera projection matrix handles
-        // the visible region, so no explicit camera offset is needed.
+        // TILEMAP — collect layers by z-index; rendered interleaved with
+        // entities so each layer appears at the correct depth.
         // ----------------------------------------------------------------
-        {
-            const auto& layers = tileMap.layers();
-            float cellSize     = tileMap.cellSize();
-            int   mapW         = tileMap.width();
-            int   mapH         = tileMap.height();
+        const float tileCS      = tileMap.cellSize();
+        const int   mapW        = tileMap.width();
+        const int   mapH        = tileMap.height();
+        const float tileOriginY = tileMap.worldOriginY();
 
-            for (const auto& layer : layers)
+        std::map<int, std::vector<const Map::TileLayer*>> tileLayersByZ;
+        for (const auto& layer : tileMap.layers())
+            tileLayersByZ[layer.zIndex()].push_back(&layer);
+
+        auto drawTileLayers = [&](int z)
+        {
+            auto it = tileLayersByZ.find(z);
+            if (it == tileLayersByZ.end()) return;
+            for (const Map::TileLayer* layer : it->second)
             {
                 for (int y = 0; y < mapH; ++y)
                 {
                     for (int x = 0; x < mapW; ++x)
                     {
-                        const auto& tile = layer.tiles()[y][x];
+                        const auto& tile = layer->tiles()[y][x];
                         if (!tile.hasTexture) continue;
 
                         auto tex = loader.getTexture(tile.textureName);
@@ -1629,8 +1636,8 @@ namespace Graphics
                         }
 
                         drawTexturedQuadUVCorners(
-                            Math::eVec2<float>{ x * cellSize, y * cellSize },
-                            Math::eVec2<float>{ cellSize, cellSize },
+                            Math::eVec2<float>{ x * tileCS, tileOriginY + y * tileCS },
+                            Math::eVec2<float>{ tileCS, tileCS },
                             tex,
                             uvTL, uvTR, uvBR, uvBL,
                             Color::White
@@ -1638,7 +1645,7 @@ namespace Graphics
                     }
                 }
             }
-        }
+        };
 
         // Resolve camera corner and viewport dimensions from the first active
         // CameraComponent, falling back to the editor fallback camera (set by
@@ -1682,10 +1689,20 @@ namespace Graphics
         std::vector<ECS::Entity> drawableEntities = entityManager.findEntity<ECSComponents::DrawInfoComponent>();
         ECSComponents::collectObjectsByLayer(engine, drawableEntities);
 
-        // Draw all entities in layer order (lowest z_index = background)
-        for (auto& [layer, entities] : ECSComponents::sortedObjectLayers)
+        // Collect all z-indices from both tile layers and entities
+        std::set<int> allZ;
+        for (auto& [z, _] : tileLayersByZ)                      allZ.insert(z);
+        for (auto& [z, _] : ECSComponents::sortedObjectLayers)  allZ.insert(z);
+
+        // Draw tile layers and entities interleaved in z-index order
+        for (int currentZ : allZ)
         {
-            for (ECS::Entity* entityPtr : entities)
+            drawTileLayers(currentZ);
+            flush();
+
+            auto entityIt = ECSComponents::sortedObjectLayers.find(currentZ);
+            if (entityIt == ECSComponents::sortedObjectLayers.end()) continue;
+            for (ECS::Entity* entityPtr : entityIt->second)
             {
                 ECS::Entity& entity = *entityPtr;
                 try

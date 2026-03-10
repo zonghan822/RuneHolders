@@ -18,8 +18,6 @@ namespace ECSComponents
         float attackDuration = 0.3f;
         float hurtDuration = 0.4f;
 
-        int health = 100;
-
         // Signals
         std::unordered_map<std::string, Events::EnoSignal> signals_;
 
@@ -33,7 +31,6 @@ namespace ECSComponents
             v("windupTime", windupTime, "float");
             v("attackDuration", attackDuration, "float");
             v("hurtDuration", hurtDuration, "float");
-            v("health", health, "int");
         }
 
         template <typename V>
@@ -44,7 +41,6 @@ namespace ECSComponents
             v("windupTime", windupTime, "float");
             v("attackDuration", attackDuration, "float");
             v("hurtDuration", hurtDuration, "float");
-            v("health", health, "int");
         }
     };
 }

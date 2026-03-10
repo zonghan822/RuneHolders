@@ -35,16 +35,19 @@ namespace Map {
         int width() const;
         int height() const;
         bool isNavLayer() const;
+        int zIndex() const;
         const std::vector<std::vector<Tile>>& tiles() const;
 
         // Modifier
         void rename(const std::string& newName);
         void setNav(bool isNavLayer);
+        void setZIndex(int z);
         void resize(int newWidth, int newHeight, bool preserveData);
 
     private:
         std::string name_;
         bool contributesToNavigation_ = false;
+        int zIndex_ = 0;
         int width_ = 0;
         int height_ = 0;
         std::vector<std::vector<Tile>> tiles_;

@@ -68,17 +68,18 @@ namespace Map {
     }
 
     Math::eVec2<int> TileMapSystem::worldToTile(const Math::eVec2<float>& pos) const {
-        return { int(pos.x / cellSize_), int(pos.y / cellSize_) };
+        return { int(pos.x / cellSize_), int((pos.y - worldOriginY_) / cellSize_) };
     }
 
     Math::eVec2<float> TileMapSystem::tileToWorld(int x, int y) const {
         return { x * cellSize_ + 0.5f * cellSize_,
-                 y * cellSize_ + 0.5f * cellSize_ };
+                 worldOriginY_ + y * cellSize_ + 0.5f * cellSize_ };
     }
 
     int TileMapSystem::width() const { return width_; }
     int TileMapSystem::height() const { return height_; }
     float TileMapSystem::cellSize() const { return cellSize_; }
+    float TileMapSystem::worldOriginY() const { return worldOriginY_; }
     const std::vector<TileLayer>& TileMapSystem::layers() const { return layers_; }
 
     Math::eVec2<float> TileMapSystem::getWorldSize() const {
@@ -98,6 +99,7 @@ namespace Map {
         doc.AddMember("width", width_, alloc);
         doc.AddMember("height", height_, alloc);
         doc.AddMember("cellSize", cellSize_, alloc);
+        doc.AddMember("worldOriginY", worldOriginY_, alloc);
 
         // Layers
         rapidjson::Value layers(rapidjson::kArrayType);
@@ -110,6 +112,7 @@ namespace Map {
                 alloc);
 
             jl.AddMember("nav", layer.isNavLayer(), alloc);
+            jl.AddMember("zIndex", layer.zIndex(), alloc);
 
             // Tiles
             rapidjson::Value tileRows(rapidjson::kArrayType);
@@ -179,6 +182,7 @@ namespace Map {
         width_ = doc["width"].GetInt();
         height_ = doc["height"].GetInt();
         cellSize_ = doc["cellSize"].GetFloat();
+        worldOriginY_ = doc.HasMember("worldOriginY") ? doc["worldOriginY"].GetFloat() : 0.0f;
 
         layers_.clear();
 
@@ -192,6 +196,8 @@ namespace Map {
                 height_,
                 jl["nav"].GetBool()
             );
+            if (jl.HasMember("zIndex"))
+                layer.setZIndex(jl["zIndex"].GetUint());
 
             const auto& jtiles = jl["tiles"];
 
@@ -229,6 +235,10 @@ namespace Map {
         if (newCellSize > 0.0f)
             cellSize_ = newCellSize;
 
+        // When height grows, shift origin up so existing tiles keep their world positions
+        if (preserveData && newHeight > height_)
+            worldOriginY_ -= (newHeight - height_) * cellSize_;
+
         // Resize each layer
         for (auto& layer : layers_) {
             layer.resize(newWidth, newHeight, preserveData);
@@ -244,5 +254,9 @@ namespace Map {
 
     void TileMapSystem::setNavLayer(int id, bool isNav) {
         layers_[id].setNav(isNav);
+    }
+
+    void TileMapSystem::setLayerZIndex(int id, int z) {
+        layers_[id].setZIndex(z);
     }
 }
