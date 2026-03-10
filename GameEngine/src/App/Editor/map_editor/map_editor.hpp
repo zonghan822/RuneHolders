@@ -19,11 +19,11 @@ public:
 		: tilemap_{ tilemap }, entMng_{ entMng } {}
 
 	bool isEditMode() const { return editMode_; }
-	int getBrush() const  { return brush_; }
+	bool hasTilemap() const { return hasTilemap_; }
 	int getSelectedLayer() const { return selectedLayer_; }
 
 	void setEditMode(bool mode) { editMode_ = mode; }
-	void setBrush(int brush) { brush_ = brush; }
+	void setHasTilemap(bool v) { hasTilemap_ = v; if (!v) editMode_ = false; }
 	void selectLayer(int layerId) { selectedLayer_ = layerId; }
 
 	void displayMenu();
@@ -37,7 +37,7 @@ public:
 	// Destroy all tracked tile collider entities and clear the cache
 	void clearAllTileColliders();
 
-	// Rebuild colliders for all currently non-walkable tiles across all nav layers
+	// Rebuild colliders for all tiles on obstacle layers
 	void rebuildAllTileColliders();
 
 private:
@@ -45,7 +45,7 @@ private:
 	ECS::EntityManager& entMng_;
 
 	bool editMode_{false};
-	int brush_{0};
+	bool hasTilemap_{false};
 	int selectedLayer_{0};
 
 	// --- Tileset Feature ---
@@ -74,4 +74,7 @@ private:
 
 	// Create or destroy the collider entity for tile (layer, x, y) based on walkability
 	void syncTileCollider(int layer, int x, int y);
+
+	// Restore tileset state from saved tile data after scene load/restart
+	void tryRestoreTileset(Resources::EnoLoader& loader);
 };

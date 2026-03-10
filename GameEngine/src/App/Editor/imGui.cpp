@@ -452,6 +452,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		clearSelectedEntity();
 		engine_.getEnoEditor().createEmptyScene(FileSystem::GetAssetsDir().string() + "/saves/scenes/");
 		g_game->markEntitiesDirty();  // Force entity cache refresh
+		g_game->resetEditorCamera();
+		g_game->getMapEditor().setHasTilemap(false);
 		g_pendingNewScene = false;
 		g_resetEntityCounter = true;  // Reset counter for new scene
 		std::cout << "[ImGui] Deferred: Created new scene" << std::endl;
@@ -461,6 +463,8 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		clearSelectedEntity();
 		engine_.getEnoEditor().selectScene(g_sceneToLoad);
 		g_game->markEntitiesDirty();  // Force entity cache refresh
+		g_game->resetEditorCamera();
+		g_game->getMapEditor().setHasTilemap(engine_.getEnoEditor().getSceneTree().hasTilemap());
 		g_pendingSceneLoad = false;
 		g_sceneToLoad = "";
 		g_resetEntityCounter = true;  // Reset counter for loaded scene
@@ -4808,17 +4812,20 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 	ImGui::SameLine();
 
 	auto& mapEditor = g_game->getMapEditor();
-	bool wasEdit = mapEditor.isEditMode();
-	if (wasEdit) {
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.8f, 0.2f, 1.0f)); // green
-	}
-
-	if (ImGui::Button("Map Editor")) {
-		mapEditor.setEditMode(!wasEdit);
-	}
-
-	if (wasEdit) {
-		ImGui::PopStyleColor();
+	if (mapEditor.hasTilemap()) {
+		bool wasEdit = mapEditor.isEditMode();
+		if (wasEdit)
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.8f, 0.2f, 1.0f));
+		if (ImGui::Button("Map Editor"))
+			mapEditor.setEditMode(!wasEdit);
+		if (wasEdit)
+			ImGui::PopStyleColor();
+	} else {
+		if (ImGui::Button("Add Tilemap")) {
+			engine_.getEnoEditor().getSceneTree().setHasTilemap(true);
+			mapEditor.setHasTilemap(true);
+			mapEditor.setEditMode(true);
+		}
 	}
 
 	ImGui::Separator();

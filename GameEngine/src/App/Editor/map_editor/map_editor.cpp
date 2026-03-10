@@ -2,7 +2,7 @@
 #include "../editor_logic.hpp"
 
 void MapEditor::displayMenu() {
-	if (!editMode_) return;
+	if (!hasTilemap_ || !editMode_) return;
 
 	ImGui::Begin("Tilemap Editor", nullptr, ImGuiWindowFlags_NoCollapse);
 
@@ -106,8 +106,8 @@ void MapEditor::displayMenu() {
 		if (!warningBuf.empty())
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf.c_str());
 
-		static bool newIsNav = false;
-		ImGui::Checkbox("Navigation Layer", &newIsNav);
+		static bool newIsObs = false;
+		ImGui::Checkbox("Obstacle Layer", &newIsObs);
 
 		if (ImGui::Button("Add New Layer")) {
 
@@ -115,7 +115,7 @@ void MapEditor::displayMenu() {
 				warningBuf = "Empty name not allowed!";
 			}
 			else {
-				tilemap_.addLayer(std::string(newLayerBuf), newIsNav);
+				tilemap_.addLayer(std::string(newLayerBuf), newIsObs);
 				selectedLayer_ = layerCount;
 				ImGui::CloseCurrentPopup();
 				warningBuf.clear();
@@ -154,128 +154,20 @@ void MapEditor::displayMenu() {
 
 	// --- Set Navigation Checkbox ---
 	if (layerCount > 0 && selectedLayer_ < layerCount) {
-		bool isNav = tilemapLayers[selectedLayer_].isNavLayer();
-		if (ImGui::Checkbox("Navigation Layer", &isNav)) {
-			tilemap_.setNavLayer(selectedLayer_, isNav);
+		bool isObstacle = tilemapLayers[selectedLayer_].isObstacleLayer();
+		if (ImGui::Checkbox("Obstacle Layer", &isObstacle)) {
+			tilemap_.setObstacleLayer(selectedLayer_, isObstacle);
+			if (isObstacle)
+				rebuildAllTileColliders();
+			else {
+				clearAllTileColliders();
+				rebuildAllTileColliders();
+			}
 		}
 	}
 	else {
-		ImGui::TextDisabled("Navigation Layer (no layer selected)");
+		ImGui::TextDisabled("Obstacle Layer (no layer selected)");
 	}
-
-	ImGui::Separator();
-
-	// --- Save / Load ---
-	ImGui::Text("-- Save / Load Tilemap --");
-
-	if (!currentFile_.empty()) {
-		if (ImGui::Button("Save")) {
-			tilemap_.saveToFile(currentFile_);
-		}
-		ImGui::SameLine();
-	}
-	
-	if (ImGui::Button("Save As")) {
-		ImGui::OpenPopup("map_save");
-	}
-
-	if (ImGui::Button("Load Map")) {
-		ImGui::OpenPopup("map_load");
-	}
-
-	if (ImGui::BeginPopup("map_save")) {
-		static std::string warningBuf;
-		static char mapSaveBuf[64];
-		ImGui::Text("Enter file name:");
-		ImGui::InputText("##Map_Name", mapSaveBuf, sizeof(mapSaveBuf));
-
-		if (!warningBuf.empty())
-			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf.c_str());
-
-		if (ImGui::Button("Save")) {
-
-			if (!mapSaveBuf || mapSaveBuf[0] == '\0') {
-				warningBuf = "Empty name not allowed!";
-			}
-			else {
-				std::string newMapName = mapSaveBuf;
-				if (newMapName.find(".json") == std::string::npos) newMapName += ".json";
-
-				std::string mapsDir = FileSystem::GetAssetsDir().string() + "/saves/maps/";
-				if (!std::filesystem::exists(mapsDir)) {
-					std::filesystem::create_directories(mapsDir);
-				}
-
-				std::string fullpath = mapsDir + newMapName;
-
-				tilemap_.saveToFile(fullpath);
-				currentFile_ = fullpath;
-				warningBuf.clear();
-				ImGui::CloseCurrentPopup();
-				memset(mapSaveBuf, 0, sizeof(mapSaveBuf));
-			}
-		}
-
-		// Cancel save
-		if (ImGui::Button("Cancel")) {
-			memset(mapSaveBuf, 0, sizeof(mapSaveBuf));
-			warningBuf.clear();
-			ImGui::CloseCurrentPopup();
-		}
-
-		ImGui::EndPopup();
-	}
-
-	if (ImGui::BeginPopup("map_load")) {
-		ImGui::Text("Select map to load:");
-		static int selected = -1;
-
-		std::vector<std::string> files;
-		std::string mapsDir = FileSystem::GetAssetsDir().string() + "/saves/maps/";
-
-		if (!std::filesystem::exists(mapsDir)) {
-			std::filesystem::create_directories(mapsDir);
-		}
-
-		for (auto& entry : std::filesystem::directory_iterator(mapsDir)) {
-			if (entry.path().extension() == ".json")
-				files.push_back(entry.path().filename().string());
-		}
-
-		if (files.empty()) {
-			ImGui::Text("No map files found!");
-		}
-		else {
-			for (int i = 0; i < (int)files.size(); i++) {
-				bool isSelected = (selected == i);
-
-				if (ImGui::Selectable(files[i].c_str(), isSelected)) {
-					selected = i;
-					std::string full = mapsDir + files[selected];
-					clearAllTileColliders();
-					tilemap_.loadFromFile(full);
-					rebuildAllTileColliders();
-					currentFile_ = full;
-					selected = -1;
-					selectedLayer_ = 0;
-				}
-			}
-		}
-
-		// Cancel load
-		if (ImGui::Button("Cancel")) {
-			ImGui::CloseCurrentPopup();
-			selected = -1;
-		}
-
-		ImGui::EndPopup();
-	}
-
-	ImGui::Separator();
-
-	// --- Brush selector ---
-	ImGui::RadioButton("Walkable", &brush_, 1); ImGui::SameLine();
-	ImGui::RadioButton("Obstacle", &brush_, 0);
 
 	ImGui::Separator();
 
@@ -302,8 +194,34 @@ void MapEditor::displayMenu() {
 	ImGui::End();
 }
 
+void MapEditor::tryRestoreTileset(Resources::EnoLoader& loader) {
+	if (tilesetReady_) return;
+
+	// Scan all layers for any tile with a saved texture name
+	for (const auto& layer : tilemap_.layers()) {
+		for (const auto& row : layer.tiles()) {
+			for (const auto& tile : row) {
+				if (!tile.hasTexture || tile.textureName.empty()) continue;
+
+				auto tex = loader.getTexture(tile.textureName.c_str());
+				if (!tex) continue;
+
+				tilesetName_    = tile.textureName;
+				tilesetTexture_ = tex;
+				float cs        = tilemap_.cellSize();
+				tilesetCols_    = static_cast<int>(tex->getWidth()  / cs);
+				tilesetRows_    = static_cast<int>(tex->getHeight() / cs);
+				tilesetReady_   = true;
+				return;
+			}
+		}
+	}
+}
+
 void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
-	if (!editMode_) return;
+	if (!hasTilemap_ || !editMode_) return;
+
+	tryRestoreTileset(loader);
 
 	ImGui::Begin("Tileset", nullptr, ImGuiWindowFlags_NoCollapse);
 
@@ -472,7 +390,7 @@ void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
 }
 
 void MapEditor::paint(EditorApplication* g) {
-	if (!editMode_) return;
+	if (!hasTilemap_ || !editMode_) return;
 
 	// Safety check: ensure we have layers
 	if (tilemap_.layers().empty()) return;
@@ -491,19 +409,7 @@ void MapEditor::paint(EditorApplication* g) {
 	bool left  = ImGui::IsItemHovered() && ImGui::IsMouseDown(0);
 	bool right = ImGui::IsItemHovered() && ImGui::IsMouseDown(1);
 
-	if (!tilesetReady_) {
-		// default walkability mode
-		if (left) {
-			auto world = Graphics::screenToWorld(mousePos, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
-			auto tile = tilemap_.worldToTile(world);
-			if (tilemap_.inBounds(tile.x, tile.y)) {
-				tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, (brush_ == 1));
-				syncTileCollider(selectedLayer_, tile.x, tile.y);
-				g->markEntitiesDirty();
-			}
-		}
-		return;
-	}
+	if (!tilesetReady_) return;
 
 	// TILESET PAINT MODE ----------------------------------
 	if (left && selectedTileX_ >= 0) {
@@ -516,7 +422,6 @@ void MapEditor::paint(EditorApplication* g) {
 			float u1 = (float)(selectedTileX_ + 1) / tilesetCols_;
 			float v1 = (float)(selectedTileY_ + 1) / tilesetRows_;
 
-			tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, (brush_ == 1));
 			syncTileCollider(selectedLayer_, tile.x, tile.y);
 			tilemap_.setTile(
 				selectedLayer_,
@@ -531,14 +436,13 @@ void MapEditor::paint(EditorApplication* g) {
 		}
 	}
 
-	// ERASE MODE — right-click clears tile texture and resets to walkable
+	// ERASE MODE — right-click clears tile texture
 	if (right) {
 		auto world = Graphics::screenToWorld(mousePos, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
 		auto tile = tilemap_.worldToTile(world);
 
 		if (tilemap_.inBounds(tile.x, tile.y)) {
 			tilemap_.clearTile(selectedLayer_, tile.x, tile.y);
-			tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, true);
 			syncTileCollider(selectedLayer_, tile.x, tile.y);
 			g->markEntitiesDirty();
 		}
@@ -548,12 +452,12 @@ void MapEditor::paint(EditorApplication* g) {
 void MapEditor::syncTileCollider(int layer, int x, int y)
 {
 	float cs = tilemap_.cellSize();
-	bool walkable = tilemap_.layers()[layer].isWalkable(x, y);
+	bool isObstacle = tilemap_.layers()[layer].isObstacleLayer() && tilemap_.layers()[layer].hasTileTexture(x, y);
 	uint64_t key = tileKey(layer, x, y);
 
 	auto it = tileColliders_.find(key);
 
-	if (!walkable)
+	if (isObstacle)
 	{
 		if (it == tileColliders_.end())
 		{
@@ -601,7 +505,7 @@ void MapEditor::rebuildAllTileColliders()
 		{
 			for (int x = 0; x < tilemap_.width(); ++x)
 			{
-				if (!layer.isWalkable(x, y))
+				if (layer.isObstacleLayer() && layer.hasTileTexture(x, y))
 				{
 					uint64_t key = tileKey(layerIdx, x, y);
 					float cx = (x + 0.5f) * cs;
@@ -625,7 +529,7 @@ void MapEditor::rebuildAllTileColliders()
 }
 
 void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {
-	if (!editMode_) return;
+	if (!hasTilemap_ || !editMode_) return;
 
 	// Safety check: ensure we have layers
 	if (tilemap_.layers().empty()) return;
@@ -641,6 +545,13 @@ void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {
 	float camY = g->getEditorCameraY();
 
 	drawList->PushClipRect(ImVec2(editorMin.x, editorMin.y), ImVec2(editorMax.x, editorMax.y), true);
+
+	// Cover the framebuffer (which shows all layers) so only the selected layer is visible
+	drawList->AddRectFilled(
+		ImVec2(editorMin.x, editorMin.y),
+		ImVec2(editorMax.x, editorMax.y),
+		IM_COL32(0, 0, 0, 255)
+	);
 
 	auto& layer = tilemap_.layers()[selectedLayer_];
 

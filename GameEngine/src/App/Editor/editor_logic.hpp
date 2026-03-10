@@ -111,6 +111,7 @@ public:
     // Get editor camera position
     float getEditorCameraX() const { return editorCameraX_; }
     float getEditorCameraY() const { return editorCameraY_; }
+    void resetEditorCamera() { editorCameraX_ = 0.f; editorCameraY_ = 0.f; }
 
     // Zoom control
     void setEditorZoom(float zoom) {

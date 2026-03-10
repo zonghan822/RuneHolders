@@ -144,6 +144,9 @@ namespace Editor
 		void save(const std::string&);
 		void load(const std::string&);
 
+		bool hasTilemap() const { return hasTilemap_; }
+		void setHasTilemap(bool v) { hasTilemap_ = v; }
+
 		template<typename T>
 		std::optional<T> extract(
 			const std::string&, const std::string&, 
@@ -200,6 +203,7 @@ namespace Editor
 
 		std::unordered_map<uint32_t, std::unique_ptr<Node>> tree_;
 		Node* selectedNode_{ nullptr };
+		bool hasTilemap_{ false };
 
 		std::vector<uint32_t> salvagedID_;
 
@@ -224,9 +228,6 @@ namespace Editor
 		std::string trim(const std::string&);
 		std::string stripPrefix(const std::string&);
 		std::string extractFname(const std::string&);
-
-		// Helper for tilemap loading
-		void loadTilemapData(const std::string& data, size_t tilemapStart, size_t tilemapEnd, uint32_t width, uint32_t height);
 
 		void setParent(const std::vector<std::pair<uint32_t, uint32_t>>&);
 		void setChildren(const std::vector<std::pair<uint32_t, std::vector<uint32_t>>>&);
