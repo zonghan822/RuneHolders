@@ -120,7 +120,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
  * \param[in]   ECS::EntityManager& entityManager
  * \return      void
 *//*========================================================================================*/
-void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t nodeID, ECS::EntityManager& entityManager);
+void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t nodeID, ECS::EntityManager& entityManager, bool isPlaying);
 
 /*============================================================================================
  * \brief       Displays All Entities View Tab
@@ -176,7 +176,7 @@ void displayFPSTab(Engine::EnoEngine& engine_);
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void displaySceneTab(Editor::EnoEditor& editor_);
+void displaySceneTab(Editor::EnoEditor& editor_, bool isPlaying);
 
 /*============================================================================================
  * \brief       Helper function to load music and sounds for Audio Tab

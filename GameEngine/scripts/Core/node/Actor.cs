@@ -1,7 +1,7 @@
 namespace Eno
 {
     // Preset: ACTOR — TransformComponent + Render + Collision + Physics + StateMachine
-    //                 + Health + Damage + Vulnerability + Visibility + Layer
+    //                 + Health + Damage + Visibility + Layer
     public class Actor : RigidBody2D
     {
         public Actor(uint id, NodeType type) : base(id, type) {}

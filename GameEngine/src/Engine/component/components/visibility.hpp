@@ -43,7 +43,7 @@ namespace ECSComponents
 	inline constexpr int MAX_LAYERS = 20;
 
 	// Current number of available layers (starts with 4: 0, 1, 2, 3)
-	inline int availableLayers = 4;
+	inline int availableLayers = 6;
 
 	/*============================================================================================
 	 * \brief       Definition of the visibility component

@@ -88,6 +88,12 @@ namespace Editor
 			std::string path = FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName;
 			std::filesystem::remove(path);
 
+			// Also delete the corresponding tilemap JSON file if it exists
+			std::string tilemapPath = path;
+			if (tilemapPath.size() >= 4 && tilemapPath.substr(tilemapPath.size() - 4) == ".txt")
+				tilemapPath = tilemapPath.substr(0, tilemapPath.size() - 4) + "_tilemap.json";
+			std::filesystem::remove(tilemapPath);
+
 			// Find scene index in scenes_ list
 			auto index = std::find_if(scenes_.begin(), scenes_.end(),
 				[&](const std::unique_ptr<Editor::EnoScene>& scene) {return sceneName == scene->getSceneName(); });

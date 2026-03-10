@@ -7,8 +7,8 @@
 
 namespace Map {
 
-    TileLayer::TileLayer(const std::string& name, int w, int h, bool nav)
-        : name_(name), contributesToNavigation_(nav), width_(w), height_(h) 
+    TileLayer::TileLayer(const std::string& name, int w, int h, bool isObstacle)
+        : name_(name), isObstacleLayer_(isObstacle), width_(w), height_(h)
     {
         tiles_.resize(h);
         for (auto& row : tiles_)
@@ -16,15 +16,11 @@ namespace Map {
     }
 
     bool TileLayer::isWalkable(int x, int y) const {
-        if (x < 0 || y < 0 || x >= width_ || y >= height_) return false;
-        return tiles_[y][x].walkable;
+        if (x < 0 || y < 0 || x >= width_ || y >= height_) return true;
+        if (!isObstacleLayer_) return true;
+        return !tiles_[y][x].hasTexture;
     }
 
-    void TileLayer::setWalkable(int x, int y, bool value) {
-        if (x < 0 || y < 0 || x >= width_ || y >= height_) return;
-        tiles_[y][x].walkable = value;
-    }
-    
     // Returns whether tile has a visual texture
     bool TileLayer::hasTileTexture(int x, int y) const {
         if (x < 0 || y < 0 || x >= width_ || y >= height_) return false;
@@ -71,22 +67,28 @@ namespace Map {
     std::string TileLayer::name() const { return name_; }
     int TileLayer::width() const { return width_; }
     int TileLayer::height() const { return height_; }
-    bool TileLayer::isNavLayer() const { return contributesToNavigation_; }
+    bool TileLayer::isObstacleLayer() const { return isObstacleLayer_; }
+    int TileLayer::zIndex() const { return zIndex_; }
     const std::vector<std::vector<Tile>>& TileLayer::tiles() const { return tiles_; }
 
     void TileLayer::rename(const std::string& newName) { name_ = newName; }
-    void TileLayer::setNav(bool isNavLayer) { contributesToNavigation_ = isNavLayer; }
+    void TileLayer::setObstacleLayer(bool obstacle) { isObstacleLayer_ = obstacle; }
+    void TileLayer::setZIndex(int z) { zIndex_ = z; }
 
     void TileLayer::resize(int newWidth, int newHeight, bool preserveData) {
         std::vector<std::vector<Tile>> newTiles(newHeight, std::vector<Tile>(newWidth));
 
         if (preserveData) {
-            int minH = std::min(newHeight, height_);
             int minW = std::min(newWidth, width_);
+            // yOffset > 0 when growing: shift existing rows down so new empty rows appear at top
+            int yOffset = newHeight - height_;
 
-            for (int y = 0; y < minH; ++y)
+            for (int srcY = 0; srcY < height_; ++srcY) {
+                int dstY = srcY + yOffset;
+                if (dstY < 0 || dstY >= newHeight) continue;
                 for (int x = 0; x < minW; ++x)
-                    newTiles[y][x] = tiles_[y][x];
+                    newTiles[dstY][x] = tiles_[srcY][x];
+            }
         }
 
         tiles_ = std::move(newTiles);

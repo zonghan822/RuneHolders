@@ -45,6 +45,7 @@ void EditorApplication::initialize() {
 
 	// Set up tile map editor
 	mapEditor_ = std::make_unique<MapEditor>(tileMap, engine_.getEntityManager());
+	mapEditor_->setHasTilemap(engine_.getEnoEditor().getSceneTree().hasTilemap());
 	Math::eVec2<float> worldSize = tileMap.getWorldSize();
 
 	stateMachineEditor_ = std::make_unique<Editor::StateMachineEditor>(engine_.getEnoEditor());
@@ -55,9 +56,8 @@ void EditorApplication::initialize() {
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(1, 1); // Resized to panel size on first frame
 
-	// Center editor camera on the middle of the game world initially
-	editorCameraX_ = worldWidth_  / 2.0f - static_cast<float>(editorPanelWidth_)  / 2.f;
-	editorCameraY_ = worldHeight_ / 2.0f - static_cast<float>(editorPanelHeight_) / 2.f;
+	editorCameraX_ = 0.f;
+	editorCameraY_ = 0.f;
 
 	// Subscribe to delete selected entity event (using EditorApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)

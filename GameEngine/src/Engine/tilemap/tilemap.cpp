@@ -17,8 +17,8 @@ namespace Map {
     }
 
     // Create new layer
-    void TileMapSystem::addLayer(const std::string& name, bool isNavLayer) {
-        layers_.emplace_back(name, width_, height_, isNavLayer);
+    void TileMapSystem::addLayer(const std::string& name, bool isObsLayer) {
+        layers_.emplace_back(name, width_, height_, isObsLayer);
     }
 
     void TileMapSystem::removeLayer(int id) {
@@ -27,10 +27,6 @@ namespace Map {
     }
 
     // Painting
-    void TileMapSystem::setWalkable(int layerIndex, int x, int y, bool value) {
-        layers_[layerIndex].setWalkable(x, y, value);
-    }
-
     void TileMapSystem::setTile(int layerIndex, int x, int y, const std::string& textureName, Math::eVec2<float> uv0, Math::eVec2<float> uv1, int rotation) {
         layers_[layerIndex].setTile(x, y, textureName, uv0, uv1, rotation);
     }
@@ -39,25 +35,13 @@ namespace Map {
         layers_[layerIndex].clearTile(x, y);
     }
 
-    void TileMapSystem::paintRectangle(int layerIndex,
-        int x0, int y0, int x1, int y1,
-        bool walkable)
-    {
-        if (x0 > x1) std::swap(x0, x1);
-        if (y0 > y1) std::swap(y0, y1);
-
-        for (int y = y0; y <= y1; ++y)
-            for (int x = x0; x <= x1; ++x)
-                layers_[layerIndex].setWalkable(x, y, walkable);
-    }
 
     // Combined navigation result
     bool TileMapSystem::isWalkable(int x, int y) const {
         for (auto& layer : layers_) {
-            if (!layer.isNavLayer()) continue;
-
-            if (!layer.isWalkable(x, y))
-                return false;  // Any blocking layer blocks
+            if (!layer.isObstacleLayer()) continue;
+            if (layer.hasTileTexture(x, y))
+                return false;
         }
         return true;
     }
@@ -68,17 +52,18 @@ namespace Map {
     }
 
     Math::eVec2<int> TileMapSystem::worldToTile(const Math::eVec2<float>& pos) const {
-        return { int(pos.x / cellSize_), int(pos.y / cellSize_) };
+        return { int(pos.x / cellSize_), int((pos.y - worldOriginY_) / cellSize_) };
     }
 
     Math::eVec2<float> TileMapSystem::tileToWorld(int x, int y) const {
         return { x * cellSize_ + 0.5f * cellSize_,
-                 y * cellSize_ + 0.5f * cellSize_ };
+                 worldOriginY_ + y * cellSize_ + 0.5f * cellSize_ };
     }
 
     int TileMapSystem::width() const { return width_; }
     int TileMapSystem::height() const { return height_; }
     float TileMapSystem::cellSize() const { return cellSize_; }
+    float TileMapSystem::worldOriginY() const { return worldOriginY_; }
     const std::vector<TileLayer>& TileMapSystem::layers() const { return layers_; }
 
     Math::eVec2<float> TileMapSystem::getWorldSize() const {
@@ -98,6 +83,7 @@ namespace Map {
         doc.AddMember("width", width_, alloc);
         doc.AddMember("height", height_, alloc);
         doc.AddMember("cellSize", cellSize_, alloc);
+        doc.AddMember("worldOriginY", worldOriginY_, alloc);
 
         // Layers
         rapidjson::Value layers(rapidjson::kArrayType);
@@ -109,7 +95,8 @@ namespace Map {
                 rapidjson::Value(layer.name().c_str(), alloc),
                 alloc);
 
-            jl.AddMember("nav", layer.isNavLayer(), alloc);
+            jl.AddMember("obstacle", layer.isObstacleLayer(), alloc);
+            jl.AddMember("zIndex", layer.zIndex(), alloc);
 
             // Tiles
             rapidjson::Value tileRows(rapidjson::kArrayType);
@@ -122,7 +109,6 @@ namespace Map {
                     const auto& t = layer.tiles()[y][x];
 
                     rapidjson::Value tile(rapidjson::kObjectType);
-                    tile.AddMember("walk", t.walkable, alloc);
                     tile.AddMember("tex", rapidjson::Value(t.textureName.c_str(), alloc), alloc);
 
                     rapidjson::Value uv0(rapidjson::kArrayType);
@@ -179,6 +165,7 @@ namespace Map {
         width_ = doc["width"].GetInt();
         height_ = doc["height"].GetInt();
         cellSize_ = doc["cellSize"].GetFloat();
+        worldOriginY_ = doc.HasMember("worldOriginY") ? doc["worldOriginY"].GetFloat() : 0.0f;
 
         layers_.clear();
 
@@ -186,12 +173,16 @@ namespace Map {
         for (rapidjson::SizeType i = 0; i < jlayers.Size(); ++i) {
             const auto& jl = jlayers[i];
 
+            bool isObstacle = jl.HasMember("obstacle") ? jl["obstacle"].GetBool()
+                             : (jl.HasMember("nav") ? jl["nav"].GetBool() : false);
             TileLayer layer(
                 jl["name"].GetString(),
                 width_,
                 height_,
-                jl["nav"].GetBool()
+                isObstacle
             );
+            if (jl.HasMember("zIndex"))
+                layer.setZIndex(jl["zIndex"].GetUint());
 
             const auto& jtiles = jl["tiles"];
 
@@ -199,8 +190,6 @@ namespace Map {
                 const auto& jrow = jtiles[y];
                 for (int x = 0; x < width_; ++x) {
                     const auto& jt = jrow[x];
-                    layer.setWalkable(x, y, jt["walk"].GetBool());
-
                     Tile& t = layer.getTile(x, y);
 
                     t.hasTexture = jt["hasTex"].GetBool();
@@ -229,6 +218,10 @@ namespace Map {
         if (newCellSize > 0.0f)
             cellSize_ = newCellSize;
 
+        // When height grows, shift origin up so existing tiles keep their world positions
+        if (preserveData && newHeight > height_)
+            worldOriginY_ -= (newHeight - height_) * cellSize_;
+
         // Resize each layer
         for (auto& layer : layers_) {
             layer.resize(newWidth, newHeight, preserveData);
@@ -238,11 +231,17 @@ namespace Map {
         height_ = newHeight;
     }
 
+    void TileMapSystem::setWorldOriginY(float y) { worldOriginY_ = y; }
+
     void TileMapSystem::renameLayer(int id, std::string const& newName) {
         layers_[id].rename(newName);
     }
 
-    void TileMapSystem::setNavLayer(int id, bool isNav) {
-        layers_[id].setNav(isNav);
+    void TileMapSystem::setObstacleLayer(int id, bool obstacle) {
+        layers_[id].setObstacleLayer(obstacle);
+    }
+
+    void TileMapSystem::setLayerZIndex(int id, int z) {
+        layers_[id].setZIndex(z);
     }
 }
