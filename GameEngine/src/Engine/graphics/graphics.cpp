@@ -14,6 +14,7 @@
 #include "../engine/eno_engine.hpp"
 #include "../component/component_registry.hpp"
 #include "../component/components/visibility.hpp"
+#include "../component/components/canvas.hpp"
 #include <iostream>
 #include <cmath>
 #include <fstream>
@@ -1692,6 +1693,11 @@ namespace Graphics
                     if (!entity.has<ECSComponents::DrawInfoComponent>(entityManager))
                         continue;
 
+                    // Skip entities parented under a Canvas — rendered separately by renderAllCanvases()
+                    if (ECSComponents::hasCanvasAncestor(entity.id(),
+                            engine.getEnoEditor().getSceneTree(), entityManager))
+                        continue;
+
                     auto& transform  = entity.get<ECSComponents::TransformComponent>(entityManager);
                     auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
 
@@ -1802,6 +1808,11 @@ namespace Graphics
                     engine.getEnoEditor().getSceneTree(), entityManager))
                 continue;
 
+            // Skip text entities parented under a Canvas — rendered by renderCanvasText()
+            if (ECSComponents::hasCanvasAncestor(textEntity.id(),
+                    engine.getEnoEditor().getSceneTree(), entityManager))
+                continue;
+
             if (!textEntity.has<ECSComponents::TransformComponent>(entityManager))
                 continue;
 
@@ -1845,6 +1856,9 @@ namespace Graphics
 
         // Restore default shader after text rendering
         rebindDefaultShader();
+
+        // Render all Canvas UI layers on top of world content
+        ECSComponents::renderAllCanvases(engine, drawableEntities, { cameraX, cameraY });
     }
 
     // =========================================================================

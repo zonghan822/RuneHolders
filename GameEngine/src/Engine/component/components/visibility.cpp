@@ -5,9 +5,11 @@
 * @brief		Contains functions to sort entities into layers for rendering
 *//*========================================================================================*/
 #include "visibility.hpp"
+#include "canvas.hpp"
 #include "../../engine/eno_engine.hpp"
 
 namespace ECSComponents {
+
 	void collectChildrenRecursive(Editor::Node* node, ECS::EntityManager& entityMng, std::map<int, std::vector<ECS::Entity*>>& layers)
 	{
 		if (!node) return;
@@ -62,6 +64,16 @@ namespace ECSComponents {
 
 		// Sort cached entities by their z_index
 		for (auto& entity : cachedEntities) {
+			// Skip canvas entities themselves
+			if (entity.has<CanvasComponent>(entityMng)) {
+				continue;
+			}
+
+			// Skip entities belonging to canvas
+			if (hasCanvasAncestor(entity.id(), sceneTree, entityMng)) {
+				continue;
+			}
+
 			// Check if entity has VisibilityComponent
 			if (entity.has<VisibilityComponent>(entityMng)) {
 				auto& vis = entity.get<VisibilityComponent>(entityMng);
@@ -89,4 +101,5 @@ namespace ECSComponents {
 			}
 		}
 	}
+
 }

@@ -9,6 +9,9 @@
 #include <iostream>
 #include "../../math/math.hpp"
 
+// Forward declarations
+namespace Editor { struct Node; }
+namespace ECS    { class EntityManager; }
 
 namespace ECSComponents
 {
@@ -16,7 +19,7 @@ namespace ECSComponents
 	{
 		// Spatial properties only - position, rotation, scale
 		Math::eVec2<float> pos{};
-		Math::eVec2<float> rot{};
+		Math::eVec2<float> rot{0.0f, 0.0f};
 		Math::eVec2<float> scale{ 1.0f, 1.0f };  // Default to unit scale
 
 		// Reset for play/stop state (editor functionality)
@@ -66,10 +69,13 @@ namespace ECSComponents
 	{
 		std::cout << "Position: (" << c.pos.x	<< ', ' << c.pos.y	 << ')' <<
 					 "Rotation: (" << c.rot.x	<< ', ' << c.rot.y	 << ')' <<
-					 "Scale: ("    << c.scale.x << ', ' << c.scale.y << ')' << 
+					 "Scale: ("    << c.scale.x << ', ' << c.scale.y << ')' <<
 					  std::endl;
 
 		return os;
 	}
+
+	// Moves a node to newPos and offsets all descendant positions by the same delta.
+	void moveNodeWithChildren(Editor::Node* node, Math::eVec2<float> newPos, ECS::EntityManager& entityMng);
 
 }
