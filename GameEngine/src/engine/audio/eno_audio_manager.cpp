@@ -1050,4 +1050,58 @@ namespace Audio
 
 		return dsp;
 	}
+
+	/*============================================================================================
+ * \brief            Helper for modifying a low pass DSP
+ * \param[in]        SoundParameters struct (LowPass/HighPass/Reverb/EQ/Volume/Pitch/Pan)
+ * \return            Pointer to a DSP to use to modify channel/channel group
+*//*========================================================================================*/
+	FMOD::DSP* EnoAudioManager::modifyLowPass(const SoundParameters& parameters)
+	{
+		if (!parameters.lowPass) return nullptr;
+
+		FMOD::DSP* dsp{ nullptr };
+		system->createDSPByType(parameters.lowPass->type, &dsp);
+
+		std::visit([dsp](auto&& f)
+			{
+				using T = std::decay_t<decltype(f)>;
+				if constexpr (std::is_same_v<T, SimpleLowPass>)
+				{
+					dsp->setParameterFloat(FMOD_DSP_LOWPASS_SIMPLE_CUTOFF, f.cutoff);
+				}
+				else if constexpr (std::is_same_v<T, StandardLowPass>)
+				{
+					dsp->setParameterFloat(FMOD_DSP_LOWPASS_CUTOFF, f.cutoff);
+					dsp->setParameterFloat(FMOD_DSP_LOWPASS_RESONANCE, f.resonance);
+				}
+			}, parameters.lowPass->lp);
+	}
+
+	/*============================================================================================
+ * \brief            Helper for modifying a high pass DSP
+ * \param[in]        SoundParameters struct (LowPass/HighPass/Reverb/EQ/Volume/Pitch/Pan)
+ * \return            Pointer to a DSP to use to modify channel/channel group
+*//*========================================================================================*/
+	FMOD::DSP* EnoAudioManager::modifyHighPass(const SoundParameters& parameters)
+	{
+		if (!parameters.highPass) return nullptr;
+
+		FMOD::DSP* dsp{ nullptr };
+		system->createDSPByType(parameters.highPass->type, &dsp);
+
+		std::visit([dsp](auto&& f)
+			{
+				using T = std::decay_t<decltype(f)>;
+				if constexpr (std::is_same_v<T, SimpleHighPass>)
+				{
+					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_SIMPLE_CUTOFF, f.cutoff);
+				}
+				else if constexpr (std::is_same_v<T, StandardHighPass>)
+				{
+					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_CUTOFF, f.cutoff);
+					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_RESONANCE, f.resonance);
+				}
+			}, parameters.lowPass->lp);
+	}
 }

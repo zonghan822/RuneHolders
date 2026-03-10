@@ -3064,8 +3064,74 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				ImGui::SameLine(160);
 				ImGui::SliderFloat("##EQHigh", &ac.eqHighGain_, -30.0f, 30.0f, "%.1f dB");
 
+				ImGui::Separator();
+
+				//ImGui::Text("Low Crossover:");
+				//ImGui::SameLine(160);
+				//ImGui::SliderFloat("##EQLowCross", &ac.eqLowCrossOver_, 10.0f, 1000.0f, "%.0f Hz");
+
+				//ImGui::Text("High Crossover:");
+				//ImGui::SameLine(160);
+				//ImGui::SliderFloat("##EQHighCross", &ac.eqHighCrossOver_, 1000.0f, 20000.0f, "%.0f Hz");
+
 				ImGui::TextDisabled("Note: EQ effects are applied via Audio Manager");
 			}
+
+			ImGui::TreePop();
+		}
+
+		ImGui::Separator();
+
+		// Low Pass Filter
+		if (ImGui::TreeNodeEx("Low Pass Filter", ImGuiTreeNodeFlags_None))
+		{
+			//ImGui::Checkbox("Enable Low Pass", &ac.enableLowPass_);
+
+			//if (ac.enableLowPass_) {
+			//	ImGui::Checkbox("Simple Mode##LP", &ac.lpSimple_);
+			//	if (ImGui::IsItemHovered())
+			//		ImGui::SetTooltip("Simple: cutoff only.\nStandard: cutoff + resonance.");
+
+			//	ImGui::Text("Cutoff Freq:");
+			//	ImGui::SameLine(160);
+			//	ImGui::SliderFloat("##LPCutoff", &ac.lpCutoff_, 10.0f, 22000.0f, "%.0f Hz");
+
+			//	if (!ac.lpSimple_) {
+			//		ImGui::Text("Resonance:");
+			//		ImGui::SameLine(160);
+			//		ImGui::SliderFloat("##LPResonance", &ac.lpResonance_, 1.0f, 10.0f, "%.2f");
+			//	}
+
+			//	ImGui::TextDisabled("Note: Low Pass is applied via Audio Manager on play");
+			//}
+
+			ImGui::TreePop();
+		}
+
+		ImGui::Separator();
+
+		// High Pass Filter
+		if (ImGui::TreeNodeEx("High Pass Filter", ImGuiTreeNodeFlags_None))
+		{
+			/*ImGui::Checkbox("Enable High Pass", &ac.enableHighPass_);
+
+			if (ac.enableHighPass_) {
+				ImGui::Checkbox("Simple Mode##HP", &ac.hpSimple_);
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip("Simple: cutoff only.\nStandard: cutoff + resonance.");
+
+				ImGui::Text("Cutoff Freq:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##HPCutoff", &ac.hpCutoff_, 10.0f, 22000.0f, "%.0f Hz");
+
+				if (!ac.hpSimple_) {
+					ImGui::Text("Resonance:");
+					ImGui::SameLine(160);
+					ImGui::SliderFloat("##HPResonance", &ac.hpResonance_, 1.0f, 10.0f, "%.2f");
+				}
+
+				ImGui::TextDisabled("Note: High Pass is applied via Audio Manager on play");
+			}*/
 
 			ImGui::TreePop();
 		}
@@ -3102,6 +3168,18 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				std::cout << "Low Gain:     " << ac.eqLowGain_ << " dB\n";
 				std::cout << "Mid Gain:     " << ac.eqMidGain_ << " dB\n";
 				std::cout << "High Gain:    " << ac.eqHighGain_ << " dB\n";
+				//std::cout << "Low Crossover: " << ac.eqLowCrossOver_ << " Hz\n";
+				//std::cout << "High Crossover: " << ac.eqHighCrossOver_ << " Hz\n";
+				std::cout << "-- LOW PASS --\n";
+				//std::cout << "Enabled:      " << (ac.enableLowPass_ ? "true" : "false") << "\n";
+				//std::cout << "Simple:       " << (ac.lpSimple_ ? "true" : "false") << "\n";
+				//std::cout << "Cutoff:       " << ac.lpCutoff_ << " Hz\n";
+				//std::cout << "Resonance:    " << ac.lpResonance_ << "\n";
+				std::cout << "-- HIGH PASS --\n";
+				//std::cout << "Enabled:      " << (ac.enableHighPass_ ? "true" : "false") << "\n";
+				//std::cout << "Simple:       " << (ac.hpSimple_ ? "true" : "false") << "\n";
+				//std::cout << "Cutoff:       " << ac.hpCutoff_ << " Hz\n";
+				//std::cout << "Resonance:    " << ac.hpResonance_ << "\n";
 				std::cout << "=================================\n";
 			}
 
