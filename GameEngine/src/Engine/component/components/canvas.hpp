@@ -145,12 +145,6 @@ namespace ECSComponents
 	}
 
 	/*============================================================================================
-	 * \brief				Collect canvas children from scene tree (like Godot)
-	 * \param[in]			engine - Reference to EnoEngine
-	 * \param[in]			canvasEntity - Canvas entity whose children to collect
-	 * \param[out]			layers - Map to populate with entities sorted by canvas layer (1-5)
-	*//*========================================================================================*/
-	/*============================================================================================
 	 * \brief				Check if entity or any ancestor has CanvasComponent
 	 * \param[in]			entityID - the ID of the entity to check
 	 * \param[in]			tree - reference to the scene tree
@@ -159,6 +153,12 @@ namespace ECSComponents
 	*//*========================================================================================*/
 	bool hasCanvasAncestor(uint32_t entityID, Editor::EnoSceneTree& tree, ECS::EntityManager& entityMng);
 
+	/*============================================================================================
+	 * \brief				Collect canvas children from scene tree (like Godot)
+	 * \param[in]			engine - Reference to EnoEngine
+	 * \param[in]			canvasEntity - Canvas entity whose children to collect
+	 * \param[out]			layers - Map to populate with entities sorted by canvas layer (1-5)
+	*//*========================================================================================*/
 	void collectCanvasChildren(Engine::EnoEngine& engine, ECS::Entity& canvasEntity, std::map<int, std::vector<ECS::Entity*>>& layers);
 
 	/*============================================================================================
