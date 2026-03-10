@@ -1804,12 +1804,12 @@ namespace Graphics
         flush();
 
         // Render particles on top of entities
-        auto* particleSys = engine.getParticleSystem();
-        if (particleSys)
-            particleSys->Render(*this, entityManager, { cameraX, cameraY });
+        //auto* particleSys = engine.getParticleSystem();
+        //if (particleSys)
+        //    particleSys->Render(*this, entityManager, { cameraX, cameraY });
 
         // Flush particle batch before text (drawTextScreen switches shader)
-        flush();
+        //flush();
 
         // Draw TextComponent entities
         auto textEntities = entityManager.findEntity<ECSComponents::TextComponent>();

@@ -32,7 +32,7 @@
 #include "../physics/physics_system.hpp"
 #include "../tilemap/tilemap.hpp"
 #include "../state_machine/state_machine_system.hpp"
-#include "../particle/particle_system.hpp"
+//#include "../particle/particle_system.hpp"
 #include "../ui/button_system.hpp"
 
 
@@ -255,7 +255,7 @@ namespace Engine
 		* \brief		Gets the Particle System for particle effects
 		* \return		Pointer to ParticleSystem instance (may be null if not initialized)
 		*//*========================================================================================*/
-		Particles::ParticleSystem* getParticleSystem() { return particleSys_.get(); }
+		//Particles::ParticleSystem* getParticleSystem() { return particleSys_.get(); }
 
 		/*============================================================================================
 		* \brief		Sets whether the game is in playing mode (affects player input processing)
@@ -345,7 +345,7 @@ namespace Engine
 		std::unique_ptr<FSM::StateMachineSystem> stateMachineSys_;
 		std::unique_ptr<Physics::PhysicsSystem> physicsSys_;
 		std::unique_ptr<Collision::CollisionSystem> collisionSys_;
-		std::unique_ptr<Particles::ParticleSystem> particleSys_;
+		//std::unique_ptr<Particles::ParticleSystem> particleSys_;
 
 		// UI Systems
 		UI::ButtonSystem buttonSys_;

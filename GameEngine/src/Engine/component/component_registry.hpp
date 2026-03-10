@@ -27,7 +27,7 @@
 #include "../component/components/combat_components.hpp"
 #include "../component/components/state_machine_component.hpp"
 #include "../component/components/text_component.hpp"
-#include "../particle/particle_component.hpp"
+//#include "../particle/particle_component.hpp"
 #include "../component/components/video_component.hpp"
 
 #include "../component/component_list.hpp"
