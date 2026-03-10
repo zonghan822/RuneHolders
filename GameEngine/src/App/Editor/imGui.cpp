@@ -999,14 +999,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	// ==================== HIERARCHY CONTROLS ====================
 	static int entityCounter = 1;  // Track entity numbering
 	static bool entityCounterInitialized = false;  // Flag to ensure we only initialize once per scene load
-	static bool attachScript = false; // Checkbox state
-
-	static int selectedScriptIndex = -1;	// Script dropdown
-	static std::vector<std::wstring> availableScripts; // List of available scripts
-	static bool scriptsLoaded = false;
-
-	Script::EnoScriptManager& scriptMng = engine_.getEnoEditor().getScriptManager();
-
 	// Reset entity counter flag when scene changes
 	if (g_resetEntityCounter) {
 		entityCounterInitialized = false;
@@ -1038,40 +1030,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		// Set counter to one more than the highest found number
 		entityCounter = maxEntityNumber + 1;
 		entityCounterInitialized = true;
-	}
-
-	ImGui::Checkbox("Attach Script to New Entity", &attachScript);
-
-	// Here i prepare the list for showcase of the scripts
-	if (attachScript) {
-		// Load scripts only once or when needed
-		if (!scriptsLoaded) {
-			availableScripts = scriptMng.getAvailableScripts();
-			scriptsLoaded = true;
-		}
-
-		if (!availableScripts.empty()) {
-			std::vector<std::string> scriptNames;
-			for (const auto& ws : availableScripts)
-			{
-				int size_needed = WideCharToMultiByte(CP_UTF8, 0, ws.data(), (int)ws.size(), nullptr, 0, nullptr, nullptr);
-				std::string result(size_needed, 0);
-				WideCharToMultiByte(CP_UTF8, 0, ws.data(), (int)ws.size(), &result[0], size_needed, nullptr, nullptr);
-
-				scriptNames.push_back(result);
-			}
-
-			// Convert vector to array for ImGui Combo
-			std::vector<const char*> scriptItems;
-			for (auto& name : scriptNames)
-				scriptItems.push_back(name.c_str());
-
-			ImGui::Text("Select Script:");
-			ImGui::Combo("##ScriptCombo", &selectedScriptIndex, scriptItems.data(), (int)scriptItems.size());
-		}
-		else {
-			ImGui::Text("No scripts found.");
-		}
 	}
 
 	// Preset selector for node spawning
@@ -1169,15 +1127,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		undoManager.executeCommand(std::move(createCmd));
 
 		std::cout << "[DEBUG] Add Root Node: Entity " << entityName << " created with preset '" << g_selectedNodePreset << "'\n";
-		if (attachScript && selectedScriptIndex >= 0) {
-			std::wstring selectedScript = availableScripts[selectedScriptIndex];
-			std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-			auto script = scriptMng.loadScript(selectedScript);
-			if (script)
-				sceneTree.attachScript(createdNode, std::move(script));
-			else
-				std::cerr << "No script is attached!" << std::endl;
-		}
 		if (g_game) g_game->markEntitiesDirty();
 	}
 
@@ -1253,14 +1202,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 					engine_.getGraphicsManager()
 				);
 				undoManager.executeCommand(std::move(createCmd));
-
-				if (attachScript && selectedScriptIndex >= 0) {
-					std::wstring selectedScript = availableScripts[selectedScriptIndex];
-					std::wcout << L"[DEBUG] Selected Script: " << selectedScript << std::endl;
-					auto script = scriptMng.loadScript(selectedScript);
-					if (script)
-						sceneTree.attachScript(childNode, std::move(script));
-				}
 
 				if (g_game) g_game->markEntitiesDirty();
 
@@ -2260,28 +2201,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		smEditor.renderStateMachineUI(node, smc);
 	}
-	else {
-		ImGui::SeparatorText("State Machine");
-		ImGui::TextDisabled("No State Machine attached");
-
-		// Allow adding state machine component if the entity doesn't have one
-		if (ImGui::Button("Add State Machine")) {
-			entity.add<ECSComponents::StateMachineComponent>(entMng);
-
-			if (node && node->script_) {
-				std::string scriptPath = node->script_->path();
-				auto scriptStates = Script::StateMachineScriptGenerator::extractStatesFromScript(scriptPath);
-				auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entMng);
-				for (const auto& state : scriptStates) {
-					smComp.addState(state.c_str());
-					if (smComp.numStates == 1) {
-						strncpy(smComp.currentState, state.c_str(), sizeof(smComp.currentState) - 1);
-						smComp.currentState[sizeof(smComp.currentState) - 1] = '\0';
-					}
-				}
-			}
-		}
-	}
 
 	// --- AIComponent ---
 	if (entity.has<ECSComponents::AIComponent>(entMng)) {
@@ -2299,16 +2218,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
 		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
 		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
-	}
-	else {
-		// Allow adding AI component if the entity doesn't have one
-		ImGui::SeparatorText("AI");
-		ImGui::TextDisabled("No AI attached");
-
-		if (ImGui::Button("Add AI")) {
-			// Add a default AI component
-			entity.add<ECSComponents::AIComponent>(entMng);
-		}
 	}
 
 	// ---------- Visibility Component ---------
@@ -2462,21 +2371,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		// Keyboard shortcuts hint
 		ImGui::TextDisabled("Use '[' and ']' to change layer");
-	}
-	else
-	{
-		// Allow adding visibility component
-		ImGui::SeparatorText("Visibility Component");
-		ImGui::TextDisabled("No visibility component attached");
-
-		if (ImGui::Button("Add visibility Component"))
-		{
-			ECSComponents::VisibilityComponent vi;
-
-			entity.add<ECSComponents::VisibilityComponent>(entMng, vi);
-			if (g_game) g_game->markEntitiesDirty();
-		}
-
 	}
 
 	// --- TransformComponent ---
@@ -2714,16 +2608,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::DragFloat("Drag", &physics.drag, 0.01f, 0.0f, 1.0f);
 		ImGui::Checkbox("Use Gravity", &physics.useGravity);
 	}
-	else 
-	{
-		ImGui::SeparatorText("Physics");
-		ImGui::TextDisabled("No physics attached");
-		if (ImGui::Button("Add Physics")) 
-		{
-			entity.add<ECSComponents::PhysicsComponent>(entMng);
-			if (g_game) g_game->markEntitiesDirty();
-		}
-	}
 
 	// --- CollisionComponent ---
 	if (entity.has<ECSComponents::CollisionComponent>(entMng)) {
@@ -2819,38 +2703,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			ImGui::SetTooltip("Trigger detects collisions but doesn't block movement.\nRequires 'Is Active' to be checked.");
 		}
 
-		ImGui::Spacing();
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 60.0f);
-		if (ImGui::Button("Remove##collider")) {
-			entity.remove<ECSComponents::CollisionComponent>(entMng);
-			if (g_game) g_game->markEntitiesDirty();
-		}
-	}
-	else {
-		// Allow adding a collider if the entity doesn't have one
-		ImGui::SeparatorText("Collider");
-		ImGui::TextDisabled("No collider attached");
-
-		if (ImGui::Button("Add Collider")) {
-			if (entity.has<ECSComponents::RenderComponent>(entMng)) {
-				auto& render = entity.get<ECSComponents::RenderComponent>(entMng);
-				auto collision = ECSComponents::CreateAABBFromRender(render);
-				if (!entity.has<ECSComponents::CollisionComponent>(entMng)) {
-					std::cout << "attempting to add collision component\n";
-					entity.add<ECSComponents::CollisionComponent>(entMng, collision);
-				
-				}
-			}
-			else {
-				entity.add<ECSComponents::CollisionComponent>(entMng, ECSComponents::CollisionComponent(10.0f));
-			}
-			if (g_game) g_game->markEntitiesDirty();
-		}
-
-		if (entity.has<ECSComponents::RenderComponent>(entMng)) {
-			auto& render = entity.get<ECSComponents::RenderComponent>(entMng);
-			ImGui::TextDisabled("Will auto-size: %.1f x %.1f", render.width, render.height);
-		}
 	}
 	if (entity.has<ECSComponents::BoxComponent>(entMng)) {
 		auto& pushComp = entity.get<ECSComponents::BoxComponent>(entMng);
@@ -3113,18 +2965,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 
 	}
-	else
-	{
-		ImGui::SeparatorText("Audio");
-		ImGui::TextDisabled("No AudioComponent attached.");
-
-		//if (ImGui::Button("Add Audio Component"))
-		//{
-		//	entity.add<ECSComponents::AudioComponent>(entMng);
-		//	std::cout << "[Audio] Added AudioComponent to entity "
-		//		<< entity.id() << "\n";
-		//}
-	}
 
 	// --------- Camera Component ----------
 	if (entity.has<ECSComponents::CameraComponent>(entMng)) {
@@ -3140,26 +2980,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		// Camera position (center of viewport)
 		ImGui::DragFloat2("Camera Position", (float*)&camera.position, 1.0f);
-	}
-	else {
-		// Allow adding camera component
-		ImGui::SeparatorText("Camera");
-		ImGui::TextDisabled("No camera attached");
-
-		if (ImGui::Button("Add Camera")) {
-			ECSComponents::CameraComponent camera;
-			camera.viewportWidth = 1920.0f;
-			camera.viewportHeight = 1080.0f;
-			camera.isActive = false; // Don't activate by default
-
-			// Set position to center of world
-			auto& tileMap = engine_.getTileMap();
-			Math::eVec2<float> worldSize = tileMap.getWorldSize();
-			camera.position = Math::eVec2<float>{ worldSize.x * 0.5f, worldSize.y * 0.5f };
-
-			entity.add<ECSComponents::CameraComponent>(entMng, camera);
-			if (g_game) g_game->markEntitiesDirty();
-		}
 	}
 
 	// --- Text Component ---
@@ -3199,20 +3019,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// Font size (scale)
 		ImGui::DragFloat("Size", &textComp.fontSize, 0.1f, 0.1f, 10.0f);
 
-		ImGui::Spacing();
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 60.0f);
-		if (ImGui::Button("Remove##text")) {
-			entity.remove<ECSComponents::TextComponent>(entMng);
-			if (g_game) g_game->markEntitiesDirty();
-		}
-	}
-	else {
-		ImGui::SeparatorText("Text");
-		ImGui::TextDisabled("No TextComponent attached");
-		if (ImGui::Button("Add Text Component")) {
-			entity.add<ECSComponents::TextComponent>(entMng);
-			if (g_game) g_game->markEntitiesDirty();
-		}
 	}
 
 	// --------- Button Component ----------
@@ -3369,37 +3175,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			ImGui::EndDisabled();
 		}
 
-		// Remove Button
-		ImGui::Separator();
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 60.0f);
-		if (ImGui::Button("Remove##button")) 
-		{
-			entity.remove<ECSComponents::ButtonComponent>(entMng);
-			if (g_game) g_game->markEntitiesDirty();
-		}
-	}
-	else
-	{
-		// Allow adding button component
-		ImGui::SeparatorText("Button Component");
-		ImGui::TextDisabled("No button component attached");
-
-		if (ImGui::Button("Add Button Component"))
-		{
-			ECSComponents::ButtonComponent button;
-
-			// Check for collider component
-			if (!entity.has<ECSComponents::CollisionComponent>(entMng))
-			{
-				ECSComponents::CollisionComponent collider;
-				// Make it non-collidable
-				collider.isTrigger = true;
-				entity.add<ECSComponents::CollisionComponent>(entMng, collider);
-			}
-
-			entity.add<ECSComponents::ButtonComponent>(entMng, button);
-			if (g_game) g_game->markEntitiesDirty();
-		}
 	}
 
 	// --- Canvas Component ---
@@ -3458,21 +3233,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			}
 		}
 
-		ImGui::Spacing();
-		if (ImGui::Button("Remove Canvas##canvas")) {
-			entity.remove<ECSComponents::CanvasComponent>(entMng);
-			if (g_game) g_game->markEntitiesDirty();
-		}
-	}
-	else {
-		ImGui::SeparatorText("Canvas");
-		ImGui::TextDisabled("No canvas attached");
-
-		if (ImGui::Button("Add Canvas##canvas")) {
-			ECSComponents::CanvasComponent canvas;
-			entity.add<ECSComponents::CanvasComponent>(entMng, canvas);
-			if (g_game) g_game->markEntitiesDirty();
-		}
 	}
 
 
@@ -3520,16 +3280,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		else if (strlen(vid.videoName) > 0)
 		{
 			ImGui::TextDisabled("(video not loaded)");
-		}
-	}
-	else
-	{
-		ImGui::SeparatorText("Video");
-		ImGui::TextDisabled("No video component attached");
-		if (ImGui::Button("Add Video Component"))
-		{
-			entity.add<ECSComponents::VideoComponent>(entMng);
-			if (g_game) g_game->markEntitiesDirty();
 		}
 	}
 
@@ -3753,18 +3503,11 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	const std::string& selectedState = states[selectedStateIdx];
 
 
-	ImGui::SeparatorText("Animations");
-
-	// Check if the selected entity has an AnimationControllerComponent
+	// Only show animations section for presets that have an AnimationControllerComponent
 	if (!entity.has<ECSComponents::AnimationControllerComponent>(entMng))
-	{
-		ImGui::TextWrapped("The currently selected entity does not have an Animation Controller component.");
-		if (ImGui::Button("Add Animation Controller")) {
-			entity.add<ECSComponents::AnimationControllerComponent>(entMng);
-			if (g_game) g_game->markEntitiesDirty();
-		}
 		return;
-	}
+
+	ImGui::SeparatorText("Animations");
 
 
 	// New UI: pick which state this "slot" applies to
