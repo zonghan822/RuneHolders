@@ -64,6 +64,7 @@
 				"Viewport Height": <float> { 1080 }
 				"Position": <eVec2(float)> { x : 960 | y : 540 }
 				"Is Active": <bool> { 1 }
+				"Follow Transform": <bool> { 1 }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
@@ -103,7 +104,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 379.421 | y : 313.184 }
+				"Position": <eVec2(float)> { x : 646.861 | y : 313.184 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }

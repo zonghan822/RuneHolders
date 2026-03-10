@@ -174,6 +174,7 @@ void MapEditor::displayMenu() {
 	// Instructions
 	ImGui::Text("Load and Select Tile from Tileset");
 	ImGui::Text("Left-click: Paint  |  Right-click: Erase");
+	ImGui::TextDisabled("Hold ALT: show active layer only");
 
 	ImGui::Separator();
 
@@ -531,109 +532,102 @@ void MapEditor::rebuildAllTileColliders()
 void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {
 	if (!hasTilemap_ || !editMode_) return;
 
-	// Safety check: ensure we have layers
 	if (tilemap_.layers().empty()) return;
-	if (selectedLayer_ >= static_cast<int>(tilemap_.layers().size())) {
+	if (selectedLayer_ >= static_cast<int>(tilemap_.layers().size()))
 		selectedLayer_ = 0;
-	}
 
-	float cameraWidth = static_cast<float>(g->getEditorWidth());
+	float cameraWidth  = static_cast<float>(g->getEditorWidth());
 	float cameraHeight = static_cast<float>(g->getEditorHeight());
 	Math::eVec2<float> editorMin = g->getEditorViewMin();
 	Math::eVec2<float> editorMax = g->getEditorViewMax();
 	float camX = g->getEditorCameraX();
 	float camY = g->getEditorCameraY();
 
+	bool altHeld = ImGui::GetIO().KeyAlt;
+
 	drawList->PushClipRect(ImVec2(editorMin.x, editorMin.y), ImVec2(editorMax.x, editorMax.y), true);
 
-	// Cover the framebuffer (which shows all layers) so only the selected layer is visible
+	// Cover engine-rendered framebuffer
 	drawList->AddRectFilled(
 		ImVec2(editorMin.x, editorMin.y),
 		ImVec2(editorMax.x, editorMax.y),
 		IM_COL32(0, 0, 0, 255)
 	);
 
-	auto& layer = tilemap_.layers()[selectedLayer_];
-
-	// Draw tileset-based tiles
 	if (tilesetReady_) {
-		float cs = tilemap_.cellSize();
+		float cs      = tilemap_.cellSize();
 		float originY = tilemap_.worldOriginY();
-		for (int y = 0; y < tilemap_.height(); ++y) {
-			for (int x = 0; x < tilemap_.width(); ++x) {
-				if (!layer.hasTileTexture(x, y)) continue;
-				const auto& tile = layer.getTile(x, y);
+		int   layerCount = static_cast<int>(tilemap_.layers().size());
 
-				Math::eVec2<float> sp1 = Graphics::worldToScreen(
-					{ x * cs, originY + y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
-				Math::eVec2<float> sp2 = Graphics::worldToScreen(
-					{ (x + 1) * cs, originY + (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+		// ALT = solo active layer only; otherwise draw all layers with ghosting
+		int firstLayer = altHeld ? selectedLayer_ : 0;
+		int lastLayer  = altHeld ? selectedLayer_ : layerCount - 1;
 
-				// Screen corners: TL, TR, BR, BL
-				ImVec2 sTL(sp1.x, sp1.y);
-				ImVec2 sTR(sp2.x, sp1.y);
-				ImVec2 sBR(sp2.x, sp2.y);
-				ImVec2 sBL(sp1.x, sp2.y);
+		for (int li = firstLayer; li <= lastLayer; ++li) {
+			auto& layer = tilemap_.layers()[li];
+			ImU32 tint  = (li == selectedLayer_)
+				? IM_COL32(255, 255, 255, 255)   // active: full opacity
+				: IM_COL32(255, 255, 255, 80);   // other:  ghosted
 
-				// UV corners remapped by rotation (clockwise)
-				float u0 = tile.uv0.x, v0 = tile.uv0.y;
-				float u1 = tile.uv1.x, v1 = tile.uv1.y;
+			for (int y = 0; y < tilemap_.height(); ++y) {
+				for (int x = 0; x < tilemap_.width(); ++x) {
+					if (!layer.hasTileTexture(x, y)) continue;
+					const auto& tile = layer.getTile(x, y);
 
-				ImVec2 uvTL, uvTR, uvBR, uvBL;
-				switch (tile.rotation) {
-				default:
-				case 0:
-					uvTL = { u0, v0 }; uvTR = { u1, v0 };
-					uvBR = { u1, v1 }; uvBL = { u0, v1 };
-					break;
-				case 90:
-					uvTL = { u0, v1 }; uvTR = { u0, v0 };
-					uvBR = { u1, v0 }; uvBL = { u1, v1 };
-					break;
-				case 180:
-					uvTL = { u1, v1 }; uvTR = { u0, v1 };
-					uvBR = { u0, v0 }; uvBL = { u1, v0 };
-					break;
-				case 270:
-					uvTL = { u1, v0 }; uvTR = { u1, v1 };
-					uvBR = { u0, v1 }; uvBL = { u0, v0 };
-					break;
+					Math::eVec2<float> sp1 = Graphics::worldToScreen(
+						{ x * cs, originY + y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+					Math::eVec2<float> sp2 = Graphics::worldToScreen(
+						{ (x + 1) * cs, originY + (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+
+					ImVec2 sTL(sp1.x, sp1.y), sTR(sp2.x, sp1.y);
+					ImVec2 sBR(sp2.x, sp2.y), sBL(sp1.x, sp2.y);
+
+					float u0 = tile.uv0.x, v0 = tile.uv0.y;
+					float u1 = tile.uv1.x, v1 = tile.uv1.y;
+
+					ImVec2 uvTL, uvTR, uvBR, uvBL;
+					switch (tile.rotation) {
+					default:
+					case 0:   uvTL={u0,v0}; uvTR={u1,v0}; uvBR={u1,v1}; uvBL={u0,v1}; break;
+					case 90:  uvTL={u0,v1}; uvTR={u0,v0}; uvBR={u1,v0}; uvBL={u1,v1}; break;
+					case 180: uvTL={u1,v1}; uvTR={u0,v1}; uvBR={u0,v0}; uvBL={u1,v0}; break;
+					case 270: uvTL={u1,v0}; uvTR={u1,v1}; uvBR={u0,v1}; uvBL={u0,v0}; break;
+					}
+
+					drawList->AddImageQuad(
+						(ImTextureID)(intptr_t)tilesetTexture_->getID(),
+						sTL, sTR, sBR, sBL,
+						uvTL, uvTR, uvBR, uvBL,
+						tint
+					);
 				}
-
-				ImGui::GetWindowDrawList()->AddImageQuad(
-					(ImTextureID)(intptr_t)tilesetTexture_->getID(),
-					sTL, sTR, sBR, sBL,
-					uvTL, uvTR, uvBR, uvBL
-				);
 			}
 		}
 	}
 
+	// Draw walkability grid for active layer only
 	{
-		float cs = tilemap_.cellSize();
+		float cs      = tilemap_.cellSize();
 		float originY = tilemap_.worldOriginY();
-	for (int y = 0; y < tilemap_.height(); ++y) {
-		for (int x = 0; x < tilemap_.width(); ++x) {
-			Math::eVec2<float> pt1 = Graphics::worldToScreen(
-				{ x * cs, originY + y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY
-			);
-			Math::eVec2<float> pt2 = Graphics::worldToScreen(
-				{ (x + 1) * cs, originY + (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY
-			);
+		auto& layer   = tilemap_.layers()[selectedLayer_];
 
-			ImVec2 p1{ pt1.x, pt1.y }, p2{ pt2.x, pt2.y };
+		for (int y = 0; y < tilemap_.height(); ++y) {
+			for (int x = 0; x < tilemap_.width(); ++x) {
+				Math::eVec2<float> pt1 = Graphics::worldToScreen(
+					{ x * cs, originY + y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+				Math::eVec2<float> pt2 = Graphics::worldToScreen(
+					{ (x + 1) * cs, originY + (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
 
-			// ignore if outside image viewport
-			if (p2.x < editorMin.x || p1.x > editorMax.x) continue;
-			if (p2.y < editorMin.y || p1.y > editorMax.y) continue;
+				ImVec2 p1{ pt1.x, pt1.y }, p2{ pt2.x, pt2.y };
+				if (p2.x < editorMin.x || p1.x > editorMax.x) continue;
+				if (p2.y < editorMin.y || p1.y > editorMax.y) continue;
 
-			bool walk = layer.isWalkable(x, y);
-
-			ImU32 col = walk ? IM_COL32(0, 255, 0, 20) : IM_COL32(255, 0, 0, 20);
-			drawList->AddRectFilled(p1, p2, col);
-			drawList->AddRect(p1, p2, IM_COL32(255, 255, 255, 20));
+				ImU32 col = layer.isWalkable(x, y) ? IM_COL32(0, 255, 0, 20) : IM_COL32(255, 0, 0, 20);
+				drawList->AddRectFilled(p1, p2, col);
+				drawList->AddRect(p1, p2, IM_COL32(255, 255, 255, 20));
+			}
 		}
 	}
-	}
+
 	drawList->PopClipRect();
 }

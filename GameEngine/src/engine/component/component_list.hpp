@@ -51,7 +51,7 @@
 	/* Audio source */ \
 	PRESET(AUDIO,        AudioComponent, LayerComponent) \
 	/* Camera */ \
-	PRESET(CAMERA,       CameraComponent) \
+	PRESET(CAMERA,       TransformComponent, CameraComponent) \
 	/* World or UI text */ \
 	PRESET(TEXT,         TransformComponent, TextComponent, VisibilityComponent, LayerComponent) \
 	/* Particle emitter */ \
