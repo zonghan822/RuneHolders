@@ -189,7 +189,7 @@
 		"NodeType": { 3 }
 	}
 
-	[SoundGuy]
+	[PressEtoTestSFX]
 	{
 		"ID": { 203 }
 		"Layer": { 1 }

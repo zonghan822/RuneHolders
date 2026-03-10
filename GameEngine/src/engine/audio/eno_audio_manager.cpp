@@ -148,6 +148,8 @@ namespace Audio
 					if (ch)
 						ch->stop();
 				}
+				// Reset volume so the next play() call doesn't restore the faded-to-zero value
+				it->group_->setVolume(1.f);
 				it = pendingStops_.erase(it);
 			}
 			else
@@ -233,9 +235,12 @@ namespace Audio
 			// Channel group exists and will be used
 			chGroup = it->second;
 
+			// Save the user-set volume so it isn't overwritten by the fade reset
+			float savedVol = 1.f;
+			chGroup->getVolume(&savedVol);
 			chGroup->removeFadePoints(0, ULLONG_MAX);
 			chGroup->setDelay(0, 0, false);
-			chGroup->setVolume(1.f);
+			chGroup->setVolume(savedVol);
 		}
 
 		if (ch)
@@ -316,11 +321,13 @@ namespace Audio
 		{
 			// Channel group exists and will be used
 			chGroup = it->second;
-			
-			// Clear previous fades and scheduled stops
+
+			// Save the user-set volume so it isn't overwritten by the fade reset
+			float savedVol = 1.f;
+			chGroup->getVolume(&savedVol);
 			chGroup->removeFadePoints(0, ULLONG_MAX);
 			chGroup->setDelay(0, 0, false);
-			chGroup->setVolume(1.f);
+			chGroup->setVolume(savedVol);
 		}
 
 		if (ch)
