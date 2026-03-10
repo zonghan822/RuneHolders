@@ -256,6 +256,15 @@ namespace Script
 		Conversion::strToLower(nodeName);
 		Conversion::strToLower(signalName);
 
+		// Sanitize: replace spaces and non-identifier characters with underscores
+		auto sanitize = [](std::string& s) {
+			for (char& c : s)
+				if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_')
+					c = '_';
+		};
+		sanitize(nodeName);
+		sanitize(signalName);
+
 		// Form the signal function signature
 		std::string funcName =
 			std::string{ signalSuffix } +
