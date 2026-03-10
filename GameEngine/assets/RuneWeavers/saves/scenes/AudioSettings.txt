@@ -77,7 +77,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 732.584 | y : 370 }
+				"Position": <eVec2(float)> { x : 854.584 | y : 426 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -88,8 +88,8 @@
 				"Width": <float> { 50 }
 				"Height": <float> { 50 }
 				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 0.8 | b : 0 | a : 1 }
-				"Texture Path": <texchar240> {  }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-AudioBall }
 				"TexID": <int> { 0 }
 			}
 
@@ -100,14 +100,22 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
 				"Rows": <int> { 0 }
 				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 1 }
+				"Current Animation": <char64> { Default }
+				"Anim0 Name": <char64> { Default }
+				"Anim0 Texture": <texchar240> { UI-AudioBall }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 0 }
+				"Anim0 Cols": <int> { 0 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { AudioSettings_Script.cs }
@@ -132,7 +140,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 735.838 | y : 657.5 }
+				"Position": <eVec2(float)> { x : 853.856 | y : 528.333 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -143,8 +151,8 @@
 				"Width": <float> { 50 }
 				"Height": <float> { 50 }
 				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 0.2 | g : 0.4 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> {  }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-AudioBall }
 				"TexID": <int> { 0 }
 			}
 
@@ -155,14 +163,22 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
 				"Rows": <int> { 0 }
 				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 1 }
+				"Current Animation": <char64> { Default }
+				"Anim0 Name": <char64> { Default }
+				"Anim0 Texture": <texchar240> { UI-AudioBall }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 0 }
+				"Anim0 Cols": <int> { 0 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { AudioSettings_Script.cs }
@@ -198,8 +214,8 @@
 				"Width": <float> { 50 }
 				"Height": <float> { 50 }
 				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 0.2 | g : 0.8 | b : 0.2 | a : 1 }
-				"Texture Path": <texchar240> {  }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-AudioBall }
 				"TexID": <int> { 0 }
 			}
 
@@ -232,14 +248,22 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
 				"Rows": <int> { 0 }
 				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 1 }
+				"Current Animation": <char64> { Default }
+				"Anim0 Name": <char64> { Default }
+				"Anim0 Texture": <texchar240> { UI-AudioBall }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 0 }
+				"Anim0 Cols": <int> { 0 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 		}
 		"Script": { AudioTest_Script.cs }
@@ -264,7 +288,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 737.243 | y : 516.15 }
+				"Position": <eVec2(float)> { x : 853.91 | y : 622.483 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -276,7 +300,7 @@
 				"Height": <float> { 50 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> {  }
+				"Texture Path": <texchar240> { UI-AudioBall }
 				"TexID": <int> { 0 }
 			}
 
@@ -312,14 +336,22 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
 				"Rows": <int> { 0 }
 				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 1 }
+				"Current Animation": <char64> { Default }
+				"Anim0 Name": <char64> { Default }
+				"Anim0 Texture": <texchar240> { UI-AudioBall }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 0 }
+				"Anim0 Cols": <int> { 0 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::HealthComponent]
@@ -358,6 +390,61 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 6 }
+	}
+
+	[UI-Audio]
+	{
+		"ID": { 206 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 1 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 952.058 | y : 533.035 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 912 }
+				"Height": <float> { 913 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-Audio }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 3 }
 	}
 
 }
