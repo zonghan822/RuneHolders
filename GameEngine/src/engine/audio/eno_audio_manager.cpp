@@ -8,6 +8,7 @@
 *//*========================================================================================*/
 
 #include "eno_audio_manager.hpp"
+#include <cmath>
 
 
 namespace Audio
@@ -289,15 +290,16 @@ namespace Audio
 	*//*========================================================================================*/
 	void EnoAudioManager::play(ECSComponents::AudioComponent& audioComp, Math::eVec2<float> camPos)
 	{
-		// CRITICAL FIX: Don't restart audio that's already playing
-		// This prevents the game loop from constantly restarting audio every frame
+		// Don't restart audio that's already playing
 		if (audioComp.isPlaying_)
 		{
-			return; // Audio already playing, nothing to do
+			return;
 		}
 
+		// Clear stale channel pointer (FMOD invalidates channels on game stop)
+		audioComp.audioMod_.ch_ = nullptr;
+
 		// Auto-prepare if sound pointer is null but name is set
-		// This handles cases where audio was deserialized from a save file
 		if (audioComp.audioMod_.sound_ == nullptr && audioComp.audioMod_.name_[0] != '\0')
 		{
 			std::cout << "[Audio] Auto-preparing audio module for: " << audioComp.audioMod_.name_ << std::endl;
@@ -313,16 +315,13 @@ namespace Audio
 		auto it = channelGroups_.find(group);
 		if (it == channelGroups_.end())
 		{
-			// Create and store a new channel group for the audio component
 			system->createChannelGroup(audioComp.audioMod_.chGroup_, &chGroup);
 			channelGroups_[group] = chGroup;
 		}
 		else
 		{
-			// Channel group exists and will be used
 			chGroup = it->second;
 
-			// Save the user-set volume so it isn't overwritten by the fade reset
 			float savedVol = 1.f;
 			chGroup->getVolume(&savedVol);
 			chGroup->removeFadePoints(0, ULLONG_MAX);
@@ -333,37 +332,23 @@ namespace Audio
 		if (ch)
 			ch->stop();
 
-		// Apply loop settings to the sound before playing
 		applyLoopSettings(sound, audioComp);
 
-		// Play the sound (channel is created here)
-		FMOD_RESULT result;
-		result = system->playSound(
+		system->playSound(
 			audioComp.audioMod_.sound_,
 			chGroup,
-			true,  // Start paused so we can apply settings first
+			true,
 			&ch);
 
-		channels_.push_back(ch);
+		audioComp.audioMod_.ch_ = ch;
 
-		// Now that channel exists, apply volume/pitch/pan
 		if (ch)
 		{
-			// Modify volume/pan based on cam pos
-			audioComp.volume_ -= 0.125 * camPos.x;
-			audioComp.panScale_ -= 0.125 * camPos.x;
-
+			// Apply base volume/pitch/pan from component (do NOT mutate the component values)
 			modifyBasic(ch, createSP(audioComp));
 
-			// CRITICAL FIX: Always unpause when play() is called
-			// The play() function is meant to START playback
-			// isAutoplay_ should only control scene-start behavior, not manual play
 			ch->setPaused(false);
-
-			// Store the channel for later use
 			channels_.push_back(ch);
-
-			// Mark as playing AFTER successfully starting playback
 			audioComp.isPlaying_ = true;
 		}
 
@@ -373,6 +358,41 @@ namespace Audio
 		{
 			signalIt->second.emit({ audioComp.volume_ });
 		}
+	}
+
+	/*============================================================================================
+	 * \brief				Update volume and pan on a currently-playing channel based on the
+	 *						distance and X-offset between the sound emitter and the camera.
+	 *						Call every frame for dynamic spatial audio.
+	 * \param[in]			Audio component with spatialAudio_ enabled
+	 * \param[in]			World position of the sound-emitting entity
+	 * \param[in]			World position of the active camera
+	*//*========================================================================================*/
+	void EnoAudioManager::updateSpatialAudio(
+		ECSComponents::AudioComponent& audioComp,
+		Math::eVec2<float> soundPos,
+		Math::eVec2<float> camPos)
+	{
+		if (!audioComp.isPlaying_ || !audioComp.audioMod_.ch_) return;
+
+		float dx = soundPos.x - camPos.x;
+		float dy = soundPos.y - camPos.y;
+		float distance = std::sqrt(dx * dx + dy * dy);
+
+		float maxDist = audioComp.maxAudibleDistance_;
+		if (maxDist <= 0.0f) maxDist = 1.0f;
+
+		// Linear volume falloff: full volume at distance 0, silent at maxAudibleDistance_
+		float distanceFactor = 1.0f - std::min(distance / maxDist, 1.0f);
+		float finalVolume = static_cast<float>(audioComp.volume_ / 100.0) * distanceFactor;
+		finalVolume = std::max(0.0f, std::min(finalVolume, 1.0f));
+
+		// Panning: normalize X offset to [-1, 1] over maxAudibleDistance_
+		float pan = dx / maxDist;
+		pan = std::max(-1.0f, std::min(pan, 1.0f));
+
+		audioComp.audioMod_.ch_->setVolume(finalVolume);
+		audioComp.audioMod_.ch_->setPan(pan);
 	}
 
 	/*============================================================================================

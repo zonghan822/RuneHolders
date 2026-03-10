@@ -40,6 +40,14 @@
 			"value": "0",
 			"type": "bool"
 		},
+		"Spatial Audio": {
+			"value": "0",
+			"type": "bool"
+		},
+		"Max Audible Distance": {
+			"value": "500",
+			"type": "float"
+		},
 		"Enable Reverb": {
 			"value": "0",
 			"type": "bool"

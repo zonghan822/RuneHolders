@@ -355,6 +355,8 @@
 				"Pan Scale": <double> { 0 }
 				"Is Playing": <bool> { 0 }
 				"Is Autoplay": <bool> { 0 }
+				"Spatial Audio": <bool> { 0 }
+				"Max Audible Distance": <float> { 500 }
 				"Enable Reverb": <bool> { 0 }
 				"Reverb Wet": <float> { 0 }
 				"Reverb Dry": <float> { 1 }

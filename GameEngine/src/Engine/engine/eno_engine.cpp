@@ -208,6 +208,32 @@ namespace Engine
 			timings_["UI Buttons"]    = 0.0;
 		}
 
+		// Dynamic spatial audio: update volume/pan for entities with spatialAudio_ enabled
+		if (isPlaying_ && !isPaused_)
+		{
+			// Find the active camera's world position
+			Math::eVec2<float> camPos{ 0.0f, 0.0f };
+			for (auto& camEnt : entityMng_.findEntity<ECSComponents::CameraComponent>())
+			{
+				auto& cam = camEnt.get<ECSComponents::CameraComponent>(entityMng_);
+				if (cam.isActive)
+				{
+					camPos = cam.position;
+					break;
+				}
+			}
+
+			// Update each spatial audio entity
+			for (auto& ent : entityMng_.findEntity<ECSComponents::AudioComponent>())
+			{
+				auto& ac = ent.get<ECSComponents::AudioComponent>(entityMng_);
+				if (!ac.spatialAudio_ || !ac.isPlaying_) continue;
+				if (!ent.has<ECSComponents::TransformComponent>(entityMng_)) continue;
+				auto& tc = ent.get<ECSComponents::TransformComponent>(entityMng_);
+				audioMng_.updateSpatialAudio(ac, tc.pos, camPos);
+			}
+		}
+
 		// Update audio system (continues during runtime pause)
 		auto t0 = Clock::now();
 		if (isPlaying_)
