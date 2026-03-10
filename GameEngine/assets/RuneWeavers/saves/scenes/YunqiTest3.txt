@@ -1,0 +1,8 @@
+{
+
+}
+
+"LayerMetadata":
+{
+	"AvailableLayers": { 4 }
+}
