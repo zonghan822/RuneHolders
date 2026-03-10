@@ -1,5 +1,123 @@
 {
 
+	[BGMSliderFill]
+	{
+		"ID": { 208 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 2 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 838.997 | y : 528 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 64 }
+				"Height": <float> { 9 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-AudioLineBar }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Circle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 0 }
+				"Rotation": <float> { 0 }
+				"Radius": <float> { 64 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 0.1 }
+				"Drag": <float> { 0 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 2 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
+				"Current Animation": <char64> { Default }
+				"Anim0 Name": <char64> { Default }
+				"Anim0 Texture": <texchar240> { UI-AudioLineBar }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 0 }
+				"Anim0 Cols": <int> { 2 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 100 }
+				"maxHealth": <float> { 100 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
+
+			[struct ECSComponents::DamageComponent]
+			{
+				"damageAmount": <float> { 10 }
+				"damageMultiplier": <float> { 1 }
+				"destroyOnHit": <bool> { 0 }
+				"damageType": <char32> { physical }
+				"spellColor": <int> { 0 }
+				"useColorMatching": <bool> { 0 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 6 }
+	}
+
 	[AudioSettingsManager]
 	{
 		"ID": { 200 }
@@ -71,7 +189,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 2 }
+				"Z Index": <uint32_t> { 3 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -203,7 +321,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 2051.52 | y : 710 }
+				"Position": <eVec2(float)> { x : 2086.51 | y : 682.5 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -314,7 +432,7 @@
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 1 }
+				"Is Active": <bool> { 0 }
 				"Rotation": <float> { 0 }
 				"Radius": <float> { 50 }
 			}
@@ -324,8 +442,8 @@
 				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
 				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
 				"Force": <eVec2(float)> { x : 0 | y : 0 }
-				"Mass": <float> { 1 }
-				"Drag": <float> { 0.1 }
+				"Mass": <float> { 0.1 }
+				"Drag": <float> { 0 }
 				"Restitution": <float> { 0.5 }
 				"UseGravity": <bool> { 0 }
 				"IsKinematic": <bool> { 0 }
@@ -445,6 +563,242 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
+	}
+
+	[MasterSliderFill]
+	{
+		"ID": { 207 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 2 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 838.997 | y : 428.667 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 64 }
+				"Height": <float> { 9 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-AudioLineBar }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Circle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 0 }
+				"Rotation": <float> { 0 }
+				"Radius": <float> { 64 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 2 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
+				"Current Animation": <char64> { Default }
+				"Anim0 Name": <char64> { Default }
+				"Anim0 Texture": <texchar240> { UI-AudioLineBar }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 0 }
+				"Anim0 Cols": <int> { 2 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 100 }
+				"maxHealth": <float> { 100 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
+
+			[struct ECSComponents::DamageComponent]
+			{
+				"damageAmount": <float> { 10 }
+				"damageMultiplier": <float> { 1 }
+				"destroyOnHit": <bool> { 0 }
+				"damageType": <char32> { physical }
+				"spellColor": <int> { 0 }
+				"useColorMatching": <bool> { 0 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 6 }
+	}
+
+	[SFXSliderFill]
+	{
+		"ID": { 209 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 2 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 840.997 | y : 624 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 64 }
+				"Height": <float> { 9 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-AudioLineBar }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Circle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 0 }
+				"Rotation": <float> { 0 }
+				"Radius": <float> { 64 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 2 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
+				"Current Animation": <char64> { Default }
+				"Anim0 Name": <char64> { Default }
+				"Anim0 Texture": <texchar240> { UI-AudioLineBar }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 0 }
+				"Anim0 Cols": <int> { 2 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 100 }
+				"maxHealth": <float> { 100 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
+
+			[struct ECSComponents::DamageComponent]
+			{
+				"damageAmount": <float> { 10 }
+				"damageMultiplier": <float> { 1 }
+				"destroyOnHit": <bool> { 0 }
+				"damageType": <char32> { physical }
+				"spellColor": <int> { 0 }
+				"useColorMatching": <bool> { 0 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 6 }
 	}
 
 }
