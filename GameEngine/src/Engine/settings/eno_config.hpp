@@ -88,6 +88,16 @@ namespace Config
 		void set(const std::string& key, const std::string& value) { configMap_[key] = value; }
 
 		/*============================================================================================
+		 * \brief				Read a single key from the in-memory config map
+		 * \return				Value string, or defaultVal if the key is absent
+		*//*========================================================================================*/
+		std::string get(const std::string& key, const std::string& defaultVal = "") const
+		{
+			auto it = configMap_.find(key);
+			return (it != configMap_.end()) ? it->second : defaultVal;
+		}
+
+		/*============================================================================================
 		 * \brief				Write the current config map back to config.txt,
 		 *						preserving line order and any unrecognised lines.
 		*//*========================================================================================*/

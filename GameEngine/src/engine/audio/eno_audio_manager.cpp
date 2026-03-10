@@ -856,19 +856,6 @@ namespace Audio
 	*//*========================================================================================*/
 	void EnoAudioManager::onAudioInstantPlay(const Audio::PlayInstant& event)
 	{
-		auto group = channelGroups_.find(event.groupName_);
-		if (group == channelGroups_.end())
-		{
-			std::cerr << "[Audio Error] Failed to find the channel group: " << event.groupName_ << std::endl;
-			bus_.publish(AudioLoadError{
-				event.soundName_,
-				"Channel group: " + event.groupName_,
-				"Unknown",
-				"Channel group '" + event.groupName_ + "' was not found. The channel group may not have been created."
-				});
-			return;
-		}
-
 		auto sound = sounds_.find(event.soundName_);
 		if (sound == sounds_.end())
 		{
@@ -882,9 +869,17 @@ namespace Audio
 			return;
 		}
 
-		FMOD::Channel* channel = playByChannel(sound->second, true);
-		//scheduleGroupFade("SFX", FADE_IN, FADE_OUT, getSoundDurSec(sound->second));
-		setPauseChannel(channel, false);
+		// Route through the named channel group so volume sliders apply correctly.
+		// Fall back to playing without a group only if the group doesn't exist.
+		FMOD::Channel* channel = nullptr;
+		auto group = channelGroups_.find(event.groupName_);
+		if (group != channelGroups_.end())
+			channel = playByGroup(sound->second, group->second, true);
+		else
+			channel = playByChannel(sound->second, true);
+
+		if (channel)
+			setPauseChannel(channel, false);
 	}
 
 	/*============================================================================================

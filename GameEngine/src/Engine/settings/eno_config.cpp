@@ -109,6 +109,15 @@ namespace Config {
 			}
 		}
 
+		// Append any config keys not yet present in the file
+		for (auto& [key, val] : configMap_) {
+			bool found = false;
+			for (const auto& line : lines)
+				if (line.rfind(key + ":", 0) == 0) { found = true; break; }
+			if (!found)
+				lines.push_back(key + ": " + val);
+		}
+
 		std::ofstream out(cfgFileName_);
 		for (auto& l : lines)
 			out << l << "\n";

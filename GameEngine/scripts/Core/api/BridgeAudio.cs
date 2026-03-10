@@ -40,5 +40,13 @@ namespace Eno
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern float GetMasterVolume();
+
+        // Persist all three volumes to config.txt so they survive scene changes and game restarts
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SaveAudioVolumes(float master, float bgm, float sfx);
+
+        // Load one volume by config key ("Audio Master", "Audio BGM", "Audio SFX"); returns defaultVal if absent
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern float LoadAudioVolume(string key, float defaultVal);
     }
 }
