@@ -77,7 +77,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1210 | y : 370 }
+				"Position": <eVec2(float)> { x : 732.584 | y : 370 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -132,7 +132,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 760 | y : 540 }
+				"Position": <eVec2(float)> { x : 735.838 | y : 657.5 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -173,7 +173,7 @@
 		"NodeType": { 3 }
 	}
 
-	[SFXSliderBall]
+	[SoundGuy]
 	{
 		"ID": { 203 }
 		"Layer": { 1 }
@@ -187,7 +187,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1210 | y : 710 }
+				"Position": <eVec2(float)> { x : 2051.52 | y : 710 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -250,32 +250,116 @@
 		"NodeType": { 3 }
 	}
 
-}
-
-"TileMap":
-{
-	"Width": { 16 }
-	"Height": { 9 }
-	"CellSize": { 120 }
-	"Layers":
-	[
+	[SFXSliderBall]
+	{
+		"ID": { 205 }
+		"Layer": { 0 }
+		"Entity Data"
 		{
-			"Name": { Tile Layer 1 }
-			"IsNav": { false }
-			"Tiles":
-			[
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ]
-			]
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 737.243 | y : 516.15 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 50 }
+				"Height": <float> { 50 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Circle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Radius": <float> { 50 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0.1 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 100 }
+				"maxHealth": <float> { 100 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
+
+			[struct ECSComponents::DamageComponent]
+			{
+				"damageAmount": <float> { 10 }
+				"damageMultiplier": <float> { 1 }
+				"destroyOnHit": <bool> { 0 }
+				"damageType": <char32> { physical }
+				"spellColor": <int> { 0 }
+				"useColorMatching": <bool> { 0 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { Default }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
 		}
-	]
+		"Script": { AudioSettings_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 6 }
+	}
+
 }
 
 "LayerMetadata":
