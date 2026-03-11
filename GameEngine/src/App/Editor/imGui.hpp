@@ -139,7 +139,7 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager, Editor::EnoSceneTree& sceneTree);
 
 
-void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity);
+void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager);
 
 /*============================================================================================
  * \brief       Displays Prefab Editor panel – lets you inspect and edit the default

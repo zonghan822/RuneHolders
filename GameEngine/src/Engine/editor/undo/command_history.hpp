@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         command_history.hpp
 * @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         2025-11-29
@@ -26,7 +26,7 @@ namespace Editor
 		* \brief   Constructor
 		* \param[in] maxHistorySize Maximum number of commands to keep (default: 20)
 		*//*========================================================================================*/
-		explicit CommandHistory(size_t maxHistorySize = 20)
+		explicit CommandHistory(size_t maxHistorySize = 30)
 			: maxHistorySize_(maxHistorySize), currentIndex_(-1) {}
 
 		/*============================================================================================

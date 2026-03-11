@@ -37,6 +37,7 @@ namespace ECSComponents
         void reflect(V&& v) {
             v("awarenessRadius", awarenessRadius, "float");
             v("chaseSpeed", chaseSpeed, "float");
+            v("allowDiagonal", allowDiagonal, "bool");
             v("attackRange", attackRange, "float");
             v("windupTime", windupTime, "float");
             v("attackDuration", attackDuration, "float");

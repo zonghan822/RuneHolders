@@ -139,7 +139,7 @@ namespace Bridge
                 {"AUDIO",        Editor::NodeType::AUDIO},
                 {"CAMERA",       Editor::NodeType::CAMERA},
                 {"TEXT",         Editor::NodeType::TEXT},
-                {"PARTICLE",     Editor::NodeType::PARTICLE},
+                //{"PARTICLE",     Editor::NodeType::PARTICLE},
             };
 
             auto it = presetMap.find(presetName);

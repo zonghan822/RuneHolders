@@ -14,8 +14,8 @@
 #include <algorithm>
 #include "imGui.hpp"
 #include "math/math.hpp"
-#include "particle/particle_presets.hpp"
-#include "particle/particle_component.hpp"
+//#include "particle/particle_presets.hpp"
+//#include "particle/particle_component.hpp"
 #include <typeindex>
 
 void EditorApplication::initialize() {

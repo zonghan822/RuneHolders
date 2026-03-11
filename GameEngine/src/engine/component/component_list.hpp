@@ -26,10 +26,10 @@
 	X(HealthComponent) \
 	X(DamageComponent) \
 	X(StateMachineComponent) \
-	X(ParticleEmitterComponent) \
 	X(CanvasComponent) \
 	X(TextComponent) \
 	X(VideoComponent) \
+//particle emitter omitted
 
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
@@ -54,12 +54,11 @@
 	PRESET(CAMERA,       TransformComponent, CameraComponent) \
 	/* World or UI text */ \
 	PRESET(TEXT,         TransformComponent, TextComponent, VisibilityComponent, LayerComponent) \
-	/* Particle emitter */ \
-	PRESET(PARTICLE,     TransformComponent, ParticleEmitterComponent, VisibilityComponent, LayerComponent) \
 	/* Video player */ \
 	PRESET(VIDEO,        TransformComponent, RenderComponent, VideoComponent, VisibilityComponent, LayerComponent) \
 	/* Canvas */ \
 	PRESET(CANVAS,		 TransformComponent, RenderComponent, CanvasComponent, VisibilityComponent, LayerComponent) \
+//particle emitter omitted
 
 // Expanding PRESET_LIST within the component namespace
 // to make use of the PRESET using macro
