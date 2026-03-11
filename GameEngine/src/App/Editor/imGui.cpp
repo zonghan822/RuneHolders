@@ -2400,7 +2400,48 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			editingPosInspector = false;
 		}
 
-		// Scale removed - doesn't do anything currently
+		// Rotation
+		static Math::eVec2<float> oldRotInspector;
+		static bool editingRotInspector = false;
+
+		if (ImGui::IsItemActive() && !editingRotInspector) {
+			oldRotInspector = transform.rot;
+			editingRotInspector = true;
+		}
+
+		float rotationDegrees = transform.rot.x * (180.0f / 3.14159265f);
+		if (ImGui::DragFloat("Rotation", &rotationDegrees, 1.0f, -360.0f, 360.0f, "%.1f deg")) {
+			transform.rot.x = rotationDegrees * (3.14159265f / 180.0f);
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		if (editingRotInspector && !ImGui::IsItemActive()) {
+			if (oldRotInspector.x != transform.rot.x || oldRotInspector.y != transform.rot.y)
+				undoManager.recordRotation(entity, oldRotInspector, transform.rot);
+			editingRotInspector = false;
+		}
+
+		// Scale (applies to Draw Info dimensions if present)
+		if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
+			auto& drawForScale = entity.get<ECSComponents::DrawInfoComponent>(entMng);
+
+			static std::unordered_map<uint32_t, float> entityScales;
+			static std::unordered_map<uint32_t, std::pair<float, float>> entityBaseSizes;
+			uint32_t entityID = entity.id();
+
+			if (entityBaseSizes.find(entityID) == entityBaseSizes.end()) {
+				entityBaseSizes[entityID] = { drawForScale.width, drawForScale.height };
+				entityScales[entityID] = 1.0f;
+			}
+
+			float& scale = entityScales[entityID];
+			auto& baseSize = entityBaseSizes[entityID];
+
+			if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.1f, 10.0f)) {
+				drawForScale.width  = baseSize.first  * scale;
+				drawForScale.height = baseSize.second * scale;
+			}
+		}
 	}
 
 	assetPresetsTab(engine_, entity);
@@ -2420,32 +2461,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
 		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
 
-		// Scale multiplier for both width and height
-		static std::unordered_map<uint32_t, float> entityScales;
-		static std::unordered_map<uint32_t, std::pair<float, float>> entityBaseSizes;
-
-		uint32_t entityID = entity.id();
-
-		// Initialize base size and scale if not stored
-		if (entityBaseSizes.find(entityID) == entityBaseSizes.end()) {
-			entityBaseSizes[entityID] = {draw.width, draw.height};
-			entityScales[entityID] = 1.0f;
-		}
-
-		float& scale = entityScales[entityID];
-		auto& baseSize = entityBaseSizes[entityID];
-
-		if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.1f, 10.0f)) {
-			// Apply scale to base size
-			draw.width = baseSize.first * scale;
-			draw.height = baseSize.second * scale;
-		}
-
-		// Update base size if width/height changed directly
-		if (oldWidth != draw.width || oldHeight != draw.height) {
-			baseSize = {draw.width / scale, draw.height / scale};
-		}
-
 		// Auto-update collision when width/height changes
 		if ((draw.width != oldWidth || draw.height != oldHeight) && entity.has<ECSComponents::CollisionComponent>(entMng)) {
 
@@ -2459,37 +2474,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				// Update rectangle dimensions
 				collision.data.rectangle.width = draw.width;
 				collision.data.rectangle.height = draw.height;
-			}
-		}
-
-		// Rotation field (edits TransformComponent rotation)
-		if (entity.has<ECSComponents::TransformComponent>(entMng)) {
-			auto& transform = entity.get<ECSComponents::TransformComponent>(entMng);
-
-			// Track rotation editing for undo
-			static Math::eVec2<float> oldRotInspector;
-			static bool editingRotInspector = false;
-
-			if (ImGui::IsItemActive() && !editingRotInspector) {
-				oldRotInspector = transform.rot;
-				editingRotInspector = true;
-			}
-
-			// Convert radians to degrees for user-friendly editing
-			float rotationDegrees = transform.rot.x * (180.0f / 3.14159265f);
-			if (ImGui::DragFloat("Rotation", &rotationDegrees, 1.0f, -360.0f, 360.0f, "%.1f deg")) {
-				// Convert degrees back to radians
-				transform.rot.x = rotationDegrees * (3.14159265f / 180.0f);
-
-				if (g_game) g_game->markEntitiesDirty();
-			}
-
-			if (editingRotInspector && !ImGui::IsItemActive()) {
-				// Record undo when user finishes editing
-				if (oldRotInspector.x != transform.rot.x || oldRotInspector.y != transform.rot.y) {
-					undoManager.recordRotation(entity, oldRotInspector, transform.rot);
-				}
-				editingRotInspector = false;
 			}
 		}
 
@@ -2920,8 +2904,74 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				ImGui::SameLine(160);
 				ImGui::SliderFloat("##EQHigh", &ac.eqHighGain_, -30.0f, 30.0f, "%.1f dB");
 
+				ImGui::Separator();
+
+				//ImGui::Text("Low Crossover:");
+				//ImGui::SameLine(160);
+				//ImGui::SliderFloat("##EQLowCross", &ac.eqLowCrossOver_, 10.0f, 1000.0f, "%.0f Hz");
+
+				//ImGui::Text("High Crossover:");
+				//ImGui::SameLine(160);
+				//ImGui::SliderFloat("##EQHighCross", &ac.eqHighCrossOver_, 1000.0f, 20000.0f, "%.0f Hz");
+
 				ImGui::TextDisabled("Note: EQ effects are applied via Audio Manager");
 			}
+
+			ImGui::TreePop();
+		}
+
+		ImGui::Separator();
+
+		// Low Pass Filter
+		if (ImGui::TreeNodeEx("Low Pass Filter", ImGuiTreeNodeFlags_None))
+		{
+			//ImGui::Checkbox("Enable Low Pass", &ac.enableLowPass_);
+
+			//if (ac.enableLowPass_) {
+			//	ImGui::Checkbox("Simple Mode##LP", &ac.lpSimple_);
+			//	if (ImGui::IsItemHovered())
+			//		ImGui::SetTooltip("Simple: cutoff only.\nStandard: cutoff + resonance.");
+
+			//	ImGui::Text("Cutoff Freq:");
+			//	ImGui::SameLine(160);
+			//	ImGui::SliderFloat("##LPCutoff", &ac.lpCutoff_, 10.0f, 22000.0f, "%.0f Hz");
+
+			//	if (!ac.lpSimple_) {
+			//		ImGui::Text("Resonance:");
+			//		ImGui::SameLine(160);
+			//		ImGui::SliderFloat("##LPResonance", &ac.lpResonance_, 1.0f, 10.0f, "%.2f");
+			//	}
+
+			//	ImGui::TextDisabled("Note: Low Pass is applied via Audio Manager on play");
+			//}
+
+			ImGui::TreePop();
+		}
+
+		ImGui::Separator();
+
+		// High Pass Filter
+		if (ImGui::TreeNodeEx("High Pass Filter", ImGuiTreeNodeFlags_None))
+		{
+			/*ImGui::Checkbox("Enable High Pass", &ac.enableHighPass_);
+
+			if (ac.enableHighPass_) {
+				ImGui::Checkbox("Simple Mode##HP", &ac.hpSimple_);
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip("Simple: cutoff only.\nStandard: cutoff + resonance.");
+
+				ImGui::Text("Cutoff Freq:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##HPCutoff", &ac.hpCutoff_, 10.0f, 22000.0f, "%.0f Hz");
+
+				if (!ac.hpSimple_) {
+					ImGui::Text("Resonance:");
+					ImGui::SameLine(160);
+					ImGui::SliderFloat("##HPResonance", &ac.hpResonance_, 1.0f, 10.0f, "%.2f");
+				}
+
+				ImGui::TextDisabled("Note: High Pass is applied via Audio Manager on play");
+			}*/
 
 			ImGui::TreePop();
 		}
@@ -2958,6 +3008,18 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				std::cout << "Low Gain:     " << ac.eqLowGain_ << " dB\n";
 				std::cout << "Mid Gain:     " << ac.eqMidGain_ << " dB\n";
 				std::cout << "High Gain:    " << ac.eqHighGain_ << " dB\n";
+				//std::cout << "Low Crossover: " << ac.eqLowCrossOver_ << " Hz\n";
+				//std::cout << "High Crossover: " << ac.eqHighCrossOver_ << " Hz\n";
+				std::cout << "-- LOW PASS --\n";
+				//std::cout << "Enabled:      " << (ac.enableLowPass_ ? "true" : "false") << "\n";
+				//std::cout << "Simple:       " << (ac.lpSimple_ ? "true" : "false") << "\n";
+				//std::cout << "Cutoff:       " << ac.lpCutoff_ << " Hz\n";
+				//std::cout << "Resonance:    " << ac.lpResonance_ << "\n";
+				std::cout << "-- HIGH PASS --\n";
+				//std::cout << "Enabled:      " << (ac.enableHighPass_ ? "true" : "false") << "\n";
+				//std::cout << "Simple:       " << (ac.hpSimple_ ? "true" : "false") << "\n";
+				//std::cout << "Cutoff:       " << ac.hpCutoff_ << " Hz\n";
+				//std::cout << "Resonance:    " << ac.hpResonance_ << "\n";
 				std::cout << "=================================\n";
 			}
 
@@ -2978,8 +3040,19 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::DragFloat("Viewport Width", &camera.viewportWidth, 10.0f, 100.0f, 10000.0f);
 		ImGui::DragFloat("Viewport Height", &camera.viewportHeight, 10.0f, 100.0f, 10000.0f);
 
-		// Camera position (center of viewport)
-		ImGui::DragFloat2("Camera Position", (float*)&camera.position, 1.0f);
+		// Follow Transform toggle
+		ImGui::Checkbox("Follow Transform##camera", &camera.followTransform);
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Drives camera position from this entity's Transform component");
+
+		// Camera position (read-only when following transform)
+		if (camera.followTransform) {
+			ImGui::BeginDisabled();
+			ImGui::DragFloat2("Camera Position", (float*)&camera.position, 1.0f);
+			ImGui::EndDisabled();
+		} else {
+			ImGui::DragFloat2("Camera Position", (float*)&camera.position, 1.0f);
+		}
 	}
 
 	// --- Text Component ---
@@ -5026,7 +5099,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			// --- Gizmo-based entity transformation logic ---
 			// Draw gizmos for selected entity
 			if (selectedEntityID != UINT32_MAX && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) {
-				auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+				auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent>();
 				for (auto& e : allEntities) {
 					if (e.id() == selectedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
@@ -5215,7 +5288,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 				// Check if we have a selected entity
 				if (selectedEntityID != UINT32_MAX) {
-					auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+					auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent>();
 					for (auto& e : allEntities) {
 						if (e.id() == selectedEntityID) {
 							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
@@ -5280,6 +5353,9 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 										auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
 										initialDrawWidth = dc.width;
 										initialDrawHeight = dc.height;
+									} else {
+										initialDrawWidth  = 100.0f;
+										initialDrawHeight = 100.0f;
 									}
 									if (handleType == 3) {
 										std::cout << "Started uniform scaling entity " << selectedEntityID << " (affecting " << affectedEntityIDs.size() << " entities)\n";
@@ -5344,7 +5420,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					g_game->getEditorCameraY());
 				ImVec2 worldPos = { eWorldPos.x, eWorldPos.y };
 
-				auto all = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+				auto all = entityManager.findEntity<ECSComponents::TransformComponent>();
 				for (auto& e : all) {
 					if (e.id() == draggedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
@@ -5437,16 +5513,14 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							else if (activeTransformAxis == 4) {
 								// Horizontal scaling only (X-axis)
 								float deltaX = worldPos.x - dragStartWorldPos.x;
-								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
-								float scaleChange = deltaX / std::max(dc.width, 1.0f);
+								float scaleChange = deltaX / std::max(initialDrawWidth, 1.0f);
 								newScaleX = std::max(0.1f, initialScale.x + scaleChange);
 								newScaleY = tc.scale.y;  // Keep Y unchanged
 							}
 							else if (activeTransformAxis == 5) {
 								// Vertical scaling only (Y-axis)
 								float deltaY = worldPos.y - dragStartWorldPos.y;
-								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
-								float scaleChange = -deltaY / std::max(dc.height, 1.0f);
+								float scaleChange = -deltaY / std::max(initialDrawHeight, 1.0f);
 								newScaleX = tc.scale.x;  // Keep X unchanged
 								newScaleY = std::max(0.1f, initialScale.y + scaleChange);
 							}

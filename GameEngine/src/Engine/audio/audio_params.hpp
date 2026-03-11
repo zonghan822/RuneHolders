@@ -14,6 +14,7 @@
 
 // stds
 #include <optional>
+#include <variant>
 
 
 namespace Audio
@@ -78,6 +79,42 @@ namespace Audio
 		std::optional<ThreeEQ> threeEQ;
 	};
 
+	struct SimpleLowPass
+	{
+		float cutoff;
+	};
+
+	struct SimpleHighPass
+	{
+		float cutoff;
+	};
+
+	struct StandardLowPass
+	{
+		float cutoff;
+		float resonance;
+	};
+
+	struct StandardHighPass
+	{
+		float cutoff;
+		float resonance;
+	};
+
+	struct LowPass
+	{
+		FMOD_DSP_TYPE type;
+
+		std::variant<StandardLowPass, SimpleLowPass> lp;
+	};
+
+	struct HighPass
+	{
+		FMOD_DSP_TYPE type;
+
+		std::variant<StandardHighPass, SimpleHighPass> hp;
+	};
+
 	// -------------------- Parameters --------------------
 	struct SoundParameters
 	{
@@ -87,5 +124,10 @@ namespace Audio
 
 		std::optional<Reverb> reverb;
 		std::optional<EQ> eq;
+		std::optional<LowPass> lowPass;
+		std::optional<HighPass> highPass;
 	};
+
+
 }
+

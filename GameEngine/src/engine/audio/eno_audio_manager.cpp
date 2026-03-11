@@ -148,6 +148,8 @@ namespace Audio
 					if (ch)
 						ch->stop();
 				}
+				// Reset volume so the next play() call doesn't restore the faded-to-zero value
+				it->group_->setVolume(1.f);
 				it = pendingStops_.erase(it);
 			}
 			else
@@ -233,9 +235,12 @@ namespace Audio
 			// Channel group exists and will be used
 			chGroup = it->second;
 
+			// Save the user-set volume so it isn't overwritten by the fade reset
+			float savedVol = 1.f;
+			chGroup->getVolume(&savedVol);
 			chGroup->removeFadePoints(0, ULLONG_MAX);
 			chGroup->setDelay(0, 0, false);
-			chGroup->setVolume(1.f);
+			chGroup->setVolume(savedVol);
 		}
 
 		if (ch)
@@ -316,11 +321,13 @@ namespace Audio
 		{
 			// Channel group exists and will be used
 			chGroup = it->second;
-			
-			// Clear previous fades and scheduled stops
+
+			// Save the user-set volume so it isn't overwritten by the fade reset
+			float savedVol = 1.f;
+			chGroup->getVolume(&savedVol);
 			chGroup->removeFadePoints(0, ULLONG_MAX);
 			chGroup->setDelay(0, 0, false);
-			chGroup->setVolume(1.f);
+			chGroup->setVolume(savedVol);
 		}
 
 		if (ch)
@@ -849,19 +856,6 @@ namespace Audio
 	*//*========================================================================================*/
 	void EnoAudioManager::onAudioInstantPlay(const Audio::PlayInstant& event)
 	{
-		auto group = channelGroups_.find(event.groupName_);
-		if (group == channelGroups_.end())
-		{
-			std::cerr << "[Audio Error] Failed to find the channel group: " << event.groupName_ << std::endl;
-			bus_.publish(AudioLoadError{
-				event.soundName_,
-				"Channel group: " + event.groupName_,
-				"Unknown",
-				"Channel group '" + event.groupName_ + "' was not found. The channel group may not have been created."
-				});
-			return;
-		}
-
 		auto sound = sounds_.find(event.soundName_);
 		if (sound == sounds_.end())
 		{
@@ -875,9 +869,17 @@ namespace Audio
 			return;
 		}
 
-		FMOD::Channel* channel = playByChannel(sound->second, true);
-		//scheduleGroupFade("SFX", FADE_IN, FADE_OUT, getSoundDurSec(sound->second));
-		setPauseChannel(channel, false);
+		// Route through the named channel group so volume sliders apply correctly.
+		// Fall back to playing without a group only if the group doesn't exist.
+		FMOD::Channel* channel = nullptr;
+		auto group = channelGroups_.find(event.groupName_);
+		if (group != channelGroups_.end())
+			channel = playByGroup(sound->second, group->second, true);
+		else
+			channel = playByChannel(sound->second, true);
+
+		if (channel)
+			setPauseChannel(channel, false);
 	}
 
 	/*============================================================================================
@@ -1049,5 +1051,59 @@ namespace Audio
 		}
 
 		return dsp;
+	}
+
+	/*============================================================================================
+ * \brief            Helper for modifying a low pass DSP
+ * \param[in]        SoundParameters struct (LowPass/HighPass/Reverb/EQ/Volume/Pitch/Pan)
+ * \return            Pointer to a DSP to use to modify channel/channel group
+*//*========================================================================================*/
+	FMOD::DSP* EnoAudioManager::modifyLowPass(const SoundParameters& parameters)
+	{
+		if (!parameters.lowPass) return nullptr;
+
+		FMOD::DSP* dsp{ nullptr };
+		system->createDSPByType(parameters.lowPass->type, &dsp);
+
+		std::visit([dsp](auto&& f)
+			{
+				using T = std::decay_t<decltype(f)>;
+				if constexpr (std::is_same_v<T, SimpleLowPass>)
+				{
+					dsp->setParameterFloat(FMOD_DSP_LOWPASS_SIMPLE_CUTOFF, f.cutoff);
+				}
+				else if constexpr (std::is_same_v<T, StandardLowPass>)
+				{
+					dsp->setParameterFloat(FMOD_DSP_LOWPASS_CUTOFF, f.cutoff);
+					dsp->setParameterFloat(FMOD_DSP_LOWPASS_RESONANCE, f.resonance);
+				}
+			}, parameters.lowPass->lp);
+	}
+
+	/*============================================================================================
+ * \brief            Helper for modifying a high pass DSP
+ * \param[in]        SoundParameters struct (LowPass/HighPass/Reverb/EQ/Volume/Pitch/Pan)
+ * \return            Pointer to a DSP to use to modify channel/channel group
+*//*========================================================================================*/
+	FMOD::DSP* EnoAudioManager::modifyHighPass(const SoundParameters& parameters)
+	{
+		if (!parameters.highPass) return nullptr;
+
+		FMOD::DSP* dsp{ nullptr };
+		system->createDSPByType(parameters.highPass->type, &dsp);
+
+		std::visit([dsp](auto&& f)
+			{
+				using T = std::decay_t<decltype(f)>;
+				if constexpr (std::is_same_v<T, SimpleHighPass>)
+				{
+					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_SIMPLE_CUTOFF, f.cutoff);
+				}
+				else if constexpr (std::is_same_v<T, StandardHighPass>)
+				{
+					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_CUTOFF, f.cutoff);
+					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_RESONANCE, f.resonance);
+				}
+			}, parameters.lowPass->lp);
 	}
 }

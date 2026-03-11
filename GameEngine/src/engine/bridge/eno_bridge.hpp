@@ -141,6 +141,10 @@ namespace Bridge {
         ENGINE_API void    __stdcall SetMasterVolume(float volume);
         ENGINE_API float   __stdcall GetMasterVolume();
 
+        // Persist audio volumes to config file and reload them
+        ENGINE_API void    __stdcall SaveAudioVolumes(float master, float bgm, float sfx);
+        ENGINE_API float   __stdcall LoadAudioVolume(const char* key, float defaultVal);
+
         // =========================================================================
         // Animation Component
         // Implemented in: eno_bridge_animation.cpp

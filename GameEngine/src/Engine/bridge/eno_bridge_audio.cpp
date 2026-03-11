@@ -7,6 +7,7 @@
 
 #include "eno_bridge.hpp"
 #include "../component/components/audio.hpp"
+#include "../settings/eno_config.hpp"
 
 namespace Bridge
 {
@@ -109,6 +110,28 @@ namespace Bridge
             float vol = 0.0f;
             master->getVolume(&vol);
             return vol * 100.0f;
+        }
+
+        // Saves master/BGM/SFX volumes (0-100) to the project config file.
+        ENGINE_API void __stdcall SaveAudioVolumes(float master, float bgm, float sfx)
+        {
+            if (!gEngine) return;
+            auto& cfg = gEngine->getConfigManager();
+            cfg.set("Audio Master", std::to_string(master));
+            cfg.set("Audio BGM",    std::to_string(bgm));
+            cfg.set("Audio SFX",    std::to_string(sfx));
+            cfg.write();
+        }
+
+        // Loads one audio volume value (0-100) from the config file by key.
+        // Returns defaultVal if the key is absent or cannot be parsed.
+        ENGINE_API float __stdcall LoadAudioVolume(const char* key, float defaultVal)
+        {
+            if (!gEngine) return defaultVal;
+            std::string val = gEngine->getConfigManager().get(std::string(key));
+            if (val.empty()) return defaultVal;
+            try { return std::stof(val); }
+            catch (...) { return defaultVal; }
         }
     }
 }

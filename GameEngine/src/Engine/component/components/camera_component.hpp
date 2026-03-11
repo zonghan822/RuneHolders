@@ -20,6 +20,9 @@ namespace ECSComponents
 		// Whether this camera is active
 		bool isActive{ true };
 
+		// When true, camera position is driven by the entity's TransformComponent every frame
+		bool followTransform{ false };
+
 		// Default constructor
 		CameraComponent() = default;
 
@@ -38,6 +41,7 @@ namespace ECSComponents
 			l("Viewport Height",	viewportHeight,		"float");
 			l("Position",			position,			"eVec2(float)");
 			l("Is Active",			isActive,			"bool");
+			l("Follow Transform",	followTransform,	"bool");
 		}
 
 		template <typename Visitor>
@@ -47,6 +51,7 @@ namespace ECSComponents
 			l("Viewport Height",	viewportHeight,		"float");
 			l("Position",			position,			"eVec2(float)");
 			l("Is Active",			isActive,			"bool");
+			l("Follow Transform",	followTransform,	"bool");
 		}
 	};
 

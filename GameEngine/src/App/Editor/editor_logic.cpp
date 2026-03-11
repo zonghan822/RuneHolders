@@ -169,6 +169,8 @@ void EditorApplication::run() {
 			{
 				auto& c = camEnt.get<ECSComponents::CameraComponent>(entityMng);
 				if (!c.isActive) continue;
+				if (c.followTransform && camEnt.has<ECSComponents::TransformComponent>(entityMng))
+					c.position = camEnt.get<ECSComponents::TransformComponent>(entityMng).pos;
 				savedCamPos = c.position;
 				savedVpW    = c.viewportWidth;
 				savedVpH    = c.viewportHeight;
