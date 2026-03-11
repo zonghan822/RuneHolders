@@ -15,6 +15,7 @@
 #include "../component/component_registry.hpp"
 #include "../component/components/visibility.hpp"
 #include "../component/components/canvas.hpp"
+#include "../ui/canvas_system.hpp"
 #include <iostream>
 #include <cmath>
 #include <fstream>
@@ -1693,8 +1694,8 @@ namespace Graphics
                     if (!entity.has<ECSComponents::DrawInfoComponent>(entityManager))
                         continue;
 
-                    // Skip entities parented under a Canvas — rendered separately by renderAllCanvases()
-                    if (ECSComponents::hasCanvasAncestor(entity.id(),
+                    // Skip entities parented under a Canvas — rendered separately by CanvasSystem::render()
+                    if (UI::CanvasSystem::hasCanvasAncestor(entity.id(),
                             engine.getEnoEditor().getSceneTree(), entityManager))
                         continue;
 
@@ -1808,8 +1809,8 @@ namespace Graphics
                     engine.getEnoEditor().getSceneTree(), entityManager))
                 continue;
 
-            // Skip text entities parented under a Canvas — rendered by renderCanvasText()
-            if (ECSComponents::hasCanvasAncestor(textEntity.id(),
+            // Skip text entities parented under a Canvas — rendered by CanvasSystem::renderCanvasText()
+            if (UI::CanvasSystem::hasCanvasAncestor(textEntity.id(),
                     engine.getEnoEditor().getSceneTree(), entityManager))
                 continue;
 
@@ -1858,7 +1859,7 @@ namespace Graphics
         rebindDefaultShader();
 
         // Render all Canvas UI layers on top of world content
-        ECSComponents::renderAllCanvases(engine, drawableEntities, { cameraX, cameraY });
+        UI::CanvasSystem{}.render(engine, drawableEntities, { cameraX, cameraY });
     }
 
     // =========================================================================

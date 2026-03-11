@@ -82,8 +82,6 @@ namespace ECSComponents
 			return followCamera;
 		}
 
-
-
 		// Mutators
 		void setViewPortWidth(float w)
 		{
@@ -144,56 +142,4 @@ namespace ECSComponents
 		return os;
 	}
 
-	/*============================================================================================
-	 * \brief				Collect canvas children from scene tree (like Godot)
-	 * \param[in]			engine - Reference to EnoEngine
-	 * \param[in]			canvasEntity - Canvas entity whose children to collect
-	 * \param[out]			layers - Map to populate with entities sorted by canvas layer (1-5)
-	*//*========================================================================================*/
-	/*============================================================================================
-	 * \brief				Check if entity or any ancestor has CanvasComponent
-	 * \param[in]			entityID - the ID of the entity to check
-	 * \param[in]			tree - reference to the scene tree
-	 * \param[in]			entityMng - reference to EntityManager
-	 * \return				true if entity or ancestor has CanvasComponent, false otherwise
-	*//*========================================================================================*/
-	bool hasCanvasAncestor(uint32_t entityID, Editor::EnoSceneTree& tree, ECS::EntityManager& entityMng);
-
-	void collectCanvasChildren(Engine::EnoEngine& engine, ECS::Entity& canvasEntity, std::map<int, std::vector<ECS::Entity*>>& layers);
-
-	/*============================================================================================
-	 * \brief				Collect text entities that are canvas children (from scene tree like Godot)
-	 * \param[in]			engine - Reference to EnoEngine
-	 * \param[in]			canvasEntity - Canvas entity whose text children to collect
-	 * \param[out]			textEntities - Vector to populate with text entities
-	*//*========================================================================================*/
-	void collectCanvasTextEntities(Engine::EnoEngine& engine, ECS::Entity& canvasEntity, std::vector<ECS::Entity*>& textEntities);
-
-	/*============================================================================================
-	 * \brief				Render canvas entities (shapes, sprites) with layering
-	 * \param[in]			engine - Reference to EnoEngine
-	 * \param[in]			cachedEntities - Vector of cached drawable entities
-	 * \param[in]			canvasEntity - Canvas entity to render
-	 * \param[in]			canvas - CanvasComponent with rendering settings
-	 * \param[in]			cameraPos - Current camera position for offset calculation
-	*//*========================================================================================*/
-	void renderCanvasEntities(Engine::EnoEngine& engine, std::vector<ECS::Entity>& cachedEntities, ECS::Entity& canvasEntity, const CanvasComponent& canvas, const Math::eVec2<float>& cameraTopLeft);
-
-	/*============================================================================================
-	 * \brief				Render text entities on canvas
-	 * \param[in]			engine - Reference to EnoEngine
-	 * \param[in]			cachedEntities - Vector of cached drawable entities
-	 * \param[in]			canvasEntity - Canvas entity to render text for
-	 * \param[in]			canvas - CanvasComponent with rendering settings
-	 * \param[in]			cameraPos - Current camera position for offset calculation
-	*//*========================================================================================*/
-	void renderCanvasText(Engine::EnoEngine& engine, std::vector<ECS::Entity>& cachedEntities, ECS::Entity& canvasEntity, const CanvasComponent& canvas, const Math::eVec2<float>& cameraTopLeft);
-
-	/*============================================================================================
-	 * \brief				Render all active canvas entities in the scene
-	 * \param[in]			engine - Reference to EnoEngine
-	 * \param[in]			cachedEntities - Vector of cached drawable entities
-	 * \param[in]			cameraPos - Current camera position for offset calculation
-	*//*========================================================================================*/
-	void renderAllCanvases(Engine::EnoEngine& engine, std::vector<ECS::Entity>& cachedEntities, const Math::eVec2<float>& cameraPos);
 }

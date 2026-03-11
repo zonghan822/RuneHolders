@@ -26,7 +26,7 @@
 				"Height": <float> { 1080 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Title-Art-1 }
+				"Texture Path": <texchar240> { Title-Art-2 }
 				"TexID": <int> { 0 }
 			}
 
@@ -39,7 +39,7 @@
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
 				"Animation Count": <int> { 2 }
-				"Current Animation": <char64> { art1 }
+				"Current Animation": <char64> { art2 }
 				"Anim0 Name": <char64> { art1 }
 				"Anim0 Texture": <texchar240> { Title-Art-1 }
 				"Anim0 FrameW": <int> { 1920 }
@@ -69,7 +69,7 @@
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 2 }
-				"CurrentState": <char32> { art1 }
+				"CurrentState": <char32> { art2 }
 				"TimeInState": <float> { 0 }
 				"State[0].name": <char32> { art1 }
 				"State[0].onEnter": <char64> { art1_enter }
@@ -142,6 +142,99 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
+	}
+
+	[CANVAS 1]
+	{
+		"ID": { 35 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 4238.68 | y : 524.834 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 64 }
+				"Height": <float> { 64 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CanvasComponent]
+			{
+				"Viewport Width": <float> { 1920 }
+				"Viewport Height": <float> { 1080 }
+				"Canvas Layer": <uint32_t> { 3 }
+				"Follow Camera": <bool> { 1 }
+				"Follow Camera Entity": <uint32_t> { 31 }
+				"Is Active": <bool> { 1 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { 36 }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 14 }
+	}
+
+	[TEXT 2]
+	{
+		"ID": { 36 }
+		"Layer": { 1 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 3970.08 | y : 607.264 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::TextComponent]
+			{
+				"Text": <char256> { aaswdw }
+				"FontName": <char64> { PixelifySans }
+				"FontSize": <float> { 3.8 }
+			}
+		}
+		"Script": { }
+		"Parent": { 35 }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 11 }
 	}
 
 }

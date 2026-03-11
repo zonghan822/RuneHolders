@@ -737,6 +737,30 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, Math:
 		}
 	}
 
+	// Text entities have no DrawInfoComponent — use a fallback bounding box
+	for (ECS::Entity& e : engine_.getEntityManager().findEntity<
+		ECSComponents::TransformComponent,
+		ECSComponents::TextComponent>())
+	{
+		if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) continue; // already handled above
+
+		auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+		auto& text = e.get<ECSComponents::TextComponent>(entityManager);
+
+		float halfW = 100.0f;
+		float halfH = 30.0f * text.fontSize;
+		float left = tc.pos.x - halfW;
+		float right = tc.pos.x + halfW;
+		float top = tc.pos.y - halfH;
+		float bottom = tc.pos.y + halfH;
+
+		if (mouse.x >= left && mouse.x <= right &&
+			mouse.y >= top && mouse.y <= bottom)
+		{
+			matchingEntities.push_back(e);
+		}
+	}
+
 	// Return the LAST matching entity (most recently created, drawn on top)
 	if (!matchingEntities.empty()) {
 		return matchingEntities.back();
@@ -3427,10 +3451,13 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				}
 			}
 
+			// Select camera to follow
 			if (ImGui::BeginCombo("Select Camera##canvas", currentCamName.c_str())) {
 				if (ImGui::Selectable("None", canvas.followCameraEntityID == static_cast<uint32_t>(-1)))
+					// Follow none by default
 					canvas.followCameraEntityID = static_cast<uint32_t>(-1);
 
+				// Loop through each entity with a camera component
 				for (auto& camEnt : cameraEntities) {
 					Editor::Node* camNode = sceneTree.getNodeByEntityID(camEnt.id());
 					if (!camNode) continue;
@@ -4966,7 +4993,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			// --- Gizmo-based entity transformation logic ---
 			// Draw gizmos for selected entity
 			if (selectedEntityID != UINT32_MAX && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped) {
-				auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+				auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent/*, ECSComponents::DrawInfoComponent*/>();
 				for (auto& e : allEntities) {
 					if (e.id() == selectedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
@@ -5155,7 +5182,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 
 				// Check if we have a selected entity
 				if (selectedEntityID != UINT32_MAX) {
-					auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+					auto allEntities = entityManager.findEntity<ECSComponents::TransformComponent>();
 					for (auto& e : allEntities) {
 						if (e.id() == selectedEntityID) {
 							auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
@@ -5284,7 +5311,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 					g_game->getEditorCameraY());
 				ImVec2 worldPos = { eWorldPos.x, eWorldPos.y };
 
-				auto all = entityManager.findEntity<ECSComponents::TransformComponent, ECSComponents::DrawInfoComponent>();
+				auto all = entityManager.findEntity<ECSComponents::TransformComponent>();
 				for (auto& e : all) {
 					if (e.id() == draggedEntityID) {
 						auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
@@ -5377,16 +5404,18 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 							else if (activeTransformAxis == 4) {
 								// Horizontal scaling only (X-axis)
 								float deltaX = worldPos.x - dragStartWorldPos.x;
-								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
-								float scaleChange = deltaX / std::max(dc.width, 1.0f);
+								float refWidth = e.has<ECSComponents::DrawInfoComponent>(entityManager)
+									? e.get<ECSComponents::DrawInfoComponent>(entityManager).width : 100.0f;
+								float scaleChange = deltaX / std::max(refWidth, 1.0f);
 								newScaleX = std::max(0.1f, initialScale.x + scaleChange);
 								newScaleY = tc.scale.y;  // Keep Y unchanged
 							}
 							else if (activeTransformAxis == 5) {
 								// Vertical scaling only (Y-axis)
 								float deltaY = worldPos.y - dragStartWorldPos.y;
-								auto& dc = e.get<ECSComponents::DrawInfoComponent>(entityManager);
-								float scaleChange = -deltaY / std::max(dc.height, 1.0f);
+								float refHeight = e.has<ECSComponents::DrawInfoComponent>(entityManager)
+									? e.get<ECSComponents::DrawInfoComponent>(entityManager).height : 100.0f;
+								float scaleChange = -deltaY / std::max(refHeight, 1.0f);
 								newScaleX = tc.scale.x;  // Keep X unchanged
 								newScaleY = std::max(0.1f, initialScale.y + scaleChange);
 							}

@@ -7,6 +7,7 @@
 #include "visibility.hpp"
 #include "canvas.hpp"
 #include "../../engine/eno_engine.hpp"
+#include "../../ui/canvas_system.hpp"
 
 namespace ECSComponents {
 
@@ -70,7 +71,7 @@ namespace ECSComponents {
 			}
 
 			// Skip entities belonging to canvas
-			if (hasCanvasAncestor(entity.id(), sceneTree, entityMng)) {
+			if (UI::CanvasSystem::hasCanvasAncestor(entity.id(), sceneTree, entityMng)) {
 				continue;
 			}
 
