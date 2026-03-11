@@ -1,8 +1,0 @@
-{
-
-}
-
-"LayerMetadata":
-{
-	"AvailableLayers": { 4 }
-}

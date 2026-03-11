@@ -54,6 +54,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -128,6 +129,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -202,6 +204,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -276,6 +279,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -350,6 +354,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -424,6 +429,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -498,6 +504,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -572,6 +579,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -646,6 +654,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -720,6 +729,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }

@@ -137,6 +137,7 @@
 				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -208,6 +209,7 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 14 }
+		"PrefabName": {  }
 	}
 
 	[TEXT 2]
@@ -248,6 +250,7 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 11 }
+		"PrefabName": {  }
 	}
 
 }
