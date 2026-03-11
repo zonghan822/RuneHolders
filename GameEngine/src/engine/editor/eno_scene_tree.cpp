@@ -529,6 +529,20 @@ namespace Editor
 		}
 	}
 
+	// Attach a script to a node by filename (e.g. "PlayerController.cs") — used when spawning prefabs
+	void EnoSceneTree::attachScriptByFilename(Node* node, const std::string& scriptFilename)
+	{
+		if (!node || scriptFilename.empty()) return;
+
+		std::filesystem::path fullScriptPath = FileSystem::GetScriptsDir() / scriptFilename;
+		std::string fname = extractFname(scriptFilename);
+		std::wstring wfname(fname.begin(), fname.end());
+		std::wstring wpath = fullScriptPath.wstring();
+
+		auto script = std::make_unique<Script::EnoScript>(coreHost_, wfname, wpath);
+		attachScript(node, std::move(script));
+	}
+
 	// Re-register all scripts with the scripting system
 	// This is needed because scenes may load before the scripting system is initialized
 	void EnoSceneTree::registerAllScripts()

@@ -3483,6 +3483,11 @@ void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			}
 
 			std::string prefabName(s_newPrefabName);
+			// Store script filename before setUserPrefab so it is included in the disk save
+			if (selectedNode->script_)
+				prefabMng.setUserPrefabScript(prefabName, std::filesystem::path(selectedNode->script_->path()).filename().string());
+			else
+				prefabMng.setUserPrefabScript(prefabName, "");
 			prefabMng.setUserPrefab(prefabName, std::move(compMap));
 			prefabMng.setUserPrefabNodeType(prefabName, static_cast<uint32_t>(selectedNode->type_));
 			selectedNode->prefabName_ = prefabName;
@@ -3582,6 +3587,11 @@ void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 					tcIt->second = tc;
 				}
 			}
+			// Store script filename before setUserPrefab so it is included in the disk save
+			if (selectedNode->script_)
+				prefabMng.setUserPrefabScript(s_selectedUserPrefab, std::filesystem::path(selectedNode->script_->path()).filename().string());
+			else
+				prefabMng.setUserPrefabScript(s_selectedUserPrefab, "");
 			prefabMng.setUserPrefab(s_selectedUserPrefab, std::move(compMap));
 			prefabMng.setUserPrefabNodeType(s_selectedUserPrefab, static_cast<uint32_t>(selectedNode->type_));
 			s_updatedPopup = true;
@@ -5146,6 +5156,11 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						node->name_       = g_selectedPrefabForPlacement;
 						node->type_       = static_cast<Editor::NodeType>(prefabMng.getUserPrefabNodeType(g_selectedPrefabForPlacement));
 						node->prefabName_ = g_selectedPrefabForPlacement;
+
+						// Attach script saved with the prefab
+						std::string prefabScript = prefabMng.getUserPrefabScript(g_selectedPrefabForPlacement);
+						if (!prefabScript.empty())
+							sceneTree.attachScriptByFilename(node, prefabScript);
 
 						auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 							sceneTree,

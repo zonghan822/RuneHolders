@@ -137,6 +137,9 @@ namespace Editor
 		void attachScript(Node*, std::unique_ptr<Script::EnoScript>&&);
 		void attachScript(std::unique_ptr<Script::EnoScript>&&);
 
+		// Attach a script to a node by filename (e.g. "PlayerController.cs") — used when spawning prefabs
+		void attachScriptByFilename(Node* node, const std::string& scriptFilename);
+
 		// Detach script
 		void detachScript(Node* node);
 		void detachScript();
