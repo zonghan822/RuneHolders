@@ -267,6 +267,15 @@ void EditorApplication::updateEditorCamera() {
 	worldWidth_ = worldSize.x;
 	worldHeight_ = worldSize.y;
 
+	// On the first frame where the panel has a real size, place the camera so
+	// that world (0, 0) sits at the bottom-left corner of the viewport.
+	if (!cameraInitialized_ && editorPanelHeight_ > 1)
+	{
+		editorCameraX_ = 0.f;
+		editorCameraY_ = -static_cast<float>(getEditorHeight());
+		cameraInitialized_ = true;
+	}
+
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 	auto  state     = engine_.getEnoEditor().getCurrentScene().getState();
 
