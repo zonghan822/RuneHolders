@@ -37,6 +37,9 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern uint GetChildCount(uint id);
 
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void SelectScene(string sceneName);
+
 
         // presetName: "DEFAULT", "SPRITE", "KINEMATIC", "RIGIDBODY", "ACTOR",
         //             "PUSHABLE_BOX", "BUTTON", "AUDIO", "CAMERA", "TEXT", "PARTICLE"
