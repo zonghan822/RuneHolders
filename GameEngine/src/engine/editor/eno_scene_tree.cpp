@@ -700,6 +700,10 @@ namespace Editor
 			appendIndent(save, jsonLevel);
 			save << "\"NodeType\": { " << static_cast<uint32_t>(it->second->type_) << " }\n";
 
+			// Prefab Name (empty if not a user prefab instance)
+			appendIndent(save, jsonLevel);
+			save << "\"PrefabName\": { " << it->second->prefabName_ << " }\n";
+
 			// Closing brace (for node properties)
 			appendIndent(save, --jsonLevel);
 			save << "}\n\n";
@@ -902,6 +906,13 @@ namespace Editor
 				? static_cast<NodeType>(any.value())
 				: NodeType::EMPTY;
 
+			// Prefab Name (absent in old scenes — optional field)
+			{
+				auto prefabOpt = extract<std::string>(data, "PrefabName", nodeStart, nodeEnd);
+				if (prefabOpt.has_value())
+					node->prefabName_ = prefabOpt.value();
+			}
+
 			if (missingData) {
 				std::cerr << "[EnoSceneTree] Warning: Some fields missing for node " << node->name_ << ", using defaults" << std::endl;
 			}
@@ -964,6 +975,33 @@ namespace Editor
 			ECSComponents::availableLayers = 4;
 		}
 
+	// Re-load all user prefabs so cross-scene updates are applied
+	prefabMng_.loadAllUserPrefabs();
+
+	// Apply latest prefab data to any node that was created from a user prefab,
+	// preserving each instance's own position.
+	for (auto& [nodeID, node] : tree_)
+	{
+		if (node->prefabName_.empty()) continue;
+		const auto* compMap = prefabMng_.getUserPrefabComponents(node->prefabName_);
+		if (!compMap) continue;
+		for (const auto& [compTypeIdx, compAny] : *compMap)
+		{
+			ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+			{
+				if (!node->entity_.has<T>(entMng_)) return;
+				if constexpr (std::is_same_v<T, ECSComponents::TransformComponent>)
+				{
+					auto& existing = node->entity_.get<T>(entMng_);
+					auto updated = std::any_cast<T>(compAny);
+					updated.pos = existing.pos;
+					existing = updated;
+				}
+				else
+					node->entity_.get<T>(entMng_) = std::any_cast<T>(compAny);
+			});
+		}
+	}
 	}
 
 

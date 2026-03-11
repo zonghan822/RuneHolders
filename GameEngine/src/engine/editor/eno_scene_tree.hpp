@@ -48,6 +48,10 @@ namespace Editor
 
 		NodeType type_;
 
+		// Non-empty when this node was created from a user prefab.
+		// Matches a name in EnoPrefabManager::userPrefabData_.
+		std::string prefabName_;
+
 		// Entity Data
 		ECS::Entity entity_;
 

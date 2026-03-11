@@ -3290,179 +3290,233 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 {
 	auto& prefabMng = engine_.getPrefabManager();
-	auto presetNames = prefabMng.getPresetNames();
+	auto& entMng    = engine_.getEntityManager();
 
-	static std::string s_selectedPreset;
-	if (s_selectedPreset.empty() && !presetNames.empty())
-		s_selectedPreset = presetNames[0];
-
-	// Preset selector
-	ImGui::Text("Preset:");
-	ImGui::SetNextItemWidth(-1);
-	if (ImGui::BeginListBox("##PrefabPresetList", ImVec2(-1, 140)))
+	// Load user prefabs from disk on first open
+	static bool s_userPrefabsLoaded = false;
+	if (!s_userPrefabsLoaded)
 	{
-		for (const auto& name : presetNames)
-		{
-			bool isSelected = (name == s_selectedPreset);
-			if (ImGui::Selectable(name.c_str(), isSelected))
-				s_selectedPreset = name;
-			if (isSelected)
-				ImGui::SetItemDefaultFocus();
-		}
-		ImGui::EndListBox();
+		prefabMng.loadAllUserPrefabs();
+		s_userPrefabsLoaded = true;
 	}
 
-	ImGui::Separator();
+	// ── Save Selected Entity as Prefab ──────────────────────────────────────
+	ImGui::SeparatorText("Save as Prefab");
 
-	if (s_selectedPreset.empty())
-		return;
+	Editor::Node* selectedNode = (selectedEntityID != UINT32_MAX)
+		? sceneTree.getNodeByEntityID(selectedEntityID) : nullptr;
 
-	ImGui::Text("Editing: %s", s_selectedPreset.c_str());
-	ImGui::Spacing();
-
-	auto* comps = prefabMng.getPresetComponentsMutable(s_selectedPreset);
-	if (!comps)
+	if (!selectedNode)
 	{
-		ImGui::TextDisabled("No data for this preset.");
-		return;
+		ImGui::TextDisabled("Select an entity in the hierarchy first.");
 	}
-
-	// Render each component as a collapsing section
-	for (auto& [compTypeIdx, compAny] : *comps)
+	else
 	{
-		ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+		ImGui::Text("Selected: %s", selectedNode->name_.c_str());
+		ImGui::Spacing();
+
+		static char s_newPrefabName[64] = {};
+		ImGui::SetNextItemWidth(-1);
+		ImGui::InputText("Name##PrefabNameInput", s_newPrefabName, sizeof(s_newPrefabName));
+
+		bool nameValid = (s_newPrefabName[0] != '\0');
+		if (!nameValid) ImGui::BeginDisabled();
+
+		if (ImGui::Button("Save Selected Entity as Prefab", ImVec2(-1, 0)))
 		{
-			T& comp = std::any_cast<T&>(compAny);
+			// Snapshot every component the entity currently owns
+			std::unordered_map<std::type_index, std::any> compMap;
+#define X(CompName) \
+			if (selectedNode->entity_.has<ECSComponents::CompName>(entMng)) \
+				compMap[std::type_index(typeid(ECSComponents::CompName))] = \
+					selectedNode->entity_.get<ECSComponents::CompName>(entMng);
+			COMPONENT_LIST
+#undef X
 
-			// Derive a readable name from the mangled type name
-			std::string rawName = compTypeIdx.name();
-			size_t ns = rawName.rfind("::");
-			std::string displayName = (ns != std::string::npos) ? rawName.substr(ns + 2) : rawName;
-
-			ImGui::PushID(static_cast<int>(compTypeIdx.hash_code()));
-			if (ImGui::CollapsingHeader(displayName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+			// Do not store position in prefab - each instance keeps its own position
 			{
-				ImGui::Indent();
-				comp.reflect([&](const std::string& fieldName, auto& fieldVal, const std::string& /*fieldType*/)
+				auto tcKey = std::type_index(typeid(ECSComponents::TransformComponent));
+				auto tcIt = compMap.find(tcKey);
+				if (tcIt != compMap.end())
 				{
-					using FieldType = std::remove_reference_t<decltype(fieldVal)>;
-
-					ImGui::PushID(fieldName.c_str());
-
-					if constexpr (std::is_same_v<FieldType, float>)
-					{
-						ImGui::DragFloat(fieldName.c_str(), &fieldVal, 0.1f);
-					}
-					else if constexpr (std::is_same_v<FieldType, int>)
-					{
-						ImGui::DragInt(fieldName.c_str(), &fieldVal);
-					}
-					else if constexpr (std::is_same_v<FieldType, bool>)
-					{
-						ImGui::Checkbox(fieldName.c_str(), &fieldVal);
-					}
-					else if constexpr (std::is_same_v<FieldType, uint32_t>)
-					{
-						int tmp = static_cast<int>(fieldVal);
-						if (ImGui::DragInt(fieldName.c_str(), &tmp, 1, 0, 9999))
-							fieldVal = static_cast<uint32_t>(tmp);
-					}
-					else if constexpr (std::is_same_v<FieldType, Math::eVec2<float>>)
-					{
-						float vals[2] = { fieldVal.x, fieldVal.y };
-						if (ImGui::DragFloat2(fieldName.c_str(), vals, 0.1f))
-						{
-							fieldVal.x = vals[0];
-							fieldVal.y = vals[1];
-						}
-					}
-					else if constexpr (std::is_same_v<FieldType, Graphics::Color>)
-					{
-						float col[4] = { fieldVal.r, fieldVal.g, fieldVal.b, fieldVal.a };
-						if (ImGui::ColorEdit4(fieldName.c_str(), col))
-						{
-							fieldVal.r = col[0];
-							fieldVal.g = col[1];
-							fieldVal.b = col[2];
-							fieldVal.a = col[3];
-						}
-					}
-					else if constexpr (std::is_array_v<FieldType> &&
-					                   std::is_same_v<std::remove_extent_t<FieldType>, char>)
-					{
-						ImGui::InputText(fieldName.c_str(), fieldVal, std::extent_v<FieldType>);
-					}
-					// Unsupported types are silently skipped
-
-					ImGui::PopID();
-				});
-				ImGui::Unindent();
+					auto tc = std::any_cast<ECSComponents::TransformComponent>(tcIt->second);
+					tc.pos = { 0.f, 0.f };
+					tcIt->second = tc;
+				}
 			}
-			ImGui::PopID();
-		});
+
+			std::string prefabName(s_newPrefabName);
+			prefabMng.setUserPrefab(prefabName, std::move(compMap));
+			prefabMng.setUserPrefabNodeType(prefabName, static_cast<uint32_t>(selectedNode->type_));
+			selectedNode->prefabName_ = prefabName;
+
+			memset(s_newPrefabName, 0, sizeof(s_newPrefabName));
+			if (g_game) g_game->markEntitiesDirty();
+		}
+
+		if (!nameValid) ImGui::EndDisabled();
 	}
 
+	// ── Prefab List ─────────────────────────────────────────────────────────
 	ImGui::Spacing();
-	ImGui::Separator();
+	ImGui::SeparatorText("Prefabs");
 
-	static bool s_savedPopup = false;
-	if (ImGui::Button("Save Prefab", ImVec2(-1, 0)))
+	auto userPrefabNames = prefabMng.getUserPrefabNames();
+	static std::string s_selectedUserPrefab;
+
+	// Clear selection if the prefab was deleted / doesn't exist anymore
+	if (!s_selectedUserPrefab.empty() && !prefabMng.userPrefabExists(s_selectedUserPrefab))
+		s_selectedUserPrefab.clear();
+
+	if (userPrefabNames.empty())
 	{
-		prefabMng.saveForcedToDisk(s_selectedPreset);
-		s_savedPopup = true;
+		ImGui::TextDisabled("No prefabs saved yet.");
 	}
-
-	if (s_savedPopup)
+	else
 	{
-		ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f), "Saved '%s'!", s_selectedPreset.c_str());
-		static int s_savedFrames = 0;
-		if (++s_savedFrames > 120) { s_savedPopup = false; s_savedFrames = 0; }
-	}
-
-	ImGui::Spacing();
-	ImGui::TextUnformatted("CHANGE ALL EXISTING INSTANCES");
-
-	static bool s_propagatedPopup = false;
-	if (ImGui::Button("Apply to All Instances", ImVec2(-1, 0)))
-	{
-		#undef PRESET
-		#define PRESET(Name, ...) {#Name, Editor::NodeType::Name},
-		static const std::unordered_map<std::string, Editor::NodeType> s_nameToType = {
-			{"EMPTY", Editor::NodeType::EMPTY},
-			PRESET_LIST
-		};
-		#undef PRESET
-
-		auto typeIt = s_nameToType.find(s_selectedPreset);
-		if (typeIt != s_nameToType.end())
+		ImGui::SetNextItemWidth(-1);
+		if (ImGui::BeginListBox("##UserPrefabList", ImVec2(-1, 130)))
 		{
-			Editor::NodeType targetType = typeIt->second;
-			auto& entMng = engine_.getEntityManager();
+			for (const auto& name : userPrefabNames)
+			{
+				bool isSelected = (name == s_selectedUserPrefab);
+				if (ImGui::Selectable(name.c_str(), isSelected))
+					s_selectedUserPrefab = name;
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndListBox();
+		}
+	}
 
+	// ── Update Buttons ───────────────────────────────────────────────────────
+	if (!s_selectedUserPrefab.empty() && prefabMng.userPrefabExists(s_selectedUserPrefab))
+	{
+		ImGui::Spacing();
+		ImGui::Text("Prefab: %s", s_selectedUserPrefab.c_str());
+		ImGui::Spacing();
+
+		// Delete Prefab button
+		ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.65f, 0.10f, 0.10f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.80f, 0.20f, 0.20f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.50f, 0.05f, 0.05f, 1.0f));
+		if (ImGui::Button("Delete Prefab", ImVec2(-1, 0)))
+		{
+			if (g_selectedPrefabForPlacement == s_selectedUserPrefab)
+				g_selectedPrefabForPlacement.clear();
+			prefabMng.deleteUserPrefab(s_selectedUserPrefab);
+			s_selectedUserPrefab.clear();
+		}
+		ImGui::PopStyleColor(3);
+
+		if (s_selectedUserPrefab.empty()) { ImGui::Spacing(); }  // already cleared — skip the rest
+		else
+		{
+
+		// Count how many nodes in the current scene use this prefab
+		int instanceCount = 0;
+		for (Editor::Node* n : sceneTree.getAllNodes())
+			if (n->prefabName_ == s_selectedUserPrefab) ++instanceCount;
+		ImGui::TextDisabled("%d instance(s) in current scene", instanceCount);
+		ImGui::Spacing();
+
+		// Update Prefab — overwrites the saved prefab file with the selected entity's data
+		bool canUpdate = (selectedNode != nullptr);
+		if (!canUpdate) ImGui::BeginDisabled();
+
+		static bool s_updatedPopup = false;
+		if (ImGui::Button("Update Prefab", ImVec2(-1, 0)))
+		{
+			std::unordered_map<std::type_index, std::any> compMap;
+#define X(CompName) \
+			if (selectedNode->entity_.has<ECSComponents::CompName>(entMng)) \
+				compMap[std::type_index(typeid(ECSComponents::CompName))] = \
+					selectedNode->entity_.get<ECSComponents::CompName>(entMng);
+			COMPONENT_LIST
+#undef X
+			// Do not store position in prefab - each instance keeps its own position
+			{
+				auto tcKey = std::type_index(typeid(ECSComponents::TransformComponent));
+				auto tcIt = compMap.find(tcKey);
+				if (tcIt != compMap.end())
+				{
+					auto tc = std::any_cast<ECSComponents::TransformComponent>(tcIt->second);
+					tc.pos = { 0.f, 0.f };
+					tcIt->second = tc;
+				}
+			}
+			prefabMng.setUserPrefab(s_selectedUserPrefab, std::move(compMap));
+			prefabMng.setUserPrefabNodeType(s_selectedUserPrefab, static_cast<uint32_t>(selectedNode->type_));
+			s_updatedPopup = true;
+		}
+
+		if (!canUpdate) ImGui::EndDisabled();
+
+		// Spawn Prefab — activate click-to-place mode in the viewport
+		ImGui::Spacing();
+		bool isPlacingThis = (g_selectedPrefabForPlacement == s_selectedUserPrefab);
+		if (isPlacingThis)
+		{
+			ImGui::TextColored(ImVec4(1.f, 0.8f, 0.f, 1.f), "Click in viewport to place. Right-click to cancel.");
+			if (ImGui::Button("Cancel Spawn", ImVec2(-1, 0)))
+				g_selectedPrefabForPlacement.clear();
+		}
+		else
+		{
+			if (ImGui::Button("Spawn Prefab", ImVec2(-1, 0)))
+				g_selectedPrefabForPlacement = s_selectedUserPrefab;
+		}
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		// Update All Existing Prefabs — patches every matching node in the current scene
+		// and re-serialises the prefab file. Other scenes are updated on their next load
+		// after their scene file is resaved with the patched entity data.
+		static bool s_updatedAllPopup = false;
+		if (ImGui::Button("Update All Existing Prefabs", ImVec2(-1, 0)))
+		{
 			for (Editor::Node* node : sceneTree.getAllNodes())
 			{
-				if (node->type_ != targetType)
-					continue;
-
-				for (auto& [compTypeIdx, compAny] : *comps)
+				if (node->prefabName_ != s_selectedUserPrefab) continue;
+				const auto* compMap = prefabMng.getUserPrefabComponents(s_selectedUserPrefab);
+				if (!compMap) continue;
+				for (const auto& [compTypeIdx, compAny] : *compMap)
 				{
 					ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
 					{
-						if (node->entity_.has<T>(entMng))
+						if (!node->entity_.has<T>(entMng)) return;
+						if constexpr (std::is_same_v<T, ECSComponents::TransformComponent>)
+						{
+							auto& existing = node->entity_.get<T>(entMng);
+							auto updated = std::any_cast<T>(compAny);
+							updated.pos = existing.pos;
+							existing = updated;
+						}
+						else
 							node->entity_.get<T>(entMng) = std::any_cast<T>(compAny);
 					});
 				}
 			}
+			s_updatedAllPopup = true;
+			if (g_game) g_game->markEntitiesDirty();
 		}
+		ImGui::TextDisabled("Note: saves current scene — other scenes update on next load.");
 
-		s_propagatedPopup = true;
-	}
-
-	if (s_propagatedPopup)
-	{
-		ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f), "Applied to all '%s' instances!", s_selectedPreset.c_str());
-		static int s_propagatedFrames = 0;
-		if (++s_propagatedFrames > 120) { s_propagatedPopup = false; s_propagatedFrames = 0; }
+		// Feedback messages
+		if (s_updatedPopup)
+		{
+			ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f), "Prefab '%s' saved!", s_selectedUserPrefab.c_str());
+			static int s_updatedFrames = 0;
+			if (++s_updatedFrames > 120) { s_updatedPopup = false; s_updatedFrames = 0; }
+		}
+		if (s_updatedAllPopup)
+		{
+			ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f), "Updated %d instance(s) in scene!", instanceCount);
+			static int s_updatedAllFrames = 0;
+			if (++s_updatedAllFrames > 120) { s_updatedAllPopup = false; s_updatedAllFrames = 0; }
+		}
+		} // end else (prefab not deleted)
 	}
 }
 
@@ -4898,6 +4952,75 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				}
 
 				g_waitingForEntityDeletion = false;
+			}
+
+			// --- Handle prefab placement by click ---
+			if (!g_selectedPrefabForPlacement.empty() && sceneEditor.getCurrentScene().getState() == Editor::State::Stopped)
+			{
+				// Right-click cancels placement mode
+				if (ImGui::IsMouseClicked(1))
+				{
+					g_selectedPrefabForPlacement.clear();
+				}
+				else if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
+				{
+					Math::eVec2<float> worldPos = Graphics::screenToWorld(
+						{ ImGui::GetMousePos().x, ImGui::GetMousePos().y },
+						g_game->getEditorViewMin(),
+						g_game->getEditorViewMax(),
+						editorWidth,
+						editorHeight,
+						g_game->getEditorCameraX(),
+						g_game->getEditorCameraY());
+
+					auto& prefabMng = engine_.getPrefabManager();
+					const auto* compMapPtr = prefabMng.getUserPrefabComponents(g_selectedPrefabForPlacement);
+					if (compMapPtr)
+					{
+						ECS::Entity newEntity = entityManager.create<>();
+
+						for (const auto& [compTypeIdx, compAny] : *compMapPtr)
+						{
+							ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+							{
+								if (!newEntity.template has<T>(entityManager))
+									newEntity.template add<T>(entityManager, std::any_cast<T>(compAny));
+							});
+						}
+
+						// Place at mouse world position
+						if (newEntity.has<ECSComponents::TransformComponent>(entityManager))
+						{
+							auto& tc = newEntity.get<ECSComponents::TransformComponent>(entityManager);
+							tc.pos = worldPos;
+						}
+
+						// Fresh animation controller per instance
+						if (newEntity.has<ECSComponents::AnimationControllerComponent>(entityManager))
+						{
+							auto& animCtrl = newEntity.get<ECSComponents::AnimationControllerComponent>(entityManager);
+							animCtrl.controllerID = engine_.getAnimationRegistry().createController();
+						}
+
+						Node* node = sceneTree.createFromEntity(newEntity, nullptr);
+						node->name_       = g_selectedPrefabForPlacement;
+						node->type_       = static_cast<Editor::NodeType>(prefabMng.getUserPrefabNodeType(g_selectedPrefabForPlacement));
+						node->prefabName_ = g_selectedPrefabForPlacement;
+
+						auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
+							sceneTree,
+							entityManager,
+							newEntity,
+							engine_.getGraphicsManager()
+						);
+						undoManager.executeCommand(std::move(createCmd));
+
+						selectedEntityID = newEntity.id();
+						if (g_game) g_game->markEntitiesDirty();
+					}
+
+					g_selectedPrefabForPlacement.clear();
+				}
 			}
 
 			// --- Gizmo-based entity transformation logic ---
