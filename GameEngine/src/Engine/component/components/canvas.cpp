@@ -153,9 +153,9 @@ namespace ECSComponents
 	// Render canvas entities with relative to the camera in world space
 	void renderCanvasEntities(
 		Engine::EnoEngine& engine,
-		std::vector<ECS::Entity>& cachedEntities,
+		std::vector<ECS::Entity>& /*cachedEntities*/,
 		ECS::Entity& canvasEntity,
-		const CanvasComponent& canvas,
+		const CanvasComponent& /*canvas*/,
 		const Math::eVec2<float>& cameraTopLeft
 	) {
 		auto& graphics = engine.getGraphicsManager();
@@ -272,9 +272,9 @@ namespace ECSComponents
 	// Render text entities on canvas
 	void renderCanvasText(
 		Engine::EnoEngine& engine,
-		std::vector<ECS::Entity>& cachedEntities,
+		std::vector<ECS::Entity>& /*cachedEntities*/,
 		ECS::Entity& canvasEntity,
-		const CanvasComponent& canvas,
+		const CanvasComponent& /*canvas*/,
 		const Math::eVec2<float>& cameraTopLeft
 	) {
 		auto& graphics = engine.getGraphicsManager();

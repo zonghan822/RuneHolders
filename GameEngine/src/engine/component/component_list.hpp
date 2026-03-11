@@ -58,6 +58,8 @@
 	PRESET(VIDEO,        TransformComponent, RenderComponent, VideoComponent, VisibilityComponent, LayerComponent) \
 	/* Canvas */ \
 	PRESET(CANVAS,		 TransformComponent, RenderComponent, CanvasComponent, VisibilityComponent, LayerComponent) \
+	/* AI-driven enemy — ACTOR components + AIComponent for pathfinding and behaviour */ \
+	PRESET(ENEMY,        TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, AIComponent, VisibilityComponent, LayerComponent) \
 //particle emitter omitted
 
 // Expanding PRESET_LIST within the component namespace

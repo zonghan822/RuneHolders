@@ -275,6 +275,15 @@ namespace Engine
 					ac.isPlaying_ = false;
 			}
 		}
+
+		// Flush any scene change requested by a script this frame.
+		// Done after all script/physics updates so no mid-loop iterator invalidation occurs.
+		if (!pendingScene_.empty())
+		{
+			editor_->selectScene(pendingScene_);
+			pendingScene_.clear();
+			hasBegun_ = false;  // Force Begin() to run for the new scene's scripts
+		}
 	}
 
 	void EnoEngine::renderFrame()

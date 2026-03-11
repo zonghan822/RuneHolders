@@ -124,6 +124,7 @@ namespace Editor
 				return node.second.get();
 			}
 		}
+		return nullptr;
 	}
 
 	// Get a node by entity ID

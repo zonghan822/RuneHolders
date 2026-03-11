@@ -304,6 +304,13 @@ namespace Engine
 		bool getIsPaused() const { return isPaused_; }
 
 		/*============================================================================================
+		* \brief		Queues a scene change to be executed at the end of the current frame,
+		*               after all scripts have finished updating. Safe to call from script Update().
+		* \param[in]	name - Scene filename (e.g. "Level.txt")
+		*//*========================================================================================*/
+		void requestSceneChange(const std::string& name) { pendingScene_ = name; }
+
+		/*============================================================================================
 		* \brief		Gets the per-subsystem timing data collected during the last frame.
 		*               Keys are system names (e.g. "Scripts", "Physics"), values are microseconds.
 		*//*========================================================================================*/
@@ -354,6 +361,7 @@ namespace Engine
 		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)
 		bool isPaused_  = false;  // Runtime pause (dialogue, menus) - pauses physics/AI/collision
 		bool hasBegun_  = false;  // Guards the one-shot Begin() call at the start of each play session
+		std::string pendingScene_;  // Non-empty when a script has requested a scene change
 		Math::eVec2<float> viewportMin_{ 0.f, 0.f };  // Screen-space game viewport bounds (set by editor/app)
 		Math::eVec2<float> viewportMax_{ 0.f, 0.f };  // Zero max = fall back to full window size
 

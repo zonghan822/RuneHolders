@@ -950,8 +950,6 @@ void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& e
 
 void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager)
 {
-	auto& entityManager = engine_.getEntityManager();
-
 	// Get all nodes from the scene tree
 	auto allNodes = sceneTree.getAllNodes();
 
@@ -1011,7 +1009,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	// This ensures we don't create duplicate names like "Entity 1" when one already exists
 	if (!entityCounterInitialized) {
 		int maxEntityNumber = 0;
-		auto& entityManager = engine_.getEntityManager();
 
 		// Scan all scene nodes to find the highest "Entity N" number
 		for (Editor::Node* n : sceneTree.getAllNodes()) {
@@ -3233,19 +3230,19 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		nodeNames.push_back("Select Target Node...");
 
-		for (auto* node : allNodes) {
+		for (auto* scriptNode : allNodes) {
 			// Only include nodes with scripts attached
-			if (!node->script_) continue;
+			if (!scriptNode->script_) continue;
 
-			std::string displayName = node->name_.empty()
-				? "Node_" + std::to_string(node->sceneObjectID_)
-				: node->name_;
+			std::string displayName = scriptNode->name_.empty()
+				? "Node_" + std::to_string(scriptNode->sceneObjectID_)
+				: scriptNode->name_;
 
 			// Add script name to display
-			displayName += " (" + Conversion::wideToUtf8(node->script_->getName()) + ")";
+			displayName += " (" + Conversion::wideToUtf8(scriptNode->script_->getName()) + ")";
 
 			nodeStrings.push_back(displayName);
-			scriptNodes.push_back(node);
+			scriptNodes.push_back(scriptNode);
 		}
 
 		// Populate const char* array for ImGui

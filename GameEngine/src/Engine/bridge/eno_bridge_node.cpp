@@ -134,6 +134,7 @@ namespace Bridge
                 {"KINEMATIC",    Editor::NodeType::KINEMATIC},
                 {"RIGIDBODY",    Editor::NodeType::RIGIDBODY},
                 {"ACTOR",        Editor::NodeType::ACTOR},
+                {"ENEMY",        Editor::NodeType::ENEMY},
                 {"PUSHABLE_BOX", Editor::NodeType::PUSHABLE_BOX},
                 {"BUTTON",       Editor::NodeType::BUTTON},
                 {"AUDIO",        Editor::NodeType::AUDIO},
