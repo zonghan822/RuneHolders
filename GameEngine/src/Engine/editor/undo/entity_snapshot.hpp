@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         entity_snapshot.hpp
 * @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         2025-11-29
@@ -76,6 +76,47 @@ namespace Editor
 	{
 	public:
 		/*============================================================================================
+		* \brief   Capture all components of an entity as a type_index -> any map.
+		*          Used by ComponentChangeCommand for lightweight component-only snapshots.
+		*//*========================================================================================*/
+		static std::unordered_map<std::type_index, std::any> captureComponentsMap(
+			ECS::Entity entity,
+			ECS::EntityManager& entityManager
+		)
+		{
+			std::unordered_map<std::type_index, std::any> result;
+#define X(CompName) \
+			if (entity.has<ECSComponents::CompName>(entityManager)) \
+				result[std::type_index(typeid(ECSComponents::CompName))] = \
+					entity.get<ECSComponents::CompName>(entityManager);
+			COMPONENT_LIST
+#undef X
+			return result;
+		}
+
+		/*============================================================================================
+		* \brief   Apply a component map snapshot back onto an existing entity.
+		*          Only overwrites components the entity already has.
+		*//*========================================================================================*/
+		static void applyComponentsMap(
+			ECS::Entity entity,
+			ECS::EntityManager& entityManager,
+			const std::unordered_map<std::type_index, std::any>& snapshot
+		)
+		{
+#define X(CompName) \
+			{ \
+				auto _key = std::type_index(typeid(ECSComponents::CompName)); \
+				auto _it = snapshot.find(_key); \
+				if (_it != snapshot.end() && entity.has<ECSComponents::CompName>(entityManager)) \
+					entity.get<ECSComponents::CompName>(entityManager) = \
+						std::any_cast<ECSComponents::CompName>(_it->second); \
+			}
+			COMPONENT_LIST
+#undef X
+		}
+
+		/*============================================================================================
 		* \brief   Create a snapshot of an entity with all its components
 		*//*========================================================================================*/
 		static EntitySnapshot captureEntity(
@@ -91,104 +132,25 @@ namespace Editor
 			if (nameNode)
 				snapshot.name = nameNode->name_;
 
-			// Capture all components
-			// Transform
-			if (entity.has<ECSComponents::TransformComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::TransformComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
-			// DrawInfo
-			if (entity.has<ECSComponents::DrawInfoComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-			// DrawInfo
-			if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::AnimationControllerComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
-			// Collision
-			if (entity.has<ECSComponents::CollisionComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::CollisionComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
-			// Physics
-			if (entity.has<ECSComponents::PhysicsComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::PhysicsComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
-			// Visibility
-			if (entity.has<ECSComponents::VisibilityComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::VisibilityComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
-			// Layer
-			if (entity.has<ECSComponents::LayerComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::LayerComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
-			// Button
-			if (entity.has<ECSComponents::ButtonComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::ButtonComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
-			// Audio
-			if (entity.has<ECSComponents::AudioComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::AudioComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
-			// AI
-			if (entity.has<ECSComponents::AIComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::AIComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
-
-			// Box (Pushable)
-			if (entity.has<ECSComponents::BoxComponent>(entityManager))
-			{
-				auto& comp = entity.get<ECSComponents::BoxComponent>(entityManager);
-				snapshot.components.emplace_back(comp);
-			}
+			// Capture all components via COMPONENT_LIST
+#define X(CompName) \
+			if (entity.has<ECSComponents::CompName>(entityManager)) \
+				snapshot.components.emplace_back(entity.get<ECSComponents::CompName>(entityManager));
+			COMPONENT_LIST
+#undef X
 
 			// Capture hierarchy information from scene tree
 			Node* node = sceneTree.getNodeByEntityID(entity.id());
 			if (node)
 			{
-				// Capture parent
 				if (node->parent_)
-				{
 					snapshot.parentID = node->parent_->entity_.id();
-				}
 
-				// Capture children
 				for (Node* child : node->children_)
-				{
 					snapshot.childIDs.push_back(child->entity_.id());
-				}
 
-				// Capture script path if exists
 				if (node->script_)
-				{
 					snapshot.scriptPath = node->script_->path();
-				}
 			}
 
 			std::cout << "[EntitySerializer] Captured entity " << entity.id()
@@ -209,10 +171,8 @@ namespace Editor
 		{
 			std::vector<EntitySnapshot> snapshots;
 
-			// Capture this entity
 			snapshots.push_back(captureEntity(entity, entityManager, sceneTree));
 
-			// Capture all children recursively
 			Node* node = sceneTree.getNodeByEntityID(entity.id());
 			if (node)
 			{
@@ -234,31 +194,24 @@ namespace Editor
 			const EntitySnapshot& snapshot,
 			ECS::EntityManager& entityManager,
 			Editor::EnoSceneTree& sceneTree,
-			std::unordered_map<uint32_t, ECS::Entity>& idMapping  // Map old ID to new ID
+			std::unordered_map<uint32_t, ECS::Entity>& idMapping
 		)
 		{
-			// Create new entity (will get a new ID)
 			ECS::Entity newEntity = entityManager.create<>();
 
 			std::cout << "[EntitySerializer] Restoring entity " << snapshot.entityID
 					  << " as new entity " << newEntity.id() << "\n";
 
-			// Store mapping from old ID to new entity
 			idMapping[snapshot.entityID] = newEntity;
 
-			// Restore all components
 			for (const auto& compSnapshot : snapshot.components)
-			{
 				restoreComponent(newEntity, compSnapshot, entityManager);
-			}
-
-			// Note: node->name_ is restored by the caller (entity_commands) after createFromEntity()
 
 			return newEntity;
 		}
 
 		/*============================================================================================
-		* \brief   Restore component from snapshot
+		* \brief   Restore component from snapshot onto entity (adds component)
 		*//*========================================================================================*/
 		static void restoreComponent(
 			ECS::Entity& entity,
@@ -266,57 +219,14 @@ namespace Editor
 			ECS::EntityManager& entityManager
 		)
 		{
-			// Check component type and restore accordingly
-			if (snapshot.type == typeid(ECSComponents::TransformComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::TransformComponent>();
-				entity.add<ECSComponents::TransformComponent>(entityManager, comp);
+#define X(CompName) \
+			if (snapshot.type == typeid(ECSComponents::CompName)) { \
+				entity.add<ECSComponents::CompName>(entityManager, \
+					snapshot.get<ECSComponents::CompName>()); \
+				return; \
 			}
-			else if (snapshot.type == typeid(ECSComponents::DrawInfoComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::DrawInfoComponent>();
-				entity.add<ECSComponents::DrawInfoComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::AnimationControllerComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::AnimationControllerComponent>();
-				entity.add<ECSComponents::AnimationControllerComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::CollisionComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::CollisionComponent>();
-				entity.add<ECSComponents::CollisionComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::PhysicsComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::PhysicsComponent>();
-				entity.add<ECSComponents::PhysicsComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::VisibilityComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::VisibilityComponent>();
-				entity.add<ECSComponents::VisibilityComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::LayerComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::LayerComponent>();
-				entity.add<ECSComponents::LayerComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::ButtonComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::ButtonComponent>();
-				entity.add<ECSComponents::ButtonComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::AudioComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::AudioComponent>();
-				entity.add<ECSComponents::AudioComponent>(entityManager, comp);
-			}
-			else if (snapshot.type == typeid(ECSComponents::AIComponent))
-			{
-				auto& comp = snapshot.get<ECSComponents::AIComponent>();
-				entity.add<ECSComponents::AIComponent>(entityManager, comp);
-			}
+			COMPONENT_LIST
+#undef X
 		}
 	};
 }

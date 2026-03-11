@@ -1,5 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         undo_manager.hpp
 * @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         2025-11-29
@@ -14,7 +14,9 @@
 #include "../editor_events.hpp"
 #include "../../event/event_bus.hpp"
 #include "../../ecs/entity.hpp"
+#include "../../graphics/graphics.hpp"
 #include <iostream>
+#include <unordered_map>
 
 namespace Editor
 {
@@ -34,10 +36,13 @@ namespace Editor
 		UndoManager(
 			Event::EnoEventBus& bus,
 			ECS::EntityManager& entityManager,
-			size_t maxHistorySize = 20
+			Graphics::EnoGraphicsManager& graphicsManager,
+			size_t maxHistorySize = 30
 		)
 			: bus_(bus)
 			, entityManager_(entityManager)
+			, graphicsMng_(graphicsManager)
+			, maxHistorySize_(maxHistorySize)
 			, history_(maxHistorySize)
 		{
 			// Subscribe to undo/redo events
@@ -184,6 +189,29 @@ namespace Editor
 		}
 
 		/*============================================================================================
+		* \brief   Capture all components of an entity as a type->any map (for inspector undo)
+		*//*========================================================================================*/
+		std::unordered_map<std::type_index, std::any> captureComponentsMap(ECS::Entity entity)
+		{
+			return EntitySerializer::captureComponentsMap(entity, entityManager_);
+		}
+
+		/*============================================================================================
+		* \brief   Record a change to any component(s) on an entity.
+		*          Call captureComponentsMap() before and after the edit, then pass both here.
+		*//*========================================================================================*/
+		void recordComponentChange(
+			ECS::Entity entity,
+			std::unordered_map<std::type_index, std::any> before,
+			std::unordered_map<std::type_index, std::any> after,
+			const std::string& description = "Edit Component"
+		)
+		{
+			executeCommand(std::make_unique<ComponentChangeCommand>(
+				entity, entityManager_, graphicsMng_, std::move(before), std::move(after), description));
+		}
+
+		/*============================================================================================
 		* \brief   Check if undo is available
 		*//*========================================================================================*/
 		bool canUndo() const
@@ -200,11 +228,43 @@ namespace Editor
 		}
 
 		/*============================================================================================
-		* \brief   Clear all history
+		* \brief   Switch the active scene, saving the current history and restoring (or
+		*          creating) the history for the new scene. Call this whenever a scene loads.
+		* \param[in] oldScene  Name of the scene being left (empty string = no previous scene)
+		* \param[in] newScene  Name of the scene being entered
+		*//*========================================================================================*/
+		void switchScene(const std::string& oldScene, const std::string& newScene)
+		{
+			// Save current history under the old scene name (only if we had one)
+			if (!oldScene.empty())
+			{
+				sceneHistories_.emplace(oldScene, std::move(history_));
+			}
+
+			// Restore or create history for the new scene
+			auto it = sceneHistories_.find(newScene);
+			if (it != sceneHistories_.end())
+			{
+				history_ = std::move(it->second);
+				sceneHistories_.erase(it);
+				std::cout << "[UndoManager] Restored history for scene '" << newScene << "'\n";
+			}
+			else
+			{
+				history_ = CommandHistory(maxHistorySize_);
+				std::cout << "[UndoManager] Fresh history for scene '" << newScene << "'\n";
+			}
+
+			currentScene_ = newScene;
+		}
+
+		/*============================================================================================
+		* \brief   Clear all history (current scene + all stored scenes)
 		*//*========================================================================================*/
 		void clear()
 		{
 			history_.clear();
+			sceneHistories_.clear();
 		}
 
 		/*============================================================================================
@@ -226,6 +286,10 @@ namespace Editor
 	private:
 		Event::EnoEventBus& bus_;
 		ECS::EntityManager& entityManager_;
+		Graphics::EnoGraphicsManager& graphicsMng_;
+		size_t maxHistorySize_;
 		CommandHistory history_;
+		std::string currentScene_;
+		std::unordered_map<std::string, CommandHistory> sceneHistories_;
 	};
 }

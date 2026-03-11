@@ -412,6 +412,55 @@ namespace Editor
 	};
 
 	/*============================================================================================
+	* \class	ComponentChangeCommand
+	* \brief	Records a before/after snapshot of ALL components on an entity,
+	*			allowing undo/redo of any inspector edit (not just transforms).
+	*//*========================================================================================*/
+	class ComponentChangeCommand : public ICommand
+	{
+	public:
+		ComponentChangeCommand(
+			ECS::Entity entity,
+			ECS::EntityManager& entityManager,
+			Graphics::EnoGraphicsManager& graphicsManager,
+			std::unordered_map<std::type_index, std::any> before,
+			std::unordered_map<std::type_index, std::any> after,
+			std::string description = "Edit Component"
+		)
+			: entity_(entity)
+			, entityManager_(entityManager)
+			, graphicsMng_(graphicsManager)
+			, before_(std::move(before))
+			, after_(std::move(after))
+			, description_(std::move(description))
+		{}
+
+		void execute() override
+		{
+			if (entityManager_.getMap().find(entity_.id()) == entityManager_.getMap().end()) return;
+			EntitySerializer::applyComponentsMap(entity_, entityManager_, after_);
+			graphicsMng_.markAnimationsDirty();
+		}
+
+		void undo() override
+		{
+			if (entityManager_.getMap().find(entity_.id()) == entityManager_.getMap().end()) return;
+			EntitySerializer::applyComponentsMap(entity_, entityManager_, before_);
+			graphicsMng_.markAnimationsDirty();
+		}
+
+		std::string getDescription() const override { return description_; }
+
+	private:
+		ECS::Entity entity_;
+		ECS::EntityManager& entityManager_;
+		Graphics::EnoGraphicsManager& graphicsMng_;
+		std::unordered_map<std::type_index, std::any> before_;
+		std::unordered_map<std::type_index, std::any> after_;
+		std::string description_;
+	};
+
+	/*============================================================================================
 	* \class	MultiEntityCommand
 	* \brief	Batch command for applying the same operation to multiple entities
 	*

@@ -25,13 +25,13 @@ namespace Editor
 		EnoEditor(const EnoEditor&) = delete;
 		EnoEditor(EnoEditor&&) = delete;
 
-		EnoEditor(Event::EnoEventBus& bus, ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost, Map::TileMapSystem& tileMap, ECSComponents::EnoPrefabManager& prefabMng)
+		EnoEditor(Event::EnoEventBus& bus, ECS::EntityManager& entMng, Core::EnoCoreHost& coreHost, Map::TileMapSystem& tileMap, ECSComponents::EnoPrefabManager& prefabMng, Graphics::EnoGraphicsManager& graphicsMng)
 			:
 			bus_ { bus },
 			entMng_{ entMng },
 			coreHost_{ coreHost },
 			prefabMng_{ prefabMng },
-			undoManager_{ bus, entMng, 20 },
+			undoManager_{ bus, entMng, graphicsMng, 30 },
 			tree_{ entMng, coreHost, tileMap, prefabMng }
 		{
 

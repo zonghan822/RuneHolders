@@ -461,7 +461,9 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	else if (g_pendingSceneLoad)
 	{
 		clearSelectedEntity();
+		std::string oldSceneName = engine_.getEnoEditor().getCurrentScene().getSceneName();
 		engine_.getEnoEditor().selectScene(g_sceneToLoad);
+		undoManager.switchScene(oldSceneName, g_sceneToLoad);  // Save old history, restore new
 		g_game->markEntitiesDirty();  // Force entity cache refresh
 		g_game->resetEditorCamera();
 		g_game->getMapEditor().setHasTilemap(engine_.getEnoEditor().getSceneTree().hasTilemap());
@@ -2161,6 +2163,26 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 {
 	auto& entMng = engine_.getEntityManager();
 
+	// Shared undo tracking for all component edits in the inspector.
+	// IsItemActivated/IsItemDeactivated fire on the exact frame the user
+	// starts/stops interacting with a widget, so we capture before then record after.
+	static std::unordered_map<std::type_index, std::any> s_compBefore;
+	static uint32_t s_compEntityID = UINT32_MAX;
+	auto trackEdit = [&](const char* desc = "Edit Component")
+	{
+		if (ImGui::IsItemActivated())
+		{
+			s_compEntityID = entity.id();
+			s_compBefore = undoManager.captureComponentsMap(entity);
+		}
+		if (ImGui::IsItemDeactivated() && s_compEntityID == entity.id())
+		{
+			auto after = undoManager.captureComponentsMap(entity);
+			undoManager.recordComponentChange(entity, std::move(s_compBefore), std::move(after), desc);
+			s_compEntityID = UINT32_MAX;
+		}
+	};
+
 	// Note: Entity ID 0 is valid, so don't early return based on ID
 	ImGui::Begin("Entity Inspector", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -2211,13 +2233,23 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// Core AI Behavior Params
 		// ----------------------------
 		ImGui::DragFloat("Awareness Radius", &ai.awarenessRadius, 1.f, 1.f, 2000.f);
+		trackEdit("Edit Awareness Radius");
 		ImGui::DragFloat("Chase Speed", &ai.chaseSpeed, 1.f, 0.f, 1000.f);
-		ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal);
+		trackEdit("Edit Chase Speed");
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Checkbox("Diagonal Movement", &ai.allowDiagonal))
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Diagonal Movement");
+		}
 
 		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
+		trackEdit("Edit Attack Range");
 		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
+		trackEdit("Edit Windup Time");
 		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
+		trackEdit("Edit Attack Duration");
 		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
+		trackEdit("Edit Hurt Duration");
 	}
 
 	// ---------- Visibility Component ---------
@@ -2228,8 +2260,12 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::SeparatorText("Visibility Component");
 
 		// Toggle checkbox for visibility (children inherit at render time via ancestor check)
-		if (ImGui::Checkbox("Entity Visibility", &vi.visible)) {
-			if (g_game) g_game->markEntitiesDirty();
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Checkbox("Entity Visibility", &vi.visible)) {
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Visibility");
+			}
 		}
 
 		// Header with +/- buttons to adjust entity's layer
@@ -2243,8 +2279,10 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		{
 			if (ImGui::Button("+"))
 			{
+				auto _before = undoManager.captureComponentsMap(entity);
 				vi.setZIndex(static_cast<uint32_t>(currentLayer + 1));
 				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Layer Up");
 			}
 		}
 		else
@@ -2262,8 +2300,10 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		{
 			if (ImGui::Button("-"))
 			{
+				auto _before = undoManager.captureComponentsMap(entity);
 				vi.setZIndex(static_cast<uint32_t>(currentLayer - 1));
 				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Layer Down");
 			}
 		}
 		else
@@ -2297,10 +2337,14 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		// Dropdown for layer selection (## hides the label since we have our own header)
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 30.0f);  // Leave room for checkbox
-		if (ImGui::Combo("##ZIndexLayer", &displayLayer, layerNames.data(), static_cast<int>(layerNames.size())))
 		{
-			vi.setZIndex(static_cast<uint32_t>(displayLayer));
-			if (g_game) g_game->markEntitiesDirty();
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("##ZIndexLayer", &displayLayer, layerNames.data(), static_cast<int>(layerNames.size())))
+			{
+				vi.setZIndex(static_cast<uint32_t>(displayLayer));
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Change Layer");
+			}
 		}
 
 		// Layer visibility checkbox (toggles visibility of the currently selected layer)
@@ -2383,43 +2427,16 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		bool isChild = transformNode && transformNode->parent_ != nullptr;
 		const char* posLabel = isChild ? "Position (local)" : "Position";
 
-		// Track position editing for undo
-		static Math::eVec2<float> oldPosInspector;
-		static bool editingPosInspector = false;
-
-		if (ImGui::IsItemActive() && !editingPosInspector) {
-			oldPosInspector = transform.pos;
-			editingPosInspector = true;
-		}
-
 		ImGui::DragFloat2(posLabel, (float*)&transform.pos, 0.5f);
-
-		if (editingPosInspector && !ImGui::IsItemActive()) {
-			if (oldPosInspector.x != transform.pos.x || oldPosInspector.y != transform.pos.y)
-				undoManager.recordMove(entity, oldPosInspector, transform.pos);
-			editingPosInspector = false;
-		}
+		trackEdit("Move");
 
 		// Rotation
-		static Math::eVec2<float> oldRotInspector;
-		static bool editingRotInspector = false;
-
-		if (ImGui::IsItemActive() && !editingRotInspector) {
-			oldRotInspector = transform.rot;
-			editingRotInspector = true;
-		}
-
 		float rotationDegrees = transform.rot.x * (180.0f / 3.14159265f);
 		if (ImGui::DragFloat("Rotation", &rotationDegrees, 1.0f, -360.0f, 360.0f, "%.1f deg")) {
 			transform.rot.x = rotationDegrees * (3.14159265f / 180.0f);
 			if (g_game) g_game->markEntitiesDirty();
 		}
-
-		if (editingRotInspector && !ImGui::IsItemActive()) {
-			if (oldRotInspector.x != transform.rot.x || oldRotInspector.y != transform.rot.y)
-				undoManager.recordRotation(entity, oldRotInspector, transform.rot);
-			editingRotInspector = false;
-		}
+		trackEdit("Rotate");
 
 		// Scale (applies to Draw Info dimensions if present)
 		if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
@@ -2441,10 +2458,11 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				drawForScale.width  = baseSize.first  * scale;
 				drawForScale.height = baseSize.second * scale;
 			}
+			trackEdit("Scale");
 		}
 	}
 
-	assetPresetsTab(engine_, entity);
+	assetPresetsTab(engine_, entity, undoManager);
 
 	// --- DrawInfoComponent ---
 	if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
@@ -2459,7 +2477,9 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		
 		// Allow independent width/height scaling
 		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+		trackEdit("Edit DrawInfo Width");
 		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+		trackEdit("Edit DrawInfo Height");
 
 		// Auto-update collision when width/height changes
 		if ((draw.width != oldWidth || draw.height != oldHeight) && entity.has<ECSComponents::CollisionComponent>(entMng)) {
@@ -2480,27 +2500,29 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// Shape type selector (Circle or Rectangle)
 		const char* shapeTypes[] = { "Circle", "Rectangle" };
 		int currentShapeIndex = (strcmp(draw.shape, "Circle") == 0) ? 0 : 1;
-		if (ImGui::Combo("Shape", &currentShapeIndex, shapeTypes, IM_ARRAYSIZE(shapeTypes))) {
-			strncpy_s(draw.shape, shapeTypes[currentShapeIndex], sizeof(draw.shape) - 1);
-			draw.shape[sizeof(draw.shape) - 1] = '\0';
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("Shape", &currentShapeIndex, shapeTypes, IM_ARRAYSIZE(shapeTypes))) {
+				strncpy_s(draw.shape, shapeTypes[currentShapeIndex], sizeof(draw.shape) - 1);
+				draw.shape[sizeof(draw.shape) - 1] = '\0';
 
-			// Auto-update collision component to match new shape
-			if (entity.has<ECSComponents::CollisionComponent>(entMng)) {
-				auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
+				// Auto-update collision component to match new shape
+				if (entity.has<ECSComponents::CollisionComponent>(entMng)) {
+					auto& collision = entity.get<ECSComponents::CollisionComponent>(entMng);
 
-				if (strcmp(draw.shape, "Circle") == 0) {
-					// Changed to circle - auto-calculate circle collider
-					collision.type = ECSComponents::ColliderType::CIRCLE;
-					collision.data.circle.radius = draw.width * 0.5f;
+					if (strcmp(draw.shape, "Circle") == 0) {
+						collision.type = ECSComponents::ColliderType::CIRCLE;
+						collision.data.circle.radius = draw.width * 0.5f;
+					}
+					else {
+						collision.type = ECSComponents::ColliderType::RECTANGLE;
+						collision.data.rectangle.width = draw.width;
+						collision.data.rectangle.height = draw.height;
+					}
 				}
-				else {
-					// Changed to Rectangle - auto-calculate rectangle collider
-					collision.type = ECSComponents::ColliderType::RECTANGLE;
-					collision.data.rectangle.width = draw.width;
-					collision.data.rectangle.height = draw.height; 
-				}
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Change Shape");
 			}
-			if (g_game) g_game->markEntitiesDirty();
 		}
 
 		// Color selector (White, Red or Green)
@@ -2516,17 +2538,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			currentColorIndex = 0; // White
 		}
 
-		if (ImGui::Combo("Color", &currentColorIndex, colorTypes, IM_ARRAYSIZE(colorTypes))) {
-			if (currentColorIndex == 1) {
-				draw.color = Graphics::Color::Green;
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("Color", &currentColorIndex, colorTypes, IM_ARRAYSIZE(colorTypes))) {
+				if (currentColorIndex == 1)       draw.color = Graphics::Color::Green;
+				else if (currentColorIndex == 2)  draw.color = Graphics::Color::Red;
+				else                              draw.color = Graphics::Color::White;
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Change Color");
 			}
-			else if (currentColorIndex == 2) {
-				draw.color = Graphics::Color::Red;
-			} 
-			else {
-				draw.color = Graphics::Color::White;
-			}
-			if (g_game) g_game->markEntitiesDirty();
 		}
 
 		// Display color preview
@@ -2542,12 +2562,14 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 					std::string textureName(static_cast<const char*>(payload->Data), payload->DataSize - 1);
 					auto tex = engine_.getResourceLoader().getTexture(textureName);
 					if (tex) {
+						auto _before = undoManager.captureComponentsMap(entity);
 						draw.texture = tex;
 						draw.width   = static_cast<float>(tex->getWidth());
 						draw.height  = static_cast<float>(tex->getHeight());
 						strncpy_s(draw.texturePath, textureName.c_str(), sizeof(draw.texturePath) - 1);
 						draw.texturePath[sizeof(draw.texturePath) - 1] = '\0';
 						if (g_game) g_game->markEntitiesDirty();
+						undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Apply Texture");
 					}
 				}
 				ImGui::EndDragDropTarget();
@@ -2569,12 +2591,14 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 					std::string textureName(static_cast<const char*>(payload->Data), payload->DataSize - 1);
 					auto tex = engine_.getResourceLoader().getTexture(textureName);
 					if (tex) {
+						auto _before = undoManager.captureComponentsMap(entity);
 						draw.texture = tex;
 						draw.width   = static_cast<float>(tex->getWidth());
 						draw.height  = static_cast<float>(tex->getHeight());
 						strncpy_s(draw.texturePath, textureName.c_str(), sizeof(draw.texturePath) - 1);
 						draw.texturePath[sizeof(draw.texturePath) - 1] = '\0';
 						if (g_game) g_game->markEntitiesDirty();
+						undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Apply Texture");
 					}
 				}
 				ImGui::EndDragDropTarget();
@@ -2588,9 +2612,13 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		auto& physics = entity.get<ECSComponents::PhysicsComponent>(entMng);
 		ImGui::SeparatorText("Physics");
 		ImGui::DragFloat2("Velocity", (float*)&physics.velocity, 0.5f);
+		trackEdit("Edit Velocity");
 		ImGui::DragFloat("Mass", &physics.mass, 0.1f, 0.1f, 100.0f);
+		trackEdit("Edit Mass");
 		ImGui::DragFloat("Drag", &physics.drag, 0.01f, 0.0f, 1.0f);
+		trackEdit("Edit Drag");
 		ImGui::Checkbox("Use Gravity", &physics.useGravity);
+		trackEdit("Toggle Use Gravity");
 	}
 
 	// --- CollisionComponent ---
@@ -2609,24 +2637,23 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// Map the current type to the combo index (0 = Circle, 1 = Rectangle)
 		int comboIndex = (collider.type == ECSComponents::ColliderType::CIRCLE) ? 0 : 1;
 
-		if (ImGui::Combo("Type", &comboIndex, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
-			ECSComponents::ColliderType newType = (comboIndex == 0) ?
-				ECSComponents::ColliderType::CIRCLE : ECSComponents::ColliderType::RECTANGLE;
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("Type", &comboIndex, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
+				ECSComponents::ColliderType newType = (comboIndex == 0) ?
+					ECSComponents::ColliderType::CIRCLE : ECSComponents::ColliderType::RECTANGLE;
 
-			// Only change if it's a different type
-			if (newType != collider.type) {
-				collider.type = newType;
-
-				// Initialize default values for the new collider type
-				if (newType == ECSComponents::ColliderType::CIRCLE) {
-					collider.data.circle.radius = 10.0f;
+				if (newType != collider.type) {
+					collider.type = newType;
+					if (newType == ECSComponents::ColliderType::CIRCLE)
+						collider.data.circle.radius = 10.0f;
+					else {
+						collider.data.rectangle.width = 20.0f;
+						collider.data.rectangle.height = 20.0f;
+					}
+					if (g_game) g_game->markEntitiesDirty();
+					undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Change Collider Type");
 				}
-				else if (newType == ECSComponents::ColliderType::RECTANGLE) {
-					collider.data.rectangle.width = 20.0f;
-					collider.data.rectangle.height = 20.0f;
-				}
-
-				if (g_game) g_game->markEntitiesDirty();
 			}
 		}
 
@@ -2635,14 +2662,17 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (ImGui::DragFloat("Radius", &collider.data.circle.radius, 0.5f, 1.0f, 200.0f)) {
 				if (g_game) g_game->markEntitiesDirty();
 			}
+			trackEdit("Edit Collider Radius");
 		}
 		else if (collider.type == ECSComponents::ColliderType::RECTANGLE) {
 			if (ImGui::DragFloat("Width##collider", &collider.data.rectangle.width, 0.5f, 1.0f, 500.0f)) {
 				if (g_game) g_game->markEntitiesDirty();
 			}
+			trackEdit("Edit Collider Width");
 			if (ImGui::DragFloat("Height##collider", &collider.data.rectangle.height, 0.5f, 1.0f, 500.0f)) {
 				if (g_game) g_game->markEntitiesDirty();
 			}
+			trackEdit("Edit Collider Height");
 
 			// Show auto-calculated dimensions if entity has RenderComponent
 			if (entity.has<ECSComponents::RenderComponent>(entMng)) {
@@ -2663,14 +2693,20 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::DragFloat("X##offset", &collider.offset.x, 0.5f, -200.0f, 200.0f)) {
 			if (g_game) g_game->markEntitiesDirty();
 		}
+		trackEdit("Edit Collider Offset X");
 		if (ImGui::DragFloat("Y##offset", &collider.offset.y, 0.5f, -200.0f, 200.0f)) {
 			if (g_game) g_game->markEntitiesDirty();
 		}
+		trackEdit("Edit Collider Offset Y");
 
 		// Active and Trigger flags
 		ImGui::Spacing();
-		if (ImGui::Checkbox("Is Active", &collider.isActive)) {
-			if (g_game) g_game->markEntitiesDirty();
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Checkbox("Is Active", &collider.isActive)) {
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Collider Active");
+			}
 		}
 		ImGui::SameLine();
 		ImGui::TextDisabled("(?)");
@@ -2678,8 +2714,12 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			ImGui::SetTooltip("Enable/disable collision detection for this collider");
 		}
 
-		if (ImGui::Checkbox("Is Trigger", &collider.isTrigger)) {
-			if (g_game) g_game->markEntitiesDirty();
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Checkbox("Is Trigger", &collider.isTrigger)) {
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Collider Trigger");
+			}
 		}
 		ImGui::SameLine();
 		ImGui::TextDisabled("(?)");
@@ -2691,10 +2731,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 	if (entity.has<ECSComponents::BoxComponent>(entMng)) {
 		auto& pushComp = entity.get<ECSComponents::BoxComponent>(entMng);
 		ImGui::SeparatorText("Box (Pushable)");
-		if (ImGui::Checkbox("Is Pushable", &pushComp.isPushable)) {
-			if (g_game) g_game->markEntitiesDirty();
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Checkbox("Is Pushable", &pushComp.isPushable)) {
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Pushable");
+			}
 		}
 		ImGui::DragFloat("Push Resistance", &pushComp.pushResistance, 0.01f, 0.0f, 1.0f);
+		trackEdit("Edit Push Resistance");
 	}
 #if 0
 	else {
@@ -2746,9 +2791,13 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			}
 		}
 
-		if (ImGui::Combo("##ChangeChannelGroup", &currentChannelGroup, channelGroupOptions, IM_ARRAYSIZE(channelGroupOptions))) {
-			strncpy(ac.audioMod_.chGroup_, channelGroupOptions[currentChannelGroup], sizeof(ac.audioMod_.chGroup_) - 1);
-			ac.audioMod_.chGroup_[sizeof(ac.audioMod_.chGroup_) - 1] = '\0';
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("##ChangeChannelGroup", &currentChannelGroup, channelGroupOptions, IM_ARRAYSIZE(channelGroupOptions))) {
+				strncpy(ac.audioMod_.chGroup_, channelGroupOptions[currentChannelGroup], sizeof(ac.audioMod_.chGroup_) - 1);
+				ac.audioMod_.chGroup_[sizeof(ac.audioMod_.chGroup_) - 1] = '\0';
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Change Channel Group");
+			}
 		}
 
 		ImGui::Spacing();
@@ -2795,9 +2844,13 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			int loopMode = static_cast<int>(ac.audioMod_.loop_);
 			ImGui::Text("Loop Mode:");
 			ImGui::SameLine(160);
-			if (ImGui::Combo("##LoopMode", &loopMode, loopOptions, IM_ARRAYSIZE(loopOptions)))
 			{
-				ac.audioMod_.loop_ = static_cast<Audio::EnoAudioModule::LoopMode>(loopMode);
+				auto _before = undoManager.captureComponentsMap(entity);
+				if (ImGui::Combo("##LoopMode", &loopMode, loopOptions, IM_ARRAYSIZE(loopOptions)))
+				{
+					ac.audioMod_.loop_ = static_cast<Audio::EnoAudioModule::LoopMode>(loopMode);
+					undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Change Loop Mode");
+				}
 			}
 
 			int loopBegin = static_cast<int>(ac.audioMod_.loopStart_);
@@ -2839,6 +2892,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (ImGui::SliderFloat("##Volume", &tmpVol, 0.f, 100.f, "%.1f")) {
 				ac.volume_ = static_cast<double>(tmpVol);
 			}
+			trackEdit("Edit Volume");
 
 			ImGui::Text("Pitch Scale:");
 			ImGui::SameLine(160);
@@ -2846,6 +2900,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			if (ImGui::SliderFloat("##PitchScale", &tmppitch, 0.1f, 5.f, "%.2f")) {
 				ac.pitchScale_ = static_cast<double>(tmppitch);
 			}
+			trackEdit("Edit Pitch Scale");
 
 			ImGui::Text("Pan:");
 			ImGui::SameLine(160);
@@ -2854,6 +2909,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			{
 				ac.panScale_ = static_cast<double>(pan);
 			}
+			trackEdit("Edit Pan");
 
 			ImGui::TreePop();
 		}
@@ -3034,14 +3090,24 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::SeparatorText("Camera");
 
 		// Active toggle (unique label to avoid conflicts with CollisionComponent)
-		ImGui::Checkbox("Is Active##camera", &camera.isActive);
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Checkbox("Is Active##camera", &camera.isActive))
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Camera Active");
+		}
 
 		// Viewport size
 		ImGui::DragFloat("Viewport Width", &camera.viewportWidth, 10.0f, 100.0f, 10000.0f);
+		trackEdit("Edit Viewport Width");
 		ImGui::DragFloat("Viewport Height", &camera.viewportHeight, 10.0f, 100.0f, 10000.0f);
+		trackEdit("Edit Viewport Height");
 
 		// Follow Transform toggle
-		ImGui::Checkbox("Follow Transform##camera", &camera.followTransform);
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Checkbox("Follow Transform##camera", &camera.followTransform))
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Camera Follow Transform");
+		}
 		if (ImGui::IsItemHovered())
 			ImGui::SetTooltip("Drives camera position from this entity's Transform component");
 
@@ -3052,6 +3118,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			ImGui::EndDisabled();
 		} else {
 			ImGui::DragFloat2("Camera Position", (float*)&camera.position, 1.0f);
+			trackEdit("Edit Camera Position");
 		}
 	}
 
@@ -3069,6 +3136,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		float minHeight  = ImGui::GetTextLineHeightWithSpacing() * 2.0f;
 		ImGui::InputTextMultiline("##TextContent", textComp.text, sizeof(textComp.text),
 			ImVec2(-1.0f, std::max(textHeight, minHeight)));
+		trackEdit("Edit Text");
 
 		// Font selector dropdown
 		auto fontNames = engine_.getResourceLoader().getFontNames();
@@ -3084,13 +3152,18 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				break;
 			}
 		}
-		if (ImGui::Combo("Font", &currentFontIdx, fontNamesCStr.data(), static_cast<int>(fontNamesCStr.size()))) {
-			strncpy_s(textComp.fontName, fontNames[currentFontIdx].c_str(), sizeof(textComp.fontName) - 1);
-			textComp.fontName[sizeof(textComp.fontName) - 1] = '\0';
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("Font", &currentFontIdx, fontNamesCStr.data(), static_cast<int>(fontNamesCStr.size()))) {
+				strncpy_s(textComp.fontName, fontNames[currentFontIdx].c_str(), sizeof(textComp.fontName) - 1);
+				textComp.fontName[sizeof(textComp.fontName) - 1] = '\0';
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Change Font");
+			}
 		}
 
 		// Font size (scale)
 		ImGui::DragFloat("Size", &textComp.fontSize, 0.1f, 0.1f, 10.0f);
+		trackEdit("Edit Font Size");
 
 	}
 
@@ -3595,7 +3668,7 @@ void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 
 // Read states from entity's StateMachineComponent
-void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
+void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager) {
 	//Node* entNode = engine_.getEnoEditor().getSceneTree().getNodeByEntityID(entity.id());
 	auto& entMng = engine_.getEntityManager();
 
@@ -3836,6 +3909,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 	if (ImGui::Button("APPLY Selected State"))
 	{
 		ECS::Entity e{ selectedEntityID };
+		auto _animBefore = undoManager.captureComponentsMap(e);
 
 		// Comprehensive validation checks
 		try {
@@ -3929,7 +4003,7 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 		// Save animation configuration to component for serialization
 		std::strncpy(animComp.currentAnimationName, selectedState.c_str(), sizeof(animComp.currentAnimationName) - 1); 
 
-		animComp.setAnimationData(																		
+		animComp.setAnimationData(
 			selectedState.c_str(),
 			selected.c_str(),
 			selectedTexData.frameWidth,
@@ -3939,6 +4013,8 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity) {
 			0.1f,
 			true
 		);
+
+		undoManager.recordComponentChange(e, std::move(_animBefore), undoManager.captureComponentsMap(e), "Apply Animation");
 	}
 
 	if (!selectedHasTexture)

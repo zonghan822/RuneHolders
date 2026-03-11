@@ -74,7 +74,7 @@ namespace Engine
 			coreHost_ = std::make_unique<Core::EnoCoreHost>(bus_);
 
 		// Initialize editor (loads saves/scenes from the current project)
-		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_, prefabMng_);
+		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_, prefabMng_, graphicsMng_);
 
 		// Bridge must be initialized before Begin() so that Bridge.* calls inside
 		// script Begin() methods resolve correctly.
