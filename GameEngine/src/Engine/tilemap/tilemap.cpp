@@ -264,6 +264,8 @@ namespace Map {
                     if (!layer.hasTileTexture(x, y)) continue;
                     float cx = (x + 0.5f) * cellSize_;
                     float cy = worldOriginY_ + (y + 0.5f) * cellSize_;
+                    ECSComponents::CollisionComponent tileCol{ cellSize_, cellSize_ };
+                    tileCol.isStatic = true;
                     ECS::Entity e = entMng.create<
                         ECSComponents::TransformComponent,
                         ECSComponents::CollisionComponent>(
@@ -272,7 +274,7 @@ namespace Map {
                                 Math::eVec2<float>{ 0.f, 0.f },
                                 Math::eVec2<float>{ 1.f, 1.f }
                             },
-                            ECSComponents::CollisionComponent{ cellSize_, cellSize_ }
+                            std::move(tileCol)
                         );
                     tileColliderEntities_.push_back(e.id());
                 }

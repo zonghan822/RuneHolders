@@ -797,6 +797,11 @@ namespace Collision {
 			// Safety check: make sure both entities still exist
 			if (itA == entityMap.end() || itB == entityMap.end()) continue;
 
+			// Skip static-static pairs — they can never meaningfully collide
+			auto& collisionA = GetCollisionComponent(itA->second);
+			auto& collisionB = GetCollisionComponent(itB->second);
+			if (collisionA.isStatic && collisionB.isStatic) continue;
+
 			// Do narrow phase collision check
 			CheckEntityCollision(entityA_ID, itA->second, entityB_ID, itB->second);
 		}

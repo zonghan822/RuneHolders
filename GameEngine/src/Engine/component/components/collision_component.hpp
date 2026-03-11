@@ -37,6 +37,7 @@ namespace ECSComponents
         Math::eVec2<float> offset;      // Offset from entity's transform position
         bool isTrigger;                 // Is this a trigger (no physics response) or solid collider?
         bool isActive;                  // Can this collider currently participate in collision detection
+        bool isStatic;                  // Static colliders never move; skip static-static pairs
         float rotation;                 // Rotation angle in radians
 
         /*============================================================================================
@@ -70,6 +71,7 @@ namespace ECSComponents
             , offset{ 0.0f, 0.0f }
             , isTrigger(false)
             , isActive(true)
+            , isStatic(false)
             , rotation(0.0f)
         {
             data.circle.radius = 10.0f;
@@ -90,6 +92,7 @@ namespace ECSComponents
             , offset(colliderOffset)
             , isTrigger(trigger)
             , isActive(true)
+            , isStatic(false)
             , rotation(0.0f)
         {
             data.circle.radius = radius;
@@ -112,6 +115,7 @@ namespace ECSComponents
             , offset(colliderOffset)
             , isTrigger(trigger)
             , isActive(true)
+            , isStatic(false)
             , rotation(0.0f)
         {
             data.rectangle.width = width;
@@ -133,6 +137,7 @@ namespace ECSComponents
             , offset{ 0.0f, 0.0f }
             , isTrigger(trigger)
             , isActive(true)
+            , isStatic(false)
             , rotation(0.0f)
         {
             data.line.p1 = point1;
@@ -165,6 +170,7 @@ namespace ECSComponents
             comp.offset = colliderOffset;
             comp.isTrigger = trigger;
             comp.isActive = true;
+            comp.isStatic = false;
             comp.rotation = 0.0f;
             return comp;
         }

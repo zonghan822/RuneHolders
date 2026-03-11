@@ -2711,6 +2711,19 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			ImGui::SetTooltip("Trigger detects collisions but doesn't block movement.\nRequires 'Is Active' to be checked.");
 		}
 
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Checkbox("Is Static", &collider.isStatic)) {
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Collider Static");
+			}
+		}
+		ImGui::SameLine();
+		ImGui::TextDisabled("(?)");
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Static colliders never move. Collisions between two static colliders are skipped for performance.");
+		}
+
 	}
 	if (entity.has<ECSComponents::BoxComponent>(entMng)) {
 		auto& pushComp = entity.get<ECSComponents::BoxComponent>(entMng);
