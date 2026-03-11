@@ -30,6 +30,30 @@
 				"TexID": <int> { 0 }
 			}
 
+			[struct ECSComponents::AudioComponent]
+			{
+				"Sound Name": <char32> { BGM_01_Layer1_loop }
+				"Sound Path": <char256> {  }
+				"Channel Group": <char32> { BGM }
+				"Loop Start": <float> { 0 }
+				"Loop End": <float> { 0 }
+				"Volume": <double> { 50 }
+				"Pitch Scale": <double> { 1 }
+				"Pan Scale": <double> { 0 }
+				"Is Playing": <bool> { 0 }
+				"Is Autoplay": <bool> { 0 }
+				"Spatial Audio": <bool> { 0 }
+				"Max Audible Distance": <float> { 500 }
+				"Enable Reverb": <bool> { 0 }
+				"Reverb Wet": <float> { 0 }
+				"Reverb Dry": <float> { 1 }
+				"Reverb Decay": <float> { 1500 }
+				"Enable EQ": <bool> { 0 }
+				"EQ Low Gain": <float> { 0 }
+				"EQ Mid Gain": <float> { 0 }
+				"EQ High Gain": <float> { 0 }
+			}
+
 			[struct ECSComponents::AnimationControllerComponent]
 			{
 				"Frame Width": <int> { 1920 }
