@@ -72,12 +72,6 @@ void EditorApplication::initialize() {
 			extern void clearSelectedEntity();
 			clearSelectedEntity();
 			engine_.markAnimationsDirty();
-			// The old tile collider entities are gone after scene reload — clear cache and rebuild
-			if (mapEditor_)
-			{
-				mapEditor_->clearColliderCache();
-				mapEditor_->rebuildAllTileColliders();
-			}
 			std::cout << "[EditorApplication] Scene cleared, reset selected entity" << std::endl;
 		});
 
@@ -197,6 +191,7 @@ void EditorApplication::run() {
 					engine_.getGraphicsManager(),
 					engine_.getEntityManager()
 				);
+				engine_.getGraphicsManager().flush();
 			}
 			if (editorFramebuffer_) {
 				editorFramebuffer_->unbind();

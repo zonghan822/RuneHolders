@@ -145,9 +145,8 @@ void MapEditor::displayMenu() {
 	ImGui::InputFloat("Cell Size", &newCellSize);
 
 	if (ImGui::Button("Resize Tilemap")) {
-		clearAllTileColliders();
 		tilemap_.resize(newW, newH, newCellSize);
-		rebuildAllTileColliders();
+		tilemap_.buildTileColliders(entMng_);
 	}
 
 	ImGui::Separator();
@@ -157,12 +156,7 @@ void MapEditor::displayMenu() {
 		bool isObstacle = tilemapLayers[selectedLayer_].isObstacleLayer();
 		if (ImGui::Checkbox("Obstacle Layer", &isObstacle)) {
 			tilemap_.setObstacleLayer(selectedLayer_, isObstacle);
-			if (isObstacle)
-				rebuildAllTileColliders();
-			else {
-				clearAllTileColliders();
-				rebuildAllTileColliders();
-			}
+			tilemap_.buildTileColliders(entMng_);
 		}
 	}
 	else {
@@ -452,81 +446,7 @@ void MapEditor::paint(EditorApplication* g) {
 
 void MapEditor::syncTileCollider(int layer, int x, int y)
 {
-	float cs = tilemap_.cellSize();
-	bool isObstacle = tilemap_.layers()[layer].isObstacleLayer() && tilemap_.layers()[layer].hasTileTexture(x, y);
-	uint64_t key = tileKey(layer, x, y);
-
-	auto it = tileColliders_.find(key);
-
-	if (isObstacle)
-	{
-		if (it == tileColliders_.end())
-		{
-			float cx = (x + 0.5f) * cs;
-			float cy = tilemap_.worldOriginY() + (y + 0.5f) * cs;
-			ECS::Entity e = entMng_.create<
-				ECSComponents::TransformComponent,
-				ECSComponents::CollisionComponent>(
-					ECSComponents::TransformComponent{
-						Math::eVec2<float>{ cx, cy },
-						Math::eVec2<float>{ 0.f, 0.f },
-						Math::eVec2<float>{ 1.f, 1.f }
-					},
-					ECSComponents::CollisionComponent{ cs, cs }
-				);
-			tileColliders_[key] = e.id();
-		}
-	}
-	else
-	{
-		if (it != tileColliders_.end())
-		{
-			ECS::Entity(it->second).destroy(entMng_);
-			tileColliders_.erase(it);
-		}
-	}
-}
-
-void MapEditor::clearAllTileColliders()
-{
-	for (auto& [key, entityID] : tileColliders_)
-	{
-		ECS::Entity(entityID).destroy(entMng_);
-	}
-	tileColliders_.clear();
-}
-
-void MapEditor::rebuildAllTileColliders()
-{
-	float cs = tilemap_.cellSize();
-	int layerIdx = 0;
-	for (auto& layer : tilemap_.layers())
-	{
-		for (int y = 0; y < tilemap_.height(); ++y)
-		{
-			for (int x = 0; x < tilemap_.width(); ++x)
-			{
-				if (layer.isObstacleLayer() && layer.hasTileTexture(x, y))
-				{
-					uint64_t key = tileKey(layerIdx, x, y);
-					float cx = (x + 0.5f) * cs;
-					float cy = tilemap_.worldOriginY() + (y + 0.5f) * cs;
-					ECS::Entity e = entMng_.create<
-						ECSComponents::TransformComponent,
-						ECSComponents::CollisionComponent>(
-							ECSComponents::TransformComponent{
-								Math::eVec2<float>{ cx, cy },
-								Math::eVec2<float>{ 0.f, 0.f },
-								Math::eVec2<float>{ 1.f, 1.f }
-							},
-							ECSComponents::CollisionComponent{ cs, cs }
-						);
-					tileColliders_[key] = e.id();
-				}
-			}
-		}
-		++layerIdx;
-	}
+	tilemap_.buildTileColliders(entMng_);
 }
 
 void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {

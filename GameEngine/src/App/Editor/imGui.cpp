@@ -2615,11 +2615,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		auto& collider = entity.get<ECSComponents::CollisionComponent>(entMng);
 		ImGui::SeparatorText("Collider");
 
-		// Show Collider checkbox
-		if (ImGui::Checkbox("Show Collider", &showColliders_)) {
-			// Toggle visibility immediately
-		}
-
 		// Collider type selector (only Circle and Rectangle)
 		const char* colliderTypes[] = { "Circle", "Rectangle" };
 
@@ -4767,6 +4762,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			mapEditor.setEditMode(!wasEdit);
 		if (wasEdit)
 			ImGui::PopStyleColor();
+		ImGui::SameLine();
+		ImGui::Checkbox("Show Colliders", &showColliders_);
 	} else {
 		if (ImGui::Button("Add Tilemap")) {
 			engine_.getEnoEditor().getSceneTree().setHasTilemap(true);
