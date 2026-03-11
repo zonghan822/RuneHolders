@@ -1755,8 +1755,8 @@ namespace Graphics
                             transform.pos.y - (scaledHeight * 0.5f)
                         };
 
-                        Math::eVec2<float> uvStart{ 0.0f, 0.0f };
-                        Math::eVec2<float> uvEnd  { 1.0f, 1.0f };
+                        Math::eVec2<float> uvStart = renderInfo.uvStart;
+                        Math::eVec2<float> uvEnd   = renderInfo.uvEnd;
 
                         if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
                         {

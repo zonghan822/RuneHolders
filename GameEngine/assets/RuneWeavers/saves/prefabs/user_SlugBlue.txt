@@ -89,6 +89,14 @@
 		"TexID": {
 			"value": "0",
 			"type": "int"
+		},
+		"UV Start": {
+			"value": "0 0",
+			"type": "eVec2(float)"
+		},
+		"UV End": {
+			"value": "1 1",
+			"type": "eVec2(float)"
 		}
 	},
 	"struct ECSComponents::TransformComponent": {

@@ -133,6 +133,7 @@ namespace Eno
         private static void Jump()
         {
             Console.WriteLine("Jumping right now!");
+            SceneManager.changeScene("Level.txt");
         }
 
         private static void Sprint()

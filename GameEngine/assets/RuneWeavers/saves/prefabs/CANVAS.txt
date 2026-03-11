@@ -41,6 +41,14 @@
 		"TexID": {
 			"value": "0",
 			"type": "int"
+		},
+		"UV Start": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"UV End": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
 		}
 	},
 	"struct ECSComponents::CanvasComponent": {

@@ -28,6 +28,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Tilemap-Lamp-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -54,6 +56,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -102,6 +105,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Tilemap-Lamp-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -128,6 +133,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -176,6 +182,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -202,6 +210,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -250,6 +259,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -276,6 +287,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -324,6 +336,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -350,6 +364,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -398,6 +413,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Tilemap-Crystals2-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -424,6 +441,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -472,6 +490,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Tilemap-Plants1-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -498,6 +518,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -546,6 +567,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Tilemap-Plants1-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -572,6 +595,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -620,6 +644,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Tilemap-Plants1-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -646,6 +672,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -694,6 +721,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Tilemap-Plants2-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -720,6 +749,7 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
@@ -806,6 +836,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Protagonist-Idle-Sheet }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]

@@ -193,6 +193,11 @@ namespace Bridge {
         ENGINE_API float   __stdcall GetRenderWidth(uint32_t sceneObjectID);
         ENGINE_API float   __stdcall GetRenderHeight(uint32_t sceneObjectID);
         ENGINE_API void    __stdcall SetRenderSize(uint32_t sceneObjectID, float w, float h);
+        ENGINE_API float   __stdcall GetUVStartX(uint32_t sceneObjectID);
+        ENGINE_API float   __stdcall GetUVStartY(uint32_t sceneObjectID);
+        ENGINE_API float   __stdcall GetUVEndX(uint32_t sceneObjectID);
+        ENGINE_API float   __stdcall GetUVEndY(uint32_t sceneObjectID);
+        ENGINE_API void    __stdcall SetUV(uint32_t sceneObjectID, float startX, float startY, float endX, float endY);
 
         // =========================================================================
         // Text Component
