@@ -60,54 +60,6 @@ namespace Bridge
                 ai->chaseSpeed = value;
         }
 
-        ENGINE_API float __stdcall GetAttackRange(uint32_t sceneObjectID)
-        {
-            auto* ai = getAI(sceneObjectID);
-            return ai ? ai->attackRange : 0.f;
-        }
-
-        ENGINE_API void __stdcall SetAttackRange(uint32_t sceneObjectID, float value)
-        {
-            if (auto* ai = getAI(sceneObjectID))
-                ai->attackRange = value;
-        }
-
-        ENGINE_API float __stdcall GetWindupTime(uint32_t sceneObjectID)
-        {
-            auto* ai = getAI(sceneObjectID);
-            return ai ? ai->windupTime : 0.f;
-        }
-
-        ENGINE_API void __stdcall SetWindupTime(uint32_t sceneObjectID, float value)
-        {
-            if (auto* ai = getAI(sceneObjectID))
-                ai->windupTime = value;
-        }
-
-        ENGINE_API float __stdcall GetAttackDuration(uint32_t sceneObjectID)
-        {
-            auto* ai = getAI(sceneObjectID);
-            return ai ? ai->attackDuration : 0.f;
-        }
-
-        ENGINE_API void __stdcall SetAttackDuration(uint32_t sceneObjectID, float value)
-        {
-            if (auto* ai = getAI(sceneObjectID))
-                ai->attackDuration = value;
-        }
-
-        ENGINE_API float __stdcall GetHurtDuration(uint32_t sceneObjectID)
-        {
-            auto* ai = getAI(sceneObjectID);
-            return ai ? ai->hurtDuration : 0.f;
-        }
-
-        ENGINE_API void __stdcall SetHurtDuration(uint32_t sceneObjectID, float value)
-        {
-            if (auto* ai = getAI(sceneObjectID))
-                ai->hurtDuration = value;
-        }
-
         ENGINE_API bool __stdcall GetAllowDiagonal(uint32_t sceneObjectID)
         {
             auto* ai = getAI(sceneObjectID);

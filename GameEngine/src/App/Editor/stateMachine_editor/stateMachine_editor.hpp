@@ -63,9 +63,6 @@ namespace Editor {
 
                 if (ImGui::Button("Detach Script")) {
                     sceneTree_.detachScript(node);
-                    if (node->entity_.has<ECSComponents::StateMachineComponent>(entMng_)) {
-                        node->entity_.remove<ECSComponents::StateMachineComponent>(entMng_);
-                    }
                 }
             }
             else {
@@ -76,6 +73,7 @@ namespace Editor {
                 if (ImGui::Button("Generate New Script")) {
                     showScriptDialog_ = true;
                     snprintf(newScriptName_, sizeof(newScriptName_), "%s_Script", node->name_.c_str());
+                    for (char& c : newScriptName_) { if (c == ' ') c = '_'; }
                 }
 
                 ImGui::SameLine();
@@ -243,6 +241,10 @@ namespace Editor {
 
                 ImGui::EndPopup();
             }
+            else {
+                // Popup was closed by clicking outside
+                showAttachDialog_ = false;
+            }
         }
 
         // Render script creation dialog
@@ -252,7 +254,10 @@ namespace Editor {
             if (ImGui::BeginPopupModal("Create Script", &showScriptDialog_)) {
                 ImGui::Text("Enter script name:");
                 ImGui::InputText("##scriptname", newScriptName_,
-                    sizeof(newScriptName_));
+                    sizeof(newScriptName_), ImGuiInputTextFlags_CallbackCharFilter,
+                    [](ImGuiInputTextCallbackData* data) -> int {
+                        return data->EventChar == ' ' ? 1 : 0;
+                    });
 
                 if (ImGui::Button("Create")) {
                     if (strlen(newScriptName_) > 0) {

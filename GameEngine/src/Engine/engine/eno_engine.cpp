@@ -80,6 +80,15 @@ namespace Engine
 		// script Begin() methods resolve correctly.
 		Bridge::Bridge_Init(this);
 
+		// Build tile colliders for the initial scene
+		tilemapSystem_->buildTileColliders(entityMng_);
+
+		// Rebuild tile colliders whenever a scene is loaded
+		bus_.subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)
+		{
+			tilemapSystem_->buildTileColliders(entityMng_);
+		});
+
 		// Handle audio autoplay when scene enters play mode
 		bus_.subscribe<Editor::PlayScene>([this](const Editor::PlayScene&)
 		{
@@ -363,4 +372,5 @@ namespace Engine
 			count = 0.0;
 		}
 	}
+
 }

@@ -20,30 +20,6 @@ namespace Eno
         public static extern void SetChaseSpeed(uint sceneObjectID, float value);
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern float GetAttackRange(uint sceneObjectID);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern void SetAttackRange(uint sceneObjectID, float value);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern float GetWindupTime(uint sceneObjectID);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern void SetWindupTime(uint sceneObjectID, float value);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern float GetAttackDuration(uint sceneObjectID);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern void SetAttackDuration(uint sceneObjectID, float value);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern float GetHurtDuration(uint sceneObjectID);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern void SetHurtDuration(uint sceneObjectID, float value);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool GetAllowDiagonal(uint sceneObjectID);
 
