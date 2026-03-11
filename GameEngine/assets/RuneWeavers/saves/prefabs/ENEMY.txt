@@ -94,6 +94,10 @@
 			"value": "1",
 			"type": "bool"
 		},
+		"Is Static": {
+			"value": "0",
+			"type": "bool"
+		},
 		"Rotation": {
 			"value": "0",
 			"type": "float"
@@ -223,22 +227,6 @@
 		"allowDiagonal": {
 			"value": "1",
 			"type": "bool"
-		},
-		"attackRange": {
-			"value": "40",
-			"type": "float"
-		},
-		"windupTime": {
-			"value": "0.5",
-			"type": "float"
-		},
-		"attackDuration": {
-			"value": "0.3",
-			"type": "float"
-		},
-		"hurtDuration": {
-			"value": "0.4",
-			"type": "float"
 		}
 	},
 	"struct ECSComponents::VisibilityComponent": {

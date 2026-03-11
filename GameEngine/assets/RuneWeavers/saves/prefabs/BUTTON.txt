@@ -28,7 +28,7 @@
 		},
 		"SelectedSignal": {
 			"value": "",
-			"type": "char32"
+			"type": "char64"
 		}
 	},
 	"struct ECSComponents::RenderComponent": {
@@ -82,6 +82,10 @@
 		},
 		"Is Active": {
 			"value": "1",
+			"type": "bool"
+		},
+		"Is Static": {
+			"value": "0",
 			"type": "bool"
 		},
 		"Rotation": {

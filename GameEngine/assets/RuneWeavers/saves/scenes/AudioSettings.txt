@@ -41,6 +41,7 @@
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Radius": <float> { 64 }
 			}
@@ -434,6 +435,7 @@
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Radius": <float> { 50 }
 			}
@@ -607,6 +609,7 @@
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Radius": <float> { 64 }
 			}
@@ -725,6 +728,7 @@
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Radius": <float> { 64 }
 			}

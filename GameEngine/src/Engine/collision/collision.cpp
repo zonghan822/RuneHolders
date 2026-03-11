@@ -13,144 +13,6 @@
 
 namespace Collision {
 
-	// COLLISION COMPONENT IMPLEMENTATION
-
-	CollisionComponent::CollisionComponent()
-		: type(ColliderType::CIRCLE)
-		, offset{ 0.0f, 0.0f }
-		, isTrigger(false)
-		, isActive(true)
-		, rotation(0.0f)
-	{
-		data.circle.radius = 1.0f;
-	}
-
-	// Circle
-	CollisionComponent::CollisionComponent(float radius, Math::eVec2<float> colliderOffset, bool trigger)
-		: type(ColliderType::CIRCLE)
-		, offset(colliderOffset)
-		, isTrigger(trigger)
-		, isActive(true)
-		, rotation(0.0f)
-	{
-		data.circle.radius = radius;
-	}
-
-	// Rectangle
-	CollisionComponent::CollisionComponent(float width, float height, Math::eVec2<float> colliderOffset, bool trigger)
-		: type(ColliderType::RECTANGLE)
-		, offset(colliderOffset)
-		, isTrigger(trigger)
-		, isActive(true)
-		, rotation(0.0f)
-	{
-		data.rectangle.width = width;
-		data.rectangle.height = height;
-	}
-
-	// Line
-	CollisionComponent::CollisionComponent(Math::eVec2<float> point1, Math::eVec2<float> point2, bool trigger)
-		: type(ColliderType::LINE)
-		, offset{ 0.f, 0.f }
-		, isTrigger(trigger)
-		, isActive(true)
-		, rotation(0.0f)
-	{
-		data.line.p1 = point1;
-		data.line.p2 = point2;
-		// Calculate edge vector (from p1 to p2)
-		Math::eVec2<float> edge = data.line.p2 - data.line.p1;
-		// Calculate perpendicular (rotate 90� counter-clockwise)
-		Math::eVec2<float> perpendicular = { -edge.y, edge.x };
-		// Normalize to get the outward normal
-		Math::eVec2Normalize(data.line.pNormal, perpendicular);
-	}
-
-	// Point
-	CollisionComponent CollisionComponent::CreatePointCollider(Math::eVec2<float> colliderOffset, bool trigger) {
-		CollisionComponent comp;
-		comp.type = ColliderType::POINT;
-		comp.offset = colliderOffset;
-		comp.isTrigger = trigger;
-		comp.isActive = true;
-		comp.rotation = 0.0f;
-		return comp;
-	}
-
-	// Circle
-	void CollisionComponent::SetRadius(float radius)
-	{
-		if (type == ColliderType::CIRCLE)
-		{
-			data.circle.radius = radius;
-		}
-	}
-
-	// Rectangle
-	void CollisionComponent::SetRectangleSize(float width, float height)
-	{
-		if (type == ColliderType::RECTANGLE)
-		{
-			data.rectangle.width = width;
-			data.rectangle.height = height;
-		}
-	}
-
-	void CollisionComponent::SetOffset(const Math::eVec2<float>& newOffset)
-	{
-		offset = newOffset;
-	}
-
-	void CollisionComponent::SetActive(bool active)
-	{
-		isActive = active;
-	}
-
-	void CollisionComponent::SetTrigger(bool trigger)
-	{
-		isTrigger = trigger;
-	}
-
-	float CollisionComponent::GetColliderArea() const
-	{
-		switch (type)
-		{
-		case ColliderType::CIRCLE:
-			return 3.14159f * data.circle.radius * data.circle.radius;
-		case ColliderType::RECTANGLE:
-			return data.rectangle.width * data.rectangle.height;
-		case ColliderType::POINT:
-			return 0.0f;
-		default:
-			return 0.0f;
-		}
-	}
-
-	std::ostream& operator<<(std::ostream& os, const CollisionComponent& collision)
-	{
-		os << "CollisionComponent: ";
-		switch (collision.type)
-		{
-		case ColliderType::CIRCLE:
-			os << "Circle (radius: " << collision.data.circle.radius << ")";
-			break;
-		case ColliderType::RECTANGLE:
-			os << "Rectangle (" << collision.data.rectangle.width << "x" << collision.data.rectangle.height << ")";
-			break;
-		case ColliderType::LINE:
-			os << "Line:" << std::endl << "p1 : " << collision.data.line.p1 << "p2 : " << collision.data.line.p2 << "pNormal : " << collision.data.line.pNormal;
-			break;
-		case ColliderType::POINT:
-			os << "Point";
-			break;
-		}
-
-		os << " Offset: (" << collision.offset.x << ", " << collision.offset.y << ")";
-		os << " Trigger: " << (collision.isTrigger ? "Yes" : "No");
-		os << " Active: " << (collision.isActive ? "Yes" : "No");
-		return os;
-	}
-
 	// COLLISION RESULT IMPLMENTATION
 	CollisionResult::CollisionResult()
 		: hasCollision(false)
@@ -1124,15 +986,9 @@ namespace Collision {
 
 	CollisionComponent& CollisionSystem::GetCollisionComponent(const ECS::EntityLoc& entityLoc)
 	{
-		// Find the Collision component's index in this entity's archetype
-		// Use ECSComponents namespace for registry lookup
 		size_t collisionIndex = entityLoc.archetype->findComponentIndex<ECSComponents::CollisionComponent>();
-
-		// Retrieve and cast to Collision namespace for compatibility
-		return reinterpret_cast<CollisionComponent&>(
-			entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::CollisionComponent>(
-				collisionIndex, entityLoc.entityIndexInChunk)
-			);
+		return entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::CollisionComponent>(
+			collisionIndex, entityLoc.entityIndexInChunk);
 	}
 
 	void CollisionSystem::GetColliderBounds(

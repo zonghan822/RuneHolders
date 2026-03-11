@@ -94,6 +94,10 @@
 			"value": "1",
 			"type": "bool"
 		},
+		"Is Static": {
+			"value": "0",
+			"type": "bool"
+		},
 		"Rotation": {
 			"value": "0",
 			"type": "float"
