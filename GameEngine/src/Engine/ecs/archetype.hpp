@@ -38,7 +38,8 @@ namespace ECS
 
 #if ARENA_ENABLED
 		Memory::EnoECSArena& arena_;									// Reference to the arena used to store the memory of each chunk
-		Memory::EnoSlabAllocator chunkSlab_;							// 
+		Memory::EnoSlabAllocator chunkSlab_;							//
+		size_t chunkSlabCapacity_{};									// Current total slab slot capacity (for doubling on grow)
 #endif
 
 		const uint32_t entityCount_{ 5 };								// Number of entities stored in a chunk
@@ -68,6 +69,7 @@ namespace ECS
 
 			// Slab allocator init
 			chunkSlab_.init(slabMem, sizeof(Chunk), initialChunkCount);
+			chunkSlabCapacity_ = initialChunkCount;
 #endif
 
 			// Instantiate a new chunk
@@ -101,6 +103,15 @@ namespace ECS
 		{
 #if ARENA_ENABLED
 			void* mem = chunkSlab_.alloc();
+			if (!mem)
+			{
+				// Slab exhausted — grow by doubling using the arena
+				size_t additionalChunks = chunkSlabCapacity_;
+				void* slabMem = arena_.alloc(sizeof(Chunk) * additionalChunks, alignof(Chunk));
+				chunkSlab_.extend(slabMem, additionalChunks);
+				chunkSlabCapacity_ += additionalChunks;
+				mem = chunkSlab_.alloc();
+			}
 			if (!mem)
 			{
 				assert(false && "Chunk slab out of memory!");

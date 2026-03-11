@@ -79,6 +79,19 @@ namespace Memory
 			freeList_ = block;
 		}
 
+		// Append additional slots from a new memory block into the free list
+		void extend(void* additionalMem, size_t additionalSlots)
+		{
+			std::byte* mem = reinterpret_cast<std::byte*>(additionalMem);
+			for (size_t i = 0; i < additionalSlots; ++i)
+			{
+				Slot* block = reinterpret_cast<Slot*>(mem + i * slotSize_);
+				block->next_ = freeList_;
+				freeList_ = block;
+			}
+			slotCount_ += additionalSlots;
+		}
+
 		// Counts the number of slots in freeList_
 		size_t freeSlotCount() const
 		{
