@@ -1337,10 +1337,7 @@ namespace Editor
 	// Helper for getting children node ids
 	void EnoSceneTree::getChildrenID(Node* node, std::vector<uint32_t>& cids)
 	{
-		std::for_each(node->children_.begin(), node->children_.end(), [&](Node* child)
-			{
-				getChildrenID(child, cids);
-				cids.push_back(child->sceneObjectID_);
-			});
+		for (Node* child : node->children_)
+			cids.push_back(child->sceneObjectID_);
 	}
 }

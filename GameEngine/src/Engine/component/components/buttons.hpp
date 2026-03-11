@@ -10,22 +10,15 @@
 #include "../../event/signals.hpp"
 
 // ECS Components
-#include "drawInfo.hpp"
 #include "transform.hpp"
 #include "visibility.hpp"
 #include "collision_component.hpp"
 #include "../../math/math.hpp"
-#include "../../event/signals.hpp"
 
 // Standard library
 #include <string>
 #include <unordered_map>
 
-// Forward declaration
-namespace Engine
-{
-	class EnoEngine;
-}
 
 namespace ECSComponents {
 
@@ -105,7 +98,7 @@ namespace ECSComponents {
 		{
 			l("IsActive", isActive, "bool");
 			l("TargetObject", targetObject, "char64");
-			l("SelectedSignal", selectedSignalType, "char32");
+			l("SelectedSignal", selectedSignalType, "char64");
 		}
 
 		template <typename Visitor>
@@ -113,18 +106,27 @@ namespace ECSComponents {
 		{
 			l("IsActive", isActive, "bool");
 			l("TargetObject", targetObject, "char64");
-			l("SelectedSignal", selectedSignalType, "char32");
+			l("SelectedSignal", selectedSignalType, "char64");
 		}
 
 		/*============================================================================================
-		* \brief		Checks if the mouse pos is within the current button clickable area
-		* \param[in]	const Math::eVec2<float>& mousePos, const TransformComponent& t, const DrawInfoComponent& d, const CollisionComponent& c
-		* \return		bool true if clicked in button area, false if outside button area
+		* \brief		Checks if the mouse pos is within the current button interactable area
+		* \param[in]	const Math::eVec2<float>& mousePos, const TransformComponent& t, const CollisionComponent& c
+		* \return		bool true if in button area, false if outside button area
 		*//*========================================================================================*/
-		bool onClick(Math::eVec2<float> mousePos, const ECSComponents::TransformComponent& t, const ECSComponents::DrawInfoComponent& d, const ECSComponents::CollisionComponent& c)
+		bool mouseWithinButton(const Math::eVec2<float>& mousePos, const ECSComponents::TransformComponent& t, const ECSComponents::CollisionComponent& c) const
 		{
-			// Check if button is interactable
-			//if (!isActive) return false;
+			// Check if button is active
+			if (!isActive) return false;
+
+			// Check for circle or rectanble collider types
+			if (c.type == ECSComponents::ColliderType::CIRCLE)
+			{
+				float dx = mousePos.x - (t.pos.x + c.offset.x);
+				float dy = mousePos.y - (t.pos.y + c.offset.y);
+				return (dx * dx + dy * dy) <= (c.data.circle.radius * c.data.circle.radius);
+			}
+			if (c.type != ECSComponents::ColliderType::RECTANGLE) return false;
 
 			//std::cout << "mouse pos :" << mousePos << std::endl;
 
@@ -134,8 +136,6 @@ namespace ECSComponents {
 				float halfW = c.data.rectangle.width / 2;
 				float halfH = c.data.rectangle.height / 2;
 				
-				Math::eVec2<float> corners[4];
-				rotateRectCorners(t.pos, c.data.rectangle.width, c.data.rectangle.height, c.rotation, corners);
 				Math::eVec2<float> newMousePos = { mousePos.x - t.pos.x, mousePos.y - t.pos.y };
 
 				float cos = cosf(c.rotation);
@@ -147,8 +147,7 @@ namespace ECSComponents {
 					rotMousePos.y >= -halfH && rotMousePos.y <= halfH)
 				{
 					// Point is inside
-					// The button is clicked
-					std::cout << "[Button] CLICK!" << std::endl;
+					std::cout << "[Button] Mouse in button!" << std::endl;
 
 					return true;
 				}
@@ -163,10 +162,10 @@ namespace ECSComponents {
 				if (mousePos.x >= (t.pos.x - (c.data.rectangle.width * 0.5f)) &&	// Left limit
 					mousePos.x <= (t.pos.x + (c.data.rectangle.width * 0.5f)) &&	// Right limit
 					mousePos.y >= (t.pos.y - (c.data.rectangle.height * 0.5f)) &&	// Upper limit
-					mousePos.y <= (t.pos.y + (c.data.rectangle.height * 0.5f)))	// Lower limit
+					mousePos.y <= (t.pos.y + (c.data.rectangle.height * 0.5f)))		// Lower limit
 				{
 					// The button is clicked
-					std::cout << "[Button] CLICK!" << std::endl;
+					std::cout << "[Button] Mouse in button!" << std::endl;
 					return true;
 
 				}
@@ -176,51 +175,8 @@ namespace ECSComponents {
 				}
 
 			}
+			return false;
 		}
-
-		/*============================================================================================
-		* \brief		Helper function to help calculate mouse pos inside of a rotated rect
-		* \param[in]	const Math::eVec2<float>& center,
-						float width,
-						float height,
-						float rotation,
-						Math::eVec2<float> corners[4]
-		*//*========================================================================================*/
-		void rotateRectCorners(
-			const Math::eVec2<float>& center,
-			float width,
-			float height,
-			float rotation,
-			Math::eVec2<float> corners[4])
-		{
-			// Calculate half extents
-			float halfWidth = width * 0.5f;
-			float halfHeight = height * 0.5f;
-
-			// Pre-calculate sin and cos
-			float cosAngle = std::cos(rotation);
-			float sinAngle = std::sin(rotation);
-
-			// Local corner positions (before rotation)
-			Math::eVec2<float> localCorners[4] = {
-				{ -halfWidth, -halfHeight }, // Bottom-left
-				{ halfWidth, -halfHeight }, // Bottom-right
-				{ halfWidth, halfHeight },   // Top-right
-				{ -halfWidth, halfHeight }, // Top-left
-			};
-
-			// Rotate and translate each corner
-			for (int i = 0; i < 4; ++i) {
-				// Rotate the corner
-				float rotatedX = localCorners[i].x * cosAngle - localCorners[i].y * sinAngle;
-				float rotatedY = localCorners[i].x * sinAngle + localCorners[i].y * cosAngle;
-
-				// Translate to world position
-				corners[i].x = center.x + rotatedX;
-				corners[i].y = center.y + rotatedY;
-			}
-		}
-
 
 	private:
 
@@ -228,7 +184,7 @@ namespace ECSComponents {
 		char targetObject[64] = "";
 
 		// Selected signal type for UI state
-		char selectedSignalType[16] = "";
+		char selectedSignalType[64] = "";
 
 		// If interactable
 		bool isActive = true;

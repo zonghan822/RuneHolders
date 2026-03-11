@@ -16,14 +16,14 @@ namespace UI
 	/*============================================================================================
 	* \class	ButtonSystem
 	* \brief	Each frame, converts the mouse screen position to world space and hit-tests every
-	*			active ButtonComponent entity. Emits the "onClick" signal on the first left-click
-	*			frame that lands inside a button's collision area.
+	*			active ButtonComponent entity. Emit the respective signal for the button for that
+	*			frame when the mouse lands inside a button's collision area.
 	*//*========================================================================================*/
 	class ButtonSystem
 	{
 	public:
 		/*============================================================================================
-		* \brief		Process button clicks for the current frame.
+		* \brief		Process button behavior for the current frame.
 		* \param[in]	entityMng    ECS entity manager used to query button entities
 		* \param[in]	inputMng     Input manager used to read mouse state and position
 		* \param[in]	viewportMin  Screen-space top-left of the rendered game image
