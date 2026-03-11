@@ -335,14 +335,26 @@ namespace Collision
 		*//*========================================================================================*/
 		void ClearCallbacks();
 
+		/*============================================================================================
+		* \brief       Build the persistent static spatial hash from all isStatic colliders.
+		*              Call this once after buildTileColliders() — static entities never move so
+		*              they don't need to be re-inserted every frame.
+		* \param[in]   ECS::EntityManager& entityManager - Reference to entity manager
+		* \return      void
+		*//*========================================================================================*/
+		void RebuildStaticEntities(ECS::EntityManager& entityManager);
+
 		const SpatialHash& GetSpatialHash() const { return spatialHash_;  }
 
 	private:
 		// Event bus for publishing collision events
 		Event::EnoEventBus& eventBus_;
-		
-		// Spatial has for broad phase collision detection
+
+		// Spatial hash for dynamic (non-static) entities — rebuilt every frame
 		SpatialHash spatialHash_;
+
+		// Persistent spatial hash for static entities (tile colliders, etc.) — rebuilt only when tiles change
+		SpatialHash staticHash_;
 
 		// Event bus for publishing collision events
 		std::vector<std::function<void(const CollisionEvent&)>> collisionCallbacks_; 

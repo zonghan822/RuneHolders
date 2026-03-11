@@ -82,11 +82,13 @@ namespace Engine
 
 		// Build tile colliders for the initial scene
 		tilemapSystem_->buildTileColliders(entityMng_);
+		collisionSys_->RebuildStaticEntities(entityMng_);
 
 		// Rebuild tile colliders whenever a scene is loaded
 		bus_.subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)
 		{
 			tilemapSystem_->buildTileColliders(entityMng_);
+			collisionSys_->RebuildStaticEntities(entityMng_);
 		});
 
 		// Handle audio autoplay when scene enters play mode
