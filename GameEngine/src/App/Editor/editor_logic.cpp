@@ -192,6 +192,12 @@ void EditorApplication::run() {
 				editorFramebuffer_->bind();
 			}
 			engine_.renderFrame();
+			if (showColliders_ && engine_.getCollisionSystem()) {
+				engine_.getCollisionSystem()->VisualizeColliders(
+					engine_.getGraphicsManager(),
+					engine_.getEntityManager()
+				);
+			}
 			if (editorFramebuffer_) {
 				editorFramebuffer_->unbind();
 				engine_.getGraphicsManager().setRenderTargetSize(0, 0); // revert to window size

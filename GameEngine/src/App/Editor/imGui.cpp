@@ -2239,14 +2239,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Diagonal Movement");
 		}
 
-		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
-		trackEdit("Edit Attack Range");
-		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
-		trackEdit("Edit Windup Time");
-		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
-		trackEdit("Edit Attack Duration");
-		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
-		trackEdit("Edit Hurt Duration");
 	}
 
 	// ---------- Visibility Component ---------
@@ -3460,7 +3452,9 @@ void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 		static char s_newPrefabName[64] = {};
 		ImGui::SetNextItemWidth(-1);
-		ImGui::InputText("Name##PrefabNameInput", s_newPrefabName, sizeof(s_newPrefabName));
+
+		ImGui::Text("Name");
+		ImGui::InputText("##PrefabNameInput", s_newPrefabName, sizeof(s_newPrefabName));
 
 		bool nameValid = (s_newPrefabName[0] != '\0');
 		if (!nameValid) ImGui::BeginDisabled();

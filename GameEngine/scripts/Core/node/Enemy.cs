@@ -19,30 +19,6 @@ namespace Eno
             set => Bridge.SetChaseSpeed(ID, value);
         }
 
-        public float attackRange
-        {
-            get => Bridge.GetAttackRange(ID);
-            set => Bridge.SetAttackRange(ID, value);
-        }
-
-        public float windupTime
-        {
-            get => Bridge.GetWindupTime(ID);
-            set => Bridge.SetWindupTime(ID, value);
-        }
-
-        public float attackDuration
-        {
-            get => Bridge.GetAttackDuration(ID);
-            set => Bridge.SetAttackDuration(ID, value);
-        }
-
-        public float hurtDuration
-        {
-            get => Bridge.GetHurtDuration(ID);
-            set => Bridge.SetHurtDuration(ID, value);
-        }
-
         public bool allowDiagonal
         {
             get => Bridge.GetAllowDiagonal(ID);
