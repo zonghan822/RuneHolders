@@ -34,10 +34,10 @@
 			{
 				"Sound Name": <char32> { BGM_01_Layer1_loop }
 				"Sound Path": <char256> {  }
-				"Channel Group": <char32> { BGM }
+				"Channel Group": <char32> { SFX }
 				"Loop Start": <float> { 0 }
 				"Loop End": <float> { 0 }
-				"Volume": <double> { 50 }
+				"Volume": <double> { 100 }
 				"Pitch Scale": <double> { 1 }
 				"Pan Scale": <double> { 0 }
 				"Is Playing": <bool> { 0 }
