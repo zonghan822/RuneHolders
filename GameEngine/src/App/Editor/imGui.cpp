@@ -748,6 +748,30 @@ std::optional<ECS::Entity> getEntityUnderMouse(Engine::EnoEngine& engine_, Math:
 		}
 	}
 
+	// Text entities have no DrawInfoComponent — use a fallback bounding box
+	for (ECS::Entity& e : engine_.getEntityManager().findEntity<
+		ECSComponents::TransformComponent,
+		ECSComponents::TextComponent>())
+	{
+		if (e.has<ECSComponents::DrawInfoComponent>(entityManager)) continue; // already handled above
+
+		auto& tc = e.get<ECSComponents::TransformComponent>(entityManager);
+		auto& text = e.get<ECSComponents::TextComponent>(entityManager);
+
+		float halfW = 100.0f;
+		float halfH = 30.0f * text.fontSize;
+		float left = tc.pos.x - halfW;
+		float right = tc.pos.x + halfW;
+		float top = tc.pos.y - halfH;
+		float bottom = tc.pos.y + halfH;
+
+		if (mouse.x >= left && mouse.x <= right &&
+			mouse.y >= top && mouse.y <= bottom)
+		{
+			matchingEntities.push_back(e);
+		}
+	}
+
 	// Return the LAST matching entity (most recently created, drawn on top)
 	if (!matchingEntities.empty()) {
 		return matchingEntities.back();
@@ -950,8 +974,6 @@ void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& e
 
 void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager)
 {
-	auto& entityManager = engine_.getEntityManager();
-
 	// Get all nodes from the scene tree
 	auto allNodes = sceneTree.getAllNodes();
 
@@ -1011,7 +1033,6 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 	// This ensures we don't create duplicate names like "Entity 1" when one already exists
 	if (!entityCounterInitialized) {
 		int maxEntityNumber = 0;
-		auto& entityManager = engine_.getEntityManager();
 
 		// Scan all scene nodes to find the highest "Entity N" number
 		for (Editor::Node* n : sceneTree.getAllNodes()) {
@@ -2242,14 +2263,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Diagonal Movement");
 		}
 
-		ImGui::DragFloat("Attack Range", &ai.attackRange, 1.f, 1.f, 500.f);
-		trackEdit("Edit Attack Range");
-		ImGui::DragFloat("Windup Time", &ai.windupTime, 0.01f, 0.f, 5.f);
-		trackEdit("Edit Windup Time");
-		ImGui::DragFloat("Attack Duration", &ai.attackDuration, 0.01f, 0.f, 5.f);
-		trackEdit("Edit Attack Duration");
-		ImGui::DragFloat("Hurt Duration", &ai.hurtDuration, 0.01f, 0.f, 5.f);
-		trackEdit("Edit Hurt Duration");
 	}
 
 	// ---------- Visibility Component ---------
@@ -2626,11 +2639,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		auto& collider = entity.get<ECSComponents::CollisionComponent>(entMng);
 		ImGui::SeparatorText("Collider");
 
-		// Show Collider checkbox
-		if (ImGui::Checkbox("Show Collider", &showColliders_)) {
-			// Toggle visibility immediately
-		}
-
 		// Collider type selector (only Circle and Rectangle)
 		const char* colliderTypes[] = { "Circle", "Rectangle" };
 
@@ -2725,6 +2733,19 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		ImGui::TextDisabled("(?)");
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetTooltip("Trigger detects collisions but doesn't block movement.\nRequires 'Is Active' to be checked.");
+		}
+
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Checkbox("Is Static", &collider.isStatic)) {
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Toggle Collider Static");
+			}
+		}
+		ImGui::SameLine();
+		ImGui::TextDisabled("(?)");
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Static colliders never move. Collisions between two static colliders are skipped for performance.");
 		}
 
 	}
@@ -3233,19 +3254,19 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		nodeNames.push_back("Select Target Node...");
 
-		for (auto* node : allNodes) {
+		for (auto* scriptNode : allNodes) {
 			// Only include nodes with scripts attached
-			if (!node->script_) continue;
+			if (!scriptNode->script_) continue;
 
-			std::string displayName = node->name_.empty()
-				? "Node_" + std::to_string(node->sceneObjectID_)
-				: node->name_;
+			std::string displayName = scriptNode->name_.empty()
+				? "Node_" + std::to_string(scriptNode->sceneObjectID_)
+				: scriptNode->name_;
 
 			// Add script name to display
-			displayName += " (" + Conversion::wideToUtf8(node->script_->getName()) + ")";
+			displayName += " (" + Conversion::wideToUtf8(scriptNode->script_->getName()) + ")";
 
 			nodeStrings.push_back(displayName);
-			scriptNodes.push_back(node);
+			scriptNodes.push_back(scriptNode);
 		}
 
 		// Populate const char* array for ImGui
@@ -3357,10 +3378,13 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				}
 			}
 
+			// Select camera to follow
 			if (ImGui::BeginCombo("Select Camera##canvas", currentCamName.c_str())) {
 				if (ImGui::Selectable("None", canvas.followCameraEntityID == static_cast<uint32_t>(-1)))
+					// Follow none by default
 					canvas.followCameraEntityID = static_cast<uint32_t>(-1);
 
+				// Loop through each entity with a camera component
 				for (auto& camEnt : cameraEntities) {
 					Editor::Node* camNode = sceneTree.getNodeByEntityID(camEnt.id());
 					if (!camNode) continue;
@@ -3463,7 +3487,9 @@ void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 		static char s_newPrefabName[64] = {};
 		ImGui::SetNextItemWidth(-1);
-		ImGui::InputText("Name##PrefabNameInput", s_newPrefabName, sizeof(s_newPrefabName));
+
+		ImGui::Text("Name");
+		ImGui::InputText("##PrefabNameInput", s_newPrefabName, sizeof(s_newPrefabName));
 
 		bool nameValid = (s_newPrefabName[0] != '\0');
 		if (!nameValid) ImGui::BeginDisabled();
@@ -3492,6 +3518,11 @@ void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 			}
 
 			std::string prefabName(s_newPrefabName);
+			// Store script filename before setUserPrefab so it is included in the disk save
+			if (selectedNode->script_)
+				prefabMng.setUserPrefabScript(prefabName, std::filesystem::path(selectedNode->script_->path()).filename().string());
+			else
+				prefabMng.setUserPrefabScript(prefabName, "");
 			prefabMng.setUserPrefab(prefabName, std::move(compMap));
 			prefabMng.setUserPrefabNodeType(prefabName, static_cast<uint32_t>(selectedNode->type_));
 			selectedNode->prefabName_ = prefabName;
@@ -3591,6 +3622,11 @@ void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 					tcIt->second = tc;
 				}
 			}
+			// Store script filename before setUserPrefab so it is included in the disk save
+			if (selectedNode->script_)
+				prefabMng.setUserPrefabScript(s_selectedUserPrefab, std::filesystem::path(selectedNode->script_->path()).filename().string());
+			else
+				prefabMng.setUserPrefabScript(s_selectedUserPrefab, "");
 			prefabMng.setUserPrefab(s_selectedUserPrefab, std::move(compMap));
 			prefabMng.setUserPrefabNodeType(s_selectedUserPrefab, static_cast<uint32_t>(selectedNode->type_));
 			s_updatedPopup = true;
@@ -4766,6 +4802,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			mapEditor.setEditMode(!wasEdit);
 		if (wasEdit)
 			ImGui::PopStyleColor();
+		ImGui::SameLine();
+		ImGui::Checkbox("Show Colliders", &showColliders_);
 	} else {
 		if (ImGui::Button("Add Tilemap")) {
 			engine_.getEnoEditor().getSceneTree().setHasTilemap(true);
@@ -5155,6 +5193,11 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 						node->name_       = g_selectedPrefabForPlacement;
 						node->type_       = static_cast<Editor::NodeType>(prefabMng.getUserPrefabNodeType(g_selectedPrefabForPlacement));
 						node->prefabName_ = g_selectedPrefabForPlacement;
+
+						// Attach script saved with the prefab
+						std::string prefabScript = prefabMng.getUserPrefabScript(g_selectedPrefabForPlacement);
+						if (!prefabScript.empty())
+							sceneTree.attachScriptByFilename(node, prefabScript);
 
 						auto createCmd = std::make_unique<Editor::CreateEntityCommand>(
 							sceneTree,

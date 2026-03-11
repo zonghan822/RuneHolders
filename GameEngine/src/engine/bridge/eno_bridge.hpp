@@ -54,6 +54,10 @@ namespace Bridge {
         ENGINE_API uint32_t __stdcall GetNodeType(uint32_t id);
         ENGINE_API uint32_t __stdcall GetChildCount(uint32_t id);
 
+        // Spawn a user prefab at (x, y); parentID = UINT32_MAX for no parent.
+        // Returns the sceneObjectID of the new node, or UINT32_MAX on failure.
+        ENGINE_API uint32_t __stdcall SpawnPrefab(const char* prefabName, float x, float y, uint32_t parentID);
+
         // ENGINE_API uint32_t __stdcall SpawnNode(const char* presetName, const char* nodeName, uint32_t parentID);
         // ENGINE_API void     __stdcall DestroyNode(uint32_t sceneObjectID);
 

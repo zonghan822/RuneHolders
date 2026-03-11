@@ -24,9 +24,9 @@ namespace FSM {
             // Find current state info
             const ECSComponents::StateInfo* currentStateInfo = sm.getState(sm.currentState);
 
-            if (currentStateInfo && currentStateInfo->onExitMethod[0] != '\0') {
+            if (!className.empty() && currentStateInfo && currentStateInfo->onExitMethod[0] != '\0') {
                 entMng.getEventBus().publish(Core::ScriptEvent{
-                    scriptID,  // Use sceneObjectID_ for script instance lookup
+                    scriptID,
                     className,
                     currentStateInfo->onExitMethod
                     });
@@ -39,9 +39,9 @@ namespace FSM {
             sm.currentState[sizeof(sm.currentState) - 1] = '\0';
 
             // Call enter method
-            if (next->onEnterMethod[0] != '\0') {
+            if (!className.empty() && next->onEnterMethod[0] != '\0') {
                 entMng.getEventBus().publish(Core::ScriptEvent{
-                    scriptID,  // Use sceneObjectID_ for script instance lookup
+                    scriptID,
                     className,
                     next->onEnterMethod
                     });
@@ -62,7 +62,7 @@ namespace FSM {
         if (strcmp(smComp.currentState, "None") != 0) {
             const ECSComponents::StateInfo* currentStateInfo = smComp.getState(smComp.currentState);
 
-            if (currentStateInfo && currentStateInfo->onUpdateMethod[0] != '\0') {
+            if (!className.empty() && currentStateInfo && currentStateInfo->onUpdateMethod[0] != '\0') {
                 entMng.getEventBus().publish(Core::ScriptEvent{
                     scriptID,
                     className,

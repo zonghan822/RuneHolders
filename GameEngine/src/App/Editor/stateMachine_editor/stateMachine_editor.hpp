@@ -63,9 +63,6 @@ namespace Editor {
 
                 if (ImGui::Button("Detach Script")) {
                     sceneTree_.detachScript(node);
-                    if (node->entity_.has<ECSComponents::StateMachineComponent>(entMng_)) {
-                        node->entity_.remove<ECSComponents::StateMachineComponent>(entMng_);
-                    }
                 }
             }
             else {
@@ -76,6 +73,7 @@ namespace Editor {
                 if (ImGui::Button("Generate New Script")) {
                     showScriptDialog_ = true;
                     snprintf(newScriptName_, sizeof(newScriptName_), "%s_Script", node->name_.c_str());
+                    for (char& c : newScriptName_) { if (c == ' ') c = '_'; }
                 }
 
                 ImGui::SameLine();
@@ -155,11 +153,6 @@ namespace Editor {
             ImGui::Text("Add New State");
             ImGui::Spacing();
 
-            if (!node->script_) {
-                ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.0f, 1.0f), "Attach a script first to add states");
-                return;
-            }
-
             if (smComp.numStates >= ECSComponents::MAX_STATES) {
                 ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Maximum states reached!");
                 return;
@@ -180,7 +173,10 @@ namespace Editor {
 
             if (!warningBuf_.empty())
                 ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf_.c_str());
-            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Methods will be auto-generated");
+            if (node->script_)
+                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Methods will be auto-generated");
+            else
+                ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.0f, 1.0f), "Attach a script to auto-generate methods");
         }
 
         // Add a new state
@@ -243,6 +239,10 @@ namespace Editor {
 
                 ImGui::EndPopup();
             }
+            else {
+                // Popup was closed by clicking outside
+                showAttachDialog_ = false;
+            }
         }
 
         // Render script creation dialog
@@ -252,7 +252,10 @@ namespace Editor {
             if (ImGui::BeginPopupModal("Create Script", &showScriptDialog_)) {
                 ImGui::Text("Enter script name:");
                 ImGui::InputText("##scriptname", newScriptName_,
-                    sizeof(newScriptName_));
+                    sizeof(newScriptName_), ImGuiInputTextFlags_CallbackCharFilter,
+                    [](ImGuiInputTextCallbackData* data) -> int {
+                        return data->EventChar == ' ' ? 1 : 0;
+                    });
 
                 if (ImGui::Button("Create")) {
                     if (strlen(newScriptName_) > 0) {

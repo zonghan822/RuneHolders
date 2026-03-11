@@ -12,21 +12,18 @@
 #include "../component/components/transform.hpp"
 #include "../component/components/drawInfo.hpp"
 #include "../component/components/collision_component.hpp"
+#include "../component/components/visibility.hpp"
 
 #include <GLFW/glfw3.h>
 
 namespace UI
 {
-	void ButtonSystem::update(
-		ECS::EntityManager&     entityMng,
-		Input::EnoInputManager& inputMng,
-		Math::eVec2<float>      viewportMin,
-		Math::eVec2<float>      viewportMax,
-		std::pair<int, int>     windowSize
-	)
+	void ButtonSystem::update(ECS::EntityManager&		entityMng,
+							  Input::EnoInputManager&	inputMng,
+							  Math::eVec2<float>		viewportMin,
+							  Math::eVec2<float>		viewportMax,
+							  std::pair<int, int>		windowSize)
 	{
-		if (!inputMng.isMouseDown(GLFW_MOUSE_BUTTON_LEFT))
-			return;
 
 		// Resolve camera top-left corner and viewport size from the active CameraComponent
 		float cameraX = 0.f, cameraY = 0.f, vpW = 1920.f, vpH = 1080.f;
@@ -45,32 +42,71 @@ namespace UI
 		if (vMax.x == 0.f && vMax.y == 0.f)
 			vMax = { static_cast<float>(windowSize.first), static_cast<float>(windowSize.second) };
 
+		// Determine mouse position
 		auto mouse = inputMng.getMousePosition();
 		Math::eVec2<float> worldPos = Graphics::screenToWorld(
 			{ static_cast<float>(mouse.first), static_cast<float>(mouse.second) },
 			viewportMin, vMax, vpW, vpH, cameraX, cameraY
 		);
 
+		// Loop through all buttons
 		for (auto& ent : entityMng.findEntity<ECSComponents::ButtonComponent>())
 		{
+			// Skip if it does not have
 			if (!ent.has<ECSComponents::CollisionComponent>(entityMng))  continue;
 			if (!ent.has<ECSComponents::TransformComponent>(entityMng)) continue;
 
+			// Button component, transform for pos, collision for hitbox
 			auto& b = ent.get<ECSComponents::ButtonComponent>(entityMng);
 			auto& t = ent.get<ECSComponents::TransformComponent>(entityMng);
 			auto& c = ent.get<ECSComponents::CollisionComponent>(entityMng);
 
-			ECSComponents::DrawInfoComponent dummyDraw{};
-			const auto& d = ent.has<ECSComponents::DrawInfoComponent>(entityMng)
-				? ent.get<ECSComponents::DrawInfoComponent>(entityMng) : dummyDraw;
+			// Skip if entity is invisible
+			if (ent.has<ECSComponents::VisibilityComponent>(entityMng) && !ent.get<ECSComponents::VisibilityComponent>(entityMng).visible) continue;
 
-			if (b.getActive() && b.onClick(worldPos, t, d, c))
+			// Check if button is active
+			if (b.getActive())
 			{
-				auto it = b.signals_.find("onClick");
-				if (it != b.signals_.end())
-					it->second.emit();
+				// Check mouse pos within button
+				if (b.mouseWithinButton(worldPos, t, c))
+				{
+
+					// Mouse over button interactable area, check if hovering or pressing
+					// Emit onPressed every frame the mouse button is held
+					if (inputMng.isMousePressed(GLFW_MOUSE_BUTTON_LEFT))
+					{
+						// Pressing button, do not trigger hover
+						std::cout << "[Button_System] Button Pressed!" << std::endl;
+						auto it2 = b.signals_.find("onPressed");
+						if (it2 != b.signals_.end())
+						{
+							it2->second.emit();
+						}
+					} 
+					else
+					{
+						// Mouse within button: emit onHover signal
+						std::cout << "[Button_System] Button Hovered!" << std::endl;
+						auto it = b.signals_.find("onHover");
+						if (it != b.signals_.end())
+						{
+							it->second.emit();
+						}
+					}
+
+					// Mouse click on button, emit onClicked signal
+					if (inputMng.isMouseUp(GLFW_MOUSE_BUTTON_LEFT))
+					{
+						std::cout << "[Button_System] Button Clicked!" << std::endl;
+						auto it2 = b.signals_.find("onClick");
+						if (it2 != b.signals_.end())
+						{
+							it2->second.emit();
+						}
+					}
+				}
 			}
 		}
 	}
 
-} // namespace UI
+} // end of namespace UI

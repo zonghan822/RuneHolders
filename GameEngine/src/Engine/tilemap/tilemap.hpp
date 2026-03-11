@@ -1,9 +1,12 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <cstdint>
 #include "tile_layer.hpp"
 #include "../event/event_bus.hpp"
 #include "../math/math.hpp"
+
+namespace ECS { class EntityManager; }
 
 namespace Map {
 	
@@ -50,6 +53,10 @@ namespace Map {
         bool saveToFile(const std::string& filepath) const;
         bool loadFromFile(const std::string& filepath);
 
+        // Creates CollisionComponent entities for every obstacle tile.
+        // Destroys any previously created tile collider entities first.
+        void buildTileColliders(ECS::EntityManager& entMng);
+
     private:
         int width_;
         int height_;
@@ -58,6 +65,8 @@ namespace Map {
         std::vector<TileLayer> layers_;
 
         Event::EnoEventBus& bus_;
+
+        std::vector<uint32_t> tileColliderEntities_;
 	};
 
 }

@@ -37,15 +37,15 @@
 	/* Blank node — layer ordering + visibility only */ \
 	PRESET(DEFAULT,      VisibilityComponent, LayerComponent) \
 	/* Static visual — no physics or collision */ \
-	PRESET(SPRITE,       TransformComponent, RenderComponent, AnimationControllerComponent, VisibilityComponent, LayerComponent) \
+	PRESET(SPRITE,       TransformComponent, RenderComponent, AnimationControllerComponent, StateMachineComponent, VisibilityComponent, LayerComponent) \
 	/* Visual with collision but no physics (walls, platforms, triggers) */ \
-	PRESET(KINEMATIC,    TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, VisibilityComponent, LayerComponent) \
+	PRESET(KINEMATIC,    TransformComponent, RenderComponent, AnimationControllerComponent, StateMachineComponent, CollisionComponent, VisibilityComponent, LayerComponent) \
 	/* Full physics object */ \
-	PRESET(RIGIDBODY,    TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, VisibilityComponent, LayerComponent) \
+	PRESET(RIGIDBODY,    TransformComponent, RenderComponent, AnimationControllerComponent, StateMachineComponent, CollisionComponent, PhysicsComponent, VisibilityComponent, LayerComponent) \
 	/* Full character setup (player / enemy) */ \
-	PRESET(ACTOR,        TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, VisibilityComponent, LayerComponent) \
+	PRESET(ACTOR,        TransformComponent, RenderComponent, AnimationControllerComponent, StateMachineComponent, CollisionComponent, PhysicsComponent, HealthComponent, DamageComponent, VisibilityComponent, LayerComponent) \
 	/* Object that can be pushed around */ \
-	PRESET(PUSHABLE_BOX, TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, BoxComponent, VisibilityComponent, LayerComponent) \
+	PRESET(PUSHABLE_BOX, TransformComponent, RenderComponent, AnimationControllerComponent, StateMachineComponent, CollisionComponent, PhysicsComponent, BoxComponent, VisibilityComponent, LayerComponent) \
 	/* UI button */ \
 	PRESET(BUTTON,       TransformComponent, ButtonComponent, DrawInfoComponent, VisibilityComponent, CollisionComponent) \
 	/* Audio source */ \
@@ -58,6 +58,8 @@
 	PRESET(VIDEO,        TransformComponent, RenderComponent, VideoComponent, VisibilityComponent, LayerComponent) \
 	/* Canvas */ \
 	PRESET(CANVAS,		 TransformComponent, RenderComponent, CanvasComponent, VisibilityComponent, LayerComponent) \
+	/* AI-driven enemy — ACTOR components + AIComponent for pathfinding and behaviour */ \
+	PRESET(ENEMY,        TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, AIComponent, VisibilityComponent, LayerComponent) \
 //particle emitter omitted
 
 // Expanding PRESET_LIST within the component namespace

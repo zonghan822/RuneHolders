@@ -41,6 +41,7 @@
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Radius": <float> { 64 }
 			}
@@ -174,6 +175,16 @@
 				"Is Active": <bool> { 1 }
 				"Follow Transform": <bool> { 0 }
 			}
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { Default }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
 		}
 		"Script": { AudioSettings_Script.cs }
 		"Parent": { }
@@ -238,6 +249,16 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { Default }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
 		}
 		"Script": { AudioSettings_Script.cs }
 		"Parent": { }
@@ -301,6 +322,16 @@
 				"Anim0 Cols": <int> { 0 }
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
+			}
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { Default }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
 			}
 		}
 		"Script": { AudioSettings_Script.cs }
@@ -390,6 +421,16 @@
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 			}
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { Default }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
 		}
 		"Script": { AudioTest_Script.cs }
 		"Parent": { }
@@ -441,6 +482,7 @@
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Radius": <float> { 50 }
 			}
@@ -565,6 +607,16 @@
 				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
 			}
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { Default }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
 		}
 		"Script": { }
 		"Parent": { }
@@ -616,6 +668,7 @@
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Radius": <float> { 64 }
 			}
@@ -735,6 +788,7 @@
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
 				"Radius": <float> { 64 }
 			}

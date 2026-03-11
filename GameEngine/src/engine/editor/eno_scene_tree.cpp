@@ -3,6 +3,8 @@
 #include "../math/math.hpp"
 #include "../component/components/visibility.hpp"
 #include "../file/file_system.hpp"
+#include "../component/component_registry.hpp"
+#include "../graphics/animation/animation.hpp"
 
 namespace Editor
 {
@@ -124,6 +126,7 @@ namespace Editor
 				return node.second.get();
 			}
 		}
+		return nullptr;
 	}
 
 	// Get a node by entity ID
@@ -526,6 +529,55 @@ namespace Editor
 
 			selectedNode_->script_.reset();
 		}
+	}
+
+	// Attach a script to a node by filename (e.g. "PlayerController.cs") — used when spawning prefabs
+	void EnoSceneTree::attachScriptByFilename(Node* node, const std::string& scriptFilename)
+	{
+		if (!node || scriptFilename.empty()) return;
+
+		std::filesystem::path fullScriptPath = FileSystem::GetScriptsDir() / scriptFilename;
+		std::string fname = extractFname(scriptFilename);
+		std::wstring wfname(fname.begin(), fname.end());
+		std::wstring wpath = fullScriptPath.wstring();
+
+		auto script = std::make_unique<Script::EnoScript>(coreHost_, wfname, wpath);
+		attachScript(node, std::move(script));
+	}
+
+	Node* EnoSceneTree::spawnFromPrefab(const std::string& prefabName, Node* parent, Animation::AnimationControllerRegistry& animReg)
+	{
+		const auto* compMap = prefabMng_.getUserPrefabComponents(prefabName);
+		if (!compMap) return nullptr;
+
+		ECS::Entity newEntity = entMng_.create<>();
+
+		for (const auto& [compTypeIdx, compAny] : *compMap)
+		{
+			ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+			{
+				if (!newEntity.template has<T>(entMng_))
+					newEntity.template add<T>(entMng_, std::any_cast<T>(compAny));
+			});
+		}
+
+		// Each spawned instance needs its own animation controller
+		if (newEntity.has<ECSComponents::AnimationControllerComponent>(entMng_))
+		{
+			auto& animCtrl = newEntity.get<ECSComponents::AnimationControllerComponent>(entMng_);
+			animCtrl.controllerID = animReg.createController();
+		}
+
+		Node* node = createFromEntity(newEntity, parent);
+		node->name_       = prefabName;
+		node->type_       = static_cast<NodeType>(prefabMng_.getUserPrefabNodeType(prefabName));
+		node->prefabName_ = prefabName;
+
+		std::string prefabScript = prefabMng_.getUserPrefabScript(prefabName);
+		if (!prefabScript.empty())
+			attachScriptByFilename(node, prefabScript);
+
+		return node;
 	}
 
 	// Re-register all scripts with the scripting system
@@ -1322,10 +1374,7 @@ namespace Editor
 	// Helper for getting children node ids
 	void EnoSceneTree::getChildrenID(Node* node, std::vector<uint32_t>& cids)
 	{
-		std::for_each(node->children_.begin(), node->children_.end(), [&](Node* child)
-			{
-				getChildrenID(child, cids);
-				cids.push_back(child->sceneObjectID_);
-			});
+		for (Node* child : node->children_)
+			cids.push_back(child->sceneObjectID_);
 	}
 }

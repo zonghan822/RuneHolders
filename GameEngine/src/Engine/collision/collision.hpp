@@ -11,6 +11,7 @@
 
 // Engine includes
 #include "../math/math.hpp"
+#include "../component/components/collision_component.hpp"
 #include "../component/components/transform.hpp"
 #include "../component/components/physics_component.hpp"
 #include "../ecs/entity.hpp"
@@ -29,161 +30,9 @@
 
 namespace Collision
 {
-	/*============================================================================================
-	 * \brief       Defines the type of collision shape for a collider
-	*//*========================================================================================*/	
-	enum class ColliderType
-	{
-		CIRCLE = 0,		// Circular collision areas (round objects)
-		RECTANGLE = 1,	// Rectangular collision areas (AABB)
-		LINE = 2,		// Line segment
-		POINT = 3		// Point collision (projectiles, click detection)
-	};
-
-	/*============================================================================================
-	 * \brief       Component that stores collision information for entities. Can be attached to
-	 *              any entity to give it collision detection. Supports different collision shapes
-	 *              and can be configured as either a solid collider (blocks movement) or trigger
-	 *              (detects overlap only).
-	*//*========================================================================================*/	
-	struct CollisionComponent
-	{
-		ColliderType type;			// What shape is the collider?
-		Math::eVec2<float> offset;	// Offset from entity's transform position
-		bool isTrigger;				// Is this a trigger (no physics response) or solid collider?
-		bool isActive;				// Can this collider currently participate in collision detection
-		float rotation;				// Rotation angle in radians
-
-		/*============================================================================================
-		* \brief       Union to store different collision shape data efficiently. Only stores the
-		*              data needed for the current collider type.
-		*//*========================================================================================*/		
-		union ColliderData
-		{
-			struct CircleData {
-				float radius;		// Radius for circle collider
-			} circle;
-
-			struct RectangleData {
-				float width;		// Width of rectangle collider
-				float height;		// Height of rectangle collider
-			} rectangle;
-
-			struct LineData {
-				Math::eVec2<float> p1;			// First point of line collider
-				Math::eVec2<float> p2;			// Second point of line collider
-				Math::eVec2<float> pNormal;		// Normalized outward normal of line collider
-			} line;
-			// Point collider doesn't need additional data beyond its position
-		} data;
-
-		// CONSTRUCTORS
-
-		/*============================================================================================
-		* \brief       Default constructor - creates a basic circle collider
-		*//*========================================================================================*/		
-		CollisionComponent();
-
-		/*============================================================================================
-		* \brief       Create a CIRCLE collider
-		* \param[in]   float radius - Size of the circular collision area
-		* \param[in]   Math::eVec2<float> colliderOffset - Offset from the entity's transform position
-		* \param[in]   bool trigger - If TRUE, this collider won't block movement but will detect overlaps
-		*//*========================================================================================*/		
-		CollisionComponent(
-			float radius,
-			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f },
-			bool trigger = false
-		);
-
-		/*============================================================================================
-		* \brief       Create a RECTANGLE collider
-		* \param[in]   float width - Width of the rectangular collision area
-		* \param[in]   float height - Height of the rectangular collision area
-		* \param[in]   Math::eVec2<float> colliderOffset - Offset from the entity's transform position
-		* \param[in]   bool trigger - If TRUE, this collider won't block movement but will detect overlaps
-		*//*========================================================================================*/		
-		CollisionComponent(
-			float width, 
-			float height, 
-			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f }, 
-			bool trigger = false);
-
-		/*============================================================================================
-		* \brief       Create a LINE collider
-		* \param[in]   Math::eVec2<float> point1 - Start point of line
-		* \param[in]   Math::eVec2<float> point2 - End point of line
-		* \param[in]   bool trigger - If TRUE, this collider won't block movement but will detect overlaps
-		*//*========================================================================================*/		
-		CollisionComponent(
-			Math::eVec2<float> point1,
-			Math::eVec2<float> point2,
-			bool trigger = false);
-
-		/*============================================================================================
-		* \brief       Create a point collider (e.g., bullets, mouse clicks, etc.)
-		* \param[in]   Math::eVec2<float> colliderOffset - Offset from the entity's transform position
-		* \param[in]   bool trigger - If TRUE, this collider won't block movement but will detect overlaps
-		* \return      CollisionComponent - Point collider instance
-		*//*========================================================================================*/		
-		static CollisionComponent CreatePointCollider(
-			Math::eVec2<float> colliderOffset = { 0.0f, 0.0f }, 
-			bool trigger = false);
-
-		// UTILITY FUNCTIONS
-
-		/*============================================================================================
-		* \brief       Set the radius of a circle collider
-		* \param[in]   float radius - New radius value
-		* \return      void
-		* \note        Only works if this is a circle collider
-		*//*========================================================================================*/		
-		void SetRadius(float radius);
-
-		/*============================================================================================
-		* \brief       Set the size of a rectangle collider
-		* \param[in]   float width - New width value
-		* \param[in]   float height - New height value
-		* \return      void
-		* \note        Only works if this is a rectangle collider
-		*//*========================================================================================*/		
-		void SetRectangleSize(float width, float height);
-
-		/*============================================================================================
-		* \brief       Change the offset of this collider from the entity's position
-		* \param[in]   Math::eVec2<float> const& newOffset - New offset vector
-		* \return      void
-		*//*========================================================================================*/		
-		void SetOffset(const Math::eVec2<float>& newOffset);
-
-		/*============================================================================================
-		* \brief       Enable or disable this collider
-		* \param[in]   bool active - If FALSE, this collider will be ignored during collision detection
-		* \return      void
-		*//*========================================================================================*/		
-		void SetActive(bool active);
-
-		/*============================================================================================
-		* \brief       Set whether this collider is a trigger or solid
-		* \param[in]   bool trigger - If TRUE, collider becomes a trigger (no physics response)
-		* \return      void
-		*//*========================================================================================*/		
-		void SetTrigger(bool trigger);
-
-		/*============================================================================================
-		* \brief       Get the area covered by this collider
-		* \return      float - Area in square units
-		*//*========================================================================================*/		
-		float GetColliderArea() const;
-	};
-	
-	/*============================================================================================
-	* \brief       Stream operator for easy debugging of collision components
-	* \param[in]   std::ostream& os - Output stream
-	* \param[in]   CollisionComponent const& collision - CollisionComponent to print
-	* \return      std::ostream& - Reference to the output stream
-	*//*========================================================================================*/	
-	std::ostream& operator<<(std::ostream& os, const CollisionComponent& collision);
+	// Use the canonical ECSComponents types directly
+	using ECSComponents::ColliderType;
+	using ECSComponents::CollisionComponent;
 
 
 	// COLLISION DETECTION
@@ -486,14 +335,26 @@ namespace Collision
 		*//*========================================================================================*/
 		void ClearCallbacks();
 
+		/*============================================================================================
+		* \brief       Build the persistent static spatial hash from all isStatic colliders.
+		*              Call this once after buildTileColliders() — static entities never move so
+		*              they don't need to be re-inserted every frame.
+		* \param[in]   ECS::EntityManager& entityManager - Reference to entity manager
+		* \return      void
+		*//*========================================================================================*/
+		void RebuildStaticEntities(ECS::EntityManager& entityManager);
+
 		const SpatialHash& GetSpatialHash() const { return spatialHash_;  }
 
 	private:
 		// Event bus for publishing collision events
 		Event::EnoEventBus& eventBus_;
-		
-		// Spatial has for broad phase collision detection
+
+		// Spatial hash for dynamic (non-static) entities — rebuilt every frame
 		SpatialHash spatialHash_;
+
+		// Persistent spatial hash for static entities (tile colliders, etc.) — rebuilt only when tiles change
+		SpatialHash staticHash_;
 
 		// Event bus for publishing collision events
 		std::vector<std::function<void(const CollisionEvent&)>> collisionCallbacks_; 

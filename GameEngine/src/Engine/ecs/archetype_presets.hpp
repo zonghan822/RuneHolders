@@ -533,6 +533,17 @@ namespace ECSComponents
 				save << "\t\t\"type\": \"uint32_t\"\n";
 				save << "\t},\n";
 			}
+
+			// Save script filename so spawned instances get the correct script
+			auto scriptIt = userPrefabScripts_.find(name);
+			if (scriptIt != userPrefabScripts_.end() && !scriptIt->second.empty())
+			{
+				save << "\t\"Script\": {\n";
+				save << "\t\t\"value\": \"" << scriptIt->second << "\",\n";
+				save << "\t\t\"type\": \"string\"\n";
+				save << "\t},\n";
+			}
+
 			for (auto& [compTypeIdx, compAny] : it->second)
 			{
 				EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
@@ -593,6 +604,23 @@ namespace ECSComponents
 							try { userPrefabNodeTypes_[name] = static_cast<uint32_t>(std::stoul(content.substr(valPos, valEnd - valPos))); }
 							catch (...) {}
 						}
+					}
+				}
+			}
+
+
+			// Read script filename if present
+			{
+				size_t sPos = content.find("\"Script\":");
+				if (sPos != std::string::npos)
+				{
+					size_t valPos = content.find("\"value\": \"", sPos);
+					if (valPos != std::string::npos)
+					{
+						valPos += 10;
+						size_t valEnd = content.find("\"", valPos);
+						if (valEnd != std::string::npos)
+							userPrefabScripts_[name] = content.substr(valPos, valEnd - valPos);
 					}
 				}
 			}
@@ -723,11 +751,25 @@ namespace ECSComponents
 			return it != userPrefabNodeTypes_.end() ? it->second : 1u; // 1 = CUSTOM
 		}
 
+		// Store the script filename for a user prefab (call before setUserPrefab/setUserPrefabNodeType so it is included in the next disk save).
+		void setUserPrefabScript(const std::string& name, const std::string& scriptFilename)
+		{
+			userPrefabScripts_[name] = scriptFilename;
+		}
+
+		// Returns the saved script filename for a user prefab, or empty string if none.
+		std::string getUserPrefabScript(const std::string& name) const
+		{
+			auto it = userPrefabScripts_.find(name);
+			return it != userPrefabScripts_.end() ? it->second : "";
+		}
+
 		// Remove a user prefab from memory and delete its file from disk.
 		void deleteUserPrefab(const std::string& name)
 		{
 			userPrefabData_.erase(name);
 			userPrefabNodeTypes_.erase(name);
+			userPrefabScripts_.erase(name);
 			auto filePath = FileSystem::GetAssetsDir() / "saves/prefabs" / ("user_" + name + ".txt");
 			std::filesystem::remove(filePath);
 			std::cout << "[UserPrefab] Deleted '" << name << "'\n";
@@ -745,6 +787,9 @@ namespace ECSComponents
 
 		// User-defined prefab node types: name -> NodeType as uint32_t
 		std::unordered_map<std::string, uint32_t> userPrefabNodeTypes_;
+
+		// User-defined prefab scripts: name -> script filename (e.g. "PlayerController.cs")
+		std::unordered_map<std::string, std::string> userPrefabScripts_;
 
 		// !!!!!!!!!! SHOULD BE REMOVED !!!!!!!!!!
 		Event::EnoEventBus& bus_;

@@ -515,7 +515,7 @@ namespace Audio
 	*//*========================================================================================*/
 	void EnoAudioManager::scheduleGroupFade(
 		const std::string& groupName,
-		float fadeInTime, float fadeOutTime, float duration)
+		float /*fadeInTime*/, float fadeOutTime, float duration)
 	{
 		
 		auto group = channelGroups_.find(groupName);
@@ -750,7 +750,7 @@ namespace Audio
 		for (size_t i = 0; i < channelCount; i++)
 		{
 			FMOD::Channel* channel{};
-			group->getChannel(i, &channel);
+			group->getChannel(static_cast<int>(i), &channel);
 
 			if (channel)
 				channel->stop();
@@ -1098,6 +1098,7 @@ namespace Audio
 					dsp->setParameterFloat(FMOD_DSP_LOWPASS_RESONANCE, f.resonance);
 				}
 			}, parameters.lowPass->lp);
+		return dsp;
 	}
 
 	/*============================================================================================
@@ -1125,5 +1126,6 @@ namespace Audio
 					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_RESONANCE, f.resonance);
 				}
 			}, parameters.lowPass->lp);
+		return dsp;
 	}
 }

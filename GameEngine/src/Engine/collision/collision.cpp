@@ -13,144 +13,6 @@
 
 namespace Collision {
 
-	// COLLISION COMPONENT IMPLEMENTATION
-
-	CollisionComponent::CollisionComponent()
-		: type(ColliderType::CIRCLE)
-		, offset{ 0.0f, 0.0f }
-		, isTrigger(false)
-		, isActive(true)
-		, rotation(0.0f)
-	{
-		data.circle.radius = 1.0f;
-	}
-
-	// Circle
-	CollisionComponent::CollisionComponent(float radius, Math::eVec2<float> colliderOffset, bool trigger)
-		: type(ColliderType::CIRCLE)
-		, offset(colliderOffset)
-		, isTrigger(trigger)
-		, isActive(true)
-		, rotation(0.0f)
-	{
-		data.circle.radius = radius;
-	}
-
-	// Rectangle
-	CollisionComponent::CollisionComponent(float width, float height, Math::eVec2<float> colliderOffset, bool trigger)
-		: type(ColliderType::RECTANGLE)
-		, offset(colliderOffset)
-		, isTrigger(trigger)
-		, isActive(true)
-		, rotation(0.0f)
-	{
-		data.rectangle.width = width;
-		data.rectangle.height = height;
-	}
-
-	// Line
-	CollisionComponent::CollisionComponent(Math::eVec2<float> point1, Math::eVec2<float> point2, bool trigger)
-		: type(ColliderType::LINE)
-		, offset{ 0.f, 0.f }
-		, isTrigger(trigger)
-		, isActive(true)
-		, rotation(0.0f)
-	{
-		data.line.p1 = point1;
-		data.line.p2 = point2;
-		// Calculate edge vector (from p1 to p2)
-		Math::eVec2<float> edge = data.line.p2 - data.line.p1;
-		// Calculate perpendicular (rotate 90� counter-clockwise)
-		Math::eVec2<float> perpendicular = { -edge.y, edge.x };
-		// Normalize to get the outward normal
-		Math::eVec2Normalize(data.line.pNormal, perpendicular);
-	}
-
-	// Point
-	CollisionComponent CollisionComponent::CreatePointCollider(Math::eVec2<float> colliderOffset, bool trigger) {
-		CollisionComponent comp;
-		comp.type = ColliderType::POINT;
-		comp.offset = colliderOffset;
-		comp.isTrigger = trigger;
-		comp.isActive = true;
-		comp.rotation = 0.0f;
-		return comp;
-	}
-
-	// Circle
-	void CollisionComponent::SetRadius(float radius)
-	{
-		if (type == ColliderType::CIRCLE)
-		{
-			data.circle.radius = radius;
-		}
-	}
-
-	// Rectangle
-	void CollisionComponent::SetRectangleSize(float width, float height)
-	{
-		if (type == ColliderType::RECTANGLE)
-		{
-			data.rectangle.width = width;
-			data.rectangle.height = height;
-		}
-	}
-
-	void CollisionComponent::SetOffset(const Math::eVec2<float>& newOffset)
-	{
-		offset = newOffset;
-	}
-
-	void CollisionComponent::SetActive(bool active)
-	{
-		isActive = active;
-	}
-
-	void CollisionComponent::SetTrigger(bool trigger)
-	{
-		isTrigger = trigger;
-	}
-
-	float CollisionComponent::GetColliderArea() const
-	{
-		switch (type)
-		{
-		case ColliderType::CIRCLE:
-			return 3.14159f * data.circle.radius * data.circle.radius;
-		case ColliderType::RECTANGLE:
-			return data.rectangle.width * data.rectangle.height;
-		case ColliderType::POINT:
-			return 0.0f;
-		default:
-			return 0.0f;
-		}
-	}
-
-	std::ostream& operator<<(std::ostream& os, const CollisionComponent& collision)
-	{
-		os << "CollisionComponent: ";
-		switch (collision.type)
-		{
-		case ColliderType::CIRCLE:
-			os << "Circle (radius: " << collision.data.circle.radius << ")";
-			break;
-		case ColliderType::RECTANGLE:
-			os << "Rectangle (" << collision.data.rectangle.width << "x" << collision.data.rectangle.height << ")";
-			break;
-		case ColliderType::LINE:
-			os << "Line:" << std::endl << "p1 : " << collision.data.line.p1 << "p2 : " << collision.data.line.p2 << "pNormal : " << collision.data.line.pNormal;
-			break;
-		case ColliderType::POINT:
-			os << "Point";
-			break;
-		}
-
-		os << " Offset: (" << collision.offset.x << ", " << collision.offset.y << ")";
-		os << " Trigger: " << (collision.isTrigger ? "Yes" : "No");
-		os << " Active: " << (collision.isActive ? "Yes" : "No");
-		return os;
-	}
-
 	// COLLISION RESULT IMPLMENTATION
 	CollisionResult::CollisionResult()
 		: hasCollision(false)
@@ -742,90 +604,91 @@ namespace Collision {
 	void CollisionSystem::Update(ECS::EntityManager& entityManager)
 	{
 		// ==== BROAD PHASE =====
-		// Use spatial hashing to reduce the number of collision cehcks
-
-		// Clear the spatial hash from the previous frame
+		// Only dynamic (non-static) entities are inserted each frame.
+		// Static entities live in staticHash_, which is rebuilt only when tiles change.
 		spatialHash_.Clear();
 
-		// Find all collidable entities and insert them into the spatial hash
 		auto& entityMap = entityManager.getMap();
-		std::vector<std::pair<uint32_t, ECS::EntityLoc*>> collidableEntities;
+
+		struct DynamicEntry {
+			uint32_t id;
+			ECS::EntityLoc* loc;
+			Math::eVec2<float> pos;
+			float hw, hh;
+		};
+		std::vector<DynamicEntry> dynamicEntities;
+		dynamicEntities.reserve(64);
 
 		for (auto& [entityID, entityLoc] : entityMap)
 		{
-			// Check if this entity has the required components for collision
-			if (HasRequiredComponents(entityLoc))
-			{
-				collidableEntities.emplace_back(entityID, &entityLoc);
+			if (!HasRequiredComponents(entityLoc)) continue;
 
-				// Get components for spatial hash insertion
-				auto& transform = GetTransformComponent(entityLoc);
-				auto& collision = GetCollisionComponent(entityLoc);
+			auto& collision = GetCollisionComponent(entityLoc);
+			if (!collision.isActive || collision.isStatic) continue;
 
-				// Skip inactive colliders
-				if (!collision.isActive)
-					continue;
+			auto& transform = GetTransformComponent(entityLoc);
+			Math::eVec2<float> worldPos = {
+				transform.pos.x + collision.offset.x,
+				transform.pos.y + collision.offset.y
+			};
+			float hw, hh;
+			GetColliderBounds(collision, transform, hw, hh);
 
-				// Calculate world position of the collider
-				Math::eVec2<float> worldPos = {
-					transform.pos.x + collision.offset.x,
-					transform.pos.y + collision.offset.y
-				};
-
-				// Get bounding box dimensions for this collider
-				float halfWidth, halfHeight;
-				GetColliderBounds(collision, transform, halfWidth, halfHeight);
-
-				// Inset into spatial hash
-				spatialHash_.Insert(entityID, worldPos, halfWidth, halfHeight);
-			}
+			spatialHash_.Insert(entityID, worldPos, hw, hh);
+			dynamicEntities.push_back({ entityID, &entityLoc, worldPos, hw, hh });
 		}
 
 		// ==== NARROW PHASE ====
-		// Only check collision pairs identified by the spatial hash
 
-		// Get potential collision pairs from spatial hash
-		auto potentialPairs = spatialHash_.GetPotentialPairs();
-
-		// Perform collision checks ONLY on potential pairs
-		for (const auto& [entityA_ID, entityB_ID] : potentialPairs)
+		// Dynamic-dynamic pairs from the dynamic hash
+		for (const auto& [idA, idB] : spatialHash_.GetPotentialPairs())
 		{
-			// Find the entity locations
-			auto itA = entityMap.find(entityA_ID);
-			auto itB = entityMap.find(entityB_ID);
-
-			// Safety check: make sure both entities still exist
+			auto itA = entityMap.find(idA);
+			auto itB = entityMap.find(idB);
 			if (itA == entityMap.end() || itB == entityMap.end()) continue;
-
-			// Do narrow phase collision check
-			CheckEntityCollision(entityA_ID, itA->second, entityB_ID, itB->second);
+			CheckEntityCollision(idA, itA->second, idB, itB->second);
 		}
-		
-		//// Step1: find all entities that can participate in collision detection
-		//// Must have both transform and collision components
-		//auto& entityMap = entityManager.getMap();
-		//std::vector<std::pair<uint32_t, ECS::EntityLoc*>> collidableEntities;
 
-		//// Iterate through all entities in the world
-		//for (auto& [entityID, entityLoc] : entityMap)
-		//{
-		//	// Check if this entity has the required components for collision
-		//	if (HasRequiredComponents(entityLoc))
-		//	{
-		//		collidableEntities.emplace_back(entityID, &entityLoc);
-		//	}
-		//}
+		// Dynamic-static pairs: query the persistent static hash for each dynamic entity
+		for (const auto& dyn : dynamicEntities)
+		{
+			auto nearbyStatics = staticHash_.Query(dyn.pos, dyn.hw, dyn.hh);
 
-		//// Step 2: check collision between all pairs of collidable entities
-		//for (size_t i = 0; i < collidableEntities.size(); ++i) {
-		//	for (size_t j = i + 1; j < collidableEntities.size(); ++j) {
-		//		// Check collision between entity i and entity j
-		//		CheckEntityCollision(collidableEntities[i].first,
-		//			*collidableEntities[i].second,
-		//			collidableEntities[j].first,
-		//			*collidableEntities[j].second);
-		//	}
-		//}
+			// Deduplicate (an entity can appear in multiple cells)
+			std::sort(nearbyStatics.begin(), nearbyStatics.end());
+			nearbyStatics.erase(std::unique(nearbyStatics.begin(), nearbyStatics.end()), nearbyStatics.end());
+
+			for (uint32_t staticID : nearbyStatics)
+			{
+				auto itStat = entityMap.find(staticID);
+				if (itStat == entityMap.end()) continue;
+				CheckEntityCollision(dyn.id, *dyn.loc, staticID, itStat->second);
+			}
+		}
+	}
+
+	void CollisionSystem::RebuildStaticEntities(ECS::EntityManager& entityManager)
+	{
+		staticHash_.Clear();
+
+		auto& entityMap = entityManager.getMap();
+		for (auto& [entityID, entityLoc] : entityMap)
+		{
+			if (!HasRequiredComponents(entityLoc)) continue;
+
+			auto& collision = GetCollisionComponent(entityLoc);
+			if (!collision.isActive || !collision.isStatic) continue;
+
+			auto& transform = GetTransformComponent(entityLoc);
+			Math::eVec2<float> worldPos = {
+				transform.pos.x + collision.offset.x,
+				transform.pos.y + collision.offset.y
+			};
+			float hw, hh;
+			GetColliderBounds(collision, transform, hw, hh);
+
+			staticHash_.Insert(entityID, worldPos, hw, hh);
+		}
 	}
 
 	void CollisionSystem::AddCollisionCallback(std::function<void(const CollisionEvent&)> callback)
@@ -1119,15 +982,9 @@ namespace Collision {
 
 	CollisionComponent& CollisionSystem::GetCollisionComponent(const ECS::EntityLoc& entityLoc)
 	{
-		// Find the Collision component's index in this entity's archetype
-		// Use ECSComponents namespace for registry lookup
 		size_t collisionIndex = entityLoc.archetype->findComponentIndex<ECSComponents::CollisionComponent>();
-
-		// Retrieve and cast to Collision namespace for compatibility
-		return reinterpret_cast<CollisionComponent&>(
-			entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::CollisionComponent>(
-				collisionIndex, entityLoc.entityIndexInChunk)
-			);
+		return entityLoc.archetype->chunks_[entityLoc.chunkIndex]->retrieve<ECSComponents::CollisionComponent>(
+			collisionIndex, entityLoc.entityIndexInChunk);
 	}
 
 	void CollisionSystem::GetColliderBounds(

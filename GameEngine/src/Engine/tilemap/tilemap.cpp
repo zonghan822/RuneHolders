@@ -1,4 +1,7 @@
 #include "tilemap.hpp"
+#include "../ecs/entity.hpp"
+#include "../component/components/transform.hpp"
+#include "../component/components/collision_component.hpp"
 
 // rapidjson
 #include <document.h>
@@ -243,5 +246,39 @@ namespace Map {
 
     void TileMapSystem::setLayerZIndex(int id, int z) {
         layers_[id].setZIndex(z);
+    }
+
+    void TileMapSystem::buildTileColliders(ECS::EntityManager& entMng)
+    {
+        for (uint32_t id : tileColliderEntities_)
+            ECS::Entity(id).destroy(entMng);
+        tileColliderEntities_.clear();
+
+        for (const auto& layer : layers_)
+        {
+            if (!layer.isObstacleLayer()) continue;
+            for (int y = 0; y < height_; ++y)
+            {
+                for (int x = 0; x < width_; ++x)
+                {
+                    if (!layer.hasTileTexture(x, y)) continue;
+                    float cx = (x + 0.5f) * cellSize_;
+                    float cy = worldOriginY_ + (y + 0.5f) * cellSize_;
+                    ECSComponents::CollisionComponent tileCol{ cellSize_, cellSize_ };
+                    tileCol.isStatic = true;
+                    ECS::Entity e = entMng.create<
+                        ECSComponents::TransformComponent,
+                        ECSComponents::CollisionComponent>(
+                            ECSComponents::TransformComponent{
+                                Math::eVec2<float>{ cx, cy },
+                                Math::eVec2<float>{ 0.f, 0.f },
+                                Math::eVec2<float>{ 1.f, 1.f }
+                            },
+                            std::move(tileCol)
+                        );
+                    tileColliderEntities_.push_back(e.id());
+                }
+            }
+        }
     }
 }

@@ -80,6 +80,17 @@ namespace Engine
 		// script Begin() methods resolve correctly.
 		Bridge::Bridge_Init(this);
 
+		// Build tile colliders for the initial scene
+		tilemapSystem_->buildTileColliders(entityMng_);
+		collisionSys_->RebuildStaticEntities(entityMng_);
+
+		// Rebuild tile colliders whenever a scene is loaded
+		bus_.subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)
+		{
+			tilemapSystem_->buildTileColliders(entityMng_);
+			collisionSys_->RebuildStaticEntities(entityMng_);
+		});
+
 		// Handle audio autoplay when scene enters play mode
 		bus_.subscribe<Editor::PlayScene>([this](const Editor::PlayScene&)
 		{
@@ -301,6 +312,15 @@ namespace Engine
 					ac.isPlaying_ = false;
 			}
 		}
+
+		// Flush any scene change requested by a script this frame.
+		// Done after all script/physics updates so no mid-loop iterator invalidation occurs.
+		if (!pendingScene_.empty())
+		{
+			editor_->selectScene(pendingScene_);
+			pendingScene_.clear();
+			hasBegun_ = false;  // Force Begin() to run for the new scene's scripts
+		}
 	}
 
 	void EnoEngine::renderFrame()
@@ -380,4 +400,5 @@ namespace Engine
 			count = 0.0;
 		}
 	}
+
 }
