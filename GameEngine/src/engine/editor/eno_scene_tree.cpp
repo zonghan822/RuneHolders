@@ -3,6 +3,8 @@
 #include "../math/math.hpp"
 #include "../component/components/visibility.hpp"
 #include "../file/file_system.hpp"
+#include "../component/component_registry.hpp"
+#include "../graphics/animation/animation.hpp"
 
 namespace Editor
 {
@@ -541,6 +543,41 @@ namespace Editor
 
 		auto script = std::make_unique<Script::EnoScript>(coreHost_, wfname, wpath);
 		attachScript(node, std::move(script));
+	}
+
+	Node* EnoSceneTree::spawnFromPrefab(const std::string& prefabName, Node* parent, Animation::AnimationControllerRegistry& animReg)
+	{
+		const auto* compMap = prefabMng_.getUserPrefabComponents(prefabName);
+		if (!compMap) return nullptr;
+
+		ECS::Entity newEntity = entMng_.create<>();
+
+		for (const auto& [compTypeIdx, compAny] : *compMap)
+		{
+			ECSComponents::EnoComponentRegistry::DeduceCompType(compTypeIdx, [&]<typename T>()
+			{
+				if (!newEntity.template has<T>(entMng_))
+					newEntity.template add<T>(entMng_, std::any_cast<T>(compAny));
+			});
+		}
+
+		// Each spawned instance needs its own animation controller
+		if (newEntity.has<ECSComponents::AnimationControllerComponent>(entMng_))
+		{
+			auto& animCtrl = newEntity.get<ECSComponents::AnimationControllerComponent>(entMng_);
+			animCtrl.controllerID = animReg.createController();
+		}
+
+		Node* node = createFromEntity(newEntity, parent);
+		node->name_       = prefabName;
+		node->type_       = static_cast<NodeType>(prefabMng_.getUserPrefabNodeType(prefabName));
+		node->prefabName_ = prefabName;
+
+		std::string prefabScript = prefabMng_.getUserPrefabScript(prefabName);
+		if (!prefabScript.empty())
+			attachScriptByFilename(node, prefabScript);
+
+		return node;
 	}
 
 	// Re-register all scripts with the scripting system

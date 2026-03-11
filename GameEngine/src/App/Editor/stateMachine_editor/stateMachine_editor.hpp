@@ -153,11 +153,6 @@ namespace Editor {
             ImGui::Text("Add New State");
             ImGui::Spacing();
 
-            if (!node->script_) {
-                ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.0f, 1.0f), "Attach a script first to add states");
-                return;
-            }
-
             if (smComp.numStates >= ECSComponents::MAX_STATES) {
                 ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Maximum states reached!");
                 return;
@@ -178,7 +173,10 @@ namespace Editor {
 
             if (!warningBuf_.empty())
                 ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf_.c_str());
-            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Methods will be auto-generated");
+            if (node->script_)
+                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Methods will be auto-generated");
+            else
+                ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.0f, 1.0f), "Attach a script to auto-generate methods");
         }
 
         // Add a new state

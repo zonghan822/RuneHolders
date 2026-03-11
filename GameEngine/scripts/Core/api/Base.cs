@@ -119,5 +119,20 @@ namespace Eno
         {
             return Bridge.GetChildCount(ID);
         }
+
+        // Spawn a user prefab by name at world position (x, y).
+        // Returns the spawned Node, or null if the prefab name was not found.
+        public Node? SpawnPrefab(string prefabName, float x, float y)
+        {
+            uint id = Bridge.SpawnPrefab(prefabName, x, y, uint.MaxValue);
+            return id == uint.MaxValue ? null : NodeFactory.Create(id);
+        }
+
+        // Spawn a user prefab as a child of the given parent node.
+        public Node? SpawnPrefab(string prefabName, float x, float y, Node parent)
+        {
+            uint id = Bridge.SpawnPrefab(prefabName, x, y, parent.ID);
+            return id == uint.MaxValue ? null : NodeFactory.Create(id);
+        }
     }
 }

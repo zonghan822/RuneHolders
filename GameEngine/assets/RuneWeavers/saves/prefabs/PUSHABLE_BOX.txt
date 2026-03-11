@@ -77,6 +77,20 @@
 			"type": "char64"
 		}
 	},
+	"struct ECSComponents::StateMachineComponent": {
+		"NumStates": {
+			"value": "0",
+			"type": "int"
+		},
+		"CurrentState": {
+			"value": "None",
+			"type": "char32"
+		},
+		"TimeInState": {
+			"value": "0",
+			"type": "float"
+		}
+	},
 	"struct ECSComponents::CollisionComponent": {
 		"Type": {
 			"value": "Circle",

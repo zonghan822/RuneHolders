@@ -137,6 +137,16 @@
 				"Animation Count": <int> { 0 }
 				"Current Animation": <char64> {  }
 			}
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { Default }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
 		}
 		"Script": { }
 		"Parent": { 31 }

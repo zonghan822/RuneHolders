@@ -412,7 +412,6 @@ void EditorApplication::updateEditorState() {
 
 
 void EditorApplication::updateImGui() {
-	SystemTimer ImGuiTimer("ImGui", systemTimes_);
 	imGuiDisplay(engine_, engine_.getEnoEditor().getSceneTree(), engine_.getEnoEditor().getUndoManager());
 }
 
