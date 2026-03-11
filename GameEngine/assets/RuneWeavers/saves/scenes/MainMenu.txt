@@ -14,7 +14,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 960 | y : 540 }
+				"Position": <eVec2(float)> { x : 960 | y : -540 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -62,8 +62,9 @@
 			{
 				"Viewport Width": <float> { 1920 }
 				"Viewport Height": <float> { 1080 }
-				"Position": <eVec2(float)> { x : 960 | y : 540 }
+				"Position": <eVec2(float)> { x : 960 | y : -540 }
 				"Is Active": <bool> { 1 }
+				"Follow Transform": <bool> { 1 }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
@@ -87,6 +88,7 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
+		"PrefabName": {  }
 	}
 
 	[Logo]
@@ -103,7 +105,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 379.421 | y : 313.184 }
+				"Position": <eVec2(float)> { x : 371.565 | y : -799.661 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -142,6 +144,7 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
+		"PrefabName": {  }
 	}
 
 	[CANVAS 1]
@@ -237,32 +240,6 @@
 		"NodeType": { 11 }
 	}
 
-}
-
-"TileMap":
-{
-	"Width": { 16 }
-	"Height": { 9 }
-	"CellSize": { 120 }
-	"Layers":
-	[
-		{
-			"Name": { Tile Layer 1 }
-			"IsNav": { false }
-			"Tiles":
-			[
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ],
-				[ { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false }, { "walk": true, "tex": "", "uv0": [0, 0], "uv1": [0, 0], "hasTex": false } ]
-			]
-		}
-	]
 }
 
 "LayerMetadata":

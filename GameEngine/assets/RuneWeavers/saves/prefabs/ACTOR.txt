@@ -211,20 +211,6 @@
 			"type": "bool"
 		}
 	},
-	"struct ECSComponents::VulnerabilityComponent": {
-		"vulnerableToColor": {
-			"value": "0",
-			"type": "int"
-		},
-		"onlyVulnerableToColor": {
-			"value": "1",
-			"type": "bool"
-		},
-		"colorBonusMultiplier": {
-			"value": "2",
-			"type": "float"
-		}
-	},
 	"struct ECSComponents::VisibilityComponent": {
 		"Z Index": {
 			"value": "3",

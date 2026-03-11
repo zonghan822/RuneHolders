@@ -4,6 +4,9 @@ Window Width: 1920
 Window Height: 1080
 Fullscreen: false
 VSync: true
-Tilemap Width: 64
-Tilemap Height: 64
+Tilemap Width: 30
+Tilemap Height: 17
 Tilemap CellSize: 64
+Audio SFX: 100.000000
+Audio Master: 19.336329
+Audio BGM: 79.378540

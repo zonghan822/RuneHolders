@@ -332,23 +332,33 @@ namespace Audio
 			// Reverb DSP
 			FMOD::DSP* reverbDSP{ nullptr };
 			if (parameters.reverb)
-			{
 				reverbDSP = modifyReverb(parameters);
-			}
 
 			// EQ DSP
 			FMOD::DSP* eqDSP{ nullptr };
 			if (parameters.eq)
-			{
 				eqDSP = modifyEQ(parameters);
-			}
+
+			// Low Pass DSP
+			FMOD::DSP* lpDSP{ nullptr };
+			if (parameters.lowPass)
+				lpDSP = modifyLowPass(parameters);
+
+			// High Pass DSP
+			FMOD::DSP* hpDSP{ nullptr };
+			if (parameters.highPass)
+				hpDSP = modifyHighPass(parameters);
 
 			// Append DSPs
 			ch->addDSP(0, reverbDSP);
 			ch->addDSP(0, eqDSP);
+			ch->addDSP(0, lpDSP);
+			ch->addDSP(0, hpDSP);
 
 			dsps_.push_back(reverbDSP);
 			dsps_.push_back(eqDSP);
+			dsps_.push_back(lpDSP);
+			dsps_.push_back(hpDSP);
 		}
 
 		/*============================================================================================
@@ -384,6 +394,22 @@ namespace Audio
 		 * \return						Pointer to a DSP to use to modify channel/channel group
 		*//*========================================================================================*/
 		FMOD::DSP* modifyEQ(const SoundParameters&);
+
+		/*============================================================================================
+		* \brief						Modifyng the lowpass of audio
+		* \param[in]					SoundParameters struct (Reverb/EQ/Volume/Pitch/Pan)
+		* \return						Pointer to a DSP to use to modify channel/channel group
+		*//*========================================================================================*/
+		FMOD::DSP* modifyHighPass(const SoundParameters&);
+
+		/*============================================================================================
+		 * \brief						Modifyng the lowpass of audio
+		 * \param[in]					SoundParameters struct (Reverb/EQ/Volume/Pitch/Pan)
+		 * \return						Pointer to a DSP to use to modify channel/channel group
+		*//*========================================================================================*/
+		FMOD::DSP* modifyLowPass(const SoundParameters&);
 	};
+
+
 
 }

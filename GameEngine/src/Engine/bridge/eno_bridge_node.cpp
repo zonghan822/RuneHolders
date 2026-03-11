@@ -11,6 +11,22 @@ namespace Bridge
 {
     extern "C"
     {
+        ENGINE_API uint32_t __stdcall CreateNode(uint32_t type)
+        {
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().create(Editor::NodeType(type));
+            if (!node)
+                return UINT32_MAX;
+
+            return node->sceneObjectID_;
+        }
+
+        ENGINE_API void __stdcall FreeNode(uint32_t id)
+        {
+            if (!gEngine) return;
+
+            gEngine->getEnoEditor().getSceneTree().kill(id);
+        }
+
         ENGINE_API uint32_t __stdcall GetNode(const char* name)
         {
             if (!gEngine) return UINT32_MAX;
@@ -28,6 +44,56 @@ namespace Bridge
             return child ? child->sceneObjectID_ : UINT32_MAX;
         }
 
+        ENGINE_API void __stdcall AddChild(uint32_t cid, uint32_t pid)
+        {
+            if (!gEngine) return;
+
+            Editor::Node* pnode = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(cid);
+            Editor::Node* cnode = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(pid);
+            if (!cnode || !pnode)
+                return;
+
+            gEngine->getEnoEditor().getSceneTree().nest(cid, pid);
+        }
+
+        ENGINE_API void __stdcall Unparent(uint32_t id)
+        {
+            if (!gEngine) return;
+
+            Editor::Node* cnode = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(id);
+            if (!cnode)
+                return;
+
+            gEngine->getEnoEditor().getSceneTree().unparent(id);
+        }
+
+        ENGINE_API void __stdcall Reparent(uint32_t cid, uint32_t pid)
+        {
+            if (!gEngine) return;
+
+            Editor::Node* cnode = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(cid);
+            Editor::Node* pnode = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(pid);
+            if (!cnode || !pnode)
+                return;
+
+            gEngine->getEnoEditor().getSceneTree().reparent(cid, pid);
+        }
+
+        ENGINE_API uint32_t __stdcall GetParentNode(uint32_t id)
+        {
+            if (!gEngine) return UINT32_MAX;
+
+            // Parent
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(id);
+            if (!node)
+                return UINT32_MAX;
+
+            if (node->parent_)
+                return node->parent_->sceneObjectID_;
+            else
+                return UINT32_MAX;
+        }
+
         ENGINE_API uint32_t __stdcall GetNodeType(uint32_t id)
         {
             if (!gEngine) return static_cast<uint32_t>(Editor::NodeType::EMPTY);
@@ -36,7 +102,18 @@ namespace Bridge
             return static_cast<uint32_t>(node->type_);
         }
 
-        ENGINE_API uint32_t __stdcall SpawnNode(const char* presetName, const char* nodeName, uint32_t parentID)
+        ENGINE_API uint32_t __stdcall GetChildCount(uint32_t id)
+        {
+            if (!gEngine) return UINT32_MAX;
+
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(id);
+            if (!node)
+                return static_cast<uint32_t>(Editor::NodeType::EMPTY);
+
+            return static_cast<uint32_t>(node->children_.size());
+        }
+
+ /*       ENGINE_API uint32_t __stdcall SpawnNode(const char* presetName, const char* nodeName, uint32_t parentID)
         {
             if (!gEngine) return UINT32_MAX;
 
@@ -57,12 +134,13 @@ namespace Bridge
                 {"KINEMATIC",    Editor::NodeType::KINEMATIC},
                 {"RIGIDBODY",    Editor::NodeType::RIGIDBODY},
                 {"ACTOR",        Editor::NodeType::ACTOR},
+                {"ENEMY",        Editor::NodeType::ENEMY},
                 {"PUSHABLE_BOX", Editor::NodeType::PUSHABLE_BOX},
                 {"BUTTON",       Editor::NodeType::BUTTON},
                 {"AUDIO",        Editor::NodeType::AUDIO},
                 {"CAMERA",       Editor::NodeType::CAMERA},
                 {"TEXT",         Editor::NodeType::TEXT},
-                {"PARTICLE",     Editor::NodeType::PARTICLE},
+                //{"PARTICLE",     Editor::NodeType::PARTICLE},
             };
 
             auto it = presetMap.find(presetName);
@@ -79,6 +157,6 @@ namespace Bridge
             Editor::Node* node = sceneTree.getNodeBySceneObjectID(sceneObjectID);
             if (node)
                 sceneTree.kill(node);
-        }
+        }*/
     }
 }

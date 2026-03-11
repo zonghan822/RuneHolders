@@ -32,7 +32,7 @@
 #include "../physics/physics_system.hpp"
 #include "../tilemap/tilemap.hpp"
 #include "../state_machine/state_machine_system.hpp"
-#include "../particle/particle_system.hpp"
+//#include "../particle/particle_system.hpp"
 #include "../ui/button_system.hpp"
 
 
@@ -255,7 +255,7 @@ namespace Engine
 		* \brief		Gets the Particle System for particle effects
 		* \return		Pointer to ParticleSystem instance (may be null if not initialized)
 		*//*========================================================================================*/
-		Particles::ParticleSystem* getParticleSystem() { return particleSys_.get(); }
+		//Particles::ParticleSystem* getParticleSystem() { return particleSys_.get(); }
 
 		/*============================================================================================
 		* \brief		Sets whether the game is in playing mode (affects player input processing)
@@ -275,6 +275,8 @@ namespace Engine
 		*               editor mode it is the ImGui game-panel bounds.
 		*//*========================================================================================*/
 		void setViewportBounds(Math::eVec2<float> min, Math::eVec2<float> max) { viewportMin_ = min; viewportMax_ = max; }
+		Math::eVec2<float> getViewportMin() const { return viewportMin_; }
+		Math::eVec2<float> getViewportMax() const { return viewportMax_; }
 
 		/*============================================================================================
 		* \brief		Marks animation controllers as dirty so they are restored on the next frame.
@@ -300,6 +302,13 @@ namespace Engine
 		* \return		True if game systems are paused, false otherwise
 		*//*========================================================================================*/
 		bool getIsPaused() const { return isPaused_; }
+
+		/*============================================================================================
+		* \brief		Queues a scene change to be executed at the end of the current frame,
+		*               after all scripts have finished updating. Safe to call from script Update().
+		* \param[in]	name - Scene filename (e.g. "Level.txt")
+		*//*========================================================================================*/
+		void requestSceneChange(const std::string& name) { pendingScene_ = name; }
 
 		/*============================================================================================
 		* \brief		Gets the per-subsystem timing data collected during the last frame.
@@ -343,7 +352,7 @@ namespace Engine
 		std::unique_ptr<FSM::StateMachineSystem> stateMachineSys_;
 		std::unique_ptr<Physics::PhysicsSystem> physicsSys_;
 		std::unique_ptr<Collision::CollisionSystem> collisionSys_;
-		std::unique_ptr<Particles::ParticleSystem> particleSys_;
+		//std::unique_ptr<Particles::ParticleSystem> particleSys_;
 
 		// UI Systems
 		UI::ButtonSystem buttonSys_;
@@ -351,6 +360,8 @@ namespace Engine
 		// Game state
 		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)
 		bool isPaused_  = false;  // Runtime pause (dialogue, menus) - pauses physics/AI/collision
+		bool hasBegun_  = false;  // Guards the one-shot Begin() call at the start of each play session
+		std::string pendingScene_;  // Non-empty when a script has requested a scene change
 		Math::eVec2<float> viewportMin_{ 0.f, 0.f };  // Screen-space game viewport bounds (set by editor/app)
 		Math::eVec2<float> viewportMax_{ 0.f, 0.f };  // Zero max = fall back to full window size
 

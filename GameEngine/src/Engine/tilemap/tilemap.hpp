@@ -1,9 +1,12 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <cstdint>
 #include "tile_layer.hpp"
 #include "../event/event_bus.hpp"
 #include "../math/math.hpp"
+
+namespace ECS { class EntityManager; }
 
 namespace Map {
 	
@@ -15,18 +18,13 @@ namespace Map {
         TileMapSystem(Event::EnoEventBus& bus, int width, int height, float cellSize);
 
         // Create new layer
-        void addLayer(const std::string& name, bool isNavLayer);
+        void addLayer(const std::string& name, bool isObsLayer);
 
         // Remove layer
         void removeLayer(int id);
 
-        void setWalkable(int layerIndex, int x, int y, bool value);
         void setTile(int layerIndex, int x, int y, const std::string& textureName, Math::eVec2<float> uv0, Math::eVec2<float> uv1, int rotation = 0);
         void clearTile(int layerIndex, int x, int y);
-
-        void paintRectangle(int layerIndex,
-            int x0, int y0, int x1, int y1,
-            bool walkable);
 
         // Pathfinding
         bool isWalkable(int x, int y) const;
@@ -42,23 +40,33 @@ namespace Map {
         const std::vector<TileLayer>& layers() const;
 
         Math::eVec2<float> getWorldSize() const;
+        float worldOriginY() const;
 
         // Modifier
         void resize(int newWidth, int newHeight, float newCellSize = -1.0f, bool preserveData = true);
+        void setWorldOriginY(float y);
         void renameLayer(int id, std::string const& newName);
-        void setNavLayer(int id, bool);
+        void setObstacleLayer(int id, bool);
+        void setLayerZIndex(int id, int z);
 
         // Serialize
         bool saveToFile(const std::string& filepath) const;
         bool loadFromFile(const std::string& filepath);
 
+        // Creates CollisionComponent entities for every obstacle tile.
+        // Destroys any previously created tile collider entities first.
+        void buildTileColliders(ECS::EntityManager& entMng);
+
     private:
         int width_;
         int height_;
         float cellSize_;
+        float worldOriginY_ = 0.0f;
         std::vector<TileLayer> layers_;
 
         Event::EnoEventBus& bus_;
+
+        std::vector<uint32_t> tileColliderEntities_;
 	};
 
 }

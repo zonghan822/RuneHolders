@@ -26,11 +26,10 @@
 	X(HealthComponent) \
 	X(DamageComponent) \
 	X(StateMachineComponent) \
-	X(VulnerabilityComponent) \
-	X(ParticleEmitterComponent) \
 	X(CanvasComponent) \
 	X(TextComponent) \
 	X(VideoComponent) \
+//particle emitter omitted
 
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
@@ -44,7 +43,7 @@
 	/* Full physics object */ \
 	PRESET(RIGIDBODY,    TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, VisibilityComponent, LayerComponent) \
 	/* Full character setup (player / enemy) */ \
-	PRESET(ACTOR,        TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, VulnerabilityComponent, VisibilityComponent, LayerComponent) \
+	PRESET(ACTOR,        TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, VisibilityComponent, LayerComponent) \
 	/* Object that can be pushed around */ \
 	PRESET(PUSHABLE_BOX, TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, BoxComponent, VisibilityComponent, LayerComponent) \
 	/* UI button */ \
@@ -55,12 +54,13 @@
 	PRESET(CAMERA,       TransformComponent, CameraComponent) \
 	/* World or UI text */ \
 	PRESET(TEXT,         TransformComponent, TextComponent, VisibilityComponent, LayerComponent) \
-	/* Particle emitter */ \
-	PRESET(PARTICLE,     TransformComponent, ParticleEmitterComponent, VisibilityComponent, LayerComponent) \
 	/* Video player */ \
 	PRESET(VIDEO,        TransformComponent, RenderComponent, VideoComponent, VisibilityComponent, LayerComponent) \
 	/* Canvas */ \
 	PRESET(CANVAS,		 TransformComponent, RenderComponent, CanvasComponent, VisibilityComponent, LayerComponent) \
+	/* AI-driven enemy — ACTOR components + AIComponent for pathfinding and behaviour */ \
+	PRESET(ENEMY,        TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, AIComponent, VisibilityComponent, LayerComponent) \
+//particle emitter omitted
 
 // Expanding PRESET_LIST within the component namespace
 // to make use of the PRESET using macro

@@ -14,8 +14,8 @@
 #include <algorithm>
 #include "imGui.hpp"
 #include "math/math.hpp"
-#include "particle/particle_presets.hpp"
-#include "particle/particle_component.hpp"
+//#include "particle/particle_presets.hpp"
+//#include "particle/particle_component.hpp"
 #include <typeindex>
 
 void EditorApplication::initialize() {
@@ -39,14 +39,13 @@ void EditorApplication::initialize() {
 	// Phase 2: editor/scene loading + project-specific assets.
 	engine_.setupLate();
 
-	// Setup all game content
-	setupPrefabs();
 	setupGameEvents();
 
 	auto& tileMap = engine_.getTileMap();
 
 	// Set up tile map editor
 	mapEditor_ = std::make_unique<MapEditor>(tileMap, engine_.getEntityManager());
+	mapEditor_->setHasTilemap(engine_.getEnoEditor().getSceneTree().hasTilemap());
 	Math::eVec2<float> worldSize = tileMap.getWorldSize();
 
 	stateMachineEditor_ = std::make_unique<Editor::StateMachineEditor>(engine_.getEnoEditor());
@@ -57,9 +56,8 @@ void EditorApplication::initialize() {
 	editorFramebuffer_ = std::make_unique<Graphics::EnoFramebuffer>();
 	editorFramebuffer_->create(1, 1); // Resized to panel size on first frame
 
-	// Center editor camera on the middle of the game world initially
-	editorCameraX_ = worldWidth_  / 2.0f - static_cast<float>(editorPanelWidth_)  / 2.f;
-	editorCameraY_ = worldHeight_ / 2.0f - static_cast<float>(editorPanelHeight_) / 2.f;
+	editorCameraX_ = 0.f;
+	editorCameraY_ = 0.f;
 
 	// Subscribe to delete selected entity event (using EditorApplication's scene tree)
 	engine_.getEventBus().subscribe<Editor::DeleteSelectedEntity>([this](const Editor::DeleteSelectedEntity&)
@@ -74,12 +72,6 @@ void EditorApplication::initialize() {
 			extern void clearSelectedEntity();
 			clearSelectedEntity();
 			engine_.markAnimationsDirty();
-			// The old tile collider entities are gone after scene reload — clear cache and rebuild
-			if (mapEditor_)
-			{
-				mapEditor_->clearColliderCache();
-				mapEditor_->rebuildAllTileColliders();
-			}
 			std::cout << "[EditorApplication] Scene cleared, reset selected entity" << std::endl;
 		});
 
@@ -171,6 +163,8 @@ void EditorApplication::run() {
 			{
 				auto& c = camEnt.get<ECSComponents::CameraComponent>(entityMng);
 				if (!c.isActive) continue;
+				if (c.followTransform && camEnt.has<ECSComponents::TransformComponent>(entityMng))
+					c.position = camEnt.get<ECSComponents::TransformComponent>(entityMng).pos;
 				savedCamPos = c.position;
 				savedVpW    = c.viewportWidth;
 				savedVpH    = c.viewportHeight;
@@ -192,6 +186,13 @@ void EditorApplication::run() {
 				editorFramebuffer_->bind();
 			}
 			engine_.renderFrame();
+			if (showColliders_ && engine_.getCollisionSystem()) {
+				engine_.getCollisionSystem()->VisualizeColliders(
+					engine_.getGraphicsManager(),
+					engine_.getEntityManager()
+				);
+				engine_.getGraphicsManager().flush();
+			}
 			if (editorFramebuffer_) {
 				editorFramebuffer_->unbind();
 				engine_.getGraphicsManager().setRenderTargetSize(0, 0); // revert to window size
@@ -231,14 +232,6 @@ void EditorApplication::shutdown() {
 	engine_.shutDown();
 }
 
-void EditorApplication::setupPrefabs() {
-	auto& prefabManager = engine_.getPrefabManager();
-	prefabManager.registerPresets();
-
-	ECSComponents::Preset::saveAll(prefabManager);
-	ECSComponents::Preset::loadAll(prefabManager);
-}
-
 void EditorApplication::setupGameEvents() {
 
 	auto& inputMng = engine_.getInputManager();
@@ -274,6 +267,15 @@ void EditorApplication::updateEditorCamera() {
 	Math::eVec2<float> worldSize = tileMap.getWorldSize();
 	worldWidth_ = worldSize.x;
 	worldHeight_ = worldSize.y;
+
+	// On the first frame where the panel has a real size, place the camera so
+	// that world (0, 0) sits at the bottom-left corner of the viewport.
+	if (!cameraInitialized_ && editorPanelHeight_ > 1)
+	{
+		editorCameraX_ = 0.f;
+		editorCameraY_ = -static_cast<float>(getEditorHeight());
+		cameraInitialized_ = true;
+	}
 
 	float deltaTime = static_cast<float>(engine_.getDeltaTime());
 	auto  state     = engine_.getEnoEditor().getCurrentScene().getState();
@@ -354,7 +356,6 @@ void EditorApplication::updateEditorCamera() {
 void EditorApplication::updateEditorState() {
 	static bool keyFrameMode = false;
 	static bool playAfterStop = true;
-	static bool hasBegun = false;
 	auto& coreHost = engine_.getCoreHost();
 
 	// Editor state = play game
@@ -377,24 +378,6 @@ void EditorApplication::updateEditorState() {
 				// Toggle flag to make it a one time event
 				playAfterStop = false;
 			}
-
-			if (!hasBegun)
-			{
-				for (const auto& node : engine_.getEnoEditor().getSceneTree().getAllNodes())
-				{
-					if (node->script_ && !node->entity_.has<ECSComponents::ButtonComponent>(engine_.getEntityManager()))
-					{
-						for (const auto& org : node->script_->origin())
-						{
-							//coreHost.begin(org, node->entity_.id());  
-							coreHost.begin(org, node->sceneObjectID_);
-						}
-					}
-				}
-				hasBegun = true;
-			}
-			break;
-
 		}
 		case Editor::State::Paused:
 		{
@@ -419,12 +402,10 @@ void EditorApplication::updateEditorState() {
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
-
 				// Mark entities as dirty to refresh the rendering cache
 				markEntitiesDirty();
 				// Toggle flag
 				playAfterStop = true;
-				hasBegun = false;
 			}
 			break;
 		}

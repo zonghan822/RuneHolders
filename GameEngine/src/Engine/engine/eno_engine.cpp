@@ -48,7 +48,7 @@ namespace Engine
 		stateMachineSys_ = std::make_unique<FSM::StateMachineSystem>(bus_);
 		physicsSys_ = std::make_unique<Physics::PhysicsSystem>(bus_);
 		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
-		particleSys_ = std::make_unique<Particles::ParticleSystem>(bus_);
+		//particleSys_ = std::make_unique<Particles::ParticleSystem>(bus_);
 		audioMng_.init();
 		graphicsMng_.initialize(window_);
 
@@ -74,22 +74,20 @@ namespace Engine
 			coreHost_ = std::make_unique<Core::EnoCoreHost>(bus_);
 
 		// Initialize editor (loads saves/scenes from the current project)
-		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_);
+		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_, prefabMng_, graphicsMng_);
 
 		// Bridge must be initialized before Begin() so that Bridge.* calls inside
 		// script Begin() methods resolve correctly.
 		Bridge::Bridge_Init(this);
 
-		for (const auto &node : editor_->getSceneTree().getAllNodes())
+		// Build tile colliders for the initial scene
+		tilemapSystem_->buildTileColliders(entityMng_);
+
+		// Rebuild tile colliders whenever a scene is loaded
+		bus_.subscribe<Editor::SceneCleared>([this](const Editor::SceneCleared&)
 		{
-			if (node->script_)
-			{
-				for (const auto &org : node->script_->origin())
-				{
-					coreHost_->begin(org, node->sceneObjectID_);
-				}
-			}
-		}
+			tilemapSystem_->buildTileColliders(entityMng_);
+		});
 
 		// Handle audio autoplay when scene enters play mode
 		bus_.subscribe<Editor::PlayScene>([this](const Editor::PlayScene&)
@@ -149,6 +147,26 @@ namespace Engine
 
 		float deltaTime = static_cast<float>(dt_);
 
+		// Call Begin() once on the first frame after play starts; reset when play stops
+		if (isPlaying_ && !hasBegun_)
+		{
+			for (const auto& node : editor_->getSceneTree().getAllNodes())
+			{
+				if (node->script_)
+				{
+					for (const auto& org : node->script_->origin())
+					{
+						coreHost_->begin(org, node->sceneObjectID_);
+					}
+				}
+			}
+			hasBegun_ = true;
+		}
+		else if (!isPlaying_)
+		{
+			hasBegun_ = false;
+		}
+
 		if (isPlaying_ && !isPaused_)
 		{
 			auto t0 = Clock::now();
@@ -182,9 +200,9 @@ namespace Engine
 			collisionSys_->Update(entityMng_);
 			timings_["Collision"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 
-			t0 = Clock::now();
-			particleSys_->Update(entityMng_, deltaTime);
-			timings_["Particles"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+			//t0 = Clock::now();
+			//particleSys_->Update(entityMng_, deltaTime);
+			//timings_["Particles"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 
 			t0 = Clock::now();
 			buttonSys_.update(entityMng_, inputMng_, viewportMin_, viewportMax_, window_.getWindowSize());
@@ -195,7 +213,7 @@ namespace Engine
 			timings_["State Machine"] = 0.0;
 			timings_["Physics"]       = 0.0;
 			timings_["Collision"]     = 0.0;
-			timings_["Particles"]     = 0.0;
+			//timings_["Particles"]     = 0.0;
 			timings_["UI Buttons"]    = 0.0;
 		}
 
@@ -266,6 +284,15 @@ namespace Engine
 					ac.isPlaying_ = false;
 			}
 		}
+
+		// Flush any scene change requested by a script this frame.
+		// Done after all script/physics updates so no mid-loop iterator invalidation occurs.
+		if (!pendingScene_.empty())
+		{
+			editor_->selectScene(pendingScene_);
+			pendingScene_.clear();
+			hasBegun_ = false;  // Force Begin() to run for the new scene's scripts
+		}
 	}
 
 	void EnoEngine::renderFrame()
@@ -313,7 +340,10 @@ namespace Engine
 		// Loading fonts
 		loader_.loadFonts(loader_.getFontPath(), 48);
 
-		// Note: shaders are loaded in setupEarly() and are not reloaded here.
+		// Load Presets
+		prefabMng_.registerPresets();
+		ECSComponents::Preset::saveAll(prefabMng_);
+		ECSComponents::Preset::loadAll(prefabMng_);
 	}
 
 	void EnoEngine::updateTime(double fps_calc_interval)
@@ -342,4 +372,5 @@ namespace Engine
 			count = 0.0;
 		}
 	}
+
 }

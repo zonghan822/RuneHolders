@@ -37,7 +37,7 @@ namespace Editor
 		CUSTOM,
 		PRESET_LIST
 	};
-#undef
+#undef PRESET
 
 	struct Node
 	{
@@ -47,6 +47,10 @@ namespace Editor
 		uint32_t nestedLayer_		{ 0 };
 
 		NodeType type_;
+
+		// Non-empty when this node was created from a user prefab.
+		// Matches a name in EnoPrefabManager::userPrefabData_.
+		std::string prefabName_;
 
 		// Entity Data
 		ECS::Entity entity_;
@@ -70,7 +74,7 @@ namespace Editor
 
 		enum BraceType { Open, Close };
 
-		EnoSceneTree(ECS::EntityManager&, Core::EnoCoreHost&, Map::TileMapSystem&);
+		EnoSceneTree(ECS::EntityManager&, Core::EnoCoreHost&, Map::TileMapSystem&, ECSComponents::EnoPrefabManager&);
 		EnoSceneTree(const EnoSceneTree&) = delete;
 		EnoSceneTree(EnoSceneTree&&) = delete;
 
@@ -78,7 +82,9 @@ namespace Editor
 		std::vector<Node*> getAllNodes();
 
 		// Create a node
-		Node* create(Node* parent = nullptr);
+		Node* create();
+		Node* create(Node* parent);
+		Node* create(NodeType);
 
 		// Create a node from an existing entity (for ImGui integration)
 		Node* createFromEntity(ECS::Entity entity, Node* parent = nullptr);
@@ -101,6 +107,15 @@ namespace Editor
 		// Nest a node
 		void nest(Node*);
 		void nest(Node*, Node*);
+		void nest(uint32_t, uint32_t);
+		
+		// Detach a node from its parent
+		void unparent(Node* node);
+		void unparent(uint32_t);
+
+		// Attach a node to a new parent
+		void reparent(Node*, Node* dst = nullptr);
+		void reparent(uint32_t, uint32_t dst = 0);
 
 		// Select a node and display all information
 		void select(const uint32_t&);
@@ -111,6 +126,7 @@ namespace Editor
 		// Delete a node and all of its children
 		void kill();
 		void kill(Node*);
+		void kill(uint32_t);
 
 		// Toggle the use of a node
 		void toggleEnable();
@@ -120,6 +136,9 @@ namespace Editor
 		// Attach script
 		void attachScript(Node*, std::unique_ptr<Script::EnoScript>&&);
 		void attachScript(std::unique_ptr<Script::EnoScript>&&);
+
+		// Attach a script to a node by filename (e.g. "PlayerController.cs") — used when spawning prefabs
+		void attachScriptByFilename(Node* node, const std::string& scriptFilename);
 
 		// Detach script
 		void detachScript(Node* node);
@@ -131,6 +150,9 @@ namespace Editor
 		// Serialize/Deserialize scene tree data
 		void save(const std::string&);
 		void load(const std::string&);
+
+		bool hasTilemap() const { return hasTilemap_; }
+		void setHasTilemap(bool v) { hasTilemap_ = v; }
 
 		template<typename T>
 		std::optional<T> extract(
@@ -184,9 +206,11 @@ namespace Editor
 		ECS::EntityManager& entMng_;
 		Core::EnoCoreHost& coreHost_;
 		Map::TileMapSystem& tileMap_;
+		ECSComponents::EnoPrefabManager& prefabMng_;
 
 		std::unordered_map<uint32_t, std::unique_ptr<Node>> tree_;
 		Node* selectedNode_{ nullptr };
+		bool hasTilemap_{ false };
 
 		std::vector<uint32_t> salvagedID_;
 
@@ -211,9 +235,6 @@ namespace Editor
 		std::string trim(const std::string&);
 		std::string stripPrefix(const std::string&);
 		std::string extractFname(const std::string&);
-
-		// Helper for tilemap loading
-		void loadTilemapData(const std::string& data, size_t tilemapStart, size_t tilemapEnd, uint32_t width, uint32_t height);
 
 		void setParent(const std::vector<std::pair<uint32_t, uint32_t>>&);
 		void setChildren(const std::vector<std::pair<uint32_t, std::vector<uint32_t>>>&);

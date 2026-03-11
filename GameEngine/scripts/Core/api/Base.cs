@@ -18,7 +18,7 @@ namespace Eno
         public uint ID { get; set; }
 
         // Get self
-        private Node _self;
+        private Node _self = null!;
         public Node self
         {
             get
@@ -26,31 +26,41 @@ namespace Eno
                 if (_self != null)
                     return _self;
 
-                Node nodeBase = NodeFactory.Create(ID);
+                Node? nodeBase = NodeFactory.Create(ID);
 
-                switch(nodeBase.Type)
-                {
-                    case NodeType.DEFAULT:
-                        _self = new Node2D(nodeBase.ID, nodeBase.Type);
-                        break;
-                    default:
-                        _self = nodeBase;
-                        break;
-                }
+                if (nodeBase == null)
+                    throw new InvalidOperationException($"Node '{ID}' could not be created.");
 
+                _self = nodeBase;
                 return _self;
             }
         }
 
-        public T Self<T>() where T : Node
+        // Self referencing method
+        public T? Self<T>() where T : Node
         {
             return self as T;
         }
 
-        // Get another node within the scene tree
-        public T GetNode<T>(string name) where T : Node
+        // Create a new node of T type
+        public T? CreateNode<T>() where T : Node
         {
-            Node node = NodeFactory.Create(Bridge.GetNode(name));
+            return NodeFactory.Create<T>();
+        }
+
+        // Free a node from the scene tree
+        public void FreeNode(Node? node)
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+            
+            Bridge.FreeNode(node.ID);
+        }
+
+        // Get another node within the scene tree
+        public T? GetNode<T>(string name) where T : Node
+        {
+            Node? node = NodeFactory.Create(Bridge.GetNode(name));
             if (node == null)
                 throw new InvalidOperationException($"Node '{name}' not found.");
 
@@ -61,16 +71,53 @@ namespace Eno
         }
 
         // Get a child of the current node
-        public T GetChild<T>(uint index) where T : Node
+        public T? GetChild<T>(uint index) where T : Node
         {
-            Node node = NodeFactory.Create(Bridge.GetChild(ID, index));
-            if (node == null)
-                throw new InvalidOperationException($"Node '{ID}''s child not found.");
+            Node? node = NodeFactory.Create(Bridge.GetChild(ID, index));
+            if (node == null || node.ID == 0)
+                return null;
 
             if (node is not T tNode)
-                throw new InvalidCastException($"Node '{ID}''s child is not of type {typeof(T).Name}.");
+                throw new InvalidCastException($"Node '{ID}''s Child is not of type {typeof(T).Name}.");
 
             return tNode;
+        }
+
+        // Add a child
+        public void AddChild(Node? child)
+        {
+            if (child == null)
+                throw new ArgumentNullException(nameof(child));
+            
+            Bridge.AddChild(child.ID, ID);
+        }
+
+        // Remove a child
+        public void Unparent(Node? node)
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+            
+            Bridge.Unparent(node.ID);
+        }
+
+        // Get parent node of the current node
+        public T? GetParent<T>() where T : Node
+        {
+            Node? node = NodeFactory.Create(Bridge.GetParentNode(ID));
+            if (node == null || node.ID == 0)
+                return null;
+
+            if (node is not T tNode)
+                throw new InvalidCastException($"Node '{ID}''s Parent is not of type {typeof(T).Name}.");
+
+            return tNode;
+        }
+
+        // Get number of children nodes
+        public uint GetChildCount()
+        {
+            return Bridge.GetChildCount(ID);
         }
     }
 }

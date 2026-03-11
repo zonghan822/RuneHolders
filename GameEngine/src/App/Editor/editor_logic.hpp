@@ -42,6 +42,7 @@ private:
     float editorCameraX_ = 0.0f;  // Camera offset X
     float editorCameraY_ = 0.0f;  // Camera offset Y
     float editorCameraSpeed_ = 600.0f;  // Camera movement speed
+    bool  cameraInitialized_ = false;   // Deferred init: position (0,0) at bottom-left on first valid frame
     float editorZoomLevel_ = 1.0f;  // Zoom level (1.0 = normal, >1.0 = zoomed in, <1.0 = zoomed out)
 
     // Actual editor view panel size (pixels); updated each frame from ImGui
@@ -111,6 +112,7 @@ public:
     // Get editor camera position
     float getEditorCameraX() const { return editorCameraX_; }
     float getEditorCameraY() const { return editorCameraY_; }
+    void resetEditorCamera() { editorCameraX_ = 0.f; cameraInitialized_ = false; }
 
     // Zoom control
     void setEditorZoom(float zoom) {
@@ -141,7 +143,6 @@ public:
 
 private:
     // Setup (called during initialize())
-    void setupPrefabs();        // Prefab instantiation
     void setupGameEvents();     // event bus setup code
     void setupImGui();          // setup ImGui code
 

@@ -120,7 +120,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
  * \param[in]   ECS::EntityManager& entityManager
  * \return      void
 *//*========================================================================================*/
-void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t nodeID, ECS::EntityManager& entityManager);
+void drawNodeRecursive(Editor::EnoSceneTree& sceneTree, uint32_t nodeID, ECS::EntityManager& entityManager, bool isPlaying);
 
 /*============================================================================================
  * \brief       Displays All Entities View Tab
@@ -139,7 +139,15 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager, Editor::EnoSceneTree& sceneTree);
 
 
-void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity);
+void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager);
+
+/*============================================================================================
+ * \brief       Displays Prefab Editor panel – lets you inspect and edit the default
+ *              component values for each prefab preset and save them back to disk.
+ * \param[in]   Engine::EnoEngine& engine_
+ * \return      void
+*//*========================================================================================*/
+void displayPrefabEditor(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree);
 //void assetPresetsTab(Engine::EnoEngine& engine_, Node* Node);
 
 /*============================================================================================
@@ -168,7 +176,7 @@ void displayFPSTab(Engine::EnoEngine& engine_);
  * \param[in]   Engine::EnoEngine& engine_
  * \return      void
 *//*========================================================================================*/
-void displaySceneTab(Editor::EnoEditor& editor_);
+void displaySceneTab(Editor::EnoEditor& editor_, bool isPlaying);
 
 /*============================================================================================
  * \brief       Helper function to load music and sounds for Audio Tab

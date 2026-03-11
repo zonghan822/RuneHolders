@@ -43,11 +43,19 @@ namespace Bridge {
         // Node Management
         // Implemented in: eno_bridge_node.cpp
         // =========================================================================
+        ENGINE_API uint32_t __stdcall CreateNode(uint32_t type);
+        ENGINE_API void __stdcall FreeNode(uint32_t id);
         ENGINE_API uint32_t __stdcall GetNode(const char* name);
         ENGINE_API uint32_t __stdcall GetChild(uint32_t parentID, uint32_t index);
+        ENGINE_API void __stdcall AddChild(uint32_t cid, uint32_t pid);
+        ENGINE_API void __stdcall Unparent(uint32_t id);
+        ENGINE_API void __stdcall Reparent(uint32_t cid, uint32_t pid);
+        ENGINE_API uint32_t __stdcall GetParentNode(uint32_t id);
         ENGINE_API uint32_t __stdcall GetNodeType(uint32_t id);
-        ENGINE_API uint32_t __stdcall SpawnNode(const char* presetName, const char* nodeName, uint32_t parentID);
-        ENGINE_API void     __stdcall DestroyNode(uint32_t sceneObjectID);
+        ENGINE_API uint32_t __stdcall GetChildCount(uint32_t id);
+
+        // ENGINE_API uint32_t __stdcall SpawnNode(const char* presetName, const char* nodeName, uint32_t parentID);
+        // ENGINE_API void     __stdcall DestroyNode(uint32_t sceneObjectID);
 
         // =========================================================================
         // Transform Component
@@ -111,6 +119,8 @@ namespace Bridge {
         ENGINE_API bool    __stdcall IsMouseReleased(int button);
         ENGINE_API float   __stdcall GetMouseX();
         ENGINE_API float   __stdcall GetMouseY();
+        ENGINE_API float   __stdcall GetMouseWorldX();
+        ENGINE_API float   __stdcall GetMouseWorldY();
 
         // =========================================================================
         // Audio Component
@@ -122,6 +132,18 @@ namespace Bridge {
         ENGINE_API void    __stdcall SetAudioVolume(uint32_t sceneObjectID, float volume);
         ENGINE_API float   __stdcall GetAudioPitch(uint32_t sceneObjectID);
         ENGINE_API void    __stdcall SetAudioPitch(uint32_t sceneObjectID, float pitch);
+
+        // Channel group volume (groupName: "BGM" or "SFX"), range 0-100
+        ENGINE_API void    __stdcall SetGroupVolume(const char* groupName, float volume);
+        ENGINE_API float   __stdcall GetGroupVolume(const char* groupName);
+
+        // Master (FMOD master channel group) volume, range 0-100
+        ENGINE_API void    __stdcall SetMasterVolume(float volume);
+        ENGINE_API float   __stdcall GetMasterVolume();
+
+        // Persist audio volumes to config file and reload them
+        ENGINE_API void    __stdcall SaveAudioVolumes(float master, float bgm, float sfx);
+        ENGINE_API float   __stdcall LoadAudioVolume(const char* key, float defaultVal);
 
         // =========================================================================
         // Animation Component

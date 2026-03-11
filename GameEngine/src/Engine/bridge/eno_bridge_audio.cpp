@@ -7,6 +7,7 @@
 
 #include "eno_bridge.hpp"
 #include "../component/components/audio.hpp"
+#include "../settings/eno_config.hpp"
 
 namespace Bridge
 {
@@ -65,6 +66,72 @@ namespace Bridge
         {
             if (auto* a = getAudio(sceneObjectID))
                 a->pitchScale_ = static_cast<double>(pitch);
+        }
+
+        ENGINE_API void __stdcall SetGroupVolume(const char* groupName, float volume)
+        {
+            if (!gEngine) return;
+            try
+            {
+                FMOD::ChannelGroup* group = gEngine->getAudioManager().getChannelGroup(std::string(groupName));
+                group->setVolume(volume / 100.0f);
+            }
+            catch (...) {}
+        }
+
+        ENGINE_API float __stdcall GetGroupVolume(const char* groupName)
+        {
+            if (!gEngine) return 0.0f;
+            try
+            {
+                FMOD::ChannelGroup* group = gEngine->getAudioManager().getChannelGroup(std::string(groupName));
+                float vol = 0.0f;
+                group->getVolume(&vol);
+                return vol * 100.0f;
+            }
+            catch (...) {}
+            return 0.0f;
+        }
+
+        ENGINE_API void __stdcall SetMasterVolume(float volume)
+        {
+            if (!gEngine) return;
+            FMOD::ChannelGroup* master = nullptr;
+            gEngine->getAudioManager().getSystem()->getMasterChannelGroup(&master);
+            if (master) master->setVolume(volume / 100.0f);
+        }
+
+        ENGINE_API float __stdcall GetMasterVolume()
+        {
+            if (!gEngine) return 0.0f;
+            FMOD::ChannelGroup* master = nullptr;
+            gEngine->getAudioManager().getSystem()->getMasterChannelGroup(&master);
+            if (!master) return 0.0f;
+            float vol = 0.0f;
+            master->getVolume(&vol);
+            return vol * 100.0f;
+        }
+
+        // Saves master/BGM/SFX volumes (0-100) to the project config file.
+        ENGINE_API void __stdcall SaveAudioVolumes(float master, float bgm, float sfx)
+        {
+            if (!gEngine) return;
+            auto& cfg = gEngine->getConfigManager();
+            cfg.set("Audio Master", std::to_string(master));
+            cfg.set("Audio BGM",    std::to_string(bgm));
+            cfg.set("Audio SFX",    std::to_string(sfx));
+            cfg.write();
+        }
+
+        // Loads one audio volume value (0-100) from the config file by key.
+        // Returns defaultVal if the key is absent or cannot be parsed.
+        ENGINE_API float __stdcall LoadAudioVolume(const char* key, float defaultVal)
+        {
+            if (!gEngine) return defaultVal;
+            std::string val = gEngine->getConfigManager().get(std::string(key));
+            if (val.empty()) return defaultVal;
+            try { return std::stof(val); }
+            catch (...) { return defaultVal; }
         }
     }
 }

@@ -52,6 +52,40 @@ namespace Eno
         NumLock     = 1 << 5
     }
 
+    // Direct static queries for keyboard and mouse state.
+    // For complex action bindings use InputAction / InputManager instead.
+    public static class Input
+    {
+        // ── Keyboard ──────────────────────────────────────────────────────────
+
+        // True on the first frame the key is pressed.
+        public static bool isKeyPressed(KeyCode key)  => Bridge.IsKeyPressed(key);
+
+        // True every frame the key is held down.
+        public static bool isKeyHeld(KeyCode key)     => Bridge.IsKeyHeld(key);
+
+        // True on the frame the key is released.
+        public static bool isKeyReleased(KeyCode key) => Bridge.IsKeyReleased(key);
+
+        // Active modifier flags (Shift, Ctrl, Alt …) as a Mod bitmask.
+        public static Mod mods => (Mod)Bridge.ModsApplied();
+
+        // ── Mouse ─────────────────────────────────────────────────────────────
+        // button: 0 = left, 1 = right, 2 = middle
+
+        public static bool isMousePressed(int button)  => Bridge.IsMousePressed(button);
+        public static bool isMouseHeld(int button)     => Bridge.IsMouseHeld(button);
+        public static bool isMouseReleased(int button) => Bridge.IsMouseReleased(button);
+
+        // Screen-space mouse position.
+        public static Vector2 mousePosition
+            => new Vector2(Bridge.GetMouseX(), Bridge.GetMouseY());
+
+        // World-space mouse position.
+        public static Vector2 mouseWorldPosition
+            => new Vector2(Bridge.GetMouseWorldX(), Bridge.GetMouseWorldY());
+    }
+
     public class InputManager
     {
         public static InputManager Instance { 

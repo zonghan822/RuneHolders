@@ -2,7 +2,7 @@
 #include "../editor_logic.hpp"
 
 void MapEditor::displayMenu() {
-	if (!editMode_) return;
+	if (!hasTilemap_ || !editMode_) return;
 
 	ImGui::Begin("Tilemap Editor", nullptr, ImGuiWindowFlags_NoCollapse);
 
@@ -54,6 +54,14 @@ void MapEditor::displayMenu() {
 		ImGui::Text("Change layer name");
 		ImGui::InputText("##Rename_Layer", renameBuf, sizeof(renameBuf));
 
+		int zIdx = tilemap_.layers()[selectedLayer_].zIndex();
+		ImGui::Text("Z Index");
+		ImGui::SameLine();
+		if (ImGui::InputInt("##LayerZIndex", &zIdx)) {
+			if (zIdx < 0) zIdx = 0;
+			tilemap_.setLayerZIndex(selectedLayer_, zIdx);
+		}
+
 		if (!warningBuf.empty())
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf.c_str());
 
@@ -98,8 +106,8 @@ void MapEditor::displayMenu() {
 		if (!warningBuf.empty())
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf.c_str());
 
-		static bool newIsNav = false;
-		ImGui::Checkbox("Navigation Layer", &newIsNav);
+		static bool newIsObs = false;
+		ImGui::Checkbox("Obstacle Layer", &newIsObs);
 
 		if (ImGui::Button("Add New Layer")) {
 
@@ -107,7 +115,7 @@ void MapEditor::displayMenu() {
 				warningBuf = "Empty name not allowed!";
 			}
 			else {
-				tilemap_.addLayer(std::string(newLayerBuf), newIsNav);
+				tilemap_.addLayer(std::string(newLayerBuf), newIsObs);
 				selectedLayer_ = layerCount;
 				ImGui::CloseCurrentPopup();
 				warningBuf.clear();
@@ -137,143 +145,30 @@ void MapEditor::displayMenu() {
 	ImGui::InputFloat("Cell Size", &newCellSize);
 
 	if (ImGui::Button("Resize Tilemap")) {
-		clearAllTileColliders();
 		tilemap_.resize(newW, newH, newCellSize);
-		rebuildAllTileColliders();
+		tilemap_.buildTileColliders(entMng_);
 	}
 
 	ImGui::Separator();
 
 	// --- Set Navigation Checkbox ---
 	if (layerCount > 0 && selectedLayer_ < layerCount) {
-		bool isNav = tilemapLayers[selectedLayer_].isNavLayer();
-		if (ImGui::Checkbox("Navigation Layer", &isNav)) {
-			tilemap_.setNavLayer(selectedLayer_, isNav);
+		bool isObstacle = tilemapLayers[selectedLayer_].isObstacleLayer();
+		if (ImGui::Checkbox("Obstacle Layer", &isObstacle)) {
+			tilemap_.setObstacleLayer(selectedLayer_, isObstacle);
+			tilemap_.buildTileColliders(entMng_);
 		}
 	}
 	else {
-		ImGui::TextDisabled("Navigation Layer (no layer selected)");
+		ImGui::TextDisabled("Obstacle Layer (no layer selected)");
 	}
-
-	ImGui::Separator();
-
-	// --- Save / Load ---
-	ImGui::Text("-- Save / Load Tilemap --");
-
-	if (!currentFile_.empty()) {
-		if (ImGui::Button("Save")) {
-			tilemap_.saveToFile(currentFile_);
-		}
-		ImGui::SameLine();
-	}
-	
-	if (ImGui::Button("Save As")) {
-		ImGui::OpenPopup("map_save");
-	}
-
-	if (ImGui::Button("Load Map")) {
-		ImGui::OpenPopup("map_load");
-	}
-
-	if (ImGui::BeginPopup("map_save")) {
-		static std::string warningBuf;
-		static char mapSaveBuf[64];
-		ImGui::Text("Enter file name:");
-		ImGui::InputText("##Map_Name", mapSaveBuf, sizeof(mapSaveBuf));
-
-		if (!warningBuf.empty())
-			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), warningBuf.c_str());
-
-		if (ImGui::Button("Save")) {
-
-			if (!mapSaveBuf || mapSaveBuf[0] == '\0') {
-				warningBuf = "Empty name not allowed!";
-			}
-			else {
-				std::string newMapName = mapSaveBuf;
-				if (newMapName.find(".json") == std::string::npos) newMapName += ".json";
-
-				std::string mapsDir = FileSystem::GetAssetsDir().string() + "/saves/maps/";
-				if (!std::filesystem::exists(mapsDir)) {
-					std::filesystem::create_directories(mapsDir);
-				}
-
-				std::string fullpath = mapsDir + newMapName;
-
-				tilemap_.saveToFile(fullpath);
-				currentFile_ = fullpath;
-				warningBuf.clear();
-				ImGui::CloseCurrentPopup();
-				memset(mapSaveBuf, 0, sizeof(mapSaveBuf));
-			}
-		}
-
-		// Cancel save
-		if (ImGui::Button("Cancel")) {
-			memset(mapSaveBuf, 0, sizeof(mapSaveBuf));
-			warningBuf.clear();
-			ImGui::CloseCurrentPopup();
-		}
-
-		ImGui::EndPopup();
-	}
-
-	if (ImGui::BeginPopup("map_load")) {
-		ImGui::Text("Select map to load:");
-		static int selected = -1;
-
-		std::vector<std::string> files;
-		std::string mapsDir = FileSystem::GetAssetsDir().string() + "/saves/maps/";
-
-		if (!std::filesystem::exists(mapsDir)) {
-			std::filesystem::create_directories(mapsDir);
-		}
-
-		for (auto& entry : std::filesystem::directory_iterator(mapsDir)) {
-			if (entry.path().extension() == ".json")
-				files.push_back(entry.path().filename().string());
-		}
-
-		if (files.empty()) {
-			ImGui::Text("No map files found!");
-		}
-		else {
-			for (int i = 0; i < (int)files.size(); i++) {
-				bool isSelected = (selected == i);
-
-				if (ImGui::Selectable(files[i].c_str(), isSelected)) {
-					selected = i;
-					std::string full = mapsDir + files[selected];
-					clearAllTileColliders();
-					tilemap_.loadFromFile(full);
-					rebuildAllTileColliders();
-					currentFile_ = full;
-					selected = -1;
-					selectedLayer_ = 0;
-				}
-			}
-		}
-
-		// Cancel load
-		if (ImGui::Button("Cancel")) {
-			ImGui::CloseCurrentPopup();
-			selected = -1;
-		}
-
-		ImGui::EndPopup();
-	}
-
-	ImGui::Separator();
-
-	// --- Brush selector ---
-	ImGui::RadioButton("Walkable", &brush_, 1); ImGui::SameLine();
-	ImGui::RadioButton("Obstacle", &brush_, 0);
 
 	ImGui::Separator();
 
 	// Instructions
 	ImGui::Text("Load and Select Tile from Tileset");
 	ImGui::Text("Left-click: Paint  |  Right-click: Erase");
+	ImGui::TextDisabled("Hold ALT: show active layer only");
 
 	ImGui::Separator();
 
@@ -294,8 +189,34 @@ void MapEditor::displayMenu() {
 	ImGui::End();
 }
 
+void MapEditor::tryRestoreTileset(Resources::EnoLoader& loader) {
+	if (tilesetReady_) return;
+
+	// Scan all layers for any tile with a saved texture name
+	for (const auto& layer : tilemap_.layers()) {
+		for (const auto& row : layer.tiles()) {
+			for (const auto& tile : row) {
+				if (!tile.hasTexture || tile.textureName.empty()) continue;
+
+				auto tex = loader.getTexture(tile.textureName.c_str());
+				if (!tex) continue;
+
+				tilesetName_    = tile.textureName;
+				tilesetTexture_ = tex;
+				float cs        = tilemap_.cellSize();
+				tilesetCols_    = static_cast<int>(tex->getWidth()  / cs);
+				tilesetRows_    = static_cast<int>(tex->getHeight() / cs);
+				tilesetReady_   = true;
+				return;
+			}
+		}
+	}
+}
+
 void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
-	if (!editMode_) return;
+	if (!hasTilemap_ || !editMode_) return;
+
+	tryRestoreTileset(loader);
 
 	ImGui::Begin("Tileset", nullptr, ImGuiWindowFlags_NoCollapse);
 
@@ -464,7 +385,7 @@ void MapEditor::displayTilesetMenu(Resources::EnoLoader& loader) {
 }
 
 void MapEditor::paint(EditorApplication* g) {
-	if (!editMode_) return;
+	if (!hasTilemap_ || !editMode_) return;
 
 	// Safety check: ensure we have layers
 	if (tilemap_.layers().empty()) return;
@@ -483,19 +404,7 @@ void MapEditor::paint(EditorApplication* g) {
 	bool left  = ImGui::IsItemHovered() && ImGui::IsMouseDown(0);
 	bool right = ImGui::IsItemHovered() && ImGui::IsMouseDown(1);
 
-	if (!tilesetReady_) {
-		// default walkability mode
-		if (left) {
-			auto world = Graphics::screenToWorld(mousePos, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
-			auto tile = tilemap_.worldToTile(world);
-			if (tilemap_.inBounds(tile.x, tile.y)) {
-				tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, (brush_ == 1));
-				syncTileCollider(selectedLayer_, tile.x, tile.y);
-				g->markEntitiesDirty();
-			}
-		}
-		return;
-	}
+	if (!tilesetReady_) return;
 
 	// TILESET PAINT MODE ----------------------------------
 	if (left && selectedTileX_ >= 0) {
@@ -508,7 +417,6 @@ void MapEditor::paint(EditorApplication* g) {
 			float u1 = (float)(selectedTileX_ + 1) / tilesetCols_;
 			float v1 = (float)(selectedTileY_ + 1) / tilesetRows_;
 
-			tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, (brush_ == 1));
 			syncTileCollider(selectedLayer_, tile.x, tile.y);
 			tilemap_.setTile(
 				selectedLayer_,
@@ -523,14 +431,13 @@ void MapEditor::paint(EditorApplication* g) {
 		}
 	}
 
-	// ERASE MODE — right-click clears tile texture and resets to walkable
+	// ERASE MODE — right-click clears tile texture
 	if (right) {
 		auto world = Graphics::screenToWorld(mousePos, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
 		auto tile = tilemap_.worldToTile(world);
 
 		if (tilemap_.inBounds(tile.x, tile.y)) {
 			tilemap_.clearTile(selectedLayer_, tile.x, tile.y);
-			tilemap_.setWalkable(selectedLayer_, tile.x, tile.y, true);
 			syncTileCollider(selectedLayer_, tile.x, tile.y);
 			g->markEntitiesDirty();
 		}
@@ -539,178 +446,108 @@ void MapEditor::paint(EditorApplication* g) {
 
 void MapEditor::syncTileCollider(int layer, int x, int y)
 {
-	float cs = tilemap_.cellSize();
-	bool walkable = tilemap_.layers()[layer].isWalkable(x, y);
-	uint64_t key = tileKey(layer, x, y);
-
-	auto it = tileColliders_.find(key);
-
-	if (!walkable)
-	{
-		if (it == tileColliders_.end())
-		{
-			float cx = (x + 0.5f) * cs;
-			float cy = (y + 0.5f) * cs;
-			ECS::Entity e = entMng_.create<
-				ECSComponents::TransformComponent,
-				ECSComponents::CollisionComponent>(
-					ECSComponents::TransformComponent{
-						Math::eVec2<float>{ cx, cy },
-						Math::eVec2<float>{ 0.f, 0.f },
-						Math::eVec2<float>{ 1.f, 1.f }
-					},
-					ECSComponents::CollisionComponent{ cs, cs }
-				);
-			tileColliders_[key] = e.id();
-		}
-	}
-	else
-	{
-		if (it != tileColliders_.end())
-		{
-			ECS::Entity(it->second).destroy(entMng_);
-			tileColliders_.erase(it);
-		}
-	}
-}
-
-void MapEditor::clearAllTileColliders()
-{
-	for (auto& [key, entityID] : tileColliders_)
-	{
-		ECS::Entity(entityID).destroy(entMng_);
-	}
-	tileColliders_.clear();
-}
-
-void MapEditor::rebuildAllTileColliders()
-{
-	float cs = tilemap_.cellSize();
-	int layerIdx = 0;
-	for (auto& layer : tilemap_.layers())
-	{
-		for (int y = 0; y < tilemap_.height(); ++y)
-		{
-			for (int x = 0; x < tilemap_.width(); ++x)
-			{
-				if (!layer.isWalkable(x, y))
-				{
-					uint64_t key = tileKey(layerIdx, x, y);
-					float cx = (x + 0.5f) * cs;
-					float cy = (y + 0.5f) * cs;
-					ECS::Entity e = entMng_.create<
-						ECSComponents::TransformComponent,
-						ECSComponents::CollisionComponent>(
-							ECSComponents::TransformComponent{
-								Math::eVec2<float>{ cx, cy },
-								Math::eVec2<float>{ 0.f, 0.f },
-								Math::eVec2<float>{ 1.f, 1.f }
-							},
-							ECSComponents::CollisionComponent{ cs, cs }
-						);
-					tileColliders_[key] = e.id();
-				}
-			}
-		}
-		++layerIdx;
-	}
+	tilemap_.buildTileColliders(entMng_);
 }
 
 void MapEditor::draw(EditorApplication* g, ImDrawList* drawList) {
-	if (!editMode_) return;
+	if (!hasTilemap_ || !editMode_) return;
 
-	// Safety check: ensure we have layers
 	if (tilemap_.layers().empty()) return;
-	if (selectedLayer_ >= static_cast<int>(tilemap_.layers().size())) {
+	if (selectedLayer_ >= static_cast<int>(tilemap_.layers().size()))
 		selectedLayer_ = 0;
-	}
 
-	float cameraWidth = static_cast<float>(g->getEditorWidth());
+	float cameraWidth  = static_cast<float>(g->getEditorWidth());
 	float cameraHeight = static_cast<float>(g->getEditorHeight());
 	Math::eVec2<float> editorMin = g->getEditorViewMin();
 	Math::eVec2<float> editorMax = g->getEditorViewMax();
 	float camX = g->getEditorCameraX();
 	float camY = g->getEditorCameraY();
 
+	bool altHeld = ImGui::GetIO().KeyAlt;
+
 	drawList->PushClipRect(ImVec2(editorMin.x, editorMin.y), ImVec2(editorMax.x, editorMax.y), true);
 
-	auto& layer = tilemap_.layers()[selectedLayer_];
+	// Cover engine-rendered framebuffer
+	drawList->AddRectFilled(
+		ImVec2(editorMin.x, editorMin.y),
+		ImVec2(editorMax.x, editorMax.y),
+		IM_COL32(0, 0, 0, 255)
+	);
 
-	// Draw tileset-based tiles
 	if (tilesetReady_) {
-		float cs = tilemap_.cellSize();
-		for (int y = 0; y < tilemap_.height(); ++y) {
-			for (int x = 0; x < tilemap_.width(); ++x) {
-				if (!layer.hasTileTexture(x, y)) continue;
-				const auto& tile = layer.getTile(x, y);
+		float cs      = tilemap_.cellSize();
+		float originY = tilemap_.worldOriginY();
+		int   layerCount = static_cast<int>(tilemap_.layers().size());
 
-				Math::eVec2<float> sp1 = Graphics::worldToScreen(
-					{ x * cs, y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
-				Math::eVec2<float> sp2 = Graphics::worldToScreen(
-					{ (x + 1) * cs, (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+		// ALT = solo active layer only; otherwise draw all layers with ghosting
+		int firstLayer = altHeld ? selectedLayer_ : 0;
+		int lastLayer  = altHeld ? selectedLayer_ : layerCount - 1;
 
-				// Screen corners: TL, TR, BR, BL
-				ImVec2 sTL(sp1.x, sp1.y);
-				ImVec2 sTR(sp2.x, sp1.y);
-				ImVec2 sBR(sp2.x, sp2.y);
-				ImVec2 sBL(sp1.x, sp2.y);
+		for (int li = firstLayer; li <= lastLayer; ++li) {
+			auto& layer = tilemap_.layers()[li];
+			ImU32 tint  = (li == selectedLayer_)
+				? IM_COL32(255, 255, 255, 255)   // active: full opacity
+				: IM_COL32(255, 255, 255, 80);   // other:  ghosted
 
-				// UV corners remapped by rotation (clockwise)
-				float u0 = tile.uv0.x, v0 = tile.uv0.y;
-				float u1 = tile.uv1.x, v1 = tile.uv1.y;
+			for (int y = 0; y < tilemap_.height(); ++y) {
+				for (int x = 0; x < tilemap_.width(); ++x) {
+					if (!layer.hasTileTexture(x, y)) continue;
+					const auto& tile = layer.getTile(x, y);
 
-				ImVec2 uvTL, uvTR, uvBR, uvBL;
-				switch (tile.rotation) {
-				default:
-				case 0:
-					uvTL = { u0, v0 }; uvTR = { u1, v0 };
-					uvBR = { u1, v1 }; uvBL = { u0, v1 };
-					break;
-				case 90:
-					uvTL = { u0, v1 }; uvTR = { u0, v0 };
-					uvBR = { u1, v0 }; uvBL = { u1, v1 };
-					break;
-				case 180:
-					uvTL = { u1, v1 }; uvTR = { u0, v1 };
-					uvBR = { u0, v0 }; uvBL = { u1, v0 };
-					break;
-				case 270:
-					uvTL = { u1, v0 }; uvTR = { u1, v1 };
-					uvBR = { u0, v1 }; uvBL = { u0, v0 };
-					break;
+					Math::eVec2<float> sp1 = Graphics::worldToScreen(
+						{ x * cs, originY + y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+					Math::eVec2<float> sp2 = Graphics::worldToScreen(
+						{ (x + 1) * cs, originY + (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+
+					ImVec2 sTL(sp1.x, sp1.y), sTR(sp2.x, sp1.y);
+					ImVec2 sBR(sp2.x, sp2.y), sBL(sp1.x, sp2.y);
+
+					float u0 = tile.uv0.x, v0 = tile.uv0.y;
+					float u1 = tile.uv1.x, v1 = tile.uv1.y;
+
+					ImVec2 uvTL, uvTR, uvBR, uvBL;
+					switch (tile.rotation) {
+					default:
+					case 0:   uvTL={u0,v0}; uvTR={u1,v0}; uvBR={u1,v1}; uvBL={u0,v1}; break;
+					case 90:  uvTL={u0,v1}; uvTR={u0,v0}; uvBR={u1,v0}; uvBL={u1,v1}; break;
+					case 180: uvTL={u1,v1}; uvTR={u0,v1}; uvBR={u0,v0}; uvBL={u1,v0}; break;
+					case 270: uvTL={u1,v0}; uvTR={u1,v1}; uvBR={u0,v1}; uvBL={u0,v0}; break;
+					}
+
+					drawList->AddImageQuad(
+						(ImTextureID)(intptr_t)tilesetTexture_->getID(),
+						sTL, sTR, sBR, sBL,
+						uvTL, uvTR, uvBR, uvBL,
+						tint
+					);
 				}
-
-				ImGui::GetWindowDrawList()->AddImageQuad(
-					(ImTextureID)(intptr_t)tilesetTexture_->getID(),
-					sTL, sTR, sBR, sBL,
-					uvTL, uvTR, uvBR, uvBL
-				);
 			}
 		}
 	}
 
-	for (int y = 0; y < tilemap_.height(); ++y) {
-		for (int x = 0; x < tilemap_.width(); ++x) {
-			float cs = tilemap_.cellSize();
-			Math::eVec2<float> pt1 = Graphics::worldToScreen(
-				{ x * cs, y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY
-			);
-			Math::eVec2<float> pt2 = Graphics::worldToScreen(
-				{ (x + 1) * cs, (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY
-			);
+	// Draw walkability grid for active layer only
+	{
+		float cs      = tilemap_.cellSize();
+		float originY = tilemap_.worldOriginY();
+		auto& layer   = tilemap_.layers()[selectedLayer_];
 
-			ImVec2 p1{ pt1.x, pt1.y }, p2{ pt2.x, pt2.y };
+		for (int y = 0; y < tilemap_.height(); ++y) {
+			for (int x = 0; x < tilemap_.width(); ++x) {
+				Math::eVec2<float> pt1 = Graphics::worldToScreen(
+					{ x * cs, originY + y * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
+				Math::eVec2<float> pt2 = Graphics::worldToScreen(
+					{ (x + 1) * cs, originY + (y + 1) * cs }, editorMin, editorMax, cameraWidth, cameraHeight, camX, camY);
 
-			// ignore if outside image viewport
-			if (p2.x < editorMin.x || p1.x > editorMax.x) continue;
-			if (p2.y < editorMin.y || p1.y > editorMax.y) continue;
+				ImVec2 p1{ pt1.x, pt1.y }, p2{ pt2.x, pt2.y };
+				if (p2.x < editorMin.x || p1.x > editorMax.x) continue;
+				if (p2.y < editorMin.y || p1.y > editorMax.y) continue;
 
-			bool walk = layer.isWalkable(x, y);
-
-			ImU32 col = walk ? IM_COL32(0, 255, 0, 20) : IM_COL32(255, 0, 0, 20);
-			drawList->AddRectFilled(p1, p2, col);
-			drawList->AddRect(p1, p2, IM_COL32(255, 255, 255, 20));
+				ImU32 col = layer.isWalkable(x, y) ? IM_COL32(0, 255, 0, 20) : IM_COL32(255, 0, 0, 20);
+				drawList->AddRectFilled(p1, p2, col);
+				drawList->AddRect(p1, p2, IM_COL32(255, 255, 255, 20));
+			}
 		}
 	}
+
 	drawList->PopClipRect();
 }
