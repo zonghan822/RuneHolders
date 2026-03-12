@@ -12,7 +12,7 @@ namespace Eno
         [Port] public string CameraName = "Camera";
 
         // How close the player must get to this entity to fire the pan.
-        [Port] public float TriggerRadius = 80f;
+        [Port] public float TriggerRadius = 100f;
 
         // World-space position the camera pans to (centre of the next room).
         [Port] public float PanTargetX = 0f;

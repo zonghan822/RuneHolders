@@ -426,30 +426,16 @@ namespace Editor
 
 		// Save the ID for reuse before erasing
 		salvagedID_.push_back(node->sceneObjectID_);
-		uint32_t entityID = node->entity_.id();
 		tree_.erase(node->sceneObjectID_);
-
-		// Destroy the underlying ECS entity so render/physics systems stop processing it
-		if (entityID != UINT32_MAX)
-			entMng_.destroyEntity(entityID);
 	}
 
 	void EnoSceneTree::kill(uint32_t id)
 	{
-		// Defer the actual deletion so that scripts calling FreeNode() mid-frame
-		// do not invalidate the getAllNodes() vector being iterated in beginFrame().
-		pendingKill_.push_back(id);
-	}
+		auto it = tree_.find(id);
+		if (it == tree_.end())
+			return;
 
-	void EnoSceneTree::flushKill()
-	{
-		for (uint32_t id : pendingKill_)
-		{
-			auto it = tree_.find(id);
-			if (it != tree_.end())
-				kill(it->second.get());
-		}
-		pendingKill_.clear();
+		kill(it->second.get());
 	}
 
 	// Toggle a node (to enable or disable)
@@ -1341,11 +1327,8 @@ namespace Editor
 	// 0 will be a sentinel to indicate that there is no id
 	uint32_t EnoSceneTree::generateID()
 	{
-		// Skip any IDs already occupied in the tree (guards against id_ being
-		// out of sync with loaded scene node IDs, which would silently overwrite
-		// the existing node when tree_[id] = std::move(node) is called).
-		while (id_ == 0 || tree_.count(id_))
-			++id_;
+		// Simply use the static counter and increment it
+		// Don't reuse IDs
 		return id_++;
 	}
 

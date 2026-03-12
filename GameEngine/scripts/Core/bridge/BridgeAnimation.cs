@@ -16,14 +16,5 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.LPStr)]
         public static extern string GetCurrentAnimation(uint sceneObjectID);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern void SetAnimationLooping(uint sceneObjectID, bool loop);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern void SetAnimationFrameDuration(uint sceneObjectID, float frameDuration);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern uint GetAnimationFrameCount(uint sceneObjectID);
     }
 }

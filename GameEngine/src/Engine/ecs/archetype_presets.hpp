@@ -337,7 +337,10 @@ namespace ECSComponents
 
 							try
 							{
-								if constexpr (std::is_array_v<ValueType>)
+								if (fname == "Texture Path")
+								{ /* empty by design */ }
+								// char exception
+								else if constexpr (std::is_array_v<ValueType>)
 								{
 									using Element = std::remove_extent_t<ValueType>;
 									constexpr size_t N = std::extent_v<ValueType>;
@@ -681,7 +684,8 @@ namespace ECSComponents
 						using ValueType = std::remove_reference_t<decltype(fvalue)>;
 						try
 						{
-							if constexpr (std::is_array_v<ValueType>)
+							if (fname == "Texture Path") { /* skip */ }
+							else if constexpr (std::is_array_v<ValueType>)
 							{
 								const std::string& str = std::get<std::string>(it->second);
 								std::strncpy(fvalue, str.c_str(), std::extent_v<ValueType>);

@@ -31,13 +31,5 @@ namespace Eno
             get => Bridge.GetIsKinematic(ID);
             set => Bridge.SetIsKinematic(ID, value);
         }
-
-        public bool isOverlappingPoint(float x, float y) => Bridge.IsOverlappingPoint(ID, x, y);
-        public bool isColliding(Node other)               => Bridge.IsColliding(ID, other.ID);
-        public bool colliderActive
-        {
-            get => Bridge.GetColliderActive(ID);
-            set => Bridge.SetColliderActive(ID, value);
-        }
     }
 }

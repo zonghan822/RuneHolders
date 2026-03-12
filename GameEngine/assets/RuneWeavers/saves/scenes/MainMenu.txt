@@ -107,8 +107,6 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Title-Art-2 }
 				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
@@ -129,8 +127,6 @@
 				"Anim0 Cols": <int> { 1 }
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
-				"Anim0 UVStart": <eVec2(float)> { x : 0 | y : 0 }
-				"Anim0 UVEnd": <eVec2(float)> { x : 1 | y : 1 }
 				"Anim1 Name": <char64> { art2 }
 				"Anim1 Texture": <texchar240> { Title-Art-2 }
 				"Anim1 FrameW": <int> { 1920 }
@@ -139,8 +135,6 @@
 				"Anim1 Cols": <int> { 1 }
 				"Anim1 Duration": <float> { 0.1 }
 				"Anim1 Looping": <bool> { 1 }
-				"Anim1 UVStart": <eVec2(float)> { x : 0 | y : 0 }
-				"Anim1 UVEnd": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::CameraComponent]
@@ -204,8 +198,6 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { Logo-M5 }
 				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -494,8 +486,6 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> {  }
 				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]

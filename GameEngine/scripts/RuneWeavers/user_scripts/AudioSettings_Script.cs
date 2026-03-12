@@ -1,4 +1,3 @@
-#nullable enable
 using System;
 
 namespace Eno
@@ -28,12 +27,12 @@ namespace Eno
         private static float s_sfxFillY;
 
         // ── Per-instance runtime state ────────────────────────────────────────────
-        private Sprite2D? _master;
-        private Sprite2D? _bgm;
-        private Sprite2D? _sfx;
-        private Sprite2D? _masterFill;
-        private Sprite2D? _bgmFill;
-        private Sprite2D? _sfxFill;
+        private uint _masterID     = uint.MaxValue;
+        private uint _bgmID        = uint.MaxValue;
+        private uint _sfxID        = uint.MaxValue;
+        private uint _masterFillID = uint.MaxValue;
+        private uint _bgmFillID    = uint.MaxValue;
+        private uint _sfxFillID    = uint.MaxValue;
 
         // Copied from statics into instance fields so Update() reads them locally
         private float _masterMinX;
@@ -43,47 +42,47 @@ namespace Eno
         private float _bgmFillY;
         private float _sfxFillY;
 
-        private Sprite2D? _draggedBall;
-        private float _dragOffsetX = 0f; // mouse-to-ball-centre offset at grab time
+        private uint  _draggedBall  = uint.MaxValue;
+        private float _dragOffsetX  = 0f; // mouse-to-ball-centre offset at grab time
 
         public void Begin()
         {
-            _master     = GetNode<Sprite2D>("MasterSliderBall");
-            _bgm        = GetNode<Sprite2D>("BGMSliderBall");
-            _sfx        = GetNode<Sprite2D>("SFXSliderBall");
-            _masterFill = GetNode<Sprite2D>("MasterSliderFill");
-            _bgmFill    = GetNode<Sprite2D>("BGMSliderFill");
-            _sfxFill    = GetNode<Sprite2D>("SFXSliderFill");
+            _masterID     = Bridge.GetNode("MasterSliderBall");
+            _bgmID        = Bridge.GetNode("BGMSliderBall");
+            _sfxID        = Bridge.GetNode("SFXSliderBall");
+            _masterFillID = Bridge.GetNode("MasterSliderFill");
+            _bgmFillID    = Bridge.GetNode("BGMSliderFill");
+            _sfxFillID    = Bridge.GetNode("SFXSliderFill");
 
             if (!s_anchored)
             {
                 // Read ball positions while they are still at scene-file origin
-                s_masterMinX  = _master?.position.x    ?? 0f;
-                s_bgmMinX     = _bgm?.position.x       ?? 0f;
-                s_sfxMinX     = _sfx?.position.x       ?? 0f;
-                s_masterFillY = _masterFill?.position.y ?? 0f;
-                s_bgmFillY    = _bgmFill?.position.y    ?? 0f;
-                s_sfxFillY    = _sfxFill?.position.y    ?? 0f;
+                s_masterMinX  = Bridge.GetPositionX(_masterID);
+                s_bgmMinX     = Bridge.GetPositionX(_bgmID);
+                s_sfxMinX     = Bridge.GetPositionX(_sfxID);
+                s_masterFillY = Bridge.GetPositionY(_masterFillID);
+                s_bgmFillY    = Bridge.GetPositionY(_bgmFillID);
+                s_sfxFillY    = Bridge.GetPositionY(_sfxFillID);
                 s_anchored    = true;
 
                 // Load saved volumes (0 on first ever run)
-                float masterVol = Audio.loadVolume("Audio Master", 0f);
-                float bgmVol    = Audio.loadVolume("Audio BGM",    0f);
-                float sfxVol    = Audio.loadVolume("Audio SFX",    0f);
+                float masterVol = Bridge.LoadAudioVolume("Audio Master", 0f);
+                float bgmVol    = Bridge.LoadAudioVolume("Audio BGM",    0f);
+                float sfxVol    = Bridge.LoadAudioVolume("Audio SFX",    0f);
 
-                Audio.masterVolume = masterVol;
-                Audio.setGroupVolume("BGM", bgmVol);
-                Audio.setGroupVolume("SFX", sfxVol);
+                Bridge.SetMasterVolume(masterVol);
+                Bridge.SetGroupVolume("BGM", bgmVol);
+                Bridge.SetGroupVolume("SFX", sfxVol);
 
                 // Place balls at saved positions
-                PlaceBallAtVolume(_master,     masterVol, s_masterMinX);
-                PlaceBallAtVolume(_bgm,        bgmVol,    s_bgmMinX);
-                PlaceBallAtVolume(_sfx,        sfxVol,    s_sfxMinX);
+                PlaceBallAtVolume(_masterID, masterVol, s_masterMinX);
+                PlaceBallAtVolume(_bgmID,    bgmVol,    s_bgmMinX);
+                PlaceBallAtVolume(_sfxID,    sfxVol,    s_sfxMinX);
 
                 // Stretch fills to match
-                UpdateFill(_masterFill, s_masterMinX, VolumeToX(masterVol, s_masterMinX), s_masterFillY);
-                UpdateFill(_bgmFill,    s_bgmMinX,    VolumeToX(bgmVol,    s_bgmMinX),    s_bgmFillY);
-                UpdateFill(_sfxFill,    s_sfxMinX,    VolumeToX(sfxVol,    s_sfxMinX),    s_sfxFillY);
+                UpdateFill(_masterFillID, s_masterMinX, VolumeToX(masterVol, s_masterMinX), s_masterFillY);
+                UpdateFill(_bgmFillID,    s_bgmMinX,    VolumeToX(bgmVol,    s_bgmMinX),    s_bgmFillY);
+                UpdateFill(_sfxFillID,    s_sfxMinX,    VolumeToX(sfxVol,    s_sfxMinX),    s_sfxFillY);
             }
 
             // Every instance copies from statics so Update() has correct local values
@@ -97,71 +96,73 @@ namespace Eno
 
         public void Update()
         {
-            Vector2 mouse = Input.mouseWorldPosition;
+            float mx = Bridge.GetMouseWorldX();
+            float my = Bridge.GetMouseWorldY();
 
-            if (Input.isMousePressed(0))
+            if (Bridge.IsMousePressed(0))
             {
-                if (IsMouseOverBall(_master, mouse))
+                if (IsMouseOverBall(_masterID, mx, my))
                 {
-                    _draggedBall = _master;
-                    _dragOffsetX = (_master?.position.x ?? 0f) - mouse.x;
+                    _draggedBall = _masterID;
+                    _dragOffsetX = Bridge.GetPositionX(_masterID) - mx;
                 }
-                else if (IsMouseOverBall(_bgm, mouse))
+                else if (IsMouseOverBall(_bgmID, mx, my))
                 {
-                    _draggedBall = _bgm;
-                    _dragOffsetX = (_bgm?.position.x ?? 0f) - mouse.x;
+                    _draggedBall = _bgmID;
+                    _dragOffsetX = Bridge.GetPositionX(_bgmID) - mx;
                 }
-                else if (IsMouseOverBall(_sfx, mouse))
+                else if (IsMouseOverBall(_sfxID, mx, my))
                 {
-                    _draggedBall = _sfx;
-                    _dragOffsetX = (_sfx?.position.x ?? 0f) - mouse.x;
+                    _draggedBall = _sfxID;
+                    _dragOffsetX = Bridge.GetPositionX(_sfxID) - mx;
                 }
             }
 
-            if (Input.isMouseHeld(0) && _draggedBall != null)
+            if (Bridge.IsMouseHeld(0) && _draggedBall != uint.MaxValue)
             {
                 float minX     = GetMinX(_draggedBall);
                 // Apply grab offset so the ball doesn't snap its centre to the cursor
-                float clampedX = MathF.Max(minX, MathF.Min(minX + SliderRange, mouse.x + _dragOffsetX));
+                float clampedX = MathF.Max(minX, MathF.Min(minX + SliderRange, mx + _dragOffsetX));
 
-                _draggedBall.position = new Vector2(clampedX, _draggedBall.position.y);
-                UpdateFill(GetFill(_draggedBall), minX, clampedX, GetFillY(_draggedBall));
+                Bridge.SetPosition(_draggedBall, clampedX, Bridge.GetPositionY(_draggedBall));
+                UpdateFill(GetFillID(_draggedBall), minX, clampedX, GetFillY(_draggedBall));
                 ApplyVolume(_draggedBall, XToVolume(clampedX, minX));
             }
 
-            if (Input.isMouseReleased(0) && _draggedBall != null)
+            if (Bridge.IsMouseReleased(0) && _draggedBall != uint.MaxValue)
             {
                 // Persist all three current volumes to config.txt
-                Audio.saveVolumes(
-                    XToVolume(_master?.position.x ?? 0f, _masterMinX),
-                    XToVolume(_bgm?.position.x    ?? 0f, _bgmMinX),
-                    XToVolume(_sfx?.position.x    ?? 0f, _sfxMinX));
+                Bridge.SaveAudioVolumes(
+                    XToVolume(Bridge.GetPositionX(_masterID), _masterMinX),
+                    XToVolume(Bridge.GetPositionX(_bgmID),    _bgmMinX),
+                    XToVolume(Bridge.GetPositionX(_sfxID),    _sfxMinX));
 
-                _draggedBall = null;
+                _draggedBall = uint.MaxValue;
             }
         }
 
         // Left edge fixed at anchorX; right edge reaches ballX.  Y never changes.
-        private void UpdateFill(Sprite2D? fill, float anchorX, float ballX, float fillY)
+        private void UpdateFill(uint fillID, float anchorX, float ballX, float fillY)
         {
-            if (fill == null) return;
+            if (fillID == uint.MaxValue) return;
             float width = MathF.Max(0f, ballX - anchorX);
-            fill.position = new Vector2(anchorX + width * 0.5f, fillY);
-            fill.setSize(width, fill.height);
+            Bridge.SetPosition(fillID, anchorX + width * 0.5f, fillY);
+            Bridge.SetRenderSize(fillID, width, Bridge.GetRenderHeight(fillID));
         }
 
-        private bool IsMouseOverBall(Sprite2D? ball, Vector2 mouse)
+        private bool IsMouseOverBall(uint id, float mx, float my)
         {
-            if (ball == null) return false;
-            float dx = mouse.x - ball.position.x;
-            float dy = mouse.y - ball.position.y;
+            if (id == uint.MaxValue) return false;
+            float dx = mx - Bridge.GetPositionX(id);
+            float dy = my - Bridge.GetPositionY(id);
             return (dx * dx + dy * dy) <= (BallRadius * BallRadius);
         }
 
-        private void PlaceBallAtVolume(Sprite2D? ball, float volume, float minX)
+        private void PlaceBallAtVolume(uint id, float volume, float minX)
         {
-            if (ball == null) return;
-            ball.position = new Vector2(VolumeToX(MathF.Max(0f, MathF.Min(100f, volume)), minX), ball.position.y);
+            if (id == uint.MaxValue) return;
+            Bridge.SetPosition(id, VolumeToX(MathF.Max(0f, MathF.Min(100f, volume)), minX),
+                                   Bridge.GetPositionY(id));
         }
 
         private float VolumeToX(float volume, float minX)
@@ -170,32 +171,32 @@ namespace Eno
         private float XToVolume(float x, float minX)
             => ((x - minX) / SliderRange) * 100f;
 
-        private float GetMinX(Sprite2D ball)
+        private float GetMinX(uint ballID)
         {
-            if (ball == _master) return _masterMinX;
-            if (ball == _bgm)    return _bgmMinX;
+            if (ballID == _masterID) return _masterMinX;
+            if (ballID == _bgmID)    return _bgmMinX;
             return _sfxMinX;
         }
 
-        private Sprite2D? GetFill(Sprite2D ball)
+        private uint GetFillID(uint ballID)
         {
-            if (ball == _master) return _masterFill;
-            if (ball == _bgm)    return _bgmFill;
-            return _sfxFill;
+            if (ballID == _masterID) return _masterFillID;
+            if (ballID == _bgmID)    return _bgmFillID;
+            return _sfxFillID;
         }
 
-        private float GetFillY(Sprite2D ball)
+        private float GetFillY(uint ballID)
         {
-            if (ball == _master) return _masterFillY;
-            if (ball == _bgm)    return _bgmFillY;
+            if (ballID == _masterID) return _masterFillY;
+            if (ballID == _bgmID)    return _bgmFillY;
             return _sfxFillY;
         }
 
-        private void ApplyVolume(Sprite2D ball, float volume)
+        private void ApplyVolume(uint ballID, float volume)
         {
-            if      (ball == _master) Audio.masterVolume = volume;
-            else if (ball == _bgm)    Audio.setGroupVolume("BGM", volume);
-            else if (ball == _sfx)    Audio.setGroupVolume("SFX", volume);
+            if      (ballID == _masterID) Bridge.SetMasterVolume(volume);
+            else if (ballID == _bgmID)    Bridge.SetGroupVolume("BGM", volume);
+            else if (ballID == _sfxID)    Bridge.SetGroupVolume("SFX", volume);
         }
     }
 }
