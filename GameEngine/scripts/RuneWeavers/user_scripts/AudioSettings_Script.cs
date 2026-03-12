@@ -11,7 +11,7 @@ namespace Eno
     // Volumes are saved to config.txt on release and restored on Begin().
     public class AudioSettings_Script : ScriptBase
     {
-        private const float SliderRange = 250f;
+        private const float SliderRange = 220f;
         private const float BallRadius  = 25f;
 
         // ── Static anchors ────────────────────────────────────────────────────────
@@ -23,9 +23,9 @@ namespace Eno
         private static float s_masterMinX;
         private static float s_bgmMinX;
         private static float s_sfxMinX;
-        private static float s_masterFillY;
-        private static float s_bgmFillY;
-        private static float s_sfxFillY;
+        // private static float s_masterFillY;
+        // private static float s_bgmFillY;
+        // private static float s_sfxFillY;
 
         // ── Per-instance runtime state ────────────────────────────────────────────
         private Sprite2D? _master;

@@ -8,5 +8,5 @@ Tilemap Width: 30
 Tilemap Height: 17
 Tilemap CellSize: 64
 Audio SFX: 100.000000
-Audio Master: 100.000000
-Audio BGM: 99.999977
+Audio Master: 64.567093
+Audio BGM: 43.906002
