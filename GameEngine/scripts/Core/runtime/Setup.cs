@@ -99,7 +99,6 @@ namespace Eno
                 var ns = classNode.FirstAncestorOrSelf<NamespaceDeclarationSyntax>();
                 if (ns != null)
                     fullName = ns.Name.ToString() + "." + fullName;
-
                 classNames.Add(fullName);
             }
 

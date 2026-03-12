@@ -7,6 +7,7 @@
 *//*========================================================================================*/
 
 #include "eno_bridge.hpp"
+#include "../file/file_system.hpp"
 
 // Global engine pointer — declared extern in eno_bridge.hpp,
 // defined exactly once here so all bridge .cpp files share it.
@@ -21,6 +22,12 @@ namespace Bridge
             gEngine = reinterpret_cast<Engine::EnoEngine*>(enginePtr);
             if (!gEngine)
                 std::cerr << "[Bridge] Bridge_Init: engine pointer is null!\n";
+
+            // The DLL has its own copy of FileSystem statics (separate from the EXE's).
+            // Initialize them here so GetScriptsDir() works correctly inside the DLL
+            // (e.g. when SpawnPrefab -> attachScriptByFilename -> EnoScript uses the path).
+            // Use the app name stored in the engine (set via EnoEngine::setAppName before setup).
+            FileSystem::Initialize(gEngine->getAppName());
         }
 
         ENGINE_API float __stdcall GetDeltaTime()

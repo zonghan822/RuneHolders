@@ -29,6 +29,7 @@ namespace Script
 		// Get all script variables
 		int count{};
 		void* names = (coreHost_.cname())(path.c_str(), &count);
+		
 
 		if (!names || count <= 0)
 			return;
