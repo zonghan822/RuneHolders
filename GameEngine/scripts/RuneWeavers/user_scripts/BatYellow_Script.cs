@@ -15,26 +15,15 @@ namespace Eno
 
         public void Update()
         {
-            if (_player == null) return;
 
-            float myX = Bridge.GetPositionX(ID);
-            float myY = Bridge.GetPositionY(ID);
-            float px  = _player.position.x;
-            float py  = _player.position.y;
-
-            float dx   = px - myX;
-            float dy   = py - myY;
-            float dist = MathF.Sqrt(dx * dx + dy * dy);
-
-            if (dist < 1f || dist > Bridge.GetAwarenessRadius(ID))
-            {
-                Bridge.SetVelocity(ID, 0f, 0f);
-                return;
-            }
-
-            float speed = Bridge.GetChaseSpeed(ID);
-            Bridge.SetVelocity(ID, dx / dist * speed, dy / dist * speed);
 		}
+
+        private float DistToPlayer()
+        {
+            float dx = _player.position.x - Bridge.GetPositionX(ID);
+            float dy = _player.position.y - Bridge.GetPositionY(ID);
+            return MathF.Sqrt(dx * dx + dy * dy);
+        }
 	
         public void Spawn_enter()
         {
@@ -43,7 +32,7 @@ namespace Eno
 
         public void Spawn_update()
         {
-            // TODO: Add update logic for Spawn state
+            Bridge.ChangeState(ID, "Idle");
         }
 
         public void Spawn_exit()
@@ -53,17 +42,52 @@ namespace Eno
 	
         public void Idle_enter()
         {
-            // TODO: Add enter logic for Idle state
+            Bridge.SetVelocity(ID, 0f, 0f);
         }
 
         public void Idle_update()
         {
-            // TODO: Add update logic for Idle state
+            if (_player == null) return;
+
+            if (DistToPlayer() <= Bridge.GetAwarenessRadius(ID))
+                Bridge.ChangeState(ID, "Chase");
         }
 
         public void Idle_exit()
         {
             // TODO: Add exit logic for Idle state
+        }
+
+        public void Chase_enter()
+        {
+            // TODO: Add enter logic for Chase state
+        }
+
+        public void Chase_update()
+        {
+            if (_player == null) return;
+
+            float myX = Bridge.GetPositionX(ID);
+            float myY = Bridge.GetPositionY(ID);
+            float dx  = _player.position.x - myX;
+            float dy  = _player.position.y - myY;
+            float dist = MathF.Sqrt(dx * dx + dy * dy);
+
+            if (dist > Bridge.GetAwarenessRadius(ID))
+            {
+                Bridge.ChangeState(ID, "Idle");
+                return;
+            }
+
+            if (dist < 1f) return;
+
+            float speed = Bridge.GetChaseSpeed(ID);
+            Bridge.SetVelocity(ID, dx / dist * speed, dy / dist * speed);
+        }
+
+        public void Chase_exit()
+        {
+            Bridge.SetVelocity(ID, 0f, 0f);
         }
 	
         public void WindUp_enter()
