@@ -128,6 +128,62 @@ namespace Eno
             uint quitMenuID = Bridge.GetNode("Quit Game Menu");
             Bridge.SetCanvasActive(quitMenuID, false);
         }
+	
+        /* -------------------------- SETTING MENU BUTTONS ----------------------- */
+        // ---------- OPEN SETTINGS BUTTON -------------
+		public void _when_settings_button_onpressed()
+        {
+            // Set to button selected sprite
+            uint buttonID = Bridge.GetNode("Settings Button");
+            Bridge.SetTexturePath(buttonID, "UI-Settings-Selected");
+        }
+	
+		public void _when_settings_button_onclick()
+        {
+            // Set to button selected sprite
+            uint buttonID = Bridge.GetNode("Settings Button");
+            Bridge.SetTexturePath(buttonID, "UI-Settings");
+            // Set Settings Menu Active
+            uint settingMenuID = Bridge.GetNode("Settings Menu");
+            Bridge.SetCanvasActive(settingMenuID, true);
+        }
+	
+        // ---------- MASTER VOLUME BUTTON -------------
+		public void _when_master_button_onpressed()
+        {
+
+        }
+	
+        // ---------- BGM VOLUME BUTTON -------------
+		public void _when_bgm_button_onpressed()
+        {
+
+        }
+	
+        // ---------- SFX VOLUME BUTTON -------------
+		public void _when_sfx_button_onpressed()
+        {
+
+        }
+	
+        // ---------- SETTINGS MENU BACK BUTTON -------------
+		public void _when_settings_menu_back_button_onpressed()
+        {
+            // Set to button selected sprite
+            uint buttonID = Bridge.GetNode("Settings Menu Back Button");
+            Bridge.SetTexturePath(buttonID, "UI-Back-Selected");
+        }
+	
+		public void _when_settings_menu_back_button_onclick()
+        {
+            // Set to button selected sprite
+            uint buttonID = Bridge.GetNode("Settings Menu Back Button");
+            Bridge.SetTexturePath(buttonID, "UI-Back");
+            // Set Settings Menu Canvas Inactive
+            uint settingMenuID = Bridge.GetNode("Settings Menu");
+            Bridge.SetCanvasActive(settingMenuID, false);
+
+        }
 	}
 }
 			

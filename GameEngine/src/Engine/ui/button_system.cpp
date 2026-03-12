@@ -76,7 +76,7 @@ namespace UI
 					if (inputMng.isMousePressed(GLFW_MOUSE_BUTTON_LEFT))
 					{
 						// Pressing button, do not trigger hover
-						std::cout << "[Button_System] Button Pressed!" << std::endl;
+						//std::cout << "[Button_System] Button Pressed!" << std::endl;
 						auto it2 = b.signals_.find("onPressed");
 						if (it2 != b.signals_.end())
 						{
@@ -86,7 +86,7 @@ namespace UI
 					else
 					{
 						// Mouse within button: emit onHover signal
-						std::cout << "[Button_System] Button Hovered!" << std::endl;
+						//std::cout << "[Button_System] Button Hovered!" << std::endl;
 						auto it = b.signals_.find("onHover");
 						if (it != b.signals_.end())
 						{
@@ -97,7 +97,7 @@ namespace UI
 					// Mouse click on button, emit onClicked signal
 					if (inputMng.isMouseUp(GLFW_MOUSE_BUTTON_LEFT))
 					{
-						std::cout << "[Button_System] Button Clicked!" << std::endl;
+						//std::cout << "[Button_System] Button Clicked!" << std::endl;
 						auto it2 = b.signals_.find("onClick");
 						if (it2 != b.signals_.end())
 						{
