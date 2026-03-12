@@ -32,7 +32,7 @@
 
 			[struct ECSComponents::AudioComponent]
 			{
-				"Sound Name": <char32> { UI_PressPlay }
+				"Sound Name": <char32> { BGM_01_Layer1_loop }
 				"Sound Path": <char256> {  }
 				"Channel Group": <char32> { BGM }
 				"Loop Mode": <loopmode> { Forward }
@@ -41,7 +41,7 @@
 				"Volume": <double> { 100 }
 				"Pitch Scale": <double> { 1 }
 				"Pan Scale": <double> { 0 }
-				"Is Playing": <bool> { 0 }
+				"Is Playing": <bool> { 1 }
 				"Is Autoplay": <bool> { 0 }
 				"Spatial Audio": <bool> { 0 }
 				"Max Audible Distance": <float> { 500 }
