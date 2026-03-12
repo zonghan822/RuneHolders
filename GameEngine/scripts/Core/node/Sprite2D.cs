@@ -36,6 +36,20 @@ namespace Eno
 
         public void setSize(float w, float h) => Bridge.SetRenderSize(ID, w, h);
 
+        public Vector2 uvStart
+        {
+            get => new Vector2(Bridge.GetUVStartX(ID), Bridge.GetUVStartY(ID));
+            set => Bridge.SetUV(ID, value.x, value.y, Bridge.GetUVEndX(ID), Bridge.GetUVEndY(ID));
+        }
+
+        public Vector2 uvEnd
+        {
+            get => new Vector2(Bridge.GetUVEndX(ID), Bridge.GetUVEndY(ID));
+            set => Bridge.SetUV(ID, Bridge.GetUVStartX(ID), Bridge.GetUVStartY(ID), value.x, value.y);
+        }
+
+        public void setUV(Vector2 start, Vector2 end) => Bridge.SetUV(ID, start.x, start.y, end.x, end.y);
+
         public string animation
         {
             get => Bridge.GetCurrentAnimation(ID);
@@ -43,5 +57,9 @@ namespace Eno
         }
 
         public void changeState(string state) => Bridge.ChangeState(ID, state);
+
+        public void setAnimationLooping(bool loop)             => Bridge.SetAnimationLooping(ID, loop);
+        public void setAnimationFrameDuration(float frameDur)  => Bridge.SetAnimationFrameDuration(ID, frameDur);
+        public uint getAnimationFrameCount()                   => Bridge.GetAnimationFrameCount(ID);
     }
 }

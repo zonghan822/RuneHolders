@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -133,6 +134,20 @@ namespace Eno
         {
             uint id = Bridge.SpawnPrefab(prefabName, x, y, parent.ID);
             return id == uint.MaxValue ? null : NodeFactory.Create(id);
+        }
+
+        // Returns all Enemy nodes currently in the scene.
+        public List<Enemy> GetAllEnemies()
+        {
+            uint[] ids = new uint[128];
+            uint count = Bridge.GetNodesByType((uint)NodeType.ENEMY, ids, (uint)ids.Length);
+            var result = new List<Enemy>();
+            for (uint i = 0; i < count && i < (uint)ids.Length; i++)
+            {
+                if (NodeFactory.Create(ids[i]) is Enemy enemy)
+                    result.Add(enemy);
+            }
+            return result;
         }
     }
 }

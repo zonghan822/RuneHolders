@@ -1457,6 +1457,21 @@ namespace Graphics
         for (auto& entity : entities)
         {
             auto& animComp = entity.get<ECSComponents::AnimationControllerComponent>(entityMng);
+
+            // Static sprites (no animations): load texture from texturePath on first encounter.
+            // Handles both scene-loaded and runtime-spawned prefabs that have no animation data.
+            if (animComp.animationCount == 0 && entity.has<ECSComponents::DrawInfoComponent>(entityMng))
+            {
+                auto& drawComp = entity.get<ECSComponents::DrawInfoComponent>(entityMng);
+                if (!drawComp.texture && strlen(drawComp.texturePath) > 0)
+                {
+                    auto& textures = loader.getAllTextures();
+                    auto it = textures.find(drawComp.texturePath);
+                    if (it != textures.end())
+                        drawComp.texture = it->second;
+                }
+            }
+
             Animation::AnimationController* ctrl = animReg.get(animComp.controllerID);
             if (!ctrl) continue;
 
@@ -1755,8 +1770,8 @@ namespace Graphics
                             transform.pos.y - (scaledHeight * 0.5f)
                         };
 
-                        Math::eVec2<float> uvStart{ 0.0f, 0.0f };
-                        Math::eVec2<float> uvEnd  { 1.0f, 1.0f };
+                        Math::eVec2<float> uvStart = renderInfo.uvStart;
+                        Math::eVec2<float> uvEnd   = renderInfo.uvEnd;
 
                         if (entity.has<ECSComponents::AnimationControllerComponent>(entityManager))
                         {
@@ -1766,8 +1781,22 @@ namespace Graphics
                             if (ctrl)
                             {
                                 const auto& frame = ctrl->getCurrentFrame();
-                                uvStart = frame.uvStart;
-                                uvEnd   = frame.uvEnd;
+
+                                // Only remap if the animation controller has a valid current frame.
+                                // A zeroed frame (uvEnd == uvStart == {0,0}) means no animation is
+                                // loaded; in that case fall back to the RenderComponent UV directly.
+                                if (frame.uvEnd.x != frame.uvStart.x || frame.uvEnd.y != frame.uvStart.y)
+                                {
+                                // Remap frame UV within the RenderComponent's UV region.
+                                // Setting uvStart/uvEnd on the render component controls
+                                // which part of the spritesheet the animation plays within.
+                                float rx = renderInfo.uvEnd.x - renderInfo.uvStart.x;
+                                float ry = renderInfo.uvEnd.y - renderInfo.uvStart.y;
+                                uvStart = { renderInfo.uvStart.x + frame.uvStart.x * rx,
+                                            renderInfo.uvStart.y + frame.uvStart.y * ry };
+                                uvEnd   = { renderInfo.uvStart.x + frame.uvEnd.x   * rx,
+                                            renderInfo.uvStart.y + frame.uvEnd.y   * ry };
+                                }
 
                                 // Flip sprite when moving right (sprites face left by default)
                                 if (entity.has<ECSComponents::PhysicsComponent>(entityManager))
