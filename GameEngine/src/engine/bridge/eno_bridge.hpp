@@ -107,6 +107,13 @@ namespace Bridge {
         ENGINE_API void     __stdcall SetVisibility(uint32_t sceneObjectID, bool visible);
 
         // =========================================================================
+        // Canvas Component
+        // Implemented in: eno_bridge_canvas.cpp
+        // =========================================================================
+        ENGINE_API bool __stdcall GetCanvasActive(uint32_t sceneObjectID);
+        ENGINE_API void __stdcall SetCanvasActive(uint32_t sceneObjectID, bool active);
+
+        // =========================================================================
         // Input — Keyboard
         // Implemented in: eno_bridge_input.cpp
         // =========================================================================
@@ -197,6 +204,7 @@ namespace Bridge {
         ENGINE_API float   __stdcall GetRenderWidth(uint32_t sceneObjectID);
         ENGINE_API float   __stdcall GetRenderHeight(uint32_t sceneObjectID);
         ENGINE_API void    __stdcall SetRenderSize(uint32_t sceneObjectID, float w, float h);
+        ENGINE_API void    __stdcall SetTexturePath(uint32_t sceneObjectID, const char* textureName);
         ENGINE_API float   __stdcall GetUVStartX(uint32_t sceneObjectID);
         ENGINE_API float   __stdcall GetUVStartY(uint32_t sceneObjectID);
         ENGINE_API float   __stdcall GetUVEndX(uint32_t sceneObjectID);

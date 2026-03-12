@@ -364,6 +364,20 @@ void EditorApplication::updateEditorState() {
 			// Check that the last frame editor state was 'Stopped'
 			if (playAfterStop)
 			{
+				// Save camera position before entering play mode
+				prePlayCameraX_   = editorCameraX_;
+				prePlayCameraY_   = editorCameraY_;
+				prePlayZoomLevel_ = editorZoomLevel_;
+				// Save canvas positions so followCamera movement can be undone on stop
+				prePlayCanvasPositions_.clear();
+				for (auto* node : engine_.getEnoEditor().getSceneTree().getAllNodes()) {
+					if (node->entity_.has<ECSComponents::CanvasComponent>(engine_.getEntityManager()) &&
+					    node->entity_.has<ECSComponents::TransformComponent>(engine_.getEntityManager()))
+					{
+						prePlayCanvasPositions_[node->entity_.id()] =
+							node->entity_.get<ECSComponents::TransformComponent>(engine_.getEntityManager()).pos;
+					}
+				}
 				coreHost.hotReload();
 				// Re-initialize the bridge after hot reload: the DLL is replaced so
 				// gEngine becomes null; every Bridge.* call silently fails until
@@ -400,6 +414,18 @@ void EditorApplication::updateEditorState() {
 			// This condition ensures resetting of pos comes after play
 			if (!playAfterStop)
 			{
+				// Restore camera to where it was before play was pressed
+				editorCameraX_   = prePlayCameraX_;
+				editorCameraY_   = prePlayCameraY_;
+				editorZoomLevel_ = prePlayZoomLevel_;
+				// Restore canvas positions (undo followCamera physical movement)
+				for (auto* node : engine_.getEnoEditor().getSceneTree().getAllNodes()) {
+					if (!node->entity_.has<ECSComponents::CanvasComponent>(engine_.getEntityManager())) continue;
+					auto it = prePlayCanvasPositions_.find(node->entity_.id());
+					if (it == prePlayCanvasPositions_.end()) continue;
+					ECSComponents::moveNodeWithChildren(node, it->second, engine_.getEntityManager());
+				}
+				prePlayCanvasPositions_.clear();
 				// Mark entities as dirty to refresh the rendering cache
 				markEntitiesDirty();
 				// Toggle flag

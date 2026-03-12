@@ -17,11 +17,11 @@ namespace Eno
 
         public void Update()
         {
-            if (Input.isMousePressed(0))
-            {
-                Bridge.AudioStop(ID);
-                SceneManager.changeScene("Level.txt");
-            }
+            // if (Input.isMousePressed(0))
+            // {
+            //     Bridge.AudioStop(ID);
+            //     SceneManager.changeScene("Level.txt");
+            // }
         }
 
         // Called when entering the art1 state

@@ -47,7 +47,7 @@
 	/* Object that can be pushed around */ \
 	PRESET(PUSHABLE_BOX, TransformComponent, RenderComponent, AnimationControllerComponent, StateMachineComponent, CollisionComponent, PhysicsComponent, BoxComponent, VisibilityComponent, LayerComponent) \
 	/* UI button */ \
-	PRESET(BUTTON,       TransformComponent, ButtonComponent, DrawInfoComponent, VisibilityComponent, CollisionComponent) \
+	PRESET(BUTTON,       TransformComponent, ButtonComponent, DrawInfoComponent, AnimationControllerComponent, VisibilityComponent, CollisionComponent) \
 	/* Audio source */ \
 	PRESET(AUDIO,        AudioComponent, LayerComponent) \
 	/* Camera */ \

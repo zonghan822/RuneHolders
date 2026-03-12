@@ -182,7 +182,7 @@ namespace UI
 					if (!entity.has<ECSComponents::DrawInfoComponent>(entityManager)) continue;
 
 					// Render entity after converting from world to screen space
-					Math::eVec2<float> worldPos   = entity.get<ECSComponents::TransformComponent>(entityManager).pos;
+					Math::eVec2<float> worldPos = entity.get<ECSComponents::TransformComponent>(entityManager).pos;
 					auto& renderInfo = entity.get<ECSComponents::DrawInfoComponent>(entityManager);
 
 					Math::eVec2<float> renderPos = {
@@ -332,7 +332,8 @@ namespace UI
 				}
 #endif
 
-				if (!canvas.isActive) continue;
+				// In play mode, inactive canvases are hidden. In the editor, always render.
+				if (!canvas.isActive && engine.getIsPlaying()) continue;
 
 				// Physically move canvas and its children to follow the camera.
 				// Only runs when a valid camera is assigned (followCameraEntityID != -1).
