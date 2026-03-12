@@ -184,6 +184,36 @@ namespace Eno
             Bridge.SetCanvasActive(settingMenuID, false);
 
         }
+	
+		public void _when_masters_onpressed()
+        {
+
+        }
+	
+		public void _when_bgms_onpressed()
+        {
+
+        }
+	
+		public void _when_sfxs_onpressed()
+        {
+
+        }
+	
+		public void _when_mastersliderball_onpressed()
+        {
+
+        }
+	
+		public void _when_bgmsliderball_onpressed()
+        {
+
+        }
+	
+		public void _when_sfxsliderball_onpressed()
+        {
+
+        }
 	}
 }
 			
