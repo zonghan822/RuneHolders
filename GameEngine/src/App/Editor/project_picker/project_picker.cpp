@@ -81,6 +81,7 @@ static void applyProjectSelection(Engine::EnoEngine& engine_, const std::string&
 	if (!std::filesystem::exists(dst))
 		writeGameScriptsCsproj(dst);
 
+	engine_.setAppName(projectName);
 	FileSystem::Initialize(projectName);
 
 	// The project's GameScripts.dll lives in a sibling directory of the Editor exe.

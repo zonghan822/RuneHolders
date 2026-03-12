@@ -8,6 +8,7 @@
 #include "eno_bridge.hpp"
 #include "../component/components/drawInfo.hpp"
 #include "../component/components/text_component.hpp"
+#include "../resources/eno_loader.hpp"
 
 namespace Bridge
 {
@@ -51,6 +52,50 @@ namespace Bridge
             {
                 r->width  = w;
                 r->height = h;
+            }
+        }
+
+        ENGINE_API void __stdcall SetTexturePath(uint32_t sceneObjectID, const char* textureName)
+        {
+            if (!textureName) return;
+            auto* r = getRender(sceneObjectID);
+            if (!r) return;
+            auto tex = gEngine->getResourceLoader().getTexture(textureName);
+            if (!tex) return;
+            r->setTexture(tex, textureName);
+        }
+        // ============= UV =============
+
+        ENGINE_API float __stdcall GetUVStartX(uint32_t sceneObjectID)
+        {
+            auto* r = getRender(sceneObjectID);
+            return r ? r->uvStart.x : 0.0f;
+        }
+
+        ENGINE_API float __stdcall GetUVStartY(uint32_t sceneObjectID)
+        {
+            auto* r = getRender(sceneObjectID);
+            return r ? r->uvStart.y : 0.0f;
+        }
+
+        ENGINE_API float __stdcall GetUVEndX(uint32_t sceneObjectID)
+        {
+            auto* r = getRender(sceneObjectID);
+            return r ? r->uvEnd.x : 1.0f;
+        }
+
+        ENGINE_API float __stdcall GetUVEndY(uint32_t sceneObjectID)
+        {
+            auto* r = getRender(sceneObjectID);
+            return r ? r->uvEnd.y : 1.0f;
+        }
+
+        ENGINE_API void __stdcall SetUV(uint32_t sceneObjectID, float startX, float startY, float endX, float endY)
+        {
+            if (auto* r = getRender(sceneObjectID))
+            {
+                r->uvStart = { startX, startY };
+                r->uvEnd   = { endX,   endY   };
             }
         }
 

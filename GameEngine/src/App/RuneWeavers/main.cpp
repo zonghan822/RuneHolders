@@ -25,6 +25,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
         // Engine instance
         Engine::EnoEngine engine_;
+        engine_.setAppName(ENO_APP_NAME);
 
         // Initialize all game systems
         engine_.setup();

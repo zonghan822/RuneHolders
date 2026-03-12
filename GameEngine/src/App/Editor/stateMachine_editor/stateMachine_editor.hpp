@@ -125,12 +125,15 @@ namespace Editor {
                     ImGui::PopStyleColor();
                 }
 
-                // Show method names
-                ImGui::Indent();
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Enter: %s()", smComp.states[i].onEnterMethod);
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Update: %s()", smComp.states[i].onUpdateMethod);
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Exit: %s()", smComp.states[i].onExitMethod);
-                ImGui::Unindent();
+                // Show method names only when a script is attached
+                if (node->script_)
+                {
+                    ImGui::Indent();
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Enter: %s()", smComp.states[i].onEnterMethod);
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Update: %s()", smComp.states[i].onUpdateMethod);
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Exit: %s()", smComp.states[i].onExitMethod);
+                    ImGui::Unindent();
+                }
 
                 // Action buttons
                 if (ImGui::SmallButton("Set Current")) {

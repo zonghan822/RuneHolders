@@ -58,6 +58,11 @@ namespace ECSComponents
 		char texturePath[FILE_PATH_LEN] = "";
 		int texID = 0;  // For sprite sheet indexing
 
+		// UV region — normalized 0..1 coordinates into the texture.
+		// Default is the full texture; set these to render a sub-region (e.g. one cell of a spritesheet).
+		Math::eVec2<float> uvStart{ 0.0f, 0.0f };
+		Math::eVec2<float> uvEnd  { 1.0f, 1.0f };
+
 		// Default constructor
 		RenderComponent() = default;
 
@@ -84,7 +89,8 @@ namespace ECSComponents
 		// Explicit copy constructor
 		RenderComponent(const RenderComponent& other)
 			: width(other.width), height(other.height), color(other.color),
-			texture(other.texture), texID(other.texID)
+			texture(other.texture), texID(other.texID),
+			uvStart(other.uvStart), uvEnd(other.uvEnd)
 		{
 			strncpy_s(shape, other.shape, sizeof(shape) - 1);
 			shape[sizeof(shape) - 1] = '\0';
@@ -109,6 +115,8 @@ namespace ECSComponents
 				strncpy_s(texturePath, other.texturePath, sizeof(texturePath) - 1);
 				texturePath[sizeof(texturePath) - 1] = '\0';
 				texID = other.texID;
+				uvStart = other.uvStart;
+				uvEnd = other.uvEnd;
 			}
 			return *this;
 		}
@@ -141,6 +149,8 @@ namespace ECSComponents
 
 			l("Texture Path", texturePath, "texchar240");
 			l("TexID", texID, "int");
+			l("UV Start", uvStart, "eVec2(float)");
+			l("UV End", uvEnd, "eVec2(float)");
 		}
 
 		template <typename Visitor>
@@ -153,6 +163,8 @@ namespace ECSComponents
 
 			l("Texture Path", texturePath, "texchar240");
 			l("TexID", texID, "int");
+			l("UV Start", uvStart, "eVec2(float)");
+			l("UV End", uvEnd, "eVec2(float)");
 		}
 	};
 

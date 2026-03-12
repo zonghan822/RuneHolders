@@ -94,6 +94,19 @@ namespace Bridge
         ENGINE_API void __stdcall RequestClose()
         {
             if (!gEngine) return;
+            // In editor play mode, stop the simulation instead of closing the application
+            if (gEngine->isEditorReady())
+            {
+                auto state = gEngine->getEnoEditor().getCurrentScene().getState();
+                if (state == Editor::State::Playing  ||
+                    state == Editor::State::Paused   ||
+                    state == Editor::State::NextFrame)
+                {
+                    gEngine->getEnoEditor().stopScene();
+                    return;
+                }
+            }
+            // Standalone (or editor not in play mode) — close the application
             gEngine->requestClose();
         }
     }

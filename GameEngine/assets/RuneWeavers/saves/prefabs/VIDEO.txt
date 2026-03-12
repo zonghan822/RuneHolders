@@ -1,0 +1,84 @@
+{
+	"struct ECSComponents::TransformComponent": {
+		"Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Rotation": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Scale": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		},
+		"Reset Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::RenderComponent": {
+		"Width": {
+			"value": "64",
+			"type": "float"
+		},
+		"Height": {
+			"value": "64",
+			"type": "float"
+		},
+		"Shape": {
+			"value": "Rectangle",
+			"type": "char32"
+		},
+		"Color": {
+			"value": "r : 1 | g : 1 | b : 1 | a : 1",
+			"type": "Color(RGBA)"
+		},
+		"Texture Path": {
+			"value": "",
+			"type": "texchar240"
+		},
+		"TexID": {
+			"value": "0",
+			"type": "int"
+		},
+		"UV Start": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"UV End": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::VideoComponent": {
+		"Video Name": {
+			"value": "",
+			"type": "texchar240"
+		},
+		"Auto Play": {
+			"value": "0",
+			"type": "bool"
+		},
+		"Loop": {
+			"value": "0",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::VisibilityComponent": {
+		"Z Index": {
+			"value": "3",
+			"type": "uint32_t"
+		},
+		"Visible": {
+			"value": "1",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::LayerComponent": {
+		"Layer": {
+			"value": "NULL",
+			"type": "char32"
+		}
+	},
+}

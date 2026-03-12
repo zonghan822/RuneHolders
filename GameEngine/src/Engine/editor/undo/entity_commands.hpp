@@ -173,15 +173,16 @@ namespace Editor
 				auto& entityMap = entityManager_.getMap();
 				if (entityMap.find(entityID) != entityMap.end())
 				{
-					// Remove from scene tree first
 					Node* node = sceneTree_.getNodeByEntityID(entityID);
 					if (node)
 					{
+						// kill(Node*) destroys the entity; don't call destroyEntity separately
 						sceneTree_.kill(node);
 					}
-
-					// Then destroy the entity
-					entityManager_.destroyEntity(entityID);
+					else
+					{
+						entityManager_.destroyEntity(entityID);
+					}
 					std::cout << "[CreateEntityCommand] Deleted entity: " << entityID << "\n";
 				}
 			}
@@ -284,15 +285,16 @@ namespace Editor
 				auto& entityMap = entityManager_.getMap();
 				if (entityMap.find(entityID) != entityMap.end())
 				{
-					// Remove from scene tree first
 					Node* node = sceneTree_.getNodeByEntityID(entityID);
 					if (node)
 					{
+						// kill(Node*) destroys the entity; don't call destroyEntity separately
 						sceneTree_.kill(node);
 					}
-
-					// Then destroy the entity
-					entityManager_.destroyEntity(entityID);
+					else
+					{
+						entityManager_.destroyEntity(entityID);
+					}
 					std::cout << "[DeleteEntityCommand] Deleted entity: " << entityID << "\n";
 				}
 			}

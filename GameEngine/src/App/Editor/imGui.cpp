@@ -702,13 +702,14 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 
 	if (!toDelete.empty()) {
 		for (auto& a : toDelete) {
-			// Remove from scene hierarchy and destroy children
+			// Remove from scene hierarchy; kill(Node*) destroys the entity and all children.
 			Node* node = sceneTree.getNodeByEntityID(a.id());
 			if (node) {
-				destroyChildrenRecursive(node, entityManager);
 				sceneTree.kill(node);
+			} else {
+				// Entity has no scene node — destroy it directly.
+				entityManager.destroyEntity(a.id());
 			}
-			entityManager.destroyEntity(a.id());
 		}
 
 		// Mark cache as dirty after deletion
@@ -1253,14 +1254,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		if (node) {
 			std::cout << "[DEBUG] Deleting node " << selectedEntityID << " and all children from hierarchy\n";
 
-			// First, destroy all child entities recursively
-			destroyChildrenRecursive(node, em);
-
-			// Then kill the scene tree nodes (removes from tree structure)
+			// kill(Node*) recursively destroys all children and the node's own entity
 			sceneTree.kill(node);
-
-			// Finally, destroy the parent entity
-			em.destroyEntity(selectedEntityID);
 			selectedEntityID = UINT32_MAX;  // Reset to "no selection"
 
 			if (g_game)
@@ -2609,6 +2604,45 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				ImGui::EndDragDropTarget();
 			}
 		}
+
+		// UV sub-region controls
+		ImGui::Spacing();
+		ImGui::SeparatorText("UV Region");
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			bool uvChanged = false;
+			uvChanged |= ImGui::DragFloat2("UV Start", (float*)&draw.uvStart, 0.01f, 0.0f, 1.0f, "%.3f");
+			uvChanged |= ImGui::DragFloat2("UV End",   (float*)&draw.uvEnd,   0.01f, 0.0f, 1.0f, "%.3f");
+			draw.uvStart.x = std::clamp(draw.uvStart.x, 0.0f, 1.0f);
+			draw.uvStart.y = std::clamp(draw.uvStart.y, 0.0f, 1.0f);
+			draw.uvEnd.x   = std::clamp(draw.uvEnd.x,   0.0f, 1.0f);
+			draw.uvEnd.y   = std::clamp(draw.uvEnd.y,   0.0f, 1.0f);
+			if (uvChanged) {
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Edit UV Region");
+			}
+
+			ImGui::SameLine();
+			if (ImGui::SmallButton("Reset##uv")) {
+				auto _b = undoManager.captureComponentsMap(entity);
+				draw.uvStart = { 0.0f, 0.0f };
+				draw.uvEnd   = { 1.0f, 1.0f };
+				if (g_game) g_game->markEntitiesDirty();
+				undoManager.recordComponentChange(entity, std::move(_b), undoManager.captureComponentsMap(entity), "Reset UV Region");
+			}
+
+			// Visual preview: draw texture thumbnail with UV rect overlay
+			if (draw.texture && draw.texture->isValid()) {
+				constexpr float previewSize = 96.0f;
+				ImVec2 imgCursor = ImGui::GetCursorScreenPos();
+				ImGui::Image((void*)(intptr_t)draw.texture->getID(), ImVec2(previewSize, previewSize));
+				ImDrawList* dl = ImGui::GetWindowDrawList();
+				ImVec2 rectMin(imgCursor.x + draw.uvStart.x * previewSize, imgCursor.y + draw.uvStart.y * previewSize);
+				ImVec2 rectMax(imgCursor.x + draw.uvEnd.x   * previewSize, imgCursor.y + draw.uvEnd.y   * previewSize);
+				dl->AddRect(rectMin, rectMax, IM_COL32(255, 220, 0, 220), 0.0f, 0, 2.0f);
+				dl->AddRectFilled(rectMin, rectMax, IM_COL32(255, 220, 0, 30));
+			}
+		}
 	}
 
 	// --- PhysicsComponent --- (skip for player)
@@ -3813,6 +3847,16 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::Un
 		previewCtrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 	}
 
+	// Read RenderComponent UV region for the preview remap
+	Math::eVec2<float> rcUvStart{ 0.0f, 0.0f };
+	Math::eVec2<float> rcUvEnd  { 1.0f, 1.0f };
+	if (entity.has<ECSComponents::RenderComponent>(entMng))
+	{
+		auto& rc = entity.get<ECSComponents::RenderComponent>(entMng);
+		rcUvStart = rc.uvStart;
+		rcUvEnd   = rc.uvEnd;
+	}
+
 	if (!selected.empty())
 	{
 		auto it = textures.find(selected);
@@ -3835,15 +3879,18 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::Un
 						previewFrameIdx = (previewFrameIdx + 1) % frames.size();
 					}
 					const auto& frame = frames[previewFrameIdx];
+					// Remap frame UV within the RenderComponent's UV region (matches runtime)
+					float rx = rcUvEnd.x - rcUvStart.x;
+					float ry = rcUvEnd.y - rcUvStart.y;
 					ImGui::Image(texID, previewSize,
-						ImVec2(frame.uvStart.x, frame.uvStart.y),
-						ImVec2(frame.uvEnd.x,   frame.uvEnd.y));
+						ImVec2(rcUvStart.x + frame.uvStart.x * rx, rcUvStart.y + frame.uvStart.y * ry),
+						ImVec2(rcUvStart.x + frame.uvEnd.x   * rx, rcUvStart.y + frame.uvEnd.y   * ry));
 					showedFrame = true;
 				}
 			}
 
 			if (!showedFrame)
-				ImGui::Image(texID, previewSize); // fallback: full spritesheet
+				ImGui::Image(texID, previewSize, ImVec2(rcUvStart.x, rcUvStart.y), ImVec2(rcUvEnd.x, rcUvEnd.y));
 		}
 		else
 		{
@@ -5326,7 +5373,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				for (auto& canvasEntity : canvasEntities) {
 					auto& canvas = canvasEntity.get<ECSComponents::CanvasComponent>(entityManager);
 
-					if (canvas.isActive && canvasEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+					if (canvasEntity.has<ECSComponents::TransformComponent>(entityManager)) {
 						auto& tc = canvasEntity.get<ECSComponents::TransformComponent>(entityManager);
 
 						// Canvas viewport is centered at the entity's transform position

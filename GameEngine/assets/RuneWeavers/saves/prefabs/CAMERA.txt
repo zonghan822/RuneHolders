@@ -1,0 +1,42 @@
+{
+	"struct ECSComponents::TransformComponent": {
+		"Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Rotation": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Scale": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		},
+		"Reset Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::CameraComponent": {
+		"Viewport Width": {
+			"value": "1920",
+			"type": "float"
+		},
+		"Viewport Height": {
+			"value": "1080",
+			"type": "float"
+		},
+		"Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Is Active": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Follow Transform": {
+			"value": "0",
+			"type": "bool"
+		}
+	},
+}
