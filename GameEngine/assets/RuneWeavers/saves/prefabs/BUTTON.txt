@@ -55,6 +55,14 @@
 		"TexID": {
 			"value": "0",
 			"type": "int"
+		},
+		"UV Start": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"UV End": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
 		}
 	},
 	"struct ECSComponents::AnimationControllerComponent": {
@@ -91,20 +99,6 @@
 			"type": "char64"
 		}
 	},
-	"struct ECSComponents::StateMachineComponent": {
-		"NumStates": {
-			"value": "0",
-			"type": "int"
-		},
-		"CurrentState": {
-			"value": "None",
-			"type": "char32"
-		},
-		"TimeInState": {
-			"value": "0",
-			"type": "float"
-		}
-	},
 	"struct ECSComponents::VisibilityComponent": {
 		"Z Index": {
 			"value": "3",
@@ -130,6 +124,10 @@
 		},
 		"Is Active": {
 			"value": "1",
+			"type": "bool"
+		},
+		"Is Static": {
+			"value": "0",
 			"type": "bool"
 		},
 		"Rotation": {
