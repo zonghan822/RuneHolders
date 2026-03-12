@@ -259,10 +259,10 @@ namespace Audio
 
 		audioComp.audioMod_.ch_ = ch;
 
-		// Now that channel exists, apply volume/pitch/pan
+		// Now that channel exists, apply volume/pitch/pan and any enabled DSP effects
 		if (ch)
 		{
-			modifyBasic(ch, createSP(audioComp));
+			modify(ch, createSP(audioComp));
 
 			// CRITICAL FIX: Always unpause when play() is called
 			// The play() function is meant to START playback
@@ -344,8 +344,8 @@ namespace Audio
 
 		if (ch)
 		{
-			// Apply base volume/pitch/pan from component (do NOT mutate the component values)
-			modifyBasic(ch, createSP(audioComp));
+			// Apply volume/pitch/pan and any enabled DSP effects from component
+			modify(ch, createSP(audioComp));
 
 			ch->setPaused(false);
 			channels_.push_back(ch);
@@ -1177,7 +1177,7 @@ namespace Audio
 					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_CUTOFF, f.cutoff);
 					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_RESONANCE, f.resonance);
 				}
-			}, parameters.lowPass->lp);
+			}, parameters.highPass->hp);
 		return dsp;
 	}
 }
