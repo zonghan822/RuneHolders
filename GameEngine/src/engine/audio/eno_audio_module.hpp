@@ -13,6 +13,7 @@
 // stds
 #include <string>
 #include <cstring>
+#include <ostream>
 
 namespace Audio
 {
@@ -37,4 +38,15 @@ namespace Audio
 		float loopStart_;
 		float loopEnd_;
 	};
+
+	inline std::ostream& operator<<(std::ostream& os, const EnoAudioModule::LoopMode& m)
+	{
+		switch (m)
+		{
+		case EnoAudioModule::LoopMode::Disabled:	return os << "Disabled";
+		case EnoAudioModule::LoopMode::Forward:		return os << "Forward";
+		case EnoAudioModule::LoopMode::PingPong:	return os << "PingPong";
+		default:									return os << "Disabled";
+		}
+	}
 }

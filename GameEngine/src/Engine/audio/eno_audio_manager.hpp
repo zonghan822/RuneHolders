@@ -95,6 +95,16 @@ namespace Audio
 		void play(ECSComponents::AudioComponent&, Math::eVec2<float>);
 
 		/*============================================================================================
+			 * \brief					Update volume and pan on a currently-playing channel based on
+			 *							distance/offset between the sound's world position and the
+			 *							camera's world position. Call every frame for dynamic spatial audio.
+			 * \param[in]				Audio component (must have isPlaying_ == true and a valid ch_)
+			 * \param[in]				World position of the sound-emitting entity
+			 * \param[in]				World position of the active camera
+		*//*========================================================================================*/
+		void updateSpatialAudio(ECSComponents::AudioComponent&, Math::eVec2<float> soundPos, Math::eVec2<float> camPos);
+
+		/*============================================================================================
 		 * \brief						Play all loaded sounds
 		 * \param[in]					Set pause state for sounds
 		*//*========================================================================================*/
@@ -225,7 +235,14 @@ namespace Audio
 		*//*========================================================================================*/
 		void setPauseChannel(FMOD::Channel*, const bool&);
 
-		// ---------- Stop ---------- 
+		// ---------- Stop ----------
+
+		/*============================================================================================
+		 * \brief						Immediately stop all channels and clear the channel list.
+		 *								Called on scene stop to prevent orphaned channels from the
+		 *								previous play session from bleeding into the next one.
+		*//*========================================================================================*/
+		void stopAllImmediate();
 
 		/*============================================================================================
 		 * \brief						Stop a channel group

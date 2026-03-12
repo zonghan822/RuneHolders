@@ -11,10 +11,17 @@ namespace Eno
         public void Begin()
         {
             Self<Sprite2D>()?.changeState("art1");
+            // Play the BGM once; the audio component is configured to loop.
+            Bridge.AudioPlay(ID);
         }
 
         public void Update()
         {
+            if (Input.isMousePressed(0))
+            {
+                Bridge.AudioStop(ID);
+                SceneManager.changeScene("Level.txt");
+            }
         }
 
         // Called when entering the art1 state

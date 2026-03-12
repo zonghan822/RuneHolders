@@ -784,7 +784,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 956 | y : -2670 }
+				"Position": <eVec2(float)> { x : 956 | y : -2676.76 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -794,7 +794,7 @@
 			{
 				"Viewport Width": <float> { 1920 }
 				"Viewport Height": <float> { 1080 }
-				"Position": <eVec2(float)> { x : 956 | y : -2670 }
+				"Position": <eVec2(float)> { x : 956 | y : -2676.76 }
 				"Is Active": <bool> { 1 }
 				"Follow Transform": <bool> { 1 }
 			}
@@ -1016,6 +1016,27 @@
 			}
 		}
 		"Script": { RuneSystem.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 0 }
+		"PrefabName": {  }
+	}
+
+	[Camera Panning Entity]
+	{
+		"ID": { 211 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+		}
+		"Script": { CameraPanTest_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }

@@ -1642,14 +1642,6 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 	// Drag-drop hint
 	ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Drag & drop .wav or .mp3 files here to import!");
 
-	// Import destination selector
-	static int importDestination = 1; // 0=Music, 1=SFX
-	ImGui::Text("Import to:");
-	ImGui::SameLine();
-	ImGui::RadioButton("Music", &importDestination, 0);
-	ImGui::SameLine();
-	ImGui::RadioButton("SFX", &importDestination, 1);
-
 	// Button to load/reload audio assets
 	if (ImGui::Button("Load Audio Files"))
 	{
@@ -1682,8 +1674,8 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 				std::cout << "[Audio Drop] Processing dropped file: " << filePath.filename().string() << std::endl;
 
 				// Determine destination folder based on user selection
-				std::string destFolder = (importDestination == 0) ? loader.getMusicPath() : loader.getSFXPath();
-				std::string folderName = (importDestination == 0) ? "Music" : "SFX";
+				std::string destFolder{};
+				std::string folderName{};
 				std::string filename = filePath.filename().string();
 				std::filesystem::path destPath = std::filesystem::path(destFolder) / filename;
 
@@ -2868,11 +2860,12 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		{
 			// Play/Pause/Stop buttons in a row
 			if (ImGui::Button("Play", ImVec2(80, 0))) {
-				// If audio is already playing, stop it first to restart from beginning
-				if (ac.isPlaying_) {
-					engine_.getAudioManager().stopChannelGroup(ac.audioMod_.chGroup_);
-					ac.isPlaying_ = false;
-				}
+				// Always kill any lingering/fading channel before starting fresh.
+				// stopChannelGroup() only schedules a gradual fade-out, so the old
+				// channel can still be running when Play is pressed again — causing
+				// the audio to double up. stopAllImmediate() kills it right away.
+				engine_.getAudioManager().stopAllImmediate();
+				ac.isPlaying_ = false;
 
 				// Use the proper play function that applies volume/pitch/pan from the component
 				engine_.getAudioManager().play(ac);
@@ -2882,8 +2875,8 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 			ImGui::SameLine();
 			if (ImGui::Button("Stop", ImVec2(80, 0))) {
-				// Stop the channel group associated with this entity's audio
-				engine_.getAudioManager().stopChannelGroup(ac.audioMod_.chGroup_);
+				// Immediately stop so there is no fading ghost channel left behind.
+				engine_.getAudioManager().stopAllImmediate();
 				ac.isPlaying_ = false;
 				std::cout << "[Audio] Stopped: " << ac.audioMod_.name_ << "\n";
 			}
