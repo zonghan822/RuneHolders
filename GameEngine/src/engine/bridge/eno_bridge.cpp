@@ -33,7 +33,25 @@ namespace Bridge
         ENGINE_API float __stdcall GetDeltaTime()
         {
             if (!gEngine) return 0.0f;
-            return static_cast<float>(gEngine->getDeltaTime());
+            return static_cast<float>(gEngine->getDeltaTime());  // already scaled by timeScale_
+        }
+
+        ENGINE_API float __stdcall GetUnscaledDeltaTime()
+        {
+            if (!gEngine) return 0.0f;
+            return static_cast<float>(gEngine->getUnscaledDeltaTime());
+        }
+
+        ENGINE_API void __stdcall SetTimeScale(float scale)
+        {
+            if (!gEngine) return;
+            gEngine->setTimeScale(scale);
+        }
+
+        ENGINE_API float __stdcall GetTimeScale()
+        {
+            if (!gEngine) return 1.0f;
+            return gEngine->getTimeScale();
         }
     }
 }

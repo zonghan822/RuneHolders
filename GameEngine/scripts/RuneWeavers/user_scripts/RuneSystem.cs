@@ -54,6 +54,13 @@ namespace Eno
         private const string LINE_PREFAB      = "RuneLine";
         private const float  LINE_HEIGHT      = 16f;
 
+        // ── StopWatch / slow-time settings ───────────────────────────────────
+        public float  slowTimeScale    = 0.3f;
+        public string stopWatchNodeName = "StopWatch";
+
+        // ── Player settings ──────────────────────────────────────────────────
+        public string playerNodeName = "Player";
+
         // ── Spell definitions ────────────────────────────────────────────────────
         private static readonly int[][] Patterns = new int[][]
         {
@@ -97,6 +104,14 @@ namespace Eno
         // Connection lines
         private List<Sprite2D?> _lines     = new();   // one permanent line per confirmed connection
         private Sprite2D?       _trailLine = null;    // live line from last connection to mouse
+
+        // StopWatch / slow-time — cached on first use (null = not found in scene)
+        private Sprite2D? _swSprite   = null;
+        private bool      _swSearched = false;
+
+        // Player — cached on first use
+        private Actor? _player        = null;
+        private bool   _playerSearched = false;
 
         // ── Script callbacks ─────────────────────────────────────────────────────
         public void Begin()
@@ -158,6 +173,21 @@ namespace Eno
 
             SpawnRunes();
             _active = true;
+
+            // Slow world time and freeze all enemies
+            Time.timeScale = slowTimeScale;
+            foreach (Enemy enemy in GetAllEnemies())
+                enemy.changeState("Frozen");
+
+            // Show the StopWatch sprite and trigger fade-in
+            FindStopWatch();
+            if (_swSprite != null)
+                _swSprite.visible = true;
+            _swSprite?.changeState("FadeIn");
+
+            // Set player state to Cast or CastWalk depending on movement
+            FindPlayer();
+            _player?.changeState(IsPlayerMoving() ? "CastWalk" : "Cast");
         }
 
         private void SpawnRunes()
@@ -255,6 +285,7 @@ namespace Eno
             DespawnLines();
             DespawnRunes();
             SpawnPrefab(SpellPrefabs[spellIndex], _originX, _originY);
+            EndSlowTime(attack: true);
         }
 
         private void Release()
@@ -264,6 +295,7 @@ namespace Eno
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
+            EndSlowTime();
         }
 
         private void Cancel()
@@ -273,6 +305,48 @@ namespace Eno
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
+            EndSlowTime();
+        }
+
+        // Restore normal time, unfreeze enemies, and trigger StopWatch fade-out.
+        // attack: true when called from CastSpell — sets player to "Attack"; false restores Idle/Walk.
+        private void EndSlowTime(bool attack = false)
+        {
+            Time.timeScale = 1.0f;
+            foreach (Enemy enemy in GetAllEnemies())
+                enemy.changeState("Idle");
+            _swSprite?.changeState("FadeOut");
+
+            if (attack)
+                _player?.changeState("Attack");
+            else
+                _player?.changeState(IsPlayerMoving() ? "Walk" : "Idle");
+        }
+
+        // Locate the StopWatch sprite by name (cached after first search).
+        private void FindStopWatch()
+        {
+            if (_swSearched) return;
+            _swSearched = true;
+
+            try { _swSprite = GetNode<Sprite2D>(stopWatchNodeName); }
+            catch { _swSprite = null; }
+        }
+
+        // Locate the player Actor by name (cached after first search).
+        private void FindPlayer()
+        {
+            if (_playerSearched) return;
+            _playerSearched = true;
+
+            try { _player = GetNode<Actor>(playerNodeName); }
+            catch { _player = null; }
+        }
+
+        private static bool IsPlayerMoving()
+        {
+            return Input.isKeyHeld(KeyCode.W) || Input.isKeyHeld(KeyCode.S) ||
+                   Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D);
         }
 
         // ── Pattern helpers ──────────────────────────────────────────────────────

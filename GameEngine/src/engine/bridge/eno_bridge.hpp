@@ -38,6 +38,9 @@ namespace Bridge {
         // Implemented in: eno_bridge_core.cpp
         // =========================================================================
         ENGINE_API float   __stdcall GetDeltaTime();
+        ENGINE_API float   __stdcall GetUnscaledDeltaTime();
+        ENGINE_API void    __stdcall SetTimeScale(float scale);
+        ENGINE_API float   __stdcall GetTimeScale();
 
         // =========================================================================
         // Node Management

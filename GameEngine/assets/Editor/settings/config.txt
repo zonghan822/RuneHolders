@@ -1,7 +1,7 @@
 Engine Version: 0.0001a
 Window Title: RuneHolders Editor
-Window Width: 1920
-Window Height: 1080
+Window Width: 2560
+Window Height: 1440
 Fullscreen: false
 VSync: false
 Tilemap Width: 30

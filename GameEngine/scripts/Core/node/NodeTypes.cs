@@ -17,5 +17,6 @@ namespace Eno
         PARTICLE    = 12,   // TransformComponent + ParticleEmitter + Visibility + Layer
         VIDEO       = 13,   // TransformComponent + RenderComponent + VideoComponent + Visibility + Layer
         ENEMY       = 14,   // ACTOR components + AIComponent
+        CANVAS      = 15,   // TransformComponent + RenderComponent + CanvasComponent + Visibility + Layer
     }
 }

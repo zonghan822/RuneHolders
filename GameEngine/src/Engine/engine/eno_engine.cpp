@@ -38,6 +38,12 @@ namespace Engine
 
 		window_.initialize(configMng_.getWindowTitle(), w, h, fullscreen, vsync);
 
+		// Cache window dimensions so the bridge DLL can read them without calling GLFW
+		// (GLFW is statically linked to the EXE only; DLL-side GLFW calls return 0).
+		auto [fw, fh] = window_.getFramebufferSize();
+		cachedWinW_ = (fw > 0) ? fw : w;
+		cachedWinH_ = (fh > 0) ? fh : h;
+
 		auto [tmW, tmH, tmCell] = configMng_.getTilemapConfig();
 		tilemapSystem_ = std::make_unique<Map::TileMapSystem>(bus_, tmW, tmH, tmCell);
 		pathfinder_ = std::make_unique<AI::PathfindingSystem>(bus_, *tilemapSystem_);
@@ -162,7 +168,7 @@ namespace Engine
 		updateTime(1.0);
 		window_.pollEvents();
 
-		float deltaTime = static_cast<float>(dt_);
+		float deltaTime = static_cast<float>(getDeltaTime());  // scaled by timeScale_
 
 		// Call Begin() once on the first frame after play starts; reset when play stops
 		if (isPlaying_ && !hasBegun_)
