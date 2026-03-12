@@ -5,14 +5,31 @@ namespace Eno
 {
 	public class BatYellow_Script : ScriptBase
     {
+        private Actor _player;
+
         public void Begin()
         {
-
+            _player = GetNode<Actor>("Player");
+            Bridge.SetUseGravity(ID, false);
 		}
 
         public void Update()
         {
+            if (_player == null) return;
 
+            float myX = Bridge.GetPositionX(ID);
+            float myY = Bridge.GetPositionY(ID);
+            float px  = _player.position.x;
+            float py  = _player.position.y;
+
+            float dx   = px - myX;
+            float dy   = py - myY;
+            float dist = MathF.Sqrt(dx * dx + dy * dy);
+
+            if (dist < 1f) return;
+
+            float speed = Bridge.GetChaseSpeed(ID);
+            Bridge.SetVelocity(ID, dx / dist * speed, dy / dist * speed);
 		}
 	
         public void Spawn_enter()
