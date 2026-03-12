@@ -77,7 +77,6 @@ namespace ECSComponents
 			v("Pitch Scale",		pitchScale_,			"double");
 			v("Pan Scale",			panScale_,				"double");
 
-			v("Is Playing",			isPlaying_,				"bool");
 			v("Is Autoplay",		isAutoplay_,			"bool");
 
 			// Spatial audio settings
@@ -113,7 +112,6 @@ namespace ECSComponents
 			v("Pitch Scale", pitchScale_, "double");
 			v("Pan Scale", panScale_, "double");
 
-			v("Is Playing", isPlaying_, "bool");
 			v("Is Autoplay", isAutoplay_, "bool");
 
 			// Spatial audio settings
