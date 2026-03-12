@@ -4,8 +4,8 @@ namespace Eno
 {
 	public class Spell_Cast_Script : ScriptBase
     {
-        private const float WINDUP_DURATION  = 0.5f;
-        private const float EXPLODE_DURATION = 0.3f;
+        private const float WINDUP_DURATION  = 1.0f;
+        private const float EXPLODE_DURATION = 0.6f;
 
         public float damage = 50f;
 

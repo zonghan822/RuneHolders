@@ -10,7 +10,7 @@
 *      (RedSpell / YellowSpell / BlueSpell) spawns and runs SpellEffect.cs.
 *   4. Mouse released early or right-click → cancel, all runes Nullified, cleaned up.
 *
-* Rune layout (clockwise from top):
+* Rune layout (clockwise from upper-right):
 *
 *          5 0
 *        4     1
@@ -48,7 +48,7 @@ namespace Eno
     public class RuneSystem : ScriptBase
     {
         // ── Tuneable values ──────────────────────────────────────────────────────
-        private const float  RUNE_RING_RADIUS = 80f;
+        private const float  RUNE_RING_RADIUS = 100f;
         private const float  SNAP_RADIUS      = 28f;
         private const int    RUNE_COUNT       = 6;
         private const string LINE_PREFAB      = "RuneLine";
@@ -166,7 +166,7 @@ namespace Eno
 
             for (int i = 0; i < RUNE_COUNT; i++)
             {
-                float angleDeg = 90f - i * (360f / RUNE_COUNT);
+                float angleDeg = -60f + i * (360f / RUNE_COUNT);
                 float angleRad = angleDeg * MathF.PI / 180f;
 
                 _runeX[i] = _originX + RUNE_RING_RADIUS * MathF.Cos(angleRad);
