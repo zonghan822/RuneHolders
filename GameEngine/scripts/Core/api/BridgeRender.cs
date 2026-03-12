@@ -16,6 +16,10 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetRenderSize(uint sceneObjectID, float w, float h);
 
+        // textureName is the filename stem of the texture, e.g. "UI-MainMenu-Selected"
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetTexturePath(uint sceneObjectID, string textureName);
+
         // -----------------------------------------------------------------------
         // Text Component  (implemented in eno_bridge_render.cpp)
         // -----------------------------------------------------------------------

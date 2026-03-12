@@ -28,7 +28,7 @@
 		},
 		"SelectedSignal": {
 			"value": "",
-			"type": "char32"
+			"type": "char64"
 		}
 	},
 	"struct ECSComponents::RenderComponent": {
@@ -55,6 +55,54 @@
 		"TexID": {
 			"value": "0",
 			"type": "int"
+		}
+	},
+	"struct ECSComponents::AnimationControllerComponent": {
+		"Frame Width": {
+			"value": "0",
+			"type": "int"
+		},
+		"Frame Height": {
+			"value": "0",
+			"type": "int"
+		},
+		"Rows": {
+			"value": "0",
+			"type": "int"
+		},
+		"Cols": {
+			"value": "0",
+			"type": "int"
+		},
+		"Frame Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Animation Count": {
+			"value": "0",
+			"type": "int"
+		},
+		"Current Animation": {
+			"value": "",
+			"type": "char64"
+		}
+	},
+	"struct ECSComponents::StateMachineComponent": {
+		"NumStates": {
+			"value": "0",
+			"type": "int"
+		},
+		"CurrentState": {
+			"value": "None",
+			"type": "char32"
+		},
+		"TimeInState": {
+			"value": "0",
+			"type": "float"
 		}
 	},
 	"struct ECSComponents::VisibilityComponent": {

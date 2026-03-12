@@ -16,6 +16,7 @@
 #include <iostream>
 #include <memory>
 #include <set>
+#include <unordered_map>
 #include <imgui.h>
 #include "map_editor/map_editor.hpp"
 #include "stateMachine_editor/stateMachine_editor.hpp"
@@ -44,6 +45,14 @@ private:
     float editorCameraSpeed_ = 600.0f;  // Camera movement speed
     bool  cameraInitialized_ = false;   // Deferred init: position (0,0) at bottom-left on first valid frame
     float editorZoomLevel_ = 1.0f;  // Zoom level (1.0 = normal, >1.0 = zoomed in, <1.0 = zoomed out)
+
+    // Saved editor camera state before entering play mode
+    float prePlayCameraX_   = 0.0f;
+    float prePlayCameraY_   = 0.0f;
+    float prePlayZoomLevel_ = 1.0f;
+
+    // Saved canvas positions before play (restored when play stops)
+    std::unordered_map<uint32_t, Math::eVec2<float>> prePlayCanvasPositions_;
 
     // Actual editor view panel size (pixels); updated each frame from ImGui
     int editorPanelWidth_  = 1;
