@@ -41,7 +41,7 @@
 				"Volume": <double> { 100 }
 				"Pitch Scale": <double> { 1 }
 				"Pan Scale": <double> { 0 }
-				"Is Playing": <bool> { 1 }
+				"Is Playing": <bool> { 0 }
 				"Is Autoplay": <bool> { 0 }
 				"Spatial Audio": <bool> { 0 }
 				"Max Audible Distance": <float> { 500 }
