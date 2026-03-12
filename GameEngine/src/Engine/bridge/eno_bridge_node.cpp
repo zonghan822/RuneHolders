@@ -24,7 +24,14 @@ namespace Bridge
         {
             if (!gEngine) return;
 
-            gEngine->getEnoEditor().getSceneTree().kill(id);
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+            Editor::Node* node = sceneTree.getNodeBySceneObjectID(id);
+            std::cout << "[Bridge::FreeNode] id=" << id
+                      << " name=" << (node ? node->name_ : "NOT_FOUND")
+                      << " type=" << (node ? static_cast<int>(node->type_) : -1)
+                      << std::endl;
+
+            sceneTree.kill(id);
         }
 
         ENGINE_API uint32_t __stdcall GetNode(const char* name)
@@ -102,6 +109,24 @@ namespace Bridge
             return static_cast<uint32_t>(node->type_);
         }
 
+        // Fills outIDs with the sceneObjectIDs of all nodes whose NodeType matches nodeType.
+        // Returns the total count written (capped at maxCount).
+        ENGINE_API uint32_t __stdcall GetNodesByType(uint32_t nodeType, uint32_t* outIDs, uint32_t maxCount)
+        {
+            if (!gEngine || !outIDs) return 0;
+            uint32_t count = 0;
+            for (auto* node : gEngine->getEnoEditor().getSceneTree().getAllNodes())
+            {
+                if (node && static_cast<uint32_t>(node->type_) == nodeType)
+                {
+                    if (count < maxCount)
+                        outIDs[count] = node->sceneObjectID_;
+                    count++;
+                }
+            }
+            return count;
+        }
+
         ENGINE_API uint32_t __stdcall GetChildCount(uint32_t id)
         {
             if (!gEngine) return UINT32_MAX;
@@ -145,53 +170,12 @@ namespace Bridge
                     gEngine->getCoreHost().begin(org, node->sceneObjectID_);
             }
 
-            return node->sceneObjectID_;
-        }
-
- /*       ENGINE_API uint32_t __stdcall SpawnNode(const char* presetName, const char* nodeName, uint32_t parentID)
-        {
-            if (!gEngine) return UINT32_MAX;
-
-            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-
-            Editor::Node* parent = (parentID != UINT32_MAX)
-                ? sceneTree.getNodeBySceneObjectID(parentID)
-                : nullptr;
-
-            Editor::Node* node = sceneTree.create(parent);
-            if (!node) return UINT32_MAX;
-
-            node->name_ = nodeName;
-
-            static const std::unordered_map<std::string, Editor::NodeType> presetMap = {
-                {"DEFAULT",      Editor::NodeType::DEFAULT},
-                {"SPRITE",       Editor::NodeType::SPRITE},
-                {"KINEMATIC",    Editor::NodeType::KINEMATIC},
-                {"RIGIDBODY",    Editor::NodeType::RIGIDBODY},
-                {"ACTOR",        Editor::NodeType::ACTOR},
-                {"ENEMY",        Editor::NodeType::ENEMY},
-                {"PUSHABLE_BOX", Editor::NodeType::PUSHABLE_BOX},
-                {"BUTTON",       Editor::NodeType::BUTTON},
-                {"AUDIO",        Editor::NodeType::AUDIO},
-                {"CAMERA",       Editor::NodeType::CAMERA},
-                {"TEXT",         Editor::NodeType::TEXT},
-                //{"PARTICLE",     Editor::NodeType::PARTICLE},
-            };
-
-            auto it = presetMap.find(presetName);
-            if (it != presetMap.end())
-                sceneTree.modNodeType(node, it->second);
+            // Re-initialize animation controllers so the new node's textures and
+            // animations are loaded on the next frame (spawnFromPrefab creates a
+            // fresh empty controller that the dirty block hasn't seen yet).
+            gEngine->markAnimationsDirty();
 
             return node->sceneObjectID_;
         }
-
-        ENGINE_API void __stdcall DestroyNode(uint32_t sceneObjectID)
-        {
-            if (!gEngine) return;
-            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            Editor::Node* node = sceneTree.getNodeBySceneObjectID(sceneObjectID);
-            if (node)
-                sceneTree.kill(node);
-        }*/
     }
 }

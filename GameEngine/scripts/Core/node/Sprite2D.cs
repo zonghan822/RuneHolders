@@ -57,5 +57,9 @@ namespace Eno
         }
 
         public void changeState(string state) => Bridge.ChangeState(ID, state);
+
+        public void setAnimationLooping(bool loop)             => Bridge.SetAnimationLooping(ID, loop);
+        public void setAnimationFrameDuration(float frameDur)  => Bridge.SetAnimationFrameDuration(ID, frameDur);
+        public uint getAnimationFrameCount()                   => Bridge.GetAnimationFrameCount(ID);
     }
 }

@@ -17,9 +17,9 @@
 *          3 2
 *
 * Spell patterns:
-*   RED    – 0 → 1 → 2 → 3
-*   YELLOW – 5 → 4 → 1 → 2
-*   BLUE   – 4 → 3 → 5 → 0
+*   FIRE   – 0 → 1 → 2 → 3
+*   LIGHT  – 5 → 4 → 1 → 2
+*   ICE    – 4 → 3 → 5 → 0
 *
 * Rune states:
 *   Disabled  – not a valid next step in any remaining pattern
@@ -28,17 +28,18 @@
 *   Nullified – blocked by an enemy; patterns requiring this rune are eliminated
 *
 * Required prefabs:
-*   "Rune"              – 6-column spritesheet; UV column i selects the rune glyph.
+*   "Runes"              – 6-column spritesheet; UV column i selects the rune glyph.
 *                         States: Disabled | Ready | Activated | Nullified
 *   "SpellBase"         – ring / aura shown at origin while casting
-*   "RedSpellCasting"   – charge indicator for RED; spritesheet has SPELL_STEPS columns
-*   "YellowSpellCasting"– charge indicator for YELLOW
-*   "BlueSpellCasting"  – charge indicator for BLUE
-*   "RedSpell"          – final spell; attach SpellEffect.cs; states: windup | explosion
-*   "YellowSpell"       – final spell
-*   "BlueSpell"         – final spell
+*   "FireSpawn"         – charge indicator for RED; spritesheet has SPELL_STEPS columns
+*   "LightSpawn"        – charge indicator for YELLOW
+*   "IceSpawn"          – charge indicator for BLUE
+*   "FireSpell"         – final spell; attach SpellEffect.cs; states: windup | explosion
+*   "LightSpell"        – final spell
+*   "IceSpell"          – final spell
 *============================================================================================*/
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 
@@ -47,31 +48,33 @@ namespace Eno
     public class RuneSystem : ScriptBase
     {
         // ── Tuneable values ──────────────────────────────────────────────────────
-        private const float RUNE_RING_RADIUS = 80f;
-        private const float SNAP_RADIUS      = 28f;
-        private const int   RUNE_COUNT       = 6;
+        private const float  RUNE_RING_RADIUS = 80f;
+        private const float  SNAP_RADIUS      = 28f;
+        private const int    RUNE_COUNT       = 6;
+        private const string LINE_PREFAB      = "RuneLine";
+        private const float  LINE_HEIGHT      = 16f;
 
         // ── Spell definitions ────────────────────────────────────────────────────
         private static readonly int[][] Patterns = new int[][]
         {
-            new int[] { 0, 1, 2, 3 },    // RED    – 0 → 1 → 2 → 3
-            new int[] { 5, 4, 1, 2 },    // YELLOW – 5 → 4 → 1 → 2
-            new int[] { 4, 3, 5, 0 },    // BLUE   – 4 → 3 → 5 → 0
+            new int[] { 0, 1, 2, 3 },    // FIRE    – 0 → 1 → 2 → 3
+            new int[] { 5, 4, 1, 2 },    // LIGHT   – 5 → 4 → 1 → 2
+            new int[] { 4, 3, 5, 0 },    // ICE     – 4 → 3 → 5 → 0
         };
 
         // Spritesheet columns per SpellCasting prefab = Patterns[s].Length
         private static readonly string[] SpellCastingPrefabs = new string[]
         {
-            "RedSpellCasting",
-            "YellowSpellCasting",
-            "BlueSpellCasting",
+            "FireSpawn",
+            "LightSpawn",
+            "IceSpawn",
         };
 
         private static readonly string[] SpellPrefabs = new string[]
         {
-            "RedSpell",
-            "YellowSpell",
-            "BlueSpell",
+            "FireSpell",
+            "LightSpell",
+            "IceSpell",
         };
 
         // ── Runtime state ────────────────────────────────────────────────────────
@@ -90,6 +93,10 @@ namespace Eno
         private Sprite2D?   _spellBase      = null;   // ring at origin
         private Sprite2D?   _spellCasting   = null;   // charge indicator
         private int         _activePattern  = -1;     // index into Patterns[], -1 = undetermined
+
+        // Connection lines
+        private List<Sprite2D?> _lines     = new();   // one permanent line per confirmed connection
+        private Sprite2D?       _trailLine = null;    // live line from last connection to mouse
 
         // ── Script callbacks ─────────────────────────────────────────────────────
         public void Begin()
@@ -111,7 +118,10 @@ namespace Eno
             else
             {
                 if (Input.isMouseHeld(0))
+                {
                     CheckConnections();
+                    UpdateTrailLine(Input.mouseWorldPosition.x, Input.mouseWorldPosition.y);
+                }
                 else
                     Release();
 
@@ -162,7 +172,7 @@ namespace Eno
                 _runeX[i] = _originX + RUNE_RING_RADIUS * MathF.Cos(angleRad);
                 _runeY[i] = _originY + RUNE_RING_RADIUS * MathF.Sin(angleRad);
 
-                _runes[i] = SpawnPrefab("Rune", _runeX[i], _runeY[i]) as Sprite2D;
+                _runes[i] = SpawnPrefab("Runes", _runeX[i], _runeY[i]) as Sprite2D;
                 if (_runes[i] == null) continue;
 
                 float uvW = 1.0f / RUNE_COUNT;
@@ -191,11 +201,22 @@ namespace Eno
                 _connected.Add(i);
                 SetRuneState(i, "Activated");
 
-                // Determine active pattern on first connection (or when it narrows to one)
-                TryDeterminePattern();
+                // Spawn a permanent line from the previous rune to this one (skip on first connection)
+                if (_connected.Count > 1)
+                {
+                    int prev = _connected[_connected.Count - 2];
+                    SpawnConnectionLine(_runeX[prev], _runeY[prev], _runeX[i], _runeY[i]);
+                }
 
-                // Advance the charge visualisation
-                UpdateSpellCastingUV();
+                // On first connection: despawn SpellBase and spawn the matching casting prefab
+                if (_connected.Count == 1)
+                {
+                    if (_spellBase != null) { FreeNode(_spellBase); _spellBase = null; }
+                    TryDeterminePattern();
+                }
+
+                // Advance the charge visualisation by changing state
+                _spellCasting?.changeState("Cast" + _connected.Count);
 
                 // If the full pattern is now complete, cast immediately
                 if (_activePattern >= 0 && PatternMatches(_connected, Patterns[_activePattern]))
@@ -227,23 +248,11 @@ namespace Eno
                 _spellCasting = SpawnPrefab(SpellCastingPrefabs[_activePattern], _originX, _originY) as Sprite2D;
         }
 
-        // Updates the SpellCasting sprite UV to show the current charge level.
-        // The spritesheet has Patterns[_activePattern].Length columns, one per connection step.
-        private void UpdateSpellCastingUV()
-        {
-            if (_spellCasting == null || _activePattern < 0) return;
-
-            int   steps = Patterns[_activePattern].Length;
-            float uvW   = 1.0f / steps;
-            // Frame index = connections made so far minus 1 (first connection = frame 0)
-            int   frame = Math.Max(0, _connected.Count - 1);
-            _spellCasting.setUV(new Vector2(frame * uvW, 0.0f), new Vector2((frame + 1) * uvW, 1.0f));
-        }
-
         private void CastSpell(int spellIndex)
         {
             _active = false;
             DespawnCastingVisuals();
+            DespawnLines();
             DespawnRunes();
             SpawnPrefab(SpellPrefabs[spellIndex], _originX, _originY);
         }
@@ -253,6 +262,7 @@ namespace Eno
             _active = false;
             NullifyUnconnected();
             DespawnCastingVisuals();
+            DespawnLines();
             DespawnRunes();
         }
 
@@ -261,6 +271,7 @@ namespace Eno
             _active = false;
             NullifyUnconnected();
             DespawnCastingVisuals();
+            DespawnLines();
             DespawnRunes();
         }
 
@@ -349,6 +360,52 @@ namespace Eno
                 if (_runeStates[i] == "Activated") continue;
                 SetRuneState(i, "Nullified");
             }
+        }
+
+        // ── Line helpers ─────────────────────────────────────────────────────────
+
+        private void SpawnConnectionLine(float x1, float y1, float x2, float y2)
+        {
+            var line = SpawnPrefab(LINE_PREFAB, (x1 + x2) * 0.5f, (y1 + y2) * 0.5f) as Sprite2D;
+            if (line == null) return;
+            SetLineTransform(line, x1, y1, x2, y2);
+            _lines.Add(line);
+        }
+
+        private void UpdateTrailLine(float mouseX, float mouseY)
+        {
+            if (_connected.Count == 0)
+                return;
+
+            float startX = _runeX[_connected[_connected.Count - 1]];
+            float startY = _runeY[_connected[_connected.Count - 1]];
+
+            if (_trailLine == null)
+                _trailLine = SpawnPrefab(LINE_PREFAB, startX, startY) as Sprite2D;
+
+            if (_trailLine != null)
+                SetLineTransform(_trailLine, startX, startY, mouseX, mouseY);
+        }
+
+        private void SetLineTransform(Sprite2D line, float x1, float y1, float x2, float y2)
+        {
+            float dx    = x2 - x1;
+            float dy    = y2 - y1;
+            float dist  = MathF.Sqrt(dx * dx + dy * dy);
+            float angle = MathF.Atan2(dy, dx);
+
+            line.position = new Vector2((x1 + x2) * 0.5f, (y1 + y2) * 0.5f);
+            line.setSize(dist, LINE_HEIGHT);
+            line.rotation = new Vector2(angle, 0f);
+        }
+
+        private void DespawnLines()
+        {
+            foreach (var line in _lines)
+                if (line != null) FreeNode(line);
+            _lines.Clear();
+
+            if (_trailLine != null) { FreeNode(_trailLine); _trailLine = null; }
         }
 
         private void DespawnCastingVisuals()

@@ -85,3 +85,11 @@
 [2026-02-26 13:20:50] Failed to locate hostfxr
 [2026-03-08 15:40:07] Unknown component passed to be deduced!
 [2026-03-08 15:40:50] Unknown component passed to be deduced!
+[2026-03-12 13:59:18] Entity to destroy cannot be found!
+[2026-03-12 14:38:19] Entity to destroy cannot be found!
+[2026-03-12 14:42:01] Entity to destroy cannot be found!
+[2026-03-12 14:43:56] Entity to destroy cannot be found!
+[2026-03-12 15:29:30] Entity to destroy cannot be found!
+[2026-03-12 15:51:52] Entity to destroy cannot be found!
+[2026-03-12 16:24:35] Failed to find this entity in the Entity Map!
+[2026-03-12 16:26:36] Entity to destroy cannot be found!

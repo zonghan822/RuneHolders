@@ -37,6 +37,9 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern uint GetChildCount(uint id);
 
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern uint GetNodesByType(uint nodeType, uint[] outIDs, uint maxCount);
+
 
         // Spawn a user prefab by name at world position (x, y).
         // parentID: uint.MaxValue means no parent (root node).

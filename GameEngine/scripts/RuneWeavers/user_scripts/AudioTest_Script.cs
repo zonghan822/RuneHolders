@@ -16,16 +16,16 @@ namespace Eno
 
         public void Update()
         {
-            bool eDown = Bridge.IsKeyPressed(KeyCode.E);
-            bool qDown = Bridge.IsKeyPressed(KeyCode.Q);
+            bool eDown = Input.isKeyPressed(KeyCode.E);
+            bool qDown = Input.isKeyPressed(KeyCode.Q);
 
             // Play on the first frame the key goes down (not every frame it's held)
             if (eDown && !_wasEPressed)
-                Bridge.AudioPlay(ID);
+                Self<AudioNode>()?.play();
 
             // Stop on the first frame the key goes down
             if (qDown && !_wasQPressed)
-                Bridge.AudioStop(ID);
+                Self<AudioNode>()?.stop();
 
             _wasEPressed = eDown;
             _wasQPressed = qDown;

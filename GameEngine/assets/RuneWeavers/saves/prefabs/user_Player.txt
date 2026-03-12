@@ -1,11 +1,33 @@
 {
 	"NodeType": {
-		"value": "14",
+		"value": "6",
 		"type": "uint32_t"
 	},
 	"Script": {
-		"value": "SlugRed_Script.cs",
+		"value": "PlayerController.cs",
 		"type": "string"
+	},
+	"struct ECSComponents::HealthComponent": {
+		"currentHealth": {
+			"value": "100",
+			"type": "float"
+		},
+		"maxHealth": {
+			"value": "100",
+			"type": "float"
+		},
+		"isDead": {
+			"value": "0",
+			"type": "bool"
+		},
+		"invulnerable": {
+			"value": "0",
+			"type": "bool"
+		},
+		"invulnerabilityTimer": {
+			"value": "0",
+			"type": "float"
+		}
 	},
 	"struct ECSComponents::VisibilityComponent": {
 		"Z Index": {
@@ -13,20 +35,6 @@
 			"type": "uint32_t"
 		},
 		"Visible": {
-			"value": "1",
-			"type": "bool"
-		}
-	},
-	"struct ECSComponents::AIComponent": {
-		"awarenessRadius": {
-			"value": "200",
-			"type": "float"
-		},
-		"chaseSpeed": {
-			"value": "90",
-			"type": "float"
-		},
-		"allowDiagonal": {
 			"value": "1",
 			"type": "bool"
 		}
@@ -57,7 +65,7 @@
 			"type": "float"
 		},
 		"Width": {
-			"value": "96",
+			"value": "65",
 			"type": "float"
 		},
 		"Height": {
@@ -83,7 +91,7 @@
 			"type": "Color(RGBA)"
 		},
 		"Texture Path": {
-			"value": "Enemy-Slug-Spawn-Sheet",
+			"value": "Protagonist-Idle-Sheet",
 			"type": "texchar240"
 		},
 		"TexID": {
@@ -91,11 +99,11 @@
 			"type": "int"
 		},
 		"UV Start": {
-			"value": "0 0",
+			"value": "x : 0 | y : 0",
 			"type": "eVec2(float)"
 		},
 		"UV End": {
-			"value": "1 1",
+			"value": "x : 1 | y : 1",
 			"type": "eVec2(float)"
 		}
 	},
@@ -171,19 +179,19 @@
 	},
 	"struct ECSComponents::AnimationControllerComponent": {
 		"Frame Width": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Frame Height": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Rows": {
-			"value": "1",
+			"value": "7",
 			"type": "int"
 		},
 		"Cols": {
-			"value": "4",
+			"value": "6",
 			"type": "int"
 		},
 		"Frame Duration": {
@@ -195,11 +203,11 @@
 			"type": "bool"
 		},
 		"Animation Count": {
-			"value": "6",
+			"value": "7",
 			"type": "int"
 		},
 		"Current Animation": {
-			"value": "Spawn",
+			"value": "Idle",
 			"type": "char64"
 		},
 		"Anim0 Name": {
@@ -207,23 +215,23 @@
 			"type": "char64"
 		},
 		"Anim0 Texture": {
-			"value": "Enemy-Slug-Idle-Sheet",
+			"value": "Protagonist-Idle-Sheet",
 			"type": "texchar240"
 		},
 		"Anim0 FrameW": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim0 FrameH": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim0 Rows": {
-			"value": "1",
+			"value": "3",
 			"type": "int"
 		},
 		"Anim0 Cols": {
-			"value": "8",
+			"value": "6",
 			"type": "int"
 		},
 		"Anim0 Duration": {
@@ -235,19 +243,19 @@
 			"type": "bool"
 		},
 		"Anim1 Name": {
-			"value": "Spawn",
+			"value": "Walk",
 			"type": "char64"
 		},
 		"Anim1 Texture": {
-			"value": "Enemy-Slug-Spawn-Sheet",
+			"value": "Protagonist-Walk-Sheet",
 			"type": "texchar240"
 		},
 		"Anim1 FrameW": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim1 FrameH": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim1 Rows": {
@@ -255,7 +263,7 @@
 			"type": "int"
 		},
 		"Anim1 Cols": {
-			"value": "5",
+			"value": "4",
 			"type": "int"
 		},
 		"Anim1 Duration": {
@@ -267,19 +275,19 @@
 			"type": "bool"
 		},
 		"Anim2 Name": {
-			"value": "Walk",
+			"value": "Cast",
 			"type": "char64"
 		},
 		"Anim2 Texture": {
-			"value": "Enemy-Slug-Walk-Sheet",
+			"value": "Protagonist-Cast-Sheet",
 			"type": "texchar240"
 		},
 		"Anim2 FrameW": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim2 FrameH": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim2 Rows": {
@@ -287,7 +295,7 @@
 			"type": "int"
 		},
 		"Anim2 Cols": {
-			"value": "9",
+			"value": "6",
 			"type": "int"
 		},
 		"Anim2 Duration": {
@@ -299,19 +307,19 @@
 			"type": "bool"
 		},
 		"Anim3 Name": {
-			"value": "Hurt",
+			"value": "CastWalk",
 			"type": "char64"
 		},
 		"Anim3 Texture": {
-			"value": "Enemy-Slug-Hurt-Sheet",
+			"value": "Protagonist-CastWalk-Sheet",
 			"type": "texchar240"
 		},
 		"Anim3 FrameW": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim3 FrameH": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim3 Rows": {
@@ -319,7 +327,7 @@
 			"type": "int"
 		},
 		"Anim3 Cols": {
-			"value": "3",
+			"value": "4",
 			"type": "int"
 		},
 		"Anim3 Duration": {
@@ -331,19 +339,19 @@
 			"type": "bool"
 		},
 		"Anim4 Name": {
-			"value": "Frozen",
+			"value": "Attack",
 			"type": "char64"
 		},
 		"Anim4 Texture": {
-			"value": "Enemy-Slug-Frozen-Sheet",
+			"value": "Protagonist-Attack-Sheet",
 			"type": "texchar240"
 		},
 		"Anim4 FrameW": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim4 FrameH": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim4 Rows": {
@@ -363,19 +371,19 @@
 			"type": "bool"
 		},
 		"Anim5 Name": {
-			"value": "Death",
+			"value": "Hurt",
 			"type": "char64"
 		},
 		"Anim5 Texture": {
-			"value": "Enemy-Slug-Death-Sheet",
+			"value": "Protagonist-Hurt-Sheet",
 			"type": "texchar240"
 		},
 		"Anim5 FrameW": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim5 FrameH": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Anim5 Rows": {
@@ -383,7 +391,7 @@
 			"type": "int"
 		},
 		"Anim5 Cols": {
-			"value": "4",
+			"value": "3",
 			"type": "int"
 		},
 		"Anim5 Duration": {
@@ -393,28 +401,38 @@
 		"Anim5 Looping": {
 			"value": "1",
 			"type": "bool"
-		}
-	},
-	"struct ECSComponents::HealthComponent": {
-		"currentHealth": {
-			"value": "100",
+		},
+		"Anim6 Name": {
+			"value": "Death",
+			"type": "char64"
+		},
+		"Anim6 Texture": {
+			"value": "Protagonist-Death-Sheet",
+			"type": "texchar240"
+		},
+		"Anim6 FrameW": {
+			"value": "128",
+			"type": "int"
+		},
+		"Anim6 FrameH": {
+			"value": "128",
+			"type": "int"
+		},
+		"Anim6 Rows": {
+			"value": "7",
+			"type": "int"
+		},
+		"Anim6 Cols": {
+			"value": "6",
+			"type": "int"
+		},
+		"Anim6 Duration": {
+			"value": "0.1",
 			"type": "float"
 		},
-		"maxHealth": {
-			"value": "100",
-			"type": "float"
-		},
-		"isDead": {
-			"value": "0",
+		"Anim6 Looping": {
+			"value": "1",
 			"type": "bool"
-		},
-		"invulnerable": {
-			"value": "0",
-			"type": "bool"
-		},
-		"invulnerabilityTimer": {
-			"value": "0",
-			"type": "float"
 		}
 	},
 	"struct ECSComponents::DamageComponent": {
@@ -445,11 +463,11 @@
 	},
 	"struct ECSComponents::StateMachineComponent": {
 		"NumStates": {
-			"value": "6",
+			"value": "7",
 			"type": "int"
 		},
 		"CurrentState": {
-			"value": "Spawn",
+			"value": "Idle",
 			"type": "char32"
 		},
 		"TimeInState": {
@@ -457,98 +475,114 @@
 			"type": "float"
 		},
 		"State[0].name": {
-			"value": "Spawn",
-			"type": "char32"
-		},
-		"State[0].onEnter": {
-			"value": "Spawn_enter",
-			"type": "char64"
-		},
-		"State[0].onUpdate": {
-			"value": "Spawn_update",
-			"type": "char64"
-		},
-		"State[0].onExit": {
-			"value": "Spawn_exit",
-			"type": "char64"
-		},
-		"State[1].name": {
 			"value": "Idle",
 			"type": "char32"
 		},
-		"State[1].onEnter": {
+		"State[0].onEnter": {
 			"value": "Idle_enter",
 			"type": "char64"
 		},
-		"State[1].onUpdate": {
+		"State[0].onUpdate": {
 			"value": "Idle_update",
 			"type": "char64"
 		},
-		"State[1].onExit": {
+		"State[0].onExit": {
 			"value": "Idle_exit",
 			"type": "char64"
 		},
-		"State[2].name": {
+		"State[1].name": {
 			"value": "Walk",
 			"type": "char32"
 		},
-		"State[2].onEnter": {
+		"State[1].onEnter": {
 			"value": "Walk_enter",
 			"type": "char64"
 		},
-		"State[2].onUpdate": {
+		"State[1].onUpdate": {
 			"value": "Walk_update",
 			"type": "char64"
 		},
-		"State[2].onExit": {
+		"State[1].onExit": {
 			"value": "Walk_exit",
 			"type": "char64"
 		},
+		"State[2].name": {
+			"value": "Cast",
+			"type": "char32"
+		},
+		"State[2].onEnter": {
+			"value": "Cast_enter",
+			"type": "char64"
+		},
+		"State[2].onUpdate": {
+			"value": "Cast_update",
+			"type": "char64"
+		},
+		"State[2].onExit": {
+			"value": "Cast_exit",
+			"type": "char64"
+		},
 		"State[3].name": {
-			"value": "Hurt",
+			"value": "CastWalk",
 			"type": "char32"
 		},
 		"State[3].onEnter": {
-			"value": "Hurt_enter",
+			"value": "CastWalk_enter",
 			"type": "char64"
 		},
 		"State[3].onUpdate": {
-			"value": "Hurt_update",
+			"value": "CastWalk_update",
 			"type": "char64"
 		},
 		"State[3].onExit": {
-			"value": "Hurt_exit",
+			"value": "CastWalk_exit",
 			"type": "char64"
 		},
 		"State[4].name": {
-			"value": "Frozen",
+			"value": "Attack",
 			"type": "char32"
 		},
 		"State[4].onEnter": {
-			"value": "Frozen_enter",
+			"value": "Attack_enter",
 			"type": "char64"
 		},
 		"State[4].onUpdate": {
-			"value": "Frozen_update",
+			"value": "Attack_update",
 			"type": "char64"
 		},
 		"State[4].onExit": {
-			"value": "Frozen_exit",
+			"value": "Attack_exit",
 			"type": "char64"
 		},
 		"State[5].name": {
-			"value": "Death",
+			"value": "Hurt",
 			"type": "char32"
 		},
 		"State[5].onEnter": {
-			"value": "Death_enter",
+			"value": "Hurt_enter",
 			"type": "char64"
 		},
 		"State[5].onUpdate": {
-			"value": "Death_update",
+			"value": "Hurt_update",
 			"type": "char64"
 		},
 		"State[5].onExit": {
+			"value": "Hurt_exit",
+			"type": "char64"
+		},
+		"State[6].name": {
+			"value": "Death",
+			"type": "char32"
+		},
+		"State[6].onEnter": {
+			"value": "Death_enter",
+			"type": "char64"
+		},
+		"State[6].onUpdate": {
+			"value": "Death_update",
+			"type": "char64"
+		},
+		"State[6].onExit": {
 			"value": "Death_exit",
 			"type": "char64"
 		}

@@ -3859,6 +3859,16 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::Un
 		previewCtrl = engine_.getAnimationRegistry().get(animComp.controllerID);
 	}
 
+	// Read RenderComponent UV region for the preview remap
+	Math::eVec2<float> rcUvStart{ 0.0f, 0.0f };
+	Math::eVec2<float> rcUvEnd  { 1.0f, 1.0f };
+	if (entity.has<ECSComponents::RenderComponent>(entMng))
+	{
+		auto& rc = entity.get<ECSComponents::RenderComponent>(entMng);
+		rcUvStart = rc.uvStart;
+		rcUvEnd   = rc.uvEnd;
+	}
+
 	if (!selected.empty())
 	{
 		auto it = textures.find(selected);
@@ -3881,15 +3891,18 @@ void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::Un
 						previewFrameIdx = (previewFrameIdx + 1) % frames.size();
 					}
 					const auto& frame = frames[previewFrameIdx];
+					// Remap frame UV within the RenderComponent's UV region (matches runtime)
+					float rx = rcUvEnd.x - rcUvStart.x;
+					float ry = rcUvEnd.y - rcUvStart.y;
 					ImGui::Image(texID, previewSize,
-						ImVec2(frame.uvStart.x, frame.uvStart.y),
-						ImVec2(frame.uvEnd.x,   frame.uvEnd.y));
+						ImVec2(rcUvStart.x + frame.uvStart.x * rx, rcUvStart.y + frame.uvStart.y * ry),
+						ImVec2(rcUvStart.x + frame.uvEnd.x   * rx, rcUvStart.y + frame.uvEnd.y   * ry));
 					showedFrame = true;
 				}
 			}
 
 			if (!showedFrame)
-				ImGui::Image(texID, previewSize); // fallback: full spritesheet
+				ImGui::Image(texID, previewSize, ImVec2(rcUvStart.x, rcUvStart.y), ImVec2(rcUvEnd.x, rcUvEnd.y));
 		}
 		else
 		{
