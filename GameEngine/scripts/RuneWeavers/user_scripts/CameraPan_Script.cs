@@ -8,18 +8,18 @@ namespace Eno
     // Player input is frozen for the duration of the pan.
     public class CameraPan_Script : ScriptBase
     {
-        [port] public string PlayerName = "Player";
-        [port] public string CameraName = "Camera";
+        [Port] public string PlayerName = "Player";
+        [Port] public string CameraName = "Camera";
 
         // How close the player must get to this entity to fire the pan.
-        [port] public float TriggerRadius = 100f;
+        [Port] public float TriggerRadius = 100f;
 
         // World-space position the camera pans to (centre of the next room).
-        [port] public float PanTargetX = 0f;
-        [port] public float PanTargetY = 0f;
+        [Port] public float PanTargetX = 0f;
+        [Port] public float PanTargetY = 0f;
 
         // Units per second.
-        [port] public float PanSpeed = 800f;
+        [Port] public float PanSpeed = 800f;
 
         private enum State { Waiting, Panning, Done }
         private State _state = State.Waiting;

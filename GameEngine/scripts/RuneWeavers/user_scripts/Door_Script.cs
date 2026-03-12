@@ -6,12 +6,12 @@ namespace Eno
     {
         // Fill in the scene entity names of the enemies that must die
         // before this door opens. Leave unused slots empty.
-        [port] public string Enemy1 = "";
-        [port] public string Enemy2 = "";
-        [port] public string Enemy3 = "";
-        [port] public string Enemy4 = "";
-        [port] public string Enemy5 = "";
-        [port] public string Enemy6 = "";
+        [Port] public string Enemy1 = "";
+        [Port] public string Enemy2 = "";
+        [Port] public string Enemy3 = "";
+        [Port] public string Enemy4 = "";
+        [Port] public string Enemy5 = "";
+        [Port] public string Enemy6 = "";
 
         private bool _opened = false;
 
