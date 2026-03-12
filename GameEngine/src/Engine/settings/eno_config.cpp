@@ -78,14 +78,14 @@ namespace Config {
 		std::string input;
 		while (std::getline(settingsFile, input))
 		{
-			for (auto& pair : configMap_)
-			{
-				if (input.find(pair.first) != std::string::npos)
-				{
-					std::size_t pos = input.find(pair.first);
-					pair.second = input.substr(pos + std::string(pair.first).size() + COLON_OFFSET);
-				}
-			}
+			// Parse every "Key: Value" line and upsert into the map.
+			// This ensures keys not present in the default map (e.g. "Audio Master")
+			// are also loaded, so saved audio volumes survive program restarts.
+			auto colon = input.find(": ");
+			if (colon == std::string::npos) continue;
+			std::string key = input.substr(0, colon);
+			std::string val = input.substr(colon + COLON_OFFSET);
+			configMap_[key] = val;
 		}
 	}
 

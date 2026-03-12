@@ -57,16 +57,23 @@ namespace Eno
 
             if (!s_anchored)
             {
-                // Read ball positions while they are still at scene-file origin
+                // Read ball positions while they are still at scene-file origin.
+                // Only done once per session — the scene-file position IS the 0-volume anchor.
                 s_masterMinX  = _master?.position.x    ?? 0f;
                 s_bgmMinX     = _bgm?.position.x       ?? 0f;
                 s_sfxMinX     = _sfx?.position.x       ?? 0f;
-                // s_masterFillY = _masterFill?.position.y ?? 0f;
-                // s_bgmFillY    = _bgmFill?.position.y    ?? 0f;
-                // s_sfxFillY    = _sfxFill?.position.y    ?? 0f;
                 s_anchored    = true;
+            }
 
-                // Load saved volumes (0 on first ever run)
+            // Every instance copies from statics so Update() has correct local values
+            _masterMinX  = s_masterMinX;
+            _bgmMinX     = s_bgmMinX;
+            _sfxMinX     = s_sfxMinX;
+
+            // Always restore saved volumes every Begin() — not just the first run.
+            // Without this, the second+ Play in the same session skips restoration
+            // (s_anchored is true) and volumes stay at 0 while balls reset to scene-file origin.
+            {
                 float masterVol = Audio.loadVolume("Audio Master", 0f);
                 float bgmVol    = Audio.loadVolume("Audio BGM",    0f);
                 float sfxVol    = Audio.loadVolume("Audio SFX",    0f);
@@ -76,20 +83,10 @@ namespace Eno
                 Audio.setGroupVolume("SFX", sfxVol);
 
                 // Place balls at saved positions
-                PlaceBallAtVolume(_master,     masterVol, s_masterMinX);
-                PlaceBallAtVolume(_bgm,        bgmVol,    s_bgmMinX);
-                PlaceBallAtVolume(_sfx,        sfxVol,    s_sfxMinX);
-
-                // Stretch fills to match
-                // UpdateFill(_masterFill, s_masterMinX, VolumeToX(masterVol, s_masterMinX), s_masterFillY);
-                // UpdateFill(_bgmFill,    s_bgmMinX,    VolumeToX(bgmVol,    s_bgmMinX),    s_bgmFillY);
-                // UpdateFill(_sfxFill,    s_sfxMinX,    VolumeToX(sfxVol,    s_sfxMinX),    s_sfxFillY);
+                PlaceBallAtVolume(_master, masterVol, _masterMinX);
+                PlaceBallAtVolume(_bgm,    bgmVol,    _bgmMinX);
+                PlaceBallAtVolume(_sfx,    sfxVol,    _sfxMinX);
             }
-
-            // Every instance copies from statics so Update() has correct local values
-            _masterMinX  = s_masterMinX;
-            _bgmMinX     = s_bgmMinX;
-            _sfxMinX     = s_sfxMinX;
             // _masterFillY = s_masterFillY;
             // _bgmFillY    = s_bgmFillY;
             // _sfxFillY    = s_sfxFillY;
