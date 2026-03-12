@@ -400,10 +400,6 @@ namespace Editor
 	void EnoSceneTree::kill(Node* node)
 	{
 		if (!node) return;
-		std::cout << "[kill(Node*)] name=" << node->name_
-		          << " sceneID=" << node->sceneObjectID_
-		          << " entityID=" << node->entity_.id()
-		          << " type=" << static_cast<int>(node->type_) << std::endl;
 		if (selectedNode_ && (selectedNode_ == node))
 			selectedNode_ = nullptr;
 

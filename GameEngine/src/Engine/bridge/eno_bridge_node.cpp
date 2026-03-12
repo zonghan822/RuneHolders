@@ -26,11 +26,6 @@ namespace Bridge
 
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
             Editor::Node* node = sceneTree.getNodeBySceneObjectID(id);
-            std::cout << "[Bridge::FreeNode] id=" << id
-                      << " name=" << (node ? node->name_ : "NOT_FOUND")
-                      << " type=" << (node ? static_cast<int>(node->type_) : -1)
-                      << std::endl;
-
             sceneTree.kill(id);
         }
 
