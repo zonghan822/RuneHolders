@@ -1,81 +1,5 @@
 {
 
-	[AudioSettingsManager]
-	{
-		"ID": { 200 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 1 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 960 | y : 540 }
-				"Rotation": <eVec2(float)> { x : 6.26078 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 1920 }
-				"Height": <float> { 1080 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 0.08 | g : 0.08 | b : 0.15 | a : 1 }
-				"Texture Path": <texchar240> {  }
-				"TexID": <int> { 0 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::CameraComponent]
-			{
-				"Viewport Width": <float> { 1920 }
-				"Viewport Height": <float> { 1080 }
-				"Position": <eVec2(float)> { x : 960 | y : 540 }
-				"Is Active": <bool> { 1 }
-				"Follow Transform": <bool> { 0 }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { Default }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
-		}
-		"Script": { AudioSettings_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 3 }
-		"PrefabName": {  }
-	}
-
 	[BGMSliderFill]
 	{
 		"ID": { 208 }
@@ -193,6 +117,82 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 6 }
+		"PrefabName": {  }
+	}
+
+	[AudioSettingsManager]
+	{
+		"ID": { 200 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 1 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 960 | y : 540 }
+				"Rotation": <eVec2(float)> { x : 6.26078 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1920 }
+				"Height": <float> { 1080 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 0.08 | g : 0.08 | b : 0.15 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::CameraComponent]
+			{
+				"Viewport Width": <float> { 1920 }
+				"Viewport Height": <float> { 1080 }
+				"Position": <eVec2(float)> { x : 960 | y : 540 }
+				"Is Active": <bool> { 1 }
+				"Follow Transform": <bool> { 0 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { Default }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { AudioSettings_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 3 }
 		"PrefabName": {  }
 	}
 
@@ -386,6 +386,7 @@
 				"Sound Name": <char32> { UI_PressPlay }
 				"Sound Path": <char256> {  }
 				"Channel Group": <char32> { SFX }
+				"Loop Mode": <loopmode> { Disabled }
 				"Loop Start": <float> { 0 }
 				"Loop End": <float> { 0 }
 				"Volume": <double> { 50 }

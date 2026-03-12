@@ -68,7 +68,7 @@ namespace ECSComponents
 			v("Sound Name",			audioMod_.name_,		"char32");
 			v("Sound Path",			audioMod_.path_,		"char256");
 			v("Channel Group",		audioMod_.chGroup_,		"char32");
-			//v("Loop Mod",			audioMod_.loop_,		"char32");  // Commented: enum causes conversion issues
+			v("Loop Mode",			audioMod_.loop_,		"loopmode");
 			v("Loop Start",			audioMod_.loopStart_,	"float");
 			v("Loop End",			audioMod_.loopEnd_,		"float");
 
@@ -104,7 +104,7 @@ namespace ECSComponents
 			v("Sound Name", audioMod_.name_, "char32");
 			v("Sound Path", audioMod_.path_, "char256");
 			v("Channel Group", audioMod_.chGroup_, "char32");
-			//v("Loop Mod", audioMod_.loop_, "char32");  // Commented: enum causes conversion issues
+			v("Loop Mode", audioMod_.loop_, "loopmode");
 			v("Loop Start", audioMod_.loopStart_, "float");
 			v("Loop End", audioMod_.loopEnd_, "float");
 
