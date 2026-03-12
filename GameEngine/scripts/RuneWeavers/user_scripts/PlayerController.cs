@@ -8,7 +8,12 @@ namespace Eno
         // Movement speed in world units per second
         public float speed = 300f;
 
+        // Duration of the attack animation in seconds
+        public float attackDuration = 0.5f;
+
         private Actor _player;
+        private float _attackTimer  = 0f;
+        private bool  _isAttacking  = false;
 
         public void Begin()
         {
@@ -22,6 +27,8 @@ namespace Eno
 
         public void Update()
         {
+            if (_isAttacking) return;
+
             float dt = Time.deltaTime;
 
             // Build direction vector from held keys
@@ -42,6 +49,13 @@ namespace Eno
             }
 
             _player.velocity = new Vector2(dx * speed, dy * speed);
+
+            // Flip sprite horizontally based on horizontal direction
+            if (dx != 0f)
+            {
+                Vector2 s = _player.scale;
+                _player.scale = new Vector2(dx > 0f ? -MathF.Abs(s.x) : MathF.Abs(s.x), s.y);
+            }
         }
     
         // Called when entering the idle state
@@ -90,47 +104,53 @@ namespace Eno
     
         public void Cast_enter()
         {
-            // TODO: Add enter logic for Cast state
         }
 
         public void Cast_update()
         {
-            // TODO: Add update logic for Cast state
+            if (IsMoving())
+                _player.changeState("CastWalk");
         }
 
         public void Cast_exit()
         {
-            // TODO: Add exit logic for Cast state
         }
     
         public void CastWalk_enter()
         {
-            // TODO: Add enter logic for CastWalk state
         }
 
         public void CastWalk_update()
         {
-            // TODO: Add update logic for CastWalk state
+            if (!IsMoving())
+                _player.changeState("Cast");
         }
 
         public void CastWalk_exit()
         {
-            // TODO: Add exit logic for CastWalk state
         }
     
         public void Attack_enter()
         {
-            // TODO: Add enter logic for Attack state
+            _isAttacking = true;
+            _attackTimer = 0f;
+            _player.velocity = new Vector2(0f, 0f);
+            _player.animation = "Attack";
+            _player.setAnimationLooping(false);
+            uint frames = _player.getAnimationFrameCount();
+            if (frames > 0) _player.setAnimationFrameDuration(attackDuration / frames);
         }
 
         public void Attack_update()
         {
-            // TODO: Add update logic for Attack state
+            _attackTimer += Time.deltaTime;
+            if (_attackTimer >= attackDuration)
+                _player.changeState("Idle");
         }
 
         public void Attack_exit()
         {
-            // TODO: Add exit logic for Attack state
+            _isAttacking = false;
         }
     
         public void Hurt_enter()

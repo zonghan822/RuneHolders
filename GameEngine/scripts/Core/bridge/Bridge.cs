@@ -27,5 +27,14 @@ namespace Eno
         // -----------------------------------------------------------------------
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern float GetDeltaTime();
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern float GetUnscaledDeltaTime();
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetTimeScale(float scale);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern float GetTimeScale();
     }
 }
