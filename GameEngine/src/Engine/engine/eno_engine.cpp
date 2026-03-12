@@ -204,6 +204,10 @@ namespace Engine
 			timings_["Scripts"] = 0.0;
 		}
 
+		// Flush nodes queued for deletion by scripts this frame (FreeNode deferred to avoid
+		// invalidating the getAllNodes() iterator during the scripts update loop above).
+		editor_->getSceneTree().flushKill();
+
 		if (isPlaying_ && !isPaused_) {
 			auto t0 = Clock::now();
 			stateMachineSys_->update(editor_->getSceneTree(), entityMng_);

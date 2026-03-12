@@ -133,6 +133,9 @@ namespace Editor
 		void kill(Node*);
 		void kill(uint32_t);
 
+		// Process all nodes queued for deferred deletion (call after script updates)
+		void flushKill();
+
 		// Toggle the use of a node
 		void toggleEnable();
 		void toggleEnable(Node*);
@@ -218,6 +221,7 @@ namespace Editor
 		bool hasTilemap_{ false };
 
 		std::vector<uint32_t> salvagedID_;
+		std::vector<uint32_t> pendingKill_;
 
 		// Button input operation states
 		bool creating_{ false };

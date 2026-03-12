@@ -592,8 +592,11 @@ namespace ECS
 		*//*========================================================================================*/
 		uint32_t assignID()
 		{
-			// Simply increment the ID counter without reusing destroyed IDs
-			// This prevents nodes from referencing wrong entities after deletion
+			// Skip any IDs already occupied in the entity map (guards against id
+			// being out of sync with loaded entity IDs, which would silently
+			// overwrite the existing entity's location in entityMap_).
+			while (entityMap_.count(id))
+				++id;
 			return id++;
 		}
 

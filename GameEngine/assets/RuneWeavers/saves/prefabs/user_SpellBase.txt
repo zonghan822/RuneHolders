@@ -1,0 +1,138 @@
+{
+	"NodeType": {
+		"value": "3",
+		"type": "uint32_t"
+	},
+	"struct ECSComponents::VisibilityComponent": {
+		"Z Index": {
+			"value": "2",
+			"type": "uint32_t"
+		},
+		"Visible": {
+			"value": "1",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::RenderComponent": {
+		"Width": {
+			"value": "128",
+			"type": "float"
+		},
+		"Height": {
+			"value": "128",
+			"type": "float"
+		},
+		"Shape": {
+			"value": "Rectangle",
+			"type": "char32"
+		},
+		"Color": {
+			"value": "r : 1 | g : 1 | b : 1 | a : 1",
+			"type": "Color(RGBA)"
+		},
+		"Texture Path": {
+			"value": "RuptureMark-Target",
+			"type": "texchar240"
+		},
+		"TexID": {
+			"value": "0",
+			"type": "int"
+		},
+		"UV Start": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"UV End": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::TransformComponent": {
+		"Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Rotation": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Scale": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		},
+		"Reset Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::StateMachineComponent": {
+		"NumStates": {
+			"value": "1",
+			"type": "int"
+		},
+		"CurrentState": {
+			"value": "None",
+			"type": "char32"
+		},
+		"TimeInState": {
+			"value": "0",
+			"type": "float"
+		},
+		"State[0].name": {
+			"value": "Default",
+			"type": "char32"
+		},
+		"State[0].onEnter": {
+			"value": "Default_enter",
+			"type": "char64"
+		},
+		"State[0].onUpdate": {
+			"value": "Default_update",
+			"type": "char64"
+		},
+		"State[0].onExit": {
+			"value": "Default_exit",
+			"type": "char64"
+		}
+	},
+	"struct ECSComponents::LayerComponent": {
+		"Layer": {
+			"value": "NULL",
+			"type": "char32"
+		}
+	},
+	"struct ECSComponents::AnimationControllerComponent": {
+		"Frame Width": {
+			"value": "0",
+			"type": "int"
+		},
+		"Frame Height": {
+			"value": "0",
+			"type": "int"
+		},
+		"Rows": {
+			"value": "0",
+			"type": "int"
+		},
+		"Cols": {
+			"value": "0",
+			"type": "int"
+		},
+		"Frame Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Animation Count": {
+			"value": "0",
+			"type": "int"
+		},
+		"Current Animation": {
+			"value": "",
+			"type": "char64"
+		}
+	},
+}

@@ -53,6 +53,7 @@ namespace Bridge {
         ENGINE_API uint32_t __stdcall GetParentNode(uint32_t id);
         ENGINE_API uint32_t __stdcall GetNodeType(uint32_t id);
         ENGINE_API uint32_t __stdcall GetChildCount(uint32_t id);
+        ENGINE_API uint32_t __stdcall GetNodesByType(uint32_t nodeType, uint32_t* outIDs, uint32_t maxCount);
 
         // Spawn a user prefab at (x, y); parentID = UINT32_MAX for no parent.
         // Returns the sceneObjectID of the new node, or UINT32_MAX on failure.
@@ -162,6 +163,9 @@ namespace Bridge {
         // =========================================================================
         ENGINE_API void        __stdcall SetAnimation(uint32_t sceneObjectID, const char* animName);
         ENGINE_API const char* __stdcall GetCurrentAnimation(uint32_t sceneObjectID);
+        ENGINE_API void        __stdcall SetAnimationLooping(uint32_t sceneObjectID, bool loop);
+        ENGINE_API void        __stdcall SetAnimationFrameDuration(uint32_t sceneObjectID, float frameDuration);
+        ENGINE_API uint32_t    __stdcall GetAnimationFrameCount(uint32_t sceneObjectID);
 
         // =========================================================================
         // State Machine
@@ -201,6 +205,20 @@ namespace Bridge {
         ENGINE_API float   __stdcall GetRenderHeight(uint32_t sceneObjectID);
         ENGINE_API void    __stdcall SetRenderSize(uint32_t sceneObjectID, float w, float h);
         ENGINE_API void    __stdcall SetTexturePath(uint32_t sceneObjectID, const char* textureName);
+        ENGINE_API float   __stdcall GetUVStartX(uint32_t sceneObjectID);
+        ENGINE_API float   __stdcall GetUVStartY(uint32_t sceneObjectID);
+        ENGINE_API float   __stdcall GetUVEndX(uint32_t sceneObjectID);
+        ENGINE_API float   __stdcall GetUVEndY(uint32_t sceneObjectID);
+        ENGINE_API void    __stdcall SetUV(uint32_t sceneObjectID, float startX, float startY, float endX, float endY);
+
+        // =========================================================================
+        // Collision
+        // Implemented in: eno_bridge_collision.cpp
+        // =========================================================================
+        ENGINE_API bool    __stdcall IsOverlappingPoint(uint32_t sceneObjectID, float x, float y);
+        ENGINE_API bool    __stdcall IsColliding(uint32_t sceneObjectIDA, uint32_t sceneObjectIDB);
+        ENGINE_API bool    __stdcall GetColliderActive(uint32_t sceneObjectID);
+        ENGINE_API void    __stdcall SetColliderActive(uint32_t sceneObjectID, bool active);
 
         // =========================================================================
         // Text Component
