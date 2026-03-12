@@ -2995,25 +2995,25 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// Low Pass Filter
 		if (ImGui::TreeNodeEx("Low Pass Filter", ImGuiTreeNodeFlags_None))
 		{
-			//ImGui::Checkbox("Enable Low Pass", &ac.enableLowPass_);
+			ImGui::Checkbox("Enable Low Pass", &ac.enableLowPass_);
 
-			//if (ac.enableLowPass_) {
-			//	ImGui::Checkbox("Simple Mode##LP", &ac.lpSimple_);
-			//	if (ImGui::IsItemHovered())
-			//		ImGui::SetTooltip("Simple: cutoff only.\nStandard: cutoff + resonance.");
+			if (ac.enableLowPass_) {
+				ImGui::Checkbox("Simple Mode##LP", &ac.lpSimple_);
+				if (ImGui::IsItemHovered())
+					ImGui::SetTooltip("Simple: cutoff only.\nStandard: cutoff + resonance.");
 
-			//	ImGui::Text("Cutoff Freq:");
-			//	ImGui::SameLine(160);
-			//	ImGui::SliderFloat("##LPCutoff", &ac.lpCutoff_, 10.0f, 22000.0f, "%.0f Hz");
+				ImGui::Text("Cutoff Freq:");
+				ImGui::SameLine(160);
+				ImGui::SliderFloat("##LPCutoff", &ac.lpCutoff_, 10.0f, 22000.0f, "%.0f Hz");
 
-			//	if (!ac.lpSimple_) {
-			//		ImGui::Text("Resonance:");
-			//		ImGui::SameLine(160);
-			//		ImGui::SliderFloat("##LPResonance", &ac.lpResonance_, 1.0f, 10.0f, "%.2f");
-			//	}
+				if (!ac.lpSimple_) {
+					ImGui::Text("Resonance:");
+					ImGui::SameLine(160);
+					ImGui::SliderFloat("##LPResonance", &ac.lpResonance_, 1.0f, 10.0f, "%.2f");
+				}
 
-			//	ImGui::TextDisabled("Note: Low Pass is applied via Audio Manager on play");
-			//}
+				ImGui::TextDisabled("Note: Low Pass is applied via Audio Manager on play");
+			}
 
 			ImGui::TreePop();
 		}
@@ -3023,7 +3023,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		// High Pass Filter
 		if (ImGui::TreeNodeEx("High Pass Filter", ImGuiTreeNodeFlags_None))
 		{
-			/*ImGui::Checkbox("Enable High Pass", &ac.enableHighPass_);
+			ImGui::Checkbox("Enable High Pass", &ac.enableHighPass_);
 
 			if (ac.enableHighPass_) {
 				ImGui::Checkbox("Simple Mode##HP", &ac.hpSimple_);
@@ -3041,7 +3041,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 				}
 
 				ImGui::TextDisabled("Note: High Pass is applied via Audio Manager on play");
-			}*/
+			}
 
 			ImGui::TreePop();
 		}

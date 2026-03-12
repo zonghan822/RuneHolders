@@ -573,6 +573,40 @@ namespace Audio
 		if (sp.pan < -1.0f) sp.pan = -1.0f;
 		if (sp.pan > 1.0f) sp.pan = 1.0f;
 
+		// Low Pass filter
+		if (ac.enableLowPass_)
+		{
+			LowPass lp;
+			if (ac.lpSimple_)
+			{
+				lp.type = FMOD_DSP_TYPE_LOWPASS_SIMPLE;
+				lp.lp = SimpleLowPass{ ac.lpCutoff_ };
+			}
+			else
+			{
+				lp.type = FMOD_DSP_TYPE_LOWPASS;
+				lp.lp = StandardLowPass{ ac.lpCutoff_, ac.lpResonance_ };
+			}
+			sp.lowPass = lp;
+		}
+
+		// High Pass filter
+		if (ac.enableHighPass_)
+		{
+			HighPass hp;
+			if (ac.hpSimple_)
+			{
+				hp.type = FMOD_DSP_TYPE_HIGHPASS_SIMPLE;
+				hp.hp = SimpleHighPass{ ac.hpCutoff_ };
+			}
+			else
+			{
+				hp.type = FMOD_DSP_TYPE_HIGHPASS;
+				hp.hp = StandardHighPass{ ac.hpCutoff_, ac.hpResonance_ };
+			}
+			sp.highPass = hp;
+		}
+
 		return sp;
 	}
 

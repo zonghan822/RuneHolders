@@ -61,6 +61,18 @@ namespace ECSComponents
 		float eqMidGain_{ 0.0f };
 		float eqHighGain_{ 0.0f };
 
+		// Low Pass filter settings (per entity, not serialised)
+		bool enableLowPass_{ false };
+		bool lpSimple_{ true };
+		float lpCutoff_{ 5000.0f };
+		float lpResonance_{ 1.0f };
+
+		// High Pass filter settings (per entity, not serialised)
+		bool enableHighPass_{ false };
+		bool hpSimple_{ true };
+		float hpCutoff_{ 500.0f };
+		float hpResonance_{ 1.0f };
+
 		template <typename Visitor>
 		void reflect(Visitor&& v)
 		{
