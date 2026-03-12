@@ -26,7 +26,11 @@ namespace Eno
             float dy   = py - myY;
             float dist = MathF.Sqrt(dx * dx + dy * dy);
 
-            if (dist < 1f) return;
+            if (dist < 1f || dist > Bridge.GetAwarenessRadius(ID))
+            {
+                Bridge.SetVelocity(ID, 0f, 0f);
+                return;
+            }
 
             float speed = Bridge.GetChaseSpeed(ID);
             Bridge.SetVelocity(ID, dx / dist * speed, dy / dist * speed);
