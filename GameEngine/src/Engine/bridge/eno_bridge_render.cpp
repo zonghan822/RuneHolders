@@ -54,6 +54,41 @@ namespace Bridge
             }
         }
 
+        // ============= UV =============
+
+        ENGINE_API float __stdcall GetUVStartX(uint32_t sceneObjectID)
+        {
+            auto* r = getRender(sceneObjectID);
+            return r ? r->uvStart.x : 0.0f;
+        }
+
+        ENGINE_API float __stdcall GetUVStartY(uint32_t sceneObjectID)
+        {
+            auto* r = getRender(sceneObjectID);
+            return r ? r->uvStart.y : 0.0f;
+        }
+
+        ENGINE_API float __stdcall GetUVEndX(uint32_t sceneObjectID)
+        {
+            auto* r = getRender(sceneObjectID);
+            return r ? r->uvEnd.x : 1.0f;
+        }
+
+        ENGINE_API float __stdcall GetUVEndY(uint32_t sceneObjectID)
+        {
+            auto* r = getRender(sceneObjectID);
+            return r ? r->uvEnd.y : 1.0f;
+        }
+
+        ENGINE_API void __stdcall SetUV(uint32_t sceneObjectID, float startX, float startY, float endX, float endY)
+        {
+            if (auto* r = getRender(sceneObjectID))
+            {
+                r->uvStart = { startX, startY };
+                r->uvEnd   = { endX,   endY   };
+            }
+        }
+
         // ============= Text =============
 
         ENGINE_API const char* __stdcall GetText(uint32_t sceneObjectID)
