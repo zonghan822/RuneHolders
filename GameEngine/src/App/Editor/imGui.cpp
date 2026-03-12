@@ -702,13 +702,14 @@ void displayEditTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree)
 
 	if (!toDelete.empty()) {
 		for (auto& a : toDelete) {
-			// Remove from scene hierarchy and destroy children
+			// Remove from scene hierarchy; kill(Node*) destroys the entity and all children.
 			Node* node = sceneTree.getNodeByEntityID(a.id());
 			if (node) {
-				destroyChildrenRecursive(node, entityManager);
 				sceneTree.kill(node);
+			} else {
+				// Entity has no scene node — destroy it directly.
+				entityManager.destroyEntity(a.id());
 			}
-			entityManager.destroyEntity(a.id());
 		}
 
 		// Mark cache as dirty after deletion
@@ -1253,14 +1254,8 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 		if (node) {
 			std::cout << "[DEBUG] Deleting node " << selectedEntityID << " and all children from hierarchy\n";
 
-			// First, destroy all child entities recursively
-			destroyChildrenRecursive(node, em);
-
-			// Then kill the scene tree nodes (removes from tree structure)
+			// kill(Node*) recursively destroys all children and the node's own entity
 			sceneTree.kill(node);
-
-			// Finally, destroy the parent entity
-			em.destroyEntity(selectedEntityID);
 			selectedEntityID = UINT32_MAX;  // Reset to "no selection"
 
 			if (g_game)
