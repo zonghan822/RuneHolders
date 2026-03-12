@@ -16,7 +16,8 @@ namespace Eno
             { typeof(Camera),               NodeType.CAMERA },
             { typeof(Label),                NodeType.TEXT },
             { typeof(ParticleEmitter),      NodeType.PARTICLE },
-            { typeof(VideoNode),            NodeType.VIDEO }
+            { typeof(VideoNode),            NodeType.VIDEO },
+            { typeof(Canvas),               NodeType.CANVAS }
         };
 
         private static readonly Dictionary<NodeType, Func<uint, Node>> ctorMap = new()
@@ -33,7 +34,8 @@ namespace Eno
             { NodeType.CAMERA, id           => new Camera(id, NodeType.CAMERA) },
             { NodeType.TEXT, id             => new Label(id, NodeType.TEXT) },
             { NodeType.PARTICLE, id         => new ParticleEmitter(id, NodeType.PARTICLE) },
-            { NodeType.VIDEO, id            => new VideoNode(id, NodeType.VIDEO) }
+            { NodeType.VIDEO, id            => new VideoNode(id, NodeType.VIDEO) },
+            { NodeType.CANVAS, id           => new Canvas(id, NodeType.CANVAS) }
         };
 
         public static Node? Create(uint id)
