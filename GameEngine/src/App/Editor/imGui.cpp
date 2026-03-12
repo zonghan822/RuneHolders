@@ -5378,7 +5378,7 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 				for (auto& canvasEntity : canvasEntities) {
 					auto& canvas = canvasEntity.get<ECSComponents::CanvasComponent>(entityManager);
 
-					if (canvas.isActive && canvasEntity.has<ECSComponents::TransformComponent>(entityManager)) {
+					if (canvasEntity.has<ECSComponents::TransformComponent>(entityManager)) {
 						auto& tc = canvasEntity.get<ECSComponents::TransformComponent>(entityManager);
 
 						// Canvas viewport is centered at the entity's transform position

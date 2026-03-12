@@ -65,6 +65,40 @@
 			"type": "eVec2(float)"
 		}
 	},
+	"struct ECSComponents::AnimationControllerComponent": {
+		"Frame Width": {
+			"value": "0",
+			"type": "int"
+		},
+		"Frame Height": {
+			"value": "0",
+			"type": "int"
+		},
+		"Rows": {
+			"value": "0",
+			"type": "int"
+		},
+		"Cols": {
+			"value": "0",
+			"type": "int"
+		},
+		"Frame Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Animation Count": {
+			"value": "0",
+			"type": "int"
+		},
+		"Current Animation": {
+			"value": "",
+			"type": "char64"
+		}
+	},
 	"struct ECSComponents::VisibilityComponent": {
 		"Z Index": {
 			"value": "3",
