@@ -28,6 +28,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { UI-AudioLineBar }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -103,7 +105,7 @@
 			[struct ECSComponents::StateMachineComponent]
 			{
 				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
+				"CurrentState": <char32> { Default }
 				"TimeInState": <float> { 0 }
 				"State[0].name": <char32> { Default }
 				"State[0].onEnter": <char64> { Default_enter }
@@ -111,7 +113,7 @@
 				"State[0].onExit": <char64> { Default_exit }
 			}
 		}
-		"Script": { }
+		"Script": { AudioSettings_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -148,6 +150,8 @@
 				"Color": <Color(RGBA)> { r : 0.08 | g : 0.08 | b : 0.15 | a : 1 }
 				"Texture Path": <texchar240> {  }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -224,6 +228,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { UI-AudioBall }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -268,6 +274,56 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
+		"PrefabName": {  }
+	}
+
+	[AUDIO 1]
+	{
+		"ID": { 258 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AudioComponent]
+			{
+				"Sound Name": <char32> { Spellbook_Close_01 }
+				"Sound Path": <char256> {  }
+				"Channel Group": <char32> { SFX }
+				"Loop Mode": <loopmode> { Disabled }
+				"Loop Start": <float> { 0 }
+				"Loop End": <float> { 0 }
+				"Volume": <double> { 50 }
+				"Pitch Scale": <double> { 1 }
+				"Pan Scale": <double> { 0 }
+				"Is Autoplay": <bool> { 0 }
+				"Spatial Audio": <bool> { 0 }
+				"Max Audible Distance": <float> { 500 }
+				"Enable Reverb": <bool> { 0 }
+				"Reverb Wet": <float> { 0 }
+				"Reverb Dry": <float> { 1 }
+				"Reverb Decay": <float> { 1500 }
+				"Enable EQ": <bool> { 0 }
+				"EQ Low Gain": <float> { 0 }
+				"EQ Mid Gain": <float> { 0 }
+				"EQ High Gain": <float> { 0 }
+			}
+		}
+		"Script": { AudioTest_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 9 }
 		"PrefabName": {  }
 	}
 
@@ -299,6 +355,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { UI-AudioBall }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -338,105 +396,6 @@
 			}
 		}
 		"Script": { AudioSettings_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 3 }
-		"PrefabName": {  }
-	}
-
-	[PressEtoTestSFX]
-	{
-		"ID": { 203 }
-		"Layer": { 1 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 2 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 2086.51 | y : 682.5 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 50 }
-				"Height": <float> { 50 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { UI-AudioBall }
-				"TexID": <int> { 0 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::AudioComponent]
-			{
-				"Sound Name": <char32> { UI_PressPlay }
-				"Sound Path": <char256> {  }
-				"Channel Group": <char32> { SFX }
-				"Loop Mode": <loopmode> { Disabled }
-				"Loop Start": <float> { 0 }
-				"Loop End": <float> { 0 }
-				"Volume": <double> { 50 }
-				"Pitch Scale": <double> { 1 }
-				"Pan Scale": <double> { 0 }
-				"Is Autoplay": <bool> { 0 }
-				"Spatial Audio": <bool> { 0 }
-				"Max Audible Distance": <float> { 500 }
-				"Enable Reverb": <bool> { 0 }
-				"Reverb Wet": <float> { 0 }
-				"Reverb Dry": <float> { 1 }
-				"Reverb Decay": <float> { 1500 }
-				"Enable EQ": <bool> { 0 }
-				"EQ Low Gain": <float> { 0 }
-				"EQ Mid Gain": <float> { 0 }
-				"EQ High Gain": <float> { 0 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 96 }
-				"Frame Height": <int> { 96 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 1 }
-				"Current Animation": <char64> { Default }
-				"Anim0 Name": <char64> { Default }
-				"Anim0 Texture": <texchar240> { UI-AudioBall }
-				"Anim0 FrameW": <int> { 96 }
-				"Anim0 FrameH": <int> { 96 }
-				"Anim0 Rows": <int> { 0 }
-				"Anim0 Cols": <int> { 0 }
-				"Anim0 Duration": <float> { 0.1 }
-				"Anim0 Looping": <bool> { 1 }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { Default }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
-		}
-		"Script": { AudioTest_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -473,6 +432,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { UI-AudioBall }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -593,6 +554,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { UI-Audio }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -660,6 +623,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { UI-AudioLineBar }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -780,6 +745,8 @@
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { UI-AudioLineBar }
 				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -872,9 +839,9 @@
 		"PrefabName": {  }
 	}
 
-	[PressEtoTestBGM]
+	[AUDIO 2]
 	{
-		"ID": { 210 }
+		"ID": { 259 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -884,64 +851,20 @@
 				"Visible": <bool> { 1 }
 			}
 
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 2091.22 | y : 419.834 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 64 }
-				"Height": <float> { 64 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> {  }
-				"TexID": <int> { 0 }
-			}
-
 			[struct ECSComponents::LayerComponent]
 			{
 				"Layer": <char32> { NULL }
 			}
 
-			[struct ECSComponents::CollisionComponent]
-			{
-				"Type": <ColliderType> { Circle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
-				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 0 }
-				"Rotation": <float> { 0 }
-				"Radius": <float> { 10 }
-			}
-
-			[struct ECSComponents::PhysicsComponent]
-			{
-				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
-				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
-				"Force": <eVec2(float)> { x : 0 | y : 0 }
-				"Mass": <float> { 1 }
-				"Drag": <float> { 0.1 }
-				"Restitution": <float> { 0.5 }
-				"UseGravity": <bool> { 0 }
-				"IsKinematic": <bool> { 0 }
-				"FreezeRotation": <bool> { 1 }
-				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
-				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
-			}
-
 			[struct ECSComponents::AudioComponent]
 			{
-				"Sound Name": <char32> { Footsteps-Fade }
+				"Sound Name": <char32> { Spellbook_Open_01 }
 				"Sound Path": <char256> {  }
 				"Channel Group": <char32> { BGM }
-				"Loop Mode": <loopmode> { Forward }
+				"Loop Mode": <loopmode> { Disabled }
 				"Loop Start": <float> { 0 }
 				"Loop End": <float> { 0 }
-				"Volume": <double> { 50 }
+				"Volume": <double> { 90.1 }
 				"Pitch Scale": <double> { 1 }
 				"Pan Scale": <double> { 0 }
 				"Is Autoplay": <bool> { 0 }
@@ -956,55 +879,13 @@
 				"EQ Mid Gain": <float> { 0 }
 				"EQ High Gain": <float> { 0 }
 			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::HealthComponent]
-			{
-				"currentHealth": <float> { 100 }
-				"maxHealth": <float> { 100 }
-				"isDead": <bool> { 0 }
-				"invulnerable": <bool> { 0 }
-				"invulnerabilityTimer": <float> { 0 }
-			}
-
-			[struct ECSComponents::DamageComponent]
-			{
-				"damageAmount": <float> { 10 }
-				"damageMultiplier": <float> { 1 }
-				"destroyOnHit": <bool> { 0 }
-				"damageType": <char32> { physical }
-				"spellColor": <int> { 0 }
-				"useColorMatching": <bool> { 0 }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { Default }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
 		}
 		"Script": { AudioTest_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }
-		"NodeType": { 6 }
+		"NodeType": { 9 }
 		"PrefabName": {  }
 	}
 

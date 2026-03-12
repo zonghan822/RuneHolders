@@ -31,17 +31,17 @@ namespace Eno
         private Sprite2D? _master;
         private Sprite2D? _bgm;
         private Sprite2D? _sfx;
-        private Sprite2D? _masterFill;
-        private Sprite2D? _bgmFill;
-        private Sprite2D? _sfxFill;
+        // private Sprite2D? _masterFill;
+        // private Sprite2D? _bgmFill;
+        // private Sprite2D? _sfxFill;
 
         // Copied from statics into instance fields so Update() reads them locally
         private float _masterMinX;
         private float _bgmMinX;
         private float _sfxMinX;
-        private float _masterFillY;
-        private float _bgmFillY;
-        private float _sfxFillY;
+        // private float _masterFillY;
+        // private float _bgmFillY;
+        // private float _sfxFillY;
 
         private Sprite2D? _draggedBall;
         private float _dragOffsetX = 0f; // mouse-to-ball-centre offset at grab time
@@ -51,9 +51,9 @@ namespace Eno
             _master     = GetNode<Sprite2D>("MasterSliderBall");
             _bgm        = GetNode<Sprite2D>("BGMSliderBall");
             _sfx        = GetNode<Sprite2D>("SFXSliderBall");
-            _masterFill = GetNode<Sprite2D>("MasterSliderFill");
-            _bgmFill    = GetNode<Sprite2D>("BGMSliderFill");
-            _sfxFill    = GetNode<Sprite2D>("SFXSliderFill");
+            // _masterFill = GetNode<Sprite2D>("MasterSliderFill");
+            // _bgmFill    = GetNode<Sprite2D>("BGMSliderFill");
+            // _sfxFill    = GetNode<Sprite2D>("SFXSliderFill");
 
             if (!s_anchored)
             {
@@ -61,9 +61,9 @@ namespace Eno
                 s_masterMinX  = _master?.position.x    ?? 0f;
                 s_bgmMinX     = _bgm?.position.x       ?? 0f;
                 s_sfxMinX     = _sfx?.position.x       ?? 0f;
-                s_masterFillY = _masterFill?.position.y ?? 0f;
-                s_bgmFillY    = _bgmFill?.position.y    ?? 0f;
-                s_sfxFillY    = _sfxFill?.position.y    ?? 0f;
+                // s_masterFillY = _masterFill?.position.y ?? 0f;
+                // s_bgmFillY    = _bgmFill?.position.y    ?? 0f;
+                // s_sfxFillY    = _sfxFill?.position.y    ?? 0f;
                 s_anchored    = true;
 
                 // Load saved volumes (0 on first ever run)
@@ -81,18 +81,18 @@ namespace Eno
                 PlaceBallAtVolume(_sfx,        sfxVol,    s_sfxMinX);
 
                 // Stretch fills to match
-                UpdateFill(_masterFill, s_masterMinX, VolumeToX(masterVol, s_masterMinX), s_masterFillY);
-                UpdateFill(_bgmFill,    s_bgmMinX,    VolumeToX(bgmVol,    s_bgmMinX),    s_bgmFillY);
-                UpdateFill(_sfxFill,    s_sfxMinX,    VolumeToX(sfxVol,    s_sfxMinX),    s_sfxFillY);
+                // UpdateFill(_masterFill, s_masterMinX, VolumeToX(masterVol, s_masterMinX), s_masterFillY);
+                // UpdateFill(_bgmFill,    s_bgmMinX,    VolumeToX(bgmVol,    s_bgmMinX),    s_bgmFillY);
+                // UpdateFill(_sfxFill,    s_sfxMinX,    VolumeToX(sfxVol,    s_sfxMinX),    s_sfxFillY);
             }
 
             // Every instance copies from statics so Update() has correct local values
             _masterMinX  = s_masterMinX;
             _bgmMinX     = s_bgmMinX;
             _sfxMinX     = s_sfxMinX;
-            _masterFillY = s_masterFillY;
-            _bgmFillY    = s_bgmFillY;
-            _sfxFillY    = s_sfxFillY;
+            // _masterFillY = s_masterFillY;
+            // _bgmFillY    = s_bgmFillY;
+            // _sfxFillY    = s_sfxFillY;
         }
 
         public void Update()
@@ -125,7 +125,7 @@ namespace Eno
                 float clampedX = MathF.Max(minX, MathF.Min(minX + SliderRange, mouse.x + _dragOffsetX));
 
                 _draggedBall.position = new Vector2(clampedX, _draggedBall.position.y);
-                UpdateFill(GetFill(_draggedBall), minX, clampedX, GetFillY(_draggedBall));
+                //UpdateFill(GetFill(_draggedBall), minX, clampedX, GetFillY(_draggedBall));
                 ApplyVolume(_draggedBall, XToVolume(clampedX, minX));
             }
 
@@ -142,13 +142,13 @@ namespace Eno
         }
 
         // Left edge fixed at anchorX; right edge reaches ballX.  Y never changes.
-        private void UpdateFill(Sprite2D? fill, float anchorX, float ballX, float fillY)
-        {
-            if (fill == null) return;
-            float width = MathF.Max(0f, ballX - anchorX);
-            fill.position = new Vector2(anchorX + width * 0.5f, fillY);
-            fill.setSize(width, fill.height);
-        }
+        // private void UpdateFill(Sprite2D? fill, float anchorX, float ballX, float fillY)
+        // {
+        //     if (fill == null) return;
+        //     float width = MathF.Max(0f, ballX - anchorX);
+        //     fill.position = new Vector2(anchorX + width * 0.5f, fillY);
+        //     fill.setSize(width, fill.height);
+        // }
 
         private bool IsMouseOverBall(Sprite2D? ball, Vector2 mouse)
         {
@@ -177,25 +177,40 @@ namespace Eno
             return _sfxMinX;
         }
 
-        private Sprite2D? GetFill(Sprite2D ball)
-        {
-            if (ball == _master) return _masterFill;
-            if (ball == _bgm)    return _bgmFill;
-            return _sfxFill;
-        }
+        // private Sprite2D? GetFill(Sprite2D ball)
+        // {
+        //     if (ball == _master) return _masterFill;
+        //     if (ball == _bgm)    return _bgmFill;
+        //     return _sfxFill;
+        // }
 
-        private float GetFillY(Sprite2D ball)
-        {
-            if (ball == _master) return _masterFillY;
-            if (ball == _bgm)    return _bgmFillY;
-            return _sfxFillY;
-        }
+        // private float GetFillY(Sprite2D ball)
+        // {
+        //     if (ball == _master) return _masterFillY;
+        //     if (ball == _bgm)    return _bgmFillY;
+        //     return _sfxFillY;
+        // }
 
         private void ApplyVolume(Sprite2D ball, float volume)
         {
             if      (ball == _master) Audio.masterVolume = volume;
             else if (ball == _bgm)    Audio.setGroupVolume("BGM", volume);
             else if (ball == _sfx)    Audio.setGroupVolume("SFX", volume);
+        }
+    
+        public void Default_enter()
+        {
+            // TODO: Add enter logic for Default state
+        }
+
+        public void Default_update()
+        {
+            // TODO: Add update logic for Default state
+        }
+
+        public void Default_exit()
+        {
+            // TODO: Add exit logic for Default state
         }
     }
 }
