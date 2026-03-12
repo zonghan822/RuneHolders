@@ -1247,8 +1247,10 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 	ImGui::Separator();
 
-	// --- Delete Node Button ---
-	if (ImGui::Button("Delete Selected Node")) {
+	// --- Delete Node Button / Del key ---
+	bool deleteTriggered = ImGui::Button("Delete Selected Node") ||
+		(selectedEntityID != UINT32_MAX && ImGui::IsKeyPressed(ImGuiKey_Delete, false) && !ImGui::GetIO().WantTextInput);
+	if (deleteTriggered) {
 		auto& em = engine_.getEntityManager();
 		Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
 		if (node) {
