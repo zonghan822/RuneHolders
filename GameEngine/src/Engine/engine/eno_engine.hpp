@@ -270,6 +270,13 @@ namespace Engine
 		void reinitBridge();
 
 		/*============================================================================================
+		* \brief		Sets the active project/app name so Bridge_Init can initialize the DLL-side
+		*               FileSystem to the correct project. Must be called before setup() or setupLate().
+		*//*========================================================================================*/
+		void setAppName(const std::string& name) { appName_ = name; }
+		const std::string& getAppName() const { return appName_; }
+
+		/*============================================================================================
 		* \brief		Sets the screen-space bounds of the rendered game viewport (imageMin/Max for
 		*               screen-to-world conversion). In full-screen mode this is (0,0)-(w,h); in
 		*               editor mode it is the ImGui game-panel bounds.
@@ -356,6 +363,9 @@ namespace Engine
 
 		// UI Systems
 		UI::ButtonSystem buttonSys_;
+
+		// Project identity
+		std::string appName_;  // Set by setAppName() before setup(); used by Bridge_Init for DLL FileSystem
 
 		// Game state
 		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)

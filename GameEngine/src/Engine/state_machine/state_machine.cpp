@@ -14,10 +14,10 @@ namespace FSM {
 
         auto& sm = entity.get<ECSComponents::StateMachineComponent>(entMng);
 
-        if (strcmp(sm.currentState, newState) == 0) return;
+        if (strcmp(sm.currentState, newState) == 0) { return; }
 
         ECSComponents::StateInfo* next = sm.getState(newState);
-        if (!next) return; // invalid state
+        if (!next) { return; } // invalid state
 
         // Exit current state
         if (strcmp(sm.currentState, "None") != 0) {

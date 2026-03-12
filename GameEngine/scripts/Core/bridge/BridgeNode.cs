@@ -40,9 +40,6 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern uint GetNodesByType(uint nodeType, uint[] outIDs, uint maxCount);
 
-        // [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        // public static extern void SelectScene(string sceneName);
-
         // Spawn a user prefab by name at world position (x, y).
         // parentID: uint.MaxValue means no parent (root node).
         // Returns the sceneObjectID of the spawned node, or uint.MaxValue on failure.
