@@ -113,6 +113,41 @@ namespace Bridge
             return static_cast<uint32_t>(node->children_.size());
         }
 
+        ENGINE_API uint32_t __stdcall SpawnPrefab(const char* prefabName, float x, float y, uint32_t parentID)
+        {
+            if (!gEngine) return UINT32_MAX;
+
+            auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
+            auto& entityMng = gEngine->getEntityManager();
+
+            Editor::Node* parent = (parentID != UINT32_MAX)
+                ? sceneTree.getNodeBySceneObjectID(parentID)
+                : nullptr;
+
+            Editor::Node* node = sceneTree.spawnFromPrefab(
+                prefabName,
+                parent,
+                gEngine->getAnimationRegistry()
+            );
+            if (!node) return UINT32_MAX;
+
+            // Place at the requested world position
+            if (node->entity_.has<ECSComponents::TransformComponent>(entityMng))
+            {
+                auto& tc = node->entity_.get<ECSComponents::TransformComponent>(entityMng);
+                tc.pos = { x, y };
+            }
+
+            // Call Begin() on the new script if the game is already running
+            if (gEngine->getIsPlaying() && node->script_)
+            {
+                for (const auto& org : node->script_->origin())
+                    gEngine->getCoreHost().begin(org, node->sceneObjectID_);
+            }
+
+            return node->sceneObjectID_;
+        }
+
  /*       ENGINE_API uint32_t __stdcall SpawnNode(const char* presetName, const char* nodeName, uint32_t parentID)
         {
             if (!gEngine) return UINT32_MAX;

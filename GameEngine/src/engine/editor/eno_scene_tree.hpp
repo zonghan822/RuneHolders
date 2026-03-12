@@ -21,6 +21,8 @@
 #include <set>
 #include <type_traits>
 
+namespace Animation { class AnimationControllerRegistry; }
+
 namespace Editor
 {
 	struct Listener
@@ -88,6 +90,9 @@ namespace Editor
 
 		// Create a node from an existing entity (for ImGui integration)
 		Node* createFromEntity(ECS::Entity entity, Node* parent = nullptr);
+
+		// Spawn a node from a user prefab at runtime
+		Node* spawnFromPrefab(const std::string& prefabName, Node* parent, Animation::AnimationControllerRegistry& animReg);
 
 		// Find node by name
 		Node* getNodeByName(const std::string&);

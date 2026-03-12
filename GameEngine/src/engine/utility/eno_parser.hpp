@@ -107,6 +107,23 @@ namespace Parser
 			}
 		}
 
+		// Loop Mode
+		if (ttype == "loopmode")
+		{
+			const std::unordered_map<std::string, Audio::EnoAudioModule::LoopMode> loopMap =
+			{
+				{ "Disabled",	Audio::EnoAudioModule::LoopMode::Disabled },
+				{ "Forward",	Audio::EnoAudioModule::LoopMode::Forward },
+				{ "PingPong",	Audio::EnoAudioModule::LoopMode::PingPong },
+			};
+
+			auto it = loopMap.find(tvalue);
+			if (it != loopMap.end())
+			{
+				return it->second;
+			}
+		}
+
 		// ------------- Custom Math -------------
 		// eVec2<float>
 		if (ttype == "evec2(float)")

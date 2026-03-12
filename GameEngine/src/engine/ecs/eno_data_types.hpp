@@ -26,6 +26,7 @@ namespace ECSComponents
 		// Enums
 		Color,
 		ECSComponents::ColliderType,
+		Audio::EnoAudioModule::LoopMode,
 
 		// File imported types
 		std::shared_ptr<Graphics::EnoTexture>

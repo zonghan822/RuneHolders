@@ -41,5 +41,7 @@ namespace Eno
             get => Bridge.GetCurrentAnimation(ID);
             set => Bridge.SetAnimation(ID, value);
         }
+
+        public void changeState(string state) => Bridge.ChangeState(ID, state);
     }
 }

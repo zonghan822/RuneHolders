@@ -122,11 +122,8 @@ void EditorApplication::run() {
 		}
 
 		// 3. Run all game-logic systems (scripts, physics, collision, particles, audio).
-		{
-			SystemTimer t("Game Logic", systemTimes_);
-			engine_.beginFrame();
-		}
-		// Merge per-subsystem timings from the engine
+		engine_.beginFrame();
+		// Merge per-subsystem timings from the engine (Scripts, Physics, Collision, etc.)
 		for (auto& [k, v] : engine_.getTimings())
 			systemTimes_[k] = v;
 
@@ -177,31 +174,26 @@ void EditorApplication::run() {
 			}
 		}
 
-		{
-			SystemTimer t("Render Frame", systemTimes_);
-			if (editorFramebuffer_) {
-				// Tell the graphics manager the pixel size of the FBO so updateCamera()
-				// sets glViewport correctly without knowing about the framebuffer.
-				engine_.getGraphicsManager().setRenderTargetSize(lastEditorFbWidth_, lastEditorFbHeight_);
-				editorFramebuffer_->bind();
-			}
-			engine_.renderFrame();
-			if (showColliders_ && engine_.getCollisionSystem()) {
-				engine_.getCollisionSystem()->VisualizeColliders(
-					engine_.getGraphicsManager(),
-					engine_.getEntityManager()
-				);
-				engine_.getGraphicsManager().flush();
-			}
-			if (editorFramebuffer_) {
-				editorFramebuffer_->unbind();
-				engine_.getGraphicsManager().setRenderTargetSize(0, 0); // revert to window size
-				auto [w, h] = engine_.getWindowManager().getFramebufferSize();
-				glViewport(0, 0, w, h);
-				engine_.getGraphicsManager().setProjectionMatrix(w, h);
-			}
+		if (editorFramebuffer_) {
+			engine_.getGraphicsManager().setRenderTargetSize(lastEditorFbWidth_, lastEditorFbHeight_);
+			editorFramebuffer_->bind();
 		}
-		// Merge render sub-system timings from the engine
+		engine_.renderFrame();
+		if (showColliders_ && engine_.getCollisionSystem()) {
+			engine_.getCollisionSystem()->VisualizeColliders(
+				engine_.getGraphicsManager(),
+				engine_.getEntityManager()
+			);
+			engine_.getGraphicsManager().flush();
+		}
+		if (editorFramebuffer_) {
+			editorFramebuffer_->unbind();
+			engine_.getGraphicsManager().setRenderTargetSize(0, 0);
+			auto [w, h] = engine_.getWindowManager().getFramebufferSize();
+			glViewport(0, 0, w, h);
+			engine_.getGraphicsManager().setProjectionMatrix(w, h);
+		}
+		// Merge render sub-system timings from the engine (Animations, Draw)
 		for (auto& [k, v] : engine_.getTimings())
 			systemTimes_[k] = v;
 
@@ -221,8 +213,14 @@ void EditorApplication::run() {
 		}
 
 		// 6. Draw ImGui panels (game viewport, inspector, etc.), then present.
-		updateEditorLogic();
-		engine_.endFrame();
+		{
+			SystemTimer t("Editor UI", systemTimes_);
+			updateEditorLogic();
+		}
+		{
+			SystemTimer t("Present", systemTimes_);
+			engine_.endFrame();
+		}
 	}
 }
 
@@ -440,7 +438,6 @@ void EditorApplication::updateEditorState() {
 
 
 void EditorApplication::updateImGui() {
-	SystemTimer ImGuiTimer("ImGui", systemTimes_);
 	imGuiDisplay(engine_, engine_.getEnoEditor().getSceneTree(), engine_.getEnoEditor().getUndoManager());
 }
 

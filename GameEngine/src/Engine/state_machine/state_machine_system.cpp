@@ -53,16 +53,19 @@ namespace FSM {
         {
             if (entityID == INVALID_ENTITY_ID) continue;
             Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
-            if (!node || !node->script_) continue;
+            if (!node) continue;
             if (!node->entity_.has<ECSComponents::StateMachineComponent>(entityManager)) continue;
 
             size_t idx = findIndex(entityID);
             if (idx == SIZE_MAX) continue;
 
-            auto& origins = node->script_->origin();
-            if (origins.empty()) continue;
-
-            std::wstring className = *origins.begin();
+            std::wstring className;
+            if (node->script_)
+            {
+                auto& origins = node->script_->origin();
+                if (!origins.empty())
+                    className = *origins.begin();
+            }
             smInstances_[idx].changeState(newState.c_str(), node->entity_, entityManager, className, node->sceneObjectID_);
         }
         pendingStateChanges_.clear();
@@ -77,16 +80,19 @@ namespace FSM {
             if (entityID == INVALID_ENTITY_ID) continue;
 
             Editor::Node* node = sceneTree.getNodeByEntityID(entityID);
-            if (!node || !node->enabled_ || !node->script_) continue;
+            if (!node || !node->enabled_) continue;
             if (!node->entity_.has<ECSComponents::StateMachineComponent>(entityManager)) continue;
 
             auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entityManager);
             if (smComp.numStates == 0 || strcmp(smComp.currentState, "None") == 0) continue;
 
-            auto& origins = node->script_->origin();
-            if (origins.empty()) continue;
-
-            std::wstring className = *origins.begin();
+            std::wstring className;
+            if (node->script_)
+            {
+                auto& origins = node->script_->origin();
+                if (!origins.empty())
+                    className = *origins.begin();
+            }
             smInstances_[i].update(node->entity_, entityManager, className, node->sceneObjectID_);
         }
         updating_ = false;

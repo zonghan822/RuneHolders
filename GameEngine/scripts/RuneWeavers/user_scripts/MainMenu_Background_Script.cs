@@ -10,11 +10,18 @@ namespace Eno
 
         public void Begin()
         {
-            Bridge.ChangeState(ID, "art1");
+            Self<Sprite2D>()?.changeState("art1");
+            // Play the BGM once; the audio component is configured to loop.
+            Bridge.AudioPlay(ID);
         }
 
         public void Update()
         {
+            if (Input.isMousePressed(0))
+            {
+                Bridge.AudioStop(ID);
+                SceneManager.changeScene("Level.txt");
+            }
         }
 
         // Called when entering the art1 state
@@ -26,9 +33,9 @@ namespace Eno
         // Called every frame while in the art1 state
         public void art1_update()
         {
-            _timer += Bridge.GetDeltaTime();
+            _timer += Time.deltaTime;
             if (_timer >= SwapInterval)
-                Bridge.ChangeState(ID, "art2");
+                Self<Sprite2D>()?.changeState("art2");
         }
 
         // Called when exiting the art1 state
@@ -45,9 +52,9 @@ namespace Eno
         // Called every frame while in the art2 state
         public void art2_update()
         {
-            _timer += Bridge.GetDeltaTime();
+            _timer += Time.deltaTime;
             if (_timer >= SwapInterval)
-                Bridge.ChangeState(ID, "art1");
+                Self<Sprite2D>()?.changeState("art1");
         }
 
         // Called when exiting the art2 state

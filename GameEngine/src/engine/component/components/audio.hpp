@@ -38,12 +38,16 @@ namespace ECSComponents
 		double volume_{ 50.0 };
 		double pitchScale_{ 1.0 };  // 1.0 = normal pitch (was 0.0 which would silence audio!)
 		double panScale_{ 0.0 };
-		
+
 		// Audio position resets when false
 		bool isPlaying_{ false };
 
 		// Keeps playback position, as stream is paused
 		bool isAutoplay_{ false };
+
+		// Spatial audio: attenuates volume and pans based on distance/offset from camera
+		bool spatialAudio_{ false };
+		float maxAudibleDistance_{ 500.0f };
 
 		// Reverb settings (per entity)
 		bool enableReverb_{ false };
@@ -64,7 +68,7 @@ namespace ECSComponents
 			v("Sound Name",			audioMod_.name_,		"char32");
 			v("Sound Path",			audioMod_.path_,		"char256");
 			v("Channel Group",		audioMod_.chGroup_,		"char32");
-			//v("Loop Mod",			audioMod_.loop_,		"char32");  // Commented: enum causes conversion issues
+			v("Loop Mode",			audioMod_.loop_,		"loopmode");
 			v("Loop Start",			audioMod_.loopStart_,	"float");
 			v("Loop End",			audioMod_.loopEnd_,		"float");
 
@@ -73,8 +77,11 @@ namespace ECSComponents
 			v("Pitch Scale",		pitchScale_,			"double");
 			v("Pan Scale",			panScale_,				"double");
 
-			v("Is Playing",			isPlaying_,				"bool");
 			v("Is Autoplay",		isAutoplay_,			"bool");
+
+			// Spatial audio settings
+			v("Spatial Audio",			spatialAudio_,				"bool");
+			v("Max Audible Distance",	maxAudibleDistance_,		"float");
 
 			// Reverb settings
 			v("Enable Reverb",		enableReverb_,			"bool");
@@ -96,7 +103,7 @@ namespace ECSComponents
 			v("Sound Name", audioMod_.name_, "char32");
 			v("Sound Path", audioMod_.path_, "char256");
 			v("Channel Group", audioMod_.chGroup_, "char32");
-			//v("Loop Mod", audioMod_.loop_, "char32");  // Commented: enum causes conversion issues
+			v("Loop Mode", audioMod_.loop_, "loopmode");
 			v("Loop Start", audioMod_.loopStart_, "float");
 			v("Loop End", audioMod_.loopEnd_, "float");
 
@@ -105,8 +112,11 @@ namespace ECSComponents
 			v("Pitch Scale", pitchScale_, "double");
 			v("Pan Scale", panScale_, "double");
 
-			v("Is Playing", isPlaying_, "bool");
 			v("Is Autoplay", isAutoplay_, "bool");
+
+			// Spatial audio settings
+			v("Spatial Audio",			spatialAudio_,				"bool");
+			v("Max Audible Distance",	maxAudibleDistance_,		"float");
 
 			// Reverb settings
 			v("Enable Reverb", enableReverb_, "bool");
