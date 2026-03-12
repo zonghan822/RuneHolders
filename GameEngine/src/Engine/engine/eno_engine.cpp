@@ -108,6 +108,21 @@ namespace Engine
 					audioMng_.play(audioComp);
 			}
 		});
+
+		// Stop all orphaned FMOD channels when the scene stops so they don't
+		// carry over into the next play session and cause audio doubling.
+		bus_.subscribe<Editor::StopScene>([this](const Editor::StopScene&)
+		{
+			audioMng_.stopAllImmediate();
+			// Reset the isPlaying_ flag on every audio component so the guard
+			// in play() doesn't block playback on the next play press.
+			for (auto& ent : entityMng_.findEntity<ECSComponents::AudioComponent>())
+			{
+				auto& ac = ent.get<ECSComponents::AudioComponent>(entityMng_);
+				ac.isPlaying_ = false;
+				ac.audioMod_.ch_ = nullptr;
+			}
+		});
 	}
 
 	void EnoEngine::run()

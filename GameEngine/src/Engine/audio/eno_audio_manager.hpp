@@ -235,7 +235,14 @@ namespace Audio
 		*//*========================================================================================*/
 		void setPauseChannel(FMOD::Channel*, const bool&);
 
-		// ---------- Stop ---------- 
+		// ---------- Stop ----------
+
+		/*============================================================================================
+		 * \brief						Immediately stop all channels and clear the channel list.
+		 *								Called on scene stop to prevent orphaned channels from the
+		 *								previous play session from bleeding into the next one.
+		*//*========================================================================================*/
+		void stopAllImmediate();
 
 		/*============================================================================================
 		 * \brief						Stop a channel group

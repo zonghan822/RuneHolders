@@ -714,7 +714,22 @@ namespace Audio
 		channel->setPaused(paused);
 	}
 
-	// ---------- Stop ---------- 
+	// ---------- Stop ----------
+
+	/*============================================================================================
+	 * \brief				Immediately stop all channels and clear the channel list.
+	 *						Called on scene stop so orphaned channels from the previous play
+	 *						session don't bleed into the next one.
+	*//*========================================================================================*/
+	void EnoAudioManager::stopAllImmediate()
+	{
+		for (FMOD::Channel* ch : channels_)
+		{
+			if (ch) ch->stop();
+		}
+		channels_.clear();
+		pendingStops_.clear();
+	}
 
 	/*============================================================================================
 		* \brief				Stop a channel group
@@ -819,6 +834,9 @@ namespace Audio
 		// Toggle playing state of specified group
 		if (soundPlaying_)
 		{
+			// Kill any channel still fading out from a previous stop before starting fresh.
+			stopAllImmediate();
+
 			// Play
 			FMOD::Channel* channel = playByGroup(selectedSound_, event.groupName_, true);
 			scheduleGroupFade("BGM", FADE_IN, FADE_OUT, getSoundDurSec(selectedSound_));
