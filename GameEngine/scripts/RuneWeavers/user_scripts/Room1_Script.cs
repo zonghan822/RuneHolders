@@ -4,7 +4,7 @@ namespace Eno
     {
         private uint _scrollID    = 0;
         private uint _playerID   = 0;
-        private uint _spellbookID = 0;  // TODO: replace "SPELLBOOK_ENTITY_PLACEHOLDER"
+        private uint _spellbookID = 0;  
         private uint _exitDoorID  = 0;
         private uint _uiInfoID    = 0;
 
@@ -20,22 +20,29 @@ namespace Eno
             _exitDoorID     = Bridge.GetNode("Door1to2");
             _uiInfoID       = Bridge.GetNode("UI_Info");
             _spellbookID    = Bridge.GetNode("Spellbook");
+            _dialogueTriggered     = false;
         }
 
         public void Update()
         {
-            // Trigger Room 1 dialogue on first frame
+            // Trigger Room 1 dialogue — retry each frame until instance is ready
             if (!_dialogueTriggered)
             {
-                _dialogueTriggered = true;
                 Scroll_Dialouge_Script.TriggerDialogue(0);
+                if (Scroll_Dialouge_Script.DialogueActive || Scroll_Dialouge_Script.DialogueShown[0])
+                    _dialogueTriggered = true;
             }
 
             // After dialogue ends: activate ui sprite, then hide after 3 seconds
             if (!_postDialogueActivated && Scroll_Dialouge_Script.DialogueShown[0])
             {
                 _postDialogueActivated = true;
-                if (_uiInfoID != 0) Bridge.SetVisibility(_uiInfoID, true);
+
+                if (_uiInfoID != 0) 
+                {
+                    Bridge.SetTexturePath(_uiInfoID, "UI-WASD-Text");
+                    Bridge.SetVisibility(_uiInfoID, true);
+                }
             }
 
             // Set a timer to hide the UI after 3 seconds
@@ -63,7 +70,7 @@ namespace Eno
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
-                if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-SpellBook-1Spell");
+                if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-1Spell");
                 if (_exitDoorID  != 0) Bridge.ChangeState(_exitDoorID, "Unlocking");
             }
         }
