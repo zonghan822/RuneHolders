@@ -13,9 +13,13 @@ namespace Eno
 
         protected virtual int EnemyColor => 0;
 
-        private Enemy? _self;
-        private Actor? _player;
-        private bool   _playerSearched = false;
+        private Enemy?   _self;
+        private Actor?   _player;
+        private Sprite2D? _healthBar;
+        private bool     _playerSearched = false;
+
+        private const string HP_BAR_PREFAB  = "EnemyHealthBar";
+        private const float  HP_BAR_OFFSET_Y = -50f;
         public float contactDamageCooldown = 1.0f;
 
         private float  _pathTimer    = 0f;
@@ -37,11 +41,24 @@ namespace Eno
                 _self.damage      = 10f;
             }
             EnemyColorRegistry.Register(ID, EnemyColor);
+
+            if (_self != null)
+            {
+                var hb = SpawnPrefab(HP_BAR_PREFAB, _self.position.x, _self.position.y + HP_BAR_OFFSET_Y, _self);
+                _healthBar = hb as Sprite2D;
+            }
         }
 
         public void Update()
         {
             if (_isDying || _self == null) return;
+
+            if (_healthBar != null)
+            {
+                _healthBar.position = new Vector2(_self.position.x, _self.position.y + HP_BAR_OFFSET_Y);
+                float pct = _self.maxHealth > 0f ? _self.health / _self.maxHealth : 0f;
+                _healthBar.setUV(new Vector2(0f, 0f), new Vector2(pct, 1f));
+            }
             FindPlayer();
             if (_player == null) return;
 
