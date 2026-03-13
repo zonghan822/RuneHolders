@@ -183,7 +183,7 @@
 			"type": "int"
 		},
 		"Cols": {
-			"value": "1",
+			"value": "2",
 			"type": "int"
 		},
 		"Frame Duration": {
@@ -195,7 +195,7 @@
 			"type": "bool"
 		},
 		"Animation Count": {
-			"value": "7",
+			"value": "8",
 			"type": "int"
 		},
 		"Current Animation": {
@@ -425,6 +425,38 @@
 		"Anim6 Looping": {
 			"value": "1",
 			"type": "bool"
+		},
+		"Anim7 Name": {
+			"value": "Chase",
+			"type": "char64"
+		},
+		"Anim7 Texture": {
+			"value": "Enemy-BatBlue-IdleFlyRest-Sheet",
+			"type": "texchar240"
+		},
+		"Anim7 FrameW": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim7 FrameH": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim7 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim7 Cols": {
+			"value": "2",
+			"type": "int"
+		},
+		"Anim7 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim7 Looping": {
+			"value": "1",
+			"type": "bool"
 		}
 	},
 	"struct ECSComponents::HealthComponent": {
@@ -477,7 +509,7 @@
 	},
 	"struct ECSComponents::StateMachineComponent": {
 		"NumStates": {
-			"value": "7",
+			"value": "8",
 			"type": "int"
 		},
 		"CurrentState": {
@@ -598,6 +630,22 @@
 		},
 		"State[6].onExit": {
 			"value": "Death_exit",
+			"type": "char64"
+		},
+		"State[7].name": {
+			"value": "Chase",
+			"type": "char32"
+		},
+		"State[7].onEnter": {
+			"value": "Chase_enter",
+			"type": "char64"
+		},
+		"State[7].onUpdate": {
+			"value": "Chase_update",
+			"type": "char64"
+		},
+		"State[7].onExit": {
+			"value": "Chase_exit",
 			"type": "char64"
 		}
 	},

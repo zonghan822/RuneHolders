@@ -83,7 +83,7 @@
 			"type": "Color(RGBA)"
 		},
 		"Texture Path": {
-			"value": "Enemy-SlugYellow-Death-Sheet",
+			"value": "Enemy-SlugYellow-Idle-Sheet",
 			"type": "texchar240"
 		},
 		"TexID": {
@@ -183,7 +183,7 @@
 			"type": "int"
 		},
 		"Cols": {
-			"value": "4",
+			"value": "9",
 			"type": "int"
 		},
 		"Frame Duration": {
@@ -195,11 +195,11 @@
 			"type": "bool"
 		},
 		"Animation Count": {
-			"value": "6",
+			"value": "7",
 			"type": "int"
 		},
 		"Current Animation": {
-			"value": "Death",
+			"value": "Idle",
 			"type": "char64"
 		},
 		"Anim0 Name": {
@@ -393,6 +393,38 @@
 		"Anim5 Looping": {
 			"value": "1",
 			"type": "bool"
+		},
+		"Anim6 Name": {
+			"value": "Chase",
+			"type": "char64"
+		},
+		"Anim6 Texture": {
+			"value": "Enemy-SlugYellow-Walk-Sheet",
+			"type": "texchar240"
+		},
+		"Anim6 FrameW": {
+			"value": "96",
+			"type": "int"
+		},
+		"Anim6 FrameH": {
+			"value": "96",
+			"type": "int"
+		},
+		"Anim6 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim6 Cols": {
+			"value": "9",
+			"type": "int"
+		},
+		"Anim6 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim6 Looping": {
+			"value": "1",
+			"type": "bool"
 		}
 	},
 	"struct ECSComponents::HealthComponent": {
@@ -445,11 +477,11 @@
 	},
 	"struct ECSComponents::StateMachineComponent": {
 		"NumStates": {
-			"value": "6",
+			"value": "7",
 			"type": "int"
 		},
 		"CurrentState": {
-			"value": "None",
+			"value": "Idle",
 			"type": "char32"
 		},
 		"TimeInState": {
@@ -550,6 +582,22 @@
 		},
 		"State[5].onExit": {
 			"value": "Death_exit",
+			"type": "char64"
+		},
+		"State[6].name": {
+			"value": "Chase",
+			"type": "char32"
+		},
+		"State[6].onEnter": {
+			"value": "Chase_enter",
+			"type": "char64"
+		},
+		"State[6].onUpdate": {
+			"value": "Chase_update",
+			"type": "char64"
+		},
+		"State[6].onExit": {
+			"value": "Chase_exit",
 			"type": "char64"
 		}
 	},
