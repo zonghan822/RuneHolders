@@ -912,9 +912,9 @@ namespace Graphics
                 // Horizontal: still respect bearing.x
                 float xPos = xCursor + ch.bearing.x * scale;
 
-                // Vertical: treat position.y as the TOP of glyph box in our
-                // top-left origin system. This avoids "flying off the screen".
-                float yPos = yCursor - ch.size.y * scale;
+                // Vertical: offset by bearing.y so all glyphs share a common baseline.
+                // bearing.y = distance from baseline to glyph top; descenders extend below.
+                float yPos = yCursor - ch.bearing.y * scale;
 
                 Math::eVec2<float> charPos(xPos, yPos);
                 Math::eVec2<float> charSize(ch.size.x * scale, ch.size.y * scale);
@@ -1012,7 +1012,7 @@ namespace Graphics
                 const Font::Character& ch = font->getChar(c);
 
                 float xPos = xCursor + ch.bearing.x * scale;
-                float yPos = yCursor - ch.size.y * scale;
+                float yPos = yCursor - ch.bearing.y * scale;
 
                 Math::eVec2<float> charPos(xPos, yPos);
                 Math::eVec2<float> charSize(ch.size.x * scale, ch.size.y * scale);

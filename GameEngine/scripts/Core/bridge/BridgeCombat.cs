@@ -25,5 +25,16 @@ namespace Eno
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void HealEntity(uint sceneObjectID, float amount);
+
+        // -----------------------------------------------------------------------
+        // Combat — Damage  (implemented in eno_bridge_combat.cpp)
+        // -----------------------------------------------------------------------
+
+        // Returns damageAmount * damageMultiplier from the DamageComponent.
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern float GetDamage(uint sceneObjectID);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetDamageAmount(uint sceneObjectID, float amount);
     }
 }

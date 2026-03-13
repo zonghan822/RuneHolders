@@ -10,6 +10,15 @@
 
 namespace Bridge
 {
+    static ECSComponents::DamageComponent* getDamage(uint32_t sceneObjectID)
+    {
+        if (!gEngine) return nullptr;
+        Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(sceneObjectID);
+        if (!node) return nullptr;
+        if (!node->entity_.has<ECSComponents::DamageComponent>(gEngine->getEntityManager())) return nullptr;
+        return &node->entity_.get<ECSComponents::DamageComponent>(gEngine->getEntityManager());
+    }
+
     static ECSComponents::HealthComponent* getHealth(uint32_t sceneObjectID)
     {
         if (!gEngine) return nullptr;
@@ -66,6 +75,19 @@ namespace Bridge
         {
             if (auto* h = getHealth(sceneObjectID))
                 h->heal(amount);
+        }
+
+        // Returns damageAmount * damageMultiplier from DamageComponent.
+        ENGINE_API float __stdcall GetDamage(uint32_t sceneObjectID)
+        {
+            auto* d = getDamage(sceneObjectID);
+            return d ? d->getTotalDamage() : 0.0f;
+        }
+
+        ENGINE_API void __stdcall SetDamageAmount(uint32_t sceneObjectID, float amount)
+        {
+            if (auto* d = getDamage(sceneObjectID))
+                d->damageAmount = amount;
         }
     }
 }

@@ -125,6 +125,12 @@ namespace Eno
 
         public void Update()
         {
+            if (Scroll_Dialouge_Script.DialogueActive)
+            {
+                if (_active) Cancel();
+                return;
+            }
+
             if (!_active)
             {
                 if (Input.isMousePressed(0))
@@ -173,6 +179,10 @@ namespace Eno
 
             SpawnRunes();
             _active = true;
+
+            // Apply rune bans from any visible Nullfly enemies
+            foreach (int runeIdx in EnemyColorRegistry.ActiveBans)
+                EnemyNullifyRune(runeIdx);
 
             // Slow world time and freeze all enemies
             Time.timeScale = slowTimeScale;
