@@ -1,9 +1,13 @@
 /*============================================================================================
-* @file         eno_bridge_audio.cpp
-* @brief        Audio component bridge — play, stop, volume, pitch.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_audio.cpp
+* @author       Koe Yun Ji (yunji.koe@digipen.edu)   57%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   29%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   14%
+* @brief        Audio component bridge — play, stop, volume, pitch.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 #include "../component/components/audio.hpp"

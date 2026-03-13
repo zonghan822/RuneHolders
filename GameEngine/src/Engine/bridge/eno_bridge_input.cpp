@@ -1,9 +1,13 @@
 /*============================================================================================
-* @file         eno_bridge_input.cpp
-* @brief        Input bridge — keyboard and mouse state queries.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_input.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   40%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   40%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   20%
+* @brief        Input bridge — keyboard and mouse state queries.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 #include "../graphics/graphics.hpp"

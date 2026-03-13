@@ -1,9 +1,13 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         transform.cpp
-* @author       Caven Koh (caven.koh@digipen.edu)
-* @date			06/03/2026
-* @brief		Transform utility functions (node movement with child propagation)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   33%
+* @date         06/03/2026
+* @brief        Transform utility functions (node movement with child propagation)
 *//*========================================================================================*/
+
+
 
 #include "transform.hpp"
 #include "../../editor/eno_scene_tree.hpp"

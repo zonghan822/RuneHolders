@@ -1,9 +1,13 @@
 /*============================================================================================
-* @file         eno_bridge_window.cpp
-* @brief        Window bridge — resolution, vsync, fullscreen, FPS, pause, and close control.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_window.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   50%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   25%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   25%
+* @brief        Window bridge — resolution, vsync, fullscreen, FPS, pause, and close control.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 

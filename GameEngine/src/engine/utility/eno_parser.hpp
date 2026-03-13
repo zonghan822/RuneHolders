@@ -1,3 +1,11 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_parser.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   80%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   20%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 
 // Value type(s) to parse

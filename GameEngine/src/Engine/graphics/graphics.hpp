@@ -1,10 +1,14 @@
- /*============================================================================================
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         graphics.hpp
-* @author       Law Zong Han (zonghan.law@digipen.edu),
-* @author       Muhammad Raziq Bin Mohd Rafig ()
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   42%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   39%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   10%
 * @date         03-10-2025
-* @brief
+* @brief        See file name.
 *//*========================================================================================*/
+
+
 
 #pragma once
 

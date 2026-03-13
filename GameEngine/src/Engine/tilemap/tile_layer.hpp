@@ -1,3 +1,11 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         tile_layer.hpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   71%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   29%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 #include <vector>
 #include <string>

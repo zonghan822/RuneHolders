@@ -1,12 +1,14 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_engine.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu),
-* @author		Muhammad Raziq Bin Mohd Rafig (),
-* @author		Law Zong Han (zonghan.law@digipen.edu)
+* @author       ZongHan Law (zonghan.law@digipen.edu)   58%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   24%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   13%
 * @date         03-10-2025
-* @brief		Main engine class that orchestrates all engine systems and provides the core 
-				game loop
+* @brief        Main engine class that orchestrates all engine systems and provides the core game loop
 *//*========================================================================================*/
+
+
 
 #pragma once
 // Engine component(s)

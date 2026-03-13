@@ -1,3 +1,11 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         ai_component.hpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   79%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   14%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 #include <vector>
 #include "../../math/math.hpp"

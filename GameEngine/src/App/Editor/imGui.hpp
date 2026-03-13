@@ -1,15 +1,14 @@
 /*============================================================================================
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         imGui.hpp
-* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author       Koe Yun Ji (yunji.koe@digipen.edu)   40%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   28%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   21%
 * @date         01-10-2025
 * @brief        This file contains the functions that are required for Dear ImGui displays,
-*				which includes the init, update and terminate functions.
-*     			There are also functions for spawning and counting entities.
-*
-*  NOTE: System pointers (collision, physics, player) are no longer global variables.
-*        Access them through engine_.getXXXSystem() methods.
 *//*========================================================================================*/
+
+
 
 #pragma once
 #include <imgui.h>

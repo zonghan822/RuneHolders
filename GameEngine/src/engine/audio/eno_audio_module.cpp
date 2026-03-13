@@ -1,3 +1,10 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_audio_module.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "eno_audio_module.hpp"
 
 namespace Audio

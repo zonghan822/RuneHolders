@@ -1,11 +1,15 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         signals.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   38%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   38%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   12%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   12%
 * @date         10/3/2025
 * @brief        Declaration/definition file for the signals
-*
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
+
+
 
 #pragma once
 
