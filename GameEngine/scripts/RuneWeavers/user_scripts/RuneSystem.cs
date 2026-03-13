@@ -240,6 +240,7 @@ namespace Eno
 
                 _connected.Add(i);
                 SetRuneState(i, "Activated");
+                try { GetNode<AudioNode>("Rune-GalaxyBellPad-1")?.play(); } catch { }
 
                 // Spawn a permanent line from the previous rune to this one (skip on first connection)
                 if (_connected.Count > 1)

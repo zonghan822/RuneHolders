@@ -4842,8 +4842,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			mapEditor.setEditMode(!wasEdit);
 		if (wasEdit)
 			ImGui::PopStyleColor();
-		ImGui::SameLine();
-		ImGui::Checkbox("Show Colliders", &showColliders_);
 	} else {
 		if (ImGui::Button("Add Tilemap")) {
 			engine_.getEnoEditor().getSceneTree().setHasTilemap(true);
@@ -4851,6 +4849,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			mapEditor.setEditMode(true);
 		}
 	}
+	ImGui::SameLine();
+	ImGui::Checkbox("Show Colliders", &showColliders_);
 
 	ImGui::Separator();
 

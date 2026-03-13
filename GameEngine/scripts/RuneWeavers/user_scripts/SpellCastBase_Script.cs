@@ -10,6 +10,14 @@ namespace Eno
         // Subclasses hardcode this: 0 = Fire/Red, 1 = Light/Yellow, 2 = Ice/Blue
         protected virtual int SpellType => 0;
 
+        // Audio node names indexed by SpellType: 0=Red, 1=Yellow, 2=Blue
+        private static readonly string[] SpellSoundNames = new string[]
+        {
+            "SpellCast_02",   // SpellType 0 – Fire / Red
+            "SpellCast_03",   // SpellType 1 – Light / Yellow
+            "SpellCast_01",   // SpellType 2 – Ice / Blue
+        };
+
         private float _timer = 0f;
 
         public void Begin()
@@ -30,6 +38,11 @@ namespace Eno
             self.setAnimationLooping(false);
             uint frames = self.getAnimationFrameCount();
             if (frames > 0) self.setAnimationFrameDuration(WINDUP_DURATION / frames);
+
+            if (SpellType >= 0 && SpellType < SpellSoundNames.Length)
+            {
+                try { GetNode<AudioNode>(SpellSoundNames[SpellType])?.play(); } catch { }
+            }
         }
 
         public void Windup_update()

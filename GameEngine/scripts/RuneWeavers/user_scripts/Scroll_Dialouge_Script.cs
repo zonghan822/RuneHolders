@@ -111,7 +111,7 @@ namespace Eno
         private Node2D?   _narrativeSprite;
         private Node2D?   _dialogueBox;
         private Node2D?[] _scrollNodes = Array.Empty<Node2D?>();
-        //private AudioNode? _typingSfx;
+        private AudioNode? _typingSfx;
 
         // ------------------- Runtime state ------------------------------
         private bool   dialogueActive      = false;
@@ -138,7 +138,7 @@ namespace Eno
 
             if (_dialogueCanvas != null) _dialogueCanvas.active = false;
 
-            //try { _typingSfx = GetNode<AudioNode>("Typing SFX"); } catch { }
+            try { _typingSfx = GetNode<AudioNode>("Typing SFX"); } catch { }
         }
 
         // Called by PlayerController when the player interacts with a scroll.
@@ -192,13 +192,13 @@ namespace Eno
                     char c = dialogueTargetText[dialogueCurrentText.Length];
                     dialogueCurrentText += c;
                     dialogueTypeTimer   -= DIALOGUE_TYPE_SPEED;
-
+                    
                     // Play typing sound for each non-whitespace character
-                    //if (c != ' ' && c != '\n' && _typingSfx != null)
-                   // {
-                   //     Bridge.AudioStop(_typingSfx.ID);
-                    //    Bridge.AudioPlay(_typingSfx.ID);
-                    //}
+                    if (c != ' ' && c != '\n' && _typingSfx != null)
+                    {
+                        //Bridge.AudioStop(_typingSfx.ID);
+                        Bridge.AudioPlay(_typingSfx.ID);
+                    }
                 }
 
                 if (_dialogueText != null)
