@@ -72,12 +72,15 @@ namespace Eno
 	
 		public void _when_winscreenquitbutton_onpressed()
         {
-
+            uint buttonID = Bridge.GetNode("WinScreenQuitButton");
+            Bridge.SetTexturePath(buttonID, "UI-QuitGame-Selected");
         }
 	
 		public void _when_winscreenquitbutton_onclick()
         {
-
+            uint buttonID = Bridge.GetNode("WinScreenQuitButton");
+            Bridge.SetTexturePath(buttonID, "UI-Quit");
+            Window.requestClose();
         }
 	
 		public void _when_areyousureyesbutton_onpressed()
