@@ -10,13 +10,14 @@ namespace Eno
 
         // Duration of the attack animation in seconds
         public float attackDuration = 0.5f;
-
-        // Spell damage — written to the DamageComponent on Begin() so spells can read it via bridge
-        public float damage = 10f;
-
         private Actor _player;
         private float _attackTimer  = 0f;
         private bool  _isAttacking  = false;
+        // Spell damage — written to the DamageComponent on Begin() so spells can read it via bridge
+        public float damage = 10f;
+
+        private Node2D?[] _scrollNodes = Array.Empty<Node2D?>();
+
 
         public void Begin()
         {
@@ -28,11 +29,23 @@ namespace Eno
             _player.maxHealth   = 100f;
             _player.health      = 100f;
             _player.damage      = damage;
+
+            
+            _scrollNodes = new Node2D?[Scroll_Dialouge_Script.ScrollNames.Length];
+            for (int i = 0; i < _scrollNodes.Length; i++)
+                try { _scrollNodes[i] = GetNode<Node2D>(Scroll_Dialouge_Script.ScrollNames[i]); } catch { }
             
         }
 
         public void Update()
         {
+            // Freeze player and skip input during dialogue
+            if (Scroll_Dialouge_Script.DialogueActive)
+            {
+                _player.velocity = new Vector2(0f, 0f);
+                return;
+            }
+
             if (_isAttacking) return;
 
             float dt = Time.deltaTime;
@@ -52,6 +65,19 @@ namespace Eno
                 float inv = 1f / MathF.Sqrt(dx * dx + dy * dy);
                 dx *= inv;
                 dy *= inv;
+            }
+
+            // Check scroll interaction before applying movement
+            if (Input.isKeyPressed(KeyCode.E))
+            {
+                for (int i = 0; i < _scrollNodes.Length; i++)
+                {
+                    if (_scrollNodes[i] != null && Bridge.IsColliding(_scrollNodes[i]!.ID, _player.ID))
+                    {
+                        Scroll_Dialouge_Script.TriggerDialogue(i);
+                        return;
+                    }
+                }
             }
 
             _player.velocity = new Vector2(dx * speed, dy * speed);
