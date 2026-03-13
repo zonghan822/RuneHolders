@@ -2,7 +2,8 @@ namespace Eno
 {
     public class Room17A_Script : ScriptBase
     {
-        private const float WavePauseTime = 2f;
+        private const float WaveDelay  = 10f;
+        private const int   TotalWaves = 1;
 
         private static readonly string[] RoomDoors =
         {
@@ -12,11 +13,10 @@ namespace Eno
 
         private static Room17A_Script _instance;
 
+        private int   _currentWave  = 0;
         private bool  _wavesStarted = false;
-        private bool  _enemiesLive  = false;
-        private bool  _pausing      = false;
-        private float _pauseTimer   = 0f;
-        private int   _waveIndex    = 0;
+        private bool  _roomCleared  = false;
+        private float _waveTimer    = 0f;
 
         public void Begin()
         {
@@ -25,76 +25,58 @@ namespace Eno
 
         public static void StartWaves()
         {
-            if (_instance != null && !_instance._wavesStarted)
-                _instance.BeginWaves();
-        }
-
-        private void BeginWaves()
-        {
-            LockDoors();
-            SpawnWave(0);
-            _wavesStarted = true;
-            _enemiesLive  = true;
+            _instance?.SpawnWave(1);
         }
 
         public void Update()
         {
-            if (!_wavesStarted) return;
-
-            if (_pausing)
+            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
             {
-                _pauseTimer += Time.deltaTime;
-                if (_pauseTimer >= WavePauseTime)
+                _roomCleared = true;
+                UnlockDoors();
+                return;
+            }
+
+            if (!_wavesStarted || _roomCleared) return;
+
+            if (_currentWave < TotalWaves)
+            {
+                _waveTimer += Time.deltaTime;
+                if (_waveTimer >= WaveDelay)
                 {
-                    _pausing = false;
-                    _waveIndex++;
-                    SpawnWave(_waveIndex);
-                    _enemiesLive = true;
+                    _waveTimer = 0f;
+                    SpawnWave(_currentWave + 1);
                 }
                 return;
             }
 
-            if (!_enemiesLive) return;
-            if (GetAllEnemies().Count > 0) return;
-
-            _enemiesLive = false;
-
-            if (_waveIndex >= 2)
+            if (GetAllEnemies().Count == 0)
             {
+                _roomCleared = true;
                 UnlockDoors();
-            }
-            else
-            {
-                _pausing    = true;
-                _pauseTimer = 0f;
             }
         }
 
-        private void SpawnWave(int index)
+        private void SpawnWave(int wave)
         {
-            float cx = Bridge.GetPositionX(ID);
-            float cy = Bridge.GetPositionY(ID);
-
-            switch (index)
+            if (!_wavesStarted)
             {
-                case 0:
-                    NullflyBase_Script.PendingRuneIndex = 1;
-                    SpawnPrefab("NullflyYellow",   cx - 150f, cy);
-                    SpawnPrefab("SlugBlue",        cx + 150f, cy);
-                    break;
+                _wavesStarted = true;
+                LockDoors();
+            }
+
+            _currentWave = wave;
+
+            switch (wave)
+            {
                 case 1:
-                    NullflyBase_Script.PendingRuneIndex = 1;
-                    SpawnPrefab("NullflyYellow",   cx - 200f, cy);
-                    SpawnPrefab("BatRed",          cx,        cy);
-                    SpawnPrefab("SlugBlue",        cx + 200f, cy);
-                    break;
-                case 2:
-                    NullflyBase_Script.PendingRuneIndex = 2;
-                    SpawnPrefab("NullflyBlue",     cx - 200f, cy);
-                    SpawnPrefab("BatBlue",         cx,        cy);
-                    SpawnPrefab("SlugYellow",      cx + 200f, cy);
+                    SpawnPrefab("SlugYellow",   2373f, -7888f);
+                    SpawnPrefab("BatBlue",      3317f, -7988f);
+                    NullflyBase_Script.PendingRuneIndex = 4; // ban W
+                    SpawnPrefab("NullflyRed",   3317f, -8302f);
                     break;
             }
+        }
         }
 
         private void LockDoors()

@@ -23,6 +23,14 @@ namespace Eno
 
         public void Update()
         {
+            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
+            {
+                _roomCleared = true;
+                UnlockDoor("Door11to12");
+                UnlockDoor("Door11to9");
+                UnlockDoor("Door9to11");
+            }
+
             if (!_wavesStarted || _roomCleared) return;
 
             if (_currentWave < 2)
