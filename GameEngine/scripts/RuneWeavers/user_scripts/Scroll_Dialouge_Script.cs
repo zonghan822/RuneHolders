@@ -195,7 +195,7 @@ namespace Eno
                     // Play typing sound for each non-whitespace character
                     if (c != ' ' && c != '\n' && _typingSfx != null)
                     {
-                        Bridge.AudioStop(_typingSfx.ID);
+                        //Bridge.AudioStop(_typingSfx.ID);
                         Bridge.AudioPlay(_typingSfx.ID);
                     }
                 }
