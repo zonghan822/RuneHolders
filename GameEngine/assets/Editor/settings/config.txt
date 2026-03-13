@@ -1,12 +1,12 @@
 Engine Version: 0.0001a
 Window Title: RuneHolders Editor
-Window Width: 2560
-Window Height: 1440
+Window Width: 1600
+Window Height: 900
 Fullscreen: false
 VSync: false
 Tilemap Width: 30
 Tilemap Height: 17
 Tilemap CellSize: 64
-Audio SFX: 100.000000
-Audio Master: 64.567093
-Audio BGM: 43.906002
+Audio SFX: 95.978172
+Audio Master: 91.926521
+Audio BGM: 53.462273

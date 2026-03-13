@@ -13,6 +13,9 @@ namespace Eno
         [Port] public string Enemy5 = "";
         [Port] public string Enemy6 = "";
 
+        // Enable this on doors that should open when the scroll dialogue finishes.
+        [Port] public bool UnlockOnDialogue = false;
+
         private bool _opened = false;
 
         public void Begin() { }
@@ -22,6 +25,9 @@ namespace Eno
             if (_opened) return;
 
             if (AllEnemiesDead())
+                Open();
+
+            if (UnlockOnDialogue && Scroll_Dialouge_Script.DialogueComplete)
                 Open();
         }
 

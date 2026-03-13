@@ -333,13 +333,31 @@ namespace UI
 #endif
 
 				// In play mode, inactive canvases are hidden. In the editor, always render.
-				if (!canvas.isActive && engine.getIsPlaying()) continue;
+				if (!canvas.isActive && engine.getIsPlaying())
+				{
+					// Restore the canvas transform to its pre-follow position.
+					if (canvas.hasOriginalPos)
+					{
+						auto& sceneTree  = engine.getEnoEditor().getSceneTree();
+						Editor::Node* canvasNode = sceneTree.getNodeByEntityID(canvasEntity.id());
+						ECSComponents::moveNodeWithChildren(canvasNode, canvas.originalPos, entityManager);
+						canvas.hasOriginalPos = false;
+					}
+					continue;
+				}
 
 				// Physically move canvas and its children to follow the camera.
 				// Only runs when a valid camera is assigned (followCameraEntityID != -1).
 				if (canvas.followCamera && engine.getIsPlaying() &&
 				    canvas.followCameraEntityID != static_cast<uint32_t>(-1))
 				{
+					// Save the original position on the first frame before moving.
+					if (!canvas.hasOriginalPos && canvasEntity.has<ECSComponents::TransformComponent>(entityManager))
+					{
+						canvas.originalPos    = canvasEntity.get<ECSComponents::TransformComponent>(entityManager).pos;
+						canvas.hasOriginalPos = true;
+					}
+
 					Math::eVec2<float> resolvedCameraPos = cameraPos;
 
 					auto& sceneTree = engine.getEnoEditor().getSceneTree();
