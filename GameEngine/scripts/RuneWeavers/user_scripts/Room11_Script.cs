@@ -39,6 +39,7 @@ namespace Eno
             if (GetAllEnemies().Count == 0)
             {
                 _roomCleared = true;
+                UnlockDoor("Door11to12");
                 UnlockDoor("Door11to9");
                 UnlockDoor("Door9to11");
             }
@@ -51,6 +52,7 @@ namespace Eno
                 _wavesStarted = true;
                 LockDoor("Door9to11");
                 LockDoor("Door11to9");
+                LockDoor("Door11to12");
             }
 
             _currentWave = wave;
