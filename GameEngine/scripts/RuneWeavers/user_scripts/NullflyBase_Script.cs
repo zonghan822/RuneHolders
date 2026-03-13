@@ -111,9 +111,11 @@ namespace Eno
             {
                 _self.velocity = new Vector2(0f, 0f);
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
-                _player.changeState("Hurt");
+                if (_self.health > 0){
+                    _player.changeState("Hurt");
+                    _self.changeState("Idle");
+                } 
                 _contactTimer = contactDamageCooldown;
-                _self.changeState("Idle");
             }
         }
 
