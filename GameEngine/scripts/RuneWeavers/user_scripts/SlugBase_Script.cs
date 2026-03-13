@@ -17,6 +17,7 @@ namespace Eno
         private Actor?    _player;
         private Sprite2D? _hpBarEmpty;
         private Sprite2D? _hpBarFull;
+        private AudioNode? _audio;
         private float     _hpBarFullInitialScaleX = 1f;
         private float     _hpBarFullHalfWidth     = 0f;
         private bool      _playerSearched = false;
@@ -25,6 +26,29 @@ namespace Eno
         private const string HP_BAR_FULL_PREFAB  = "EnemyHealthBar_Full";
         private const float  HP_BAR_OFFSET_Y     = -50f;
         public float contactDamageCooldown = 1.0f;
+
+        private static Random rng = new Random();
+
+        List<string> _deathSounds = new List<string>
+        {
+          "Trailblight_Death_01",
+          "Trailblight_Death_02",
+          "Trailblight_Death_03"
+        };
+
+        List<string> _hurtSounds = new List<string>
+        {
+          "Trailblight_Hurt_01",
+          "Trailblight_Hurt_02",
+          "Trailblight_Hurt_03",
+          "Trailblight_Hurt_04",
+          "Trailblight_Hurt_05",
+          "Trailblight_Hurt_06"
+        };
+
+        private const string _moveSound = "Trailblight_Move_Loop";
+
+        private const string AUDIO = "EnemyAudio";
 
         private float  _pathTimer    = 0f;
         private float  _hurtTimer    = 0f;
@@ -51,6 +75,9 @@ namespace Eno
                 float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
                 _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
                 _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
+
+                _audio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
+
                 if (_hpBarFull != null)
                 {
                     _hpBarFullInitialScaleX = _hpBarFull.scale.x;
@@ -116,7 +143,10 @@ namespace Eno
         public void Chase_enter()
         {
             _pathTimer = pathRefreshInterval;
-            try { Bridge.AudioPlayInstantLoop("SFX", "Trailblight_Move_Loop"); } catch { }
+
+            // Set Move loop sound
+            _audio.sound = _moveSound;
+            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
         public void Chase_update()
         {
@@ -176,7 +206,10 @@ namespace Eno
         {
             _self?.clearPath();
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            try { Bridge.AudioStopInstant("Trailblight_Move_Loop"); } catch { }
+            
+            // Set Move loop sound
+            _audio.sound = _moveSound;
+            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
 
         public void Frozen_enter() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
@@ -187,7 +220,12 @@ namespace Eno
         {
             _hurtTimer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            try { Bridge.AudioPlayInstant("SFX", "Trailblight_Hurt_02"); } catch { }
+
+            // Randomize between all hurt sounds
+            int i = rng.Next(0, _hurtSounds.Count);
+            _audio.sound = _hurtSounds[i];
+
+            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
         public void Hurt_update()
         {
@@ -206,7 +244,11 @@ namespace Eno
         {
             _deathTimer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            try { Bridge.AudioPlayInstant("SFX", "Trailblight_Death_02"); } catch { }
+
+            // Randomize and play selected death sound
+            int i = rng.Next(0, _deathSounds.Count);
+            _audio.sound = _deathSounds[i];
+            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
         public void Death_update()
         {
