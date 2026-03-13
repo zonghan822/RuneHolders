@@ -230,7 +230,7 @@ namespace Engine
 			//timings_["Particles"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 
 			t0 = Clock::now();
-			buttonSys_.update(entityMng_, inputMng_, viewportMin_, viewportMax_, window_.getWindowSize());
+			buttonSys_.update(entityMng_, inputMng_, viewportMin_, viewportMax_, window_.getWindowSize(), editor_->getSceneTree());
 			timings_["UI Buttons"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 		}
 		else

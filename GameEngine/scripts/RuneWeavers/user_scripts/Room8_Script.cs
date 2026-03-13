@@ -33,7 +33,8 @@ namespace Eno
             }
 
             // E on scroll → pickup: scroll disappears, spellbook updates, door unlocks
-            if (!_scrollPickedUp && Input.isKeyPressed(KeyCode.E) &&
+            if (!_scrollPickedUp && Scroll_Dialouge_Script.DialogueShown[2] &&
+                Input.isKeyPressed(KeyCode.E) &&
                 _scrollID != 0 && _playerID != 0 &&
                 Bridge.IsColliding(_scrollID, _playerID))
             {
