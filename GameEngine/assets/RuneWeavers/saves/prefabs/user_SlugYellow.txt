@@ -83,7 +83,7 @@
 			"type": "Color(RGBA)"
 		},
 		"Texture Path": {
-			"value": "Enemy-SlugYellow-Death-Sheet",
+			"value": "Enemy-SlugYellow-Idle-Sheet",
 			"type": "texchar240"
 		},
 		"TexID": {
@@ -199,7 +199,7 @@
 			"type": "int"
 		},
 		"Current Animation": {
-			"value": "Death",
+			"value": "Idle",
 			"type": "char64"
 		},
 		"Anim0 Name": {
@@ -445,11 +445,11 @@
 	},
 	"struct ECSComponents::StateMachineComponent": {
 		"NumStates": {
-			"value": "6",
+			"value": "7",
 			"type": "int"
 		},
 		"CurrentState": {
-			"value": "None",
+			"value": "Idle",
 			"type": "char32"
 		},
 		"TimeInState": {
@@ -550,6 +550,22 @@
 		},
 		"State[5].onExit": {
 			"value": "Death_exit",
+			"type": "char64"
+		},
+		"State[6].name": {
+			"value": "Chase",
+			"type": "char32"
+		},
+		"State[6].onEnter": {
+			"value": "Chase_enter",
+			"type": "char64"
+		},
+		"State[6].onUpdate": {
+			"value": "Chase_update",
+			"type": "char64"
+		},
+		"State[6].onExit": {
+			"value": "Chase_exit",
 			"type": "char64"
 		}
 	},

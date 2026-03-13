@@ -477,7 +477,7 @@
 	},
 	"struct ECSComponents::StateMachineComponent": {
 		"NumStates": {
-			"value": "7",
+			"value": "8",
 			"type": "int"
 		},
 		"CurrentState": {
@@ -598,6 +598,22 @@
 		},
 		"State[6].onExit": {
 			"value": "Death_exit",
+			"type": "char64"
+		},
+		"State[7].name": {
+			"value": "Chase",
+			"type": "char32"
+		},
+		"State[7].onEnter": {
+			"value": "Chase_enter",
+			"type": "char64"
+		},
+		"State[7].onUpdate": {
+			"value": "Chase_update",
+			"type": "char64"
+		},
+		"State[7].onExit": {
+			"value": "Chase_exit",
 			"type": "char64"
 		}
 	},
