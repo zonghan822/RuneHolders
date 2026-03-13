@@ -19,14 +19,21 @@ namespace Eno
 
         protected virtual int EnemyColor => 0;
 
-        private Enemy?   _self;
-        private Actor?   _player;
-        private Sprite2D? _healthBar;
-        private bool     _playerSearched = false;
+        private Enemy?    _self;
+        private Actor?    _player;
+        private Sprite2D? _hpBarEmpty;
+        private Sprite2D? _hpBarFull;
+        private float     _hpBarFullInitialScaleX = 1f;
+        private float     _hpBarFullHalfWidth     = 0f;
+        private bool      _playerSearched = false;
 
-        private const string HP_BAR_PREFAB   = "EnemyHealthBar";
-        private const float  HP_BAR_OFFSET_Y = -50f;
+        private const string HP_BAR_EMPTY_PREFAB = "EnemyHealthBar_Empty";
+        private const string HP_BAR_FULL_PREFAB  = "EnemyHealthBar_Full";
+        private const float  HP_BAR_OFFSET_Y     = -50f;
+        public float pathRefreshInterval = 0.5f;
+
         private float   _timer          = 0f;
+        private float   _pathTimer      = 0f;
         private float   _contactTimer   = 0f;
         private Vector2 _dashDir        = new Vector2(1f, 0f);
         private Vector2 _prevPos;
@@ -48,8 +55,14 @@ namespace Eno
 
             if (_self != null)
             {
-                var hb = SpawnPrefab(HP_BAR_PREFAB, _self.position.x, _self.position.y + HP_BAR_OFFSET_Y, _self);
-                _healthBar = hb as Sprite2D;
+                float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
+                _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
+                _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
+                if (_hpBarFull != null)
+                {
+                    _hpBarFullInitialScaleX = _hpBarFull.scale.x;
+                    _hpBarFullHalfWidth     = _hpBarFull.width * 0.5f;
+                }
             }
         }
 
@@ -57,11 +70,18 @@ namespace Eno
         {
             if (_isDying || _self == null) return;
 
-            if (_healthBar != null)
+            if (_hpBarEmpty != null || _hpBarFull != null)
             {
-                _healthBar.position = new Vector2(_self.position.x, _self.position.y + HP_BAR_OFFSET_Y);
+                float hx  = _self.position.x;
+                float hy  = _self.position.y + HP_BAR_OFFSET_Y;
                 float pct = _self.maxHealth > 0f ? _self.health / _self.maxHealth : 0f;
-                _healthBar.setUV(new Vector2(0f, 0f), new Vector2(pct, 1f));
+
+                if (_hpBarEmpty != null) _hpBarEmpty.position = new Vector2(hx, hy);
+                if (_hpBarFull  != null)
+                {
+                    _hpBarFull.scale    = new Vector2(_hpBarFullInitialScaleX * pct, _hpBarFull.scale.y);
+                    _hpBarFull.position = new Vector2(hx + _hpBarFullHalfWidth * (pct - 1f), hy);
+                }
             }
             FindPlayer();
             if (_player == null) return;
@@ -93,15 +113,61 @@ namespace Eno
 
         // ── Idle ──────────────────────────────────────────────────────────────────
 
-        public void Idle_enter() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
+        public void Idle_enter() { _pathTimer = pathRefreshInterval; }
         public void Idle_update()
         {
             FindPlayer();
             if (_self == null || _player == null) return;
+
             if (Dist(_self.position, _player.position) <= TRIGGER_RADIUS)
+            {
+                _self.velocity = new Vector2(0f, 0f);
                 _self.changeState("WindUp");
+                return;
+            }
+
+            _pathTimer += Time.deltaTime;
+            if (_pathTimer >= pathRefreshInterval)
+            {
+                _pathTimer = 0f;
+                _self.computePath(_player.position);
+            }
+
+            if (_self.hasPath)
+            {
+                Vector2 wp = _self.nextWaypoint;
+                float dx = wp.x - _self.position.x;
+                float dy = wp.y - _self.position.y;
+
+                if (dx * dx + dy * dy < 32f * 32f)
+                {
+                    _self.advance();
+                }
+                else
+                {
+                    Vector2 dir = Norm(dx, dy);
+                    _self.velocity = new Vector2(dir.x * chaseSpeed, dir.y * chaseSpeed);
+                    if (dir.x != 0f)
+                    {
+                        Vector2 s = _self.scale;
+                        _self.scale = new Vector2(dir.x > 0f ? -MathF.Abs(s.x) : MathF.Abs(s.x), s.y);
+                    }
+                }
+            }
+            else
+            {
+                float dx = _player.position.x - _self.position.x;
+                float dy = _player.position.y - _self.position.y;
+                Vector2 dir = Norm(dx, dy);
+                _self.velocity = new Vector2(dir.x * chaseSpeed, dir.y * chaseSpeed);
+                if (dir.x != 0f)
+                {
+                    Vector2 s = _self.scale;
+                    _self.scale = new Vector2(dir.x > 0f ? -MathF.Abs(s.x) : MathF.Abs(s.x), s.y);
+                }
+            }
         }
-        public void Idle_exit() { }
+        public void Idle_exit() { _self?.clearPath(); }
 
         // ── WindUp ────────────────────────────────────────────────────────────────
 

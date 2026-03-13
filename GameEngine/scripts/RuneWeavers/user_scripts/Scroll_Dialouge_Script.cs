@@ -101,7 +101,8 @@ namespace Eno
 
         // ---------- Static state readable by other scripts --------
         private static Scroll_Dialouge_Script? _instance;
-        public  static bool DialogueActive = false;
+        public  static bool   DialogueActive = false;
+        public  static bool[] DialogueShown  = new bool[ScrollNames.Length];
 
         // ------------------- Node references ----------------------------
         private Actor?    _player;
@@ -143,7 +144,7 @@ namespace Eno
         // Called by PlayerController when the player interacts with a scroll.
         public static void TriggerDialogue(int scrollIndex)
         {
-            if (_instance == null || DialogueActive) return;
+            if (_instance == null || DialogueActive || DialogueShown[scrollIndex]) return;
             _instance.StartDialogueForScroll(scrollIndex);
         }
 
@@ -287,6 +288,7 @@ namespace Eno
             if (_dialogueCanvas  != null) _dialogueCanvas.active = false;
             if (_narrativeSprite != null) Bridge.SetVisibility(_narrativeSprite.ID, false);
             if (_dialogueBox     != null) Bridge.SetVisibility(_dialogueBox.ID, true);
+            if (_activeIndex >= 0) DialogueShown[_activeIndex] = true;
         }
         // Helper function to create new line of text to prevent overflow out of dialogue box
         private string WrapText(string text, int maxChars)
