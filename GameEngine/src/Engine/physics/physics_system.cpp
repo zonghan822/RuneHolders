@@ -61,8 +61,8 @@ namespace Physics
             if (physics.isKinematic)
                 continue;
 
-            // Skip inactive colliders
-            if (!collision.isActive)
+            // Skip inactive colliders or triggers (triggers detect overlap only, no physics response)
+            if (!collision.isActive || collision.isTrigger)
                 continue;
 
             // Integrate velocity into position (with collision response)

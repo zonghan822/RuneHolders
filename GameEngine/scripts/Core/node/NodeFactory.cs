@@ -15,8 +15,9 @@ namespace Eno
             { typeof(AudioNode),            NodeType.AUDIO },
             { typeof(Camera),               NodeType.CAMERA },
             { typeof(Label),                NodeType.TEXT },
-            { typeof(ParticleEmitter),      NodeType.PARTICLE },
-            { typeof(VideoNode),            NodeType.VIDEO }
+           // { typeof(ParticleEmitter),      NodeType.PARTICLE },
+            { typeof(VideoNode),            NodeType.VIDEO },
+            { typeof(Canvas),               NodeType.CANVAS }
         };
 
         private static readonly Dictionary<NodeType, Func<uint, Node>> ctorMap = new()
@@ -32,13 +33,14 @@ namespace Eno
             { NodeType.AUDIO, id            => new AudioNode(id, NodeType.AUDIO) },
             { NodeType.CAMERA, id           => new Camera(id, NodeType.CAMERA) },
             { NodeType.TEXT, id             => new Label(id, NodeType.TEXT) },
-            { NodeType.PARTICLE, id         => new ParticleEmitter(id, NodeType.PARTICLE) },
-            { NodeType.VIDEO, id            => new VideoNode(id, NodeType.VIDEO) }
+           // { NodeType.PARTICLE, id         => new ParticleEmitter(id, NodeType.PARTICLE) },
+            { NodeType.VIDEO, id            => new VideoNode(id, NodeType.VIDEO) },
+            { NodeType.CANVAS, id           => new Canvas(id, NodeType.CANVAS) }
         };
 
         public static Node? Create(uint id)
         {
-            if (id == 0)
+            if (id == 0 || id == uint.MaxValue)
                 return null;
 
             NodeType type = (NodeType)Bridge.GetNodeType(id);
