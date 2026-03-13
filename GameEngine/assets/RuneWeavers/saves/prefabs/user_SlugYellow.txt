@@ -183,7 +183,7 @@
 			"type": "int"
 		},
 		"Cols": {
-			"value": "4",
+			"value": "9",
 			"type": "int"
 		},
 		"Frame Duration": {
@@ -195,7 +195,7 @@
 			"type": "bool"
 		},
 		"Animation Count": {
-			"value": "6",
+			"value": "7",
 			"type": "int"
 		},
 		"Current Animation": {
@@ -391,6 +391,38 @@
 			"type": "float"
 		},
 		"Anim5 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim6 Name": {
+			"value": "Chase",
+			"type": "char64"
+		},
+		"Anim6 Texture": {
+			"value": "Enemy-SlugYellow-Walk-Sheet",
+			"type": "texchar240"
+		},
+		"Anim6 FrameW": {
+			"value": "96",
+			"type": "int"
+		},
+		"Anim6 FrameH": {
+			"value": "96",
+			"type": "int"
+		},
+		"Anim6 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim6 Cols": {
+			"value": "9",
+			"type": "int"
+		},
+		"Anim6 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim6 Looping": {
 			"value": "1",
 			"type": "bool"
 		}
