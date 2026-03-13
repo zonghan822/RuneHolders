@@ -9,7 +9,7 @@ namespace Eno
         [Port] public float  PanSpeed      = 800f;
         [Port] public float  TriggerRadius = 64f;
 
-        private const float PlayerDestX =  6388f;
+        private const float PlayerDestX =  5004f;
         private const float PlayerDestY = -8156f;
         private const float CamDestX    =  4794f;
         private const float CamDestY    = -8133f;
