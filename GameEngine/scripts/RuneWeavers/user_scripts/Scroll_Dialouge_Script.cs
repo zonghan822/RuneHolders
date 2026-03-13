@@ -141,10 +141,19 @@ namespace Eno
             try { _typingSfx = GetNode<AudioNode>("Typing SFX"); } catch { }
         }
 
-        // Called by PlayerController when the player interacts with a scroll.
+        // Called by room scripts when the player interacts with a text-based scroll.
         public static void TriggerDialogue(int scrollIndex)
         {
             if (_instance == null || DialogueActive || DialogueShown[scrollIndex]) return;
+            if (_isNarrative[scrollIndex]) return;
+            _instance.StartDialogueForScroll(scrollIndex);
+        }
+
+        // Called by room scripts when the player interacts with a narrative scroll.
+        public static void TriggerNarrative(int scrollIndex)
+        {
+            if (_instance == null || DialogueActive || DialogueShown[scrollIndex]) return;
+            if (!_isNarrative[scrollIndex]) return;
             _instance.StartDialogueForScroll(scrollIndex);
         }
 

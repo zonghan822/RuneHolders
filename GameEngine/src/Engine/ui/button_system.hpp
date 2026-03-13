@@ -13,8 +13,9 @@
 #include "../math/math.hpp"
 #include <utility>
 
-namespace ECS   { class EntityManager;   }
-namespace Input { class EnoInputManager; }
+namespace ECS    { class EntityManager;   }
+namespace Input  { class EnoInputManager; }
+namespace Editor { class EnoSceneTree;    }
 
 namespace UI
 {
@@ -41,7 +42,8 @@ namespace UI
 			Input::EnoInputManager& inputMng,
 			Math::eVec2<float>      viewportMin,
 			Math::eVec2<float>      viewportMax,
-			std::pair<int, int>     windowSize
+			std::pair<int, int>     windowSize,
+			Editor::EnoSceneTree&   sceneTree
 		);
 	};
 
