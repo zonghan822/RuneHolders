@@ -26,10 +26,11 @@ namespace Eno
         [Port] public int CharsPerLine = 30;
 
         // Node references
-        private Actor  _player;
-        private Node2D _scroll;
-        private Canvas _dialogueCanvas;
-        private Label  _dialogueText;
+        private Actor     _player;
+        private Node2D    _scroll;
+        private Canvas    _dialogueCanvas;
+        private Label     _dialogueText;
+        private AudioNode _typingSfx;
 
         // Set to true once the final dialogue line is dismissed; other scripts can read this.
         public static bool DialogueComplete = false;
@@ -42,8 +43,6 @@ namespace Eno
         private string dialogueTargetText  = "";
         private float  dialogueTypeTimer   = 0f;
 
-        private static readonly Random rng = new Random();
-
         public void Begin()
         {
             _player         = GetNode<Actor>("Player");
@@ -52,6 +51,8 @@ namespace Eno
             _dialogueText   = GetNode<Label>("Dialogue Text");
 
             if (_dialogueCanvas != null) _dialogueCanvas.active = false;
+
+            _typingSfx = GetNode<AudioNode>("Typing SFX");
         }
 
         public void Update()
@@ -93,13 +94,16 @@ namespace Eno
                 while (dialogueTypeTimer >= DIALOGUE_TYPE_SPEED &&
                        dialogueCurrentText.Length < dialogueTargetText.Length)
                 {
-                    dialogueCurrentText += dialogueTargetText[dialogueCurrentText.Length];
+                    char c = dialogueTargetText[dialogueCurrentText.Length];
+                    dialogueCurrentText += c;
                     dialogueTypeTimer   -= DIALOGUE_TYPE_SPEED;
 
-                    // Play a random typing sound (Typing_01 … Typing_21)
-                    int    sfxNum  = rng.Next(1, 22);
-                    string sfxName = "Typing_" + (sfxNum < 10 ? "0" : "") + sfxNum;
-                    try { GetNode<AudioNode>(sfxName)?.play(); } catch { }
+                    // Play typing sound for each non-whitespace character
+                    if (c != ' ' && c != '\n' && _typingSfx != null)
+                    {
+                        Bridge.AudioStop(_typingSfx.ID);
+                        Bridge.AudioPlay(_typingSfx.ID);
+                    }
                 }
 
                 if (_dialogueText != null)

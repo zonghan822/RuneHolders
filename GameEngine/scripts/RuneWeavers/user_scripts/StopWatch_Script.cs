@@ -41,6 +41,7 @@ namespace Eno
             var self = Self<Sprite2D>();
             if (self == null) return;
             self.animation = "FadeIn";
+            Bridge.AudioPlay(ID);
             self.setAnimationLooping(false);
             uint frames = self.getAnimationFrameCount();
             // Animation system uses scaled dt, so multiply by timeScale to keep real duration correct

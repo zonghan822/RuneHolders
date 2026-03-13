@@ -48,5 +48,10 @@ namespace Eno
         // Load one volume by config key ("Audio Master", "Audio BGM", "Audio SFX"); returns defaultVal if absent
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern float LoadAudioVolume(string key, float defaultVal);
+
+        // Play a sound immediately by name without needing a scene entity.
+        // groupName: "SFX" or "BGM", soundName: asset name e.g. "Typing_01"
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void AudioPlayInstant(string groupName, string soundName);
     }
 }

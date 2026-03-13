@@ -123,6 +123,14 @@ namespace Bridge
             cfg.write();
         }
 
+        // Play a sound immediately by name without needing a scene entity.
+        // groupName: "SFX" or "BGM", soundName: asset name e.g. "Typing_01"
+        ENGINE_API void __stdcall AudioPlayInstant(const char* groupName, const char* soundName)
+        {
+            if (!gEngine) return;
+            gEngine->getEventBus().publish(Audio::PlayInstant{ std::string(groupName), std::string(soundName) });
+        }
+
         // Loads one audio volume value (0-100) from the config file by key.
         // Returns defaultVal if the key is absent or cannot be parsed.
         ENGINE_API float __stdcall LoadAudioVolume(const char* key, float defaultVal)
