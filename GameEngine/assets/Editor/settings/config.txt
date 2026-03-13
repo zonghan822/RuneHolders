@@ -7,6 +7,6 @@ VSync: false
 Tilemap Width: 30
 Tilemap Height: 17
 Tilemap CellSize: 64
-Audio SFX: 95.978172
-Audio Master: 91.926521
-Audio BGM: 53.462273
+Audio SFX: 88.558571
+Audio Master: 78.942284
+Audio BGM: 82.213135
