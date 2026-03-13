@@ -1,14 +1,32 @@
 {
 	"NodeType": {
-		"value": "5",
+		"value": "13",
 		"type": "uint32_t"
+	},
+	"Script": {
+		"value": "DummyRed_Script.cs",
+		"type": "string"
 	},
 	"struct ECSComponents::VisibilityComponent": {
 		"Z Index": {
-			"value": "4",
+			"value": "3",
 			"type": "uint32_t"
 		},
 		"Visible": {
+			"value": "1",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::AIComponent": {
+		"awarenessRadius": {
+			"value": "200",
+			"type": "float"
+		},
+		"chaseSpeed": {
+			"value": "90",
+			"type": "float"
+		},
+		"allowDiagonal": {
 			"value": "1",
 			"type": "bool"
 		}
@@ -23,7 +41,7 @@
 			"type": "eVec2(float)"
 		},
 		"Is Trigger": {
-			"value": "1",
+			"value": "0",
 			"type": "bool"
 		},
 		"Is Active": {
@@ -31,7 +49,7 @@
 			"type": "bool"
 		},
 		"Is Static": {
-			"value": "1",
+			"value": "0",
 			"type": "bool"
 		},
 		"Rotation": {
@@ -39,7 +57,7 @@
 			"type": "float"
 		},
 		"Radius": {
-			"value": "72",
+			"value": "60",
 			"type": "float"
 		}
 	},
@@ -93,36 +111,6 @@
 		"Reset Position": {
 			"value": "x : 0 | y : 0",
 			"type": "eVec2(float)"
-		}
-	},
-	"struct ECSComponents::StateMachineComponent": {
-		"NumStates": {
-			"value": "1",
-			"type": "int"
-		},
-		"CurrentState": {
-			"value": "None",
-			"type": "char32"
-		},
-		"TimeInState": {
-			"value": "0",
-			"type": "float"
-		},
-		"State[0].name": {
-			"value": "Default",
-			"type": "char32"
-		},
-		"State[0].onEnter": {
-			"value": "Default_enter",
-			"type": "char64"
-		},
-		"State[0].onUpdate": {
-			"value": "Default_update",
-			"type": "char64"
-		},
-		"State[0].onExit": {
-			"value": "Default_exit",
-			"type": "char64"
 		}
 	},
 	"struct ECSComponents::LayerComponent": {
@@ -179,19 +167,19 @@
 	},
 	"struct ECSComponents::AnimationControllerComponent": {
 		"Frame Width": {
-			"value": "0",
+			"value": "96",
 			"type": "int"
 		},
 		"Frame Height": {
-			"value": "0",
+			"value": "96",
 			"type": "int"
 		},
 		"Rows": {
-			"value": "0",
+			"value": "1",
 			"type": "int"
 		},
 		"Cols": {
-			"value": "0",
+			"value": "1",
 			"type": "int"
 		},
 		"Frame Duration": {
@@ -203,11 +191,169 @@
 			"type": "bool"
 		},
 		"Animation Count": {
-			"value": "0",
+			"value": "2",
 			"type": "int"
 		},
 		"Current Animation": {
-			"value": "",
+			"value": "Idle",
+			"type": "char64"
+		},
+		"Anim0 Name": {
+			"value": "Idle",
+			"type": "char64"
+		},
+		"Anim0 Texture": {
+			"value": "Dummies-Red",
+			"type": "texchar240"
+		},
+		"Anim0 FrameW": {
+			"value": "96",
+			"type": "int"
+		},
+		"Anim0 FrameH": {
+			"value": "96",
+			"type": "int"
+		},
+		"Anim0 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim0 Cols": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim0 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim0 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim1 Name": {
+			"value": "Hurt",
+			"type": "char64"
+		},
+		"Anim1 Texture": {
+			"value": "Dummies-Red-Hurt",
+			"type": "texchar240"
+		},
+		"Anim1 FrameW": {
+			"value": "96",
+			"type": "int"
+		},
+		"Anim1 FrameH": {
+			"value": "96",
+			"type": "int"
+		},
+		"Anim1 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim1 Cols": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim1 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim1 Looping": {
+			"value": "1",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::HealthComponent": {
+		"currentHealth": {
+			"value": "100",
+			"type": "float"
+		},
+		"maxHealth": {
+			"value": "100",
+			"type": "float"
+		},
+		"isDead": {
+			"value": "0",
+			"type": "bool"
+		},
+		"invulnerable": {
+			"value": "0",
+			"type": "bool"
+		},
+		"invulnerabilityTimer": {
+			"value": "0",
+			"type": "float"
+		}
+	},
+	"struct ECSComponents::DamageComponent": {
+		"damageAmount": {
+			"value": "10",
+			"type": "float"
+		},
+		"damageMultiplier": {
+			"value": "1",
+			"type": "float"
+		},
+		"destroyOnHit": {
+			"value": "0",
+			"type": "bool"
+		},
+		"damageType": {
+			"value": "physical",
+			"type": "char32"
+		},
+		"spellColor": {
+			"value": "0",
+			"type": "int"
+		},
+		"useColorMatching": {
+			"value": "0",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::StateMachineComponent": {
+		"NumStates": {
+			"value": "2",
+			"type": "int"
+		},
+		"CurrentState": {
+			"value": "Idle",
+			"type": "char32"
+		},
+		"TimeInState": {
+			"value": "0",
+			"type": "float"
+		},
+		"State[0].name": {
+			"value": "Idle",
+			"type": "char32"
+		},
+		"State[0].onEnter": {
+			"value": "Idle_enter",
+			"type": "char64"
+		},
+		"State[0].onUpdate": {
+			"value": "Idle_update",
+			"type": "char64"
+		},
+		"State[0].onExit": {
+			"value": "Idle_exit",
+			"type": "char64"
+		},
+		"State[1].name": {
+			"value": "Hurt",
+			"type": "char32"
+		},
+		"State[1].onEnter": {
+			"value": "Hurt_enter",
+			"type": "char64"
+		},
+		"State[1].onUpdate": {
+			"value": "Hurt_update",
+			"type": "char64"
+		},
+		"State[1].onExit": {
+			"value": "Hurt_exit",
 			"type": "char64"
 		}
 	},

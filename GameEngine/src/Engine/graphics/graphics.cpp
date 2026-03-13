@@ -126,7 +126,16 @@ namespace Graphics
         else if (channels_ == 4)
             format = GL_RGBA;
 
+        // Single-channel textures (e.g. font atlases) have 1-byte rows that are
+        // not guaranteed to be 4-byte aligned. Set GL_UNPACK_ALIGNMENT to 1 so
+        // OpenGL reads each row tightly packed, then restore the default.
+        if (channels_ == 1)
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+        if (channels_ == 1)
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // restore default
 
         glBindTexture(GL_TEXTURE_2D, 0);
         return true;
