@@ -17,7 +17,7 @@ namespace Eno
             EnemyColorRegistry.Register(ID, 2); // 2 = Ice / Blue
         }
 
-        public void Update() { _self.velocity = new Vector2(0f, 0f); }
+        public void Update() { _self!.velocity = new Vector2(0f, 0f); }
 
         public void Idle_enter() { }
         public void Idle_update() { }

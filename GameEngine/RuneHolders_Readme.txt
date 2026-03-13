@@ -10,214 +10,105 @@ Connect runes together to cast spells and defeat monsters in the Witch’s mansi
 1. Game Concept
 ----------------------------------------------------------
 
-Draw runes to cast spells.
+Connect runes to cast spells.
 
-Chain spells together to create new effects.
+Identify the enemy with the highest threat and cast the spell that is effective against that enemy's element to damage it.
 
-Experiment with different combinations to find devastating synergies.
+Fight various monsters in an action packed top down dungeon crawler.
 
-Fighting various monsters in an action-packed dungeon crawler setting
+The goal is to immerse the player in the fantasy of drawing spell patterns to perform magic and defeat elemental monsters.
 
-The goal is to empower the player with freedom of expression in combat, blending artful gesture 
-input with tactical spellcasting.
-
-----------------------------------------------------------
-2. Current State of Demo ( Inputs and Usage )
-----------------------------------------------------------
 ---------------------------
-2.a Controls
+2 Controls
 ---------------------------
 
 ---General---
 
-WASD → Move player (if spawned).
-SPACEBAR → Player dash (if spawned).
+WASD → Move player
+E → Interact
+F → Open/close spellbook
+HOLD LEFT-CLICK → Spawn Runes
+- Connect white runes together to cast a respective spell colour
 
-
----Player Transform---
-
-1 → Scale Up
-2 → Scale Down
-3 → Rotate Clockwise
-4 → Rotate Counter-clockwise
-
-
----Audio---
-
-P / L → Select between two audio tracks
-O → Play/Stop selected track
-
-**** Stop audio with O before switching tracks ****
-
-
----Physics & Collision Testing ---
-
-TESTING COLLISION DETECTION:
-
-The demo includes test objects (pushable boxes) for collision testing:
-
-Dynamic collision response with momentum transfer
-Objects can push each other based on mass and velocity
-Collision normal determine separation direction
-
-Velocity: Current movement speed (X/Y)
-Mass: Affects collision response (heavier = harder to push)
-Drag: Air resistance/friction factor
-Use Gravity: Toggle gravity for the entity
-Is Kinematic: If true, object won't be pushed by physics
-
----Level Editor---
-
-WASD → Move editor camera view
-Play Button → Enter runtime/test mode (does NOT auto-save scene)
-Stop Button → Exit runtime mode and reload scene from last save
-
-
----Scene Management---
-
-Click scene name in Scene List → Switch to that scene
-Create New Scene → Creates new scene with auto-incremented name
-Rename Scene → Rename the active scene
-Save Scene → Manually save current scene state
-Delete Scene → Permanently delete active scene (with confirmation)
-
-**** Stop button reloads the scene - any changes in Play mode are discarded ****
 ---------------------------
-2.b Features
+4. How To Play
 ---------------------------
 
----Cursor System---
+--Tutorial & Acquiring 1st Spell--
 
-Cursor determines entity spawn location.
-Adjustable speed via Main tab.
+- Press Play
+- Read through dialogue (Press E to advance dialogue) or skip dialogue (Press ESC)
+- Walk to Collectible and Interact (Press E)
+- Open Spellbook (Press F)
+- Close spellbook (Press F)
+- Enter next room
+- Watch tutorial (Press E to exit)
+- Open the rune wheel, and connect runes together to draw red spell
+- Cast the red spell on the Red Dummy
+- Walk to next room
+- Avoid enemies in following rooms and draw the red spell to kill them
 
+--Acquiring 2nd Spell--
 
----Main Controls Tab---
+- Read through dialogue (Press E to advance dialogue) or skip dialogue (Press ESC)
+- Walk to Collectible and Interact (Press E)
+- Watch tutorial (Press E to exit)
+- Open the rune wheel, and connect runes together to draw yellow spell
+- Cast the yellow spell on the Yellow Dummy
+- Walk to next room
+- Avoid enemies in following rooms and draw both the red and yellow spell to kill them
 
-PLAYER:
-• Spawn Player → Creates player at indicator position with config from file
-• Destroy Player → Removes player from scene
-• Player stats loaded from player_config.txt
+--Acquiring 3rd Spell--
 
-ENTITY SPAWNING:
-• Spawn Entity → Creates entity at indicator position
-• Entity settings: Width, Height, Shape (Rectangle/Circle), Color
-• Optional colliders: None, Circle, or Rectangle
-• "Show Colliders" toggle → Visualize collision boundaries
-
-COLLIDER OPTIONS:
-• Circle collider: Adjustable radius
-• Rectangle collider: Adjustable width/height + adds PhysicsComponent (pushable)
-• Entities with rectangle colliders can be pushed by player
-
-STRESS TESTING:
-• Spawn 2500 Entities → Creates 2500 random entities for performance testing
-• Entities spawn at random positions with random sizes/colors
-
-
----Edit Tab---
-
-ALL ENTITIES LIST:
-• Shows total entity count
-• Lists all entities with ID and name
-• Click entity → Opens in Entity Inspector
-
-DELETE FUNCTION:
-• "Delete All Entities" button (except player)
-• Useful for clearing test entities
+- Read through dialogue (Press E to advance dialogue) or skip dialogue (Press ESC)
+- Walk to Collectible and Interact (Press E)
+- Watch tutorial (Press E to exit)
+- Open the rune wheel, and connect runes together to draw blue spell
+- Cast the blue spell on the Blue Dummy
+- Walk to next room
+- Avoid enemies in following rooms and draw all 3 spells to kill them
 
 
----FPS Panel---
-
-PERFORMANCE METRICS:
-• Current FPS (frames per second)
-• Frame time in milliseconds
-• Per-system timing breakdown (Entities, Graphics, ImGui)
-• Percentage of frame time per system
-
-DEBUG BUTTONS:
-• Show Entity Count → Displays total entities in scene
-• Show Entity Characteristics → Lists all entity components
+- Win: Reach the final room without dying
+- Lose: Die before reaching the final room
 
 
----Prefabs Tab---
+--Playable Features--
 
-CREATE PREFABS:
-• Enter prefab name
-• Set transform/size (Position X/Y, Width, Height)
-• Choose shape (Rectangle, Circle)
-• Choose color
-• Toggle "Has Collider" option
-• Click "Save New or Existing Prefabs" to save
+Rune Wheel
+   - Connect runes together using the mouse to form a spell pattern
 
-LOAD PREFABS:
-• Click "Load Existing Prefab" to scan saves directory
-• Select prefab from dropdown list
-• Selected prefab highlighted for placement
+Spells
+- Red Rupture Mark
+   - Explosion spell that damages red enemies
+- Yellow Rupture Mark
+   - Explosion spell that damages yellow enemies
+- Blue Rupture Mark
+   - Explosion spell that damages blue enemies
 
-SPAWN PREFABS:
-• Click "Spawn Prefab" → Spawns at default position
-• OR Select prefab → Click in Game View to place at cursor position
-• Click "Cancel Placement" to stop click-to-place mode
+Enemies
+- Slug
+   - A slow, relentless enemy that hurts the player on contact
+- Bat
+   - A fast, viscious animal that winds up and dashes at the player
+- Nullfly
+   - A small, unmoving critter that blocks a rune
 
-PREFAB FILES:
-• Can edit existing prefabs by modifying settings and saving with same name
+Spellbook
+  - Controls
+  - Step-by-step guide on how to cast a spell
+  - Numbered example guide on how to draw each spell
 
-**** Loading an unsaved prefab name will crash to test crash logger ****
-**** THIS IS INTENTIONAL BEHAVIOR FOR TESTING ****
+Collectibles
+  - Go near an object on the ground and press E
 
+Dialogue
+  - Press E to advance dialogue
+  - Press ESC to skip dialogue
 
----Scene Panel---
-
-Located at top-left of editor interface
-
-SCENE FILES:
-• Displays current active scene name
-• Lists all available scene files (.txt)
-• Click scene name to switch scenes
-
-SCENE OPERATIONS:
-• Create new scene → Auto-incremented name (New Scene (1), New Scene (2), etc.)
-• Rename Scene → Rename active scene file
-• Save Scene → Manually save current state
-• Delete Scene → Permanently remove scene (with confirmation)
-
-SCENE LOADING:
-• Application loads last scene from CurrentSceneSaved.txt on startup
-• Switching scenes updates CurrentSceneSaved.txt automatically
-• If CurrentSceneSaved.txt is deleted, creates new default scene
-
-**** Creating multiple new scenes won't overwrite - names auto-increment ****
-
-
----Hierarchy Tab---
-
-Spawn Player → Add player character to scene
-Add Root Node → Create new parent entity (top-level)
-Add Child Node → Create child entity under selected parent
-Delete Selected Node → Remove entity and all children (recursive deletion)
-Print Tree to Terminal → Debug output of full hierarchy structure
-**** Deleting a parent deletes ALL children without individual confirmation ****
-
-
----Assets Browser---
-
-Drag & Drop → Import textures (PNG, JPG, JPEG)
-Click texture → Select for sprite sheet creation or entity assignment
-Texture names → Use in DrawInfo component for entity rendering
-
-
----Entity Inspector---
-
-Displays when entity is selected from Hierarchy or Edit tab
-Components shown: Name, Transform, Physics, DrawInfo, Collision, Player
-Drag controls → Adjust component values in real-time
-All changes → Apply immediately to scene
-
-**** Changes made during Play mode are temporary (lost on Stop) ****
 
 ----------------------------------------------------------
-3. Team Roster
+5. Team Roster
 ----------------------------------------------------------
 
 RuneHolders
@@ -230,3 +121,5 @@ Caven KOH ( Physics Champion )
 Zhe An LEE ( Engine Champion )
 Yun Ji KOE ( Level Editor Champion )
 Kimberly Charlotte Madlangbayan AMBROSIO ( Collision Champion )
+
+

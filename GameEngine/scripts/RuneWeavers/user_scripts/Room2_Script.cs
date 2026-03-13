@@ -2,7 +2,7 @@ namespace Eno
 {
     public class Room2_Script : ScriptBase
     {
-        private static Room2_Script _instance;
+        private static Room2_Script? _instance;
         private bool  _roomCleared  = false;
         private bool  _wavesStarted = false;
 

@@ -4,7 +4,7 @@ namespace Eno
     {
         private const float WaveDelay = 10f;
 
-        private static Room5_Script _instance;
+        private static Room5_Script? _instance;
 
         private int   _currentWave  = 0;  // 0 = none spawned yet
         private bool  _wavesStarted = false;

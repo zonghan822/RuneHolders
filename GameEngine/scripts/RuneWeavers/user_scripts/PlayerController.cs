@@ -12,7 +12,7 @@ namespace Eno
         public float castDuration   = 0.5f;
         public float hurtDuration   = 0.4f;
 
-        private Actor     _player;
+        private Actor     _player = null!;
         private Canvas?   _canvas       = null;
         private Sprite2D? _hpBarFull;
         private bool      _hpBarReady   = false;
@@ -33,7 +33,7 @@ namespace Eno
 
         public void Begin()
         {
-            _player = Self<Actor>();
+            _player = Self<Actor>()!;
 
             // ACTOR nodes have physics — keep gravity off for top-down movement
             _player.useGravity  = false;

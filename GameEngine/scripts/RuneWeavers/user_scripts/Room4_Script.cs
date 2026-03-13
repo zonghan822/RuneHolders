@@ -7,8 +7,7 @@ namespace Eno
         private uint _spellbookID = 0;
         private uint _exitDoorID  = 0;
 
-        private bool  _postDialogueActivated = false;
-        private bool  _scrollPickedUp        = false;
+        private bool  _scrollPickedUp = false;
 
         private Canvas?    _videoCanvas = null;
         private VideoNode? _videoHolder = null;

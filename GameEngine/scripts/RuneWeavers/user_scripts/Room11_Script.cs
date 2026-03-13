@@ -4,7 +4,7 @@ namespace Eno
     {
         private const float WaveDelay = 10f;
 
-        private static Room11_Script _instance;
+        private static Room11_Script? _instance;
 
         private int   _currentWave  = 0;
         private bool  _wavesStarted = false;

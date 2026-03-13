@@ -12,7 +12,7 @@ namespace Eno
             "Door15Bto16C",
         };
 
-        private static Room15B_Script _instance;
+        private static Room15B_Script? _instance;
 
         private int   _currentWave  = 0;
         private bool  _wavesStarted = false;
