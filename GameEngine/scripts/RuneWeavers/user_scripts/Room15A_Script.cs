@@ -77,15 +77,18 @@ namespace Eno
             switch (index)
             {
                 case 0:
-                    SpawnPrefab("NullflyRedNW",  cx,        cy);
+                    NullflyBase_Script.PendingRuneIndex = 5;
+                    SpawnPrefab("NullflyRed",    cx,        cy);
                     break;
                 case 1:
                     SpawnPrefab("SlugRed",       cx - 150f, cy);
-                    SpawnPrefab("NullflyBlueSE", cx + 150f, cy);
+                    NullflyBase_Script.PendingRuneIndex = 2;
+                    SpawnPrefab("NullflyBlue",   cx + 150f, cy);
                     break;
                 case 2:
                     SpawnPrefab("SlugYellow",    cx - 150f, cy);
-                    SpawnPrefab("NullflyRedNW",  cx + 150f, cy);
+                    NullflyBase_Script.PendingRuneIndex = 5;
+                    SpawnPrefab("NullflyRed",    cx + 150f, cy);
                     break;
             }
         }

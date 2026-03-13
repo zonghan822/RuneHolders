@@ -82,12 +82,14 @@ namespace Eno
                     SpawnPrefab("BatYellow",      cx + 150f, cy);
                     break;
                 case 1:
-                    SpawnPrefab("NullflyYellowE", cx - 200f, cy);
+                    NullflyBase_Script.PendingRuneIndex = 1;
+                    SpawnPrefab("NullflyYellow",  cx - 200f, cy);
                     SpawnPrefab("BatYellow",      cx,        cy);
                     SpawnPrefab("SlugRed",        cx + 200f, cy);
                     break;
                 case 2:
-                    SpawnPrefab("NullflyBlueE",   cx - 200f, cy);
+                    NullflyBase_Script.PendingRuneIndex = 1;
+                    SpawnPrefab("NullflyBlue",    cx - 200f, cy);
                     SpawnPrefab("BatYellow",      cx,        cy);
                     SpawnPrefab("BatYellow",      cx + 200f, cy);
                     break;
