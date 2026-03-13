@@ -35,7 +35,7 @@ namespace Eno
             for (int i = 0; i < _scrollNodes.Length; i++)
                 try { _scrollNodes[i] = GetNode<Node2D>(Scroll_Dialouge_Script.ScrollNames[i]); } catch { }
 
-            _spellbookUIID = Bridge.GetNode("SPELLBOOK_UI_PLACEHOLDER");
+            _spellbookUIID = Bridge.GetNode("Spellbook");
         }
 
         public void Update()
