@@ -68,6 +68,18 @@ namespace Bridge
                 a->pitchScale_ = static_cast<double>(pitch);
         }
 
+        ENGINE_API void __stdcall SetAudioSpatial(uint32_t sceneObjectID, int32_t spatial)
+        {
+            if (auto* a = getAudio(sceneObjectID))
+                a->spatialAudio_ = (spatial != 0);
+        }
+
+        ENGINE_API void __stdcall SetAudioMaxDistance(uint32_t sceneObjectID, float distance)
+        {
+            if (auto* a = getAudio(sceneObjectID))
+                a->maxAudibleDistance_ = distance;
+        }
+
         ENGINE_API void __stdcall SetGroupVolume(const char* groupName, float volume)
         {
             if (!gEngine) return;

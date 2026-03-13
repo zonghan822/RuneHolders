@@ -1,7 +1,7 @@
 /*============================================================================================
 * All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         imGui.hpp
-* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author       Yun Ji Koe (yunji.koe@digipen.edu) 100%
 * @date         01-10-2025
 * @brief        This file contains the functions that are required for Dear ImGui displays,
 *				which includes the init, update and terminate functions.

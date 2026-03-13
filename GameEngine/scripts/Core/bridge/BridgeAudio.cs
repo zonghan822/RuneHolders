@@ -27,6 +27,14 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetAudioPitch(uint sceneObjectID, float pitch);
 
+        // Enable/disable spatial audio (distance attenuation + panning) for the audio node
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetAudioSpatial(uint sceneObjectID, int spatial);
+
+        // distance: world units at which volume reaches zero
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetAudioMaxDistance(uint sceneObjectID, float distance);
+
         // groupName: "BGM" or "SFX", volume: 0 – 100
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern void SetGroupVolume(string groupName, float volume);
