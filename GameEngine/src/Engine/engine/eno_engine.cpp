@@ -133,6 +133,7 @@ namespace Engine
 	{
 		// Standalone game is always in play mode
 		setIsPlaying(true);
+		bus_.publish(Editor::PlayScene{});  // prepare audio components (load sounds into FMOD)
 
 		while (!window_.shouldClose())
 		{
