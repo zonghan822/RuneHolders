@@ -19,7 +19,7 @@ namespace Eno
             EnemyColorRegistry.Register(ID, 1); // 1 = Light / Yellow
         }
 
-        public void Update() { _self.velocity = 0.0f; }
+        public void Update() { _self.velocity = new Vector2(0f, 0f); }
 
         public void Idle_enter() { }
         public void Idle_update() { }
