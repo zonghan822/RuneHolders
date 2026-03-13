@@ -139,14 +139,6 @@ namespace Bridge
             cfg.write();
         }
 
-        // Play a sound immediately by name without needing a scene entity.
-        // groupName: "SFX" or "BGM", soundName: asset name e.g. "Typing_01"
-        ENGINE_API void __stdcall AudioPlayInstant(const char* groupName, const char* soundName)
-        {
-            if (!gEngine) return;
-            gEngine->getEventBus().publish(Audio::PlayInstant{ std::string(groupName), std::string(soundName) });
-        }
-
         // Play a looping sound by name. The channel is tracked internally so it
         // can be stopped later with AudioStopInstant. Calling again while already
         // playing restarts the sound from the beginning.
@@ -184,6 +176,69 @@ namespace Bridge
                 gEngine->getAudioManager().setGroupLowPassFilter(std::string(groupName), cutoff);
             }
             catch (...) {}
+        }
+
+        // Play a sound immediately by name without needing a scene entity.
+        // groupName: "SFX" or "BGM", soundName: asset name e.g. "Typing_01"
+        ENGINE_API void __stdcall AudioPlayInstant(uint32_t sceneObjectID, float x, float y)
+        {
+            if (!gEngine) return;
+
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(sceneObjectID);
+            ECS::EntityManager& entMng = gEngine->getEntityManager();
+
+            // Get Audio Component of source
+            auto& ac = node->entity_.get<ECSComponents::AudioComponent>(entMng);
+
+            // Construct audio source vec2
+            Math::eVec2 v2{ x, y };
+
+            // Play relative to the camera
+            std::vector<Editor::Node*> nodes = gEngine->getEnoEditor().getSceneTree().getAllNodes();
+            for (const auto& node : nodes)
+            {
+                // Find the first entity with a camera and play relative to it
+                if (node->entity_.has<ECSComponents::CameraComponent>(entMng))
+                {
+                    // Get camera pos
+                    auto camPos = node->entity_.get<ECSComponents::CameraComponent>(entMng).position;
+
+                    gEngine->getAudioManager().play(ac, v2, camPos);
+                }
+            }
+        }
+
+        // Assign a sound file to a sound component
+        ENGINE_API void __stdcall SetSound(uint32_t id, const char* soundName)
+        {
+            if (!gEngine) return;
+
+            FMOD::Sound* sound{};
+
+            // Get requested sound
+            auto sounds = gEngine->getAudioManager().getSounds();
+            auto it = sounds.find(soundName);
+            if (it == sounds.end())
+                return;
+
+            sound = it->second;
+
+            // Assign sound
+            ECS::EntityManager& entMng = gEngine->getEntityManager();
+            Editor::EnoSceneTree& tree = gEngine->getEnoEditor().getSceneTree();
+            Editor::Node* node = tree.getNodeBySceneObjectID(id);
+
+            if (node)
+            {
+                if (node->entity_.has<ECSComponents::AudioComponent>(entMng))
+                    node->entity_.get<ECSComponents::AudioComponent>(entMng).audioMod_.sound_ = sound;
+                else
+                    std::cerr << "No audio component available to the node that is being set a sound with!" << std::endl;
+            }
+            else
+            {
+                std::cerr << "Invalid node ID passed for setting a sound!" << std::endl;
+            }
         }
     }
 }

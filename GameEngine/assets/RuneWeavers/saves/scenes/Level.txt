@@ -175,6 +175,27 @@
 		"PrefabName": {  }
 	}
 
+	[Room3]
+	{
+		"ID": { 229 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+		}
+		"Script": { Room3_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 0 }
+		"PrefabName": {  }
+	}
+
 	[Narrative]
 	{
 		"ID": { 286 }
@@ -241,27 +262,6 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
-		"PrefabName": {  }
-	}
-
-	[Room3]
-	{
-		"ID": { 229 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-		}
-		"Script": { Room3_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 0 }
 		"PrefabName": {  }
 	}
 
@@ -355,6 +355,27 @@
 			}
 		}
 		"Script": { Room4_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 0 }
+		"PrefabName": {  }
+	}
+
+	[Room5]
+	{
+		"ID": { 231 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+		}
+		"Script": { Room5_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -3396,7 +3417,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -3429,11 +3450,11 @@
 			{
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
+				"Is Trigger": <bool> { 1 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 60 }
+				"Radius": <float> { 72 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -3453,45 +3474,25 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 96 }
-				"Frame Height": <int> { 96 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 1 }
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 2 }
-				"Current Animation": <char64> { Idle }
-				"Anim0 Name": <char64> { Idle }
-				"Anim0 Texture": <texchar240> { Dummies-Blue }
-				"Anim0 FrameW": <int> { 96 }
-				"Anim0 FrameH": <int> { 96 }
-				"Anim0 Rows": <int> { 1 }
-				"Anim0 Cols": <int> { 1 }
-				"Anim0 Duration": <float> { 0.1 }
-				"Anim0 Looping": <bool> { 1 }
-				"Anim1 Name": <char64> { Hurt }
-				"Anim1 Texture": <texchar240> { Dummies-Blue-Hurt }
-				"Anim1 FrameW": <int> { 96 }
-				"Anim1 FrameH": <int> { 96 }
-				"Anim1 Rows": <int> { 1 }
-				"Anim1 Cols": <int> { 1 }
-				"Anim1 Duration": <float> { 0.1 }
-				"Anim1 Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 2 }
-				"CurrentState": <char32> { Idle }
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
 				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Idle }
-				"State[0].onEnter": <char64> { Idle_enter }
-				"State[0].onUpdate": <char64> { Idle_update }
-				"State[0].onExit": <char64> { Idle_exit }
-				"State[1].name": <char32> { Hurt }
-				"State[1].onEnter": <char64> { Hurt_enter }
-				"State[1].onUpdate": <char64> { Hurt_update }
-				"State[1].onExit": <char64> { Hurt_exit }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
 			}
 		}
 		"Script": { }
@@ -3735,75 +3736,6 @@
 		"Enabled": { true }
 		"NodeType": { 4 }
 		"PrefabName": { LeftDoor }
-	}
-
-	[DefeatScreen]
-	{
-		"ID": { 380 }
-		"Layer": { 1 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 3200 | y : 1750 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 384 }
-				"Height": <float> { 155 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { UI-DefeatText }
-				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
-		}
-		"Script": { }
-		"Parent": { 377 }
-		"Children": { 381, 382, 383 }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 3 }
-		"PrefabName": {  }
 	}
 
 	[Door2to1]
@@ -4409,7 +4341,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -4442,11 +4374,11 @@
 			{
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
+				"Is Trigger": <bool> { 1 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 60 }
+				"Radius": <float> { 72 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -4466,45 +4398,25 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 96 }
-				"Frame Height": <int> { 96 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 1 }
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 2 }
-				"Current Animation": <char64> { Idle }
-				"Anim0 Name": <char64> { Idle }
-				"Anim0 Texture": <texchar240> { Dummies-Yellow }
-				"Anim0 FrameW": <int> { 96 }
-				"Anim0 FrameH": <int> { 96 }
-				"Anim0 Rows": <int> { 1 }
-				"Anim0 Cols": <int> { 1 }
-				"Anim0 Duration": <float> { 0.1 }
-				"Anim0 Looping": <bool> { 1 }
-				"Anim1 Name": <char64> { Hurt }
-				"Anim1 Texture": <texchar240> { Dummies-Yellow-Hurt }
-				"Anim1 FrameW": <int> { 96 }
-				"Anim1 FrameH": <int> { 96 }
-				"Anim1 Rows": <int> { 1 }
-				"Anim1 Cols": <int> { 1 }
-				"Anim1 Duration": <float> { 0.1 }
-				"Anim1 Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 2 }
-				"CurrentState": <char32> { Idle }
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
 				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Idle }
-				"State[0].onEnter": <char64> { Idle_enter }
-				"State[0].onUpdate": <char64> { Idle_update }
-				"State[0].onExit": <char64> { Idle_exit }
-				"State[1].name": <char32> { Hurt }
-				"State[1].onEnter": <char64> { Hurt_enter }
-				"State[1].onUpdate": <char64> { Hurt_update }
-				"State[1].onExit": <char64> { Hurt_exit }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
 			}
 		}
 		"Script": { }
@@ -11928,7 +11840,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -11961,11 +11873,11 @@
 			{
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
+				"Is Trigger": <bool> { 1 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 60 }
+				"Radius": <float> { 72 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -11985,45 +11897,25 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 96 }
-				"Frame Height": <int> { 96 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 1 }
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 2 }
-				"Current Animation": <char64> { Idle }
-				"Anim0 Name": <char64> { Idle }
-				"Anim0 Texture": <texchar240> { Dummies-Blue }
-				"Anim0 FrameW": <int> { 96 }
-				"Anim0 FrameH": <int> { 96 }
-				"Anim0 Rows": <int> { 1 }
-				"Anim0 Cols": <int> { 1 }
-				"Anim0 Duration": <float> { 0.1 }
-				"Anim0 Looping": <bool> { 1 }
-				"Anim1 Name": <char64> { Hurt }
-				"Anim1 Texture": <texchar240> { Dummies-Blue-Hurt }
-				"Anim1 FrameW": <int> { 96 }
-				"Anim1 FrameH": <int> { 96 }
-				"Anim1 Rows": <int> { 1 }
-				"Anim1 Cols": <int> { 1 }
-				"Anim1 Duration": <float> { 0.1 }
-				"Anim1 Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 2 }
-				"CurrentState": <char32> { Idle }
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
 				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Idle }
-				"State[0].onEnter": <char64> { Idle_enter }
-				"State[0].onUpdate": <char64> { Idle_update }
-				"State[0].onExit": <char64> { Idle_exit }
-				"State[1].name": <char32> { Hurt }
-				"State[1].onEnter": <char64> { Hurt_enter }
-				"State[1].onUpdate": <char64> { Hurt_update }
-				"State[1].onExit": <char64> { Hurt_exit }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
 			}
 		}
 		"Script": { }
@@ -12043,7 +11935,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -12076,11 +11968,11 @@
 			{
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
+				"Is Trigger": <bool> { 1 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 60 }
+				"Radius": <float> { 72 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -12100,45 +11992,25 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 96 }
-				"Frame Height": <int> { 96 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 1 }
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 2 }
-				"Current Animation": <char64> { Idle }
-				"Anim0 Name": <char64> { Idle }
-				"Anim0 Texture": <texchar240> { Dummies-Yellow }
-				"Anim0 FrameW": <int> { 96 }
-				"Anim0 FrameH": <int> { 96 }
-				"Anim0 Rows": <int> { 1 }
-				"Anim0 Cols": <int> { 1 }
-				"Anim0 Duration": <float> { 0.1 }
-				"Anim0 Looping": <bool> { 1 }
-				"Anim1 Name": <char64> { Hurt }
-				"Anim1 Texture": <texchar240> { Dummies-Yellow-Hurt }
-				"Anim1 FrameW": <int> { 96 }
-				"Anim1 FrameH": <int> { 96 }
-				"Anim1 Rows": <int> { 1 }
-				"Anim1 Cols": <int> { 1 }
-				"Anim1 Duration": <float> { 0.1 }
-				"Anim1 Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 2 }
-				"CurrentState": <char32> { Idle }
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
 				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Idle }
-				"State[0].onEnter": <char64> { Idle_enter }
-				"State[0].onUpdate": <char64> { Idle_update }
-				"State[0].onExit": <char64> { Idle_exit }
-				"State[1].name": <char32> { Hurt }
-				"State[1].onEnter": <char64> { Hurt_enter }
-				"State[1].onUpdate": <char64> { Hurt_update }
-				"State[1].onExit": <char64> { Hurt_exit }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
 			}
 		}
 		"Script": { }
@@ -12158,7 +12030,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -12191,11 +12063,11 @@
 			{
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
+				"Is Trigger": <bool> { 1 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 60 }
+				"Radius": <float> { 72 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -12215,45 +12087,25 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 96 }
-				"Frame Height": <int> { 96 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 1 }
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 2 }
-				"Current Animation": <char64> { Idle }
-				"Anim0 Name": <char64> { Idle }
-				"Anim0 Texture": <texchar240> { Dummies-Blue }
-				"Anim0 FrameW": <int> { 96 }
-				"Anim0 FrameH": <int> { 96 }
-				"Anim0 Rows": <int> { 1 }
-				"Anim0 Cols": <int> { 1 }
-				"Anim0 Duration": <float> { 0.1 }
-				"Anim0 Looping": <bool> { 1 }
-				"Anim1 Name": <char64> { Hurt }
-				"Anim1 Texture": <texchar240> { Dummies-Blue-Hurt }
-				"Anim1 FrameW": <int> { 96 }
-				"Anim1 FrameH": <int> { 96 }
-				"Anim1 Rows": <int> { 1 }
-				"Anim1 Cols": <int> { 1 }
-				"Anim1 Duration": <float> { 0.1 }
-				"Anim1 Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 2 }
-				"CurrentState": <char32> { Idle }
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
 				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Idle }
-				"State[0].onEnter": <char64> { Idle_enter }
-				"State[0].onUpdate": <char64> { Idle_update }
-				"State[0].onExit": <char64> { Idle_exit }
-				"State[1].name": <char32> { Hurt }
-				"State[1].onEnter": <char64> { Hurt_enter }
-				"State[1].onUpdate": <char64> { Hurt_update }
-				"State[1].onExit": <char64> { Hurt_exit }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
 			}
 		}
 		"Script": { }
@@ -12273,7 +12125,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -12306,11 +12158,11 @@
 			{
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 0 }
+				"Is Trigger": <bool> { 1 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 0 }
+				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 60 }
+				"Radius": <float> { 72 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -12330,45 +12182,25 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 96 }
-				"Frame Height": <int> { 96 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 1 }
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 2 }
-				"Current Animation": <char64> { Idle }
-				"Anim0 Name": <char64> { Idle }
-				"Anim0 Texture": <texchar240> { Dummies-Blue }
-				"Anim0 FrameW": <int> { 96 }
-				"Anim0 FrameH": <int> { 96 }
-				"Anim0 Rows": <int> { 1 }
-				"Anim0 Cols": <int> { 1 }
-				"Anim0 Duration": <float> { 0.1 }
-				"Anim0 Looping": <bool> { 1 }
-				"Anim1 Name": <char64> { Hurt }
-				"Anim1 Texture": <texchar240> { Dummies-Blue-Hurt }
-				"Anim1 FrameW": <int> { 96 }
-				"Anim1 FrameH": <int> { 96 }
-				"Anim1 Rows": <int> { 1 }
-				"Anim1 Cols": <int> { 1 }
-				"Anim1 Duration": <float> { 0.1 }
-				"Anim1 Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 2 }
-				"CurrentState": <char32> { Idle }
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
 				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Idle }
-				"State[0].onEnter": <char64> { Idle_enter }
-				"State[0].onUpdate": <char64> { Idle_update }
-				"State[0].onExit": <char64> { Idle_exit }
-				"State[1].name": <char32> { Hurt }
-				"State[1].onEnter": <char64> { Hurt_enter }
-				"State[1].onUpdate": <char64> { Hurt_update }
-				"State[1].onExit": <char64> { Hurt_exit }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
 			}
 		}
 		"Script": { }
