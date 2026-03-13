@@ -14,6 +14,10 @@ namespace Eno
         // How close (world units) the bat must be to a waypoint before advancing
         private const float WaypointReachDist = 8f;
 
+        // Contact damage: 20% of player max HP per hit, 1-second i-frames
+        private const float ContactDamagePercent = 0.2f;
+        private const float ContactIFrameDuration = 1.0f;
+
         public void Begin()
         {
             _player = GetNode<Actor>("Player");
@@ -113,6 +117,10 @@ namespace Eno
 
             float speed = Bridge.GetChaseSpeed(ID);
             Bridge.SetVelocity(ID, dx / dist * speed, dy / dist * speed);
+
+            // Deal contact damage if touching the player
+            if (Bridge.IsColliding(ID, _player.ID))
+                EnemyCombat.TryDealContactDamage(_player.ID, ContactDamagePercent, ContactIFrameDuration);
         }
 
         public void Chase_exit()

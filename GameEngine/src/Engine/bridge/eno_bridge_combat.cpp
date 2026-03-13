@@ -67,5 +67,37 @@ namespace Bridge
             if (auto* h = getHealth(sceneObjectID))
                 h->heal(amount);
         }
+
+        // Deal flat damage; returns true if the entity died.
+        // Honours invulnerability — returns false without damaging if invulnerable.
+        ENGINE_API bool __stdcall TakeDamageFlat(uint32_t sceneObjectID, float amount)
+        {
+            auto* h = getHealth(sceneObjectID);
+            return h ? h->takeDamage(amount) : false;
+        }
+
+        ENGINE_API bool __stdcall IsInvulnerable(uint32_t sceneObjectID)
+        {
+            auto* h = getHealth(sceneObjectID);
+            return h ? h->invulnerable : false;
+        }
+
+        ENGINE_API void __stdcall SetInvulnerable(uint32_t sceneObjectID, bool value)
+        {
+            if (auto* h = getHealth(sceneObjectID))
+                h->invulnerable = value;
+        }
+
+        ENGINE_API float __stdcall GetInvulnerabilityTimer(uint32_t sceneObjectID)
+        {
+            auto* h = getHealth(sceneObjectID);
+            return h ? h->invulnerabilityTimer : 0.f;
+        }
+
+        ENGINE_API void __stdcall SetInvulnerabilityTimer(uint32_t sceneObjectID, float value)
+        {
+            if (auto* h = getHealth(sceneObjectID))
+                h->invulnerabilityTimer = value;
+        }
     }
 }

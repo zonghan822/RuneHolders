@@ -27,6 +27,8 @@ namespace Eno
 
         public void Update()
         {
+            EnemyCombat.TickInvulnerability(_player.ID, Time.deltaTime);
+
             if (_isAttacking) return;
 
             float dt = Time.deltaTime;
