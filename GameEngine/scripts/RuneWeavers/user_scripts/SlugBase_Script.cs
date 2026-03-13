@@ -57,8 +57,8 @@ namespace Eno
         }
         public void Idle_exit() { }
 
-        public void Walk_enter() { _pathTimer = pathRefreshInterval; }
-        public void Walk_update()
+        public void Chase_enter() { _pathTimer = pathRefreshInterval; }
+        public void Chase_update()
         {
             FindPlayer();
             if (_self == null || _player == null) return;
@@ -112,7 +112,7 @@ namespace Eno
                 }
             }
         }
-        public void Walk_exit()
+        public void Chase_exit()
         {
             _self?.clearPath();
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
