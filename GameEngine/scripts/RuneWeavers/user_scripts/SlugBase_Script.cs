@@ -26,12 +26,13 @@ namespace Eno
         private const float  HP_BAR_OFFSET_Y     = -50f;
         public float contactDamageCooldown = 1.0f;
 
-        private float  _pathTimer    = 0f;
-        private float  _hurtTimer    = 0f;
-        private float  _deathTimer   = 0f;
-        private float  _spawnTimer   = 0f;
-        private float  _contactTimer = 0f;
-        private bool   _isDying      = false;
+        private float  _pathTimer       = 0f;
+        private float  _hurtTimer       = 0f;
+        private float  _deathTimer      = 0f;
+        private float  _spawnTimer      = 0f;
+        private float  _contactTimer    = 0f;
+        private bool   _isDying         = false;
+        private bool   _deathTriggered  = false;
 
         public void Begin()
         {
@@ -63,6 +64,14 @@ namespace Eno
         {
             if (_isDying || _self == null) return;
 
+            // Force death if health reached zero outside of Hurt state
+            if (!_deathTriggered && _self.health <= 0f)
+            {
+                _deathTriggered = true;
+                _self.changeState("Death");
+                return;
+            }
+
             if (_hpBarEmpty != null || _hpBarFull != null)
             {
                 float hx  = _self.position.x;
@@ -87,6 +96,7 @@ namespace Eno
 
             if (_self.isColliding(_player))
             {
+                _self.velocity = new Vector2(0f, 0f);
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
                 _player.changeState("Hurt");
                 _self.changeState("Idle");
