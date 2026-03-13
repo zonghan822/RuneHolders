@@ -27,8 +27,9 @@ namespace Eno
         // Spell damage — written to the DamageComponent on Begin() so spells can read it via bridge
         public float damage = 10f;
 
-        private Node2D?[] _scrollNodes = Array.Empty<Node2D?>();
-
+        private Node2D?[] _scrollNodes    = Array.Empty<Node2D?>();
+        private uint      _spellbookUIID = 0;   // TODO: replace "SPELLBOOK_UI_PLACEHOLDER"
+        private bool      _spellbookOpen = false;
 
         public void Begin()
         {
@@ -48,7 +49,8 @@ namespace Eno
             _scrollNodes = new Node2D?[Scroll_Dialouge_Script.ScrollNames.Length];
             for (int i = 0; i < _scrollNodes.Length; i++)
                 try { _scrollNodes[i] = GetNode<Node2D>(Scroll_Dialouge_Script.ScrollNames[i]); } catch { }
-            
+
+            _spellbookUIID = Bridge.GetNode("Spellbook");
         }
 
         private void UpdateHealthBar()
@@ -90,6 +92,13 @@ namespace Eno
             {
                 _player.velocity = new Vector2(0f, 0f);
                 return;
+            }
+
+            // F key — toggle spellbook UI
+            if (Input.isKeyPressed(KeyCode.F) && _spellbookUIID != 0)
+            {
+                _spellbookOpen = !_spellbookOpen;
+                Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
             }
 
             if (_isAttacking || _isHurt) return;

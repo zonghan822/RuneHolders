@@ -186,6 +186,7 @@ namespace Eno
 
             // Slow world time and freeze all enemies
             Time.timeScale = slowTimeScale;
+            Bridge.SetGroupLowPass("SFX", 600f);
             foreach (Enemy enemy in GetAllEnemies())
                 enemy.changeState("Frozen");
 
@@ -324,6 +325,7 @@ namespace Eno
         private void EndSlowTime(bool attack = false)
         {
             Time.timeScale = 1.0f;
+            Bridge.SetGroupLowPass("SFX", 0f);
             foreach (Enemy enemy in GetAllEnemies())
                 enemy.changeState("Idle");
             _swSprite?.changeState("FadeOut");

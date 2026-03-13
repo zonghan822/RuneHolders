@@ -150,7 +150,11 @@ namespace Eno
 
         // ── WindUp (cloak + unban, then monitor distance → Idle) ────────────────
 
-        public void WindUp_enter() { _timer = 0f; }
+        public void WindUp_enter()
+        {
+            _timer = 0f;
+            try { Bridge.AudioPlayInstant("SFX", "Nullfly_Attack_01"); } catch { }
+        }
         public void WindUp_update()
         {
             if (!_isCloaked)

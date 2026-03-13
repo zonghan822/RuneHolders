@@ -1,0 +1,214 @@
+{
+	"NodeType": {
+		"value": "5",
+		"type": "uint32_t"
+	},
+	"struct ECSComponents::VisibilityComponent": {
+		"Z Index": {
+			"value": "4",
+			"type": "uint32_t"
+		},
+		"Visible": {
+			"value": "1",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::CollisionComponent": {
+		"Type": {
+			"value": "Circle",
+			"type": "ColliderType"
+		},
+		"Offset": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Is Trigger": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Is Active": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Is Static": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Rotation": {
+			"value": "0",
+			"type": "float"
+		},
+		"Radius": {
+			"value": "72",
+			"type": "float"
+		}
+	},
+	"struct ECSComponents::RenderComponent": {
+		"Width": {
+			"value": "96",
+			"type": "float"
+		},
+		"Height": {
+			"value": "96",
+			"type": "float"
+		},
+		"Shape": {
+			"value": "Rectangle",
+			"type": "char32"
+		},
+		"Color": {
+			"value": "r : 1 | g : 1 | b : 1 | a : 1",
+			"type": "Color(RGBA)"
+		},
+		"Texture Path": {
+			"value": "Dummies-Blue",
+			"type": "texchar240"
+		},
+		"TexID": {
+			"value": "0",
+			"type": "int"
+		},
+		"UV Start": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"UV End": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::TransformComponent": {
+		"Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Rotation": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Scale": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		},
+		"Reset Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::StateMachineComponent": {
+		"NumStates": {
+			"value": "1",
+			"type": "int"
+		},
+		"CurrentState": {
+			"value": "None",
+			"type": "char32"
+		},
+		"TimeInState": {
+			"value": "0",
+			"type": "float"
+		},
+		"State[0].name": {
+			"value": "Default",
+			"type": "char32"
+		},
+		"State[0].onEnter": {
+			"value": "Default_enter",
+			"type": "char64"
+		},
+		"State[0].onUpdate": {
+			"value": "Default_update",
+			"type": "char64"
+		},
+		"State[0].onExit": {
+			"value": "Default_exit",
+			"type": "char64"
+		}
+	},
+	"struct ECSComponents::LayerComponent": {
+		"Layer": {
+			"value": "NULL",
+			"type": "char32"
+		}
+	},
+	"struct ECSComponents::PhysicsComponent": {
+		"Velocity": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Acceleration": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Force": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Mass": {
+			"value": "1",
+			"type": "float"
+		},
+		"Drag": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Restitution": {
+			"value": "0.5",
+			"type": "float"
+		},
+		"UseGravity": {
+			"value": "0",
+			"type": "bool"
+		},
+		"IsKinematic": {
+			"value": "0",
+			"type": "bool"
+		},
+		"FreezeRotation": {
+			"value": "1",
+			"type": "bool"
+		},
+		"VelocityMin": {
+			"value": "x : -1000 | y : -1000",
+			"type": "eVec2(float)"
+		},
+		"VelocityMax": {
+			"value": "x : 1000 | y : 1000",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::AnimationControllerComponent": {
+		"Frame Width": {
+			"value": "0",
+			"type": "int"
+		},
+		"Frame Height": {
+			"value": "0",
+			"type": "int"
+		},
+		"Rows": {
+			"value": "0",
+			"type": "int"
+		},
+		"Cols": {
+			"value": "0",
+			"type": "int"
+		},
+		"Frame Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Animation Count": {
+			"value": "0",
+			"type": "int"
+		},
+		"Current Animation": {
+			"value": "",
+			"type": "char64"
+		}
+	},
+}
