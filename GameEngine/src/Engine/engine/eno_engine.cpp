@@ -1,13 +1,16 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
-* @file         eno_engine.cpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   59%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   23%
-* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   14%
-* @date         03-10-2025
-* @brief        Implementation of the core engine systems and main game loop This file contains the implementation of the EnoEngine class which serves as the central coordinator for all engine subsystems. It manages
-*//*========================================================================================*/
-
+ * @file         eno_engine.cpp
+ * @author       Lee Zhe An (zhean.l@digipen.edu),
+ * @author		Law Zong Han (zonghan.law@digipen.edu)
+ * @date         03-10-2025
+ * @brief		Implementation of the core engine systems and main game loop
+ *
+ *				This file contains the implementation of the EnoEngine class which serves as
+ *				the central coordinator for all engine subsystems. It manages the initialization,
+ *				main game loop execution, resource loading, time management, and shutdown procedures.
+ *				The engine follows a component-based architecture where each system (graphics, audio,
+ *				input, etc.) is managed independently but coordinated through the main engine class.
+ */
 /*========================================================================================*/
 
 #include "eno_engine.hpp"

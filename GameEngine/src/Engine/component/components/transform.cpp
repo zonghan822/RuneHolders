@@ -1,9 +1,8 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         transform.cpp
 * @author       Caven Koh (caven.koh@digipen.edu)
-* @date         06/03/2026
-* @brief        Transform utility functions (node movement with child propagation)
+* @date			06/03/2026
+* @brief		Transform utility functions (node movement with child propagation)
 *//*========================================================================================*/
 
 #include "transform.hpp"

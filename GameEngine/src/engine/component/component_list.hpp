@@ -1,14 +1,11 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
-* @file         component_list.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   38%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   26%
-* @co-author    Caven Koh (caven.koh@digipen.edu)   24%
+* @file         component_id.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
 * @brief        XMacro definition for providing a ssot for component registering
+* 
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
-
-
 
 #pragma once
 

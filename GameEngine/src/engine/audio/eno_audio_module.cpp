@@ -1,10 +1,3 @@
-/*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
-* @file         eno_audio_module.cpp
-* @author       Koe Yun Ji (yunji.koe@digipen.edu)
-* @brief        Implementation of the audio module — manages individual FMOD sound instances.
-*//*========================================================================================*/
-
 #include "eno_audio_module.hpp"
 
 namespace Audio

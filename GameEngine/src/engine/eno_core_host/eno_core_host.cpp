@@ -1,11 +1,3 @@
-/*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
-* @file         eno_core_host.cpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   55%
-* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   38%
-* @brief        See file name.
-*//*========================================================================================*/
-
 #include "eno_core_host.hpp"
 #include "../file/file_system.hpp"
 #include "script_event.hpp"

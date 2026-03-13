@@ -1,13 +1,11 @@
 /*============================================================================================
-* All content Â© 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_map.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   67%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   33%
+* @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
 * @brief        Declaration file for a map
+* 
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
-
-
 
 #pragma once
 

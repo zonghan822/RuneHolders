@@ -1,10 +1,10 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         visibility.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   50%
-* @co-author    Caven Koh (caven.koh@digipen.edu)   50%
+* @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
-* @brief        Declaration/definition file for the visibility component All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Declaration/definition file for the visibility component
+* 
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once

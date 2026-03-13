@@ -1,11 +1,10 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         entity.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   47%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   31%
-* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   22%
+* @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
-* @brief        Declaration/definition file for the entity and entity manager All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Declaration/definition file for the entity and entity manager
+* 
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once

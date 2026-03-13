@@ -1,8 +1,24 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         raycast_renderer.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)
-* @brief        Wolfenstein-3D-style GPU ray-cast renderer. Architecture: - Uses EnoLoader to retrieve the pre-loaded raycast.vert / raycast.frag shader sources; EnoShader compiles and owns the program. - Renders a f
+* @brief        Wolfenstein-3D-style GPU ray-cast renderer.
+*
+*               Architecture:
+*                 - Uses EnoLoader to retrieve the pre-loaded raycast.vert / raycast.frag
+*                   shader sources; EnoShader compiles and owns the program.
+*                 - Renders a fullscreen quad each frame into an EnoFramebuffer whose
+*                   colour texture is exposed via getTextureID() for ImGui::Image.
+*                 - The fragment shader (assets/shaders/raycast.frag) performs DDA ray
+*                   casting per screen column; floor/ceiling projection is also on the GPU.
+*                 - The tilemap is mirrored on the GPU as a Shader Storage Buffer Object
+*                   (SSBO); call updateMap() after any map edit.
+*
+*               Player control:
+*                 Set playerPos / playerDir / cameraPlane directly from scripts.
+*                 The renderer does NOT move or rotate the player.
+*
+*               Collision bitmap:
+*                 collisionMap_ is a flat CPU-side array (0=open, 1=wall) built from all
+*                 tilemap layers combined. Use isWall(x, y) for script-side queries.
 *//*========================================================================================*/
 
 #pragma once

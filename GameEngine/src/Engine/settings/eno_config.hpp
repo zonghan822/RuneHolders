@@ -1,10 +1,10 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_config.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   86%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   10%
+* @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
-* @brief        Declaration file for config manager All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Declaration file for config manager
+* 
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once

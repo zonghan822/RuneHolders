@@ -1,8 +1,8 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         text_component.hpp
-* @author       Caven Koh (caven.koh@digipen.edu)
-* @brief        Declaration/definition file for the text component All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Declaration/definition file for the text component
+*
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once

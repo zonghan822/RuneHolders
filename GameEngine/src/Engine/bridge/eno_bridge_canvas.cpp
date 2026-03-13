@@ -1,8 +1,8 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_bridge_canvas.cpp
-* @author       Caven Koh (caven.koh@digipen.edu)
-* @brief        All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        
+*
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #include "eno_bridge.hpp"

@@ -1,12 +1,11 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_bridge.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   55%
-* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   27%
 * @brief        Master bridge header — declares all C-export functions grouped by system.
+*               Each category is implemented in its own eno_bridge_<system>.cpp file.
+*               The shared DLL (Engine_shared) links all bridge .cpp files together.
+*
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
-
-
 
 #pragma once
 

@@ -1,14 +1,14 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         imGui.cpp
-* @author       Koe Yun Ji (yunji.koe@digipen.edu)   38%
-* @co-author    ZongHan Law (zonghan.law@digipen.edu)   26%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   17%
-* @co-author    Caven Koh (caven.koh@digipen.edu)   15%
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author		Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         01-10-2025
-* @brief        This file contains the functions that are required for Dear ImGui displays, which includes the init, update and terminate functions. There are also functions for spawning and counting entities.
+* @brief        This file contains the functions that are required for Dear ImGui displays,
+*				which includes the init, update and terminate functions.
+*     			There are also functions for spawning and counting entities.
 *//*========================================================================================*/
-
 #include <algorithm>
 #include <filesystem>
 #include <random>
@@ -1249,6 +1249,7 @@ void displayHierarchyTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& scene
 
 	// --- Delete Node Button ---
 	if (ImGui::Button("Delete Selected Node")) {
+		auto& em = engine_.getEntityManager();
 		Editor::Node* node = sceneTree.getNodeByEntityID(selectedEntityID);
 		if (node) {
 			std::cout << "[DEBUG] Deleting node " << selectedEntityID << " and all children from hierarchy\n";

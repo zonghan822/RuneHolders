@@ -1,8 +1,8 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_bridge_visibility.cpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)
-* @brief        Visibility component bridge — z-index and visible flag. All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Visibility component bridge — z-index and visible flag.
+*
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #include "eno_bridge.hpp"

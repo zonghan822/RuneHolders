@@ -1,12 +1,14 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_loader.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   66%
-* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   18%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   13%
+* @author       Lee Zhe An (zhean.l@digipen.edu),
+* @author       Muhammad Raziq Bin Mohd Rafig (),
+* @author       Law Zong Han (zonghan.law@digipen.edu)
 * @date         03-10-2025
-* @brief        Resource loading and management system for textures, shaders, fonts, and sounds. Handles loading of image files (PNG/JPG), shader source files (GLSL), audio files (WAV/MP3), and fonts (TTF/OTF). Integ
-*//*========================================================================================*/
+* @brief        Resource loading and management system for textures, shaders, fonts, and sounds.
+*               Handles loading of image files (PNG/JPG), shader source files (GLSL),
+*               audio files (WAV/MP3), and fonts (TTF/OTF). Integrates with an event bus
+*               to publish and subscribe to resource-related events.
+*===========================================================================================*/
 
 #pragma once
 // FMOD

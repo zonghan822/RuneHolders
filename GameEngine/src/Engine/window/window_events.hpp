@@ -1,13 +1,9 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         window_events.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   67%
-* @co-author    Caven Koh (caven.koh@digipen.edu)   33%
+* @author       Law Zong Han (zonghan.law@digipen.edu)
 * @date         03-10-2025
 * @brief        Event structures for window and input events
 *//*========================================================================================*/
-
-
 
 #pragma once
 

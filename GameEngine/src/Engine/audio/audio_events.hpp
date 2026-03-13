@@ -1,11 +1,10 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         audio_events.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   50%
-* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   33%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   17%
+* @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
-* @brief        Events here are used to communicate to and fro the audio manager All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Events here are used to communicate to and fro the audio manager
+* 
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once

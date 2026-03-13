@@ -41,7 +41,7 @@ foreach(target ${ENGINE_NAME}_static ${ENGINE_NAME}_shared)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(${target} PRIVATE -Wall ${DisableWarnings})
     elseif (MSVC)
-        target_compile_options(${target} PRIVATE /W4 /WX- /external:anglebrackets /external:W0)
+        target_compile_options(${target} PRIVATE /W4 /WX-)
     endif()
 endforeach()
 

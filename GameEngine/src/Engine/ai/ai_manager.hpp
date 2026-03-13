@@ -1,8 +1,6 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         ai_manager.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   80%
-* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   20%
+* @author       Zong Han (zonghan.law@digipen.edu)
 * @date         30-11-2025
 * @brief        Sets up behavior for AI
 *//*========================================================================================*/

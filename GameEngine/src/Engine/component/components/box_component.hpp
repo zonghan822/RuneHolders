@@ -1,11 +1,11 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content ? 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         box_component.hpp
-* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
-* @co-author    Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   33%
+* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
 * @date         05-11-2025
-* @brief        Component that marks an entity as a pushable box. Boxes use PhysicsComponent for movement and can be pushed by the player or other physics entities.
-*//*========================================================================================*/
+* @brief        Component that marks an entity as a pushable box. Boxes use PhysicsComponent
+*               for movement and can be pushed by the player or other physics entities.
+*===========================================================================================*/
 
 #pragma once
 

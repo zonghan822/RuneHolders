@@ -1,11 +1,11 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         drawInfo.hpp
-* @author       Koe Yun Ji (yunji.koe@digipen.edu)   66%
-* @co-author    ZongHan Law (zonghan.law@digipen.edu)   16%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   16%
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
 * @date         01-10-2025
-* @brief        This file contains the component constructor for Drawing Information This Component allows the drawing system to act directly upon it so long as it exists.
+* @brief        This file contains the component constructor for Drawing Information
+*				This Component allows the drawing system to act directly upon it so long as it
+*				exists.
 *//*========================================================================================*/
 
 #pragma once

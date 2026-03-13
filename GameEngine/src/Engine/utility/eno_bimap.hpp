@@ -1,13 +1,11 @@
 /*============================================================================================
-* All content Â© 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_bimap.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   75%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   25%
+* @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
 * @brief        Declaration file for a bimap
+* 
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
-
-
 
 #pragma once
 

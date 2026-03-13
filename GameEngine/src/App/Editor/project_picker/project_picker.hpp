@@ -1,8 +1,8 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         project_picker.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)
-* @brief        Project picker dialog — open, create, and switch between projects. Provides imGuiProjectPicker() which owns its own ImGui frame and renders the Open/New-Project dialog before the main editor is displa
+* @brief        Project picker dialog — open, create, and switch between projects.
+*               Provides imGuiProjectPicker() which owns its own ImGui frame and renders
+*               the Open/New-Project dialog before the main editor is displayed.
 *//*========================================================================================*/
 
 #pragma once

@@ -1,12 +1,11 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         collision.cpp
-* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   51%
-* @co-author    Caven Koh (caven.koh@digipen.edu)   20%
-* @co-author    ZongHan Law (zonghan.law@digipen.edu)   11%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   11%
+* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
 * @date         03-10-2025
-* @brief        Implementation of the collision detection system including all collision detection algorithms, collision component methods, and collision system for ECS integration.
+* @brief        Implementation of the collision detection system including all collision
+*               detection algorithms, collision component methods, and collision system
+*               for ECS integration.
 *//*========================================================================================*/
 
 #include "collision.hpp"

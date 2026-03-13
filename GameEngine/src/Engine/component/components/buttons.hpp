@@ -1,11 +1,9 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         buttons.hpp
 * @author       Caven Koh (caven.koh@digipen.edu)
 * @date         27/11/2025
 * @brief        This file contains the definition of the button component class for in game buttons
 *//*========================================================================================*/
-
 #pragma once
 
 // Signals
@@ -177,6 +175,7 @@ namespace ECSComponents {
 				}
 
 			}
+			return false;
 		}
 
 	private:

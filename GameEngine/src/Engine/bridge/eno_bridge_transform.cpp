@@ -1,8 +1,8 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_bridge_transform.cpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)
-* @brief        Transform component bridge — position, rotation, scale. All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Transform component bridge — position, rotation, scale.
+*
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #include "eno_bridge.hpp"

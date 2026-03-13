@@ -1,12 +1,7 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         button_system.cpp
-* @author       Caven Koh (caven.koh@digipen.edu)   67%
-* @co-author    ZongHan Law (zonghan.law@digipen.edu)   33%
 * @brief        Implementation of the UI ButtonSystem.
 *//*========================================================================================*/
-
-
 #include "button_system.hpp"
 
 #include "../ecs/entity.hpp"

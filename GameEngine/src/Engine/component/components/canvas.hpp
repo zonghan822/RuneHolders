@@ -1,12 +1,9 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         canvas.hpp
-* @author       Caven Koh (caven.koh@digipen.edu)   75%
-* @co-author    ZongHan Law (zonghan.law@digipen.edu)   25%
+* @author       Caven Koh (caven.koh@digipen.edu)
 * @date         27/02/2026
 * @brief        This file contains the declaration of the canvas component class for UI elements
 *//*========================================================================================*/
-
 #pragma once
 
 // Signals

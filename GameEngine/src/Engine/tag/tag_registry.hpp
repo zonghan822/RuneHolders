@@ -1,9 +1,10 @@
 /*============================================================================================
-* All content Â© 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
-* @file         tag_registry.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)
+* @file         tag_events.hpp
+* @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
-* @brief        Declaration/definition file for the tag registry All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Declaration/definition file for the tag registry
+* 
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once

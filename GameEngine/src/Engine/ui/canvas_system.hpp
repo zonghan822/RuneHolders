@@ -1,11 +1,7 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         canvas_system.hpp
-* @author       Caven Koh (caven.koh@digipen.edu)
 * @brief        Declaration of CanvasSystem — processes and renders all active canvas entities.
 *//*========================================================================================*/
-
-
 #pragma once
 
 #include "../math/math.hpp"

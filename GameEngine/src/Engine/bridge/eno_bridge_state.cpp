@@ -1,8 +1,8 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_bridge_state.cpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)
-* @brief        State machine bridge — request state transitions. All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        State machine bridge — request state transitions.
+*
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #include "eno_bridge.hpp"

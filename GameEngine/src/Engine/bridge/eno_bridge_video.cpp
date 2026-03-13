@@ -1,9 +1,10 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_bridge_video.cpp
-* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig ()
 * @date         09-03-2026
-* @brief        Video component bridge — play, pause, stop, query state/time. All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Video component bridge — play, pause, stop, query state/time.
+*
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #include "eno_bridge.hpp"

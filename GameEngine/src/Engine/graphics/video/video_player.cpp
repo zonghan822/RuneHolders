@@ -1,7 +1,6 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         video_player.cpp
-* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig ()
 * @date         07-03-2026
 * @brief        FFmpeg video decode pipeline implementation.
 *//*========================================================================================*/

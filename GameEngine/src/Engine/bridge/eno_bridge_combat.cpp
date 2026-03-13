@@ -1,8 +1,8 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_bridge_combat.cpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)
-* @brief        Combat bridge — health, max health, heal, death check. All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Combat bridge — health, max health, heal, death check.
+*
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #include "eno_bridge.hpp"

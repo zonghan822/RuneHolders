@@ -1,11 +1,7 @@
 /*============================================================================================
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         entity_snapshot.hpp
-* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   30%
-* @co-author    ZongHan Law (zonghan.law@digipen.edu)   30%
-* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   20%
-* @co-author    Caven Koh (caven.koh@digipen.edu)   10%
-* @co-author    Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   10%
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         2025-11-29
 * @brief        Entity snapshot for serialization in undo/redo system
 *//*========================================================================================*/

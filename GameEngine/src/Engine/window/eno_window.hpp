@@ -1,13 +1,10 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_window.hpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   68%
-* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   21%
+* @author       Lee Zhe An (zhean.l@digipen.edu),
+* @author		Law Zong Han (zonghan.law@digipen.edu)
 * @date         03-10-2025
-* @brief        Window management class handling GLFW window creation and event callbacks
+* @brief		Window management class handling GLFW window creation and event callbacks
 *//*========================================================================================*/
-
-
 
 #pragma once
 // OpenGL api

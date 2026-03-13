@@ -1,11 +1,12 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_config.cpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   85%
-* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   15%
+* @author       Lee Zhe An (zhean.l@digipen.edu)
 * @date         10/3/2025
-* @brief        Definition file for config manager All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Definition file for config manager
+* 
+* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
+
 
 #include "eno_config.hpp"
 

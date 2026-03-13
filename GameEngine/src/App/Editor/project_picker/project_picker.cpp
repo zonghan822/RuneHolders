@@ -1,7 +1,5 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         project_picker.cpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)
 * @brief        Project picker dialog — open, create, and switch between projects.
 *//*========================================================================================*/
 

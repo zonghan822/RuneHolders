@@ -1,8 +1,8 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         raycast_renderer.cpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)
-* @brief        GPU ray-cast renderer — implementation. Uses EnoShader / EnoFramebuffer from the engine's graphics system and EnoLoader to retrieve the pre-scanned shader sources.
+* @brief        GPU ray-cast renderer — implementation.
+*               Uses EnoShader / EnoFramebuffer from the engine's graphics system and
+*               EnoLoader to retrieve the pre-scanned shader sources.
 *//*========================================================================================*/
 
 #include "raycast_renderer.hpp"

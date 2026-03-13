@@ -1,10 +1,12 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
-* @file         editor_logic.cpp
-* @author       ZongHan Law (zonghan.law@digipen.edu)   79%
-* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   11%
+* All content ? 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         game_logic.cpp
+* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author		Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         05-11-2025
-* @brief        Game application layer that handles game-specific logic, entity management, rendering, and ImGui integration. Systems are now managed by EnoEngine.
+* @brief        Game application layer that handles game-specific logic, entity management,
+*               rendering, and ImGui integration. Systems are now managed by EnoEngine.
 *//*========================================================================================*/
 
 #include "editor_logic.hpp"
