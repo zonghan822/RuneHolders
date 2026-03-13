@@ -23,6 +23,7 @@ namespace Eno
         {
             _playerID = Bridge.GetNode(PlayerName);
             _cameraID = Bridge.GetNode(CameraName);
+            Bridge.ChangeState(ID, "Unlocked");
         }
 
         public void Update()
@@ -46,6 +47,7 @@ namespace Eno
             {
                 Bridge.SetPosition(_cameraID, CamDestX, CamDestY);
                 _panning = false;
+                Room3_Script.StartWaves();
             }
             else
             {
