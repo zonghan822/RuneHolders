@@ -1,12 +1,12 @@
 /*============================================================================================
-* All content ? 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         physics_system.hpp
-* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   67%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   17%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   17%
 * @date         05-11-2025
-* @brief        Central physics system that manages force-based physics simulation for all
-*               entities with PhysicsComponent. Handles force integration, velocity updates,
-*               collision detection, and momentum transfer for realistic object interactions.
-*===========================================================================================*/
+* @brief        Central physics system that manages force-based physics simulation for all entities with PhysicsComponent. Handles force integration, velocity updates, collision detection, and momentum transfer for r
+*//*========================================================================================*/
 
 #pragma once
 

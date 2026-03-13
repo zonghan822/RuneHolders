@@ -1,16 +1,10 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_loader.cpp
-* @author       Lee Zhe An (zhean.l@digipen.edu),
-* @author		Muhammad Raziq Bin Mohd Rafig (),
-* @author		Law Zong Han (zonghan.law@digipen.edu)
+* @author       ZongHan Law (zonghan.law@digipen.edu)   64%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   27%
 * @date         03-10-2025
-* @brief		Implementation of resource loading system for game assets
-*				
-*				This file implements the resource loading system that handles loading and
-*				management of game assets including textures, shaders, fonts, and audio files.
-*				The system provides a unified interface for accessing resources by name and
-*				includes comprehensive error handling and debug output. Resources are loaded
-*				from predefined directory structures and cached for efficient reuse.
+* @brief        Implementation of resource loading system for game assets This file implements the resource loading system that handles loading and management of game assets including textures, shaders, fonts, and au
 *//*========================================================================================*/
 
 #include "eno_loader.hpp"

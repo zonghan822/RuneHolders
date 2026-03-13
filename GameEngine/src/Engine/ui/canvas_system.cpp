@@ -1,7 +1,11 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         canvas_system.cpp
+* @author       Caven Koh (caven.koh@digipen.edu)
 * @brief        Implementation of CanvasSystem — canvas rendering and hierarchy traversal.
 *//*========================================================================================*/
+
+
 #include "canvas_system.hpp"
 
 #include "../ecs/entity.hpp"
@@ -149,7 +153,7 @@ namespace UI
 
 	void CanvasSystem::renderCanvasEntities(
 		Engine::EnoEngine& engine,
-		std::vector<ECS::Entity>& cachedEntities,
+		std::vector<ECS::Entity>& /*cachedEntities*/,
 		ECS::Entity& canvasEntity,
 		const Math::eVec2<float>& cameraTopLeft)
 	{
@@ -245,7 +249,7 @@ namespace UI
 
 	void CanvasSystem::renderCanvasText(
 		Engine::EnoEngine& engine,
-		std::vector<ECS::Entity>& cachedEntities,
+		std::vector<ECS::Entity>& /*cachedEntities*/,
 		ECS::Entity& canvasEntity)
 	{
 		auto& graphics      = engine.getGraphicsManager();

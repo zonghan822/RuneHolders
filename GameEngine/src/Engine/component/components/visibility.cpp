@@ -1,9 +1,11 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         visibility.cpp
 * @author       Caven Koh (caven.koh@digipen.edu)
-* @date			29/01/2026
-* @brief		Contains functions to sort entities into layers for rendering
+* @date         29/01/2026
+* @brief        Contains functions to sort entities into layers for rendering
 *//*========================================================================================*/
+
 #include "visibility.hpp"
 #include "canvas.hpp"
 #include "../../engine/eno_engine.hpp"

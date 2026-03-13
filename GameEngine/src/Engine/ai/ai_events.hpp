@@ -1,18 +1,7 @@
-#pragma once
-#include "../math/math.hpp"
-#include <cstdint>
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         ai_events.hpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)
+* @brief        See file name.
+*//*========================================================================================*/
 
-namespace AI {
-
-    struct PathClearRequest {
-        uint32_t entityID;
-    };
-
-    struct PathfindRequest {
-        uint32_t entityID;
-        Math::eVec2<float> start;
-        Math::eVec2<float> goal;
-        bool allowDiagonal;
-        Math::eVec2<float>& next;
-    };
-}

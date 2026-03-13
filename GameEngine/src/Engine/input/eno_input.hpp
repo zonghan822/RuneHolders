@@ -1,11 +1,11 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_input.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu),
-* @author		Law Zong Han (zonghan.law@digipen.edu)
+* @author       ZongHan Law (zonghan.law@digipen.edu)   80%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   10%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   10%
 * @date         03-10-2025
-* @brief		Input management system for handling keyboard and mouse input events.
-*               Integrates with the event bus to map key/mouse actions to engine events,
-*               and provides utility functions to query input states.
+* @brief        Input management system for handling keyboard and mouse input events. Integrates with the event bus to map key/mouse actions to engine events, and provides utility functions to query input states.
 *//*========================================================================================*/
 
 #pragma once

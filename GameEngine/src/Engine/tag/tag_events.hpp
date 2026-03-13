@@ -1,10 +1,10 @@
 /*============================================================================================
+* All content Â© 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         tag_events.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @author       ZongHan Law (zonghan.law@digipen.edu)   67%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   33%
 * @date         10/3/2025
-* @brief        Definition file for tag-related events
-* 
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Definition file for tag-related events All content ï¿½ 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once

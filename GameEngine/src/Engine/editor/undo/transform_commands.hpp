@@ -1,7 +1,8 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content Â© 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         transform_commands.hpp
-* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   33%
 * @date         2025-11-29
 * @brief        Transform-related commands (move, rotate, scale) for undo/redo
 *//*========================================================================================*/

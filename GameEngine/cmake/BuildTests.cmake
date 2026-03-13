@@ -36,7 +36,7 @@ set_property(TARGET ${APP_NAME}  PROPERTY CXX_STANDARD 20)
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(${APP_NAME} PRIVATE -Wall ${DisableWarnings})
 elseif (MSVC)
-    target_compile_options(${APP_NAME} PRIVATE /W4 /WX-)
+    target_compile_options(${APP_NAME} PRIVATE /W4 /WX- /external:anglebrackets /external:W0)
 endif()
 
 if (MSVC)

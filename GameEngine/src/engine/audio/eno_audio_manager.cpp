@@ -1,11 +1,13 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_audio_manager.cpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @author       Koe Yun Ji (yunji.koe@digipen.edu)   72%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   28%
 * @date         10/3/2025
 * @brief        Definition file for the audio manager
-* 
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
+
+
 
 #include "eno_audio_manager.hpp"
 #include <cmath>
@@ -288,7 +290,7 @@ namespace Audio
 	 * \brief				(Overload) Sets up and plays sound based on params provided by an audio component
 	 * \param[in]			Audio component
 	*//*========================================================================================*/
-	void EnoAudioManager::play(ECSComponents::AudioComponent& audioComp, Math::eVec2<float> camPos)
+	void EnoAudioManager::play(ECSComponents::AudioComponent& audioComp, Math::eVec2<float> /*camPos*/)
 	{
 		// Don't restart audio that's already playing
 		if (audioComp.isPlaying_)

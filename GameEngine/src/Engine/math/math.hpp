@@ -1,13 +1,13 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         math.hpp
-* @author       Caven Koh (caven.koh@digipen.edu)
+* @author       Caven Koh (caven.koh@digipen.edu)   64%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   14%
+* @co-author    Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   14%
 * @date         15-09-2025
-* @brief        This file contains struct templates for Vector2D, Vector3D, Mtx3x3, and Mtx4x4
-*				as well as operator overloads and helper functions which assists in arithmetic
-*				calculations
-* 
-* * All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        This file contains struct templates for Vector2D, Vector3D, Mtx3x3, and Mtx4x4 as well as operator overloads and helper functions which assists in arithmetic calculations * All content � 2025 DigiPen
 *//*========================================================================================*/
+
 #pragma once
 
 #include <utility>

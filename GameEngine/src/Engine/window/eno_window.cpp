@@ -1,16 +1,13 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_window.cpp
-* @author       Lee Zhe An (zhean.l@digipen.edu),
-* @author		Law Zong Han (zonghan.law@digipen.edu)
+* @author       ZongHan Law (zonghan.law@digipen.edu)   71%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   21%
 * @date         03-10-2025
-* @brief		Implementation of GLFW window management and OpenGL context handling
-* 
-*				This file implements the window management system using GLFW for cross-platform
-*				window creation and OpenGL context management. It handles window initialization,
-*				event callback registration, OpenGL context creation with GLEW, and proper resource
-*				cleanup. The implementation provides a robust wrapper around GLFW with error handling
-*				and event forwarding to the engine's event system.
+* @brief        Implementation of GLFW window management and OpenGL context handling
 *//*========================================================================================*/
+
+
 
 #include "eno_window.hpp"
 

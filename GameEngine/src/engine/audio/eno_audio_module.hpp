@@ -1,9 +1,12 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_audio_module.hpp
-* @author       Zhe An  (@digipen.edu)
+* @author       Koe Yun Ji (yunji.koe@digipen.edu)
 * @date         30-11-2025
 * @brief        Audio Module for Audio manager to handle sounds
 *//*========================================================================================*/
+
+
 
 #pragma once
 

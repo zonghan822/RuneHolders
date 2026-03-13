@@ -1,3 +1,10 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_input_params.hpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)
+* @brief        Input parameter definitions and key/button mappings for the input system.
+*//*========================================================================================*/
+
 #pragma once
 
 namespace Input

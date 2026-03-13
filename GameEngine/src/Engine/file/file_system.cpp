@@ -1,52 +1,9 @@
-#include "file_system.hpp"
-#include <windows.h>
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         file_system.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   55%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   18%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   18%
+* @brief        See file name.
+*//*========================================================================================*/
 
-std::filesystem::path FileSystem::exeDir_;
-std::filesystem::path FileSystem::rootDir_;
-std::filesystem::path FileSystem::assetsDir_;
-std::filesystem::path FileSystem::scriptsDir_;
-
-void FileSystem::Initialize(const std::string& appName)
-{
-    char buffer[MAX_PATH];
-    GetModuleFileNameA(NULL, buffer, MAX_PATH);
-    exeDir_ = std::filesystem::path(buffer).parent_path();
-
-    // Navigate up from build/projects/App/<AppName>/Debug to GameEngine root (5 levels up)
-    rootDir_ = exeDir_.parent_path().parent_path().parent_path()
-                       .parent_path().parent_path();
-
-    std::filesystem::path sourceAssets = rootDir_ / "assets" / appName;
-    if (std::filesystem::exists(sourceAssets))
-    {
-        // Development: use per-app source dirs
-        assetsDir_  = sourceAssets;
-        scriptsDir_ = rootDir_ / "scripts" / appName / "user_scripts";
-    }
-    else
-    {
-        // Shipped: assets/ and scripts/ sit next to the exe
-        assetsDir_  = exeDir_ / "assets";
-        scriptsDir_ = exeDir_ / "scripts" / "user_scripts";
-    }
-}
-
-const std::filesystem::path& FileSystem::GetRootDir()
-{
-    return rootDir_;
-}
-
-const std::filesystem::path& FileSystem::GetExecutableDir()
-{
-    return exeDir_;
-}
-
-const std::filesystem::path& FileSystem::GetAssetsDir()
-{
-    return assetsDir_;
-}
-
-const std::filesystem::path& FileSystem::GetScriptsDir()
-{
-    return scriptsDir_;
-}

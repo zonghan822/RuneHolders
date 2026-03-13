@@ -1,18 +1,7 @@
-#pragma once
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         tilemap_events.hpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)
+* @brief        See file name.
+*//*========================================================================================*/
 
-namespace Map {
-
-    struct TileChanged {
-        int layer;
-        int x;
-        int y;
-        bool walkable;
-    };
-
-    struct TilemapResized {
-        int newWidth;
-        int newHeight;
-        float cellSize;
-    };
-
-}

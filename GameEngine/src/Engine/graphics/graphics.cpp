@@ -1,9 +1,11 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         graphics.cpp
-* @author       Law Zong Han (zonghan.law@digipen.edu),
-* @author       Muhammad Raziq Bin Mohd Rafig ()
+* @author       ZongHan Law (zonghan.law@digipen.edu)   58%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   29%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   10%
 * @date         03-10-2025
-* @brief
+* @brief        See file name.
 *//*========================================================================================*/
 
 #define STB_IMAGE_IMPLEMENTATION

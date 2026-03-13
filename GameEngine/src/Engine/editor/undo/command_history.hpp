@@ -1,7 +1,9 @@
 /*============================================================================================
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         command_history.hpp
-* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   50%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   25%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   25%
 * @date         2025-11-29
 * @brief        Command history manager for undo/redo functionality
 *//*========================================================================================*/

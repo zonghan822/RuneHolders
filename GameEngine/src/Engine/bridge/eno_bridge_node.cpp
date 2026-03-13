@@ -1,8 +1,10 @@
 /*============================================================================================
-* @file         eno_bridge_node.cpp
-* @brief        Node management bridge — spawn, destroy, lookup.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_node.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   78%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   11%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   11%
+* @brief        Node management bridge — spawn, destroy, lookup. All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #include "eno_bridge.hpp"
@@ -25,7 +27,6 @@ namespace Bridge
             if (!gEngine) return;
 
             auto& sceneTree = gEngine->getEnoEditor().getSceneTree();
-            Editor::Node* node = sceneTree.getNodeBySceneObjectID(id);
             sceneTree.kill(id);
         }
 

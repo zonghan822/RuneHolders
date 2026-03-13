@@ -1,10 +1,11 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         name.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @author       ZongHan Law (zonghan.law@digipen.edu)   67%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   17%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   17%
 * @date         10/3/2025
-* @brief        Declaration/definition file for the name component
-* 
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @brief        Declaration/definition file for the name component All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
 
 #pragma once

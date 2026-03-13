@@ -1,3 +1,10 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_scene.hpp
+* @author       Caven Koh (caven.koh@digipen.edu)
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 
 // Engine Component(s)

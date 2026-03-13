@@ -1,11 +1,10 @@
 /*============================================================================================
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
-* @file         game_logic.hpp
-* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
-* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         editor_logic.hpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   90%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   10%
 * @date         06-11-2025
-* @brief        Game application layer that manages game-specific logic, rendering, and entity
-*               management. Systems are now managed by EnoEngine for better architecture.
+* @brief        Game application layer that manages game-specific logic, rendering, and entity management. Systems are now managed by EnoEngine for better architecture.
 *//*========================================================================================*/
 
 #pragma once

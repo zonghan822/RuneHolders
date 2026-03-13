@@ -1,3 +1,10 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_tlsf_arena.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @brief        TLSF (Two-Level Segregated Fit) arena allocator for O(1) dynamic allocation.
+*//*========================================================================================*/
+
 #pragma once
 
 // Windows

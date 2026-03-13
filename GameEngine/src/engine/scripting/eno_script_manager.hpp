@@ -1,3 +1,12 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_script_manager.hpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   57%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   29%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   14%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 
 // Engine Component(s)

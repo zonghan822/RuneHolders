@@ -1,3 +1,11 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_data_types.hpp
+* @author       Koe Yun Ji (yunji.koe@digipen.edu)   50%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   50%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 
 #include <string>

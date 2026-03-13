@@ -1,10 +1,9 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         video_component.hpp
-* @author       Muhammad Raziq Bin Mohd Rafig ()
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         09-03-2026
-* @brief        Component for attaching a loaded video to an entity.
-*               Stores the name key of a video in EnoGraphicsManager's videoMap_.
-*               The render system pulls the current decoded frame texture each frame.
+* @brief        Component for attaching a loaded video to an entity. Stores the name key of a video in EnoGraphicsManager's videoMap_. The render system pulls the current decoded frame texture each frame.
 *//*========================================================================================*/
 
 #pragma once

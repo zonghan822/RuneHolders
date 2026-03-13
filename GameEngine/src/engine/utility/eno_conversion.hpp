@@ -1,3 +1,10 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_conversion.hpp
+* @author       Koe Yun Ji (yunji.koe@digipen.edu)
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 
 // stds
