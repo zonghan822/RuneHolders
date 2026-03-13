@@ -256,7 +256,11 @@ namespace Eno
 
         // ── Frozen ────────────────────────────────────────────────────────────────
 
-        public void Frozen_enter() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
+        public void Frozen_enter()
+        {
+            if (_deathTriggered) { _self?.changeState("Death"); return; }
+            if (_self != null) _self.velocity = new Vector2(0f, 0f);
+        }
         public void Frozen_update() { }
         public void Frozen_exit() { }
 

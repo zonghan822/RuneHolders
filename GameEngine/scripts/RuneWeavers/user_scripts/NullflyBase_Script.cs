@@ -205,7 +205,10 @@ namespace Eno
 
         // ── Frozen ───────────────────────────────────────────────────────────────
 
-        public void Frozen_enter() { }
+        public void Frozen_enter()
+        {
+            if (_deathTriggered) { _self?.changeState("Death"); return; }
+        }
         public void Frozen_update() { }
         public void Frozen_exit() { }
 
