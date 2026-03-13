@@ -26,6 +26,9 @@ namespace Eno
         private Canvas _dialogueCanvas;
         private Label  _dialogueText;
 
+        // Set to true once the final dialogue line is dismissed; other scripts can read this.
+        public static bool DialogueComplete = false;
+
         // Runtime state
         private bool   dialogueActive      = false;
         private bool   dialogueTyping      = false;
@@ -140,6 +143,7 @@ namespace Eno
                 dialogueTyping = false;
                 if (_dialogueCanvas != null)
                     _dialogueCanvas.active = false;
+                DialogueComplete = true;
             }
             else
             {
