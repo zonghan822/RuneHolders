@@ -32,7 +32,10 @@ namespace Bridge
             auto viewportMax = gEngine->getViewportMax();
             if (viewportMax.x == 0.f && viewportMax.y == 0.f)
             {
-                auto [winW, winH] = gEngine->getWindowManager().getWindowSize();
+                // Use the window size cached at startup in the EXE.
+                // GLFW is statically linked to the EXE only; calling getWindowSize() from
+                // the DLL always returns 0 because the DLL's GLFW has no windows.
+                auto [winW, winH] = gEngine->getCachedWindowSize();
                 viewportMax = { static_cast<float>(winW), static_cast<float>(winH) };
             }
 

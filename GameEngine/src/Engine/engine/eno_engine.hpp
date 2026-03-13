@@ -222,10 +222,26 @@ namespace Engine
 		FSM::StateMachineSystem& getStateMachineSys() { return *stateMachineSys_; }
 
 		/*============================================================================================
-		* \brief		Gets the time elapsed since the last frame
-		* \return		Delta time in seconds
+		* \brief		Gets the time elapsed since the last frame, scaled by timeScale_.
+		*               Physics, AI, and all C++ systems receive this value so the entire
+		*               simulation slows down uniformly when timeScale_ < 1.
+		* \return		Scaled delta time in seconds (dt_ * timeScale_)
 		*//*========================================================================================*/
-		double getDeltaTime() const { return dt_; }
+		double getDeltaTime() const { return dt_ * timeScale_; }
+
+		/*============================================================================================
+		* \brief		Gets the real (wall-clock) delta time, unaffected by timeScale_.
+		*               Used by UI animations and timers that must run at real-world speed.
+		*//*========================================================================================*/
+		double getUnscaledDeltaTime() const { return dt_; }
+
+		/*============================================================================================
+		* \brief		Sets the global time scale applied to GetDeltaTime() in the C# bridge.
+		*               1.0 = normal speed; <1.0 = slow motion; 0.0 = frozen scripts.
+		*               Does NOT affect C++-side physics/AI dt.
+		*//*========================================================================================*/
+		void  setTimeScale(float s) { timeScale_ = s < 0.0f ? 0.0f : s; }
+		float getTimeScale() const  { return timeScale_; }
 
 		/*============================================================================================
 		* \brief		Gets the current frames per second
@@ -284,6 +300,7 @@ namespace Engine
 		void setViewportBounds(Math::eVec2<float> min, Math::eVec2<float> max) { viewportMin_ = min; viewportMax_ = max; }
 		Math::eVec2<float> getViewportMin() const { return viewportMin_; }
 		Math::eVec2<float> getViewportMax() const { return viewportMax_; }
+		std::pair<int,int>  getCachedWindowSize() const { return { cachedWinW_, cachedWinH_ }; }
 
 		/*============================================================================================
 		* \brief		Marks animation controllers as dirty so they are restored on the next frame.
@@ -374,10 +391,13 @@ namespace Engine
 		std::string pendingScene_;  // Non-empty when a script has requested a scene change
 		Math::eVec2<float> viewportMin_{ 0.f, 0.f };  // Screen-space game viewport bounds (set by editor/app)
 		Math::eVec2<float> viewportMax_{ 0.f, 0.f };  // Zero max = fall back to full window size
+		int cachedWinW_ = 0;  // Window pixel width  — cached at setupEarly so the bridge DLL can read it
+		int cachedWinH_ = 0;  // Window pixel height — without calling GLFW (which is EXE-only in static builds)
 
 		// Time
 		double dt_ = 0.0;
 		double fps_ = 0.0;
+		float  timeScale_ = 1.0f;  // Applied by the C# bridge GetDeltaTime(); C++ systems use raw dt_
 
 		// Per-subsystem timing (microseconds), populated each frame
 		std::unordered_map<std::string, double> timings_;

@@ -11,7 +11,7 @@ namespace Eno
     // Volumes are saved to config.txt on release and restored on Begin().
     public class AudioSettings_Script : ScriptBase
     {
-        private const float SliderRange = 250f;
+        private const float SliderRange = 220f;
         private const float BallRadius  = 25f;
 
         // ── Static anchors ────────────────────────────────────────────────────────
@@ -23,25 +23,25 @@ namespace Eno
         private static float s_masterMinX;
         private static float s_bgmMinX;
         private static float s_sfxMinX;
-        private static float s_masterFillY;
-        private static float s_bgmFillY;
-        private static float s_sfxFillY;
+        // private static float s_masterFillY;
+        // private static float s_bgmFillY;
+        // private static float s_sfxFillY;
 
         // ── Per-instance runtime state ────────────────────────────────────────────
         private Sprite2D? _master;
         private Sprite2D? _bgm;
         private Sprite2D? _sfx;
-        private Sprite2D? _masterFill;
-        private Sprite2D? _bgmFill;
-        private Sprite2D? _sfxFill;
+        // private Sprite2D? _masterFill;
+        // private Sprite2D? _bgmFill;
+        // private Sprite2D? _sfxFill;
 
         // Copied from statics into instance fields so Update() reads them locally
         private float _masterMinX;
         private float _bgmMinX;
         private float _sfxMinX;
-        private float _masterFillY;
-        private float _bgmFillY;
-        private float _sfxFillY;
+        // private float _masterFillY;
+        // private float _bgmFillY;
+        // private float _sfxFillY;
 
         private Sprite2D? _draggedBall;
         private float _dragOffsetX = 0f; // mouse-to-ball-centre offset at grab time
@@ -51,22 +51,29 @@ namespace Eno
             _master     = GetNode<Sprite2D>("MasterSliderBall");
             _bgm        = GetNode<Sprite2D>("BGMSliderBall");
             _sfx        = GetNode<Sprite2D>("SFXSliderBall");
-            _masterFill = GetNode<Sprite2D>("MasterSliderFill");
-            _bgmFill    = GetNode<Sprite2D>("BGMSliderFill");
-            _sfxFill    = GetNode<Sprite2D>("SFXSliderFill");
+            // _masterFill = GetNode<Sprite2D>("MasterSliderFill");
+            // _bgmFill    = GetNode<Sprite2D>("BGMSliderFill");
+            // _sfxFill    = GetNode<Sprite2D>("SFXSliderFill");
 
             if (!s_anchored)
             {
-                // Read ball positions while they are still at scene-file origin
+                // Read ball positions while they are still at scene-file origin.
+                // Only done once per session — the scene-file position IS the 0-volume anchor.
                 s_masterMinX  = _master?.position.x    ?? 0f;
                 s_bgmMinX     = _bgm?.position.x       ?? 0f;
                 s_sfxMinX     = _sfx?.position.x       ?? 0f;
-                s_masterFillY = _masterFill?.position.y ?? 0f;
-                s_bgmFillY    = _bgmFill?.position.y    ?? 0f;
-                s_sfxFillY    = _sfxFill?.position.y    ?? 0f;
                 s_anchored    = true;
+            }
 
-                // Load saved volumes (0 on first ever run)
+            // Every instance copies from statics so Update() has correct local values
+            _masterMinX  = s_masterMinX;
+            _bgmMinX     = s_bgmMinX;
+            _sfxMinX     = s_sfxMinX;
+
+            // Always restore saved volumes every Begin() — not just the first run.
+            // Without this, the second+ Play in the same session skips restoration
+            // (s_anchored is true) and volumes stay at 0 while balls reset to scene-file origin.
+            {
                 float masterVol = Audio.loadVolume("Audio Master", 0f);
                 float bgmVol    = Audio.loadVolume("Audio BGM",    0f);
                 float sfxVol    = Audio.loadVolume("Audio SFX",    0f);
@@ -76,23 +83,13 @@ namespace Eno
                 Audio.setGroupVolume("SFX", sfxVol);
 
                 // Place balls at saved positions
-                PlaceBallAtVolume(_master,     masterVol, s_masterMinX);
-                PlaceBallAtVolume(_bgm,        bgmVol,    s_bgmMinX);
-                PlaceBallAtVolume(_sfx,        sfxVol,    s_sfxMinX);
-
-                // Stretch fills to match
-                UpdateFill(_masterFill, s_masterMinX, VolumeToX(masterVol, s_masterMinX), s_masterFillY);
-                UpdateFill(_bgmFill,    s_bgmMinX,    VolumeToX(bgmVol,    s_bgmMinX),    s_bgmFillY);
-                UpdateFill(_sfxFill,    s_sfxMinX,    VolumeToX(sfxVol,    s_sfxMinX),    s_sfxFillY);
+                PlaceBallAtVolume(_master, masterVol, _masterMinX);
+                PlaceBallAtVolume(_bgm,    bgmVol,    _bgmMinX);
+                PlaceBallAtVolume(_sfx,    sfxVol,    _sfxMinX);
             }
-
-            // Every instance copies from statics so Update() has correct local values
-            _masterMinX  = s_masterMinX;
-            _bgmMinX     = s_bgmMinX;
-            _sfxMinX     = s_sfxMinX;
-            _masterFillY = s_masterFillY;
-            _bgmFillY    = s_bgmFillY;
-            _sfxFillY    = s_sfxFillY;
+            // _masterFillY = s_masterFillY;
+            // _bgmFillY    = s_bgmFillY;
+            // _sfxFillY    = s_sfxFillY;
         }
 
         public void Update()
@@ -125,7 +122,7 @@ namespace Eno
                 float clampedX = MathF.Max(minX, MathF.Min(minX + SliderRange, mouse.x + _dragOffsetX));
 
                 _draggedBall.position = new Vector2(clampedX, _draggedBall.position.y);
-                UpdateFill(GetFill(_draggedBall), minX, clampedX, GetFillY(_draggedBall));
+                //UpdateFill(GetFill(_draggedBall), minX, clampedX, GetFillY(_draggedBall));
                 ApplyVolume(_draggedBall, XToVolume(clampedX, minX));
             }
 
@@ -142,13 +139,13 @@ namespace Eno
         }
 
         // Left edge fixed at anchorX; right edge reaches ballX.  Y never changes.
-        private void UpdateFill(Sprite2D? fill, float anchorX, float ballX, float fillY)
-        {
-            if (fill == null) return;
-            float width = MathF.Max(0f, ballX - anchorX);
-            fill.position = new Vector2(anchorX + width * 0.5f, fillY);
-            fill.setSize(width, fill.height);
-        }
+        // private void UpdateFill(Sprite2D? fill, float anchorX, float ballX, float fillY)
+        // {
+        //     if (fill == null) return;
+        //     float width = MathF.Max(0f, ballX - anchorX);
+        //     fill.position = new Vector2(anchorX + width * 0.5f, fillY);
+        //     fill.setSize(width, fill.height);
+        // }
 
         private bool IsMouseOverBall(Sprite2D? ball, Vector2 mouse)
         {
@@ -177,25 +174,40 @@ namespace Eno
             return _sfxMinX;
         }
 
-        private Sprite2D? GetFill(Sprite2D ball)
-        {
-            if (ball == _master) return _masterFill;
-            if (ball == _bgm)    return _bgmFill;
-            return _sfxFill;
-        }
+        // private Sprite2D? GetFill(Sprite2D ball)
+        // {
+        //     if (ball == _master) return _masterFill;
+        //     if (ball == _bgm)    return _bgmFill;
+        //     return _sfxFill;
+        // }
 
-        private float GetFillY(Sprite2D ball)
-        {
-            if (ball == _master) return _masterFillY;
-            if (ball == _bgm)    return _bgmFillY;
-            return _sfxFillY;
-        }
+        // private float GetFillY(Sprite2D ball)
+        // {
+        //     if (ball == _master) return _masterFillY;
+        //     if (ball == _bgm)    return _bgmFillY;
+        //     return _sfxFillY;
+        // }
 
         private void ApplyVolume(Sprite2D ball, float volume)
         {
             if      (ball == _master) Audio.masterVolume = volume;
             else if (ball == _bgm)    Audio.setGroupVolume("BGM", volume);
             else if (ball == _sfx)    Audio.setGroupVolume("SFX", volume);
+        }
+    
+        public void Default_enter()
+        {
+            // TODO: Add enter logic for Default state
+        }
+
+        public void Default_update()
+        {
+            // TODO: Add update logic for Default state
+        }
+
+        public void Default_exit()
+        {
+            // TODO: Add exit logic for Default state
         }
     }
 }

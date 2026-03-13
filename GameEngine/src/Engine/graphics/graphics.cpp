@@ -1798,13 +1798,6 @@ namespace Graphics
                                             renderInfo.uvStart.y + frame.uvEnd.y   * ry };
                                 }
 
-                                // Flip sprite when moving right (sprites face left by default)
-                                if (entity.has<ECSComponents::PhysicsComponent>(entityManager))
-                                {
-                                    auto& physics = entity.get<ECSComponents::PhysicsComponent>(entityManager);
-                                    if (physics.velocity.x > 0.1f)
-                                        std::swap(uvStart.x, uvEnd.x);
-                                }
                             }
                         }
 

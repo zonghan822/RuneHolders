@@ -366,16 +366,11 @@ namespace Audio
 			if (parameters.highPass)
 				hpDSP = modifyHighPass(parameters);
 
-			// Append DSPs
-			ch->addDSP(0, reverbDSP);
-			ch->addDSP(0, eqDSP);
-			ch->addDSP(0, lpDSP);
-			ch->addDSP(0, hpDSP);
-
-			dsps_.push_back(reverbDSP);
-			dsps_.push_back(eqDSP);
-			dsps_.push_back(lpDSP);
-			dsps_.push_back(hpDSP);
+			// Append DSPs (only non-null to avoid FMOD errors and null dereference on cleanup)
+			if (reverbDSP) { ch->addDSP(0, reverbDSP); dsps_.push_back(reverbDSP); }
+			if (eqDSP)     { ch->addDSP(0, eqDSP);     dsps_.push_back(eqDSP); }
+			if (lpDSP)     { ch->addDSP(0, lpDSP);     dsps_.push_back(lpDSP); }
+			if (hpDSP)     { ch->addDSP(0, hpDSP);     dsps_.push_back(hpDSP); }
 		}
 
 		/*============================================================================================

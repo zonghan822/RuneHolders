@@ -555,7 +555,6 @@ namespace Editor
 		std::wstring wfname(fname.begin(), fname.end());
 		std::wstring wpath = fullScriptPath.wstring();
 
-		std::wcout << "Scripts Dir: " << wpath << ". Name: " << wfname << std::endl;
 		auto script = std::make_unique<Script::EnoScript>(coreHost_, wfname, wpath);
 		attachScript(node, std::move(script));
 	}

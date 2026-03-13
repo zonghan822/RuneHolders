@@ -259,10 +259,10 @@ namespace Audio
 
 		audioComp.audioMod_.ch_ = ch;
 
-		// Now that channel exists, apply volume/pitch/pan
+		// Now that channel exists, apply volume/pitch/pan and any enabled DSP effects
 		if (ch)
 		{
-			modifyBasic(ch, createSP(audioComp));
+			modify(ch, createSP(audioComp));
 
 			// CRITICAL FIX: Always unpause when play() is called
 			// The play() function is meant to START playback
@@ -344,8 +344,8 @@ namespace Audio
 
 		if (ch)
 		{
-			// Apply base volume/pitch/pan from component (do NOT mutate the component values)
-			modifyBasic(ch, createSP(audioComp));
+			// Apply volume/pitch/pan and any enabled DSP effects from component
+			modify(ch, createSP(audioComp));
 
 			ch->setPaused(false);
 			channels_.push_back(ch);
@@ -572,6 +572,40 @@ namespace Audio
 		sp.pan = static_cast<float>(ac.panScale_);
 		if (sp.pan < -1.0f) sp.pan = -1.0f;
 		if (sp.pan > 1.0f) sp.pan = 1.0f;
+
+		// Low Pass filter
+		if (ac.enableLowPass_)
+		{
+			LowPass lp;
+			if (ac.lpSimple_)
+			{
+				lp.type = FMOD_DSP_TYPE_LOWPASS_SIMPLE;
+				lp.lp = SimpleLowPass{ ac.lpCutoff_ };
+			}
+			else
+			{
+				lp.type = FMOD_DSP_TYPE_LOWPASS;
+				lp.lp = StandardLowPass{ ac.lpCutoff_, ac.lpResonance_ };
+			}
+			sp.lowPass = lp;
+		}
+
+		// High Pass filter
+		if (ac.enableHighPass_)
+		{
+			HighPass hp;
+			if (ac.hpSimple_)
+			{
+				hp.type = FMOD_DSP_TYPE_HIGHPASS_SIMPLE;
+				hp.hp = SimpleHighPass{ ac.hpCutoff_ };
+			}
+			else
+			{
+				hp.type = FMOD_DSP_TYPE_HIGHPASS;
+				hp.hp = StandardHighPass{ ac.hpCutoff_, ac.hpResonance_ };
+			}
+			sp.highPass = hp;
+		}
 
 		return sp;
 	}
@@ -1143,7 +1177,7 @@ namespace Audio
 					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_CUTOFF, f.cutoff);
 					dsp->setParameterFloat(FMOD_DSP_HIGHPASS_RESONANCE, f.resonance);
 				}
-			}, parameters.lowPass->lp);
+			}, parameters.highPass->hp);
 		return dsp;
 	}
 }
