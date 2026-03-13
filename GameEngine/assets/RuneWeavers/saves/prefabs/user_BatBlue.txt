@@ -183,7 +183,7 @@
 			"type": "int"
 		},
 		"Cols": {
-			"value": "1",
+			"value": "2",
 			"type": "int"
 		},
 		"Frame Duration": {
@@ -195,7 +195,7 @@
 			"type": "bool"
 		},
 		"Animation Count": {
-			"value": "7",
+			"value": "8",
 			"type": "int"
 		},
 		"Current Animation": {
@@ -423,6 +423,38 @@
 			"type": "float"
 		},
 		"Anim6 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim7 Name": {
+			"value": "Chase",
+			"type": "char64"
+		},
+		"Anim7 Texture": {
+			"value": "Enemy-BatBlue-IdleFlyRest-Sheet",
+			"type": "texchar240"
+		},
+		"Anim7 FrameW": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim7 FrameH": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim7 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim7 Cols": {
+			"value": "2",
+			"type": "int"
+		},
+		"Anim7 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim7 Looping": {
 			"value": "1",
 			"type": "bool"
 		}

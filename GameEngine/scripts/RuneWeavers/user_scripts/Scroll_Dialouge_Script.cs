@@ -110,6 +110,7 @@ namespace Eno
         private Node2D?   _narrativeSprite;
         private Node2D?   _dialogueBox;
         private Node2D?[] _scrollNodes = Array.Empty<Node2D?>();
+        private AudioNode _typingSfx;
 
         // ------------------- Runtime state ------------------------------
         private bool   dialogueActive      = false;
@@ -120,8 +121,6 @@ namespace Eno
         private string dialogueCurrentText = "";
         private string dialogueTargetText  = "";
         private float  dialogueTypeTimer   = 0f;
-
-        private static readonly Random rng = new Random();
 
         public void Begin()
         {
@@ -137,6 +136,8 @@ namespace Eno
                 try { _scrollNodes[i] = GetNode<Node2D>(ScrollNames[i]); } catch { }
 
             if (_dialogueCanvas != null) _dialogueCanvas.active = false;
+
+            _typingSfx = GetNode<AudioNode>("Typing SFX");
         }
 
         // Called by PlayerController when the player interacts with a scroll.
@@ -187,12 +188,16 @@ namespace Eno
                 while (dialogueTypeTimer >= DIALOGUE_TYPE_SPEED &&
                        dialogueCurrentText.Length < dialogueTargetText.Length)
                 {
-                    dialogueCurrentText += dialogueTargetText[dialogueCurrentText.Length];
+                    char c = dialogueTargetText[dialogueCurrentText.Length];
+                    dialogueCurrentText += c;
                     dialogueTypeTimer   -= DIALOGUE_TYPE_SPEED;
 
-                    int    sfxNum  = rng.Next(1, 22);
-                    string sfxName = "Typing_" + (sfxNum < 10 ? "0" : "") + sfxNum;
-                    try { GetNode<AudioNode>(sfxName)?.play(); } catch { }
+                    // Play typing sound for each non-whitespace character
+                    if (c != ' ' && c != '\n' && _typingSfx != null)
+                    {
+                        Bridge.AudioStop(_typingSfx.ID);
+                        Bridge.AudioPlay(_typingSfx.ID);
+                    }
                 }
 
                 if (_dialogueText != null)

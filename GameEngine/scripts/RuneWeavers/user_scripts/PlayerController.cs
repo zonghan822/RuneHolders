@@ -10,11 +10,14 @@ namespace Eno
 
         // Duration of the attack animation in seconds
         public float attackDuration = 0.5f;
+        private Actor _player;
+        private float _attackTimer  = 0f;
+        private bool  _isAttacking  = false;
+        // Spell damage — written to the DamageComponent on Begin() so spells can read it via bridge
+        public float damage = 10f;
 
-        private Actor     _player = null!;
         private Node2D?[] _scrollNodes = Array.Empty<Node2D?>();
-        private float     _attackTimer = 0f;
-        private bool      _isAttacking = false;
+
 
         public void Begin()
         {
@@ -23,11 +26,14 @@ namespace Eno
             // ACTOR nodes have physics — keep gravity off for top-down movement
             _player.useGravity  = false;
             _player.isKinematic = false;
+            _player.maxHealth   = 100f;
+            _player.health      = 100f;
+            _player.damage      = damage;
 
+            
             _scrollNodes = new Node2D?[Scroll_Dialouge_Script.ScrollNames.Length];
             for (int i = 0; i < _scrollNodes.Length; i++)
                 try { _scrollNodes[i] = GetNode<Node2D>(Scroll_Dialouge_Script.ScrollNames[i]); } catch { }
-            
             
         }
 
