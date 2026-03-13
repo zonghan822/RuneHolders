@@ -89,6 +89,7 @@ namespace Eno
             {
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
                 _player.changeState("Hurt");
+                _self.changeState("Idle");
                 _contactTimer = contactDamageCooldown;
             }
         }
@@ -112,7 +113,11 @@ namespace Eno
         }
         public void Idle_exit() { }
 
-        public void Chase_enter() { _pathTimer = pathRefreshInterval; }
+        public void Chase_enter()
+        {
+            _pathTimer = pathRefreshInterval;
+            try { Bridge.AudioPlayInstantLoop("SFX", "Trailblight_Move_Loop"); } catch { }
+        }
         public void Chase_update()
         {
             FindPlayer();
@@ -171,6 +176,7 @@ namespace Eno
         {
             _self?.clearPath();
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
+            try { Bridge.AudioStopInstant("Trailblight_Move_Loop"); } catch { }
         }
 
         public void Frozen_enter() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
@@ -181,6 +187,7 @@ namespace Eno
         {
             _hurtTimer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
+            try { Bridge.AudioPlayInstant("SFX", "Trailblight_Hurt_02"); } catch { }
         }
         public void Hurt_update()
         {
@@ -199,6 +206,7 @@ namespace Eno
         {
             _deathTimer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
+            try { Bridge.AudioPlayInstant("SFX", "Trailblight_Death_02"); } catch { }
         }
         public void Death_update()
         {

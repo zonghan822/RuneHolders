@@ -268,10 +268,6 @@ namespace ECS
 				std::cout << "[DEBUG TEXTURE LOAD] texture already set, skipping\n";
 			}
 		}
-		else
-		{
-			std::cout << "[DEBUG TEXTURE LOAD] Entity " << entity.id() << " has no RenderComponent\n";
-		}
 	}
 
 	// Saving entity data in binary

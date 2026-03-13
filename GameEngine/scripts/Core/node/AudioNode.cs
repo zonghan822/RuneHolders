@@ -19,5 +19,17 @@ namespace Eno
             get => Bridge.GetAudioPitch(ID);
             set => Bridge.SetAudioPitch(ID, value);
         }
+
+        // Enable spatial audio: volume falls off with distance, pan follows X offset from camera
+        public bool spatialAudio
+        {
+            set => Bridge.SetAudioSpatial(ID, value ? 1 : 0);
+        }
+
+        // World-unit distance at which volume reaches zero (default 500)
+        public float maxAudibleDistance
+        {
+            set => Bridge.SetAudioMaxDistance(ID, value);
+        }
     }
 }

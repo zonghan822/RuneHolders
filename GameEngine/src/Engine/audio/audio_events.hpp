@@ -61,6 +61,24 @@ namespace Audio
 	};
 
 	/*============================================================================================
+	 * \brief				A request to play a looping sound immediately by name.
+	 *						The channel is tracked by soundName_ so it can be stopped later.
+	*//*========================================================================================*/
+	struct PlayInstantLoop
+	{
+		std::string groupName_;
+		std::string soundName_;
+	};
+
+	/*============================================================================================
+	 * \brief				A request to stop a looping instant sound by name.
+	*//*========================================================================================*/
+	struct StopInstant
+	{
+		std::string soundName_;
+	};
+
+	/*============================================================================================
 	 * \brief				Behaves as a tag event
 	*//*========================================================================================*/
 	struct StopBGM {

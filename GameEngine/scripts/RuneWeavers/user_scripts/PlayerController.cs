@@ -8,11 +8,22 @@ namespace Eno
         // Movement speed in world units per second
         public float speed = 300f;
 
-        // Duration of the attack animation in seconds
         public float attackDuration = 0.5f;
-        private Actor _player;
-        private float _attackTimer  = 0f;
-        private bool  _isAttacking  = false;
+        public float castDuration   = 0.5f;
+        public float hurtDuration   = 0.4f;
+
+        private Actor     _player;
+        private Canvas?   _canvas       = null;
+        private Sprite2D? _hpBarFull;
+        private bool      _hpBarReady   = false;
+        private float     _hpBarInitW   = 0f;
+        private float     _hpBarInitH   = 0f;
+        private float     _hpBarLocalX  = 0f;
+        private float     _hpBarLocalY  = 0f;
+        private float     _attackTimer  = 0f;
+        private float     _hurtTimer   = 0f;
+        private bool      _isAttacking = false;
+        private bool      _isHurt      = false;
         // Spell damage — written to the DamageComponent on Begin() so spells can read it via bridge
         public float damage = 10f;
 
@@ -31,6 +42,10 @@ namespace Eno
             _player.health      = 100f;
             _player.damage      = damage;
 
+            
+            _hpBarFull = GetNode<Sprite2D>("PlayerHealthBar_Full");
+            try { _canvas = GetNode<Canvas>("Gameplay_UI"); } catch { }
+
             _scrollNodes = new Node2D?[Scroll_Dialouge_Script.ScrollNames.Length];
             for (int i = 0; i < _scrollNodes.Length; i++)
                 try { _scrollNodes[i] = GetNode<Node2D>(Scroll_Dialouge_Script.ScrollNames[i]); } catch { }
@@ -38,8 +53,40 @@ namespace Eno
             _spellbookUIID = Bridge.GetNode("Spellbook");
         }
 
+        private void UpdateHealthBar()
+        {
+            if (_hpBarFull == null) return;
+
+            if (!_hpBarReady)
+            {
+                float w = _hpBarFull.width;
+                if (w <= 0f) return;
+                _hpBarInitW = w;
+                _hpBarInitH = _hpBarFull.height;
+
+                // Capture initial canvas-local offset so we can restore it each frame
+                if (_canvas != null)
+                {
+                    _hpBarLocalX = _hpBarFull.position.x - Bridge.GetPositionX(_canvas.ID);
+                    _hpBarLocalY = _hpBarFull.position.y - Bridge.GetPositionY(_canvas.ID);
+                }
+
+                _hpBarReady = true;
+            }
+
+            float pct  = _player.maxHealth > 0f ? _player.health / _player.maxHealth : 0f;
+            float newW = _hpBarInitW * pct;
+
+            // Shift the bar center left so the left edge stays fixed while the right edge shrinks
+            float offsetX = (_hpBarInitW - newW) * 0.5f;
+            Bridge.SetLocalPosition(_hpBarFull.ID, _hpBarLocalX - offsetX, _hpBarLocalY);
+            _hpBarFull.setSize(newW, _hpBarInitH);
+        }
+
         public void Update()
         {
+            UpdateHealthBar();
+
             // Freeze player and skip input during dialogue
             if (Scroll_Dialouge_Script.DialogueActive)
             {
@@ -54,7 +101,7 @@ namespace Eno
                 Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
             }
 
-            if (_isAttacking) return;
+            if (_isAttacking || _isHurt) return;
 
             float dt = Time.deltaTime;
 
@@ -144,6 +191,10 @@ namespace Eno
     
         public void Cast_enter()
         {
+            _player.animation = "Cast";
+            _player.setAnimationLooping(false);
+            uint frames = _player.getAnimationFrameCount();
+            if (frames > 0) _player.setAnimationFrameDuration(castDuration / frames);
         }
 
         public void Cast_update()
@@ -195,17 +246,25 @@ namespace Eno
     
         public void Hurt_enter()
         {
-            // TODO: Add enter logic for Hurt state
+            _isHurt    = true;
+            _hurtTimer = 0f;
+            _player.velocity  = new Vector2(0f, 0f);
+            _player.animation = "Hurt";
+            _player.setAnimationLooping(false);
+            uint frames = _player.getAnimationFrameCount();
+            if (frames > 0) _player.setAnimationFrameDuration(hurtDuration / frames);
         }
 
         public void Hurt_update()
         {
-            // TODO: Add update logic for Hurt state
+            _hurtTimer += Time.deltaTime;
+            if (_hurtTimer >= hurtDuration)
+                _player.changeState(IsMoving() ? "Walk" : "Idle");
         }
 
         public void Hurt_exit()
         {
-            // TODO: Add exit logic for Hurt state
+            _isHurt = false;
         }
     
         public void Death_enter()

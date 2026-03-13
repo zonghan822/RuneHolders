@@ -72,6 +72,7 @@ namespace Bridge {
         ENGINE_API float   __stdcall GetPositionX(uint32_t sceneObjectID);
         ENGINE_API float   __stdcall GetPositionY(uint32_t sceneObjectID);
         ENGINE_API void    __stdcall SetPosition(uint32_t sceneObjectID, float x, float y);
+        ENGINE_API void    __stdcall SetLocalPosition(uint32_t sceneObjectID, float x, float y);
 
         ENGINE_API float   __stdcall GetRotationX(uint32_t sceneObjectID);
         ENGINE_API float   __stdcall GetRotationY(uint32_t sceneObjectID);
@@ -151,6 +152,9 @@ namespace Bridge {
         // Channel group volume (groupName: "BGM" or "SFX"), range 0-100
         ENGINE_API void    __stdcall SetGroupVolume(const char* groupName, float volume);
         ENGINE_API float   __stdcall GetGroupVolume(const char* groupName);
+
+        // Apply a low-pass filter to a channel group. cutoff in Hz (10-22000); pass 0 to remove.
+        ENGINE_API void    __stdcall SetGroupLowPass(const char* groupName, float cutoff);
 
         // Master (FMOD master channel group) volume, range 0-100
         ENGINE_API void    __stdcall SetMasterVolume(float volume);
