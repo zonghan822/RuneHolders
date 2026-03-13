@@ -17,7 +17,7 @@ namespace Eno
         public float damage = 10f;
 
         private Node2D?[] _scrollNodes    = Array.Empty<Node2D?>();
-        private uint      _spellbookUIID = 0;   // TODO: replace "SPELLBOOK_UI_PLACEHOLDER"
+        private uint      _spellbookUIID = 0;  
         private bool      _spellbookOpen = false;
 
         public void Begin()

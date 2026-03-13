@@ -46,6 +46,8 @@ namespace Eno
             {
                 Bridge.SetPosition(_cameraID, CamDestX, CamDestY);
                 _panning = false;
+                // Play video in next room
+                
             }
             else
             {

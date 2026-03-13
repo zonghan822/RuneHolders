@@ -2,37 +2,42 @@ namespace Eno
 {
     public class Room8_Script : ScriptBase
     {
-        private static readonly string[] AllDoors =
+        private uint _scrollID    = 0;
+        private uint _playerID    = 0;
+        private uint _spellbookID = 0;
+        private uint _exitDoorID  = 0;
+
+        private bool  _postDialogueActivated = false;
+        private bool  _scrollPickedUp        = false;
+
+        public void Begin()
         {
-            "Door1to2",  "Door2to1",
-            "Door2to3",  "Door3to2",
-            "Door3to4",  "Door4to3",
-            "Door4to5",  "Door5to4",
-            "Door5to6",  "Door6to5",
-            "Door6to7",  "Door7to6",
-            "Door7to8",  "Door8to7",
-            "Door8to9",  "Door9to8",
-            "Door9to10", "Door10to9",
-            "Door9to11", "Door11to9",
-        };
-
-        private bool _cleared = false;
-
-        public void Begin() { }
+            _playerID    = Bridge.GetNode("Player");
+            _scrollID    = Bridge.GetNode("Room8_Scroll");
+            _exitDoorID  = Bridge.GetNode("Door8to9");
+            _spellbookID = Bridge.GetNode("Spellbook");
+        }
 
         public void Update()
         {
-            if (_cleared) return;
-
-            // TODO: replace with real clear condition
-            if (!Input.isKeyPressed(KeyCode.Space)) return;
-
-            _cleared = true;
-            foreach (string name in AllDoors)
+            // After dialogue ends: activate ui sprite, then hide after 3 seconds
+            if (!_postDialogueActivated && Scroll_Dialouge_Script.DialogueShown[2])
             {
-                uint id = Bridge.GetNode(name);
-                if (id != 0 && id != uint.MaxValue)
-                    Bridge.ChangeState(id, "Unlocking");
+                _postDialogueActivated = true;
+            }
+
+            // E on scroll → pickup: scroll disappears, spellbook updates, door unlocks
+            if (!_scrollPickedUp && Input.isKeyPressed(KeyCode.E) &&
+                _scrollID != 0 && _playerID != 0 &&
+                Bridge.IsColliding(_scrollID, _playerID))
+            {
+                _scrollPickedUp = true;
+                // Hide the scroll
+                Bridge.SetVisibility(_scrollID, false);
+                Bridge.SetColliderActive(_scrollID, false);
+                // Update spellbook
+                if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-3Spells");
+                if (_exitDoorID  != 0) Bridge.ChangeState(_exitDoorID, "Unlocking");
             }
         }
     }
