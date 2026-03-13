@@ -46,7 +46,6 @@ namespace Eno
             {
                 Bridge.SetPosition(_cameraID, CamDestX, CamDestY);
                 _panning = false;
-                Room21_Script.StartWaves();
             }
             else
             {

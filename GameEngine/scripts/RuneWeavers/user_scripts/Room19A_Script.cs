@@ -77,7 +77,6 @@ namespace Eno
                     break;
             }
         }
-        }
 
         private void LockDoors()
         {
