@@ -103,8 +103,8 @@ namespace Engine
 		* \brief		Returns true when the window has been requested to close.
 		*               Use in a custom game loop together with beginFrame() / endFrame().
 		*//*========================================================================================*/
-		bool shouldClose() const { return window_.shouldClose(); }
-		void requestClose() { window_.setShouldClose(true); }
+		bool shouldClose() const { return window_.shouldClose() || closeRequested_; }
+		void requestClose() { closeRequested_ = true; }
 
 		// Returns true once initScripting() or setupLate() has created the script host.
 		bool isScriptingReady() const { return coreHost_ != nullptr; }
@@ -387,9 +387,10 @@ namespace Engine
 		std::string appName_;  // Set by setAppName() before setup(); used by Bridge_Init for DLL FileSystem
 
 		// Game state
-		bool isPlaying_ = false;  // Tracks if game is in playing mode (vs editor mode)
-		bool isPaused_  = false;  // Runtime pause (dialogue, menus) - pauses physics/AI/collision
-		bool hasBegun_  = false;  // Guards the one-shot Begin() call at the start of each play session
+		bool isPlaying_       = false;  // Tracks if game is in playing mode (vs editor mode)
+		bool isPaused_        = false;  // Runtime pause (dialogue, menus) - pauses physics/AI/collision
+		bool hasBegun_        = false;  // Guards the one-shot Begin() call at the start of each play session
+		bool closeRequested_  = false;  // Set by requestClose(); checked by shouldClose() to avoid GLFW DLL boundary issues
 		std::string pendingScene_;  // Non-empty when a script has requested a scene change
 		Math::eVec2<float> viewportMin_{ 0.f, 0.f };  // Screen-space game viewport bounds (set by editor/app)
 		Math::eVec2<float> viewportMax_{ 0.f, 0.f };  // Zero max = fall back to full window size

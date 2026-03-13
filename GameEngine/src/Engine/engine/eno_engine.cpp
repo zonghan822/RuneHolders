@@ -134,7 +134,7 @@ namespace Engine
 		// Standalone game is always in play mode
 		setIsPlaying(true);
 
-		while (!window_.shouldClose())
+		while (!shouldClose())
 		{
 			// Script watch (beginFrame also polls events / updates time)
 			bool modified = coreHost_->areScriptsModified();
