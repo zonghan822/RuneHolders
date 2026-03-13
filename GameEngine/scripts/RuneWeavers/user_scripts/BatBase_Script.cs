@@ -4,8 +4,8 @@ namespace Eno
 {
     public class BatBase_Script : ScriptBase
     {
-        public float chaseSpeed      = 100f;
-        public float dashSpeed       = 400f;
+        public float chaseSpeed      = 120f;
+        public float dashSpeed       = 240f;
         public float awarenessRadius = 300f;
         public float windUpDuration  = 1.5f;
         public float dashDuration    = 0.4f;
@@ -18,9 +18,12 @@ namespace Eno
         private Enemy?  _self;
         private Actor?  _player;
         private bool    _playerSearched = false;
-        private float   _timer  = 0f;
-        private Vector2 _dashDir = new Vector2(1f, 0f);
-        private bool    _isDying = false;
+        public float contactDamageCooldown = 1.0f;
+
+        private float   _timer        = 0f;
+        private float   _contactTimer = 0f;
+        private Vector2 _dashDir      = new Vector2(1f, 0f);
+        private bool    _isDying      = false;
 
         public void Begin()
         {
@@ -29,11 +32,32 @@ namespace Eno
             {
                 _self.useGravity  = false;
                 _self.isKinematic = false;
+                _self.maxHealth   = 10f;
+                _self.health      = 10f;
+                _self.damage      = 20f;
             }
             EnemyColorRegistry.Register(ID, EnemyColor);
         }
 
-        public void Update() { }
+        public void Update()
+        {
+            if (_isDying || _self == null) return;
+            FindPlayer();
+            if (_player == null) return;
+
+            if (_contactTimer > 0f)
+            {
+                _contactTimer -= Time.deltaTime;
+                return;
+            }
+
+            if (_self.isColliding(_player))
+            {
+                _player.health = MathF.Max(0f, _player.health - _self.damage);
+                _player.changeState("Hurt");
+                _contactTimer = contactDamageCooldown;
+            }
+        }
 
         public void Spawn_enter() { _timer = 0f; }
         public void Spawn_update()

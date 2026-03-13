@@ -11,6 +11,9 @@ namespace Eno
         // Duration of the attack animation in seconds
         public float attackDuration = 0.5f;
 
+        // Spell damage — written to the DamageComponent on Begin() so spells can read it via bridge
+        public float damage = 10f;
+
         private Actor _player;
         private float _attackTimer  = 0f;
         private bool  _isAttacking  = false;
@@ -22,6 +25,9 @@ namespace Eno
             // ACTOR nodes have physics — keep gravity off for top-down movement
             _player.useGravity  = false;
             _player.isKinematic = false;
+            _player.maxHealth   = 100f;
+            _player.health      = 100f;
+            _player.damage      = damage;
             
         }
 

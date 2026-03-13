@@ -4,7 +4,7 @@
 		"type": "uint32_t"
 	},
 	"Script": {
-		"value": "Spell_Cast_Script.cs",
+		"value": "LightSpell_Script.cs",
 		"type": "string"
 	},
 	"struct ECSComponents::VisibilityComponent": {

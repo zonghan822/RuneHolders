@@ -16,11 +16,14 @@ namespace Eno
         private Enemy? _self;
         private Actor? _player;
         private bool   _playerSearched = false;
-        private float  _pathTimer  = 0f;
-        private float  _hurtTimer  = 0f;
-        private float  _deathTimer = 0f;
-        private float  _spawnTimer = 0f;
-        private bool   _isDying    = false;
+        public float contactDamageCooldown = 1.0f;
+
+        private float  _pathTimer    = 0f;
+        private float  _hurtTimer    = 0f;
+        private float  _deathTimer   = 0f;
+        private float  _spawnTimer   = 0f;
+        private float  _contactTimer = 0f;
+        private bool   _isDying      = false;
 
         public void Begin()
         {
@@ -29,11 +32,32 @@ namespace Eno
             {
                 _self.useGravity  = false;
                 _self.isKinematic = false;
+                _self.maxHealth   = 30f;
+                _self.health      = 30f;
+                _self.damage      = 10f;
             }
             EnemyColorRegistry.Register(ID, EnemyColor);
         }
 
-        public void Update() { }
+        public void Update()
+        {
+            if (_isDying || _self == null) return;
+            FindPlayer();
+            if (_player == null) return;
+
+            if (_contactTimer > 0f)
+            {
+                _contactTimer -= Time.deltaTime;
+                return;
+            }
+
+            if (_self.isColliding(_player))
+            {
+                _player.health = MathF.Max(0f, _player.health - _self.damage);
+                _player.changeState("Hurt");
+                _contactTimer = contactDamageCooldown;
+            }
+        }
 
         public void Spawn_enter() { _spawnTimer = 0f; }
         public void Spawn_update()
@@ -53,7 +77,7 @@ namespace Eno
             FindPlayer();
             if (_self == null || _player == null) return;
             if (Dist(_self.position, _player.position) <= awarenessRadius)
-                _self.changeState("Walk");
+                _self.changeState("Chase");
         }
         public void Idle_exit() { }
 
@@ -135,7 +159,7 @@ namespace Eno
                 if (_self?.isDead == true)
                     _self.changeState("Death");
                 else
-                    _self?.changeState("Walk");
+                    _self?.changeState("Chase");
             }
         }
         public void Hurt_exit() { }
