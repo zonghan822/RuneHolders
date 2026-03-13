@@ -175,7 +175,7 @@ namespace Eno
         public void WindUp_enter()
         {
             _timer = 0f;
-            //try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Windup_01"); } catch { }
+            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Windup_01"); } catch { }
         }
         public void WindUp_update()
         {
@@ -210,7 +210,7 @@ namespace Eno
             _timer         = 0f;
             _chargedPixels = 0f;
             _dashReady     = false;
-            //try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Attack_01"); } catch { }
+            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Attack_01"); } catch { }
             if (_self != null)
                 _self.velocity = new Vector2(_dashDir.x * dashSpeed, _dashDir.y * dashSpeed);
         }
@@ -256,7 +256,7 @@ namespace Eno
         {
             _timer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            //try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Hurt_02"); } catch { }
+            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Hurt_02"); } catch { }
         }
         public void Hurt_update()
         {
@@ -277,7 +277,7 @@ namespace Eno
         {
             _timer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            //try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Death_01"); } catch { }
+            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Death_01"); } catch { }
         }
         public void Death_update()
         {

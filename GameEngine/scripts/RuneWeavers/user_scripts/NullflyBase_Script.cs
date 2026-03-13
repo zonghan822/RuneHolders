@@ -153,7 +153,7 @@ namespace Eno
         public void WindUp_enter()
         {
             _timer = 0f;
-            //try { Bridge.AudioPlayInstant("SFX", "Nullfly_Attack_01"); } catch { }
+            try { Bridge.AudioPlayInstant("SFX", "Nullfly_Attack_01"); } catch { }
         }
         public void WindUp_update()
         {
