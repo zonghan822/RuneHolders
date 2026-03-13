@@ -61,5 +61,13 @@ namespace Eno
         // groupName: "SFX" or "BGM", soundName: asset name e.g. "Typing_01"
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern void AudioPlayInstant(string groupName, string soundName);
+
+        // Play a looping sound by name. Call AudioStopInstant to stop it.
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void AudioPlayInstantLoop(string groupName, string soundName);
+
+        // Stop a looping sound previously started with AudioPlayInstantLoop.
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void AudioStopInstant(string soundName);
     }
 }

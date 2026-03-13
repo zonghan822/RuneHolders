@@ -299,6 +299,16 @@ namespace Audio
 		*//*========================================================================================*/
 		void onAudioInstantPlay(const Audio::PlayInstant&);
 
+		/*============================================================================================
+		 * \brief						Play a looping sound immediately; channel tracked by name
+		*//*========================================================================================*/
+		void onAudioInstantPlayLoop(const Audio::PlayInstantLoop&);
+
+		/*============================================================================================
+		 * \brief						Stop a tracked looping instant sound by name
+		*//*========================================================================================*/
+		void onAudioInstantStop(const Audio::StopInstant&);
+
 	private:
 
 		struct PendingStop
@@ -329,6 +339,9 @@ namespace Audio
 		// Sounds
 		std::unordered_map<std::string, FMOD::Sound*> sounds_;
 		FMOD::Sound* selectedSound_;
+
+		// Channels for looping instant sounds (keyed by sound name)
+		std::unordered_map<std::string, FMOD::Channel*> instantChannels_;
 
 		// DSPs
 		std::vector<FMOD::DSP*> dsps_;

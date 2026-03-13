@@ -143,6 +143,22 @@ namespace Bridge
             gEngine->getEventBus().publish(Audio::PlayInstant{ std::string(groupName), std::string(soundName) });
         }
 
+        // Play a looping sound by name. The channel is tracked internally so it
+        // can be stopped later with AudioStopInstant. Calling again while already
+        // playing restarts the sound from the beginning.
+        ENGINE_API void __stdcall AudioPlayInstantLoop(const char* groupName, const char* soundName)
+        {
+            if (!gEngine) return;
+            gEngine->getEventBus().publish(Audio::PlayInstantLoop{ std::string(groupName), std::string(soundName) });
+        }
+
+        // Stop a looping sound previously started with AudioPlayInstantLoop.
+        ENGINE_API void __stdcall AudioStopInstant(const char* soundName)
+        {
+            if (!gEngine) return;
+            gEngine->getEventBus().publish(Audio::StopInstant{ std::string(soundName) });
+        }
+
         // Loads one audio volume value (0-100) from the config file by key.
         // Returns defaultVal if the key is absent or cannot be parsed.
         ENGINE_API float __stdcall LoadAudioVolume(const char* key, float defaultVal)
