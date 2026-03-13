@@ -117,7 +117,8 @@ namespace UI
 		void renderCanvasText(
 			Engine::EnoEngine& engine,
 			std::vector<ECS::Entity>& cachedEntities,
-			ECS::Entity& canvasEntity);
+			ECS::Entity& canvasEntity,
+			const Math::eVec2<float>& cameraTopLeft);
 	};
 
 } // end of namespace UI

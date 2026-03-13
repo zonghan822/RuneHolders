@@ -2,50 +2,107 @@ namespace Eno
 {
     public class Room15A_Script : ScriptBase
     {
-        private static readonly string[] AllDoors =
+        private const float WavePauseTime = 2f;
+
+        private static readonly string[] RoomDoors =
         {
-            "Door1to2",    "Door2to1",
-            "Door2to3",    "Door3to2",
-            "Door3to4",    "Door4to3",
-            "Door4to5",    "Door5to4",
-            "Door5to6",    "Door6to5",
-            "Door6to7",    "Door7to6",
-            "Door7to8",    "Door8to7",
-            "Door8to9",    "Door9to8",
-            "Door9to10",   "Door10to9",
-            "Door9to11",   "Door11to9",
-            "Door11to12",  "Door12to11",
-            "Door12to13A", "Door13Ato12",
-            "Door12to13B", "Door13Bto12",
-            "Door13Ato14A","Door14Ato13A",
-            "Door13Bto14B","Door14Bto13B",
-            "Door14Ato15A","Door15Ato14A",
-            "Door14Ato16A","Door16Ato14A",
-            "Door14Bto15B","Door15Bto14B",
-            "Door15Bto16B","Door16Bto15B",
-            "Door16Ato17A","Door17Ato16A",
-            "Door16Bto17B","Door17Bto16B",
-            "Door16Bto18B","Door18Bto16B",
-            "Door17Ato18A","Door18Ato17A",
-            "Door18Ato19A","Door19Ato18A",
-            "Door18Bto19A","Door19Ato18B",
-            "Door19Ato20A","Door20Ato19A",
-            "Door20Ato21A","Door21Ato20A",
+            "Door15Ato14A",
         };
 
-        private bool _cleared = false;
+        private static Room15A_Script _instance;
 
-        public void Begin() { }
+        private bool  _wavesStarted = false;
+        private bool  _enemiesLive  = false;
+        private bool  _pausing      = false;
+        private float _pauseTimer   = 0f;
+        private int   _waveIndex    = 0;
+
+        public void Begin()
+        {
+            _instance = this;
+        }
+
+        public static void StartWaves()
+        {
+            if (_instance != null && !_instance._wavesStarted)
+                _instance.BeginWaves();
+        }
+
+        private void BeginWaves()
+        {
+            LockDoors();
+            SpawnWave(0);
+            _wavesStarted = true;
+            _enemiesLive  = true;
+        }
 
         public void Update()
         {
-            if (_cleared) return;
+            if (!_wavesStarted) return;
 
-            // TODO: replace with real clear condition
-            if (!Input.isKeyPressed(KeyCode.Space)) return;
+            if (_pausing)
+            {
+                _pauseTimer += Time.deltaTime;
+                if (_pauseTimer >= WavePauseTime)
+                {
+                    _pausing = false;
+                    _waveIndex++;
+                    SpawnWave(_waveIndex);
+                    _enemiesLive = true;
+                }
+                return;
+            }
 
-            _cleared = true;
-            foreach (string name in AllDoors)
+            if (!_enemiesLive) return;
+            if (GetAllEnemies().Count > 0) return;
+
+            _enemiesLive = false;
+
+            if (_waveIndex >= 2)
+            {
+                UnlockDoors();
+            }
+            else
+            {
+                _pausing    = true;
+                _pauseTimer = 0f;
+            }
+        }
+
+        private void SpawnWave(int index)
+        {
+            float cx = Bridge.GetPositionX(ID);
+            float cy = Bridge.GetPositionY(ID);
+
+            switch (index)
+            {
+                case 0:
+                    SpawnPrefab("NullflyRedNW",  cx,        cy);
+                    break;
+                case 1:
+                    SpawnPrefab("SlugRed",       cx - 150f, cy);
+                    SpawnPrefab("NullflyBlueSE", cx + 150f, cy);
+                    break;
+                case 2:
+                    SpawnPrefab("SlugYellow",    cx - 150f, cy);
+                    SpawnPrefab("NullflyRedNW",  cx + 150f, cy);
+                    break;
+            }
+        }
+
+        private void LockDoors()
+        {
+            foreach (string name in RoomDoors)
+            {
+                uint id = Bridge.GetNode(name);
+                if (id != 0 && id != uint.MaxValue)
+                    Bridge.ChangeState(id, "Locked");
+            }
+        }
+
+        private void UnlockDoors()
+        {
+            foreach (string name in RoomDoors)
             {
                 uint id = Bridge.GetNode(name);
                 if (id != 0 && id != uint.MaxValue)

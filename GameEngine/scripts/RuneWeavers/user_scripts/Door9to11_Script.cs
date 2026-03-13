@@ -46,6 +46,7 @@ namespace Eno
             {
                 Bridge.SetPosition(_cameraID, CamDestX, CamDestY);
                 _panning = false;
+                Room11_Script.StartWaves();
             }
             else
             {
@@ -58,6 +59,7 @@ namespace Eno
         {
             Bridge.SetVisibility(ID, true);
             Bridge.SetColliderActive(ID, true);
+            Bridge.SetZIndex(ID, 2);
         }
         public void Locked_update() { }
         public void Locked_exit()   { }

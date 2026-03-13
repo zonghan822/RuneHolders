@@ -40,6 +40,7 @@ namespace Eno
         private float   _chargedPixels  = 0f;
         private bool    _isDying        = false;
         private bool    _dashReady      = false;
+        private bool    _deathTriggered = false;
 
         public void Begin()
         {
@@ -71,6 +72,14 @@ namespace Eno
         {
             if (_isDying || _self == null) return;
 
+            // Force death if health reached zero outside of Hurt state
+            if (!_deathTriggered && _self.health <= 0f)
+            {
+                _deathTriggered = true;
+                _self.changeState("Death");
+                return;
+            }
+
             if (_hpBarEmpty != null || _hpBarFull != null)
             {
                 float hx  = _self.position.x;
@@ -95,8 +104,12 @@ namespace Eno
 
             if (_self.isColliding(_player))
             {
+                _self.velocity = new Vector2(0f, 0f);
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
-                _player.changeState("Hurt");
+                if (_self.health > 0){
+                    _player.changeState("Hurt");
+                    _self.changeState("Idle");
+                } 
                 _contactTimer = contactDamageCooldown;
             }
         }
@@ -246,7 +259,11 @@ namespace Eno
 
         // ── Frozen ────────────────────────────────────────────────────────────────
 
-        public void Frozen_enter() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
+        public void Frozen_enter()
+        {
+            if (_deathTriggered) { _self?.changeState("Death"); return; }
+            if (_self != null) _self.velocity = new Vector2(0f, 0f);
+        }
         public void Frozen_update() { }
         public void Frozen_exit() { }
 

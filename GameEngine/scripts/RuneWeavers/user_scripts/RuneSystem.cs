@@ -188,7 +188,7 @@ namespace Eno
             Time.timeScale = slowTimeScale;
             Bridge.SetGroupLowPass("SFX", 600f);
             foreach (Enemy enemy in GetAllEnemies())
-                enemy.changeState("Frozen");
+                if (enemy.health > 0f) enemy.changeState("Frozen");
 
             // Show the StopWatch sprite and trigger fade-in
             FindStopWatch();
@@ -327,7 +327,7 @@ namespace Eno
             Time.timeScale = 1.0f;
             Bridge.SetGroupLowPass("SFX", 0f);
             foreach (Enemy enemy in GetAllEnemies())
-                enemy.changeState("Idle");
+                if (enemy.health > 0f) enemy.changeState("Idle");
             _swSprite?.changeState("FadeOut");
 
             if (attack)

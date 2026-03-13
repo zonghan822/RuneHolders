@@ -29,10 +29,11 @@ namespace Eno
         private const float  HP_BAR_OFFSET_Y     = -50f;
         public float contactDamageCooldown = 1.0f;
 
-        private float  _timer        = 0f;
-        private float  _contactTimer = 0f;
-        private bool   _isCloaked    = false;
-        private bool   _isDying      = false;
+        private float  _timer          = 0f;
+        private float  _contactTimer  = 0f;
+        private bool   _isCloaked     = false;
+        private bool   _isDying       = false;
+        private bool   _deathTriggered = false;
 
         // ── Cloak toggle ─────────────────────────────────────────────────────────
 
@@ -77,6 +78,14 @@ namespace Eno
         {
             if (_isDying || _self == null) return;
 
+            // Force death if health reached zero outside of Hurt state
+            if (!_deathTriggered && _self.health <= 0f)
+            {
+                _deathTriggered = true;
+                _self.changeState("Death");
+                return;
+            }
+
             if (_hpBarEmpty != null || _hpBarFull != null)
             {
                 float hx  = _self.position.x;
@@ -100,10 +109,13 @@ namespace Eno
             FindPlayer();
             if (_player != null && _self.isColliding(_player))
             {
+                _self.velocity = new Vector2(0f, 0f);
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
-                _player.changeState("Hurt");
+                if (_self.health > 0){
+                    _player.changeState("Hurt");
+                    _self.changeState("Idle");
+                } 
                 _contactTimer = contactDamageCooldown;
-                _self.changeState("Idle");
             }
         }
 
@@ -195,7 +207,10 @@ namespace Eno
 
         // ── Frozen ───────────────────────────────────────────────────────────────
 
-        public void Frozen_enter() { }
+        public void Frozen_enter()
+        {
+            if (_deathTriggered) { _self?.changeState("Death"); return; }
+        }
         public void Frozen_update() { }
         public void Frozen_exit() { }
 

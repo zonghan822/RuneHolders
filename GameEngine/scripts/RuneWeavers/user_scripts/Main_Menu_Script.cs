@@ -28,6 +28,7 @@ namespace Eno
             uint buttonID = Bridge.GetNode("Play Button");
             // Set to button default sprite
             Bridge.SetTexturePath(buttonID, "UI-Play");
+            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             Bridge.ChangeScene("Level.txt");
         }
     
@@ -44,6 +45,7 @@ namespace Eno
             // Set to button default sprite
             uint buttonID = Bridge.GetNode("Control Button");
             Bridge.SetTexturePath(buttonID, "UI-Controls");
+            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             // Set Control Menu Canvas Active
             uint controlMenuID = Bridge.GetNode("Controls Menu");
             Bridge.SetCanvasActive(controlMenuID, true);
@@ -62,6 +64,7 @@ namespace Eno
             // Set to button default sprite
             uint buttonID = Bridge.GetNode("Quit Button");
             Bridge.SetTexturePath(buttonID, "UI-Quit");
+            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             // Set Quit Menu Canvas Active
             uint quitMenuID = Bridge.GetNode("Quit Game Menu");
             Bridge.SetCanvasActive(quitMenuID, true);
@@ -83,6 +86,7 @@ namespace Eno
             // Set to button selected sprite
             uint buttonID = Bridge.GetNode("Control Menu Back Button");
             Bridge.SetTexturePath(buttonID, "UI-Back");
+            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             // Set Control Menu Canvas Inactive
             uint controlMenuID = Bridge.GetNode("Controls Menu");
             Bridge.SetCanvasActive(controlMenuID, false);
@@ -103,6 +107,7 @@ namespace Eno
             // Set to button selected sprite
             uint buttonID = Bridge.GetNode("Quit Menu Yes Button");
             Bridge.SetTexturePath(buttonID, "UI-Yes");
+            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             // Set Quit Menu Canvas Inactive
             uint quitMenuID = Bridge.GetNode("Quit Game Menu");
             Bridge.SetCanvasActive(quitMenuID, false);
@@ -124,6 +129,7 @@ namespace Eno
             // Set to button selected sprite
             uint buttonID = Bridge.GetNode("Quit Menu No Button");
             Bridge.SetTexturePath(buttonID, "UI-No");
+            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             // Set Quit Menu Canvas Inactive
             uint quitMenuID = Bridge.GetNode("Quit Game Menu");
             Bridge.SetCanvasActive(quitMenuID, false);
@@ -143,6 +149,7 @@ namespace Eno
             // Set to button selected sprite
             uint buttonID = Bridge.GetNode("Settings Button");
             Bridge.SetTexturePath(buttonID, "UI-Settings");
+            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             // Set Settings Menu Active
             uint settingMenuID = Bridge.GetNode("Settings Menu");
             Bridge.SetCanvasActive(settingMenuID, true);
@@ -179,6 +186,7 @@ namespace Eno
             // Set to button selected sprite
             uint buttonID = Bridge.GetNode("Settings Menu Back Button");
             Bridge.SetTexturePath(buttonID, "UI-Back");
+            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             // Set Settings Menu Canvas Inactive
             uint settingMenuID = Bridge.GetNode("Settings Menu");
             Bridge.SetCanvasActive(settingMenuID, false);

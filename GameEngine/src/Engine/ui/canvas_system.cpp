@@ -250,13 +250,28 @@ namespace UI
 
 	void CanvasSystem::renderCanvasText(
 		Engine::EnoEngine& engine,
-		std::vector<ECS::Entity>& /*cachedEntities*/,
-		ECS::Entity& canvasEntity)
+		std::vector<ECS::Entity>& cachedEntities,
+		ECS::Entity& canvasEntity,
+		const Math::eVec2<float>& cameraTopLeft)
 	{
 		auto& graphics      = engine.getGraphicsManager();
 		auto& entityManager = engine.getEntityManager();
 
-		// Collect all children of current canvas into layering map
+		// Resolve viewport dimensions from the active camera (needed by drawTextScreen)
+		float viewportW = 1920.f, viewportH = 1080.f;
+		{
+			auto cameraEntities = entityManager.findEntity<ECSComponents::CameraComponent>();
+			for (auto& ce : cameraEntities)
+			{
+				auto& cam = ce.get<ECSComponents::CameraComponent>(entityManager);
+				if (!cam.isActive) continue;
+				viewportW = cam.viewportWidth;
+				viewportH = cam.viewportHeight;
+				break;
+			}
+		}
+
+		// Collect all text children of this canvas
 		std::vector<ECS::Entity*> textEntities;
 		collectCanvasTextEntities(engine, canvasEntity, textEntities);
 
@@ -279,8 +294,11 @@ namespace UI
 				auto font = engine.getResourceLoader().getFont(std::string(textComp.fontName));
 				if (!font) continue;
 
-				// Use world position directly — drawText uses the camera projection matrix
-				Math::eVec2<float> worldPos = textEntity.get<ECSComponents::TransformComponent>(entityManager).pos;
+				// Convert world position to screen-relative coordinates, matching how
+				// non-canvas text entities are rendered via drawTextScreen in graphics.cpp
+				Math::eVec2<float> worldPos  = textEntity.get<ECSComponents::TransformComponent>(entityManager).pos;
+				Math::eVec2<float> screenPos = { worldPos.x - cameraTopLeft.x,
+				                                 worldPos.y - cameraTopLeft.y };
 
 				std::string fullText(textComp.text);
 				float  lineHeight = 60.0f * textComp.fontSize;
@@ -294,11 +312,12 @@ namespace UI
 						: fullText.substr(start);
 
 					if (!line.empty()) {
-						graphics.drawText(
+						graphics.drawTextScreen(
 							font, line,
-							Math::eVec2<float>{ worldPos.x, worldPos.y + yOffset },
+							Math::eVec2<float>{ screenPos.x, screenPos.y + yOffset },
 							textComp.fontSize,
-							Graphics::Color::White);
+							Graphics::Color::White,
+							viewportW, viewportH);
 					}
 
 					if (pos == std::string::npos) break;
@@ -379,7 +398,7 @@ namespace UI
 				}
 
 				renderCanvasEntities(engine, cachedEntities, canvasEntity, { 0.0f, 0.0f });
-				renderCanvasText(engine, cachedEntities, canvasEntity);
+				renderCanvasText(engine, cachedEntities, canvasEntity, cameraPos);
 			}
 			catch (...) { continue; }
 		}
