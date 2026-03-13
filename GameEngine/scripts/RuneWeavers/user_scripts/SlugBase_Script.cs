@@ -13,13 +13,17 @@ namespace Eno
 
         protected virtual int EnemyColor => 0;
 
-        private Enemy?   _self;
-        private Actor?   _player;
-        private Sprite2D? _healthBar;
-        private bool     _playerSearched = false;
+        private Enemy?    _self;
+        private Actor?    _player;
+        private Sprite2D? _hpBarEmpty;
+        private Sprite2D? _hpBarFull;
+        private float     _hpBarFullInitialScaleX = 1f;
+        private float     _hpBarFullHalfWidth     = 0f;
+        private bool      _playerSearched = false;
 
-        private const string HP_BAR_PREFAB  = "EnemyHealthBar";
-        private const float  HP_BAR_OFFSET_Y = -50f;
+        private const string HP_BAR_EMPTY_PREFAB = "EnemyHealthBar_Empty";
+        private const string HP_BAR_FULL_PREFAB  = "EnemyHealthBar_Full";
+        private const float  HP_BAR_OFFSET_Y     = -50f;
         public float contactDamageCooldown = 1.0f;
 
         private float  _pathTimer    = 0f;
@@ -44,8 +48,14 @@ namespace Eno
 
             if (_self != null)
             {
-                var hb = SpawnPrefab(HP_BAR_PREFAB, _self.position.x, _self.position.y + HP_BAR_OFFSET_Y, _self);
-                _healthBar = hb as Sprite2D;
+                float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
+                _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
+                _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
+                if (_hpBarFull != null)
+                {
+                    _hpBarFullInitialScaleX = _hpBarFull.scale.x;
+                    _hpBarFullHalfWidth     = _hpBarFull.width * 0.5f;
+                }
             }
         }
 
@@ -53,11 +63,18 @@ namespace Eno
         {
             if (_isDying || _self == null) return;
 
-            if (_healthBar != null)
+            if (_hpBarEmpty != null || _hpBarFull != null)
             {
-                _healthBar.position = new Vector2(_self.position.x, _self.position.y + HP_BAR_OFFSET_Y);
+                float hx  = _self.position.x;
+                float hy  = _self.position.y + HP_BAR_OFFSET_Y;
                 float pct = _self.maxHealth > 0f ? _self.health / _self.maxHealth : 0f;
-                _healthBar.setUV(new Vector2(0f, 0f), new Vector2(pct, 1f));
+
+                if (_hpBarEmpty != null) _hpBarEmpty.position = new Vector2(hx, hy);
+                if (_hpBarFull  != null)
+                {
+                    _hpBarFull.scale    = new Vector2(_hpBarFullInitialScaleX * pct, _hpBarFull.scale.y);
+                    _hpBarFull.position = new Vector2(hx + _hpBarFullHalfWidth * (pct - 1f), hy);
+                }
             }
             FindPlayer();
             if (_player == null) return;
