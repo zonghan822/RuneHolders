@@ -1,3 +1,12 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_scene_tree.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   40%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   31%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   21%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "eno_scene_tree.hpp"
 
 #include "../math/math.hpp"

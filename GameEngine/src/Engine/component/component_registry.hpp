@@ -1,11 +1,14 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         component_registry.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   48%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   33%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   14%
 * @date         10/3/2025
 * @brief        Declaration/definition file for the component registry
-* 
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
+
+
 
 
 #pragma once

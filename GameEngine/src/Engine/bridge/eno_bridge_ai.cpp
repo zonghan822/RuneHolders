@@ -1,9 +1,12 @@
 /*============================================================================================
-* @file         eno_bridge_ai.cpp
-* @brief        AI bridge — exposes AIComponent fields and pathfinding to C# scripts.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_ai.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   50%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   50%
+* @brief        AI bridge — exposes AIComponent fields and pathfinding to C# scripts.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 #include "../component/components/ai_component.hpp"

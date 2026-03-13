@@ -1,3 +1,11 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         state_machine_system.hpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   60%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   40%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 #include "state_machine.hpp"
 #include "../editor/eno_scene_tree.hpp"

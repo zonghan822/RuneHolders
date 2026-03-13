@@ -1,3 +1,10 @@
+/*============================================================================================
+* All content Â© 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_profiler.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 
 // stds
@@ -25,7 +32,7 @@ namespace Profiler
 #elif defined(TIME_MC)
 	// Microseconds
 	using Duration = std::chrono::microseconds;
-	constexpr const char* unit = "µs";
+	constexpr const char* unit = "ï¿½s";
 
 #elif defined(TIME_ML)
 	// Milliseconds

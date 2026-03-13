@@ -1,9 +1,13 @@
 /*============================================================================================
-* @file         eno_bridge_render.cpp
-* @brief        Render and Text component bridge — size, text content, font size.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_render.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   40%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   40%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   20%
+* @brief        Render and Text component bridge — size, text content, font size.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 #include "../component/components/drawInfo.hpp"

@@ -1,10 +1,12 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         video_player.hpp
-* @author       Muhammad Raziq Bin Mohd Rafig ()
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         07-03-2026
 * @brief        FFmpeg-backed video player that decodes frames and streams them to an
-*               OpenGL texture. Used by EnoGraphicsManager for video asset management.
 *//*========================================================================================*/
+
+
 
 #pragma once
 

@@ -1,9 +1,12 @@
 /*============================================================================================
-* @file         eno_bridge_combat.cpp
-* @brief        Combat bridge — health, max health, heal, death check.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_combat.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   50%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   50%
+* @brief        Combat bridge — health, max health, heal, death check.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 #include "../component/components/combat_components.hpp"

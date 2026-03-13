@@ -1,3 +1,12 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         state_machine_system.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   67%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   17%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   17%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "state_machine_system.hpp"
 #include "../editor/editor_events.hpp"
 

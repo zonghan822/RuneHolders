@@ -1,9 +1,15 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_scene_tree.hpp
-* @author       Zhe An (zhean.l@digipen.edu)
+* @author       ZongHan Law (zonghan.law@digipen.edu)   35%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   31%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   23%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   12%
 * @date         30-11-2025
 * @brief        Scene tree to keep track of nodes and heirarchiel entity relationships
 *//*========================================================================================*/
+
+
 
 #pragma once
 

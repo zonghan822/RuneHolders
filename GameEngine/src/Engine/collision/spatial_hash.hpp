@@ -1,10 +1,13 @@
-﻿/*============================================================================================
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
-* @file         collision.cpp
-* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         spatial_hash.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   33%
 * @date         29-01-2026
-* @brief        Declaration for spatial hash grid used in broad phase collision detection         
+* @brief        Declaration for spatial hash grid used in broad phase collision detection
 *//*========================================================================================*/
+
+
 
 #pragma once
 

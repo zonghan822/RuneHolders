@@ -1,11 +1,14 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         font.hpp
-* @author       Law Zong Han (zonghan.law@digipen.edu)
+* @author       ZongHan Law (zonghan.law@digipen.edu)   50%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   33%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   17%
 * @date         03-10-2025
 * @brief        Font system built on FreeType and OpenGL.
-*               Provides EnoFont for glyph atlas creation and FontManager
-*               for font resource management.
 *//*========================================================================================*/
+
+
 
 #pragma once
 // Freetype api

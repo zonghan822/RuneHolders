@@ -1,11 +1,13 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         chunk.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   73%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   27%
 * @date         10/3/2025
 * @brief        Declaration/definition file for chunks
-* 
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
+
+
 
 #pragma once
 

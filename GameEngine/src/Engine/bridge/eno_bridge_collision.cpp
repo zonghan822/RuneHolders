@@ -1,9 +1,12 @@
 /*============================================================================================
-* @file         eno_bridge_collision.cpp
-* @brief        Collision bridge — point overlap, entity-entity collision, collider activation.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_collision.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   33%
+* @brief        Collision bridge — point overlap, entity-entity collision, collider activation.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 #include "../component/components/collision_component.hpp"

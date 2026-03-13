@@ -1,12 +1,15 @@
 /*============================================================================================
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         collision.hpp
-* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   38%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   23%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   15%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   15%
 * @date         03-10-2025
 * @brief        This file contains the collision detection system including collision
-*               components (circle, rectangle, line, point), collision detection algorithms,
-*               collision system for ECS integration, and event handling for collision response.
 *//*========================================================================================*/
+
+
 #pragma once
 
 // Engine includes

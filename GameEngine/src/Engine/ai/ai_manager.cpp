@@ -1,3 +1,12 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         ai_manager.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   69%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   19%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   12%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "ai_manager.hpp"
 #include "ai_events.hpp"
 

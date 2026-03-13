@@ -1,7 +1,12 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         canvas_system.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   33%
 * @brief        Declaration of CanvasSystem — processes and renders all active canvas entities.
 *//*========================================================================================*/
+
+
 #pragma once
 
 #include "../math/math.hpp"

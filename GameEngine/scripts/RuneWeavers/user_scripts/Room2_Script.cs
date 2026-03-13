@@ -16,12 +16,28 @@ namespace Eno
             "Door9to11", "Door11to9",
         };
 
-        private bool _cleared = false;
+        private bool _cleared       = false;
+        private bool _videoStarted  = false;
 
-        public void Begin() { }
+        private Canvas?    _videoCanvas = null;
+        private VideoNode? _videoHolder = null;
+
+        public void Begin()
+        {
+            try { _videoCanvas = GetNode<Canvas>("VideoCanvas");    } catch { }
+            try { _videoHolder = GetNode<VideoNode>("VideoHolder"); } catch { }
+
+            if (_videoCanvas != null) _videoCanvas.active = true;
+        }
 
         public void Update()
         {
+            if (!_videoStarted && _videoHolder != null)
+            {
+                _videoStarted = true;
+                _videoHolder.play();
+            }
+
             if (_cleared) return;
 
             // TODO: replace with real clear condition

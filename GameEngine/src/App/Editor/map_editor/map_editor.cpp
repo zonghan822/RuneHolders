@@ -1,3 +1,11 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         map_editor.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   74%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   26%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "map_editor.hpp"
 #include "../editor_logic.hpp"
 
@@ -444,7 +452,7 @@ void MapEditor::paint(EditorApplication* g) {
 	}
 }	
 
-void MapEditor::syncTileCollider(int layer, int x, int y)
+void MapEditor::syncTileCollider(int /*layer*/, int /*x*/, int /*y*/)
 {
 	tilemap_.buildTileColliders(entMng_);
 }

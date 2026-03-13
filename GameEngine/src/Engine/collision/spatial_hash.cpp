@@ -1,12 +1,13 @@
-﻿/*============================================================================================
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
-* @file         collision.cpp
-* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         spatial_hash.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   50%
+* @co-author    Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   50%
 * @date         29-01-2026
-* @brief
-*
-*
+* @brief        See file name.
 *//*========================================================================================*/
+
+
 
 #include "spatial_hash.hpp"
 #include <unordered_set>

@@ -1,11 +1,14 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         archetype_presets.hpp
-* @author       Lee Zhe An (zhean.l@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   38%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   35%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   15%
 * @date         10/3/2025
 * @brief        Declaration/definition file for archetype presets
-* 
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 *//*========================================================================================*/
+
+
 
 #pragma once
 

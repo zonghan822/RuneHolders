@@ -1,3 +1,13 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         file_system.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   46%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   23%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   15%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   15%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "file_system.hpp"
 #include <windows.h>
 

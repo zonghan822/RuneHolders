@@ -221,7 +221,6 @@ namespace Eno
             if (_isNarrative[index])
             {
                 // Show narrative sprite, hide text label and dialogue box
-                Console.WriteLine($"[Dialogue] Narrative index {index}: texture = {_narrativeTextures[index]}");
                 if (_narrativeSprite != null)
                 {
                     Bridge.SetTexturePath(_narrativeSprite.ID, _narrativeTextures[index]);
@@ -252,7 +251,6 @@ namespace Eno
                 dialogueCurrentText = "";
                 dialogueTypeTimer   = 0f;
                 dialogueTyping      = true;
-                Console.WriteLine($"[Dialogue] Text index {index}, line 0: \"{_dialogueSets[index][0]}\"");
             }
         }
 
@@ -269,7 +267,6 @@ namespace Eno
             else
             {
                 // Reset typewriter animation values and input next line
-                Console.WriteLine($"[Dialogue] Text index {_activeIndex}, line {dialogueIndex}: \"{_dialogueSets[_activeIndex][dialogueIndex]}\"");
                 if (_dialogueText != null) _dialogueText.text = "";
                 dialogueTargetText  = WrapText(_dialogueSets[_activeIndex][dialogueIndex], CharsPerLine);
                 dialogueCurrentText = "";
@@ -288,7 +285,8 @@ namespace Eno
             if (_dialogueCanvas  != null) _dialogueCanvas.active = false;
             if (_narrativeSprite != null) Bridge.SetVisibility(_narrativeSprite.ID, false);
             if (_dialogueBox     != null) Bridge.SetVisibility(_dialogueBox.ID, true);
-            if (_activeIndex >= 0) DialogueShown[_activeIndex] = true;
+            // To prevent dialogue from repeating
+            if (_activeIndex >= 0 && !_isNarrative[_activeIndex]) DialogueShown[_activeIndex] = true;
         }
         // Helper function to create new line of text to prevent overflow out of dialogue box
         private string WrapText(string text, int maxChars)
