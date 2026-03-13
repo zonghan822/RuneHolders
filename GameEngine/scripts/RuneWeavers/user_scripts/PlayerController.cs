@@ -11,9 +11,10 @@ namespace Eno
         // Duration of the attack animation in seconds
         public float attackDuration = 0.5f;
 
-        private Actor _player;
-        private float _attackTimer  = 0f;
-        private bool  _isAttacking  = false;
+        private Actor     _player = null!;
+        private Node2D?[] _scrollNodes = Array.Empty<Node2D?>();
+        private float     _attackTimer = 0f;
+        private bool      _isAttacking = false;
 
         public void Begin()
         {
@@ -22,11 +23,23 @@ namespace Eno
             // ACTOR nodes have physics — keep gravity off for top-down movement
             _player.useGravity  = false;
             _player.isKinematic = false;
+
+            _scrollNodes = new Node2D?[Scroll_Dialouge_Script.ScrollNames.Length];
+            for (int i = 0; i < _scrollNodes.Length; i++)
+                try { _scrollNodes[i] = GetNode<Node2D>(Scroll_Dialouge_Script.ScrollNames[i]); } catch { }
+            
             
         }
 
         public void Update()
         {
+            // Freeze player and skip input during dialogue
+            if (Scroll_Dialouge_Script.DialogueActive)
+            {
+                _player.velocity = new Vector2(0f, 0f);
+                return;
+            }
+
             if (_isAttacking) return;
 
             float dt = Time.deltaTime;
@@ -46,6 +59,19 @@ namespace Eno
                 float inv = 1f / MathF.Sqrt(dx * dx + dy * dy);
                 dx *= inv;
                 dy *= inv;
+            }
+
+            // Check scroll interaction before applying movement
+            if (Input.isKeyPressed(KeyCode.E))
+            {
+                for (int i = 0; i < _scrollNodes.Length; i++)
+                {
+                    if (_scrollNodes[i] != null && Bridge.IsColliding(_scrollNodes[i]!.ID, _player.ID))
+                    {
+                        Scroll_Dialouge_Script.TriggerDialogue(i);
+                        return;
+                    }
+                }
             }
 
             _player.velocity = new Vector2(dx * speed, dy * speed);

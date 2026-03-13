@@ -5,7 +5,7 @@ namespace Eno
 {
 	public class BatYellow_Script : ScriptBase
     {
-        private Actor _player;
+        private Actor _player = null!;
 
         public void Begin()
         {
