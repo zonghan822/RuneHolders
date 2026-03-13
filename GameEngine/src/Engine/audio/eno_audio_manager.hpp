@@ -32,6 +32,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 
 namespace Audio
@@ -200,6 +201,14 @@ namespace Audio
 		FMOD::ChannelGroup* getChannelGroup(const std::string&) const;
 
 		/*============================================================================================
+		 * \brief						Apply (or remove) a simple low-pass filter on a channel group.
+		 *								Call with cutoff > 0 to insert the filter; cutoff <= 0 to remove it.
+		 * \param[in]					Channel group name (e.g. "SFX")
+		 * \param[in]					Low-pass cutoff frequency in Hz (10 – 22000). 0 removes the filter.
+		*//*========================================================================================*/
+		void setGroupLowPassFilter(const std::string& groupName, float cutoff);
+
+		/*============================================================================================
 		 * \brief						Get the length of a sound sample (in seconds) by sound name
 		 * \param[in]					Name of sound
 		 * \return						Length of sound sample in seconds
@@ -345,6 +354,9 @@ namespace Audio
 
 		// DSPs
 		std::vector<FMOD::DSP*> dsps_;
+
+		// Per-group low-pass DSPs (keyed by group name; managed by setGroupLowPassFilter)
+		std::unordered_map<std::string, FMOD::DSP*> groupLowPassDSPs_;
 
 		// Event Bus
 		Event::EnoEventBus& bus_;

@@ -68,6 +68,13 @@ namespace Audio
 			dsp->release();
 		}
 
+		// Group low-pass DSP cleanup
+		for (auto& [name, dsp] : groupLowPassDSPs_)
+		{
+			if (dsp) { dsp->release(); dsp = nullptr; }
+		}
+		groupLowPassDSPs_.clear();
+
 		// Sound cleanup
 		for (const auto& sound : sounds_)
 		{
@@ -1247,5 +1254,35 @@ namespace Audio
 				}
 			}, parameters.highPass->hp);
 		return dsp;
+	}
+
+	void EnoAudioManager::setGroupLowPassFilter(const std::string& groupName, float cutoff)
+	{
+		auto groupIt = channelGroups_.find(groupName);
+		if (groupIt == channelGroups_.end()) return;
+		FMOD::ChannelGroup* group = groupIt->second;
+
+		// Remove and release any existing low-pass DSP on this group
+		auto dspIt = groupLowPassDSPs_.find(groupName);
+		if (dspIt != groupLowPassDSPs_.end() && dspIt->second)
+		{
+			group->removeDSP(dspIt->second);
+			dspIt->second->release();
+			dspIt->second = nullptr;
+			groupLowPassDSPs_.erase(dspIt);
+		}
+
+		if (cutoff <= 0.f) return;
+
+		if (cutoff > 22000.f) cutoff = 22000.f;
+		if (cutoff < 10.f)    cutoff = 10.f;
+
+		FMOD::DSP* dsp{ nullptr };
+		system->createDSPByType(FMOD_DSP_TYPE_LOWPASS_SIMPLE, &dsp);
+		if (!dsp) return;
+
+		dsp->setParameterFloat(FMOD_DSP_LOWPASS_SIMPLE_CUTOFF, cutoff);
+		group->addDSP(0, dsp);
+		groupLowPassDSPs_[groupName] = dsp;
 	}
 }

@@ -69,5 +69,10 @@ namespace Eno
         // Stop a looping sound previously started with AudioPlayInstantLoop.
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern void AudioStopInstant(string soundName);
+
+        // Apply a low-pass filter to a channel group (groupName: "SFX" or "BGM").
+        // cutoff: frequency in Hz (10 - 22000). Pass 0 to remove the filter.
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetGroupLowPass(string groupName, float cutoff);
     }
 }

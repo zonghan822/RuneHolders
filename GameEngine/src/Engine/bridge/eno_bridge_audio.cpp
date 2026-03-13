@@ -169,5 +169,17 @@ namespace Bridge
             try { return std::stof(val); }
             catch (...) { return defaultVal; }
         }
+
+        // Apply or remove a simple low-pass filter on a channel group.
+        // cutoff > 0: insert filter at that frequency (Hz); cutoff <= 0: remove the filter.
+        ENGINE_API void __stdcall SetGroupLowPass(const char* groupName, float cutoff)
+        {
+            if (!gEngine) return;
+            try
+            {
+                gEngine->getAudioManager().setGroupLowPassFilter(std::string(groupName), cutoff);
+            }
+            catch (...) {}
+        }
     }
 }
