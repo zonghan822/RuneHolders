@@ -125,6 +125,12 @@ namespace Eno
 
         public void Update()
         {
+            if (Scroll_Dialouge_Script.DialogueActive)
+            {
+                if (_active) Cancel();
+                return;
+            }
+
             if (!_active)
             {
                 if (Input.isMousePressed(0))
