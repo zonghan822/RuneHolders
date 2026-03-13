@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python3 - << 'EOF'\nwith open\\(\"/mnt/c/Users/YUNQI/source/repos/csd2401f25_team_runeholders/GameEngine/src/Engine/audio/eno_audio_manager.cpp\", 'rb'\\) as f:\n    content = f.read\\(\\)\n\nold = b'\\\\t\\\\t// DSP cleanup\\\\r\\\\n\\\\t\\\\tfor \\(const auto& dsp : dsps_\\)\\\\r\\\\n\\\\t\\\\t{\\\\r\\\\n\\\\t\\\\t\\\\tdsp->release\\(\\);\\\\r\\\\n\\\\t\\\\t}\\\\r\\\\n\\\\r\\\\n\\\\t\\\\t// Sound cleanup'\nnew = b'\\\\t\\\\t// DSP cleanup\\\\r\\\\n\\\\t\\\\tfor \\(const auto& dsp : dsps_\\)\\\\r\\\\n\\\\t\\\\t{\\\\r\\\\n\\\\t\\\\t\\\\tdsp->release\\(\\);\\\\r\\\\n\\\\t\\\\t}\\\\r\\\\n\\\\r\\\\n\\\\t\\\\t// Group low-pass DSP cleanup\\\\r\\\\n\\\\t\\\\tfor \\(auto& [name, dsp] : groupLowPassDSPs_\\)\\\\r\\\\n\\\\t\\\\t{\\\\r\\\\n\\\\t\\\\t\\\\tif \\(dsp\\) { dsp->release\\(\\); dsp = nullptr; }\\\\r\\\\n\\\\t\\\\t}\\\\r\\\\n\\\\t\\\\tgroupLowPassDSPs_.clear\\(\\);\\\\r\\\\n\\\\r\\\\n\\\\t\\\\t// Sound cleanup'\n\nif old in content:\n    content = content.replace\\(old, new, 1\\)\n    with open\\(\"/mnt/c/Users/YUNQI/source/repos/csd2401f25_team_runeholders/GameEngine/src/Engine/audio/eno_audio_manager.cpp\", 'wb'\\) as f:\n        f.write\\(content\\)\n    print\\(\"Replaced successfully\"\\)\nelse:\n    print\\(\"Pattern not found\"\\)\nEOF)"
-    ]
-  }
-}
