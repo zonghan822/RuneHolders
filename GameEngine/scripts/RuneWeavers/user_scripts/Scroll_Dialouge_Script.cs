@@ -20,6 +20,11 @@ namespace Eno
 
         private const float DIALOGUE_TYPE_SPEED = 0.05f;
 
+        // Set this in the editor to the scene name of the door to unlock when dialogue ends.
+        [Port] public string DoorName = "";
+        // Max characters per line before wrapping to the next line.
+        [Port] public int CharsPerLine = 30;
+
         // Node references
         private Actor  _player;
         private Node2D _scroll;
@@ -41,21 +46,12 @@ namespace Eno
 
         public void Begin()
         {
-            try { _player         = GetNode<Actor>("Player");           } catch { }
-            try { _scroll         = GetNode<Node2D>("Scroll");          } catch { }
-            try { _dialogueCanvas = GetNode<Canvas>("Dialogue Canvas"); }
-            catch (InvalidOperationException)
-            {
-                Console.WriteLine("[Scroll_Dialouge_Script] Node 'Dialogue Canvas' not found in scene — check the name is exactly 'Dialogue Canvas' (case-sensitive)");
-            }
-            catch (InvalidCastException)
-            {
-                Console.WriteLine("[Scroll_Dialouge_Script] Node 'Dialogue Canvas' found but is not a Canvas type — ensure it was created with the Canvas preset in the editor");
-            }
-            try { _dialogueText   = GetNode<Label>("Dialogue Text");    } catch { }
+            _player         = GetNode<Actor>("Player");
+            _scroll         = GetNode<Node2D>("Room1_Scroll");
+            _dialogueCanvas = GetNode<Canvas>("Dialogue Canvas");
+            _dialogueText   = GetNode<Label>("Dialogue Text");
 
-            if (_dialogueCanvas != null)
-                _dialogueCanvas.active = false;
+            if (_dialogueCanvas != null) _dialogueCanvas.active = false;
         }
 
         public void Update()
@@ -127,7 +123,7 @@ namespace Eno
             if (_dialogueText != null)
                 _dialogueText.text = "";
 
-            dialogueTargetText  = dialogueTexts[0];
+            dialogueTargetText  = WrapText(dialogueTexts[0], CharsPerLine);
             dialogueCurrentText = "";
             dialogueTypeTimer   = 0f;
             dialogueTyping      = true;
@@ -135,26 +131,62 @@ namespace Eno
 
         private void AdvanceDialogue()
         {
+            // Next line
             dialogueIndex++;
-
+            // If reached last line, unlock the door to go to the next room
             if (dialogueIndex >= dialogueTexts.Count)
             {
                 dialogueActive = false;
                 dialogueTyping = false;
-                if (_dialogueCanvas != null)
-                    _dialogueCanvas.active = false;
+                // Set Canvas Inactive
+                if (_dialogueCanvas != null) _dialogueCanvas.active = false;
                 DialogueComplete = true;
+
+                if (!string.IsNullOrEmpty(DoorName))
+                {
+                    uint doorID = Bridge.GetNode(DoorName);
+                    if (doorID != 0)
+                    {
+                        Bridge.SetVisibility(doorID, false);
+                        Bridge.SetPosition(doorID, -99999f, -99999f);
+                    }
+                }
             }
             else
             {
                 if (_dialogueText != null)
                     _dialogueText.text = "";
 
-                dialogueTargetText  = dialogueTexts[dialogueIndex];
+                dialogueTargetText  = WrapText(dialogueTexts[dialogueIndex], CharsPerLine);
                 dialogueCurrentText = "";
                 dialogueTypeTimer   = 0f;
                 dialogueTyping      = true;
             }
+        }
+
+        private string WrapText(string text, int maxChars)
+        {
+            string[] words  = text.Split(' ');
+            string   result = "";
+            string   line   = "";
+
+            foreach (string word in words)
+            {
+                if (line.Length + word.Length + (line.Length > 0 ? 1 : 0) > maxChars)
+                {
+                    result += (result.Length > 0 ? "\n" : "") + line;
+                    line    = word;
+                }
+                else
+                {
+                    line += (line.Length > 0 ? " " : "") + word;
+                }
+            }
+
+            if (line.Length > 0)
+                result += (result.Length > 0 ? "\n" : "") + line;
+
+            return result;
         }
 
         public void Default_enter()  { }
