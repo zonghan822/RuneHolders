@@ -26,22 +26,15 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void HealEntity(uint sceneObjectID, float amount);
 
-        // Deal flat damage; returns true if the entity died.
+        // -----------------------------------------------------------------------
+        // Combat — Damage  (implemented in eno_bridge_combat.cpp)
+        // -----------------------------------------------------------------------
+
+        // Returns damageAmount * damageMultiplier from the DamageComponent.
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.I1)]
-        public static extern bool TakeDamageFlat(uint sceneObjectID, float amount);
+        public static extern float GetDamage(uint sceneObjectID);
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.I1)]
-        public static extern bool IsInvulnerable(uint sceneObjectID);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern void SetInvulnerable(uint sceneObjectID, bool value);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern float GetInvulnerabilityTimer(uint sceneObjectID);
-
-        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern void SetInvulnerabilityTimer(uint sceneObjectID, float value);
+        public static extern void SetDamageAmount(uint sceneObjectID, float amount);
     }
 }

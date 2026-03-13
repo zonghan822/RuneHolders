@@ -2,37 +2,69 @@ namespace Eno
 {
     public class Room1_Script : ScriptBase
     {
-        private static readonly string[] AllDoors =
+        private uint _scrollID    = 0;
+        private uint _playerID   = 0;
+        private uint _spellbookID = 0;  // TODO: replace "SPELLBOOK_ENTITY_PLACEHOLDER"
+        private uint _exitDoorID  = 0;
+        private uint _uiInfoID    = 0;
+
+        private bool  _dialogueTriggered     = false;
+        private bool  _postDialogueActivated = false;
+        private bool  _scrollPickedUp        = false;
+        private float _uiInfoTimer           = 0f;
+
+        public void Begin()
         {
-            "Door1to2",  "Door2to1",
-            "Door2to3",  "Door3to2",
-            "Door3to4",  "Door4to3",
-            "Door4to5",  "Door5to4",
-            "Door5to6",  "Door6to5",
-            "Door6to7",  "Door7to6",
-            "Door7to8",  "Door8to7",
-            "Door8to9",  "Door9to8",
-            "Door9to10", "Door10to9",
-            "Door9to11", "Door11to9",
-        };
-
-        private bool _cleared = false;
-
-        public void Begin() { }
+            _playerID       = Bridge.GetNode("Player");
+            _scrollID       = Bridge.GetNode("Room1_Scroll");
+            _exitDoorID     = Bridge.GetNode("Door1to2");
+            _uiInfoID       = Bridge.GetNode("UI_Info");
+            _spellbookID    = Bridge.GetNode("Spellbook");
+        }
 
         public void Update()
         {
-            if (_cleared) return;
-
-            // TODO: replace with real clear condition
-            if (!Input.isKeyPressed(KeyCode.Space)) return;
-
-            _cleared = true;
-            foreach (string name in AllDoors)
+            // Trigger Room 1 dialogue on first frame
+            if (!_dialogueTriggered)
             {
-                uint id = Bridge.GetNode(name);
-                if (id != 0 && id != uint.MaxValue)
-                    Bridge.ChangeState(id, "Unlocking");
+                _dialogueTriggered = true;
+                Scroll_Dialouge_Script.TriggerDialogue(0);
+            }
+
+            // After dialogue ends: activate ui sprite, then hide after 3 seconds
+            if (!_postDialogueActivated && Scroll_Dialouge_Script.DialogueShown[0])
+            {
+                _postDialogueActivated = true;
+                if (_uiInfoID != 0) Bridge.SetVisibility(_uiInfoID, true);
+            }
+
+            // Set a timer to hide the UI after 3 seconds
+            if (_postDialogueActivated && _uiInfoTimer < 3f)
+            {
+                _uiInfoTimer += Time.deltaTime;
+                if (_uiInfoTimer >= 3f && _uiInfoID != 0)
+                    Bridge.SetVisibility(_uiInfoID, false);
+            }
+
+            // E on scroll → pickup: scroll disappears, spellbook updates, door unlocks
+            if (!_scrollPickedUp && Input.isKeyPressed(KeyCode.E) &&
+                _scrollID != 0 && _playerID != 0 &&
+                Bridge.IsColliding(_scrollID, _playerID))
+            {
+                _scrollPickedUp = true;
+                // Press f to open spell book
+                // Swap UI_Info texture and reset its timer
+                if (_uiInfoID != 0)
+                {
+                    Bridge.SetTexturePath(_uiInfoID, "UI-FtoOpen-Text");
+                    Bridge.SetVisibility(_uiInfoID, true);
+                }
+                _uiInfoTimer = 0f;
+                // Hide the scroll
+                Bridge.SetVisibility(_scrollID, false);
+                Bridge.SetColliderActive(_scrollID, false);
+                if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-SpellBook-1Spell");
+                if (_exitDoorID  != 0) Bridge.ChangeState(_exitDoorID, "Unlocking");
             }
         }
     }

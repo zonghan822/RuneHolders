@@ -10,6 +10,15 @@
 
 namespace Bridge
 {
+    static ECSComponents::DamageComponent* getDamage(uint32_t sceneObjectID)
+    {
+        if (!gEngine) return nullptr;
+        Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(sceneObjectID);
+        if (!node) return nullptr;
+        if (!node->entity_.has<ECSComponents::DamageComponent>(gEngine->getEntityManager())) return nullptr;
+        return &node->entity_.get<ECSComponents::DamageComponent>(gEngine->getEntityManager());
+    }
+
     static ECSComponents::HealthComponent* getHealth(uint32_t sceneObjectID)
     {
         if (!gEngine) return nullptr;
@@ -68,36 +77,17 @@ namespace Bridge
                 h->heal(amount);
         }
 
-        // Deal flat damage; returns true if the entity died.
-        // Honours invulnerability — returns false without damaging if invulnerable.
-        ENGINE_API bool __stdcall TakeDamageFlat(uint32_t sceneObjectID, float amount)
+        // Returns damageAmount * damageMultiplier from DamageComponent.
+        ENGINE_API float __stdcall GetDamage(uint32_t sceneObjectID)
         {
-            auto* h = getHealth(sceneObjectID);
-            return h ? h->takeDamage(amount) : false;
+            auto* d = getDamage(sceneObjectID);
+            return d ? d->getTotalDamage() : 0.0f;
         }
 
-        ENGINE_API bool __stdcall IsInvulnerable(uint32_t sceneObjectID)
+        ENGINE_API void __stdcall SetDamageAmount(uint32_t sceneObjectID, float amount)
         {
-            auto* h = getHealth(sceneObjectID);
-            return h ? h->invulnerable : false;
-        }
-
-        ENGINE_API void __stdcall SetInvulnerable(uint32_t sceneObjectID, bool value)
-        {
-            if (auto* h = getHealth(sceneObjectID))
-                h->invulnerable = value;
-        }
-
-        ENGINE_API float __stdcall GetInvulnerabilityTimer(uint32_t sceneObjectID)
-        {
-            auto* h = getHealth(sceneObjectID);
-            return h ? h->invulnerabilityTimer : 0.f;
-        }
-
-        ENGINE_API void __stdcall SetInvulnerabilityTimer(uint32_t sceneObjectID, float value)
-        {
-            if (auto* h = getHealth(sceneObjectID))
-                h->invulnerabilityTimer = value;
+            if (auto* d = getDamage(sceneObjectID))
+                d->damageAmount = amount;
         }
     }
 }

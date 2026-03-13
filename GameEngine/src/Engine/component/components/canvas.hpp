@@ -60,6 +60,11 @@ namespace ECSComponents
 		// Whether this canvas is active
 		bool isActive{ true };
 
+		// Runtime-only: position saved before the first camera-follow move so it
+		// can be restored when the canvas is deactivated.
+		Math::eVec2<float> originalPos{ 0.0f, 0.0f };
+		bool hasOriginalPos{ false };
+
 		// Accessors
 		const float& getViewPortWidth() const
 		{

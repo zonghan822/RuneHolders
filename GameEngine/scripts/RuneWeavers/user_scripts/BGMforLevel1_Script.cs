@@ -3,22 +3,17 @@ using System.Collections.Generic;
 
 namespace Eno
 {
-	public class ButtonTestScript : ScriptBase
+	public class BGMforLevel1_Script : ScriptBase
     {
         public void Begin()
         {
-
+            Bridge.AudioPlay(ID);
 		}
 
         public void Update()
         {
 
 		}
-	
-		public void _when_button_2_onclick()
-        {
-
-        }
 	}
 }
 			

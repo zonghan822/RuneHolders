@@ -61,8 +61,8 @@ namespace Physics
             if (physics.isKinematic)
                 continue;
 
-            // Skip inactive colliders
-            if (!collision.isActive)
+            // Skip inactive colliders or triggers (triggers detect overlap only, no physics response)
+            if (!collision.isActive || collision.isTrigger)
                 continue;
 
             // Integrate velocity into position (with collision response)
@@ -163,126 +163,131 @@ namespace Physics
         // Handle both rectangle and circle colliders
         // (Note: for circles, we treat them as square AABBS for simplified physics)
 
-        // Calculate displacement from velocity: displacement = velocity * dt
-        Math::eVec2<float> displacement = {
-            physics.velocity.x * deltaTime,
-            physics.velocity.y * deltaTime
-        };
+        float dispX = physics.velocity.x * deltaTime;
+        float dispY = physics.velocity.y * deltaTime;
 
-        // Target position if no collision
-        Math::eVec2<float> targetPos = {
-            transform.pos.x + displacement.x,
-            transform.pos.y + displacement.y
-        };
-
-        // Check for collisions with all other collidable entities
+        // Collect collidables once for both axis passes
         auto collidables = entityManager.findEntity<ECSComponents::CollisionComponent, ECSComponents::TransformComponent>();
-        bool hadCollision = false;
 
-        for (auto& otherEntity : collidables)
+        // Helper: test whether the player AABB at testPos overlaps a given other entity.
+        // Returns true and writes otherTransform/otherCollision/otherHasPhysics on match.
+        auto testOverlap = [&](const Math::eVec2<float>& testPos,
+                               ECSComponents::TransformComponent& otherTransform,
+                               ECSComponents::CollisionComponent& otherCollision) -> bool
         {
-            // Skip self
-            if (entityID == otherEntity.id())
-                continue;
-
-            // Get other entity's components
-            auto& otherTransform = otherEntity.get<ECSComponents::TransformComponent>(entityManager);
-            auto& otherCollision = otherEntity.get<ECSComponents::CollisionComponent>(entityManager);
-            bool otherHasPhysics = otherEntity.has<ECSComponents::PhysicsComponent>(entityManager);
-
-            // Skip inactive colliders or triggers
-            if (!otherCollision.isActive || otherCollision.isTrigger)
-                continue;
-
-            // Check collision based on collider types
-            bool overlaps = false;
-
-            // Handle different collision type combinations
             if (collision.type == ECSComponents::ColliderType::RECTANGLE &&
                 otherCollision.type == ECSComponents::ColliderType::RECTANGLE)
             {
-                // Rectangle vs Rectangle - use AABB
-                float scaledWidthA, scaledHeightA;
-                float scaledWidthB, scaledHeightB;
-                GetScaledColliderDimensions(transform, collision, scaledWidthA, scaledHeightA);
-                GetScaledColliderDimensions(otherTransform, otherCollision, scaledWidthB, scaledHeightB);
-
-                overlaps = CheckAABBOverlap(
-                    targetPos,
-                    scaledWidthA,
-                    scaledHeightA,
-                    otherTransform.pos,
-                    scaledWidthB,
-                    scaledHeightB
-                );
+                float wA, hA, wB, hB;
+                GetScaledColliderDimensions(transform, collision, wA, hA);
+                GetScaledColliderDimensions(otherTransform, otherCollision, wB, hB);
+                return CheckAABBOverlap(testPos, wA, hA, otherTransform.pos, wB, hB);
             }
             else if (collision.type == ECSComponents::ColliderType::CIRCLE &&
                      otherCollision.type == ECSComponents::ColliderType::CIRCLE)
             {
-                // Circle vs Circle
-                float radiusA = collision.data.circle.radius * transform.scale.x;
-                float radiusB = otherCollision.data.circle.radius * otherTransform.scale.x;
-                overlaps = CheckCircleCircleOverlap(targetPos, radiusA, otherTransform.pos, radiusB);
+                float rA = collision.data.circle.radius * transform.scale.x;
+                float rB = otherCollision.data.circle.radius * otherTransform.scale.x;
+                return CheckCircleCircleOverlap(testPos, rA, otherTransform.pos, rB);
             }
             else if (collision.type == ECSComponents::ColliderType::CIRCLE &&
                      otherCollision.type == ECSComponents::ColliderType::RECTANGLE)
             {
-                // Circle vs Rectangle
-                float radius = collision.data.circle.radius * transform.scale.x;
-                float scaledWidthB, scaledHeightB;
-                GetScaledColliderDimensions(otherTransform, otherCollision, scaledWidthB, scaledHeightB);
-                overlaps = CheckCircleRectOverlap(targetPos, radius, otherTransform.pos, scaledWidthB, scaledHeightB);
+                float r = collision.data.circle.radius * transform.scale.x;
+                float wB, hB;
+                GetScaledColliderDimensions(otherTransform, otherCollision, wB, hB);
+                return CheckCircleRectOverlap(testPos, r, otherTransform.pos, wB, hB);
             }
             else if (collision.type == ECSComponents::ColliderType::RECTANGLE &&
                      otherCollision.type == ECSComponents::ColliderType::CIRCLE)
             {
-                // Rectangle vs Circle (same as Circle vs Rectangle, just swapped)
-                float radius = otherCollision.data.circle.radius * otherTransform.scale.x;
-                float scaledWidthA, scaledHeightA;
-                GetScaledColliderDimensions(transform, collision, scaledWidthA, scaledHeightA);
-                overlaps = CheckCircleRectOverlap(otherTransform.pos, radius, targetPos, scaledWidthA, scaledHeightA);
+                float r = otherCollision.data.circle.radius * otherTransform.scale.x;
+                float wA, hA;
+                GetScaledColliderDimensions(transform, collision, wA, hA);
+                return CheckCircleRectOverlap(otherTransform.pos, r, testPos, wA, hA);
             }
+            return false;
+        };
 
-            if (overlaps)
+        // --- X-axis pass ---
+        // Test horizontal movement only; if blocked, cancel only X velocity so the
+        // player can still slide along walls when moving diagonally.
+        if (dispX != 0.0f)
+        {
+            Math::eVec2<float> testX = { transform.pos.x + dispX, transform.pos.y };
+            bool blockedX = false;
+
+            for (auto& otherEntity : collidables)
             {
-                hadCollision = true;
+                if (otherEntity.id() == entityID) continue;
+                auto& otherTransform = otherEntity.get<ECSComponents::TransformComponent>(entityManager);
+                auto& otherCollision = otherEntity.get<ECSComponents::CollisionComponent>(entityManager);
+                if (!otherCollision.isActive || otherCollision.isTrigger) continue;
+
+                if (!testOverlap(testX, otherTransform, otherCollision)) continue;
+
+                bool otherHasPhysics = otherEntity.has<ECSComponents::PhysicsComponent>(entityManager);
                 bus_.publish(CollideEvent{ entityID, otherEntity.id() });
 
-                // If other entity has physics, resolve collision with momentum transfer
                 if (otherHasPhysics)
                 {
                     auto& otherPhysics = otherEntity.get<ECSComponents::PhysicsComponent>(entityManager);
-
-                    // Don't push kinematic objects (like walls)
                     if (!otherPhysics.isKinematic)
                     {
-                        // Resolve collision with momentum transfer (this enables pushing!)
-                        ResolveCollision(
-                            transform, physics, collision,
-                            otherTransform, otherPhysics, otherCollision
-                        );
-                    }
-                    else
-                    {
-                        // Hit a static wall - just stop movement
-                        physics.velocity = { 0.0f, 0.0f };
+                        ResolveCollision(transform, physics, collision,
+                                         otherTransform, otherPhysics, otherCollision);
+                        dispX = physics.velocity.x * deltaTime;
+                        break;
                     }
                 }
-                else
-                {
-                    // Other entity has no physics (static obstacle) - stop movement
-                    physics.velocity = { 0.0f, 0.0f };
-                }
-
-                break;  // Handle one collision per frame for stability
+                // Static or kinematic wall: cancel X movement
+                physics.velocity.x = 0.0f;
+                dispX = 0.0f;
+                blockedX = true;
+                break;
             }
+            if (!blockedX)
+                transform.pos.x += dispX;
         }
 
-        // If no collision, update position normally
-        if (!hadCollision)
+        // --- Y-axis pass ---
+        // Test vertical movement only against the already X-resolved position.
+        if (dispY != 0.0f)
         {
-            transform.pos.x = targetPos.x;
-            transform.pos.y = targetPos.y;
+            Math::eVec2<float> testY = { transform.pos.x, transform.pos.y + dispY };
+            bool blockedY = false;
+
+            for (auto& otherEntity : collidables)
+            {
+                if (otherEntity.id() == entityID) continue;
+                auto& otherTransform = otherEntity.get<ECSComponents::TransformComponent>(entityManager);
+                auto& otherCollision = otherEntity.get<ECSComponents::CollisionComponent>(entityManager);
+                if (!otherCollision.isActive || otherCollision.isTrigger) continue;
+
+                if (!testOverlap(testY, otherTransform, otherCollision)) continue;
+
+                bool otherHasPhysics = otherEntity.has<ECSComponents::PhysicsComponent>(entityManager);
+                bus_.publish(CollideEvent{ entityID, otherEntity.id() });
+
+                if (otherHasPhysics)
+                {
+                    auto& otherPhysics = otherEntity.get<ECSComponents::PhysicsComponent>(entityManager);
+                    if (!otherPhysics.isKinematic)
+                    {
+                        ResolveCollision(transform, physics, collision,
+                                         otherTransform, otherPhysics, otherCollision);
+                        dispY = physics.velocity.y * deltaTime;
+                        break;
+                    }
+                }
+                // Static or kinematic wall: cancel Y movement
+                physics.velocity.y = 0.0f;
+                dispY = 0.0f;
+                blockedY = true;
+                break;
+            }
+            if (!blockedY)
+                transform.pos.y += dispY;
         }
     }
 
@@ -653,8 +658,8 @@ namespace Physics
     {
         // Apply transform scale to collision dimensions
         // This ensures the collision box matches the visual sprite size
-        scaledWidth = collision.data.rectangle.width * transform.scale.x;
-        scaledHeight = collision.data.rectangle.height * transform.scale.y;
+        scaledWidth  = collision.data.rectangle.width  * std::abs(transform.scale.x);
+        scaledHeight = collision.data.rectangle.height * std::abs(transform.scale.y);
     }
  
     ECSComponents::TransformComponent& PhysicsSystem::GetTransform(const ECS::EntityLoc& entityLoc)

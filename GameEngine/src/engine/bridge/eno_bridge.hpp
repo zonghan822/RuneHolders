@@ -152,6 +152,9 @@ namespace Bridge {
         ENGINE_API void    __stdcall SetGroupVolume(const char* groupName, float volume);
         ENGINE_API float   __stdcall GetGroupVolume(const char* groupName);
 
+        // Apply a low-pass filter to a channel group. cutoff in Hz (10-22000); pass 0 to remove.
+        ENGINE_API void    __stdcall SetGroupLowPass(const char* groupName, float cutoff);
+
         // Master (FMOD master channel group) volume, range 0-100
         ENGINE_API void    __stdcall SetMasterVolume(float volume);
         ENGINE_API float   __stdcall GetMasterVolume();

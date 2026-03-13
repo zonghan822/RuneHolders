@@ -1,8 +1,8 @@
 /*============================================================================================
 * All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         imGui.cpp
-* @author       Yun Ji Koe (yunji.koe@digipen.edu)
-* @author		Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Yun Ji Koe (yunji.koe@digipen.edu) 50%
+* @author		Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu) 20%
 * @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
 * @date         01-10-2025
 * @brief        This file contains the functions that are required for Dear ImGui displays,
@@ -4842,8 +4842,6 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			mapEditor.setEditMode(!wasEdit);
 		if (wasEdit)
 			ImGui::PopStyleColor();
-		ImGui::SameLine();
-		ImGui::Checkbox("Show Colliders", &showColliders_);
 	} else {
 		if (ImGui::Button("Add Tilemap")) {
 			engine_.getEnoEditor().getSceneTree().setHasTilemap(true);
@@ -4851,6 +4849,8 @@ void displayEditorView(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTr
 			mapEditor.setEditMode(true);
 		}
 	}
+	ImGui::SameLine();
+	ImGui::Checkbox("Show Colliders", &showColliders_);
 
 	ImGui::Separator();
 

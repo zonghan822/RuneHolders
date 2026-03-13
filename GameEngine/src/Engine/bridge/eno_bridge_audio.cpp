@@ -68,6 +68,18 @@ namespace Bridge
                 a->pitchScale_ = static_cast<double>(pitch);
         }
 
+        ENGINE_API void __stdcall SetAudioSpatial(uint32_t sceneObjectID, int32_t spatial)
+        {
+            if (auto* a = getAudio(sceneObjectID))
+                a->spatialAudio_ = (spatial != 0);
+        }
+
+        ENGINE_API void __stdcall SetAudioMaxDistance(uint32_t sceneObjectID, float distance)
+        {
+            if (auto* a = getAudio(sceneObjectID))
+                a->maxAudibleDistance_ = distance;
+        }
+
         ENGINE_API void __stdcall SetGroupVolume(const char* groupName, float volume)
         {
             if (!gEngine) return;
@@ -123,6 +135,30 @@ namespace Bridge
             cfg.write();
         }
 
+        // Play a sound immediately by name without needing a scene entity.
+        // groupName: "SFX" or "BGM", soundName: asset name e.g. "Typing_01"
+        ENGINE_API void __stdcall AudioPlayInstant(const char* groupName, const char* soundName)
+        {
+            if (!gEngine) return;
+            gEngine->getEventBus().publish(Audio::PlayInstant{ std::string(groupName), std::string(soundName) });
+        }
+
+        // Play a looping sound by name. The channel is tracked internally so it
+        // can be stopped later with AudioStopInstant. Calling again while already
+        // playing restarts the sound from the beginning.
+        ENGINE_API void __stdcall AudioPlayInstantLoop(const char* groupName, const char* soundName)
+        {
+            if (!gEngine) return;
+            gEngine->getEventBus().publish(Audio::PlayInstantLoop{ std::string(groupName), std::string(soundName) });
+        }
+
+        // Stop a looping sound previously started with AudioPlayInstantLoop.
+        ENGINE_API void __stdcall AudioStopInstant(const char* soundName)
+        {
+            if (!gEngine) return;
+            gEngine->getEventBus().publish(Audio::StopInstant{ std::string(soundName) });
+        }
+
         // Loads one audio volume value (0-100) from the config file by key.
         // Returns defaultVal if the key is absent or cannot be parsed.
         ENGINE_API float __stdcall LoadAudioVolume(const char* key, float defaultVal)
@@ -132,6 +168,18 @@ namespace Bridge
             if (val.empty()) return defaultVal;
             try { return std::stof(val); }
             catch (...) { return defaultVal; }
+        }
+
+        // Apply or remove a simple low-pass filter on a channel group.
+        // cutoff > 0: insert filter at that frequency (Hz); cutoff <= 0: remove the filter.
+        ENGINE_API void __stdcall SetGroupLowPass(const char* groupName, float cutoff)
+        {
+            if (!gEngine) return;
+            try
+            {
+                gEngine->getAudioManager().setGroupLowPassFilter(std::string(groupName), cutoff);
+            }
+            catch (...) {}
         }
     }
 }

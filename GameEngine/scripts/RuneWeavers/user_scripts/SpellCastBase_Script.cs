@@ -2,12 +2,21 @@ using System;
 
 namespace Eno
 {
-	public class Spell_Cast_Script : ScriptBase
+    public class SpellCastBase_Script : ScriptBase
     {
         private const float WINDUP_DURATION  = 1.0f;
         private const float EXPLODE_DURATION = 0.6f;
 
-        public float damage = 50f;
+        // Subclasses hardcode this: 0 = Fire/Red, 1 = Light/Yellow, 2 = Ice/Blue
+        protected virtual int SpellType => 0;
+
+        // Audio node names indexed by SpellType: 0=Red, 1=Yellow, 2=Blue
+        private static readonly string[] SpellSoundNames = new string[]
+        {
+            "SpellCast_02",   // SpellType 0 – Fire / Red
+            "SpellCast_03",   // SpellType 1 – Light / Yellow
+            "SpellCast_01",   // SpellType 2 – Ice / Blue
+        };
 
         private float _timer = 0f;
 
@@ -29,6 +38,11 @@ namespace Eno
             self.setAnimationLooping(false);
             uint frames = self.getAnimationFrameCount();
             if (frames > 0) self.setAnimationFrameDuration(WINDUP_DURATION / frames);
+
+            if (SpellType >= 0 && SpellType < SpellSoundNames.Length)
+            {
+                try { GetNode<AudioNode>(SpellSoundNames[SpellType])?.play(); } catch { }
+            }
         }
 
         public void Windup_update()
@@ -53,7 +67,7 @@ namespace Eno
                 uint frames = self.getAnimationFrameCount();
                 if (frames > 0) self.setAnimationFrameDuration(EXPLODE_DURATION / frames);
             }
-            DamageCollidingEnemies();
+            DamageMatchingEnemies();
         }
 
         public void Explode_update()
@@ -67,14 +81,26 @@ namespace Eno
 
         // ── Helpers ───────────────────────────────────────────────────────────────
 
-        private void DamageCollidingEnemies()
+        private void DamageMatchingEnemies()
         {
             var self = Self<KinematicBody2D>();
             if (self == null) return;
-            foreach (var enemy in GetAllEnemies())
+
+            Actor? player = GetNode<Actor>("Player");
+            float damage = player != null ? player.damage : 0f;
+
+            foreach (Enemy enemy in GetAllEnemies())
             {
-                if (self.isColliding(enemy))
-                    enemy.health = MathF.Max(0f, enemy.health - damage);
+                if (!self.isColliding(enemy)) continue;
+
+                if (!EnemyColorRegistry.Colors.TryGetValue(enemy.ID, out int color)) continue;
+                if (color != SpellType) continue;
+
+                enemy.health = MathF.Max(0f, enemy.health - damage);
+                if (enemy.isDead)
+                    enemy.changeState("Death");
+                else
+                    enemy.changeState("Hurt");
             }
         }
     }

@@ -21,5 +21,11 @@ namespace Eno
         public bool isDead => Bridge.IsDead(ID);
 
         public void heal(float amount) => Bridge.HealEntity(ID, amount);
+
+        public float damage
+        {
+            get => Bridge.GetDamage(ID);
+            set => Bridge.SetDamageAmount(ID, value);
+        }
     }
 }
