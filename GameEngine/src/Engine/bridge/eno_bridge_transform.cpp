@@ -90,5 +90,29 @@ namespace Bridge
                 t->scale.y = y;
             }
         }
+
+        // Sets a node's position relative to its parent node.
+        // Equivalent to child.worldPos = parent.worldPos + (x, y).
+        ENGINE_API void __stdcall SetLocalPosition(uint32_t sceneObjectID, float x, float y)
+        {
+            if (!gEngine) return;
+            Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(sceneObjectID);
+            if (!node) return;
+            auto& em = gEngine->getEntityManager();
+            if (!node->entity_.has<ECSComponents::TransformComponent>(em)) return;
+            auto& t = node->entity_.get<ECSComponents::TransformComponent>(em);
+
+            if (node->parent_ && node->parent_->entity_.has<ECSComponents::TransformComponent>(em))
+            {
+                auto& pt = node->parent_->entity_.get<ECSComponents::TransformComponent>(em);
+                t.pos.x = pt.pos.x + x;
+                t.pos.y = pt.pos.y + y;
+            }
+            else
+            {
+                t.pos.x = x;
+                t.pos.y = y;
+            }
+        }
     }
 }

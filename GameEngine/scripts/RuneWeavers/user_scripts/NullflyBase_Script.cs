@@ -5,10 +5,11 @@ namespace Eno
     public class NullflyBase_Script : ScriptBase
     {
         public int   runeIndex       = 5;      // 0-5: which rune this Nullfly bans
-        public float cloakRadius     = 150f;   // player closer than this → start cloaking
-        public float uncloakRadius   = 220f;   // player farther than this → uncloak
-        public float shockedDuration = 0.3f;
-        public float windUpDuration  = 0.4f;
+        public float cloakRadius     = 220f;   // player closer than this → cloak
+        public float uncloakRadius   = 300f;   // player farther than this → uncloak
+        public float idleDuration    = 0.5f;     // time in Idle before channelling
+        public float shockedDuration = 0.2f;
+        public float windUpDuration  = 0.3f;
         public float hurtDuration    = 0.5f;
         public float deathDuration   = 1.0f;
         public float spawnDuration   = 0.5f;
@@ -40,10 +41,6 @@ namespace Eno
             if (_isCloaked == cloaked) return;
             _isCloaked = cloaked;
             if (_self != null) _self.visible = !cloaked;
-            if (cloaked)
-                EnemyColorRegistry.UnbanRune(runeIndex);
-            else
-                EnemyColorRegistry.BanRune(runeIndex);
         }
 
         // ── Lifecycle ────────────────────────────────────────────────────────────
@@ -61,7 +58,7 @@ namespace Eno
                 _self.damage      = 15f;
             }
             EnemyColorRegistry.Register(ID, EnemyColor);
-            EnemyColorRegistry.BanRune(runeIndex);   // starts visible → rune banned
+            // Rune starts unbanned; only Channel state bans it
 
             if (_self != null)
             {
@@ -94,27 +91,28 @@ namespace Eno
                 }
             }
 
-            if (_isCloaked) return;
-            FindPlayer();
-            if (_player == null) return;
-
             if (_contactTimer > 0f)
             {
                 _contactTimer -= Time.deltaTime;
                 return;
             }
 
-            if (_self.isColliding(_player))
+            FindPlayer();
+            if (_player != null && _self.isColliding(_player))
             {
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
                 _player.changeState("Hurt");
                 _contactTimer = contactDamageCooldown;
+                _self.changeState("Idle");
             }
         }
 
         // ── Spawn ────────────────────────────────────────────────────────────────
 
-        public void Spawn_enter() { _timer = 0f; }
+        public void Spawn_enter() { 
+            _timer = 0f;     
+        }
+
         public void Spawn_update()
         {
             _timer += Time.deltaTime;
@@ -123,15 +121,19 @@ namespace Eno
         }
         public void Spawn_exit() { }
 
-        // ── Idle (visible, rune banned) ──────────────────────────────────────────
+        // ── Idle (visible, rune banned, timed → Channel) ─────────────────────────
 
-        public void Idle_enter()  { SetCloaked(false); }
+        public void Idle_enter()
+        {
+            _timer = 0f;
+            SetCloaked(false);
+            EnemyColorRegistry.UnbanRune(runeIndex); // ensure rune is clean on Idle
+        }
         public void Idle_update()
         {
-            FindPlayer();
-            if (_self == null || _player == null) return;
-            if (Dist(_self.position, _player.position) <= cloakRadius)
-                _self.changeState("Shocked");
+            _timer += Time.deltaTime;
+            if (_timer >= idleDuration)
+                _self?.changeState("Channel");
         }
         public void Idle_exit() { }
 
@@ -146,28 +148,46 @@ namespace Eno
         }
         public void Shocked_exit() { }
 
-        // ── WindUp (transition into cloak) ───────────────────────────────────────
+        // ── WindUp (cloak + unban, then monitor distance → Idle) ────────────────
 
         public void WindUp_enter() { _timer = 0f; }
         public void WindUp_update()
         {
-            _timer += Time.deltaTime;
-            if (_timer >= windUpDuration)
-                _self?.changeState("Channel");
+            if (!_isCloaked)
+            {
+                _timer += Time.deltaTime;
+                if (_timer >= windUpDuration)
+                {
+                    SetCloaked(true);
+                    EnemyColorRegistry.UnbanRune(runeIndex);
+                }
+            }
+            else
+            {
+                FindPlayer();
+                if (_self == null || _player == null) return;
+                if (Dist(_self.position, _player.position) > uncloakRadius)
+                    _self?.changeState("Idle");
+            }
         }
-        public void WindUp_exit() { }
+        public void WindUp_exit()
+        {
+            // If hurt mid-windup before cloaking, rune was still banned by Channel — unban it
+            if (!_isCloaked)
+                EnemyColorRegistry.UnbanRune(runeIndex);
+        }
 
-        // ── Channel (invisible, rune unbanned) ───────────────────────────────────
+        // ── Channel (visible, always bans rune; player near → Shocked) ───────────
 
-        public void Channel_enter() { SetCloaked(true); }
+        public void Channel_enter() { EnemyColorRegistry.BanRune(runeIndex); }
         public void Channel_update()
         {
             FindPlayer();
             if (_self == null || _player == null) return;
-            if (Dist(_self.position, _player.position) > uncloakRadius)
-                _self.changeState("Idle");
+            if (Dist(_self.position, _player.position) <= cloakRadius)
+                _self.changeState("Shocked");
         }
-        public void Channel_exit() { SetCloaked(false); }
+        public void Channel_exit() { }
 
         // ── Frozen ───────────────────────────────────────────────────────────────
 
@@ -196,16 +216,15 @@ namespace Eno
         public void Death_enter()
         {
             _timer = 0f;
-            // If dying while cloaked, clean up ban state without re-banning
             if (_isCloaked)
             {
                 _isCloaked = false;
                 if (_self != null) _self.visible = true;
-                EnemyColorRegistry.UnbanRune(runeIndex);
+                // rune already unbanned when cloaking happened
             }
             else
             {
-                EnemyColorRegistry.UnbanRune(runeIndex);
+                EnemyColorRegistry.UnbanRune(runeIndex); // may have died in Channel (banned)
             }
         }
         public void Death_update()

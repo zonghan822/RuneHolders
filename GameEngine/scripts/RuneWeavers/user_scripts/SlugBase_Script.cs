@@ -89,6 +89,7 @@ namespace Eno
             {
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
                 _player.changeState("Hurt");
+                _self.changeState("Idle");
                 _contactTimer = contactDamageCooldown;
             }
         }

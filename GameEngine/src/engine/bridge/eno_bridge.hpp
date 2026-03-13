@@ -72,6 +72,7 @@ namespace Bridge {
         ENGINE_API float   __stdcall GetPositionX(uint32_t sceneObjectID);
         ENGINE_API float   __stdcall GetPositionY(uint32_t sceneObjectID);
         ENGINE_API void    __stdcall SetPosition(uint32_t sceneObjectID, float x, float y);
+        ENGINE_API void    __stdcall SetLocalPosition(uint32_t sceneObjectID, float x, float y);
 
         ENGINE_API float   __stdcall GetRotationX(uint32_t sceneObjectID);
         ENGINE_API float   __stdcall GetRotationY(uint32_t sceneObjectID);

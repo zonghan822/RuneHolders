@@ -18,6 +18,10 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetPosition(uint sceneObjectID, float x, float y);
 
+        // Sets position relative to the node's parent (canvas-local coordinates).
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetLocalPosition(uint sceneObjectID, float x, float y);
+
         // Rotation  (engine stores rotation as Vec2 — x and y components)
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern float GetRotationX(uint sceneObjectID);
