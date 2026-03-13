@@ -29,6 +29,9 @@ namespace Eno
         private const float  HP_BAR_OFFSET_Y     = -50f;
         public float contactDamageCooldown = 1.0f;
 
+        // Set this before SpawnPrefab to assign runeIndex on the next spawned Nullfly
+        public static int PendingRuneIndex = 5;
+
         private float  _timer          = 0f;
         private float  _contactTimer  = 0f;
         private bool   _isCloaked     = false;
@@ -49,6 +52,7 @@ namespace Eno
         public void Begin()
         {
             _self = Self<Enemy>();
+            runeIndex = PendingRuneIndex;
             if (_self != null)
             {
                 _self.useGravity  = false;

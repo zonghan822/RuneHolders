@@ -4,8 +4,6 @@ namespace Eno
 {
     public class DummyBlue_Script : ScriptBase
     {
-        public static bool WasHit = false;
-
         private Enemy? _self;
 
         public void Begin()
@@ -19,7 +17,7 @@ namespace Eno
             EnemyColorRegistry.Register(ID, 2); // 2 = Ice / Blue
         }
 
-        public void Update() { }
+        public void Update() { _self.velocity = new Vector2(0f, 0f); }
 
         public void Idle_enter() { }
         public void Idle_update() { }
