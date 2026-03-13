@@ -70,6 +70,13 @@ namespace Audio
 			dsp->release();
 		}
 
+		// Group low-pass DSP cleanup
+		for (auto& [name, dsp] : groupLowPassDSPs_)
+		{
+			if (dsp) { dsp->release(); dsp = nullptr; }
+		}
+		groupLowPassDSPs_.clear();
+
 		// Sound cleanup
 		for (const auto& sound : sounds_)
 		{
@@ -101,6 +108,16 @@ namespace Audio
 		bus_.subscribe<PlayInstant>([&](const PlayInstant& event)
 			{
 				onAudioInstantPlay(event);
+			});
+
+		bus_.subscribe<PlayInstantLoop>([&](const PlayInstantLoop& event)
+			{
+				onAudioInstantPlayLoop(event);
+			});
+
+		bus_.subscribe<StopInstant>([&](const StopInstant& event)
+			{
+				onAudioInstantStop(event);
 			});
 
 		bus_.subscribe<StopBGM>([&](const StopBGM&) {
@@ -765,6 +782,11 @@ namespace Audio
 		}
 		channels_.clear();
 		pendingStops_.clear();
+		for (auto& [name, ch] : instantChannels_)
+		{
+			if (ch) ch->stop();
+		}
+		instantChannels_.clear();
 	}
 
 	/*============================================================================================
@@ -933,6 +955,12 @@ namespace Audio
 		auto sound = sounds_.find(event.soundName_);
 		if (sound == sounds_.end())
 		{
+			// Lazy-load: ask the resource loader to supply the sound, then retry.
+			bus_.publish(RequestSound{ std::string(event.soundName_) });
+			sound = sounds_.find(event.soundName_);
+		}
+		if (sound == sounds_.end())
+		{
 			std::cerr << "[Audio Error] Failed to find the sound: " << event.soundName_ << std::endl;
 			bus_.publish(AudioLoadError{
 				event.soundName_,
@@ -954,6 +982,53 @@ namespace Audio
 
 		if (channel)
 			setPauseChannel(channel, false);
+	}
+
+	void EnoAudioManager::onAudioInstantPlayLoop(const Audio::PlayInstantLoop& event)
+	{
+		auto sound = sounds_.find(event.soundName_);
+		if (sound == sounds_.end())
+		{
+			bus_.publish(RequestSound{ std::string(event.soundName_) });
+			sound = sounds_.find(event.soundName_);
+		}
+		if (sound == sounds_.end())
+		{
+			std::cerr << "[Audio Error] Failed to find the sound: " << event.soundName_ << std::endl;
+			return;
+		}
+
+		// Stop any previous instance of this looping sound
+		auto existing = instantChannels_.find(event.soundName_);
+		if (existing != instantChannels_.end() && existing->second)
+		{
+			existing->second->stop();
+		}
+
+		sound->second->setMode(FMOD_LOOP_NORMAL);
+
+		FMOD::Channel* channel = nullptr;
+		auto group = channelGroups_.find(event.groupName_);
+		if (group != channelGroups_.end())
+			channel = playByGroup(sound->second, group->second, true);
+		else
+			channel = playByChannel(sound->second, true);
+
+		if (channel)
+		{
+			instantChannels_[event.soundName_] = channel;
+			setPauseChannel(channel, false);
+		}
+	}
+
+	void EnoAudioManager::onAudioInstantStop(const Audio::StopInstant& event)
+	{
+		auto it = instantChannels_.find(event.soundName_);
+		if (it != instantChannels_.end())
+		{
+			if (it->second) it->second->stop();
+			instantChannels_.erase(it);
+		}
 	}
 
 	/*============================================================================================
@@ -1181,5 +1256,35 @@ namespace Audio
 				}
 			}, parameters.highPass->hp);
 		return dsp;
+	}
+
+	void EnoAudioManager::setGroupLowPassFilter(const std::string& groupName, float cutoff)
+	{
+		auto groupIt = channelGroups_.find(groupName);
+		if (groupIt == channelGroups_.end()) return;
+		FMOD::ChannelGroup* group = groupIt->second;
+
+		// Remove and release any existing low-pass DSP on this group
+		auto dspIt = groupLowPassDSPs_.find(groupName);
+		if (dspIt != groupLowPassDSPs_.end() && dspIt->second)
+		{
+			group->removeDSP(dspIt->second);
+			dspIt->second->release();
+			dspIt->second = nullptr;
+			groupLowPassDSPs_.erase(dspIt);
+		}
+
+		if (cutoff <= 0.f) return;
+
+		if (cutoff > 22000.f) cutoff = 22000.f;
+		if (cutoff < 10.f)    cutoff = 10.f;
+
+		FMOD::DSP* dsp{ nullptr };
+		system->createDSPByType(FMOD_DSP_TYPE_LOWPASS_SIMPLE, &dsp);
+		if (!dsp) return;
+
+		dsp->setParameterFloat(FMOD_DSP_LOWPASS_SIMPLE_CUTOFF, cutoff);
+		group->addDSP(0, dsp);
+		groupLowPassDSPs_[groupName] = dsp;
 	}
 }

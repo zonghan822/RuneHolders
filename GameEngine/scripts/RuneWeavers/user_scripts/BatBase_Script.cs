@@ -39,6 +39,7 @@ namespace Eno
         private Vector2 _prevPos;
         private float   _chargedPixels  = 0f;
         private bool    _isDying        = false;
+        private bool    _dashReady      = false;
 
         public void Begin()
         {
@@ -171,7 +172,11 @@ namespace Eno
 
         // ── WindUp ────────────────────────────────────────────────────────────────
 
-        public void WindUp_enter() { _timer = 0f; }
+        public void WindUp_enter()
+        {
+            _timer = 0f;
+            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Windup_01"); } catch { }
+        }
         public void WindUp_update()
         {
             FindPlayer();
@@ -204,24 +209,32 @@ namespace Eno
         {
             _timer         = 0f;
             _chargedPixels = 0f;
+            _dashReady     = false;
+            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Attack_01"); } catch { }
             if (_self != null)
-            {
-                _prevPos       = _self.position;
                 _self.velocity = new Vector2(_dashDir.x * dashSpeed, _dashDir.y * dashSpeed);
-            }
         }
         public void Attack_update()
         {
             if (_self == null) return;
 
             Vector2 curPos = _self.position;
+
+            // Skip first frame — physics hasn't moved the body yet, so moved≈0
+            // would falsely trigger the wall-hit check.
+            if (!_dashReady)
+            {
+                _prevPos   = curPos;
+                _dashReady = true;
+                return;
+            }
+
             float moved    = Dist(curPos, _prevPos);
             _chargedPixels += moved;
             _prevPos        = curPos;
 
-            // Wall hit: expected to move but barely did
             float expectedMove = dashSpeed * Time.deltaTime;
-            bool  hitWall      = moved < expectedMove * 0.15f;
+            bool  hitWall      = moved < expectedMove * 0.3f;
 
             if (_chargedPixels >= CHARGE_DISTANCE || hitWall)
             {
@@ -243,6 +256,7 @@ namespace Eno
         {
             _timer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
+            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Hurt_02"); } catch { }
         }
         public void Hurt_update()
         {
@@ -263,6 +277,7 @@ namespace Eno
         {
             _timer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
+            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Death_01"); } catch { }
         }
         public void Death_update()
         {
