@@ -1,10 +1,15 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         collision_component.hpp
-* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   33%
+* @co-author    Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   33%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   22%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   11%
 * @date         02-11-2025
 * @brief        Collision component for ECS. Stores collision shape data including type,
-*               dimensions, offset, and trigger status for collision detection system.
-*===========================================================================================*/
+*//*========================================================================================*/
+
+
 
 #pragma once
 

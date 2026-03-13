@@ -1,3 +1,12 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         entity.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   42%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   38%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   12%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "entity.hpp"
 #include "../resources/eno_loader.hpp"
 

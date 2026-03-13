@@ -1,8 +1,13 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         button_system.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   50%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   25%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   25%
 * @brief        UI button system — processes mouse click hit-tests against all active
-*               ButtonComponent entities and emits their onClick signals.
 *//*========================================================================================*/
+
+
 #pragma once
 
 #include "../math/math.hpp"

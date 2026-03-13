@@ -1,9 +1,12 @@
 /*============================================================================================
-* @file         text_component.hpp
-* @brief        Declaration/definition file for the text component
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         text_component.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   33%
+* @brief        Declaration/definition file for the text component
 *//*========================================================================================*/
+
+
 
 #pragma once
 #include <vector>

@@ -1,9 +1,13 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         audio.hpp
-* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author       Koe Yun Ji (yunji.koe@digipen.edu)   80%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   20%
 * @date         30-11-2025
 * @brief        Audio component for serialising and functionality
 *//*========================================================================================*/
+
+
 
 #pragma once
 

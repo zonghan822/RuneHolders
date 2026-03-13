@@ -1,10 +1,14 @@
 /*============================================================================================
-* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content Â© 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         crashlogger.cpp
-* @author       Yun Ji Koe (yunji.koe@digipen.edu)
+* @author       Koe Yun Ji (yunji.koe@digipen.edu)   43%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   29%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   29%
 * @date         03-10-2025
 * @brief        Logs exception into a crash_log.txt file with timestamps
 *//*========================================================================================*/
+
+
 
 #include "crashlogger.hpp"
 #include "../file/file_system.hpp"

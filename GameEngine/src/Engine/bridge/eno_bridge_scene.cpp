@@ -1,9 +1,12 @@
 /*============================================================================================
-* @file         eno_bridge_scene.cpp
-* @brief        Scene bridge — change scene from C# scripts.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_scene.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   33%
+* @brief        Scene bridge — change scene from C# scripts.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 

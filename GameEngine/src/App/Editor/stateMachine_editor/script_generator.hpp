@@ -1,3 +1,11 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         script_generator.hpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   67%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   33%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 #include <string>
 #include <vector>

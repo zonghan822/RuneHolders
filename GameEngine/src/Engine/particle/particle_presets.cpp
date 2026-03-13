@@ -1,3 +1,10 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         particle_presets.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "particle_presets.hpp"
 
 namespace Particles::Presets {

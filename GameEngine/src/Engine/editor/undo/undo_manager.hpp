@@ -1,10 +1,14 @@
 /*============================================================================================
-* All content � 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         undo_manager.hpp
-* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   71%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   14%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   14%
 * @date         2025-11-29
 * @brief        Central undo/redo manager that integrates with the editor
 *//*========================================================================================*/
+
+
 
 #pragma once
 

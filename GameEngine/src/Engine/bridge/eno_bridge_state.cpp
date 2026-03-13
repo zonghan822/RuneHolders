@@ -1,9 +1,12 @@
 /*============================================================================================
-* @file         eno_bridge_state.cpp
-* @brief        State machine bridge — request state transitions.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_state.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   33%
+* @brief        State machine bridge — request state transitions.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 #include "../component/components/state_machine_component.hpp"

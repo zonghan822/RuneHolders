@@ -1,9 +1,12 @@
 /*============================================================================================
-* @file         eno_bridge_physics.cpp
-* @brief        Physics component bridge — velocity, forces, mass, gravity, kinematic.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_physics.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   33%
+* @brief        Physics component bridge — velocity, forces, mass, gravity, kinematic.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 #include "../component/components/physics_component.hpp"

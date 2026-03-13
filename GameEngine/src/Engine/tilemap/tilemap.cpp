@@ -1,3 +1,11 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         tilemap.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   85%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   15%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "tilemap.hpp"
 #include "../ecs/entity.hpp"
 #include "../component/components/transform.hpp"

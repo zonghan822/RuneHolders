@@ -1,9 +1,12 @@
 /*============================================================================================
-* @file         eno_bridge_visibility.cpp
-* @brief        Visibility component bridge — z-index and visible flag.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge_visibility.cpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   33%
+* @brief        Visibility component bridge — z-index and visible flag.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 #include "../component/components/visibility.hpp"

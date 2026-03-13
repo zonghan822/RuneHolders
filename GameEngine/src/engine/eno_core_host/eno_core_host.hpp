@@ -1,9 +1,13 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         eno_core_host.hpp
-* @author       Zhe An Lee (zhean.l@digipen.edu)
+* @author       ZongHan Law (zonghan.law@digipen.edu)   61%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   26%
 * @date         30-11-2025
 * @brief        Scripting set up and update
 *//*========================================================================================*/
+
+
 
 #pragma once
 

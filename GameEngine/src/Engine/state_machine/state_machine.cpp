@@ -1,3 +1,11 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         state_machine.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   78%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   22%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "state_machine.hpp"
 #include "../event/event_bus.hpp"
 #include "../eno_core_host/script_event.hpp"

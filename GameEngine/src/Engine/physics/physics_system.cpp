@@ -1,12 +1,14 @@
 /*============================================================================================
-* All content ? 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         physics_system.cpp
-* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)
+* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   50%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   28%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   17%
 * @date         05-11-2025
 * @brief        Implementation of centralized physics system. Handles force integration,
-*               velocity updates, AABB collision detection, and momentum transfer to enable
-*               realistic pushing interactions between physics-enabled entities.
-*===========================================================================================*/
+*//*========================================================================================*/
+
+
 
 #include "physics_system.hpp"
 #include "physics_events.hpp"

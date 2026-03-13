@@ -1,3 +1,12 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_script_manager.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   50%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   25%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   17%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #include "eno_script_manager.hpp"
 #include "../file/file_system.hpp"
 

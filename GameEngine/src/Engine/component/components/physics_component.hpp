@@ -1,10 +1,13 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         physics_component.hpp
-* @author       Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio)
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   60%
+* @co-author    Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   40%
 * @date         02-11-2025
 * @brief        Physics component for ECS. Stores physics properties including mass, velocity,
-*               acceleration, forces, and simulation flags for physics-based entities.
-*===========================================================================================*/
+*//*========================================================================================*/
+
+
 
 #pragma once
 

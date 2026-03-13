@@ -1,14 +1,13 @@
 /*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         font.cpp
-* @author       Law Zong Han (zonghan.law@digipen.edu)
+* @author       ZongHan Law (zonghan.law@digipen.edu)   67%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   33%
 * @date         03-10-2025
 * @brief        Implementation of the EnoFont and FontManager classes using FreeType and OpenGL.
-*               
-*                This file implements the font rendering system using FreeType for font loading
-*               and glyph processing. It creates texture atlases containing all printable characters
-*               for efficient text rendering. The system handles font metrics, character spacing,
-*               and UV coordinate calculation for proper text rendering in the graphics system.
 *//*========================================================================================*/
+
+
 
 #include "font.hpp"
 #include "../graphics.hpp"

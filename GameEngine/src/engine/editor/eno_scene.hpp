@@ -1,3 +1,11 @@
+/*============================================================================================
+* All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_scene.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   67%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   33%
+* @brief        See file name.
+*//*========================================================================================*/
+
 #pragma once
 
 // Engine Component(s)

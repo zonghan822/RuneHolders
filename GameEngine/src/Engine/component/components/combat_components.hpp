@@ -1,9 +1,15 @@
 /*============================================================================================
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
 * @file         combat_components.hpp
+* @author       Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   50%
+* @co-author    Kimberly Charlotte Madlangbayan Ambrosio (k.ambrosio@digipen.edu)   25%
+* @co-author    ZongHan Law (zonghan.law@digipen.edu)   12%
+* @co-author    Caven Koh (caven.koh@digipen.edu)   12%
 * @date         2025-11-29
 * @brief        Components for health and damage systems
 *//*========================================================================================*/
+
+
 
 #pragma once
 

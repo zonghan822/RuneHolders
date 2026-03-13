@@ -1,10 +1,13 @@
 /*============================================================================================
-* @file         eno_bridge_core.cpp  (compiled as eno_bridge.cpp)
-* @brief        Core bridge — engine initialisation and time.
-*               Defines the global gEngine pointer used across all bridge files.
-*
 * All content © 2025 DigiPen (SINGAPORE) Corporation, all rights reserved.
+* @file         eno_bridge.cpp
+* @author       ZongHan Law (zonghan.law@digipen.edu)   71%
+* @co-author    Muhammad Raziq Bin Mohd Rafig (muhammadraziq.b@digipen.edu)   12%
+* @co-author    Koe Yun Ji (yunji.koe@digipen.edu)   12%
+* @brief        Core bridge — engine initialisation and time.
 *//*========================================================================================*/
+
+
 
 #include "eno_bridge.hpp"
 #include "../file/file_system.hpp"
