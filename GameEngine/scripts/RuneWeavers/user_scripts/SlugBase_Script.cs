@@ -74,10 +74,7 @@ namespace Eno
         }
         public void Idle_update()
         {
-            FindPlayer();
-            if (_self == null || _player == null) return;
-            if (Dist(_self.position, _player.position) <= awarenessRadius)
-                _self.changeState("Chase");
+            _self?.changeState("Chase");
         }
         public void Idle_exit() { }
 

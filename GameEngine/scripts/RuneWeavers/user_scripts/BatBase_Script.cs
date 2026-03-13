@@ -6,24 +6,28 @@ namespace Eno
     {
         public float chaseSpeed      = 120f;
         public float dashSpeed       = 240f;
-        public float awarenessRadius = 300f;
-        public float windUpDuration  = 1.5f;
-        public float dashDuration    = 0.4f;
         public float hurtDuration    = 0.3f;
         public float deathDuration   = 1.0f;
         public float spawnDuration   = 0.5f;
+        public float contactDamageCooldown = 1.0f;
+
+        // 1 unit = 55 pixels
+        private const float TRIGGER_RADIUS      = 165f;
+        private const float CHARGE_DISTANCE     = 330f;
+        private const float WINDUP_DURATION     = 0.75f;
+        private const float TRACKING_DURATION   = 0.5f;  // first 0.5s tracks player
 
         protected virtual int EnemyColor => 0;
 
         private Enemy?  _self;
         private Actor?  _player;
         private bool    _playerSearched = false;
-        public float contactDamageCooldown = 1.0f;
-
-        private float   _timer        = 0f;
-        private float   _contactTimer = 0f;
-        private Vector2 _dashDir      = new Vector2(1f, 0f);
-        private bool    _isDying      = false;
+        private float   _timer          = 0f;
+        private float   _contactTimer   = 0f;
+        private Vector2 _dashDir        = new Vector2(1f, 0f);
+        private Vector2 _prevPos;
+        private float   _chargedPixels  = 0f;
+        private bool    _isDying        = false;
 
         public void Begin()
         {
@@ -59,6 +63,8 @@ namespace Eno
             }
         }
 
+        // ── Spawn ─────────────────────────────────────────────────────────────────
+
         public void Spawn_enter() { _timer = 0f; }
         public void Spawn_update()
         {
@@ -68,15 +74,19 @@ namespace Eno
         }
         public void Spawn_exit() { }
 
+        // ── Idle ──────────────────────────────────────────────────────────────────
+
         public void Idle_enter() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
         public void Idle_update()
         {
             FindPlayer();
             if (_self == null || _player == null) return;
-            if (Dist(_self.position, _player.position) <= awarenessRadius)
+            if (Dist(_self.position, _player.position) <= TRIGGER_RADIUS)
                 _self.changeState("WindUp");
         }
         public void Idle_exit() { }
+
+        // ── WindUp ────────────────────────────────────────────────────────────────
 
         public void WindUp_enter() { _timer = 0f; }
         public void WindUp_update()
@@ -84,55 +94,67 @@ namespace Eno
             FindPlayer();
             if (_self == null || _player == null) return;
 
-            if (Dist(_self.position, _player.position) > awarenessRadius * 1.5f)
-            {
-                _self.changeState("Idle");
-                return;
-            }
-
-            float dx = _player.position.x - _self.position.x;
-            float dy = _player.position.y - _self.position.y;
-            Vector2 dir = Norm(dx, dy);
-            _self.velocity = new Vector2(dir.x * chaseSpeed, dir.y * chaseSpeed);
-
-            if (dir.x != 0f)
-            {
-                Vector2 s = _self.scale;
-                _self.scale = new Vector2(dir.x > 0f ? -MathF.Abs(s.x) : MathF.Abs(s.x), s.y);
-            }
-
             _timer += Time.deltaTime;
-            if (_timer >= windUpDuration)
+
+            // Tracking phase: first TRACKING_DURATION seconds face the player
+            if (_timer <= TRACKING_DURATION)
+            {
+                float dx = _player.position.x - _self.position.x;
+                float dy = _player.position.y - _self.position.y;
+                _dashDir = Norm(dx, dy);
+
+                if (_dashDir.x != 0f)
+                {
+                    Vector2 s = _self.scale;
+                    _self.scale = new Vector2(_dashDir.x > 0f ? -MathF.Abs(s.x) : MathF.Abs(s.x), s.y);
+                }
+            }
+
+            if (_timer >= WINDUP_DURATION)
                 _self.changeState("Attack");
         }
-        public void WindUp_exit()
-        {
-            if (_self == null || _player == null) return;
-            _dashDir = Norm(
-                _player.position.x - _self.position.x,
-                _player.position.y - _self.position.y);
-        }
+        public void WindUp_exit() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
+
+        // ── Attack (charge) ───────────────────────────────────────────────────────
 
         public void Attack_enter()
         {
-            _timer = 0f;
+            _timer         = 0f;
+            _chargedPixels = 0f;
             if (_self != null)
+            {
+                _prevPos       = _self.position;
                 _self.velocity = new Vector2(_dashDir.x * dashSpeed, _dashDir.y * dashSpeed);
+            }
         }
         public void Attack_update()
         {
-            _timer += Time.deltaTime;
-            if (_timer >= dashDuration)
+            if (_self == null) return;
+
+            Vector2 curPos = _self.position;
+            float moved    = Dist(curPos, _prevPos);
+            _chargedPixels += moved;
+            _prevPos        = curPos;
+
+            // Wall hit: expected to move but barely did
+            float expectedMove = dashSpeed * Time.deltaTime;
+            bool  hitWall      = moved < expectedMove * 0.15f;
+
+            if (_chargedPixels >= CHARGE_DISTANCE || hitWall)
             {
-                if (_self != null) _self.velocity = new Vector2(0f, 0f);
-                _self?.changeState("WindUp");
+                _self.velocity = new Vector2(0f, 0f);
+                _self.changeState("Idle");
             }
         }
         public void Attack_exit() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
 
+        // ── Frozen ────────────────────────────────────────────────────────────────
+
         public void Frozen_enter() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
         public void Frozen_update() { }
         public void Frozen_exit() { }
+
+        // ── Hurt ──────────────────────────────────────────────────────────────────
 
         public void Hurt_enter()
         {
@@ -152,6 +174,8 @@ namespace Eno
         }
         public void Hurt_exit() { }
 
+        // ── Death ─────────────────────────────────────────────────────────────────
+
         public void Death_enter()
         {
             _timer = 0f;
@@ -169,6 +193,8 @@ namespace Eno
             }
         }
         public void Death_exit() { }
+
+        // ── Helpers ───────────────────────────────────────────────────────────────
 
         private void FindPlayer()
         {
