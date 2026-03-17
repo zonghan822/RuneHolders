@@ -147,7 +147,6 @@ namespace Eno
             _pathTimer = pathRefreshInterval;
 
             // Set Move loop sound
-            Console.WriteLine("Assigning sound");
             _audio.sound = MOVE_SOUND;
             _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
@@ -270,8 +269,10 @@ namespace Eno
         {
             if (_playerSearched) return;
             _playerSearched = true;
-            try { _player = GetNode<Actor>("Player"); }
-            catch { _player = null; }
+            // try { _player = this.GetNode<Actor>("Player"); }
+            // catch { _player = null; }
+
+            _player = this.GetNode<Actor>("PunkRock");
         }
 
         protected static float Dist(Vector2 a, Vector2 b)

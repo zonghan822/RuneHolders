@@ -324,11 +324,7 @@ namespace Audio
 			prepareMod(audioComp);
 		}
 
-		std::cout << "1" << std::endl;
-
 		updateSpatialAudio(audioComp, soundPos, camPos);
-
-		std::cout << "2" << std::endl;
 
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
@@ -353,14 +349,10 @@ namespace Audio
 			chGroup->setVolume(savedVol);
 		}
 
-		std::cout << "3" << std::endl;
-
 		if (ch)
 			ch->stop();
 
 		applyLoopSettings(sound, audioComp);
-
-		std::cout << "4" << std::endl;
 
 		system->playSound(
 			audioComp.audioMod_.sound_,
@@ -369,9 +361,6 @@ namespace Audio
 			&ch);
 
 		audioComp.audioMod_.ch_ = ch;
-
-		std::cout << "5" << std::endl;
-
 
 		if (ch)
 		{
@@ -382,8 +371,6 @@ namespace Audio
 			channels_.push_back(ch);
 			audioComp.isPlaying_ = true;
 		}
-
-		std::cout << "6" << std::endl;
 
 
 		// Emit signals
