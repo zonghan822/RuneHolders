@@ -186,7 +186,7 @@ namespace Bridge
 
             Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(sceneObjectID);
             ECS::EntityManager& entMng = gEngine->getEntityManager();
-
+            
             // Get Audio Component of source
             auto& ac = node->entity_.get<ECSComponents::AudioComponent>(entMng);
 

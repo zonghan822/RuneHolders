@@ -10,8 +10,6 @@
 
 
 
-#pragma once
-
 // Engine Component(s)
 
 

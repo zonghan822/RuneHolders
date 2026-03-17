@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Eno
 {
@@ -15,9 +16,9 @@ namespace Eno
 
         private Enemy?    _self;
         private Actor?    _player;
+        private AudioNode? _audio;
         private Sprite2D? _hpBarEmpty;
         private Sprite2D? _hpBarFull;
-        private AudioNode? _audio;
         private float     _hpBarFullInitialScaleX = 1f;
         private float     _hpBarFullHalfWidth     = 0f;
         private bool      _playerSearched = false;
@@ -27,7 +28,7 @@ namespace Eno
         private const float  HP_BAR_OFFSET_Y     = -50f;
         public float contactDamageCooldown = 1.0f;
 
-        private static Random rng = new Random();
+        private const string AUDIO = "DefaultAudio";
 
         List<string> _deathSounds = new List<string>
         {
@@ -46,9 +47,8 @@ namespace Eno
           "Trailblight_Hurt_06"
         };
 
-        private const string _moveSound = "Trailblight_Move_Loop";
+        private const string MOVE_SOUND = "Trailblight_Move_Loop";
 
-        private const string AUDIO = "EnemyAudio";
 
         private float  _pathTimer    = 0f;
         private float  _hurtTimer    = 0f;
@@ -56,6 +56,8 @@ namespace Eno
         private float  _spawnTimer   = 0f;
         private float  _contactTimer = 0f;
         private bool   _isDying      = false;
+
+        private Random rng = new Random();
 
         public void Begin()
         {
@@ -145,7 +147,8 @@ namespace Eno
             _pathTimer = pathRefreshInterval;
 
             // Set Move loop sound
-            _audio.sound = _moveSound;
+            Console.WriteLine("Assigning sound");
+            _audio.sound = MOVE_SOUND;
             _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
         public void Chase_update()
@@ -206,9 +209,9 @@ namespace Eno
         {
             _self?.clearPath();
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            
+
             // Set Move loop sound
-            _audio.sound = _moveSound;
+            _audio.sound = MOVE_SOUND;
             _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
 

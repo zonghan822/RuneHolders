@@ -41,7 +41,7 @@ namespace Eno
 
             if (SpellType >= 0 && SpellType < SpellSoundNames.Length)
             {
-                try { GetNode<AudioNode>(SpellSoundNames[SpellType])?.play(); } catch { }
+                //try { GetNode<AudioNode>(SpellSoundNames[SpellType])?.play(); } catch { }
             }
         }
 

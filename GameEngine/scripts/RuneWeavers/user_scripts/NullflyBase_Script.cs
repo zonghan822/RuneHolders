@@ -18,6 +18,7 @@ namespace Eno
 
         private Enemy?    _self;
         private Actor?    _player;
+        private AudioNode? _audio;
         private Sprite2D? _hpBarEmpty;
         private Sprite2D? _hpBarFull;
         private float     _hpBarFullInitialScaleX = 1f;
@@ -28,6 +29,10 @@ namespace Eno
         private const string HP_BAR_FULL_PREFAB  = "EnemyHealthBar_Full";
         private const float  HP_BAR_OFFSET_Y     = -50f;
         public float contactDamageCooldown = 1.0f;
+
+        private const string ATTACK_SOUND = "Nullfly_Attack_01";
+
+        private const string AUDIO = "DefaultAudio";
 
         private float  _timer        = 0f;
         private float  _contactTimer = 0f;
@@ -65,6 +70,10 @@ namespace Eno
                 float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
                 _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
                 _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
+
+                // Audio node instantiation
+                _audio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
+
                 if (_hpBarFull != null)
                 {
                     _hpBarFullInitialScaleX = _hpBarFull.scale.x;
@@ -153,7 +162,9 @@ namespace Eno
         public void WindUp_enter()
         {
             _timer = 0f;
-            //try { Bridge.AudioPlayInstant("SFX", "Nullfly_Attack_01"); } catch { }
+
+            _audio.sound = ATTACK_SOUND;
+            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
         public void WindUp_update()
         {

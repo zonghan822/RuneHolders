@@ -175,27 +175,6 @@
 		"PrefabName": {  }
 	}
 
-	[Room3]
-	{
-		"ID": { 229 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-		}
-		"Script": { Room3_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 0 }
-		"PrefabName": {  }
-	}
-
 	[Narrative]
 	{
 		"ID": { 286 }
@@ -262,6 +241,27 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
+		"PrefabName": {  }
+	}
+
+	[Room3]
+	{
+		"ID": { 229 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+		}
+		"Script": { Room3_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 0 }
 		"PrefabName": {  }
 	}
 
@@ -363,9 +363,9 @@
 		"PrefabName": {  }
 	}
 
-	[Room5]
+	[CrystalBig1]
 	{
-		"ID": { 231 }
+		"ID": { 39 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -374,34 +374,69 @@
 				"Z Index": <uint32_t> { 3 }
 				"Visible": <bool> { 1 }
 			}
-		}
-		"Script": { Room5_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 0 }
-		"PrefabName": {  }
-	}
 
-	[Room5]
-	{
-		"ID": { 231 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
+			[struct ECSComponents::TransformComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
+				"Position": <eVec2(float)> { x : 1184 | y : -672 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 64 }
+				"Height": <float> { 64 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 64 }
+				"Frame Height": <int> { 64 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 12 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
+				"Current Animation": <char64> { Default }
+				"Anim0 Name": <char64> { Default }
+				"Anim0 Texture": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 12 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { Default }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
 			}
 		}
-		"Script": { Room5_Script.cs }
+		"Script": { }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }
-		"NodeType": { 0 }
+		"NodeType": { 3 }
 		"PrefabName": {  }
 	}
 
@@ -500,9 +535,30 @@
 		"PrefabName": {  }
 	}
 
-	[CrystalBig1]
+	[Room5]
 	{
-		"ID": { 39 }
+		"ID": { 231 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+		}
+		"Script": { Room5_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 0 }
+		"PrefabName": {  }
+	}
+
+	[CrystalBig2]
+	{
+		"ID": { 40 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -514,7 +570,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1184 | y : -672 }
+				"Position": <eVec2(float)> { x : 1184 | y : -224 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -686,9 +742,9 @@
 		"PrefabName": { RightDoor }
 	}
 
-	[CrystalBig2]
+	[CrystalSmall]
 	{
-		"ID": { 40 }
+		"ID": { 41 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -700,7 +756,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1184 | y : -224 }
+				"Position": <eVec2(float)> { x : 1120 | y : -672 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -712,7 +768,7 @@
 				"Height": <float> { 64 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
+				"Texture Path": <texchar240> { Tilemap-Crystals2-Idle-Sheet }
 				"TexID": <int> { 0 }
 				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
 				"UV End": <eVec2(float)> { x : 1 | y : 1 }
@@ -734,7 +790,7 @@
 				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { Default }
 				"Anim0 Name": <char64> { Default }
-				"Anim0 Texture": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
+				"Anim0 Texture": <texchar240> { Tilemap-Crystals2-Idle-Sheet }
 				"Anim0 FrameW": <int> { 64 }
 				"Anim0 FrameH": <int> { 64 }
 				"Anim0 Rows": <int> { 1 }
@@ -760,27 +816,6 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
-		"PrefabName": {  }
-	}
-
-	[Room20A]
-	{
-		"ID": { 354 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-		}
-		"Script": { Room20A_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 0 }
 		"PrefabName": {  }
 	}
 
@@ -893,9 +928,30 @@
 		"PrefabName": { RightDoor }
 	}
 
-	[CrystalSmall]
+	[Room20A]
 	{
-		"ID": { 41 }
+		"ID": { 354 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+		}
+		"Script": { Room20A_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 0 }
+		"PrefabName": {  }
+	}
+
+	[PlantBig]
+	{
+		"ID": { 42 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -907,7 +963,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1120 | y : -672 }
+				"Position": <eVec2(float)> { x : 1120 | y : -352 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -919,7 +975,7 @@
 				"Height": <float> { 64 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Tilemap-Crystals2-Idle-Sheet }
+				"Texture Path": <texchar240> { Tilemap-Plants1-Idle-Sheet }
 				"TexID": <int> { 0 }
 				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
 				"UV End": <eVec2(float)> { x : 1 | y : 1 }
@@ -941,7 +997,7 @@
 				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { Default }
 				"Anim0 Name": <char64> { Default }
-				"Anim0 Texture": <texchar240> { Tilemap-Crystals2-Idle-Sheet }
+				"Anim0 Texture": <texchar240> { Tilemap-Plants1-Idle-Sheet }
 				"Anim0 FrameW": <int> { 64 }
 				"Anim0 FrameH": <int> { 64 }
 				"Anim0 Rows": <int> { 1 }
@@ -1079,9 +1135,9 @@
 		"PrefabName": { RightDoor }
 	}
 
-	[PlantBig]
+	[PlantBig1]
 	{
-		"ID": { 42 }
+		"ID": { 43 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -1093,7 +1149,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 1120 | y : -352 }
+				"Position": <eVec2(float)> { x : 800 | y : -288 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -1149,75 +1205,6 @@
 		}
 		"Script": { }
 		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 3 }
-		"PrefabName": {  }
-	}
-
-	[PlayerHealthBar_Empty]
-	{
-		"ID": { 364 }
-		"Layer": { 1 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 2585 | y : -900 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 320 }
-				"Height": <float> { 96 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { UI-Health-Player-Empty }
-				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
-		}
-		"Script": { }
-		"Parent": { 256 }
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }
@@ -1334,9 +1321,78 @@
 		"PrefabName": { RightDoor }
 	}
 
-	[PlantBig1]
+	[PlayerHealthBar_Empty]
 	{
-		"ID": { 43 }
+		"ID": { 364 }
+		"Layer": { 1 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 2585 | y : -900 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 320 }
+				"Height": <float> { 96 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-Health-Player-Empty }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { }
+		"Parent": { 256 }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 3 }
+		"PrefabName": {  }
+	}
+
+	[PlantBig2]
+	{
+		"ID": { 44 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -1348,7 +1404,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 800 | y : -288 }
+				"Position": <eVec2(float)> { x : 864 | y : -480 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -1520,9 +1576,9 @@
 		"PrefabName": { RightDoor }
 	}
 
-	[PlantBig2]
+	[PlantSmall]
 	{
-		"ID": { 44 }
+		"ID": { 45 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -1534,7 +1590,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 864 | y : -480 }
+				"Position": <eVec2(float)> { x : 1120 | y : -736 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -1546,7 +1602,7 @@
 				"Height": <float> { 64 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Tilemap-Plants1-Idle-Sheet }
+				"Texture Path": <texchar240> { Tilemap-Plants2-Idle-Sheet }
 				"TexID": <int> { 0 }
 				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
 				"UV End": <eVec2(float)> { x : 1 | y : 1 }
@@ -1568,7 +1624,7 @@
 				"Animation Count": <int> { 1 }
 				"Current Animation": <char64> { Default }
 				"Anim0 Name": <char64> { Default }
-				"Anim0 Texture": <texchar240> { Tilemap-Plants1-Idle-Sheet }
+				"Anim0 Texture": <texchar240> { Tilemap-Plants2-Idle-Sheet }
 				"Anim0 FrameW": <int> { 64 }
 				"Anim0 FrameH": <int> { 64 }
 				"Anim0 Rows": <int> { 1 }
@@ -1594,27 +1650,6 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
-		"PrefabName": {  }
-	}
-
-	[Room24]
-	{
-		"ID": { 358 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-		}
-		"Script": { Room24_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 0 }
 		"PrefabName": {  }
 	}
 
@@ -1727,86 +1762,9 @@
 		"PrefabName": { UpDoor }
 	}
 
-	[PlantSmall]
+	[Room24]
 	{
-		"ID": { 45 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 1120 | y : -736 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 64 }
-				"Height": <float> { 64 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Tilemap-Plants2-Idle-Sheet }
-				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 64 }
-				"Frame Height": <int> { 64 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 12 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 1 }
-				"Current Animation": <char64> { Default }
-				"Anim0 Name": <char64> { Default }
-				"Anim0 Texture": <texchar240> { Tilemap-Plants2-Idle-Sheet }
-				"Anim0 FrameW": <int> { 64 }
-				"Anim0 FrameH": <int> { 64 }
-				"Anim0 Rows": <int> { 1 }
-				"Anim0 Cols": <int> { 12 }
-				"Anim0 Duration": <float> { 0.1 }
-				"Anim0 Looping": <bool> { 1 }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { Default }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 3 }
-		"PrefabName": {  }
-	}
-
-	[Room6]
-	{
-		"ID": { 238 }
+		"ID": { 358 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -1816,7 +1774,7 @@
 				"Visible": <bool> { 1 }
 			}
 		}
-		"Script": { Room6_Script.cs }
+		"Script": { Room24_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -1860,6 +1818,48 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 10 }
+		"PrefabName": {  }
+	}
+
+	[Room6]
+	{
+		"ID": { 238 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+		}
+		"Script": { Room6_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 0 }
+		"PrefabName": {  }
+	}
+
+	[Room11]
+	{
+		"ID": { 244 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+		}
+		"Script": { Room11_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 0 }
 		"PrefabName": {  }
 	}
 
@@ -2058,27 +2058,6 @@
 		"PrefabName": { Player }
 	}
 
-	[Room11]
-	{
-		"ID": { 244 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-		}
-		"Script": { Room11_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 0 }
-		"PrefabName": {  }
-	}
-
 	[RuneSystem]
 	{
 		"ID": { 53 }
@@ -2230,101 +2209,6 @@
 		"PrefabName": { UpDoor }
 	}
 
-	[Room19_Scroll]
-	{
-		"ID": { 282 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 4 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 10557.7 | y : -11307.5 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 36 }
-				"Height": <float> { 36 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Collectible-Scroll }
-				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::CollisionComponent]
-			{
-				"Type": <ColliderType> { Circle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
-				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 1 }
-				"Rotation": <float> { 0 }
-				"Radius": <float> { 100 }
-			}
-
-			[struct ECSComponents::PhysicsComponent]
-			{
-				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
-				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
-				"Force": <eVec2(float)> { x : 0 | y : 0 }
-				"Mass": <float> { 1 }
-				"Drag": <float> { 0.1 }
-				"Restitution": <float> { 0.5 }
-				"UseGravity": <bool> { 0 }
-				"IsKinematic": <bool> { 0 }
-				"FreezeRotation": <bool> { 1 }
-				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
-				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { 283 }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 5 }
-		"PrefabName": {  }
-	}
-
 	[Door2to3]
 	{
 		"ID": { 225 }
@@ -2432,6 +2316,101 @@
 		"Enabled": { true }
 		"NodeType": { 4 }
 		"PrefabName": { UpDoor }
+	}
+
+	[Room19_Scroll]
+	{
+		"ID": { 282 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 4 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 10557.7 | y : -11307.5 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 36 }
+				"Height": <float> { 36 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Collectible-Scroll }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Circle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 1 }
+				"Is Active": <bool> { 1 }
+				"Is Static": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Radius": <float> { 100 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0.1 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { 283 }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 5 }
+		"PrefabName": {  }
 	}
 
 	[Door3to4]
@@ -2543,27 +2522,6 @@
 		"PrefabName": { UpDoor }
 	}
 
-	[Room21]
-	{
-		"ID": { 356 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-		}
-		"Script": { Room21_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 0 }
-		"PrefabName": {  }
-	}
-
 	[Door4to5]
 	{
 		"ID": { 227 }
@@ -2673,9 +2631,9 @@
 		"PrefabName": { UpDoor }
 	}
 
-	[Room20C]
+	[Room21]
 	{
-		"ID": { 352 }
+		"ID": { 356 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -2685,7 +2643,7 @@
 				"Visible": <bool> { 1 }
 			}
 		}
-		"Script": { Room20C_Script.cs }
+		"Script": { Room21_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -2715,6 +2673,27 @@
 		"PrefabName": {  }
 	}
 
+	[Room20C]
+	{
+		"ID": { 352 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+		}
+		"Script": { Room20C_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 0 }
+		"PrefabName": {  }
+	}
+
 	[Room8]
 	{
 		"ID": { 240 }
@@ -2728,27 +2707,6 @@
 			}
 		}
 		"Script": { Room8_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 0 }
-		"PrefabName": {  }
-	}
-
-	[Room9]
-	{
-		"ID": { 241 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-		}
-		"Script": { Room9_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -2804,6 +2762,27 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 9 }
+		"PrefabName": {  }
+	}
+
+	[Room9]
+	{
+		"ID": { 241 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+		}
+		"Script": { Room9_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 0 }
 		"PrefabName": {  }
 	}
 
@@ -2937,6 +2916,56 @@
 		"PrefabName": { LeftDoor }
 	}
 
+	[SpellCast_01]
+	{
+		"ID": { 360 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AudioComponent]
+			{
+				"Sound Name": <char32> { SpellCast_01 }
+				"Sound Path": <char256> {  }
+				"Channel Group": <char32> { SFX }
+				"Loop Mode": <loopmode> { Disabled }
+				"Loop Start": <float> { 0 }
+				"Loop End": <float> { 0 }
+				"Volume": <double> { 50 }
+				"Pitch Scale": <double> { 1 }
+				"Pan Scale": <double> { 0 }
+				"Is Autoplay": <bool> { 0 }
+				"Spatial Audio": <bool> { 0 }
+				"Max Audible Distance": <float> { 500 }
+				"Enable Reverb": <bool> { 0 }
+				"Reverb Wet": <float> { 0 }
+				"Reverb Dry": <float> { 1 }
+				"Reverb Decay": <float> { 1500 }
+				"Enable EQ": <bool> { 0 }
+				"EQ Low Gain": <float> { 0 }
+				"EQ Mid Gain": <float> { 0 }
+				"EQ High Gain": <float> { 0 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 9 }
+		"PrefabName": {  }
+	}
+
 	[Door7to6]
 	{
 		"ID": { 247 }
@@ -3044,151 +3073,6 @@
 		"Enabled": { true }
 		"NodeType": { 4 }
 		"PrefabName": { LeftDoor }
-	}
-
-	[SpellCast_01]
-	{
-		"ID": { 360 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::AudioComponent]
-			{
-				"Sound Name": <char32> { SpellCast_01 }
-				"Sound Path": <char256> {  }
-				"Channel Group": <char32> { SFX }
-				"Loop Mode": <loopmode> { Disabled }
-				"Loop Start": <float> { 0 }
-				"Loop End": <float> { 0 }
-				"Volume": <double> { 50 }
-				"Pitch Scale": <double> { 1 }
-				"Pan Scale": <double> { 0 }
-				"Is Autoplay": <bool> { 0 }
-				"Spatial Audio": <bool> { 0 }
-				"Max Audible Distance": <float> { 500 }
-				"Enable Reverb": <bool> { 0 }
-				"Reverb Wet": <float> { 0 }
-				"Reverb Dry": <float> { 1 }
-				"Reverb Decay": <float> { 1500 }
-				"Enable EQ": <bool> { 0 }
-				"EQ Low Gain": <float> { 0 }
-				"EQ Mid Gain": <float> { 0 }
-				"EQ High Gain": <float> { 0 }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 9 }
-		"PrefabName": {  }
-	}
-
-	[Room1_Scroll]
-	{
-		"ID": { 263 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 4 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 1066.28 | y : -638.342 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 36 }
-				"Height": <float> { 36 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Collectible-Scroll }
-				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::CollisionComponent]
-			{
-				"Type": <ColliderType> { Circle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
-				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 1 }
-				"Rotation": <float> { 0 }
-				"Radius": <float> { 65 }
-			}
-
-			[struct ECSComponents::PhysicsComponent]
-			{
-				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
-				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
-				"Force": <eVec2(float)> { x : 0 | y : 0 }
-				"Mass": <float> { 1 }
-				"Drag": <float> { 0.1 }
-				"Restitution": <float> { 0.5 }
-				"UseGravity": <bool> { 0 }
-				"IsKinematic": <bool> { 0 }
-				"FreezeRotation": <bool> { 1 }
-				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
-				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { Default }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
-		}
-		"Script": { Scroll_Dialouge_Script.cs }
-		"Parent": { }
-		"Children": { 264 }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 5 }
-		"PrefabName": {  }
 	}
 
 	[Door8to7]
@@ -3300,6 +3184,216 @@
 		"PrefabName": { LeftDoor }
 	}
 
+	[Room1_Scroll]
+	{
+		"ID": { 263 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 4 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1066.28 | y : -638.342 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 36 }
+				"Height": <float> { 36 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Collectible-Scroll }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Circle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 1 }
+				"Is Active": <bool> { 1 }
+				"Is Static": <bool> { 1 }
+				"Rotation": <float> { 0 }
+				"Radius": <float> { 65 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0.1 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { Default }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { Scroll_Dialouge_Script.cs }
+		"Parent": { }
+		"Children": { 264 }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 5 }
+		"PrefabName": {  }
+	}
+
+	[DummyBlue]
+	{
+		"ID": { 370 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 6712.23 | y : -4608.34 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 96 }
+				"Height": <float> { 96 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Dummies-Blue }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Circle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 1 }
+				"Is Static": <bool> { 0 }
+				"Rotation": <float> { 0 }
+				"Radius": <float> { 60 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0.1 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 1 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 2 }
+				"Current Animation": <char64> { Idle }
+				"Anim0 Name": <char64> { Idle }
+				"Anim0 Texture": <texchar240> { Dummies-Blue }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { Hurt }
+				"Anim1 Texture": <texchar240> { Dummies-Blue-Hurt }
+				"Anim1 FrameW": <int> { 96 }
+				"Anim1 FrameH": <int> { 96 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 2 }
+				"CurrentState": <char32> { Idle }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Idle }
+				"State[0].onEnter": <char64> { Idle_enter }
+				"State[0].onUpdate": <char64> { Idle_update }
+				"State[0].onExit": <char64> { Idle_exit }
+				"State[1].name": <char32> { Hurt }
+				"State[1].onEnter": <char64> { Hurt_enter }
+				"State[1].onUpdate": <char64> { Hurt_update }
+				"State[1].onExit": <char64> { Hurt_exit }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 5 }
+		"PrefabName": { DummyBlue }
+	}
+
 	[Door9to8]
 	{
 		"ID": { 249 }
@@ -3409,36 +3503,36 @@
 		"PrefabName": { LeftDoor }
 	}
 
-	[DummyBlue]
+	[Door10to9]
 	{
-		"ID": { 370 }
+		"ID": { 250 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 4 }
+				"Z Index": <uint32_t> { 3 }
 				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 6712.23 | y : -4608.34 }
+				"Position": <eVec2(float)> { x : 10272.4 | y : -4896.92 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1.72893 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
 			}
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 96 }
-				"Height": <float> { 96 }
+				"Width": <float> { 64 }
+				"Height": <float> { 110.651 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Dummies-Blue }
+				"Texture Path": <texchar240> { Tilemap-SideDoor-Idle-Sheet }
 				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+				"UV Start": <eVec2(float)> { x : 1 | y : 0 }
+				"UV End": <eVec2(float)> { x : 0 | y : 1 }
 			}
 
 			[struct ECSComponents::LayerComponent]
@@ -3448,60 +3542,74 @@
 
 			[struct ECSComponents::CollisionComponent]
 			{
-				"Type": <ColliderType> { Circle }
+				"Type": <ColliderType> { Rectangle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
 				"Is Trigger": <bool> { 1 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 1 }
+				"Is Static": <bool> { 0 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 72 }
-			}
-
-			[struct ECSComponents::PhysicsComponent]
-			{
-				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
-				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
-				"Force": <eVec2(float)> { x : 0 | y : 0 }
-				"Mass": <float> { 1 }
-				"Drag": <float> { 0.1 }
-				"Restitution": <float> { 0.5 }
-				"UseGravity": <bool> { 0 }
-				"IsKinematic": <bool> { 0 }
-				"FreezeRotation": <bool> { 1 }
-				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
-				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+				"Width": <float> { 64 }
+				"Height": <float> { 110.651 }
 			}
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 64 }
+				"Frame Height": <int> { 192 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 5 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 2 }
+				"Current Animation": <char64> { Locked }
+				"Anim0 Name": <char64> { Locked }
+				"Anim0 Texture": <texchar240> { Tilemap-SideDoor-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 192 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 12 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { Unlocking }
+				"Anim1 Texture": <texchar240> { Tilemap-SideDoor-Open-Sheet }
+				"Anim1 FrameW": <int> { 64 }
+				"Anim1 FrameH": <int> { 192 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 5 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
+				"NumStates": <int> { 4 }
+				"CurrentState": <char32> { Locked }
 				"TimeInState": <float> { 0 }
 				"State[0].name": <char32> { Default }
 				"State[0].onEnter": <char64> { Default_enter }
 				"State[0].onUpdate": <char64> { Default_update }
 				"State[0].onExit": <char64> { Default_exit }
+				"State[1].name": <char32> { Unlocking }
+				"State[1].onEnter": <char64> { Unlocking_enter }
+				"State[1].onUpdate": <char64> { Unlocking_update }
+				"State[1].onExit": <char64> { Unlocking_exit }
+				"State[2].name": <char32> { Locked }
+				"State[2].onEnter": <char64> { Locked_enter }
+				"State[2].onUpdate": <char64> { Locked_update }
+				"State[2].onExit": <char64> { Locked_exit }
+				"State[3].name": <char32> { Unlocked }
+				"State[3].onEnter": <char64> { Unlocked_enter }
+				"State[3].onUpdate": <char64> { Unlocked_update }
+				"State[3].onExit": <char64> { Unlocked_exit }
 			}
 		}
-		"Script": { }
+		"Script": { Door10to9_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }
-		"NodeType": { 5 }
-		"PrefabName": { DummyBlue }
+		"NodeType": { 4 }
+		"PrefabName": { LeftDoor }
 	}
 
 	[StopWatch]
@@ -3629,115 +3737,6 @@
 		"PrefabName": {  }
 	}
 
-	[Door10to9]
-	{
-		"ID": { 250 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 10272.4 | y : -4896.92 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1.72893 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 64 }
-				"Height": <float> { 110.651 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Tilemap-SideDoor-Idle-Sheet }
-				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 1 | y : 0 }
-				"UV End": <eVec2(float)> { x : 0 | y : 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::CollisionComponent]
-			{
-				"Type": <ColliderType> { Rectangle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
-				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 0 }
-				"Rotation": <float> { 0 }
-				"Width": <float> { 64 }
-				"Height": <float> { 110.651 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 64 }
-				"Frame Height": <int> { 192 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 5 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 2 }
-				"Current Animation": <char64> { Locked }
-				"Anim0 Name": <char64> { Locked }
-				"Anim0 Texture": <texchar240> { Tilemap-SideDoor-Idle-Sheet }
-				"Anim0 FrameW": <int> { 64 }
-				"Anim0 FrameH": <int> { 192 }
-				"Anim0 Rows": <int> { 1 }
-				"Anim0 Cols": <int> { 12 }
-				"Anim0 Duration": <float> { 0.1 }
-				"Anim0 Looping": <bool> { 1 }
-				"Anim1 Name": <char64> { Unlocking }
-				"Anim1 Texture": <texchar240> { Tilemap-SideDoor-Open-Sheet }
-				"Anim1 FrameW": <int> { 64 }
-				"Anim1 FrameH": <int> { 192 }
-				"Anim1 Rows": <int> { 1 }
-				"Anim1 Cols": <int> { 5 }
-				"Anim1 Duration": <float> { 0.1 }
-				"Anim1 Looping": <bool> { 1 }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 4 }
-				"CurrentState": <char32> { Locked }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-				"State[1].name": <char32> { Unlocking }
-				"State[1].onEnter": <char64> { Unlocking_enter }
-				"State[1].onUpdate": <char64> { Unlocking_update }
-				"State[1].onExit": <char64> { Unlocking_exit }
-				"State[2].name": <char32> { Locked }
-				"State[2].onEnter": <char64> { Locked_enter }
-				"State[2].onUpdate": <char64> { Locked_update }
-				"State[2].onExit": <char64> { Locked_exit }
-				"State[3].name": <char32> { Unlocked }
-				"State[3].onEnter": <char64> { Unlocked_enter }
-				"State[3].onUpdate": <char64> { Unlocked_update }
-				"State[3].onExit": <char64> { Unlocked_exit }
-			}
-		}
-		"Script": { Door10to9_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 4 }
-		"PrefabName": { LeftDoor }
-	}
-
 	[Door2to1]
 	{
 		"ID": { 251 }
@@ -3845,6 +3844,75 @@
 		"Enabled": { true }
 		"NodeType": { 4 }
 		"PrefabName": { DownDoor }
+	}
+
+	[DefeatScreen]
+	{
+		"ID": { 380 }
+		"Layer": { 1 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 3200 | y : 1750 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 384 }
+				"Height": <float> { 155 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-DefeatText }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { }
+		"Parent": { 377 }
+		"Children": { 381, 382, 383 }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 3 }
+		"PrefabName": {  }
 	}
 
 	[Door3to2]
@@ -3956,6 +4024,56 @@
 		"PrefabName": { UpDoor }
 	}
 
+	[PeacefulBGM]
+	{
+		"ID": { 374 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AudioComponent]
+			{
+				"Sound Name": <char32> { BGM_01_Layer1_loop }
+				"Sound Path": <char256> {  }
+				"Channel Group": <char32> { SFX }
+				"Loop Mode": <loopmode> { Disabled }
+				"Loop Start": <float> { 0 }
+				"Loop End": <float> { 0 }
+				"Volume": <double> { 50 }
+				"Pitch Scale": <double> { 1 }
+				"Pan Scale": <double> { 0 }
+				"Is Autoplay": <bool> { 0 }
+				"Spatial Audio": <bool> { 0 }
+				"Max Audible Distance": <float> { 500 }
+				"Enable Reverb": <bool> { 0 }
+				"Reverb Wet": <float> { 0 }
+				"Reverb Dry": <float> { 1 }
+				"Reverb Decay": <float> { 1500 }
+				"Enable EQ": <bool> { 0 }
+				"EQ Low Gain": <float> { 0 }
+				"EQ Mid Gain": <float> { 0 }
+				"EQ High Gain": <float> { 0 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 9 }
+		"PrefabName": {  }
+	}
+
 	[Door4to3]
 	{
 		"ID": { 253 }
@@ -4063,56 +4181,6 @@
 		"Enabled": { true }
 		"NodeType": { 4 }
 		"PrefabName": { UpDoor }
-	}
-
-	[PeacefulBGM]
-	{
-		"ID": { 374 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::AudioComponent]
-			{
-				"Sound Name": <char32> { BGM_01_Layer1_loop }
-				"Sound Path": <char256> {  }
-				"Channel Group": <char32> { SFX }
-				"Loop Mode": <loopmode> { Disabled }
-				"Loop Start": <float> { 0 }
-				"Loop End": <float> { 0 }
-				"Volume": <double> { 50 }
-				"Pitch Scale": <double> { 1 }
-				"Pan Scale": <double> { 0 }
-				"Is Autoplay": <bool> { 0 }
-				"Spatial Audio": <bool> { 0 }
-				"Max Audible Distance": <float> { 500 }
-				"Enable Reverb": <bool> { 0 }
-				"Reverb Wet": <float> { 0 }
-				"Reverb Dry": <float> { 1 }
-				"Reverb Decay": <float> { 1500 }
-				"Enable EQ": <bool> { 0 }
-				"EQ Low Gain": <float> { 0 }
-				"EQ Mid Gain": <float> { 0 }
-				"EQ High Gain": <float> { 0 }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 9 }
-		"PrefabName": {  }
 	}
 
 	[Door5to4]
@@ -4224,6 +4292,121 @@
 		"PrefabName": { UpDoor }
 	}
 
+	[DummyYellow]
+	{
+		"ID": { 368 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 728.666 | y : -3748.75 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 96 }
+				"Height": <float> { 96 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Dummies-Yellow }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Circle }
+				"Offset": <eVec2(float)> { x : 0 | y : 0 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 1 }
+				"Is Static": <bool> { 0 }
+				"Rotation": <float> { 0 }
+				"Radius": <float> { 60 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0.1 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 1 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 2 }
+				"Current Animation": <char64> { Idle }
+				"Anim0 Name": <char64> { Idle }
+				"Anim0 Texture": <texchar240> { Dummies-Yellow }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { Hurt }
+				"Anim1 Texture": <texchar240> { Dummies-Yellow-Hurt }
+				"Anim1 FrameW": <int> { 96 }
+				"Anim1 FrameH": <int> { 96 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 2 }
+				"CurrentState": <char32> { Idle }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Idle }
+				"State[0].onEnter": <char64> { Idle_enter }
+				"State[0].onUpdate": <char64> { Idle_update }
+				"State[0].onExit": <char64> { Idle_exit }
+				"State[1].name": <char32> { Hurt }
+				"State[1].onEnter": <char64> { Hurt_enter }
+				"State[1].onUpdate": <char64> { Hurt_update }
+				"State[1].onExit": <char64> { Hurt_exit }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 5 }
+		"PrefabName": { DummyYellow }
+	}
+
 	[Door11to9]
 	{
 		"ID": { 255 }
@@ -4331,101 +4514,6 @@
 		"Enabled": { true }
 		"NodeType": { 4 }
 		"PrefabName": { UpDoor }
-	}
-
-	[DummyYellow]
-	{
-		"ID": { 368 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 4 }
-				"Visible": <bool> { 1 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 728.666 | y : -3748.75 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 96 }
-				"Height": <float> { 96 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Dummies-Yellow }
-				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::CollisionComponent]
-			{
-				"Type": <ColliderType> { Circle }
-				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
-				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 1 }
-				"Rotation": <float> { 0 }
-				"Radius": <float> { 72 }
-			}
-
-			[struct ECSComponents::PhysicsComponent]
-			{
-				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
-				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
-				"Force": <eVec2(float)> { x : 0 | y : 0 }
-				"Mass": <float> { 1 }
-				"Drag": <float> { 0.1 }
-				"Restitution": <float> { 0.5 }
-				"UseGravity": <bool> { 0 }
-				"IsKinematic": <bool> { 0 }
-				"FreezeRotation": <bool> { 1 }
-				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
-				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
-		}
-		"Script": { }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 5 }
-		"PrefabName": { DummyYellow }
 	}
 
 	[Gameplay_UI]
@@ -11840,7 +11928,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 4 }
+				"Z Index": <uint32_t> { 3 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -11873,11 +11961,11 @@
 			{
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 1 }
+				"Is Static": <bool> { 0 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 72 }
+				"Radius": <float> { 60 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -11897,25 +11985,45 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 1 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 2 }
+				"Current Animation": <char64> { Idle }
+				"Anim0 Name": <char64> { Idle }
+				"Anim0 Texture": <texchar240> { Dummies-Blue }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { Hurt }
+				"Anim1 Texture": <texchar240> { Dummies-Blue-Hurt }
+				"Anim1 FrameW": <int> { 96 }
+				"Anim1 FrameH": <int> { 96 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
+				"NumStates": <int> { 2 }
+				"CurrentState": <char32> { Idle }
 				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
+				"State[0].name": <char32> { Idle }
+				"State[0].onEnter": <char64> { Idle_enter }
+				"State[0].onUpdate": <char64> { Idle_update }
+				"State[0].onExit": <char64> { Idle_exit }
+				"State[1].name": <char32> { Hurt }
+				"State[1].onEnter": <char64> { Hurt_enter }
+				"State[1].onUpdate": <char64> { Hurt_update }
+				"State[1].onExit": <char64> { Hurt_exit }
 			}
 		}
 		"Script": { }
@@ -11935,7 +12043,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 4 }
+				"Z Index": <uint32_t> { 3 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -11968,11 +12076,11 @@
 			{
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 1 }
+				"Is Static": <bool> { 0 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 72 }
+				"Radius": <float> { 60 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -11992,25 +12100,45 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 1 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 2 }
+				"Current Animation": <char64> { Idle }
+				"Anim0 Name": <char64> { Idle }
+				"Anim0 Texture": <texchar240> { Dummies-Yellow }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { Hurt }
+				"Anim1 Texture": <texchar240> { Dummies-Yellow-Hurt }
+				"Anim1 FrameW": <int> { 96 }
+				"Anim1 FrameH": <int> { 96 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
+				"NumStates": <int> { 2 }
+				"CurrentState": <char32> { Idle }
 				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
+				"State[0].name": <char32> { Idle }
+				"State[0].onEnter": <char64> { Idle_enter }
+				"State[0].onUpdate": <char64> { Idle_update }
+				"State[0].onExit": <char64> { Idle_exit }
+				"State[1].name": <char32> { Hurt }
+				"State[1].onEnter": <char64> { Hurt_enter }
+				"State[1].onUpdate": <char64> { Hurt_update }
+				"State[1].onExit": <char64> { Hurt_exit }
 			}
 		}
 		"Script": { }
@@ -12030,7 +12158,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 4 }
+				"Z Index": <uint32_t> { 3 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -12063,11 +12191,11 @@
 			{
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 1 }
+				"Is Static": <bool> { 0 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 72 }
+				"Radius": <float> { 60 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -12087,25 +12215,45 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 1 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 2 }
+				"Current Animation": <char64> { Idle }
+				"Anim0 Name": <char64> { Idle }
+				"Anim0 Texture": <texchar240> { Dummies-Blue }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { Hurt }
+				"Anim1 Texture": <texchar240> { Dummies-Blue-Hurt }
+				"Anim1 FrameW": <int> { 96 }
+				"Anim1 FrameH": <int> { 96 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
+				"NumStates": <int> { 2 }
+				"CurrentState": <char32> { Idle }
 				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
+				"State[0].name": <char32> { Idle }
+				"State[0].onEnter": <char64> { Idle_enter }
+				"State[0].onUpdate": <char64> { Idle_update }
+				"State[0].onExit": <char64> { Idle_exit }
+				"State[1].name": <char32> { Hurt }
+				"State[1].onEnter": <char64> { Hurt_enter }
+				"State[1].onUpdate": <char64> { Hurt_update }
+				"State[1].onExit": <char64> { Hurt_exit }
 			}
 		}
 		"Script": { }
@@ -12125,7 +12273,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 4 }
+				"Z Index": <uint32_t> { 3 }
 				"Visible": <bool> { 1 }
 			}
 
@@ -12158,11 +12306,11 @@
 			{
 				"Type": <ColliderType> { Circle }
 				"Offset": <eVec2(float)> { x : 0 | y : 0 }
-				"Is Trigger": <bool> { 1 }
+				"Is Trigger": <bool> { 0 }
 				"Is Active": <bool> { 1 }
-				"Is Static": <bool> { 1 }
+				"Is Static": <bool> { 0 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 72 }
+				"Radius": <float> { 60 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -12182,25 +12330,45 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 1 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
+				"Animation Count": <int> { 2 }
+				"Current Animation": <char64> { Idle }
+				"Anim0 Name": <char64> { Idle }
+				"Anim0 Texture": <texchar240> { Dummies-Blue }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { Hurt }
+				"Anim1 Texture": <texchar240> { Dummies-Blue-Hurt }
+				"Anim1 FrameW": <int> { 96 }
+				"Anim1 FrameH": <int> { 96 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
+				"NumStates": <int> { 2 }
+				"CurrentState": <char32> { Idle }
 				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
+				"State[0].name": <char32> { Idle }
+				"State[0].onEnter": <char64> { Idle_enter }
+				"State[0].onUpdate": <char64> { Idle_update }
+				"State[0].onExit": <char64> { Idle_exit }
+				"State[1].name": <char32> { Hurt }
+				"State[1].onEnter": <char64> { Hurt_enter }
+				"State[1].onUpdate": <char64> { Hurt_update }
+				"State[1].onExit": <char64> { Hurt_exit }
 			}
 		}
 		"Script": { }
@@ -13129,6 +13297,204 @@
 		"Enabled": { true }
 		"NodeType": { 8 }
 		"PrefabName": {  }
+	}
+
+	[SlugRed]
+	{
+		"ID": { 393 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 1107 | y : -461 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 96 }
+				"Height": <float> { 96 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Enemy-Slug-Walk-Sheet }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CollisionComponent]
+			{
+				"Type": <ColliderType> { Rectangle }
+				"Offset": <eVec2(float)> { x : 0.5 | y : 7 }
+				"Is Trigger": <bool> { 0 }
+				"Is Active": <bool> { 1 }
+				"Is Static": <bool> { 0 }
+				"Rotation": <float> { 0 }
+				"Width": <float> { 87.5 }
+				"Height": <float> { 86 }
+			}
+
+			[struct ECSComponents::PhysicsComponent]
+			{
+				"Velocity": <eVec2(float)> { x : 0 | y : 0 }
+				"Acceleration": <eVec2(float)> { x : 0 | y : 0 }
+				"Force": <eVec2(float)> { x : 0 | y : 0 }
+				"Mass": <float> { 1 }
+				"Drag": <float> { 0.1 }
+				"Restitution": <float> { 0.5 }
+				"UseGravity": <bool> { 0 }
+				"IsKinematic": <bool> { 0 }
+				"FreezeRotation": <bool> { 1 }
+				"VelocityMin": <eVec2(float)> { x : -1000 | y : -1000 }
+				"VelocityMax": <eVec2(float)> { x : 1000 | y : 1000 }
+			}
+
+			[struct ECSComponents::AIComponent]
+			{
+				"awarenessRadius": <float> { 200 }
+				"chaseSpeed": <float> { 90 }
+				"allowDiagonal": <bool> { 1 }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 96 }
+				"Frame Height": <int> { 96 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 9 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 7 }
+				"Current Animation": <char64> { Chase }
+				"Anim0 Name": <char64> { Idle }
+				"Anim0 Texture": <texchar240> { Enemy-Slug-Idle-Sheet }
+				"Anim0 FrameW": <int> { 96 }
+				"Anim0 FrameH": <int> { 96 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 8 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { Walk }
+				"Anim1 Texture": <texchar240> { Enemy-Slug-Walk-Sheet }
+				"Anim1 FrameW": <int> { 96 }
+				"Anim1 FrameH": <int> { 96 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 9 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
+				"Anim2 Name": <char64> { Spawn }
+				"Anim2 Texture": <texchar240> { Enemy-Slug-Spawn-Sheet }
+				"Anim2 FrameW": <int> { 96 }
+				"Anim2 FrameH": <int> { 96 }
+				"Anim2 Rows": <int> { 1 }
+				"Anim2 Cols": <int> { 5 }
+				"Anim2 Duration": <float> { 0.1 }
+				"Anim2 Looping": <bool> { 1 }
+				"Anim3 Name": <char64> { Hurt }
+				"Anim3 Texture": <texchar240> { Enemy-Slug-Hurt-Sheet }
+				"Anim3 FrameW": <int> { 96 }
+				"Anim3 FrameH": <int> { 96 }
+				"Anim3 Rows": <int> { 1 }
+				"Anim3 Cols": <int> { 3 }
+				"Anim3 Duration": <float> { 0.1 }
+				"Anim3 Looping": <bool> { 1 }
+				"Anim4 Name": <char64> { Frozen }
+				"Anim4 Texture": <texchar240> { Enemy-Slug-Frozen-Sheet }
+				"Anim4 FrameW": <int> { 96 }
+				"Anim4 FrameH": <int> { 96 }
+				"Anim4 Rows": <int> { 1 }
+				"Anim4 Cols": <int> { 1 }
+				"Anim4 Duration": <float> { 0.1 }
+				"Anim4 Looping": <bool> { 1 }
+				"Anim5 Name": <char64> { Death }
+				"Anim5 Texture": <texchar240> { Enemy-Slug-Death-Sheet }
+				"Anim5 FrameW": <int> { 96 }
+				"Anim5 FrameH": <int> { 96 }
+				"Anim5 Rows": <int> { 1 }
+				"Anim5 Cols": <int> { 4 }
+				"Anim5 Duration": <float> { 0.1 }
+				"Anim5 Looping": <bool> { 1 }
+				"Anim6 Name": <char64> { Chase }
+				"Anim6 Texture": <texchar240> { Enemy-Slug-Walk-Sheet }
+				"Anim6 FrameW": <int> { 96 }
+				"Anim6 FrameH": <int> { 96 }
+				"Anim6 Rows": <int> { 1 }
+				"Anim6 Cols": <int> { 9 }
+				"Anim6 Duration": <float> { 0.1 }
+				"Anim6 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::HealthComponent]
+			{
+				"currentHealth": <float> { 100 }
+				"maxHealth": <float> { 100 }
+				"isDead": <bool> { 0 }
+				"invulnerable": <bool> { 0 }
+				"invulnerabilityTimer": <float> { 0 }
+			}
+
+			[struct ECSComponents::DamageComponent]
+			{
+				"damageAmount": <float> { 10 }
+				"damageMultiplier": <float> { 1 }
+				"destroyOnHit": <bool> { 0 }
+				"damageType": <char32> { physical }
+				"spellColor": <int> { 0 }
+				"useColorMatching": <bool> { 0 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 6 }
+				"CurrentState": <char32> { Chase }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Hurt }
+				"State[0].onEnter": <char64> { Hurt_enter }
+				"State[0].onUpdate": <char64> { Hurt_update }
+				"State[0].onExit": <char64> { Hurt_exit }
+				"State[1].name": <char32> { Spawn }
+				"State[1].onEnter": <char64> { Spawn_enter }
+				"State[1].onUpdate": <char64> { Spawn_update }
+				"State[1].onExit": <char64> { Spawn_exit }
+				"State[2].name": <char32> { Frozen }
+				"State[2].onEnter": <char64> { Frozen_enter }
+				"State[2].onUpdate": <char64> { Frozen_update }
+				"State[2].onExit": <char64> { Frozen_exit }
+				"State[3].name": <char32> { Idle }
+				"State[3].onEnter": <char64> { Idle_enter }
+				"State[3].onUpdate": <char64> { Idle_update }
+				"State[3].onExit": <char64> { Idle_exit }
+				"State[4].name": <char32> { Death }
+				"State[4].onEnter": <char64> { Death_enter }
+				"State[4].onUpdate": <char64> { Death_update }
+				"State[4].onExit": <char64> { Death_exit }
+				"State[5].name": <char32> { Chase }
+				"State[5].onEnter": <char64> { Chase_enter }
+				"State[5].onUpdate": <char64> { Chase_update }
+				"State[5].onExit": <char64> { Chase_exit }
+			}
+		}
+		"Script": { SlugRed_Script.cs }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 13 }
+		"PrefabName": { SlugRed }
 	}
 
 }
