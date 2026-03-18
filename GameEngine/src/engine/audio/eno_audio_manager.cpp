@@ -307,7 +307,7 @@ namespace Audio
 	 * \brief				(Overload) Sets up and plays sound based on params provided by an audio component
 	 * \param[in]			Audio component
 	*//*========================================================================================*/
-	void EnoAudioManager::play(ECSComponents::AudioComponent& audioComp, Math::eVec2<float> /*camPos*/)
+	void EnoAudioManager::play(ECSComponents::AudioComponent& audioComp, Math::eVec2<float> soundPos ,Math::eVec2<float> camPos)
 	{
 		// Don't restart audio that's already playing
 		if (audioComp.isPlaying_)
@@ -324,7 +324,7 @@ namespace Audio
 			std::cout << "[Audio] Auto-preparing audio module for: " << audioComp.audioMod_.name_ << std::endl;
 			prepareMod(audioComp);
 		}
-
+		updateSpatialAudio(audioComp, soundPos, camPos);
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
 		FMOD::Channel* ch{ audioComp.audioMod_.ch_ };

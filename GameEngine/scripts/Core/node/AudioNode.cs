@@ -7,6 +7,7 @@ namespace Eno
 
         public void play()  => Bridge.AudioPlay(ID);
         public void stop()  => Bridge.AudioStop(ID);
+        public void spatialPlay( uint id, float x, float y) => Bridge.AudioPlayInstant(id,x,y);
 
         public float volume
         {
@@ -19,7 +20,10 @@ namespace Eno
             get => Bridge.GetAudioPitch(ID);
             set => Bridge.SetAudioPitch(ID, value);
         }
-
+        public string sound
+        {
+            set => Bridge.SetSound(ID , value);
+        }
         // Enable spatial audio: volume falls off with distance, pan follows X offset from camera
         public bool spatialAudio
         {

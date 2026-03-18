@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Eno
 {
@@ -15,6 +16,7 @@ namespace Eno
 
         private Enemy?    _self;
         private Actor?    _player;
+        private AudioNode? _audio;
         private Sprite2D? _hpBarEmpty;
         private Sprite2D? _hpBarFull;
         private float     _hpBarFullInitialScaleX = 1f;
@@ -26,6 +28,9 @@ namespace Eno
         private const float  HP_BAR_OFFSET_Y     = -50f;
         public float contactDamageCooldown = 1.0f;
 
+        private const string AUDIO = "DefaultAudio";
+        private const string MOVE_SOUND = "Trailblight_Move_Loop";
+        
         private float  _pathTimer       = 0f;
         private float  _hurtTimer       = 0f;
         private float  _deathTimer      = 0f;
@@ -33,6 +38,8 @@ namespace Eno
         private float  _contactTimer    = 0f;
         private bool   _isDying         = false;
         private bool   _deathTriggered  = false;
+
+        private Random rng = new Random();
 
         public void Begin()
         {
@@ -128,7 +135,9 @@ namespace Eno
         public void Chase_enter()
         {
             _pathTimer = pathRefreshInterval;
-            try { Bridge.AudioPlayInstantLoop("SFX", "Trailblight_Move_Loop"); } catch { }
+            //try { Bridge.AudioPlayInstantLoop("SFX", "Trailblight_Move_Loop"); } catch { }
+            _audio.sound = MOVE_SOUND;
+            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
         public void Chase_update()
         {
@@ -203,7 +212,7 @@ namespace Eno
         {
             _hurtTimer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            try { Bridge.AudioPlayInstant("SFX", "Trailblight_Hurt_02"); } catch { }
+            //try { Bridge.AudioPlayInstant("SFX", "Trailblight_Hurt_02"); } catch { }
         }
         public void Hurt_update()
         {
@@ -222,7 +231,7 @@ namespace Eno
         {
             _deathTimer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            try { Bridge.AudioPlayInstant("SFX", "Trailblight_Death_02"); } catch { }
+            //try { Bridge.AudioPlayInstant("SFX", "Trailblight_Death_02"); } catch { }
         }
         public void Death_update()
         {

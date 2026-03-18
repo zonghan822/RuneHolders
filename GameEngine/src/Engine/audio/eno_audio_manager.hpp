@@ -96,7 +96,7 @@ namespace Audio
 		/*============================================================================================
 			 * \brief					(Overload) Play a sound from an audio component
 		*//*========================================================================================*/
-		void play(ECSComponents::AudioComponent&, Math::eVec2<float>);
+		void play(ECSComponents::AudioComponent&, Math::eVec2<float> soundPos, Math::eVec2<float>);
 
 		/*============================================================================================
 			 * \brief					Update volume and pan on a currently-playing channel based on
@@ -363,6 +363,7 @@ namespace Audio
 
 		// Event Bus
 		Event::EnoEventBus& bus_;
+		
 
 		/*============================================================================================
 		 * \brief						Received request to play or pause a sound
