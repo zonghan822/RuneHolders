@@ -216,10 +216,21 @@ namespace Bridge
             FMOD::Sound* sound{};
 
             // Get requested sound
-            auto sounds = gEngine->getAudioManager().getSounds();
+            auto& sounds = gEngine->getAudioManager().getSounds();
             auto it = sounds.find(soundName);
             if (it == sounds.end())
-                return;
+            {
+                // Request sound from loader
+                gEngine->getAudioManager().publishSoundRequest(soundName);
+
+                // Verify that requested sound can be found
+                it = sounds.find(soundName);
+                if (it == sounds.end())
+                {
+                    std::cout << "Requested sound could not be retrieved" << std::endl;
+                    return;
+                }
+            }
 
             sound = it->second;
 

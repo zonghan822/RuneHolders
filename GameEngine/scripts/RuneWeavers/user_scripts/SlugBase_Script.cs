@@ -16,7 +16,8 @@ namespace Eno
 
         private Enemy?    _self;
         private Actor?    _player;
-        private AudioNode? _audio;
+        private AudioNode? _walkAudio;      // Constant walk sound
+        private AudioNode? _hdAudio;        // Hurt | death audio 
         private Sprite2D? _hpBarEmpty;
         private Sprite2D? _hpBarFull;
         private float     _hpBarFullInitialScaleX = 1f;
@@ -78,7 +79,8 @@ namespace Eno
                 _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
                 _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
 
-                _audio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
+                _walkAudio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
+                _hdAudio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
 
                 if (_hpBarFull != null)
                 {
@@ -147,9 +149,10 @@ namespace Eno
             _pathTimer = pathRefreshInterval;
 
             // Set Move loop sound
-            _audio.sound = MOVE_SOUND;
-            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+            _walkAudio.sound = MOVE_SOUND;
+            _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
         }
+
         public void Chase_update()
         {
             FindPlayer();
@@ -210,8 +213,8 @@ namespace Eno
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
 
             // Set Move loop sound
-            _audio.sound = MOVE_SOUND;
-            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+            _walkAudio.sound = MOVE_SOUND;
+            _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
         }
 
         public void Frozen_enter() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
@@ -220,14 +223,15 @@ namespace Eno
 
         public void Hurt_enter()
         {
+            Console.WriteLine("Hurt enter entered");
             _hurtTimer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
 
             // Randomize between all hurt sounds
             int i = rng.Next(0, _hurtSounds.Count);
-            _audio.sound = _hurtSounds[i];
-
-            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+            Console.WriteLine($"Sound selected: { _hurtSounds[i] }");
+            _hdAudio.sound = _hurtSounds[i];
+            _hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
         }
         public void Hurt_update()
         {
@@ -249,13 +253,14 @@ namespace Eno
 
             // Randomize and play selected death sound
             int i = rng.Next(0, _deathSounds.Count);
-            _audio.sound = _deathSounds[i];
-            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+            _hdAudio.sound = _deathSounds[i];
+            _hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
         }
         public void Death_update()
         {
             if (_isDying) return;
             _deathTimer += Time.deltaTime;
+
             if (_deathTimer >= deathDuration)
             {
                 _isDying = true;
@@ -272,7 +277,7 @@ namespace Eno
             // try { _player = this.GetNode<Actor>("Player"); }
             // catch { _player = null; }
 
-            _player = this.GetNode<Actor>("PunkRock");
+            _player = this.GetNode<Actor>("Player");
         }
 
         protected static float Dist(Vector2 a, Vector2 b)
