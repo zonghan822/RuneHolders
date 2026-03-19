@@ -96,18 +96,24 @@ if %errorlevel% gtr 7 (
 
 REM Copy assets directly from source
 echo Copying assets...
-robocopy "assets" "%SHIP_DIR%\assets\RuneWeavers" /E /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy "assets\RuneWeavers" "%SHIP_DIR%\assets" /E /NFL /NDL /NJH /NJS /nc /ns /np
 if %errorlevel% gtr 7 (
     echo ERROR: Failed to copy assets!
     pause
     exit /b 1
 )
 
-REM Copy scripts directly from source
+REM Copy scripts directly from source (Core + user scripts only)
 echo Copying scripts...
-robocopy "scripts" "%SHIP_DIR%\scripts\RuneWeavers" /E /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy "scripts\Core" "%SHIP_DIR%\scripts\Core" /E /NFL /NDL /NJH /NJS /nc /ns /np
 if %errorlevel% gtr 7 (
-    echo ERROR: Failed to copy scripts!
+    echo ERROR: Failed to copy Core scripts!
+    pause
+    exit /b 1
+)
+robocopy "scripts\RuneWeavers\user_scripts" "%SHIP_DIR%\scripts\user_scripts" /E /NFL /NDL /NJH /NJS /nc /ns /np
+if %errorlevel% gtr 7 (
+    echo ERROR: Failed to copy user scripts!
     pause
     exit /b 1
 )
