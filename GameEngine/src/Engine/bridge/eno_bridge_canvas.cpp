@@ -10,6 +10,7 @@
 
 #include "eno_bridge.hpp"
 #include "../component/components/canvas.hpp"
+#include "../component/components/visibility.hpp"
 
 namespace Bridge
 {
@@ -33,7 +34,20 @@ namespace Bridge
         ENGINE_API void __stdcall SetCanvasActive(uint32_t sceneObjectID, bool active)
         {
             if (auto* c = getCanvas(sceneObjectID))
+            {
                 c->setActive(active);
+
+                // When showing a canvas, also restore the canvas entity's own visibility so that
+                // ButtonSystem::isAncestorVisible() does not block button clicks. A canvas entity
+                // may have been hidden via SetVisibility(id, false) before; SetCanvasActive(true)
+                // should always make it interactable again.
+                if (active && gEngine)
+                {
+                    Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(sceneObjectID);
+                    if (node && node->entity_.has<ECSComponents::VisibilityComponent>(gEngine->getEntityManager()))
+                        node->entity_.get<ECSComponents::VisibilityComponent>(gEngine->getEntityManager()).visible = true;
+                }
+            }
         }
     }
 }

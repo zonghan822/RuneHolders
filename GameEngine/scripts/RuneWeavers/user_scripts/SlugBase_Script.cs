@@ -62,6 +62,7 @@ namespace Eno
 
         public void Update()
         {
+            if (PlayerController.IsGamePaused) return;
             if (_isDying || _self == null) return;
 
             // Force death if health reached zero outside of Hurt state

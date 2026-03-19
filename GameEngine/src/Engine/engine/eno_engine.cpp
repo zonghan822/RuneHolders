@@ -13,6 +13,7 @@
 
 #include "eno_engine.hpp"
 #include "../graphics/video/video_player.hpp"
+#include "../ui/canvas_system.hpp"
 
 namespace Engine
 {
@@ -213,6 +214,7 @@ namespace Engine
 		// invalidating the getAllNodes() iterator during the scripts update loop above).
 		editor_->getSceneTree().flushKill();
 
+		// Game logic — blocked by editor pause only; in-game pause is handled in C# scripts
 		if (isPlaying_ && !isPaused_) {
 			auto t0 = Clock::now();
 			stateMachineSys_->update(editor_->getSceneTree(), entityMng_);
@@ -229,10 +231,6 @@ namespace Engine
 			//t0 = Clock::now();
 			//particleSys_->Update(entityMng_, deltaTime);
 			//timings_["Particles"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
-
-			t0 = Clock::now();
-			buttonSys_.update(entityMng_, inputMng_, viewportMin_, viewportMax_, window_.getWindowSize(), editor_->getSceneTree());
-			timings_["UI Buttons"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 		}
 		else
 		{
@@ -240,7 +238,23 @@ namespace Engine
 			timings_["Physics"]       = 0.0;
 			timings_["Collision"]     = 0.0;
 			//timings_["Particles"]     = 0.0;
-			timings_["UI Buttons"]    = 0.0;
+		}
+
+		// Canvas and buttons: blocked by editor pause, but NOT by in-game pause (UI stays interactive)
+		if (isPlaying_ && !isPaused_)
+		{
+			auto t0 = Clock::now();
+			UI::CanvasSystem::update(*this);
+			timings_["UI Canvas"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+
+			t0 = Clock::now();
+			buttonSys_.update(entityMng_, inputMng_, viewportMin_, viewportMax_, window_.getWindowSize(), editor_->getSceneTree());
+			timings_["UI Buttons"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+		}
+		else
+		{
+			timings_["UI Canvas"]  = 0.0;
+			timings_["UI Buttons"] = 0.0;
 		}
 
 		// Dynamic spatial audio: update volume/pan for entities with spatialAudio_ enabled

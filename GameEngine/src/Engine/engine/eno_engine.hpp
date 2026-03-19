@@ -388,7 +388,7 @@ namespace Engine
 
 		// Game state
 		bool isPlaying_       = false;  // Tracks if game is in playing mode (vs editor mode)
-		bool isPaused_        = false;  // Runtime pause (dialogue, menus) - pauses physics/AI/collision
+		bool isPaused_        = false;  // Editor-driven pause — blocks everything including canvas/buttons
 		bool hasBegun_        = false;  // Guards the one-shot Begin() call at the start of each play session
 		bool closeRequested_  = false;  // Set by requestClose(); checked by shouldClose() to avoid GLFW DLL boundary issues
 		std::string pendingScene_;  // Non-empty when a script has requested a scene change

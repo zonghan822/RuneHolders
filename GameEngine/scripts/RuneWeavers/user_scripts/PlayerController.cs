@@ -32,6 +32,9 @@ namespace Eno
         private bool      _spellbookOpen    = false;
         private uint      _winLoseCanvasID  = 0;
 
+        // In-game pause flag
+        public static bool IsGamePaused = false;
+
         // Canvas interface
         //private bool _UIPopUp = false;
 
@@ -56,6 +59,8 @@ namespace Eno
 
             _spellbookUIID   = Bridge.GetNode("Spellbook");
             _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");
+
+            IsGamePaused = false;
         }
 
         private void UpdateHealthBar()
@@ -90,20 +95,23 @@ namespace Eno
 
         public void Update()
         {
+            // P key toggles in-game pause
+            if (Input.isKeyPressed(KeyCode.P))
+            {
+                IsGamePaused = !IsGamePaused;
+                Bridge.SetCanvasActive(_winLoseCanvasID, IsGamePaused);
+                uint buttonID = Bridge.GetNode("PauseScreen");
+                Bridge.SetVisibility(buttonID, true);
+                Bridge.SetAudioPaused(IsGamePaused);
+            }
+            if (IsGamePaused) return;
+
             UpdateHealthBar();
 
             // Freeze player and skip input during dialogue
             if (Scroll_Dialouge_Script.DialogueActive)
             {
                 _player.velocity = new Vector2(0f, 0f);
-                return;
-            }
-
-            // Escape — show win/lose canvas (pause menu)
-            if (Input.isKeyPressed(KeyCode.Escape) && _winLoseCanvasID != 0)
-            {  
-                //_UIPopUp = true;
-                Bridge.SetCanvasActive(_winLoseCanvasID, true);
                 return;
             }
 
@@ -143,6 +151,7 @@ namespace Eno
                     if (_scrollNodes[i] != null && Bridge.IsColliding(_scrollNodes[i]!.ID, _player.ID))
                     {
                         Scroll_Dialouge_Script.TriggerDialogue(i);
+                        Scroll_Dialouge_Script.TriggerNarrative(i);
                         return;
                     }
                 }

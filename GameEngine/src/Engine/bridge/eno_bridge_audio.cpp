@@ -84,6 +84,12 @@ namespace Bridge
                 a->maxAudibleDistance_ = distance;
         }
 
+        ENGINE_API void __stdcall SetAudioPaused(bool paused)
+        {
+            if (!gEngine) return;
+            gEngine->getAudioManager().togglePauseAllGroups(paused);
+        }
+
         ENGINE_API void __stdcall SetGroupVolume(const char* groupName, float volume)
         {
             if (!gEngine) return;

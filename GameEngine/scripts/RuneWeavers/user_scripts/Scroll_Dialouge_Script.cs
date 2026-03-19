@@ -5,6 +5,54 @@ namespace Eno
 {
 	public class Scroll_Dialouge_Script : ScriptBase
     {
+        // Enums for speaker
+        public enum Speaker
+        {
+            Cassia,
+            Witch,
+            CassiaMain,
+            WitchMain,
+        };
+
+        public enum Emotion
+        {
+            Default,
+            Cry,
+            CryGrey,
+            DefaultGrey,
+            Sad,
+            SadGrey,
+            Surprised,
+            SurprisedGrey,
+            WideEyed,
+            WideEyedGrey,
+            Angry,
+            AngryGrey,
+            Smile,
+            SmileGrey,
+            None,
+        }
+
+        // Single set of dialogue
+        public struct DialogueLine
+        {
+            public Speaker _speaker;
+            public Emotion _emotion;
+            public Emotion _greyEmotion;
+            public string _line;
+
+            // Two characters on screen
+            public DialogueLine(Speaker speaker, Emotion emotion, Emotion greyEmotion, string line)
+            {
+                _speaker = speaker; _emotion = emotion; _greyEmotion = greyEmotion; _line = line;
+            }
+            // Single character on screen
+            public DialogueLine(Speaker speaker, Emotion emotion, string line)
+            {
+                _speaker = speaker; _emotion = emotion; _greyEmotion = Emotion.None; _line = line;
+            }
+        }
+
         // ------------------- Scroll registry ----------------------------
         // All interactable scroll/guide entity names, in index order.
         // PlayerController uses this same array for collision checks.
@@ -29,69 +77,69 @@ namespace Eno
         };
 
         // Text dialogue sets
-        private static readonly List<string>[] _dialogueSets =
+        private static readonly List<DialogueLine>[] _dialogueSets =
         {
-            new List<string>
+            new List<DialogueLine>
             {
-                "It really is here... the rumoured mansion.",
-                "A human... faun?",
-                "Wait...are you-",
-                "Dang, they ran away. But that should be...",
-                "Huh, they dropped a scroll... for a spell?",
-                "Let me record it in my SPELLBOOK."
+                new DialogueLine(Speaker.Cassia,        Emotion.Default,                            "It really is here... the rumoured mansion."),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.DefaultGrey,     "A human... faun?"),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Surprised,  Emotion.None,            "Wait...are you-"),
+                new DialogueLine(Speaker.Cassia,        Emotion.Sad,                                "Dang, they ran away. But that should be..."),
+                new DialogueLine(Speaker.Cassia,        Emotion.WideEyed,                           "Huh, they dropped a scroll... for a spell?"),
+                new DialogueLine(Speaker.Cassia,        Emotion.Default,                            "Let me record it in my SPELLBOOK.")
             },   // Room1_Scroll
 
-            new List<string> 
-            { 
-                "Finally caught up to you!",
-                "WAIT I mean no harm, I promise!",
-                "I'm here because...",
-                "I... I want my horns gone.",
-                "Everyone at school hates me, bullies me and-",
-                "not even see me as human...",
-                "Just because of these horns on my head...!",
-                "Rumours say that there's a witch in the Elden Forest-",
-                "that can rid one of their monster features...",
-                "You're that witch right?! Please...",
-                "Please help me get rid of them and let me live a proper life!",
-                "......",
-                "If you're that determined...",
-                "Follow me.",
+            new List<DialogueLine>
+            {
+                new DialogueLine(Speaker.CassiaMain,    Emotion.WideEyed,   Emotion.DefaultGrey,     "WAIT I mean no harm, I promise!"),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Surprised,  Emotion.DefaultGrey,     "Finally caught up to you!"),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Surprised,  Emotion.DefaultGrey,     "I'm here because..."),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.DefaultGrey,     "I... I want my horns gone."),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Cry,        Emotion.DefaultGrey,     "Everyone at school hates me, bullies me and-"),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Cry,        Emotion.DefaultGrey,     "not even see me as human..."),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Cry,        Emotion.DefaultGrey,     "Just because of these horns on my head...!"),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.DefaultGrey,     "Rumours say that there's a witch in the Elden Forest-"),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.DefaultGrey,     "that can rid one of their monster features..."),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.DefaultGrey,     "You're that witch right?! Please..."),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Cry,        Emotion.DefaultGrey,     "Please help me get rid of them and let me live a proper life!"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.SadGrey,         "......"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.SadGrey,         "If you're that determined..."),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.SurprisedGrey,   "Follow me.")
             },   // Room4_Scroll
 
-            new List<string> 
-            { 
-                "......",
-                "Do you truly want your horns gone?",
-                "I...",
-                "You are well aware of the cose of the spell, right?",
-                "You... can no longer cast magic anymore.",
-                "... I'm well aware.",
-                "... Only a few more rooms left",
-                "Come.",
+            new List<DialogueLine>
+            {
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.DefaultGrey,       "......"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.WideEyedGrey,      "Do you truly want your horns gone?"),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.DefaultGrey,       "I..."),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.SadGrey,           "You are well aware of the cost of the spell, right?"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.SadGrey,           "You... can no longer cast magic anymore."),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Cry,        Emotion.DefaultGrey,       "... I'm well aware."),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.CryGrey,           "... Only a few more rooms left"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.CryGrey,           "Come.")
             },   // Room8_Scroll
 
-            new List<string> 
-            { 
-                "We're here... my room.",
-                "I already asked you if you want your horns gone...",
-                "But from what I've seen of your capabilities",
-                "You dont't really mean it, do you?",
-                "You learn and execute the spells I left for you so fast",
-                "against creatures you've never seen before too.",
-                "Do you truly want your skill and talent to go to waste?",
-                "And more importantly... your love for magic?",
-                "I...",
-                "No... I don't! I don't want that!",
-                "But... my friends... school... the whole world...!",
-                "NO ONE ACCEPTS ME!",
-                "But I do.",
-                "Wha...?",
-                "It was nice having someone to talk to after 200 years.",
-                "And I want to talk more... about you, magic, the world now...",
-                "So what I'm saying is... instead of ridding of your horns and magic...",
-                "Will you be my first friend?",
-            },   // Room24_Scroll
+            new List<DialogueLine>
+            {
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.SadGrey,           "We're here... my room."),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.WideEyedGrey,      "I already asked you if you want your horns gone..."),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.WideEyedGrey,      "But from what I've seen of your capabilities"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Angry,      Emotion.WideEyedGrey,      "You don't really mean it, do you?"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Angry,      Emotion.WideEyedGrey,      "You learn and execute the spells I left for you so fast"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.WideEyedGrey,      "against creatures you've never seen before too."),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Angry,      Emotion.WideEyedGrey,      "Do you truly want your skill and talent to go to waste?"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Angry,      Emotion.WideEyedGrey,      "And more importantly... your love for magic?"),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.AngryGrey,         "I..."),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.AngryGrey,         "No... I don't! I don't want that!"),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.AngryGrey,         "But... my friends... school... the whole world...!"),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Cry,        Emotion.AngryGrey,         "NO ONE ACCEPTS ME!"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Smile,      Emotion.WideEyedGrey,      "But I do."),
+                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.SmileGrey,         "Wha...?"),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Smile,      Emotion.SadGrey,           "It was nice having someone to talk to after 200 years."),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Smile,      Emotion.WideEyedGrey,      "And I want to talk more... about you, magic, the world now..."),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Smile,      Emotion.WideEyedGrey,      "So what I'm saying is... instead of ridding of your horns and magic..."),
+                new DialogueLine(Speaker.WitchMain,     Emotion.Smile,      Emotion.WideEyedGrey,      "Will you be my first friend?")
+            }
         };
 
         private const float DIALOGUE_TYPE_SPEED = 0.05f;
@@ -112,6 +160,15 @@ namespace Eno
         private Node2D?   _dialogueBox;
         private Node2D?[] _scrollNodes = Array.Empty<Node2D?>();
         private AudioNode? _typingSfx;
+
+        // Character display nodes
+        private Node2D? _charCenter;        // Centre character image
+        private Node2D? _charLeft;          // Cassia on the left
+        private Node2D? _charRight;         // Witch on the right
+
+        // Win screen node IDs
+        private uint _winLoseCanvasID = 0;
+        private uint _victoryScreenID = 0;
 
         // ------------------- Runtime state ------------------------------
         private bool   dialogueActive      = false;
@@ -139,6 +196,13 @@ namespace Eno
             if (_dialogueCanvas != null) _dialogueCanvas.active = false;
 
             try { _typingSfx = GetNode<AudioNode>("Typing SFX"); } catch { }
+
+            try { _charCenter  = GetNode<Node2D>("CharacterCenter");  } catch { }
+            try { _charLeft    = GetNode<Node2D>("ProtagonistLeft");    } catch { }
+            try { _charRight   = GetNode<Node2D>("WitchRight");   } catch { }
+
+            try { _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas"); } catch { }
+            try { _victoryScreenID = Bridge.GetNode("WinScreen");  } catch { }
         }
 
         // Called by room scripts when the player interacts with a text-based scroll.
@@ -201,7 +265,7 @@ namespace Eno
                     char c = dialogueTargetText[dialogueCurrentText.Length];
                     dialogueCurrentText += c;
                     dialogueTypeTimer   -= DIALOGUE_TYPE_SPEED;
-                    
+
                     // Play typing sound for each non-whitespace character
                     if (c != ' ' && c != '\n' && _typingSfx != null)
                     {
@@ -255,11 +319,8 @@ namespace Eno
                     _dialogueText.text = "";
                 }
 
-                dialogueIndex       = 0;
-                dialogueTargetText  = WrapText(_dialogueSets[index][0], CharsPerLine);
-                dialogueCurrentText = "";
-                dialogueTypeTimer   = 0f;
-                dialogueTyping      = true;
+                dialogueIndex = 0;
+                ShowLine(_dialogueSets[index][0]);
             }
         }
 
@@ -275,12 +336,7 @@ namespace Eno
             }
             else
             {
-                // Reset typewriter animation values and input next line
-                if (_dialogueText != null) _dialogueText.text = "";
-                dialogueTargetText  = WrapText(_dialogueSets[_activeIndex][dialogueIndex], CharsPerLine);
-                dialogueCurrentText = "";
-                dialogueTypeTimer   = 0f;
-                dialogueTyping      = true;
+                ShowLine(_dialogueSets[_activeIndex][dialogueIndex]);
             }
         }
 
@@ -294,9 +350,111 @@ namespace Eno
             if (_dialogueCanvas  != null) _dialogueCanvas.active = false;
             if (_narrativeSprite != null) Bridge.SetVisibility(_narrativeSprite.ID, false);
             if (_dialogueBox     != null) Bridge.SetVisibility(_dialogueBox.ID, true);
+            // Hide character display nodes
+            if (_charCenter  != null) Bridge.SetVisibility(_charCenter.ID,  false);
+            if (_charLeft    != null) Bridge.SetVisibility(_charLeft.ID,    false);
+            if (_charRight   != null) Bridge.SetVisibility(_charRight.ID,   false);
             // To prevent dialogue from repeating
             if (_activeIndex >= 0 && !_isNarrative[_activeIndex]) DialogueShown[_activeIndex] = true;
+
+            // Final dialogue (Room24_Scroll, index 3) — show the win screen
+            if (_activeIndex == 3 && _winLoseCanvasID != 0)
+            {
+                Bridge.SetCanvasActive(_winLoseCanvasID, true);
+                if (_victoryScreenID != 0)
+                    Bridge.SetVisibility(_victoryScreenID, true);
+            }
         }
+
+        // Displays one dialogue line: sets character sprites, speaker name texture, and starts typewriter.
+        private void ShowLine(DialogueLine line)
+        {
+            // Hide all character nodes first
+            if (_charCenter != null) Bridge.SetVisibility(_charCenter.ID, false);
+            if (_charLeft   != null) Bridge.SetVisibility(_charLeft.ID,   false);
+            if (_charRight  != null) Bridge.SetVisibility(_charRight.ID,  false);
+
+            // Identify speaker and current emotion
+            switch (line._speaker)
+            { 
+                case Speaker.Cassia:
+                    if (_charCenter != null)
+                    {
+                        Bridge.SetTexturePath(_charCenter.ID, determineCharacterTex(line._speaker, line._emotion));
+                        Bridge.SetVisibility(_charCenter.ID, true);
+                    }
+                    // Change dialogue box texture
+                    if (_dialogueBox != null)
+                        Bridge.SetTexturePath(_dialogueBox.ID, "UI-DialogueBox-Cassia");
+                    break;
+
+                case Speaker.Witch:
+                    if (_charCenter != null)
+                    {
+                        Bridge.SetTexturePath(_charCenter.ID, determineCharacterTex(line._speaker, line._emotion));
+                        Bridge.SetVisibility(_charCenter.ID, true);
+                    }
+                    // Change dialogue box texture
+                    if (_dialogueBox != null)
+                        Bridge.SetTexturePath(_dialogueBox.ID, "UI-DialogueBox-Witch");
+                    break;
+
+                case Speaker.CassiaMain:
+                    // Cassia ACTIVE on left, Witch GREY on right
+                    if (_charLeft != null)
+                    {
+                        Bridge.SetTexturePath(_charLeft.ID, determineCharacterTex(line._speaker, line._emotion));
+                        Bridge.SetVisibility(_charLeft.ID, true);
+                    }
+                    if (_charRight != null)
+                    {
+                        if (line._greyEmotion != Emotion.None)
+                        {
+                            Bridge.SetTexturePath(_charRight.ID, determineCharacterTex(line._speaker, line._greyEmotion));
+                            Bridge.SetVisibility(_charRight.ID, true);
+                        }
+                        // else stays hidden
+                    }
+                    // Change dialogue box texture
+                    if (_dialogueBox != null)
+                        Bridge.SetTexturePath(_dialogueBox.ID, "UI-DialogueBox-Cassia");
+                    break;
+
+                case Speaker.WitchMain:
+                    // Cassia GREY on left, Witch ACTIVE on right
+                    if (_charLeft != null)
+                    {
+                        if (line._greyEmotion != Emotion.None)
+                        {
+                            Bridge.SetTexturePath(_charLeft.ID, determineCharacterTex(line._speaker, line._greyEmotion));
+                            Bridge.SetVisibility(_charLeft.ID, true);
+                        }
+                        // else stays hidden
+                    }
+                    if (_charRight != null)
+                    {
+                        Bridge.SetTexturePath(_charRight.ID, determineCharacterTex(line._speaker, line._emotion));
+                        Bridge.SetVisibility(_charRight.ID, true);
+                    }
+                    // Change dialogue box texture
+                    if (_dialogueBox != null)
+                        Bridge.SetTexturePath(_dialogueBox.ID, "UI-DialogueBox-Witch");
+                    break;
+            }
+
+            // Show dialogue box with current speaker name
+            if (_dialogueBox != null)
+                Bridge.SetVisibility(_dialogueBox.ID, true);
+
+            // Start typewriter
+            if (_dialogueText != null) _dialogueText.text = "";
+            dialogueTargetText  = WrapText(line._line, CharsPerLine);
+            dialogueCurrentText = "";
+            dialogueTypeTimer   = 0f;
+            dialogueTyping      = true;
+        }
+
+
         // Helper function to create new line of text to prevent overflow out of dialogue box
         private string WrapText(string text, int maxChars)
         {
@@ -322,6 +480,26 @@ namespace Eno
 
             return result;
         }
+
+
+        // Returns the asset texture name for a given speaker + emotion.
+        private static string determineCharacterTex(Speaker speaker, Emotion emotion)
+        {
+            // Determine which character is the main speaker
+            bool isGrey = emotion.ToString().EndsWith("Grey");
+
+            bool useProtagonist = (speaker == Speaker.Cassia || speaker == Speaker.CassiaMain)
+                                  ? !isGrey   // Cassia active
+                                  : isGrey;   // Witch active
+
+            // If using Cassia
+            if (useProtagonist) return "Protagonist-Dialogue-" + emotion.ToString();
+
+            // Using Witch
+            return "Witch-Dialogue-" + emotion.ToString();
+        }
+
+
 
         public void Default_enter()  { }
         public void Default_update() { }

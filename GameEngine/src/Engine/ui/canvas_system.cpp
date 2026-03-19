@@ -331,38 +331,31 @@ namespace UI
 		graphics.rebindDefaultShader();
 	}
 
-	void CanvasSystem::render(
-		Engine::EnoEngine& engine,
-		std::vector<ECS::Entity>& cachedEntities,
-		const Math::eVec2<float>& cameraPos)
+	void CanvasSystem::update(Engine::EnoEngine& engine)
 	{
 		auto& entityManager = engine.getEntityManager();
 
-		// Loop through each canvas
-		for (ECS::Entity& canvasEntity : cachedEntities) {
-			if (!canvasEntity.has<ECSComponents::CanvasComponent>(entityManager)) continue;
+		// Resolve the fallback camera position once for canvases that don't specify a camera.
+		Math::eVec2<float> defaultCameraPos{ 0.0f, 0.0f };
+		for (auto& camEnt : entityManager.findEntity<ECSComponents::CameraComponent>())
+		{
+			auto& cam = camEnt.get<ECSComponents::CameraComponent>(entityManager);
+			if (!cam.isActive) continue;
+			defaultCameraPos = cam.position;
+			break;
+		}
+
+		for (ECS::Entity& canvasEntity : entityManager.findEntity<ECSComponents::CanvasComponent>())
+		{
 			try {
 				auto& canvas = canvasEntity.get<ECSComponents::CanvasComponent>(entityManager);
 
-#if 0
-				// Debugging
-				{
-					const char* cnvName = canvasEntity.has<ECSComponents::NameComponent>(entityManager)
-						? canvasEntity.get<ECSComponents::NameComponent>(entityManager).name : "(no name)";
-					std::cout << "[CANVAS DBG] Canvas='" << cnvName << "' id=" << canvasEntity.id()
-					          << " active=" << canvas.isActive
-					          << " followCam=" << canvas.followCamera
-					          << " followCamID=" << canvas.followCameraEntityID << "\n";
-				}
-#endif
-
-				// In play mode, inactive canvases are hidden. In the editor, always render.
+				// Inactive canvases: restore their transform to the pre-follow position.
 				if (!canvas.isActive && engine.getIsPlaying())
 				{
-					// Restore the canvas transform to its pre-follow position.
 					if (canvas.hasOriginalPos)
 					{
-						auto& sceneTree  = engine.getEnoEditor().getSceneTree();
+						auto& sceneTree      = engine.getEnoEditor().getSceneTree();
 						Editor::Node* canvasNode = sceneTree.getNodeByEntityID(canvasEntity.id());
 						ECSComponents::moveNodeWithChildren(canvasNode, canvas.originalPos, entityManager);
 						canvas.hasOriginalPos = false;
@@ -382,8 +375,8 @@ namespace UI
 						canvas.hasOriginalPos = true;
 					}
 
-					Math::eVec2<float> resolvedCameraPos = cameraPos;
-
+					// Use the canvas's assigned camera if available, otherwise fall back.
+					Math::eVec2<float> resolvedCameraPos = defaultCameraPos;
 					auto& sceneTree = engine.getEnoEditor().getSceneTree();
 					Editor::Node* camNode = sceneTree.getNodeBySceneObjectID(canvas.followCameraEntityID);
 					if (camNode && camNode->entity_.has<ECSComponents::CameraComponent>(entityManager))
@@ -396,6 +389,26 @@ namespace UI
 					};
 					ECSComponents::moveNodeWithChildren(canvasNode, targetPos, entityManager);
 				}
+			}
+			catch (...) { continue; }
+		}
+	}
+
+	void CanvasSystem::render(
+		Engine::EnoEngine& engine,
+		std::vector<ECS::Entity>& cachedEntities,
+		const Math::eVec2<float>& cameraPos)
+	{
+		auto& entityManager = engine.getEntityManager();
+
+		for (ECS::Entity& canvasEntity : cachedEntities) {
+			if (!canvasEntity.has<ECSComponents::CanvasComponent>(entityManager)) continue;
+			try {
+				auto& canvas = canvasEntity.get<ECSComponents::CanvasComponent>(entityManager);
+
+				// In play mode, inactive canvases are hidden. In the editor, always render.
+				if (!canvas.isActive && engine.getIsPlaying())
+					continue;
 
 				renderCanvasEntities(engine, cachedEntities, canvasEntity, { 0.0f, 0.0f });
 				renderCanvasText(engine, cachedEntities, canvasEntity, cameraPos);

@@ -35,6 +35,10 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetAudioMaxDistance(uint sceneObjectID, float distance);
 
+        // Pause/resume all audio channel groups (BGM + SFX) — used by in-game pause
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetAudioPaused([MarshalAs(UnmanagedType.I1)] bool paused);
+
         // groupName: "BGM" or "SFX", volume: 0 – 100
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern void SetGroupVolume(string groupName, float volume);

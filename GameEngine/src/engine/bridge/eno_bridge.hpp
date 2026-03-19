@@ -151,6 +151,9 @@ namespace Bridge {
         ENGINE_API float   __stdcall GetAudioPitch(uint32_t sceneObjectID);
         ENGINE_API void    __stdcall SetAudioPitch(uint32_t sceneObjectID, float pitch);
 
+        // Pause/resume all audio channel groups (BGM + SFX) — used by in-game pause
+        ENGINE_API void    __stdcall SetAudioPaused(bool paused);
+
         // Channel group volume (groupName: "BGM" or "SFX"), range 0-100
         ENGINE_API void    __stdcall SetGroupVolume(const char* groupName, float volume);
         ENGINE_API float   __stdcall GetGroupVolume(const char* groupName);

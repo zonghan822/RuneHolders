@@ -19,6 +19,8 @@
 #include "../component/components/drawInfo.hpp"
 #include "../component/components/collision_component.hpp"
 #include "../component/components/visibility.hpp"
+#include "../component/components/canvas.hpp"
+#include "../editor/eno_scene_tree.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -32,16 +34,20 @@ namespace UI
 							  Editor::EnoSceneTree&		sceneTree)
 	{
 
-		// Resolve camera top-left corner and viewport size from the active CameraComponent
+		// Resolve camera top-left corner and viewport size from the ACTIVE CameraComponent.
+		// Always search for the active camera rather than taking cams[0], because the ECS
+		// can return cameras in arbitrary order and non-active cameras (e.g. disabled editor
+		// cameras) would produce wrong mouse-to-world coordinates.
 		float cameraX = 0.f, cameraY = 0.f, vpW = 1920.f, vpH = 1080.f;
-		auto cams = entityMng.findEntity<ECSComponents::CameraComponent>();
-		if (!cams.empty())
+		for (auto& camEnt : entityMng.findEntity<ECSComponents::CameraComponent>())
 		{
-			auto& cam = cams[0].get<ECSComponents::CameraComponent>(entityMng);
+			auto& cam = camEnt.get<ECSComponents::CameraComponent>(entityMng);
+			if (!cam.isActive) continue;
 			cameraX = cam.position.x - cam.viewportWidth  * 0.5f;
 			cameraY = cam.position.y - cam.viewportHeight * 0.5f;
 			vpW     = cam.viewportWidth;
 			vpH     = cam.viewportHeight;
+			break;
 		}
 
 		// Fall back to full window bounds if no viewport rect was supplied
@@ -73,6 +79,27 @@ namespace UI
 
 			// Skip if any ancestor is invisible
 			if (!ECSComponents::isAncestorVisible(ent.id(), sceneTree, entityMng)) continue;
+
+			// Skip if any ancestor canvas is inactive — buttons in hidden canvases must not
+			// be hit-tested; they sit at their restored design positions and would fire spuriously.
+			{
+				Editor::Node* node = sceneTree.getNodeByEntityID(ent.id());
+				Editor::Node* ancestor = node ? node->parent_ : nullptr;
+				bool insideInactiveCanvas = false;
+				while (ancestor)
+				{
+					if (ancestor->entity_.has<ECSComponents::CanvasComponent>(entityMng))
+					{
+						if (!ancestor->entity_.get<ECSComponents::CanvasComponent>(entityMng).isActive)
+						{
+							insideInactiveCanvas = true;
+							break;
+						}
+					}
+					ancestor = ancestor->parent_;
+				}
+				if (insideInactiveCanvas) continue;
+			}
 
 			// Check if button is active
 			if (b.getActive())
@@ -109,6 +136,9 @@ namespace UI
 					{
 						std::cout << "[Button_System] Button Clicked!" << std::endl;
 						auto it2 = b.signals_.find("onClick");
+						Editor::Node* clickedNode = sceneTree.getNodeByEntityID(ent.id());
+						std::string clickedName = clickedNode ? clickedNode->name_ : "(unknown)";
+						std::cout << "[Button_System] Button Clicked! Node: " << clickedName << std::endl;
 						if (it2 != b.signals_.end())
 						{
 							it2->second.emit();

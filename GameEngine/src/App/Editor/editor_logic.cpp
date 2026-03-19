@@ -88,9 +88,14 @@ void EditorApplication::run() {
 
 		// 1. Set playing state and run editor state BEFORE game logic so that
 		//    isPlaying_ and hot-reload/begin() are correct when beginFrame() runs.
-		bool isPlayMode = (engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::Playing ||
-		                   engine_.getEnoEditor().getCurrentScene().getState() == Editor::State::NextFrame);
+		//    Paused is included so isPlaying_ stays true during pause, which prevents
+		//    hasBegun_ from resetting and Begin() from re-firing on every unpause.
+		auto currentState = engine_.getEnoEditor().getCurrentScene().getState();
+		bool isPlayMode = (currentState == Editor::State::Playing  ||
+		                   currentState == Editor::State::NextFrame ||
+		                   currentState == Editor::State::Paused);
 		engine_.setIsPlaying(isPlayMode);
+		engine_.setPaused(currentState == Editor::State::Paused);
 		updateEditorState();
 
 		// 2. Resize editor framebuffer if zoom or camera viewport changed.

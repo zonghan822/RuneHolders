@@ -31,6 +31,7 @@ namespace Eno
 
         public void Update()
         {
+            if (PlayerController.IsGamePaused) return;
             if (_allWavesDone) return;
 
             _waveTimer += Time.deltaTime;

@@ -33,6 +33,21 @@ namespace UI
 		* \param[in]	cachedEntities  Pre-sorted drawable entity list
 		* \param[in]	cameraPos       Camera top-left position in world space
 		*//*========================================================================================*/
+		/*============================================================================================
+		* \brief		Update all canvas transforms for the current frame — moves canvases that
+		*				follow a camera to the correct world position, and restores inactive canvases
+		*				to their original positions. Must be called before button hit-testing so that
+		*				buttons are tested against already-moved canvas positions.
+		* \param[in]	engine  Reference to EnoEngine
+		*//*========================================================================================*/
+		static void update(Engine::EnoEngine& engine);
+
+		/*============================================================================================
+		* \brief		Render all active canvas entities on top of world content.
+		* \param[in]	engine          Reference to EnoEngine
+		* \param[in]	cachedEntities  Pre-sorted drawable entity list
+		* \param[in]	cameraPos       Camera top-left position in world space
+		*//*========================================================================================*/
 		void render(Engine::EnoEngine&        engine,
 		            std::vector<ECS::Entity>& cachedEntities,
 		            const Math::eVec2<float>& cameraPos);

@@ -88,3 +88,9 @@
 [2026-03-12 13:33:48] Unknown field found in the data map!
 [2026-03-12 13:35:25] Unknown field found in the data map!
 [2026-03-13 12:34:22] Failed to find this entity in the Entity Map!
+[2026-03-18 23:15:04] Failed to find this entity in the Entity Map!
+[2026-03-18 23:16:41] Failed to find this entity in the Entity Map!
+[2026-03-19 00:27:14] Failed to find this entity in the Entity Map!
+[2026-03-19 04:04:03] Failed to initialize CoreCLR
+[2026-03-19 08:34:56] Failed to initialize CoreCLR
+[2026-03-19 08:36:26] Failed to find this entity in the Entity Map!
