@@ -21,6 +21,7 @@ namespace Eno
 
         private Enemy?    _self;
         private Actor?    _player;
+        private AudioNode? _audio;
         private Sprite2D? _hpBarEmpty;
         private Sprite2D? _hpBarFull;
         private float     _hpBarFullInitialScaleX = 1f;
@@ -31,6 +32,15 @@ namespace Eno
         private const string HP_BAR_FULL_PREFAB  = "EnemyHealthBar_Full";
         private const float  HP_BAR_OFFSET_Y     = -50f;
         public float pathRefreshInterval = 0.5f;
+
+
+        // Audio sounds
+        private const string ATTACK_SOUND = "Bloodwing_Attack_01";
+        private const string WINDUP_SOUND = "Bloodwing_Windup_01";
+        private const string HURT_SOUND = "Bloodwing_Hurt_02";
+        private const string DEATH_SOUND = "Bloodwing_Death_01";
+
+        private const string AUDIO = "DefaultAudio";
 
         private float   _timer          = 0f;
         private float   _pathTimer      = 0f;
@@ -60,6 +70,10 @@ namespace Eno
                 float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
                 _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
                 _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
+
+                // Audio node initialization
+                _audio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
+
                 if (_hpBarFull != null)
                 {
                     _hpBarFullInitialScaleX = _hpBarFull.scale.x;
@@ -189,7 +203,10 @@ namespace Eno
         public void WindUp_enter()
         {
             _timer = 0f;
-            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Windup_01"); } catch { }
+
+            // Windup Audio
+            _audio.sound = WINDUP_SOUND;
+            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
         public void WindUp_update()
         {
@@ -224,7 +241,10 @@ namespace Eno
             _timer         = 0f;
             _chargedPixels = 0f;
             _dashReady     = false;
-            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Attack_01"); } catch { }
+
+            _audio.sound = ATTACK_SOUND;
+            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+
             if (_self != null)
                 _self.velocity = new Vector2(_dashDir.x * dashSpeed, _dashDir.y * dashSpeed);
         }
@@ -274,7 +294,9 @@ namespace Eno
         {
             _timer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Hurt_02"); } catch { }
+
+            _audio.sound = HURT_SOUND;
+            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
         public void Hurt_update()
         {
@@ -295,7 +317,9 @@ namespace Eno
         {
             _timer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Death_01"); } catch { }
+
+            _audio.sound = DEATH_SOUND;
+            _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
         }
         public void Death_update()
         {

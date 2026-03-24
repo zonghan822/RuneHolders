@@ -422,7 +422,6 @@ namespace Core
 		std::optional<DelegateInfo> del = loadDelegate(fullTypeWithAsm.c_str(), method, stateDelegate_);
 
 
-
 		if (del)
 		{
 			std::wcout << L"[DEBUG] Running " << method << L"() for " << fullTypeWithAsm << L"\n";

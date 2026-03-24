@@ -20,8 +20,8 @@ namespace Eno
             bool qDown = Input.isKeyPressed(KeyCode.Q);
 
             // Play on the first frame the key goes down (not every frame it's held)
-            if (eDown && !_wasEPressed)
-                Self<AudioNode>()?.play();
+            // if (eDown && !_wasEPressed)
+            //     Self<AudioNode>()?.play();
 
             // Stop on the first frame the key goes down
             if (qDown && !_wasQPressed)
