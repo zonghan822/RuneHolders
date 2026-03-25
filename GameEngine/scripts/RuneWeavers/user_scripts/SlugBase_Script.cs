@@ -54,6 +54,8 @@ namespace Eno
         private float  _deathTimer      = 0f;
         private float  _spawnTimer      = 0f;
         private float  _contactTimer    = 0f;
+        private float  _stuckTimer      = 0f;
+        private Vector2 _lastStuckPos   = new Vector2(0f, 0f);
 
         private Random rng = new Random();
 
@@ -63,11 +65,13 @@ namespace Eno
             if (_self == null) return;
             
             // Initialize Slug Values
-            _self.useGravity  = false;
-            _self.isKinematic = false;
-            _self.maxHealth   = 30f;
-            _self.health      = 30f;
-            _self.damage      = 10f;
+            _self.useGravity    = false;
+            _self.isKinematic   = false;
+            _self.maxHealth     = 30f;
+            _self.health        = 30f;
+            _self.damage        = 10f;
+            _self.pathClearance  = 1;
+            _self.collisionGroup = 1;
             EnemyColorRegistry.Register(ID, EnemyColor);
 
             // Spawn HP Bar
@@ -159,6 +163,8 @@ namespace Eno
         public void Chase_enter()
         {
             _pathTimer = pathRefreshInterval;
+            _stuckTimer = 0f;
+            if (_self != null) _lastStuckPos = _self.position;
 
             if (_walkAudio != null && _self != null)
             {
@@ -177,6 +183,18 @@ namespace Eno
             {
                 _pathTimer = 0f;
                 _self.computePath(_player.position);
+            }
+
+            // Stuck detection: if barely moved since last check, avoid current waypoint
+            _stuckTimer += Time.deltaTime;
+            if (_stuckTimer >= 0.5f)
+            {
+                float sdx = _self.position.x - _lastStuckPos.x;
+                float sdy = _self.position.y - _lastStuckPos.y;
+                if (_self.hasPath && sdx * sdx + sdy * sdy < 10f * 10f)
+                    _self.computePathAvoidCurrentWaypoint(_player.position);
+                _lastStuckPos = _self.position;
+                _stuckTimer = 0f;
             }
 
             if (_self.hasPath)

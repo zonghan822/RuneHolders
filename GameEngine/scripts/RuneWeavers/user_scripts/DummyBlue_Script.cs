@@ -11,8 +11,9 @@ namespace Eno
             _self = Self<Enemy>();
             if (_self != null)
             {
-                _self.health    = 9999f;
-                _self.maxHealth = 9999f;
+                _self.health         = 9999f;
+                _self.maxHealth      = 9999f;
+                _self.collisionGroup = 1;
             }
             EnemyColorRegistry.Register(ID, 2); // 2 = Ice / Blue
         }

@@ -44,5 +44,12 @@ namespace Eno
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetIsKinematic(uint sceneObjectID, [MarshalAs(UnmanagedType.I1)] bool kinematic);
+
+        // Collision Group
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int GetCollisionGroup(uint sceneObjectID);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetCollisionGroup(uint sceneObjectID, int group);
     }
 }

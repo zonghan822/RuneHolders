@@ -26,6 +26,12 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetAllowDiagonal(uint sceneObjectID, bool value);
 
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int GetPathClearance(uint sceneObjectID);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetPathClearance(uint sceneObjectID, int value);
+
         // -----------------------------------------------------------------------
         // AI — Pathfinding  (implemented in eno_bridge_ai.cpp)
         // -----------------------------------------------------------------------
@@ -34,6 +40,11 @@ namespace Eno
         // allowDiagonal is read from the entity's own AIComponent.
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void AI_ComputePath(uint sceneObjectID,
+            float startX, float startY, float goalX, float goalY);
+
+        // Recompute path while treating the current waypoint tile as blocked.
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void AI_ComputePathAvoidCurrentWaypoint(uint sceneObjectID,
             float startX, float startY, float goalX, float goalY);
 
         // Clear the stored path.

@@ -102,8 +102,9 @@ namespace AI {
 
                 parent[nxt.y][nxt.x] = cur.pos;
 
-                // Add more cost if move diagonally
+                // Base move cost + penalty for being close to walls
                 int moveCost = diagonalMove ? 14 : 10;
+                moveCost += wallProximityCost(nxt.x, nxt.y);
 
                 open.push({
                     nxt,
@@ -113,6 +114,7 @@ namespace AI {
             }
         }
 
+        extraBlockedTiles_.clear();
         return result;
     }
 

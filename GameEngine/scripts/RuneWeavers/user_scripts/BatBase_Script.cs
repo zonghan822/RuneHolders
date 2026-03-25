@@ -43,6 +43,8 @@ namespace Eno
         private float   _timer          = 0f;
         private float   _pathTimer      = 0f;
         private float   _contactTimer   = 0f;
+        private float   _stuckTimer     = 0f;
+        private Vector2 _lastStuckPos   = new Vector2(0f, 0f);
         private Vector2 _dashDir        = new Vector2(1f, 0f);
         private Vector2 _prevPos;
         private float   _chargedPixels  = 0f;
@@ -54,11 +56,13 @@ namespace Eno
             if (_self == null) return;
             
             // Initialize Bat Values
-            _self.useGravity  = false;
-            _self.isKinematic = false;
-            _self.maxHealth   = 10f;
-            _self.health      = 10f;
-            _self.damage      = 20f; 
+            _self.useGravity    = false;
+            _self.isKinematic   = false;
+            _self.maxHealth     = 10f;
+            _self.health        = 10f;
+            _self.damage        = 20f;
+            _self.pathClearance  = 1;
+            _self.collisionGroup = 1;
             EnemyColorRegistry.Register(ID, EnemyColor);
 
             // Spawn HP Bar
@@ -140,7 +144,12 @@ namespace Eno
         public void Spawn_exit() { }
 
         // ── Idle ──────────────────────────────────────────────────────────────────
-        public void Idle_enter() { _pathTimer = pathRefreshInterval; }
+        public void Idle_enter()
+        {
+            _pathTimer = pathRefreshInterval;
+            _stuckTimer = 0f;
+            if (_self != null) _lastStuckPos = _self.position;
+        }
         public void Idle_update()
         {
             FindPlayer();
@@ -158,6 +167,18 @@ namespace Eno
             {
                 _pathTimer = 0f;
                 _self.computePath(_player.position);
+            }
+
+            // Stuck detection: if barely moved since last check, avoid current waypoint
+            _stuckTimer += Time.deltaTime;
+            if (_stuckTimer >= 0.5f)
+            {
+                float sdx = _self.position.x - _lastStuckPos.x;
+                float sdy = _self.position.y - _lastStuckPos.y;
+                if (_self.hasPath && sdx * sdx + sdy * sdy < 10f * 10f)
+                    _self.computePathAvoidCurrentWaypoint(_player.position);
+                _lastStuckPos = _self.position;
+                _stuckTimer = 0f;
             }
 
             if (_self.hasPath)
@@ -269,7 +290,7 @@ namespace Eno
             _prevPos        = curPos;
 
             float expectedMove = dashSpeed * Time.deltaTime;
-            bool  hitWall      = moved < expectedMove * 0.3f;
+            bool  hitWall      = moved < expectedMove;
 
             if (_chargedPixels >= CHARGE_DISTANCE || hitWall)
             {

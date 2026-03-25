@@ -96,5 +96,19 @@ namespace Bridge
             if (auto* p = getPhysics(sceneObjectID))
                 p->isKinematic = kinematic;
         }
+
+        // ============= Collision Group =============
+
+        ENGINE_API int __stdcall GetCollisionGroup(uint32_t sceneObjectID)
+        {
+            auto* p = getPhysics(sceneObjectID);
+            return p ? p->collisionGroup : 0;
+        }
+
+        ENGINE_API void __stdcall SetCollisionGroup(uint32_t sceneObjectID, int group)
+        {
+            if (auto* p = getPhysics(sceneObjectID))
+                p->collisionGroup = group;
+        }
     }
 }

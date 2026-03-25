@@ -25,6 +25,12 @@ namespace Eno
             set => Bridge.SetAllowDiagonal(ID, value);
         }
 
+        public int pathClearance
+        {
+            get => Bridge.GetPathClearance(ID);
+            set => Bridge.SetPathClearance(ID, value);
+        }
+
         // ============= Pathfinding =============
 
         // Compute a path from a world-space start to a world-space goal.
@@ -35,6 +41,13 @@ namespace Eno
         // Convenience overload — uses this enemy's current position as the start.
         public void computePath(float goalX, float goalY)
             => Bridge.AI_ComputePath(ID, position.x, position.y, goalX, goalY);
+
+        // Recompute path treating the current stuck waypoint as blocked.
+        public void computePathAvoidCurrentWaypoint(float goalX, float goalY)
+            => Bridge.AI_ComputePathAvoidCurrentWaypoint(ID, position.x, position.y, goalX, goalY);
+
+        public void computePathAvoidCurrentWaypoint(Vector2 goal)
+            => Bridge.AI_ComputePathAvoidCurrentWaypoint(ID, position.x, position.y, goal.x, goal.y);
 
         // Convenience overload — uses this enemy's current position as the start.
         public void computePath(Vector2 goal)

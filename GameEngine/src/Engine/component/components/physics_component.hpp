@@ -39,6 +39,10 @@ namespace ECSComponents
         bool isKinematic;                   // If true, physics won't move it (manually controlled)
         bool freezeRotation;                // Prevent rotation from physics
 
+        // Collision grouping: entities with the same non-zero group pass through each other
+        // (collision events still fire; only the physics push response is skipped).
+        int  collisionGroup = 0;
+
         // Constraints
         Math::eVec2<float> velocityMin;     // Minimum velocity clamp
         Math::eVec2<float> velocityMax;     // Maximum velocity clamp
