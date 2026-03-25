@@ -19,7 +19,11 @@ namespace Eno
 
         public void Begin()
         {
-            _instance = this;
+            _instance     = this;
+            _currentWave  = 0;
+            _wavesStarted = false;
+            _roomCleared  = false;
+            _waveTimer    = 0f;
         }
 
         public static void StartWaves()

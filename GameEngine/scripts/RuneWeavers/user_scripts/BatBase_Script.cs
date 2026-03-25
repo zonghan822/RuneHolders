@@ -70,7 +70,11 @@ namespace Eno
 
         public void Update()
         {
-            if (PlayerController.IsGamePaused) return;
+            if (PlayerController.IsGamePaused)
+            {
+                if (_self != null) _self.velocity = new Vector2(0f, 0f);
+                return;
+            }
             if (_isDying || _self == null) return;
 
             // Force death if health reached zero outside of Hurt state
@@ -120,6 +124,7 @@ namespace Eno
         public void Spawn_enter() { _timer = 0f; }
         public void Spawn_update()
         {
+            if (PlayerController.IsGamePaused) return;
             _timer += Time.deltaTime;
             if (_timer >= spawnDuration)
                 _self?.changeState("Idle");
@@ -131,6 +136,7 @@ namespace Eno
         public void Idle_enter() { _pathTimer = pathRefreshInterval; }
         public void Idle_update()
         {
+            if (PlayerController.IsGamePaused) return;
             FindPlayer();
             if (_self == null || _player == null) return;
 
@@ -193,6 +199,7 @@ namespace Eno
         }
         public void WindUp_update()
         {
+            if (PlayerController.IsGamePaused) return;
             FindPlayer();
             if (_self == null || _player == null) return;
 
@@ -230,6 +237,7 @@ namespace Eno
         }
         public void Attack_update()
         {
+            if (PlayerController.IsGamePaused) return;
             if (_self == null) return;
 
             Vector2 curPos = _self.position;
@@ -278,6 +286,7 @@ namespace Eno
         }
         public void Hurt_update()
         {
+            if (PlayerController.IsGamePaused) return;
             _timer += Time.deltaTime;
             if (_timer >= hurtDuration)
             {
@@ -299,6 +308,7 @@ namespace Eno
         }
         public void Death_update()
         {
+            if (PlayerController.IsGamePaused) return;
             if (_isDying) return;
             _timer += Time.deltaTime;
             if (_timer >= deathDuration)

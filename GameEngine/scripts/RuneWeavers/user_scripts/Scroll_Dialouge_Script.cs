@@ -186,7 +186,7 @@ namespace Eno
             _player         = GetNode<Actor>("Player");
             _dialogueCanvas = GetNode<Canvas>("Dialogue Canvas");
             _dialogueText   = GetNode<Label>("Dialogue Text");
-            try { _narrativeSprite = GetNode<Node2D>("Narrative"); } catch { }
+            _narrativeSprite = GetNode<Node2D>("Narrative");
             try { _dialogueBox    = GetNode<Node2D>("Dialogue Box"); } catch { }
 
             _scrollNodes = new Node2D?[ScrollNames.Length];
@@ -203,6 +203,20 @@ namespace Eno
 
             try { _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas"); } catch { }
             try { _victoryScreenID = Bridge.GetNode("WinScreen");  } catch { }
+
+            // Reset static state so dialogue replays on level restart
+            DialogueActive = false;
+            DialogueShown  = new bool[ScrollNames.Length];
+
+            // Reset instance state
+            dialogueActive      = false;
+            _skipEInput         = false;
+            dialogueTyping      = false;
+            dialogueIndex       = 0;
+            _activeIndex        = -1;
+            dialogueCurrentText = "";
+            dialogueTargetText  = "";
+            dialogueTypeTimer   = 0f;
         }
 
         // Called by room scripts when the player interacts with a text-based scroll.
@@ -218,6 +232,7 @@ namespace Eno
         {
             if (_instance == null || DialogueActive || DialogueShown[scrollIndex]) return;
             if (!_isNarrative[scrollIndex]) return;
+            Console.WriteLine("NARRATIVE");
             _instance.StartDialogueForScroll(scrollIndex);
         }
 
@@ -294,7 +309,7 @@ namespace Eno
             if (_isNarrative[index])
             {
                 // Show narrative sprite, hide text label and dialogue box
-                if (_narrativeSprite != null)
+                //if (_narrativeSprite != null)
                 {
                     Bridge.SetTexturePath(_narrativeSprite.ID, _narrativeTextures[index]);
                     Bridge.SetVisibility(_narrativeSprite.ID, true);
@@ -362,7 +377,10 @@ namespace Eno
             {
                 Bridge.SetCanvasActive(_winLoseCanvasID, true);
                 if (_victoryScreenID != 0)
+                {
                     Bridge.SetVisibility(_victoryScreenID, true);
+                    SetChildButtonsActive(_victoryScreenID, true);
+                }
             }
         }
 
@@ -500,6 +518,18 @@ namespace Eno
         }
 
 
+
+        private void SetChildButtonsActive(uint parentID, bool active)
+        {
+            uint count = Bridge.GetChildCount(parentID);
+            for (uint i = 0; i < count; i++)
+            {
+                uint childID = Bridge.GetChild(parentID, i);
+                if (Bridge.GetNodeType(childID) == (uint)NodeType.BUTTON)
+                    Bridge.SetButtonActive(childID, active);
+                SetChildButtonsActive(childID, active);
+            }
+        }
 
         public void Default_enter()  { }
         public void Default_update() { }

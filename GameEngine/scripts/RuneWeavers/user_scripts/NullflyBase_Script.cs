@@ -80,7 +80,11 @@ namespace Eno
 
         public void Update()
         {
-            if (PlayerController.IsGamePaused) return;
+            if (PlayerController.IsGamePaused)
+            {
+                if (_self != null) _self.velocity = new Vector2(0f, 0f);
+                return;
+            }
             if (_isDying || _self == null) return;
 
             // Force death if health reached zero outside of Hurt state
@@ -132,6 +136,7 @@ namespace Eno
 
         public void Spawn_update()
         {
+            if (PlayerController.IsGamePaused) return;
             _timer += Time.deltaTime;
             if (_timer >= spawnDuration)
                 _self?.changeState("Idle");
@@ -148,6 +153,7 @@ namespace Eno
         }
         public void Idle_update()
         {
+            if (PlayerController.IsGamePaused) return;
             _timer += Time.deltaTime;
             if (_timer >= idleDuration)
                 _self?.changeState("Channel");
@@ -159,6 +165,7 @@ namespace Eno
         public void Shocked_enter() { _timer = 0f; }
         public void Shocked_update()
         {
+            if (PlayerController.IsGamePaused) return;
             _timer += Time.deltaTime;
             if (_timer >= shockedDuration)
                 _self?.changeState("WindUp");
@@ -174,6 +181,7 @@ namespace Eno
         }
         public void WindUp_update()
         {
+            if (PlayerController.IsGamePaused) return;
             if (!_isCloaked)
             {
                 _timer += Time.deltaTime;
@@ -203,6 +211,7 @@ namespace Eno
         public void Channel_enter() { EnemyColorRegistry.BanRune(runeIndex); }
         public void Channel_update()
         {
+            if (PlayerController.IsGamePaused) return;
             FindPlayer();
             if (_self == null || _player == null) return;
             if (Dist(_self.position, _player.position) <= cloakRadius)
@@ -224,6 +233,7 @@ namespace Eno
         public void Hurt_enter() { _timer = 0f; }
         public void Hurt_update()
         {
+            if (PlayerController.IsGamePaused) return;
             _timer += Time.deltaTime;
             if (_timer >= hurtDuration)
             {
@@ -253,6 +263,7 @@ namespace Eno
         }
         public void Death_update()
         {
+            if (PlayerController.IsGamePaused) return;
             if (_isDying) return;
             _timer += Time.deltaTime;
             if (_timer >= deathDuration)

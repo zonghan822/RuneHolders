@@ -335,6 +335,16 @@ namespace UI
 	{
 		auto& entityManager = engine.getEntityManager();
 
+		// Sync camera position from TransformComponent so that canvas following
+		// and camera movement happen in the same frame.
+		for (auto& camEnt : entityManager.findEntity<ECSComponents::CameraComponent>())
+		{
+			auto& cam = camEnt.get<ECSComponents::CameraComponent>(entityManager);
+			if (!cam.isActive) continue;
+			if (cam.followTransform && camEnt.has<ECSComponents::TransformComponent>(entityManager))
+				cam.position = camEnt.get<ECSComponents::TransformComponent>(entityManager).pos;
+		}
+
 		// Resolve the fallback camera position once for canvases that don't specify a camera.
 		Math::eVec2<float> defaultCameraPos{ 0.0f, 0.0f };
 		for (auto& camEnt : entityManager.findEntity<ECSComponents::CameraComponent>())

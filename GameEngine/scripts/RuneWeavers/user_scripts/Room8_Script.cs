@@ -10,6 +10,9 @@ namespace Eno
         private bool  _postDialogueActivated = false;
         private bool  _scrollPickedUp        = false;
 
+        private uint  _uiInfoID    = 0;
+        private float _uiInfoTimer = 0f;
+
         private Canvas?    _videoCanvas = null;
         private VideoNode? _videoHolder = null;
 
@@ -19,13 +22,25 @@ namespace Eno
             _scrollID    = Bridge.GetNode("Room8_Scroll");
             _exitDoorID  = Bridge.GetNode("Door8to9");
             _spellbookID = Bridge.GetNode("Spellbook");
+            _uiInfoID    = Bridge.GetNode("UI_Info");
 
             try { _videoCanvas = GetNode<Canvas>("VideoCanvas");    } catch { }
             try { _videoHolder = GetNode<VideoNode>("VideoHolder"); } catch { }
+
+            _postDialogueActivated = false;
+            _scrollPickedUp        = false;
+            _uiInfoTimer           = 0f;
         }
 
         public void Update()
         {
+            if (_uiInfoID != 0 && _uiInfoTimer < 3f)
+            {
+                _uiInfoTimer += Time.deltaTime;
+                if (_uiInfoTimer >= 3f)
+                    Bridge.SetVisibility(_uiInfoID, false);
+            }
+
             // After dialogue ends: activate ui sprite, then hide after 3 seconds
             if (!_postDialogueActivated && Scroll_Dialouge_Script.DialogueShown[2])
             {
@@ -42,6 +57,13 @@ namespace Eno
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
+                // Show F-to-open hint
+                if (_uiInfoID != 0)
+                {
+                    Bridge.SetTexturePath(_uiInfoID, "UI-FtoOpen-Text");
+                    Bridge.SetVisibility(_uiInfoID, true);
+                }
+                _uiInfoTimer = 0f;
                 // Update spellbook
                 if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-3Spells");
                 if (_exitDoorID  != 0) Bridge.ChangeState(_exitDoorID, "Unlocking");

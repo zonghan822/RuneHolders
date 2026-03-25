@@ -5,6 +5,7 @@ namespace Eno
         private const float WaveDelay = 10f;
 
         private static Room6_Script? _instance;
+        private static bool _popupActivated = false;
 
         private int   _currentWave  = 0;
         private bool  _wavesStarted = false;
@@ -13,12 +14,37 @@ namespace Eno
 
         public void Begin()
         {
-            _instance = this;
+            _instance       = this;
+            _popupActivated = false;
+            _currentWave    = 0;
+            _wavesStarted   = false;
+            _roomCleared    = false;
+            _waveTimer      = 0f;
         }
 
         public static void StartWaves()
         {
-            _instance?.SpawnWave(1);
+            if (_instance == null) return;
+
+            if (!_popupActivated)
+            {
+                _popupActivated = true;
+                uint popupID = Bridge.GetNode("EnemyInfoPopUp");
+                if (popupID != 0 && popupID != uint.MaxValue)
+                {
+                    Bridge.SetTexturePath(popupID, "Enemy-Bat-Frozen-Sheet");
+                    Bridge.SetVisibility(popupID, true);
+                    Bridge.SetButtonActive(popupID, true);
+                }
+                uint popupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
+                if (popupBgID != 0 && popupBgID != uint.MaxValue)
+                    Bridge.SetVisibility(popupBgID, true);
+                uint enemyInfoID = Bridge.GetNode("EnemyInfo");
+                if (enemyInfoID != 0 && enemyInfoID != uint.MaxValue)
+                    Bridge.SetTexturePath(enemyInfoID, "UI-EnemyPopUp-YellowBat");
+            }
+
+            _instance.SpawnWave(1);
         }
 
         public void Update()
@@ -68,7 +94,7 @@ namespace Eno
             switch (wave)
             {
                 case 1:
-                    SpawnPrefab("BatRed",    3207f, -4881f);
+                    SpawnPrefab("BatYellow",    3207f, -4881f);
                     break;
                 case 2:
                     SpawnPrefab("BatYellow", 2633f, -5008f);

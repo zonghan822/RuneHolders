@@ -35,6 +35,18 @@ namespace Eno
 
 		}
 
+        private void SetChildButtonsActive(uint parentID, bool active)
+        {
+            uint count = Bridge.GetChildCount(parentID);
+            for (uint i = 0; i < count; i++)
+            {
+                uint childID = Bridge.GetChild(parentID, i);
+                if (Bridge.GetNodeType(childID) == (uint)NodeType.BUTTON)
+                    Bridge.SetButtonActive(childID, active);
+                SetChildButtonsActive(childID, active);
+            }
+        }
+
 	
 		public void _when_pausescreenresumebutton_onpressed()
         {
@@ -62,7 +74,9 @@ namespace Eno
             Bridge.SetTexturePath(buttonID, "UI-Quit");
             _prevScreen = prevScreen.PauseScreen;
             Bridge.SetVisibility(_pauseScreenID, false);
+            SetChildButtonsActive(_pauseScreenID, false);
             Bridge.SetVisibility(_areYouSureID, true);
+            SetChildButtonsActive(_areYouSureID, true);
         }
 	
 		public void _when_pausescreenmainmenu_onpressed()
@@ -102,16 +116,20 @@ namespace Eno
             uint buttonID = Bridge.GetNode("AreYouSureScreenNo");
             Bridge.SetTexturePath(buttonID, "UI-No");
             Bridge.SetVisibility(_areYouSureID, false);
+            SetChildButtonsActive(_areYouSureID, false);
             switch (_prevScreen)
             {
                 case prevScreen.WinScreen:
                 Bridge.SetVisibility(_victoryScreenID, true);
+                SetChildButtonsActive(_victoryScreenID, true);
                 break;
                 case prevScreen.PauseScreen:
                 Bridge.SetVisibility(_pauseScreenID, true);
+                SetChildButtonsActive(_pauseScreenID, true);
                 break;
                 case prevScreen.LoseScreen:
                 Bridge.SetVisibility(_defeatScreenID, true);
+                SetChildButtonsActive(_defeatScreenID, true);
                 break;
             }
 
@@ -129,7 +147,9 @@ namespace Eno
             Bridge.SetTexturePath(buttonID, "UI-Quit");
             _prevScreen = prevScreen.WinScreen;
             Bridge.SetVisibility(_victoryScreenID, false);
+            SetChildButtonsActive(_victoryScreenID, false);
             Bridge.SetVisibility(_areYouSureID, true);
+            SetChildButtonsActive(_areYouSureID, true);
         }
 	
 		public void _when_winscreenmainmenu_onpressed()
@@ -157,7 +177,9 @@ namespace Eno
             Bridge.SetTexturePath(buttonID, "UI-Quit");
             _prevScreen = prevScreen.LoseScreen;
             Bridge.SetVisibility(_defeatScreenID, false);
+            SetChildButtonsActive(_defeatScreenID, false);
             Bridge.SetVisibility(_areYouSureID, true);
+            SetChildButtonsActive(_areYouSureID, true);
         }
 	
 		public void _when_defeatscreenmainmenu_onpressed()

@@ -21,6 +21,9 @@ namespace Eno
             _uiInfoID       = Bridge.GetNode("UI_Info");
             _spellbookID    = Bridge.GetNode("Spellbook");
             _dialogueTriggered     = false;
+            _postDialogueActivated = false;
+            _scrollPickedUp        = false;
+            _uiInfoTimer           = 0f;
         }
 
         public void Update()

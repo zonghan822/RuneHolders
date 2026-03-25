@@ -62,6 +62,9 @@ namespace UI
 			viewportMin, vMax, vpW, vpH, cameraX, cameraY
 		);
 
+		// A global flag that looks for the moement in which left mouse is pressed and released
+		static bool leftMouseDown = false;
+
 		// Loop through all buttons
 		for (auto& ent : entityMng.findEntity<ECSComponents::ButtonComponent>())
 		{
@@ -74,17 +77,14 @@ namespace UI
 			auto& t = ent.get<ECSComponents::TransformComponent>(entityMng);
 			auto& c = ent.get<ECSComponents::CollisionComponent>(entityMng);
 
-			// Skip if entity is invisible
-			if (ent.has<ECSComponents::VisibilityComponent>(entityMng) && !ent.get<ECSComponents::VisibilityComponent>(entityMng).visible) continue;
-
-			// Skip if any ancestor is invisible
-			if (!ECSComponents::isAncestorVisible(ent.id(), sceneTree, entityMng)) continue;
+			// Fetch scene-tree node once; skip button if it isn't in the tree
+			Editor::Node* buttonNode = sceneTree.getNodeByEntityID(ent.id());
+			if (!buttonNode) continue;
 
 			// Skip if any ancestor canvas is inactive — buttons in hidden canvases must not
 			// be hit-tested; they sit at their restored design positions and would fire spuriously.
 			{
-				Editor::Node* node = sceneTree.getNodeByEntityID(ent.id());
-				Editor::Node* ancestor = node ? node->parent_ : nullptr;
+				Editor::Node* ancestor = buttonNode->parent_;
 				bool insideInactiveCanvas = false;
 				while (ancestor)
 				{
@@ -113,13 +113,14 @@ namespace UI
 					if (inputMng.isMousePressed(GLFW_MOUSE_BUTTON_LEFT))
 					{
 						// Pressing button, do not trigger hover
+						leftMouseDown = true;
 						std::cout << "[Button_System] Button Pressed!" << std::endl;
 						auto it2 = b.signals_.find("onPressed");
 						if (it2 != b.signals_.end())
 						{
 							it2->second.emit();
 						}
-					} 
+					}
 					else
 					{
 						// Mouse within button: emit onHover signal
@@ -131,18 +132,19 @@ namespace UI
 						}
 					}
 
-					// Mouse click on button, emit onClicked signal
-					if (inputMng.isMouseUp(GLFW_MOUSE_BUTTON_LEFT))
+					// Mouse click on button: only fire in the moment mouse press was released
+					if (inputMng.isMouseUp(GLFW_MOUSE_BUTTON_LEFT) && leftMouseDown)
 					{
 						std::cout << "[Button_System] Button Clicked!" << std::endl;
 						auto it2 = b.signals_.find("onClick");
-						Editor::Node* clickedNode = sceneTree.getNodeByEntityID(ent.id());
-						std::string clickedName = clickedNode ? clickedNode->name_ : "(unknown)";
+						std::string clickedName = buttonNode->name_;
 						std::cout << "[Button_System] Button Clicked! Node: " << clickedName << std::endl;
 						if (it2 != b.signals_.end())
 						{
 							it2->second.emit();
 						}
+						// Release left mouse down so this input doesn't hold true for other subsequent buttons
+						leftMouseDown = false;
 					}
 				}
 			}

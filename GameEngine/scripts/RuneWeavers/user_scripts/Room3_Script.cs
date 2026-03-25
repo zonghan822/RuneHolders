@@ -5,24 +5,69 @@ namespace Eno
         private const float Wave2Delay = 10f;
 
         private static Room3_Script? _instance;
+        private static bool _popupActivated = false;
 
         private bool  _wavesStarted = false;
         private bool  _wave2Spawned = false;
         private bool  _roomCleared  = false;
         private float _wave2Timer   = 0f;
 
+        private uint  _uiInfoID    = 0;
+        private float _uiInfoTimer = 0f;
+
         public void Begin()
         {
-            _instance = this;
+            _instance       = this;
+            _popupActivated = false;
+            _wavesStarted   = false;
+            _wave2Spawned   = false;
+            _roomCleared    = false;
+            _wave2Timer     = 0f;
+            _uiInfoTimer    = 0f;
         }
 
         public static void StartWaves()
         {
-            _instance?.SpawnWave1();
+            if (_instance == null) return;
+
+            _instance._uiInfoID = Bridge.GetNode("UI_Info");
+            if (_instance._uiInfoID != 0)
+            {
+                Bridge.SetTexturePath(_instance._uiInfoID, "UI-MonsterColourInstructions-Text");
+                Bridge.SetVisibility(_instance._uiInfoID, true);
+            }
+            _instance._uiInfoTimer = 0f;
+
+            if (!_popupActivated)
+            {
+                _popupActivated = true;
+                uint popupID = Bridge.GetNode("EnemyInfoPopUp");
+                if (popupID != 0 && popupID != uint.MaxValue)
+                {
+                    Bridge.SetTexturePath(popupID, "Enemy-Slug-Frozen-Sheet");
+                    Bridge.SetVisibility(popupID, true);
+                    Bridge.SetButtonActive(popupID, true);
+                }
+                uint popupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
+                if (popupBgID != 0 && popupBgID != uint.MaxValue)
+                    Bridge.SetVisibility(popupBgID, true);
+                uint enemyInfoID = Bridge.GetNode("EnemyInfo");
+                if (enemyInfoID != 0 && enemyInfoID != uint.MaxValue)
+                    Bridge.SetTexturePath(enemyInfoID, "UI-EnemyPopUp-LavaSlug");
+            }
+
+            _instance.SpawnWave1();
         }
 
         public void Update()
         {
+            if (_uiInfoID != 0 && _uiInfoTimer < 3f)
+            {
+                _uiInfoTimer += Time.deltaTime;
+                if (_uiInfoTimer >= 3f)
+                    Bridge.SetVisibility(_uiInfoID, false);
+            }
+
             if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
             {
                 _roomCleared = true;

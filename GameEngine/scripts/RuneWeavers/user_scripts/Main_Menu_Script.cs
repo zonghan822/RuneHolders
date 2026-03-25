@@ -14,6 +14,18 @@ namespace Eno
 
         }
 
+        private void SetChildButtonsActive(uint parentID, bool active)
+        {
+            uint count = Bridge.GetChildCount(parentID);
+            for (uint i = 0; i < count; i++)
+            {
+                uint childID = Bridge.GetChild(parentID, i);
+                if (Bridge.GetNodeType(childID) == (uint)NodeType.BUTTON)
+                    Bridge.SetButtonActive(childID, active);
+                SetChildButtonsActive(childID, active);
+            }
+        }
+
         /* -------------------------- MAIN MENU BUTTONS ----------------------- */
         // -------------- PLAY BUTTON -------------------
 		public void _when_play_button_onpressed()
@@ -49,6 +61,7 @@ namespace Eno
             // Set Control Menu Canvas Active
             uint controlMenuID = Bridge.GetNode("Controls Menu");
             Bridge.SetCanvasActive(controlMenuID, true);
+            SetChildButtonsActive(controlMenuID, true);
         }
 	
         // ---------------- QUIT BUTTON -------------------
@@ -68,6 +81,7 @@ namespace Eno
             // Set Quit Menu Canvas Active
             uint quitMenuID = Bridge.GetNode("Quit Game Menu");
             Bridge.SetCanvasActive(quitMenuID, true);
+            SetChildButtonsActive(quitMenuID, true);
         }
 	
 
@@ -90,6 +104,7 @@ namespace Eno
             // Set Control Menu Canvas Inactive
             uint controlMenuID = Bridge.GetNode("Controls Menu");
             Bridge.SetCanvasActive(controlMenuID, false);
+            SetChildButtonsActive(controlMenuID, false);
         }
 
         /* -------------------------- QUIT MENU BUTTONS ----------------------- */
@@ -111,6 +126,7 @@ namespace Eno
             // Set Quit Menu Canvas Inactive
             uint quitMenuID = Bridge.GetNode("Quit Game Menu");
             Bridge.SetCanvasActive(quitMenuID, false);
+            SetChildButtonsActive(quitMenuID, false);
             // Exit Game
             Window.requestClose();
 
@@ -133,6 +149,7 @@ namespace Eno
             // Set Quit Menu Canvas Inactive
             uint quitMenuID = Bridge.GetNode("Quit Game Menu");
             Bridge.SetCanvasActive(quitMenuID, false);
+            SetChildButtonsActive(quitMenuID, false);
         }
 	
         /* -------------------------- SETTING MENU BUTTONS ----------------------- */
@@ -153,6 +170,7 @@ namespace Eno
             // Set Settings Menu Active
             uint settingMenuID = Bridge.GetNode("Settings Menu");
             Bridge.SetCanvasActive(settingMenuID, true);
+            SetChildButtonsActive(settingMenuID, true);
         }
 	
         // ---------- MASTER VOLUME BUTTON -------------
@@ -190,6 +208,7 @@ namespace Eno
             // Set Settings Menu Canvas Inactive
             uint settingMenuID = Bridge.GetNode("Settings Menu");
             Bridge.SetCanvasActive(settingMenuID, false);
+            SetChildButtonsActive(settingMenuID, false);
 
         }
 	

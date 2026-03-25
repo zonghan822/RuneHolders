@@ -28,7 +28,7 @@ namespace Eno
 
         private bool _cleared = false;
 
-        public void Begin() { }
+        public void Begin() { _cleared = false; }
 
         public void Update()
         {

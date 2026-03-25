@@ -8,7 +8,9 @@ namespace Eno
 
         public void Begin()
         {
-            _instance = this;
+            _instance     = this;
+            _roomCleared  = false;
+            _wavesStarted = false;
         }
 
         public static void StartWaves()

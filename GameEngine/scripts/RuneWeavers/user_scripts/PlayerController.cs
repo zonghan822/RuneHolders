@@ -31,6 +31,10 @@ namespace Eno
         private uint      _spellbookUIID    = 0;
         private bool      _spellbookOpen    = false;
         private uint      _winLoseCanvasID  = 0;
+        private uint      _enemyInfoID        = 0;
+        private uint      _enemyInfoPopupID   = 0;
+        private uint      _enemyInfoPopupBgID = 0;
+        private bool      _enemyInfoOpen      = false;
 
         // In-game pause flag
         public static bool IsGamePaused = false;
@@ -59,6 +63,9 @@ namespace Eno
 
             _spellbookUIID   = Bridge.GetNode("Spellbook");
             _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");
+            _enemyInfoID        = Bridge.GetNode("EnemyInfo");
+            _enemyInfoPopupID   = Bridge.GetNode("EnemyInfoPopUp");
+            _enemyInfoPopupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
 
             IsGamePaused = false;
         }
@@ -102,6 +109,7 @@ namespace Eno
                 Bridge.SetCanvasActive(_winLoseCanvasID, IsGamePaused);
                 uint buttonID = Bridge.GetNode("PauseScreen");
                 Bridge.SetVisibility(buttonID, true);
+                SetChildButtonsActive(buttonID, IsGamePaused);
                 Bridge.SetAudioPaused(IsGamePaused);
             }
             if (IsGamePaused) return;
@@ -141,6 +149,20 @@ namespace Eno
                 float inv = 1f / MathF.Sqrt(dx * dx + dy * dy);
                 dx *= inv;
                 dy *= inv;
+            }
+
+            // E key — close enemy info panel if open
+            if (_enemyInfoOpen && Input.isKeyPressed(KeyCode.E))
+            {
+                _enemyInfoOpen = false;
+                if (_enemyInfoID      != 0) Bridge.SetVisibility(_enemyInfoID, false);
+                if (_enemyInfoPopupID != 0)
+                {
+                    Bridge.SetVisibility(_enemyInfoPopupID, false);
+                    Bridge.SetButtonActive(_enemyInfoPopupID, false);
+                }
+                if (_enemyInfoPopupBgID != 0) Bridge.SetVisibility(_enemyInfoPopupBgID, false);
+                return;
             }
 
             // Check scroll interaction before applying movement
@@ -203,6 +225,18 @@ namespace Eno
         public void Walk_exit()
         {
             // TODO: Add exit logic for walk state
+        }
+
+        private void SetChildButtonsActive(uint parentID, bool active)
+        {
+            uint count = Bridge.GetChildCount(parentID);
+            for (uint i = 0; i < count; i++)
+            {
+                uint childID = Bridge.GetChild(parentID, i);
+                if (Bridge.GetNodeType(childID) == (uint)NodeType.BUTTON)
+                    Bridge.SetButtonActive(childID, active);
+                SetChildButtonsActive(childID, active);
+            }
         }
 
         private bool IsMoving()
@@ -302,6 +336,15 @@ namespace Eno
         public void Death_exit()
         {
             // TODO: Add exit logic for Death state
+        }
+    
+		public void _when_enemyinfopopup_onclick()
+        {
+            if (_enemyInfoID != 0)
+            {
+                _enemyInfoOpen = true;
+                Bridge.SetVisibility(_enemyInfoID, true);
+            }
         }
     }
 }
