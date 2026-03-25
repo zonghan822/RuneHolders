@@ -17,8 +17,8 @@ namespace AI {
 
     // Compute full path from start to goal
     void AIPathAgent::computePath(const Math::eVec2<int>& start, const Math::eVec2<int>& goal, bool allowDiagonal) {
-        path_ = pf_.findPath(start, goal);
         pf_.setAllowDiagonal(allowDiagonal);
+        path_ = pf_.findPath(start, goal);
         currentIndex_ = 0;
     }
 

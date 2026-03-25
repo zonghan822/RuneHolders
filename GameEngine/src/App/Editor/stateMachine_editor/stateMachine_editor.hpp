@@ -10,6 +10,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <algorithm>
 #include "imgui.h"
 
 #include "script_generator.hpp"
@@ -59,7 +60,9 @@ namespace Editor {
 
             if (node->script_) {
                 // Script is attached
-                std::string scriptName(node->script_->name_.begin(), node->script_->name_.end());
+                std::string scriptName(node->script_->name_.size(), '\0');
+                std::transform(node->script_->name_.begin(), node->script_->name_.end(), scriptName.begin(),
+                    [](wchar_t c) { return static_cast<char>(c); });
                 ImGui::Text("Attached Script: %s", scriptName.c_str());
 
                 if (ImGui::Button("Open Script")) {
@@ -236,7 +239,9 @@ namespace Editor {
                 std::vector<std::wstring> scripts = scriptManager_.getAvailableScripts();
 
                 for (const auto& scriptName : scripts) {
-                    std::string scriptNameStr(scriptName.begin(), scriptName.end());
+                    std::string scriptNameStr(scriptName.size(), '\0');
+                    std::transform(scriptName.begin(), scriptName.end(), scriptNameStr.begin(),
+                        [](wchar_t c) { return static_cast<char>(c); });
 
                     if (ImGui::Selectable(scriptNameStr.c_str())) {
                         attachScript(node, scriptName);

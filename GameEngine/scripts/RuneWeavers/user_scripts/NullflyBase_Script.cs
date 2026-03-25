@@ -7,17 +7,19 @@ namespace Eno
         public int   runeIndex       = 5;      // 0-5: which rune this Nullfly bans
         public float cloakRadius     = 220f;   // player closer than this → cloak
         public float uncloakRadius   = 300f;   // player farther than this → uncloak
-        public float idleDuration    = 0.5f;     // time in Idle before channelling
+        public float idleDuration    = 0.5f;   // time in Idle before channelling
         public float shockedDuration = 0.2f;
         public float windUpDuration  = 0.3f;
         public float hurtDuration    = 0.5f;
         public float deathDuration   = 1.0f;
         public float spawnDuration   = 0.5f;
+        public float contactDamageCooldown = 1.0f;
 
         protected virtual int EnemyColor => 0;
 
         private Enemy?    _self;
         private Actor?    _player;
+        private AudioNode? _audio;
         private Sprite2D? _hpBarEmpty;
         private Sprite2D? _hpBarFull;
         private float     _hpBarFullInitialScaleX = 1f;
@@ -27,19 +29,17 @@ namespace Eno
         private const string HP_BAR_EMPTY_PREFAB = "EnemyHealthBar_Empty";
         private const string HP_BAR_FULL_PREFAB  = "EnemyHealthBar_Full";
         private const float  HP_BAR_OFFSET_Y     = -50f;
-        public float contactDamageCooldown = 1.0f;
 
         // Set this before SpawnPrefab to assign runeIndex on the next spawned Nullfly
         public static int PendingRuneIndex = 5;
 
+        private const string ATTACK_SOUND = "Nullfly_Attack_01";
+        private const string AUDIO = "DefaultAudio";
         private float  _timer          = 0f;
         private float  _contactTimer  = 0f;
         private bool   _isCloaked     = false;
-        private bool   _isDying       = false;
-        private bool   _deathTriggered = false;
 
         // ── Cloak toggle ─────────────────────────────────────────────────────────
-
         private void SetCloaked(bool cloaked)
         {
             if (_isCloaked == cloaked) return;
@@ -48,53 +48,50 @@ namespace Eno
         }
 
         // ── Lifecycle ────────────────────────────────────────────────────────────
-
         public void Begin()
         {
             _self = Self<Enemy>();
             runeIndex = PendingRuneIndex;
-            if (_self != null)
-            {
-                _self.useGravity  = false;
-                _self.isKinematic = true;
-                _self.velocity    = new Vector2(0f, 0f);
-                _self.maxHealth   = 20f;
-                _self.health      = 20f;
-                _self.damage      = 15f;
-            }
+            if (_self == null) return;
+            
+            // Initialize Nullfly Values
+            _self.useGravity    = false;
+            _self.isKinematic   = true;
+            _self.velocity      = new Vector2(0f, 0f);
+            _self.maxHealth     = 20f;
+            _self.health        = 20f;
+            _self.damage        = 15f;
+            _self.pathClearance  = 1;
+            _self.collisionGroup = 1;
             EnemyColorRegistry.Register(ID, EnemyColor);
-            // Rune starts unbanned; only Channel state bans it
 
-            if (_self != null)
+            // Spawn HP Bar
+            float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
+            _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
+            _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
+            if (_hpBarFull != null)
             {
-                float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
-                _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
-                _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
-                if (_hpBarFull != null)
-                {
-                    _hpBarFullInitialScaleX = _hpBarFull.scale.x;
-                    _hpBarFullHalfWidth     = _hpBarFull.width * 0.5f;
-                }
+                _hpBarFullInitialScaleX = _hpBarFull.scale.x;
+                _hpBarFullHalfWidth     = _hpBarFull.width * 0.5f;
             }
+
+            // Audio node instantiation
+            _audio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;                     
         }
 
         public void Update()
         {
-            if (PlayerController.IsGamePaused)
-            {
-                if (_self != null) _self.velocity = new Vector2(0f, 0f);
-                return;
-            }
-            if (_isDying || _self == null) return;
+            if (PlayerController.IsGamePaused) return;
+            if (_self == null) return;
 
             // Force death if health reached zero outside of Hurt state
-            if (!_deathTriggered && _self.health <= 0f)
+            if (_self.health <= 0f)
             {
-                _deathTriggered = true;
                 _self.changeState("Death");
                 return;
             }
 
+            // Update Healthbar
             if (_hpBarEmpty != null || _hpBarFull != null)
             {
                 float hx  = _self.position.x;
@@ -109,31 +106,33 @@ namespace Eno
                 }
             }
 
+            // Enemy - Player Collision
+            FindPlayer();
+            if (_player == null) return;
             if (_contactTimer > 0f)
             {
                 _contactTimer -= Time.deltaTime;
                 return;
             }
-
-            FindPlayer();
-            if (_player != null && _self.isColliding(_player))
+            if (_self.isColliding(_player))
             {
                 _self.velocity = new Vector2(0f, 0f);
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
-                if (_self.health > 0){
-                    _player.changeState("Hurt");
-                    _self.changeState("Idle");
-                } 
+                _player.changeState("Hurt");
+                _self.changeState("Idle"); 
                 _contactTimer = contactDamageCooldown;
             }
         }
 
         // ── Spawn ────────────────────────────────────────────────────────────────
-
-        public void Spawn_enter() { 
-            _timer = 0f;     
+        public void Spawn_enter()
+        {
+            _timer = 0f;
+            if (_self == null) return;
+            _self.setAnimationLooping(false);
+            uint frames = _self.getAnimationFrameCount();
+            if (frames > 0) _self.setAnimationFrameDuration(spawnDuration / frames);
         }
-
         public void Spawn_update()
         {
             if (PlayerController.IsGamePaused) return;
@@ -144,12 +143,10 @@ namespace Eno
         public void Spawn_exit() { }
 
         // ── Idle (visible, rune banned, timed → Channel) ─────────────────────────
-
         public void Idle_enter()
         {
             _timer = 0f;
             SetCloaked(false);
-            EnemyColorRegistry.UnbanRune(runeIndex); // ensure rune is clean on Idle
         }
         public void Idle_update()
         {
@@ -161,7 +158,6 @@ namespace Eno
         public void Idle_exit() { }
 
         // ── Shocked (brief reaction before cloaking) ─────────────────────────────
-
         public void Shocked_enter() { _timer = 0f; }
         public void Shocked_update()
         {
@@ -173,11 +169,15 @@ namespace Eno
         public void Shocked_exit() { }
 
         // ── WindUp (cloak + unban, then monitor distance → Idle) ────────────────
-
         public void WindUp_enter()
         {
             _timer = 0f;
-            try { Bridge.AudioPlayInstant("SFX", "Nullfly_Attack_01"); } catch { }
+
+            if (_audio != null && _self != null)
+            {
+                _audio.sound = ATTACK_SOUND;
+                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+            }
         }
         public void WindUp_update()
         {
@@ -207,7 +207,6 @@ namespace Eno
         }
 
         // ── Channel (visible, always bans rune; player near → Shocked) ───────────
-
         public void Channel_enter() { EnemyColorRegistry.BanRune(runeIndex); }
         public void Channel_update()
         {
@@ -220,16 +219,14 @@ namespace Eno
         public void Channel_exit() { }
 
         // ── Frozen ───────────────────────────────────────────────────────────────
-
         public void Frozen_enter()
         {
-            if (_deathTriggered) { _self?.changeState("Death"); return; }
+            if (_self != null) _self.velocity = new Vector2(0f, 0f);
         }
         public void Frozen_update() { }
         public void Frozen_exit() { }
 
         // ── Hurt ─────────────────────────────────────────────────────────────────
-
         public void Hurt_enter() { _timer = 0f; }
         public void Hurt_update()
         {
@@ -237,19 +234,21 @@ namespace Eno
             _timer += Time.deltaTime;
             if (_timer >= hurtDuration)
             {
-                if (_self?.isDead == true)
-                    _self.changeState("Death");
-                else
-                    _self?.changeState("Idle");
+                _self?.changeState("Idle");
             }
         }
         public void Hurt_exit() { }
 
         // ── Death ────────────────────────────────────────────────────────────────
-
         public void Death_enter()
         {
             _timer = 0f;
+            if (_self == null) return;
+            _self.stateChangeLocked = true;
+            if (_hpBarFull != null) _hpBarFull.scale = new Vector2(0f, _hpBarFull.scale.y);
+            _self.setAnimationLooping(false);
+            uint frames = _self.getAnimationFrameCount();
+            if (frames > 0) _self.setAnimationFrameDuration(deathDuration / frames);
             if (_isCloaked)
             {
                 _isCloaked = false;
@@ -263,12 +262,10 @@ namespace Eno
         }
         public void Death_update()
         {
-            if (PlayerController.IsGamePaused) return;
-            if (_isDying) return;
+            if (_self != null) _self.setAnimationLooping(false);
             _timer += Time.deltaTime;
             if (_timer >= deathDuration)
             {
-                _isDying = true;
                 EnemyColorRegistry.Unregister(ID);
                 FreeNode(_self!);
             }
@@ -276,7 +273,6 @@ namespace Eno
         public void Death_exit() { }
 
         // ── Helpers ──────────────────────────────────────────────────────────────
-
         private void FindPlayer()
         {
             if (_playerSearched) return;

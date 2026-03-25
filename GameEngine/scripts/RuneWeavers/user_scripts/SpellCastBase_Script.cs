@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Eno
 {
@@ -19,6 +20,7 @@ namespace Eno
         };
 
         private float _timer = 0f;
+        private readonly HashSet<uint> _damagedEnemies = new HashSet<uint>();
 
         public void Begin()
         {
@@ -34,14 +36,13 @@ namespace Eno
             _timer = 0f;
             var self = Self<KinematicBody2D>();
             if (self == null) return;
-            self.animation = "Windup";
             self.setAnimationLooping(false);
             uint frames = self.getAnimationFrameCount();
             if (frames > 0) self.setAnimationFrameDuration(WINDUP_DURATION / frames);
 
             if (SpellType >= 0 && SpellType < SpellSoundNames.Length)
             {
-                try { GetNode<AudioNode>(SpellSoundNames[SpellType])?.play(); } catch { }
+                //try { GetNode<AudioNode>(SpellSoundNames[SpellType])?.play(); } catch { }
             }
         }
 
@@ -59,19 +60,19 @@ namespace Eno
         public void Explode_enter()
         {
             _timer = 0f;
+            _damagedEnemies.Clear();
             var self = Self<KinematicBody2D>();
             if (self != null)
             {
-                self.animation = "Explode";
                 self.setAnimationLooping(false);
                 uint frames = self.getAnimationFrameCount();
                 if (frames > 0) self.setAnimationFrameDuration(EXPLODE_DURATION / frames);
             }
-            DamageMatchingEnemies();
         }
 
         public void Explode_update()
         {
+            DamageMatchingEnemies();
             _timer += Time.deltaTime;
             if (_timer >= EXPLODE_DURATION)
                 FreeNode(Self<KinematicBody2D>());
@@ -91,11 +92,13 @@ namespace Eno
 
             foreach (Enemy enemy in GetAllEnemies())
             {
+                if (_damagedEnemies.Contains(enemy.ID)) continue;
                 if (!self.isColliding(enemy)) continue;
 
                 if (!EnemyColorRegistry.Colors.TryGetValue(enemy.ID, out int color)) continue;
                 if (color != SpellType) continue;
 
+                _damagedEnemies.Add(enemy.ID);
                 enemy.health = MathF.Max(0f, enemy.health - damage);
                 if (enemy.isDead)
                     enemy.changeState("Death");

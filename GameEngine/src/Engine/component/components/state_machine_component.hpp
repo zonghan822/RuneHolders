@@ -98,6 +98,9 @@ namespace ECSComponents
             return nullptr;
         }
 
+        // When true, requestStateChange calls are silently ignored for this entity
+        bool stateChangeLocked = false;
+
         // Signals
         std::unordered_map<std::string, Events::EnoSignal> signals_;
 

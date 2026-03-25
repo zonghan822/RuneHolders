@@ -32,6 +32,12 @@ namespace Eno
             set => Bridge.SetIsKinematic(ID, value);
         }
 
+        public int collisionGroup
+        {
+            get => Bridge.GetCollisionGroup(ID);
+            set => Bridge.SetCollisionGroup(ID, value);
+        }
+
         public bool isOverlappingPoint(float x, float y) => Bridge.IsOverlappingPoint(ID, x, y);
         public bool isColliding(Node other)               => Bridge.IsColliding(ID, other.ID);
         public bool colliderActive

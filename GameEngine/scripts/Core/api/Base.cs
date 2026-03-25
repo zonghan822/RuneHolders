@@ -24,13 +24,15 @@ namespace Eno
         {
             get
             {
+                // Create a local node for the node that this script is attached to
+
                 if (_self != null)
                     return _self;
 
                 Node? nodeBase = NodeFactory.Create(ID);
-
+                
                 if (nodeBase == null)
-                    throw new InvalidOperationException($"Node '{ID}' could not be created.");
+                    Console.WriteLine($"Node '{ID}' could not be created.");
 
                 _self = nodeBase;
                 return _self;
@@ -53,42 +55,59 @@ namespace Eno
         public void FreeNode(Node? node)
         {
             if (node == null)
-                throw new ArgumentNullException(nameof(node));
+                return;
             
             Bridge.FreeNode(node.ID);
         }
 
-        // Get another node within the scene tree
+        // Get any node within the same scene tree by name
         public T? GetNode<T>(string name) where T : Node
         {
             Node? node = NodeFactory.Create(Bridge.GetNode(name));
+            
+            // No node found
             if (node == null)
-                throw new InvalidOperationException($"Node '{name}' not found.");
+            {
+                Console.WriteLine($"Node '{name}' not found.");
+                return null;
+            }
 
-            if (node is not T tNode)
-                throw new InvalidCastException($"Node '{name}' is not of type {typeof(T).Name}.");
-
-            return tNode;
+            // Node is of the right type and retrieved
+            if (node is T tNode)
+                return tNode;
+    
+            // Node gotten is not of type T
+            Console.WriteLine($"Node '{ID}''s Child is not of type {typeof(T).Name}.");
+            return null;
         }
 
         // Get a child of the current node
         public T? GetChild<T>(uint index) where T : Node
         {
             Node? node = NodeFactory.Create(Bridge.GetChild(ID, index));
+
+            // No child node found
             if (node == null || node.ID == 0)
+            {
+                Console.WriteLine($"Node '{ID}''s Child not found.");
                 return null;
+            }
 
-            if (node is not T tNode)
-                throw new InvalidCastException($"Node '{ID}''s Child is not of type {typeof(T).Name}.");
-
-            return tNode;
+            // Child node is of the right type and retrieved
+            if (node is T tNode)
+                return tNode;
+    
+            // Child node gotten is not of type T
+            Console.WriteLine($"Node '{ID}''s Child is not of type {typeof(T).Name}.");
+            return null;
         }
 
         // Add a child
         public void AddChild(Node? child)
         {
+            // Invalid node passed
             if (child == null)
-                throw new ArgumentNullException(nameof(child));
+                return;
             
             Bridge.AddChild(child.ID, ID);
         }
@@ -96,8 +115,9 @@ namespace Eno
         // Remove a child
         public void Unparent(Node? node)
         {
+            // Invalid node passed
             if (node == null)
-                throw new ArgumentNullException(nameof(node));
+                return;
             
             Bridge.Unparent(node.ID);
         }
@@ -106,13 +126,21 @@ namespace Eno
         public T? GetParent<T>() where T : Node
         {
             Node? node = NodeFactory.Create(Bridge.GetParentNode(ID));
+
+            // No parent node found
             if (node == null || node.ID == 0)
+            {
+                Console.WriteLine($"Node '{ID}''s Parent not found.");
                 return null;
+            }
 
-            if (node is not T tNode)
-                throw new InvalidCastException($"Node '{ID}''s Parent is not of type {typeof(T).Name}.");
-
-            return tNode;
+            // Child node is of the right type and retrieved
+            if (node is T tNode)
+                return tNode;
+    
+            // Child node gotten is not of type T
+            Console.WriteLine($"Node '{ID}''s Parent is not of type {typeof(T).Name}.");
+            return null;
         }
 
         // Get number of children nodes

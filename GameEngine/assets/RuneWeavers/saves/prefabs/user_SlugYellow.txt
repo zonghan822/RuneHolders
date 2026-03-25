@@ -37,7 +37,7 @@
 			"type": "ColliderType"
 		},
 		"Offset": {
-			"value": "x : 0.5 | y : 15",
+			"value": "x : 0 | y : 7.5",
 			"type": "eVec2(float)"
 		},
 		"Is Trigger": {
@@ -57,11 +57,11 @@
 			"type": "float"
 		},
 		"Width": {
-			"value": "64",
+			"value": "90",
 			"type": "float"
 		},
 		"Height": {
-			"value": "64",
+			"value": "80",
 			"type": "float"
 		}
 	},

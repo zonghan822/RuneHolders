@@ -12,5 +12,6 @@ namespace Eno
             get => Bridge.GetColliderActive(ID);
             set => Bridge.SetColliderActive(ID, value);
         }
+
     }
 }

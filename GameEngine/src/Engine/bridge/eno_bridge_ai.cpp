@@ -75,6 +75,18 @@ namespace Bridge
                 ai->allowDiagonal = value;
         }
 
+        ENGINE_API int __stdcall GetPathClearance(uint32_t sceneObjectID)
+        {
+            auto* ai = getAI(sceneObjectID);
+            return ai ? ai->pathClearance : 1;
+        }
+
+        ENGINE_API void __stdcall SetPathClearance(uint32_t sceneObjectID, int value)
+        {
+            if (auto* ai = getAI(sceneObjectID))
+                ai->pathClearance = value;
+        }
+
         // ============= Pathfinding =============
 
         // Compute a path from a world-space start to a world-space goal.
@@ -91,9 +103,36 @@ namespace Bridge
             bool diag = ai ? ai->allowDiagonal : false;
 
             auto& pf = gEngine->getPathfinder();
+            pf.setClearance(ai ? ai->pathClearance : 1);
             auto start = pf.worldToTile({ startX, startY });
             auto goal  = pf.worldToTile({ goalX,  goalY  });
             agent->computePath(start, goal, diag);
+        }
+
+        // Recompute a path while treating the current waypoint tile as blocked,
+        // forcing A* to find an alternative route around it.
+        ENGINE_API void __stdcall AI_ComputePathAvoidCurrentWaypoint(
+            uint32_t sceneObjectID,
+            float startX, float startY,
+            float goalX,  float goalY)
+        {
+            auto* agent = getPathAgent(sceneObjectID);
+            if (!agent) return;
+
+            auto* ai = getAI(sceneObjectID);
+            bool diag = ai ? ai->allowDiagonal : false;
+
+            auto& pf = gEngine->getPathfinder();
+            pf.setClearance(ai ? ai->pathClearance : 1);
+
+            // Block the current stuck waypoint for this computation only
+            if (agent->hasPath())
+                pf.addExtraBlockedTile(agent->getCurrentTile());
+
+            auto start = pf.worldToTile({ startX, startY });
+            auto goal  = pf.worldToTile({ goalX,  goalY  });
+            agent->computePath(start, goal, diag);
+            // extraBlockedTiles_ is cleared inside findPath automatically
         }
 
         // Clear the stored path.

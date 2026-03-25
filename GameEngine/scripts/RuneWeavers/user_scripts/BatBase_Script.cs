@@ -9,9 +9,9 @@ namespace Eno
         public float hurtDuration    = 0.3f;
         public float deathDuration   = 1.0f;
         public float spawnDuration   = 0.5f;
+        public float pathRefreshInterval = 0.5f;
         public float contactDamageCooldown = 1.0f;
 
-        // 1 unit = 55 pixels
         private const float TRIGGER_RADIUS      = 165f;
         private const float CHARGE_DISTANCE     = 330f;
         private const float WINDUP_DURATION     = 0.75f;
@@ -21,6 +21,7 @@ namespace Eno
 
         private Enemy?    _self;
         private Actor?    _player;
+        private AudioNode? _audio;
         private Sprite2D? _hpBarEmpty;
         private Sprite2D? _hpBarFull;
         private float     _hpBarFullInitialScaleX = 1f;
@@ -30,61 +31,69 @@ namespace Eno
         private const string HP_BAR_EMPTY_PREFAB = "EnemyHealthBar_Empty";
         private const string HP_BAR_FULL_PREFAB  = "EnemyHealthBar_Full";
         private const float  HP_BAR_OFFSET_Y     = -50f;
-        public float pathRefreshInterval = 0.5f;
+
+        // Audio sounds
+        private const string ATTACK_SOUND = "Bloodwing_Attack_01";
+        private const string WINDUP_SOUND = "Bloodwing_Windup_01";
+        private const string HURT_SOUND = "Bloodwing_Hurt_02";
+        private const string DEATH_SOUND = "Bloodwing_Death_01";
+
+        private const string AUDIO = "DefaultAudio";
 
         private float   _timer          = 0f;
         private float   _pathTimer      = 0f;
         private float   _contactTimer   = 0f;
+        private float   _stuckTimer     = 0f;
+        private Vector2 _lastStuckPos   = new Vector2(0f, 0f);
         private Vector2 _dashDir        = new Vector2(1f, 0f);
         private Vector2 _prevPos;
         private float   _chargedPixels  = 0f;
-        private bool    _isDying        = false;
         private bool    _dashReady      = false;
-        private bool    _deathTriggered = false;
 
         public void Begin()
         {
             _self = Self<Enemy>();
-            if (_self != null)
-            {
-                _self.useGravity  = false;
-                _self.isKinematic = false;
-                _self.maxHealth   = 10f;
-                _self.health      = 10f;
-                _self.damage      = 20f;
-            }
+            if (_self == null) return;
+            
+            // Initialize Bat Values
+            _self.useGravity    = false;
+            _self.isKinematic   = false;
+            _self.maxHealth     = 10f;
+            _self.health        = 10f;
+            _self.damage        = 20f;
+            _self.pathClearance  = 1;
+            _self.collisionGroup = 1;
             EnemyColorRegistry.Register(ID, EnemyColor);
 
-            if (_self != null)
+            // Spawn HP Bar
+            float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
+            _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
+            _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
+            if (_hpBarFull != null)
             {
-                float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
-                _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
-                _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
-                if (_hpBarFull != null)
-                {
-                    _hpBarFullInitialScaleX = _hpBarFull.scale.x;
-                    _hpBarFullHalfWidth     = _hpBarFull.width * 0.5f;
-                }
+                _hpBarFullInitialScaleX = _hpBarFull.scale.x;
+                _hpBarFullHalfWidth     = _hpBarFull.width * 0.5f;
             }
+
+            // Audio node initialization
+            _audio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
+
+                
         }
 
         public void Update()
         {
-            if (PlayerController.IsGamePaused)
-            {
-                if (_self != null) _self.velocity = new Vector2(0f, 0f);
-                return;
-            }
-            if (_isDying || _self == null) return;
+            if (PlayerController.IsGamePaused) return;
+            if (_self == null) return;
 
             // Force death if health reached zero outside of Hurt state
-            if (!_deathTriggered && _self.health <= 0f)
+            if (_self.health <= 0f)
             {
-                _deathTriggered = true;
                 _self.changeState("Death");
                 return;
             }
 
+            // Update Healthbar
             if (_hpBarEmpty != null || _hpBarFull != null)
             {
                 float hx  = _self.position.x;
@@ -98,30 +107,34 @@ namespace Eno
                     _hpBarFull.position = new Vector2(hx + _hpBarFullHalfWidth * (pct - 1f), hy);
                 }
             }
+
+            // Enemy - Player Collision
             FindPlayer();
             if (_player == null) return;
-
             if (_contactTimer > 0f)
             {
                 _contactTimer -= Time.deltaTime;
                 return;
             }
-
             if (_self.isColliding(_player))
             {
                 _self.velocity = new Vector2(0f, 0f);
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
-                if (_self.health > 0){
-                    _player.changeState("Hurt");
-                    _self.changeState("Idle");
-                } 
+                _player.changeState("Hurt");
+                _self.changeState("Idle");
                 _contactTimer = contactDamageCooldown;
             }
         }
 
         // ── Spawn ─────────────────────────────────────────────────────────────────
-
-        public void Spawn_enter() { _timer = 0f; }
+        public void Spawn_enter()
+        {
+            _timer = 0f;
+            if (_self == null) return;
+            _self.setAnimationLooping(false);
+            uint frames = _self.getAnimationFrameCount();
+            if (frames > 0) _self.setAnimationFrameDuration(spawnDuration / frames);
+        }
         public void Spawn_update()
         {
             if (PlayerController.IsGamePaused) return;
@@ -132,8 +145,12 @@ namespace Eno
         public void Spawn_exit() { }
 
         // ── Idle ──────────────────────────────────────────────────────────────────
-
-        public void Idle_enter() { _pathTimer = pathRefreshInterval; }
+        public void Idle_enter()
+        {
+            _pathTimer = pathRefreshInterval;
+            _stuckTimer = 0f;
+            if (_self != null) _lastStuckPos = _self.position;
+        }
         public void Idle_update()
         {
             if (PlayerController.IsGamePaused) return;
@@ -152,6 +169,18 @@ namespace Eno
             {
                 _pathTimer = 0f;
                 _self.computePath(_player.position);
+            }
+
+            // Stuck detection: if barely moved since last check, avoid current waypoint
+            _stuckTimer += Time.deltaTime;
+            if (_stuckTimer >= 0.5f)
+            {
+                float sdx = _self.position.x - _lastStuckPos.x;
+                float sdy = _self.position.y - _lastStuckPos.y;
+                if (_self.hasPath && sdx * sdx + sdy * sdy < 10f * 10f)
+                    _self.computePathAvoidCurrentWaypoint(_player.position);
+                _lastStuckPos = _self.position;
+                _stuckTimer = 0f;
             }
 
             if (_self.hasPath)
@@ -191,11 +220,15 @@ namespace Eno
         public void Idle_exit() { _self?.clearPath(); }
 
         // ── WindUp ────────────────────────────────────────────────────────────────
-
         public void WindUp_enter()
         {
             _timer = 0f;
-            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Windup_01"); } catch { }
+
+            if (_audio != null && _self != null)
+            {
+                _audio.sound = WINDUP_SOUND;
+                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+            }
         }
         public void WindUp_update()
         {
@@ -225,13 +258,18 @@ namespace Eno
         public void WindUp_exit() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
 
         // ── Attack (charge) ───────────────────────────────────────────────────────
-
         public void Attack_enter()
         {
             _timer         = 0f;
             _chargedPixels = 0f;
             _dashReady     = false;
-            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Attack_01"); } catch { }
+
+            if (_audio != null && _self != null)
+            {
+                _audio.sound = ATTACK_SOUND;
+                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+            }
+
             if (_self != null)
                 _self.velocity = new Vector2(_dashDir.x * dashSpeed, _dashDir.y * dashSpeed);
         }
@@ -256,7 +294,7 @@ namespace Eno
             _prevPos        = curPos;
 
             float expectedMove = dashSpeed * Time.deltaTime;
-            bool  hitWall      = moved < expectedMove * 0.3f;
+            bool  hitWall      = moved < expectedMove;
 
             if (_chargedPixels >= CHARGE_DISTANCE || hitWall)
             {
@@ -267,22 +305,24 @@ namespace Eno
         public void Attack_exit() { if (_self != null) _self.velocity = new Vector2(0f, 0f); }
 
         // ── Frozen ────────────────────────────────────────────────────────────────
-
         public void Frozen_enter()
         {
-            if (_deathTriggered) { _self?.changeState("Death"); return; }
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
         }
         public void Frozen_update() { }
         public void Frozen_exit() { }
 
         // ── Hurt ──────────────────────────────────────────────────────────────────
-
         public void Hurt_enter()
         {
             _timer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Hurt_02"); } catch { }
+
+            if (_audio != null && _self != null)
+            {
+                _audio.sound = HURT_SOUND;
+                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+            }
         }
         public void Hurt_update()
         {
@@ -290,30 +330,35 @@ namespace Eno
             _timer += Time.deltaTime;
             if (_timer >= hurtDuration)
             {
-                if (_self?.isDead == true)
-                    _self.changeState("Death");
-                else
-                    _self?.changeState("WindUp");
+                _self?.changeState("Idle");
             }
         }
         public void Hurt_exit() { }
 
         // ── Death ─────────────────────────────────────────────────────────────────
-
         public void Death_enter()
         {
             _timer = 0f;
-            if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            try { Bridge.AudioPlayInstant("SFX", "Bloodwing_Death_01"); } catch { }
+            if (_self == null) return;
+            _self.stateChangeLocked = true;
+            _self.velocity = new Vector2(0f, 0f);
+            if (_hpBarFull != null) _hpBarFull.scale = new Vector2(0f, _hpBarFull.scale.y);
+            _self.setAnimationLooping(false);
+            uint frames = _self.getAnimationFrameCount();
+            if (frames > 0) _self.setAnimationFrameDuration(deathDuration / frames);
+
+            if (_audio != null)
+            {
+                _audio.sound = DEATH_SOUND;
+                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+            }
         }
         public void Death_update()
         {
-            if (PlayerController.IsGamePaused) return;
-            if (_isDying) return;
+            if (_self != null) _self.setAnimationLooping(false);
             _timer += Time.deltaTime;
             if (_timer >= deathDuration)
             {
-                _isDying = true;
                 EnemyColorRegistry.Unregister(ID);
                 FreeNode(_self!);
             }
@@ -321,7 +366,6 @@ namespace Eno
         public void Death_exit() { }
 
         // ── Helpers ───────────────────────────────────────────────────────────────
-
         private void FindPlayer()
         {
             if (_playerSearched) return;

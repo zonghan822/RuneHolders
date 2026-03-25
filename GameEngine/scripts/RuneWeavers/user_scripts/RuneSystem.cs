@@ -159,7 +159,6 @@ namespace Eno
             if (!_active) return;
             if (runeIndex < 0 || runeIndex >= RUNE_COUNT) return;
             if (_runes[runeIndex] == null) return;
-            if (_runeStates[runeIndex] == "Activated") return;
             if (_runeStates[runeIndex] == "Nullified") return;
 
             SetRuneState(runeIndex, "Nullified");
@@ -188,7 +187,7 @@ namespace Eno
             Time.timeScale = slowTimeScale;
             Bridge.SetGroupLowPass("SFX", 600f);
             foreach (Enemy enemy in GetAllEnemies())
-                if (enemy.health > 0f) enemy.changeState("Frozen");
+                enemy.changeState("Frozen");
 
             // Show the StopWatch sprite and trigger fade-in
             FindStopWatch();
@@ -327,7 +326,7 @@ namespace Eno
             Time.timeScale = 1.0f;
             Bridge.SetGroupLowPass("SFX", 0f);
             foreach (Enemy enemy in GetAllEnemies())
-                if (enemy.health > 0f) enemy.changeState("Idle");
+                enemy.changeState("Idle");
             _swSprite?.changeState("FadeOut");
 
             if (attack)

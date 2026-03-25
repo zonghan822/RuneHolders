@@ -124,7 +124,6 @@ namespace UI
 					else
 					{
 						// Mouse within button: emit onHover signal
-						std::cout << "[Button_System] Button Hovered!" << std::endl;
 						auto it = b.signals_.find("onHover");
 						if (it != b.signals_.end())
 						{
@@ -135,10 +134,9 @@ namespace UI
 					// Mouse click on button: only fire in the moment mouse press was released
 					if (inputMng.isMouseUp(GLFW_MOUSE_BUTTON_LEFT) && leftMouseDown)
 					{
-						std::cout << "[Button_System] Button Clicked!" << std::endl;
 						auto it2 = b.signals_.find("onClick");
-						std::string clickedName = buttonNode->name_;
-						std::cout << "[Button_System] Button Clicked! Node: " << clickedName << std::endl;
+						Editor::Node* clickedNode = sceneTree.getNodeByEntityID(ent.id());
+						std::string clickedName = clickedNode ? clickedNode->name_ : "(unknown)";
 						if (it2 != b.signals_.end())
 						{
 							it2->second.emit();

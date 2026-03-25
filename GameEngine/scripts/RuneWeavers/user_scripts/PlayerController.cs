@@ -47,9 +47,10 @@ namespace Eno
             _player = Self<Actor>()!;
 
             // ACTOR nodes have physics — keep gravity off for top-down movement
-            _player.useGravity  = false;
-            _player.isKinematic = false;
-            _player.maxHealth   = 100f;
+            _player.useGravity      = false;
+            _player.isKinematic     = false;
+            _player.collisionGroup  = 1;
+            _player.maxHealth       = 100f;
             _player.health      = 100f;
             _player.damage      = damage;
 
@@ -192,7 +193,7 @@ namespace Eno
         // Called when entering the idle state
         public void Idle_enter()
         {
-            // TODO: Add enter logic for idle state
+            _player.setAnimationLooping(true);
         }
 
         // Called every frame while in the idle state
@@ -211,7 +212,7 @@ namespace Eno
         // Called when entering the walk state
         public void Walk_enter()
         {
-            // TODO: Add enter logic for walk state
+            _player.setAnimationLooping(true);
         }
 
         // Called every frame while in the walk state
@@ -265,6 +266,7 @@ namespace Eno
     
         public void CastWalk_enter()
         {
+            _player.setAnimationLooping(true);
         }
 
         public void CastWalk_update()
@@ -305,7 +307,6 @@ namespace Eno
             _isHurt    = true;
             _hurtTimer = 0f;
             _player.velocity  = new Vector2(0f, 0f);
-            _player.animation = "Hurt";
             _player.setAnimationLooping(false);
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(hurtDuration / frames);
@@ -325,7 +326,8 @@ namespace Eno
     
         public void Death_enter()
         {
-            // TODO: Add enter logic for Death state
+            _player.stateChangeLocked = true;
+            _player.velocity = new Vector2(0f, 0f);
         }
 
         public void Death_update()

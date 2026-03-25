@@ -40,6 +40,15 @@ namespace AI {
         void setAllowDiagonal(bool allow) { allowDiagonal_ = allow; }
         bool allowDiagonal() const { return allowDiagonal_; }
 
+        // Tile clearance radius: tiles within this many tiles of a wall are
+        // treated as blocked so enemy colliders do not clip into obstacles.
+        void setClearance(int c) { clearance_ = c; }
+        int  clearance() const   { return clearance_; }
+
+        // Extra tiles blocked for the next findPath call only (cleared automatically).
+        void addExtraBlockedTile(const Math::eVec2<int>& tile) { extraBlockedTiles_.push_back(tile); }
+        void clearExtraBlockedTiles() { extraBlockedTiles_.clear(); }
+
         Path findPath(const Math::eVec2<int>& start, const Math::eVec2<int>& goal);
 
         Math::eVec2<int> worldToTile(const Math::eVec2<float>& pos) const;
@@ -50,6 +59,8 @@ namespace AI {
 
         Map::TileMapSystem& tilemap_;
         bool allowDiagonal_ = false;
+        int  clearance_      = 0;
+        std::vector<Math::eVec2<int>> extraBlockedTiles_;
 
         struct Node {
             Math::eVec2<int> pos;
@@ -64,7 +75,22 @@ namespace AI {
         int heuristic(const Math::eVec2<int>& a, const Math::eVec2<int>& b) const;
 
         inline bool isWalkable(int x, int y) const {
-            return tilemap_.isWalkable(x, y);
+            if (!tilemap_.isWalkable(x, y)) return false;
+            for (const auto& t : extraBlockedTiles_)
+                if (t.x == x && t.y == y) return false;
+            return true;
+        }
+
+        // Returns extra g-cost for being near walls.
+        // Narrow corridors remain reachable but are more expensive than open paths.
+        inline int wallProximityCost(int x, int y) const {
+            if (clearance_ == 0) return 0;
+            int penalty = 0;
+            for (int dy = -clearance_; dy <= clearance_; ++dy)
+                for (int dx = -clearance_; dx <= clearance_; ++dx)
+                    if (!tilemap_.isWalkable(x + dx, y + dy))
+                        penalty += 10;
+            return penalty;
         }
 
         inline bool inBounds(int x, int y) const {

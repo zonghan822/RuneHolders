@@ -61,10 +61,10 @@ namespace Eno
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern float LoadAudioVolume(string key, float defaultVal);
 
-        // Play a sound immediately by name without needing a scene entity.
+        // Play a sound
         // groupName: "SFX" or "BGM", soundName: asset name e.g. "Typing_01"
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern void AudioPlayInstant(string groupName, string soundName);
+        public static extern void AudioPlayInstant(uint ID, float x, float y);
 
         // Play a looping sound by name. Call AudioStopInstant to stop it.
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -78,5 +78,9 @@ namespace Eno
         // cutoff: frequency in Hz (10 - 22000). Pass 0 to remove the filter.
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern void SetGroupLowPass(string groupName, float cutoff);
+
+        // Set a loaded sound by name
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetSound(uint ID, string soundName);
     }
 }

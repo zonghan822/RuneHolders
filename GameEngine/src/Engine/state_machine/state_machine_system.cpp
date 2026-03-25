@@ -65,6 +65,9 @@ namespace FSM {
             if (!node) continue;
             if (!node->entity_.has<ECSComponents::StateMachineComponent>(entityManager)) continue;
 
+            auto& smComp = node->entity_.get<ECSComponents::StateMachineComponent>(entityManager);
+            if (smComp.stateChangeLocked) continue;
+
             size_t idx = findIndex(entityID);
             if (idx == SIZE_MAX) continue;
 

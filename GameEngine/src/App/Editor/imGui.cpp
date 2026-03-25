@@ -1391,10 +1391,6 @@ void displaySceneTab(Editor::EnoEditor& editor_, bool isPlaying)
 				g_pendingSceneLoad = true;
 				g_sceneToLoad = sceneName;
 			}
-			else
-			{
-				std::cout << "Scene is already loaded!";
-			}
 
 		}
 

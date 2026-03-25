@@ -19,7 +19,8 @@ namespace ECSComponents
     {
         float awarenessRadius = 200.f;
         float chaseSpeed = 90.f;
-        bool allowDiagonal = true;
+        bool  allowDiagonal  = true;
+        int   pathClearance  = 1;   // wall-proximity cost radius for pathfinding
 
 
         // Signals
