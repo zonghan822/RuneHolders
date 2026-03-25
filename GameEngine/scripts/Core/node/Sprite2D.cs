@@ -56,6 +56,14 @@ namespace Eno
             set => Bridge.SetAnimation(ID, value);
         }
 
+        public string currentState => Bridge.GetCurrentState(ID);
+
+        public bool stateChangeLocked
+        {
+            get => Bridge.GetStateChangeLocked(ID);
+            set => Bridge.SetStateChangeLocked(ID, value);
+        }
+
         public void changeState(string state) => Bridge.ChangeState(ID, state);
 
         public void setAnimationLooping(bool loop)             => Bridge.SetAnimationLooping(ID, loop);

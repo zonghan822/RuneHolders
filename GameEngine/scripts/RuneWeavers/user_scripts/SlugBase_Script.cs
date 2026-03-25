@@ -6,11 +6,11 @@ namespace Eno
     public class SlugBase_Script : ScriptBase
     {
         public float chaseSpeed          = 60f;
-        public float awarenessRadius     = 250f;
         public float pathRefreshInterval = 0.5f;
         public float hurtDuration        = 0.4f;
         public float deathDuration       = 1.0f;
         public float spawnDuration       = 0.5f;
+        public float contactDamageCooldown = 1.0f;
 
         protected virtual int EnemyColor => 0;
 
@@ -27,7 +27,6 @@ namespace Eno
         private const string HP_BAR_EMPTY_PREFAB = "EnemyHealthBar_Empty";
         private const string HP_BAR_FULL_PREFAB  = "EnemyHealthBar_Full";
         private const float  HP_BAR_OFFSET_Y     = -50f;
-        public float contactDamageCooldown = 1.0f;
 
         private const string AUDIO = "DefaultAudio";
 
@@ -55,54 +54,50 @@ namespace Eno
         private float  _deathTimer      = 0f;
         private float  _spawnTimer      = 0f;
         private float  _contactTimer    = 0f;
-        private bool   _isDying         = false;
-        private bool   _deathTriggered  = false;
 
         private Random rng = new Random();
 
         public void Begin()
         {
             _self = Self<Enemy>();
-            if (_self != null)
-            {
-                _self.useGravity  = false;
-                _self.isKinematic = false;
-                _self.maxHealth   = 30f;
-                _self.health      = 30f;
-                _self.damage      = 10f;
-            }
+            if (_self == null) return;
+            
+            // Initialize Slug Values
+            _self.useGravity  = false;
+            _self.isKinematic = false;
+            _self.maxHealth   = 30f;
+            _self.health      = 30f;
+            _self.damage      = 10f;
             EnemyColorRegistry.Register(ID, EnemyColor);
 
-            if (_self != null)
+            // Spawn HP Bar
+            float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
+            _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
+            _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
+            if (_hpBarFull != null)
             {
-                float hx = _self.position.x, hy = _self.position.y + HP_BAR_OFFSET_Y;
-                _hpBarEmpty = SpawnPrefab(HP_BAR_EMPTY_PREFAB, hx, hy, _self) as Sprite2D;
-                _hpBarFull  = SpawnPrefab(HP_BAR_FULL_PREFAB,  hx, hy, _self) as Sprite2D;
-
-                _walkAudio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
-                _hdAudio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
-
-                if (_hpBarFull != null)
-                {
-                    _hpBarFullInitialScaleX = _hpBarFull.scale.x;
-                    _hpBarFullHalfWidth     = _hpBarFull.width * 0.5f;
-                }
+                _hpBarFullInitialScaleX = _hpBarFull.scale.x;
+                _hpBarFullHalfWidth     = _hpBarFull.width * 0.5f;
             }
+
+            // Audio
+            _walkAudio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
+            _hdAudio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode; 
         }
 
         public void Update()
         {
             if (PlayerController.IsGamePaused) return;
-            if (_isDying || _self == null) return;
+            if (_self == null) return;
 
             // Force death if health reached zero outside of Hurt state
-            if (!_deathTriggered && _self.health <= 0f)
+            if (_self.health <= 0f)
             {
-                _deathTriggered = true;
                 _self.changeState("Death");
                 return;
             }
 
+            // Update Healthbar
             if (_hpBarEmpty != null || _hpBarFull != null)
             {
                 float hx  = _self.position.x;
@@ -116,28 +111,33 @@ namespace Eno
                     _hpBarFull.position = new Vector2(hx + _hpBarFullHalfWidth * (pct - 1f), hy);
                 }
             }
+            
+            // Enemy - Player Collision
             FindPlayer();
             if (_player == null) return;
-
             if (_contactTimer > 0f)
             {
                 _contactTimer -= Time.deltaTime;
                 return;
             }
-
             if (_self.isColliding(_player))
             {
                 _self.velocity = new Vector2(0f, 0f);
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
-                if (_self.health > 0){
-                    _player.changeState("Hurt");
-                    _self.changeState("Idle");
-                }  
+                _player.changeState("Hurt");
+                _self.changeState("Idle");
                 _contactTimer = contactDamageCooldown;
             }
         }
 
-        public void Spawn_enter() { _spawnTimer = 0f; }
+        public void Spawn_enter()
+        {
+            _spawnTimer = 0f;
+            if (_self == null) return;
+            _self.setAnimationLooping(false);
+            uint frames = _self.getAnimationFrameCount();
+            if (frames > 0) _self.setAnimationFrameDuration(spawnDuration / frames);
+        }
         public void Spawn_update()
         {
             _spawnTimer += Time.deltaTime;
@@ -160,9 +160,11 @@ namespace Eno
         {
             _pathTimer = pathRefreshInterval;
 
-            // Set Move loop sound
-            _walkAudio.sound = MOVE_SOUND;
-            _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
+            if (_walkAudio != null && _self != null)
+            {
+                _walkAudio.sound = MOVE_SOUND;
+                _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
+            }
         }
 
         public void Chase_update()
@@ -219,19 +221,21 @@ namespace Eno
                 }
             }
         }
+
         public void Chase_exit()
         {
             _self?.clearPath();
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
 
-            // Set Move loop sound
-            _walkAudio.sound = MOVE_SOUND;
-            _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
+            if (_walkAudio != null && _self != null)
+            {
+                _walkAudio.sound = MOVE_SOUND;
+                _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
+            }
         }
 
         public void Frozen_enter()
         {
-            if (_deathTriggered) { _self?.changeState("Death"); return; }
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
         }
         public void Frozen_update() { }
@@ -239,25 +243,23 @@ namespace Eno
 
         public void Hurt_enter()
         {
-            Console.WriteLine("Hurt enter entered");
             _hurtTimer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
 
-            // Randomize between all hurt sounds
-            int i = rng.Next(0, _hurtSounds.Count);
-            Console.WriteLine($"Sound selected: { _hurtSounds[i] }");
-            _hdAudio.sound = _hurtSounds[i];
-            _hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
+            if (_hdAudio != null && _self != null)
+            {
+                int i = rng.Next(0, _hurtSounds.Count);
+                Console.WriteLine($"Sound selected: { _hurtSounds[i] }");
+                _hdAudio.sound = _hurtSounds[i];
+                _hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
+            }
         }
         public void Hurt_update()
         {
             _hurtTimer += Time.deltaTime;
             if (_hurtTimer >= hurtDuration)
             {
-                if (_self?.isDead == true)
-                    _self.changeState("Death");
-                else
-                    _self?.changeState("Chase");
+                _self?.changeState("Idle");
             }
         }
         public void Hurt_exit() { }
@@ -265,21 +267,28 @@ namespace Eno
         public void Death_enter()
         {
             _deathTimer = 0f;
-            if (_self != null) _self.velocity = new Vector2(0f, 0f);
+            if (_self == null) return;
+            _self.stateChangeLocked = true;
+            _self.velocity = new Vector2(0f, 0f);
+            if (_hpBarFull != null) _hpBarFull.scale = new Vector2(0f, _hpBarFull.scale.y);
+            _self.setAnimationLooping(false);
+            uint frames = _self.getAnimationFrameCount();
+            if (frames > 0) _self.setAnimationFrameDuration(deathDuration / frames);
 
-            // Randomize and play selected death sound
-            int i = rng.Next(0, _deathSounds.Count);
-            _hdAudio.sound = _deathSounds[i];
-            _hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
+            if (_hdAudio != null)
+            {
+                int i = rng.Next(0, _deathSounds.Count);
+                _hdAudio.sound = _deathSounds[i];
+                _hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
+            }
         }
         public void Death_update()
         {
-            if (_isDying) return;
+            if (_self != null) _self.setAnimationLooping(false);
             _deathTimer += Time.deltaTime;
 
             if (_deathTimer >= deathDuration)
             {
-                _isDying = true;
                 EnemyColorRegistry.Unregister(ID);
                 FreeNode(_self!);
             }
@@ -290,9 +299,6 @@ namespace Eno
         {
             if (_playerSearched) return;
             _playerSearched = true;
-            // try { _player = this.GetNode<Actor>("Player"); }
-            // catch { _player = null; }
-
             _player = this.GetNode<Actor>("Player");
         }
 

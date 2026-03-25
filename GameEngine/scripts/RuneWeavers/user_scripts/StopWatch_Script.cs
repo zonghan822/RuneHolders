@@ -40,7 +40,6 @@ namespace Eno
             _timer = 0f;
             var self = Self<Sprite2D>();
             if (self == null) return;
-            self.animation = "FadeIn";
             Bridge.AudioPlay(ID);
             self.setAnimationLooping(false);
             uint frames = self.getAnimationFrameCount();
@@ -68,7 +67,6 @@ namespace Eno
             _timer = 0f;
             var self = Self<Sprite2D>();
             if (self == null) return;
-            self.animation = "FadeOut";
             self.setAnimationLooping(false);
             uint frames = self.getAnimationFrameCount();
             // timeScale is 1.0 during FadeOut (restored by EndSlowTime before this state), so this is just fadeOutTime / frames

@@ -34,7 +34,6 @@ namespace Eno
             _timer = 0f;
             var self = Self<KinematicBody2D>();
             if (self == null) return;
-            self.animation = "Windup";
             self.setAnimationLooping(false);
             uint frames = self.getAnimationFrameCount();
             if (frames > 0) self.setAnimationFrameDuration(WINDUP_DURATION / frames);
@@ -62,7 +61,6 @@ namespace Eno
             var self = Self<KinematicBody2D>();
             if (self != null)
             {
-                self.animation = "Explode";
                 self.setAnimationLooping(false);
                 uint frames = self.getAnimationFrameCount();
                 if (frames > 0) self.setAnimationFrameDuration(EXPLODE_DURATION / frames);

@@ -201,13 +201,13 @@ namespace Bridge
 
             // Play relative to the camera
             std::vector<Editor::Node*> nodes = gEngine->getEnoEditor().getSceneTree().getAllNodes();
-            for (const auto& node : nodes)
+            for (const auto& camNode : nodes)
             {
                 // Find the first entity with a camera and play relative to it
-                if (node->entity_.has<ECSComponents::CameraComponent>(entMng))
+                if (camNode->entity_.has<ECSComponents::CameraComponent>(entMng))
                 {
                     // Get camera pos
-                    auto camPos = node->entity_.get<ECSComponents::CameraComponent>(entMng).position;
+                    auto camPos = camNode->entity_.get<ECSComponents::CameraComponent>(entMng).position;
 
                     gEngine->getAudioManager().play(ac, v2, camPos);
                 }

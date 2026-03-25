@@ -27,5 +27,6 @@ namespace Eno
             get => Bridge.GetDamage(ID);
             set => Bridge.SetDamageAmount(ID, value);
         }
+
     }
 }

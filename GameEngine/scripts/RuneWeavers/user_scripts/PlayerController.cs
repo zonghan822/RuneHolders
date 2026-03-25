@@ -271,7 +271,6 @@ namespace Eno
             _isHurt    = true;
             _hurtTimer = 0f;
             _player.velocity  = new Vector2(0f, 0f);
-            _player.animation = "Hurt";
             _player.setAnimationLooping(false);
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(hurtDuration / frames);
@@ -291,7 +290,8 @@ namespace Eno
     
         public void Death_enter()
         {
-            // TODO: Add enter logic for Death state
+            _player.stateChangeLocked = true;
+            _player.velocity = new Vector2(0f, 0f);
         }
 
         public void Death_update()

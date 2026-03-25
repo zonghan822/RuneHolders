@@ -412,16 +412,11 @@ namespace Editor
 		if (selectedNode_ && (selectedNode_ == node))
 			selectedNode_ = nullptr;
 
-		// Kill children recursively
-		if (!node->children_.empty())
-		{
-			for (Node* child : node->children_)
-			{
-				kill(child);
-			}
-		}
-
-		node->children_.clear();
+		// Move children out before recursing so each child's kill() cannot
+		// erase from node->children_ while we are iterating over it.
+		std::vector<Node*> children = std::move(node->children_);
+		for (Node* child : children)
+			kill(child);
 
 		// Kill parent / current node
 		if (node->parent_)
