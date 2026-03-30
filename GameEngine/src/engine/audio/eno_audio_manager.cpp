@@ -324,8 +324,6 @@ namespace Audio
 			prepareMod(audioComp);
 		}
 
-		updateSpatialAudio(audioComp, soundPos, camPos);
-
 		FMOD::Sound* sound{ audioComp.audioMod_.sound_ };
 		std::string group{ audioComp.audioMod_.chGroup_ };
 		FMOD::Channel* ch{ audioComp.audioMod_.ch_ };
@@ -372,6 +370,7 @@ namespace Audio
 			audioComp.isPlaying_ = true;
 		}
 
+		updateSpatialAudio(audioComp, soundPos, camPos);
 
 		// Emit signals
 		auto signalIt = audioComp.signals_.find("started");
@@ -394,7 +393,16 @@ namespace Audio
 		Math::eVec2<float> soundPos,
 		Math::eVec2<float> camPos)
 	{
-		if (!audioComp.isPlaying_ || !audioComp.audioMod_.ch_) return;
+		// DEBUG: This guard is checked BEFORE the channel is created in play(), so it
+		// will always return early when called from the spatial play() overload.
+		if (!audioComp.isPlaying_ || !audioComp.audioMod_.ch_)
+		{
+			std::cout << "[DEBUG][Spatial] updateSpatialAudio SKIPPED"
+			          << " (isPlaying=" << audioComp.isPlaying_
+			          << ", ch=" << (void*)audioComp.audioMod_.ch_ << ")"
+			          << " -- spatial pan/volume NOT applied!" << std::endl;
+			return;
+		}
 
 		float dx = soundPos.x - camPos.x;
 		float dy = soundPos.y - camPos.y;
@@ -411,6 +419,11 @@ namespace Audio
 		// Panning: normalize X offset to [-1, 1] over maxAudibleDistance_
 		float pan = dx / maxDist;
 		pan = std::max(-1.0f, std::min(pan, 1.0f));
+
+		// DEBUG: Show what values are actually being applied
+		std::cout << "[DEBUG][Spatial] updateSpatialAudio APPLIED"
+		          << " dx=" << dx << " dy=" << dy << " dist=" << distance
+		          << " pan=" << pan << " vol=" << finalVolume << std::endl;
 
 		audioComp.audioMod_.ch_->setVolume(finalVolume);
 		audioComp.audioMod_.ch_->setPan(pan);

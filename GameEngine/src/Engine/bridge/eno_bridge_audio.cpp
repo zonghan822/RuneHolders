@@ -12,6 +12,7 @@
 #include "eno_bridge.hpp"
 #include "../component/components/audio.hpp"
 #include "../settings/eno_config.hpp"
+#include <cmath>
 
 namespace Bridge
 {
@@ -190,17 +191,28 @@ namespace Bridge
         {
             if (!gEngine) return;
 
+            // DEBUG: Verify AudioPlayInstant is being called and with what world position
+            std::cout << "[DEBUG][Spatial] AudioPlayInstant called: entityID=" << sceneObjectID
+                      << "  soundPos=(" << x << ", " << y << ")" << std::endl;
+
             Editor::Node* node = gEngine->getEnoEditor().getSceneTree().getNodeBySceneObjectID(sceneObjectID);
             ECS::EntityManager& entMng = gEngine->getEntityManager();
-            
+
             // Get Audio Component of source
             auto& ac = node->entity_.get<ECSComponents::AudioComponent>(entMng);
+
+            // DEBUG: Show audio component state before play
+            std::cout << "[DEBUG][Spatial]   AudioComponent: isPlaying=" << ac.isPlaying_
+                      << "  spatialAudio=" << ac.spatialAudio_
+                      << "  ch=" << (void*)ac.audioMod_.ch_
+                      << "  maxDist=" << ac.maxAudibleDistance_ << std::endl;
 
             // Construct audio source vec2
             Math::eVec2 v2{ x, y };
 
             // Play relative to the camera
             std::vector<Editor::Node*> nodes = gEngine->getEnoEditor().getSceneTree().getAllNodes();
+            bool foundCamera = false;
             for (const auto& camNode : nodes)
             {
                 // Find the first entity with a camera and play relative to it
@@ -209,9 +221,38 @@ namespace Bridge
                     // Get camera pos
                     auto camPos = camNode->entity_.get<ECSComponents::CameraComponent>(entMng).position;
 
+                    // DEBUG: Show camera position and calculated spatial values
+                    float dx = x - camPos.x;
+                    float dy = y - camPos.y;
+                    float dist = std::sqrt(dx * dx + dy * dy);
+                    float maxDist = ac.maxAudibleDistance_ > 0.0f ? ac.maxAudibleDistance_ : 1.0f;
+                    float expectedPan = std::max(-1.0f, std::min(dx / maxDist, 1.0f));
+                    float expectedVol = (1.0f - std::min(dist / maxDist, 1.0f)) * static_cast<float>(ac.volume_ / 100.0);
+                    std::cout << "[DEBUG][Spatial]   Camera at (" << camPos.x << ", " << camPos.y << ")"
+                              << "  dx=" << dx << "  dy=" << dy << "  dist=" << dist << std::endl;
+                    std::cout << "[DEBUG][Spatial]   Expected pan=" << expectedPan
+                              << "  expectedVol=" << expectedVol
+                              << "  (NOTE: updateSpatialAudio will skip if isPlaying_=false or ch_=null)" << std::endl;
+
+                    foundCamera = true;
                     gEngine->getAudioManager().play(ac, v2, camPos);
+
+                    // DEBUG: Show what pan/volume actually got applied after play()
+                    float actualVol = -1.0f, actualPan = -999.0f;
+                    if (ac.audioMod_.ch_)
+                    {
+                        ac.audioMod_.ch_->getVolume(&actualVol);
+                        // FMOD has no getPan — read panScale_ instead
+                    }
+                    std::cout << "[DEBUG][Spatial]   After play(): isPlaying=" << ac.isPlaying_
+                              << "  ch=" << (void*)ac.audioMod_.ch_
+                              << "  actualVol=" << actualVol
+                              << "  storedPanScale=" << ac.panScale_
+                              << " (if pan=0.0 spatial pan was NOT applied)" << std::endl;
                 }
             }
+            if (!foundCamera)
+                std::cout << "[DEBUG][Spatial]   WARNING: No camera entity found — spatial audio skipped entirely!" << std::endl;
         }
 
         // Assign a sound file to a sound component
