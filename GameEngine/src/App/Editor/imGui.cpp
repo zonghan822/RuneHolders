@@ -390,7 +390,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 				ImGui::Separator();
 
-				// Reload textures (still runs every frame) ****
+				// Load texture assets
 				if (ImGui::Button("Reload Assets"))
 					LoadTextureAssets(engine_);
 
