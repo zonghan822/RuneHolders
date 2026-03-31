@@ -179,15 +179,15 @@
 	},
 	"struct ECSComponents::AnimationControllerComponent": {
 		"Frame Width": {
-			"value": "128",
+			"value": "96",
 			"type": "int"
 		},
 		"Frame Height": {
-			"value": "128",
+			"value": "96",
 			"type": "int"
 		},
 		"Rows": {
-			"value": "7",
+			"value": "1",
 			"type": "int"
 		},
 		"Cols": {
@@ -347,11 +347,11 @@
 			"type": "texchar240"
 		},
 		"Anim4 FrameW": {
-			"value": "128",
+			"value": "96",
 			"type": "int"
 		},
 		"Anim4 FrameH": {
-			"value": "128",
+			"value": "96",
 			"type": "int"
 		},
 		"Anim4 Rows": {
@@ -359,7 +359,7 @@
 			"type": "int"
 		},
 		"Anim4 Cols": {
-			"value": "1",
+			"value": "5",
 			"type": "int"
 		},
 		"Anim4 Duration": {
@@ -379,11 +379,11 @@
 			"type": "texchar240"
 		},
 		"Anim5 FrameW": {
-			"value": "128",
+			"value": "96",
 			"type": "int"
 		},
 		"Anim5 FrameH": {
-			"value": "128",
+			"value": "96",
 			"type": "int"
 		},
 		"Anim5 Rows": {
@@ -411,15 +411,15 @@
 			"type": "texchar240"
 		},
 		"Anim6 FrameW": {
-			"value": "128",
+			"value": "96",
 			"type": "int"
 		},
 		"Anim6 FrameH": {
-			"value": "128",
+			"value": "96",
 			"type": "int"
 		},
 		"Anim6 Rows": {
-			"value": "7",
+			"value": "1",
 			"type": "int"
 		},
 		"Anim6 Cols": {

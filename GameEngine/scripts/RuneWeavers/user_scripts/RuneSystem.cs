@@ -97,7 +97,7 @@ namespace Eno
         private List<int>   _connected      = new();
 
         // Casting visuals
-        private Sprite2D?   _spellBase      = null;   // ring at origin
+        private KinematicBody2D? _spellBase  = null;   // ring at origin
         private Sprite2D?   _spellCasting   = null;   // charge indicator
         private int         _activePattern  = -1;     // index into Patterns[], -1 = undetermined
 
@@ -174,7 +174,7 @@ namespace Eno
             _activePattern = -1;
             _connected.Clear();
 
-            _spellBase = SpawnPrefab("SpellBase", _originX, _originY) as Sprite2D;
+            _spellBase = SpawnPrefab("SpellBase", _originX, _originY) as KinematicBody2D;
 
             SpawnRunes();
             _active = true;
@@ -183,11 +183,17 @@ namespace Eno
             foreach (int runeIdx in EnemyColorRegistry.ActiveBans)
                 EnemyNullifyRune(runeIdx);
 
-            // Slow world time and freeze all enemies
+            // Slow world time and freeze enemies overlapping the spell base
             Time.timeScale = slowTimeScale;
             Bridge.SetGroupLowPass("SFX", 600f);
-            foreach (Enemy enemy in GetAllEnemies())
-                enemy.changeState("Frozen");
+            if (_spellBase != null)
+            {
+                foreach (Enemy enemy in GetAllEnemies())
+                {
+                    if (_spellBase.isColliding(enemy))
+                        enemy.changeState("Frozen");
+                }
+            }
 
             // Show the StopWatch sprite and trigger fade-in
             FindStopWatch();
@@ -326,7 +332,10 @@ namespace Eno
             Time.timeScale = 1.0f;
             Bridge.SetGroupLowPass("SFX", 0f);
             foreach (Enemy enemy in GetAllEnemies())
-                enemy.changeState("Idle");
+            {
+                if (enemy.currentState == "Frozen")
+                    enemy.changeState("Idle");
+            }
             _swSprite?.changeState("FadeOut");
 
             if (attack)

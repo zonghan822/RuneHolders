@@ -62,7 +62,11 @@ namespace Eno
 
         // ── State: Idle ───────────────────────────────────────────────────────
         public void Idle_enter() {}
-        public void Idle_update() {}
+        public void Idle_update() 
+        {
+            if (_self == null) return;
+            _self.setAnimationLooping(true);
+        }
         public void Idle_exit() {}
 
         // ── State: FadeOut ────────────────────────────────────────────────────

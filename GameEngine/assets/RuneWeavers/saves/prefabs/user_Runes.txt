@@ -9,7 +9,7 @@
 	},
 	"struct ECSComponents::VisibilityComponent": {
 		"Z Index": {
-			"value": "3",
+			"value": "4",
 			"type": "uint32_t"
 		},
 		"Visible": {
