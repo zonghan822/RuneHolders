@@ -25,6 +25,8 @@
 #include "editor/undo/undo_manager.hpp"
 #include "stateMachine_editor/stateMachine_editor.hpp"
 
+#include "utility/eno_file_picker.hpp"
+
 // Variables
 static std::mt19937 rng(std::random_device{}());
 
