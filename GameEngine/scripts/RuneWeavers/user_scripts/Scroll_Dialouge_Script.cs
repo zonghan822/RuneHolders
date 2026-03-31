@@ -156,15 +156,15 @@ namespace Eno
         private Actor?    _player;
         private Canvas?   _dialogueCanvas;
         private Label?    _dialogueText;
-        private Node2D?   _narrativeSprite;
-        private Node2D?   _dialogueBox;
-        private Node2D?[] _scrollNodes = Array.Empty<Node2D?>();
+        private Sprite2D?   _narrativeSprite;
+        private Sprite2D?   _dialogueBox;
+        private Sprite2D?[] _scrollNodes = Array.Empty<Sprite2D?>();
         private AudioNode? _typingSfx;
 
         // Character display nodes
-        private Node2D? _charCenter;        // Centre character image
-        private Node2D? _charLeft;          // Cassia on the left
-        private Node2D? _charRight;         // Witch on the right
+        private Sprite2D? _charCenter;        // Centre character image
+        private Sprite2D? _charLeft;          // Cassia on the left
+        private Sprite2D? _charRight;         // Witch on the right
 
         // Win screen node IDs
         private uint _winLoseCanvasID = 0;
@@ -186,20 +186,20 @@ namespace Eno
             _player         = GetNode<Actor>("Player");
             _dialogueCanvas = GetNode<Canvas>("Dialogue Canvas");
             _dialogueText   = GetNode<Label>("Dialogue Text");
-            _narrativeSprite = GetNode<Node2D>("Narrative");
-            try { _dialogueBox    = GetNode<Node2D>("Dialogue Box"); } catch { }
+            _narrativeSprite = GetNode<Sprite2D>("Narrative");
+            try { _dialogueBox    = GetNode<Sprite2D>("Dialogue Box"); } catch { }
 
-            _scrollNodes = new Node2D?[ScrollNames.Length];
+            _scrollNodes = new Sprite2D?[ScrollNames.Length];
             for (int i = 0; i < ScrollNames.Length; i++)
-                try { _scrollNodes[i] = GetNode<Node2D>(ScrollNames[i]); } catch { }
+                try { _scrollNodes[i] = GetNode<Sprite2D>(ScrollNames[i]); } catch { }
 
             if (_dialogueCanvas != null) _dialogueCanvas.active = false;
 
             try { _typingSfx = GetNode<AudioNode>("Typing SFX"); } catch { }
 
-            try { _charCenter  = GetNode<Node2D>("CharacterCenter");  } catch { }
-            try { _charLeft    = GetNode<Node2D>("ProtagonistLeft");    } catch { }
-            try { _charRight   = GetNode<Node2D>("WitchRight");   } catch { }
+            try { _charCenter  = GetNode<Sprite2D>("CharacterCenter");  } catch { }
+            try { _charLeft    = GetNode<Sprite2D>("ProtagonistLeft");    } catch { }
+            try { _charRight   = GetNode<Sprite2D>("WitchRight");   } catch { }
 
             try { _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas"); } catch { }
             try { _victoryScreenID = Bridge.GetNode("WinScreen");  } catch { }
@@ -232,7 +232,6 @@ namespace Eno
         {
             if (_instance == null || DialogueActive || DialogueShown[scrollIndex]) return;
             if (!_isNarrative[scrollIndex]) return;
-            Console.WriteLine("NARRATIVE");
             _instance.StartDialogueForScroll(scrollIndex);
         }
 
@@ -311,13 +310,13 @@ namespace Eno
                 // Show narrative sprite, hide text label and dialogue box
                 //if (_narrativeSprite != null)
                 {
-                    Bridge.SetTexturePath(_narrativeSprite.ID, _narrativeTextures[index]);
-                    Bridge.SetVisibility(_narrativeSprite.ID, true);
+                    _narrativeSprite.texture = _narrativeTextures[index];
+                    _narrativeSprite.visible = true;
                 }
                 if (_dialogueText != null)
-                    Bridge.SetVisibility(_dialogueText.ID, false);
+                    _dialogueText.visible = false;
                 if (_dialogueBox != null)
-                    Bridge.SetVisibility(_dialogueBox.ID, false);
+                    _dialogueBox.visible = false;
 
                 dialogueTyping = false;
             }
@@ -325,12 +324,12 @@ namespace Eno
             {
                 // Show text label and dialogue box, hide narrative sprite
                 if (_narrativeSprite != null)
-                    Bridge.SetVisibility(_narrativeSprite.ID, false);
+                    _narrativeSprite.visible = false;
                 if (_dialogueBox != null)
-                    Bridge.SetVisibility(_dialogueBox.ID, true);
+                    _dialogueBox.visible = true;
                 if (_dialogueText != null)
                 {
-                    Bridge.SetVisibility(_dialogueText.ID, true);
+                    _dialogueText.visible = true;
                     _dialogueText.text = "";
                 }
 
@@ -363,12 +362,12 @@ namespace Eno
             DialogueActive = false;
             // Set canvas inactive
             if (_dialogueCanvas  != null) _dialogueCanvas.active = false;
-            if (_narrativeSprite != null) Bridge.SetVisibility(_narrativeSprite.ID, false);
-            if (_dialogueBox     != null) Bridge.SetVisibility(_dialogueBox.ID, true);
+            if (_narrativeSprite != null) _narrativeSprite.visible = false;
+            if (_dialogueBox     != null) _dialogueBox.visible = true;
             // Hide character display nodes
-            if (_charCenter  != null) Bridge.SetVisibility(_charCenter.ID,  false);
-            if (_charLeft    != null) Bridge.SetVisibility(_charLeft.ID,    false);
-            if (_charRight   != null) Bridge.SetVisibility(_charRight.ID,   false);
+            if (_charCenter  != null) _charCenter.visible = false;
+            if (_charLeft    != null) _charLeft.visible   = false;
+            if (_charRight   != null) _charRight.visible  = false;
             // To prevent dialogue from repeating
             if (_activeIndex >= 0 && !_isNarrative[_activeIndex]) DialogueShown[_activeIndex] = true;
 
@@ -388,9 +387,9 @@ namespace Eno
         private void ShowLine(DialogueLine line)
         {
             // Hide all character nodes first
-            if (_charCenter != null) Bridge.SetVisibility(_charCenter.ID, false);
-            if (_charLeft   != null) Bridge.SetVisibility(_charLeft.ID,   false);
-            if (_charRight  != null) Bridge.SetVisibility(_charRight.ID,  false);
+            if (_charCenter != null) _charCenter.visible = false;
+            if (_charLeft   != null) _charLeft.visible   = false;
+            if (_charRight  != null) _charRight.visible  = false;
 
             // Identify speaker and current emotion
             switch (line._speaker)
@@ -398,44 +397,44 @@ namespace Eno
                 case Speaker.Cassia:
                     if (_charCenter != null)
                     {
-                        Bridge.SetTexturePath(_charCenter.ID, determineCharacterTex(line._speaker, line._emotion));
-                        Bridge.SetVisibility(_charCenter.ID, true);
+                        _charCenter.texture = determineCharacterTex(line._speaker, line._emotion);
+                        _charCenter.visible = true;
                     }
                     // Change dialogue box texture
                     if (_dialogueBox != null)
-                        Bridge.SetTexturePath(_dialogueBox.ID, "UI-DialogueBox-Cassia");
+                        _dialogueBox.texture = "UI-DialogueBox-Cassia";
                     break;
 
                 case Speaker.Witch:
                     if (_charCenter != null)
                     {
-                        Bridge.SetTexturePath(_charCenter.ID, determineCharacterTex(line._speaker, line._emotion));
-                        Bridge.SetVisibility(_charCenter.ID, true);
+                        _charCenter.texture = determineCharacterTex(line._speaker, line._emotion);
+                        _charCenter.visible = true;
                     }
                     // Change dialogue box texture
                     if (_dialogueBox != null)
-                        Bridge.SetTexturePath(_dialogueBox.ID, "UI-DialogueBox-Witch");
+                        _dialogueBox.texture = "UI-DialogueBox-Witch";
                     break;
 
                 case Speaker.CassiaMain:
                     // Cassia ACTIVE on left, Witch GREY on right
                     if (_charLeft != null)
                     {
-                        Bridge.SetTexturePath(_charLeft.ID, determineCharacterTex(line._speaker, line._emotion));
-                        Bridge.SetVisibility(_charLeft.ID, true);
+                        _charLeft.texture = determineCharacterTex(line._speaker, line._emotion);
+                        _charLeft.visible = true;
                     }
                     if (_charRight != null)
                     {
                         if (line._greyEmotion != Emotion.None)
                         {
-                            Bridge.SetTexturePath(_charRight.ID, determineCharacterTex(line._speaker, line._greyEmotion));
-                            Bridge.SetVisibility(_charRight.ID, true);
+                            _charRight.texture = determineCharacterTex(line._speaker, line._greyEmotion);
+                            _charRight.visible = true;
                         }
                         // else stays hidden
                     }
                     // Change dialogue box texture
                     if (_dialogueBox != null)
-                        Bridge.SetTexturePath(_dialogueBox.ID, "UI-DialogueBox-Cassia");
+                        _dialogueBox.texture = "UI-DialogueBox-Cassia";
                     break;
 
                 case Speaker.WitchMain:
@@ -444,25 +443,25 @@ namespace Eno
                     {
                         if (line._greyEmotion != Emotion.None)
                         {
-                            Bridge.SetTexturePath(_charLeft.ID, determineCharacterTex(line._speaker, line._greyEmotion));
-                            Bridge.SetVisibility(_charLeft.ID, true);
+                            _charLeft.texture = determineCharacterTex(line._speaker, line._greyEmotion);
+                            _charLeft.visible = true;
                         }
                         // else stays hidden
                     }
                     if (_charRight != null)
                     {
-                        Bridge.SetTexturePath(_charRight.ID, determineCharacterTex(line._speaker, line._emotion));
-                        Bridge.SetVisibility(_charRight.ID, true);
+                        _charRight.texture = determineCharacterTex(line._speaker, line._emotion);
+                        _charRight.visible = true;
                     }
                     // Change dialogue box texture
                     if (_dialogueBox != null)
-                        Bridge.SetTexturePath(_dialogueBox.ID, "UI-DialogueBox-Witch");
+                        _dialogueBox.texture = "UI-DialogueBox-Witch";
                     break;
             }
 
             // Show dialogue box with current speaker name
             if (_dialogueBox != null)
-                Bridge.SetVisibility(_dialogueBox.ID, true);
+                _dialogueBox.visible = true;
 
             // Start typewriter
             if (_dialogueText != null) _dialogueText.text = "";
