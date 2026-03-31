@@ -262,5 +262,23 @@ namespace Bridge {
 
         ENGINE_API bool  __stdcall GetShouldClose();
         ENGINE_API void  __stdcall RequestClose();
+
+        // =========================================================================
+        // Particle System
+        // Implemented in: eno_bridge_particle.cpp
+        // =========================================================================
+        ENGINE_API void  __stdcall ParticleEmitBurst(uint32_t sceneObjectID, int count);
+        ENGINE_API void  __stdcall ParticleStartEmission(uint32_t sceneObjectID);
+        ENGINE_API void  __stdcall ParticleStopEmission(uint32_t sceneObjectID);
+        ENGINE_API void  __stdcall SetParticleEmissionRate(uint32_t sceneObjectID, float rate);
+        ENGINE_API void  __stdcall SetParticleMaxParticles(uint32_t sceneObjectID, int max);
+        ENGINE_API void  __stdcall SetParticleLifetime(uint32_t sceneObjectID, float minLife, float maxLife);
+        ENGINE_API void  __stdcall SetParticleSize(uint32_t sceneObjectID, float minSize, float maxSize);
+        ENGINE_API void  __stdcall SetParticleVelocity(uint32_t sceneObjectID, float minX, float minY, float maxX, float maxY);
+        ENGINE_API void  __stdcall SetParticleColorStart(uint32_t sceneObjectID, float r, float g, float b, float a);
+        ENGINE_API void  __stdcall SetParticleColorEnd(uint32_t sceneObjectID, float r, float g, float b, float a);
+        ENGINE_API void  __stdcall SetParticleGravity(uint32_t sceneObjectID, float gx, float gy);
+        ENGINE_API void  __stdcall SetParticleDrag(uint32_t sceneObjectID, float drag);
+        ENGINE_API bool  __stdcall GetParticleIsEmitting(uint32_t sceneObjectID);
     }
 }

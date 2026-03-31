@@ -3476,6 +3476,148 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 	}
 
+	// --- ParticleEmitterComponent ---
+	if (entity.has<ECSComponents::ParticleEmitterComponent>(entMng))
+	{
+		auto& emitter = entity.get<ECSComponents::ParticleEmitterComponent>(entMng);
+		ImGui::SeparatorText("Particle Emitter");
+
+		// Emission
+		ImGui::DragFloat("Emission Rate", &emitter.emissionRate, 1.0f, 0.0f, 10000.0f);
+		trackEdit("Edit Emission Rate");
+		ImGui::DragInt("Max Particles", &emitter.maxParticles, 1, 1, 10000);
+		trackEdit("Edit Max Particles");
+		ImGui::DragFloat("Duration", &emitter.duration, 0.1f, -1.0f, 60.0f);
+		trackEdit("Edit Duration");
+
+		// Emission shape
+		const char* shapeNames[] = { "Point", "Circle", "Cone", "Box" };
+		int shapeIdx = static_cast<int>(emitter.shape);
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("Shape##particle", &shapeIdx, shapeNames, IM_ARRAYSIZE(shapeNames)))
+			{
+				emitter.shape = static_cast<Particles::EmissionShape>(shapeIdx);
+				undoManager.recordComponentChange(entity, std::move(_before),
+					undoManager.captureComponentsMap(entity), "Edit Emission Shape");
+			}
+		}
+
+		if (emitter.shape == Particles::EmissionShape::Circle)
+		{
+			ImGui::DragFloat("Shape Radius", &emitter.shapeRadius, 1.0f, 0.0f, 1000.0f);
+			trackEdit("Edit Shape Radius");
+		}
+		else if (emitter.shape == Particles::EmissionShape::Cone)
+		{
+			ImGui::DragFloat("Shape Angle", &emitter.shapeAngle, 1.0f, 0.0f, 360.0f);
+			trackEdit("Edit Shape Angle");
+		}
+		else if (emitter.shape == Particles::EmissionShape::Box)
+		{
+			ImGui::DragFloat2("Shape Size", (float*)&emitter.shapeSize, 1.0f, 0.0f, 1000.0f);
+			trackEdit("Edit Shape Size");
+		}
+
+		// Particle properties
+		ImGui::SeparatorText("Particle Properties");
+		ImGui::DragFloat2("Velocity Min", (float*)&emitter.velocityMin, 1.0f);
+		trackEdit("Edit Velocity Min");
+		ImGui::DragFloat2("Velocity Max", (float*)&emitter.velocityMax, 1.0f);
+		trackEdit("Edit Velocity Max");
+		ImGui::DragFloat("Lifetime Min", &emitter.lifetimeMin, 0.05f, 0.01f, 30.0f);
+		trackEdit("Edit Lifetime Min");
+		ImGui::DragFloat("Lifetime Max", &emitter.lifetimeMax, 0.05f, 0.01f, 30.0f);
+		trackEdit("Edit Lifetime Max");
+		ImGui::DragFloat("Size Min", &emitter.sizeMin, 0.5f, 0.1f, 200.0f);
+		trackEdit("Edit Size Min");
+		ImGui::DragFloat("Size Max", &emitter.sizeMax, 0.5f, 0.1f, 200.0f);
+		trackEdit("Edit Size Max");
+		ImGui::DragFloat("Rotation Min", &emitter.rotationMin, 1.0f, 0.0f, 360.0f);
+		trackEdit("Edit Rotation Min");
+		ImGui::DragFloat("Rotation Max", &emitter.rotationMax, 1.0f, 0.0f, 360.0f);
+		trackEdit("Edit Rotation Max");
+		ImGui::DragFloat("Rotation Speed", &emitter.rotationSpeed, 1.0f, 0.0f, 720.0f);
+		trackEdit("Edit Rotation Speed");
+
+		// Physics
+		ImGui::SeparatorText("Particle Physics");
+		ImGui::DragFloat2("Gravity##particle", (float*)&emitter.gravity, 0.5f);
+		trackEdit("Edit Particle Gravity");
+		ImGui::DragFloat("Drag##particle", &emitter.drag, 0.01f, 0.0f, 2.0f);
+		trackEdit("Edit Particle Drag");
+
+		// Visual — start color
+		ImGui::SeparatorText("Particle Colors");
+		float colorStart[4] = { emitter.colorStartR, emitter.colorStartG, emitter.colorStartB, emitter.colorStartA };
+		if (ImGui::ColorEdit4("Color Start", colorStart))
+		{
+			emitter.colorStartR = colorStart[0]; emitter.colorStartG = colorStart[1];
+			emitter.colorStartB = colorStart[2]; emitter.colorStartA = colorStart[3];
+		}
+		trackEdit("Edit Color Start");
+
+		float colorEnd[4] = { emitter.colorEndR, emitter.colorEndG, emitter.colorEndB, emitter.colorEndA };
+		if (ImGui::ColorEdit4("Color End", colorEnd))
+		{
+			emitter.colorEndR = colorEnd[0]; emitter.colorEndG = colorEnd[1];
+			emitter.colorEndB = colorEnd[2]; emitter.colorEndA = colorEnd[3];
+		}
+		trackEdit("Edit Color End");
+
+		// Particle shape
+		const char* shapeRenderNames[] = { "Square", "Circle" };
+		int shapeRenderIdx = static_cast<int>(emitter.particleShape);
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("Particle Shape##particle", &shapeRenderIdx, shapeRenderNames, IM_ARRAYSIZE(shapeRenderNames)))
+			{
+				emitter.particleShape = static_cast<Particles::ParticleShape>(shapeRenderIdx);
+				undoManager.recordComponentChange(entity, std::move(_before),
+					undoManager.captureComponentsMap(entity), "Edit Particle Shape");
+			}
+		}
+
+		// Blend mode
+		const char* blendNames[] = { "Alpha", "Additive" };
+		int blendIdx = static_cast<int>(emitter.blendMode);
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("Blend Mode##particle", &blendIdx, blendNames, IM_ARRAYSIZE(blendNames)))
+			{
+				emitter.blendMode = static_cast<Particles::BlendMode>(blendIdx);
+				undoManager.recordComponentChange(entity, std::move(_before),
+					undoManager.captureComponentsMap(entity), "Edit Blend Mode");
+			}
+		}
+
+		// State
+		ImGui::SeparatorText("State");
+		ImGui::Checkbox("Is Emitting##particle", &emitter.isEmitting);
+		trackEdit("Toggle Is Emitting");
+		ImGui::Text("Active Particles: %d", emitter.activeParticleCount);
+
+		// Preview controls
+		ImGui::Separator();
+		if (ImGui::Button("Emit Burst##particle"))
+		{
+			auto* ps = engine_.getParticleSystem();
+			if (ps) ps->EmitBurst(entMng, entity.id(), emitter.maxParticles / 4);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Start##particle"))
+		{
+			auto* ps = engine_.getParticleSystem();
+			if (ps) ps->StartEmission(entMng, entity.id());
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Stop##particle"))
+		{
+			auto* ps = engine_.getParticleSystem();
+			if (ps) ps->StopEmission(entMng, entity.id());
+		}
+	}
+
 	ImGui::End();
 }
 

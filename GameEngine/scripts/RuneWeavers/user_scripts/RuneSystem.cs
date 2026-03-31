@@ -113,6 +113,12 @@ namespace Eno
         private Actor? _player        = null;
         private bool   _playerSearched = false;
 
+        // Particle blink effect
+        private ParticleEmitter? _blinkEmitter = null;
+
+        // Deferred spell cast — pattern index stored when complete, cast on mouse release
+        private int _pendingSpell = -1;
+
         // ── Script callbacks ─────────────────────────────────────────────────────
         public void Begin()
         {
@@ -121,6 +127,7 @@ namespace Eno
                 _runes[i]      = null;
                 _runeStates[i] = "Disabled";
             }
+
         }
 
         public void Update()
@@ -172,6 +179,7 @@ namespace Eno
             _originX       = Input.mouseWorldPosition.x;
             _originY       = Input.mouseWorldPosition.y;
             _activePattern = -1;
+            _pendingSpell  = -1;
             _connected.Clear();
 
             _spellBase = SpawnPrefab("SpellBase", _originX, _originY) as KinematicBody2D;
@@ -265,10 +273,15 @@ namespace Eno
                 // Advance the charge visualisation by changing state
                 _spellCasting?.changeState("Cast" + _connected.Count);
 
-                // If the full pattern is now complete, cast immediately
+                // If the full pattern is now complete, store it and spawn blink particles
                 if (_activePattern >= 0 && PatternMatches(_connected, Patterns[_activePattern]))
                 {
-                    CastSpell(_activePattern);
+                    _pendingSpell = _activePattern;
+
+                    // Spawn particle blink at origin
+                    if (_blinkEmitter != null) FreeNode(_blinkEmitter);
+                    _blinkEmitter = SpawnPrefab("BlinkParticle", _originX, _originY) as ParticleEmitter;
+                    _blinkEmitter?.emitBurst(20);
                     return;
                 }
 
@@ -298,30 +311,43 @@ namespace Eno
         private void CastSpell(int spellIndex)
         {
             _active = false;
+            _pendingSpell = -1;
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
+            CleanupBlinkEmitter();
             SpawnPrefab(SpellPrefabs[spellIndex], _originX, _originY);
             EndSlowTime(attack: true);
         }
 
         private void Release()
         {
+            if (_pendingSpell >= 0)
+            {
+                int spell = _pendingSpell;
+                _pendingSpell = -1;
+                CastSpell(spell);
+                return;
+            }
+
             _active = false;
             NullifyUnconnected();
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
+            CleanupBlinkEmitter();
             EndSlowTime();
         }
 
         private void Cancel()
         {
             _active = false;
+            _pendingSpell = -1;
             NullifyUnconnected();
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
+            CleanupBlinkEmitter();
             EndSlowTime();
         }
 
@@ -515,6 +541,15 @@ namespace Eno
                 FreeNode(_spellCasting);
                 _spellCasting  = null;
                 _activePattern = -1;
+            }
+        }
+
+        private void CleanupBlinkEmitter()
+        {
+            if (_blinkEmitter != null)
+            {
+                FreeNode(_blinkEmitter);
+                _blinkEmitter = null;
             }
         }
 

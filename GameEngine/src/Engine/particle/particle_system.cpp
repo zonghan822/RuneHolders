@@ -133,16 +133,27 @@ void ParticleSystem::Render(Graphics::EnoGraphicsManager& graphics, ECS::EntityM
             if (!particle.active) continue;
 
             Math::eVec2<float> screenPos = particle.position - cameraOffset;
-
-            // Render as colored rectangle
             Graphics::Color particleColor(particle.r, particle.g, particle.b, particle.a);
-            graphics.drawRect(
-                screenPos,
-                Math::eVec2<float>{particle.size, particle.size},
-                particleColor,
-                true,
-                particle.rotation
-            );
+
+            if (emitter.particleShape == Particles::ParticleShape::Circle)
+            {
+                graphics.drawCircle(
+                    { screenPos.x + particle.size * 0.5f, screenPos.y + particle.size * 0.5f },
+                    particle.size * 0.5f,
+                    particleColor,
+                    true
+                );
+            }
+            else
+            {
+                graphics.drawRect(
+                    screenPos,
+                    Math::eVec2<float>{particle.size, particle.size},
+                    particleColor,
+                    true,
+                    particle.rotation
+                );
+            }
         }
 
         // Reset blend mode to default

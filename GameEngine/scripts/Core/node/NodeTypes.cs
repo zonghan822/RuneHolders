@@ -14,9 +14,9 @@ namespace Eno
         AUDIO       = 9,    // AudioComponent + Layer
         CAMERA      = 10,   // TransformComponent + CameraComponent
         TEXT        = 11,   // TransformComponent + TextComponent + Visibility + Layer
-        //PARTICLE    = 12,   // TransformComponent + ParticleEmitter + Visibility + Layer
         VIDEO       = 12,   // TransformComponent + RenderComponent + VideoComponent + Visibility + Layer
         ENEMY       = 13,   // ACTOR components + AIComponent
         CANVAS      = 14,   // TransformComponent + RenderComponent + CanvasComponent + Visibility + Layer
+        PARTICLE    = 15,   // TransformComponent + ParticleEmitter + Visibility + Layer
     }
 }

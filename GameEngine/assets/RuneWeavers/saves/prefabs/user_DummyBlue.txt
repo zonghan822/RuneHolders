@@ -79,7 +79,7 @@
 			"type": "Color(RGBA)"
 		},
 		"Texture Path": {
-			"value": "Dummies-Blue",
+			"value": "Dummies-Blue-Hurt",
 			"type": "texchar240"
 		},
 		"TexID": {
@@ -179,7 +179,7 @@
 			"type": "int"
 		},
 		"Cols": {
-			"value": "1",
+			"value": "3",
 			"type": "int"
 		},
 		"Frame Duration": {
@@ -195,7 +195,7 @@
 			"type": "int"
 		},
 		"Current Animation": {
-			"value": "Idle",
+			"value": "Hurt",
 			"type": "char64"
 		},
 		"Anim0 Name": {
@@ -251,7 +251,7 @@
 			"type": "int"
 		},
 		"Anim1 Cols": {
-			"value": "1",
+			"value": "3",
 			"type": "int"
 		},
 		"Anim1 Duration": {
@@ -317,7 +317,7 @@
 			"type": "int"
 		},
 		"CurrentState": {
-			"value": "Idle",
+			"value": "Hurt",
 			"type": "char32"
 		},
 		"TimeInState": {
