@@ -354,8 +354,16 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 		{
 			if (ImGui::Begin("Build Site Analyzer", &bsaOpen))
 			{
-				std::uintmax_t totalFileSize = 0;
-				size_t totalAssetCount = 0;
+				static std::string selectedTexture;
+				static Graphics::TextureData textureData;
+				static std::filesystem::path selectedTextureBuildPath;
+				static std::filesystem::path selectedTextureRootPath;
+
+				static std::unordered_set<std::string> selectedTextures;
+
+				std::uintmax_t totalFileSize{};
+				std::uintmax_t selectedFileSize{};
+				size_t totalAssetCount{};
 
 				for (const TextureFolder& sub : g_textureTree.subfolders)
 				{
@@ -365,24 +373,28 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 						totalFileSize += fileSize;
 
 						++totalAssetCount;
+
+						if (selectedTextures.contains(entry.stemName))
+						{
+							selectedFileSize += fileSize;
+						}
 					}
 				}
 
 				float totalMB = totalFileSize / (1024.f * 1024.f);
-				ImGui::Text("Assets (%.2f MB)", totalMB);
+				float selectedMB = selectedFileSize / (1024.f * 1024.f);
+				ImGui::Text(
+					"Assets (%.2f MB) } Selected (%.2f MB)", 
+					totalMB,
+					selectedMB);
 
 				ImGui::Separator();
 
-				// Reload textures (still runs every frame)
-				LoadTextureAssets(engine_);
+				// Reload textures (still runs every frame) ****
+				if (ImGui::Button("Reload Assets"))
+					LoadTextureAssets(engine_);
+
 				const auto& textures = loader.getAllTextures();
-
-				static std::string selectedTexture;
-				static Graphics::TextureData textureData;
-				static std::filesystem::path selectedTextureBuildPath;
-				static std::filesystem::path selectedTextureRootPath;
-
-				static std::unordered_set<std::string> selectedTextures;
 
 				bool allSelected = (selectedTextures.size() == totalAssetCount);
 				bool selectAllUI = allSelected;
