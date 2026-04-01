@@ -9,6 +9,8 @@ namespace Eno
         public void stop()  => Bridge.AudioStop(ID);
         public void spatialPlay(uint id, float x, float y) => Bridge.AudioPlayInstant(id, x, y);
 
+        public bool isPlaying => Bridge.IsAudioPlaying(ID) != 0;
+
         public float volume
         {
             get => Bridge.GetAudioVolume(ID);

@@ -49,6 +49,16 @@ namespace Bridge
             a->isPlaying_ = false;
         }
 
+        // Returns 1 if the FMOD channel is still playing, 0 if it has finished or never started.
+        ENGINE_API int __stdcall IsAudioPlaying(uint32_t sceneObjectID)
+        {
+            auto* a = getAudio(sceneObjectID);
+            if (!a || !a->audioMod_.ch_) return 0;
+            bool playing = false;
+            a->audioMod_.ch_->isPlaying(&playing);
+            return playing ? 1 : 0;
+        }
+
         ENGINE_API float __stdcall GetAudioVolume(uint32_t sceneObjectID)
         {
             auto* a = getAudio(sceneObjectID);

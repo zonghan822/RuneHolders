@@ -202,6 +202,13 @@ namespace Eno
                 _stuckTimer = 0f;
             }
 
+            // Loop walk audio: replay spatially whenever the previous play finishes
+            if (_walkAudio != null && !_walkAudio.isPlaying)
+            {
+                _walkAudio.sound = MOVE_SOUND;
+                _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
+            }
+
             if (_self.hasPath)
             {
                 Vector2 wp = _self.nextWaypoint;
@@ -249,12 +256,7 @@ namespace Eno
         {
             _self?.clearPath();
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-
-            if (_walkAudio != null && _self != null)
-            {
-                _walkAudio.sound = MOVE_SOUND;
-                _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
-            }
+            _walkAudio?.stop();
         }
 
         public void Frozen_enter()

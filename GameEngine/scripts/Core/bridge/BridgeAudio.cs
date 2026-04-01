@@ -13,6 +13,10 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void AudioStop(uint sceneObjectID);
 
+        // Returns 1 if the audio channel is currently playing, 0 if it has finished or never started.
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int IsAudioPlaying(uint sceneObjectID);
+
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern float GetAudioVolume(uint sceneObjectID);
 
