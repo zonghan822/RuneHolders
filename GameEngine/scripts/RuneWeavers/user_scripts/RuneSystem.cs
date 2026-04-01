@@ -177,28 +177,42 @@ namespace Eno
             {
                 if (Input.isMouseHeld(0) || rtDown)
                 {
-                    // Right stick → angle-based activation; mouse → position-based
-                    Vector2 rStick = Input.getRightStick(0.15f);
-                    float stickMag = MathF.Sqrt(rStick.x * rStick.x + rStick.y * rStick.y);
-
-                    if (stickMag >= STICK_ACTIVATE)
-                        CheckConnectionByAngle(rStick.x, rStick.y);
-                    else
-                        CheckConnectionsAt(Cursor_Script.CursorX, Cursor_Script.CursorY);
-
-                    // Trail line follows stick direction or cursor
-                    if (stickMag > 0.15f)
+                    if (_pendingSpell < 0)
                     {
-                        float norm = RUNE_RING_RADIUS / stickMag;
-                        UpdateTrailLine(_originX + rStick.x * norm, _originY + rStick.y * norm);
+                        // Right stick → angle-based activation; mouse → position-based
+                        Vector2 rStick = Input.getRightStick(0.15f);
+                        float stickMag = MathF.Sqrt(rStick.x * rStick.x + rStick.y * rStick.y);
+
+                        if (stickMag >= STICK_ACTIVATE)
+                            CheckConnectionByAngle(rStick.x, rStick.y);
+                        else
+                            CheckConnectionsAt(Cursor_Script.CursorX, Cursor_Script.CursorY);
+
+                        // Trail line follows stick direction, or snaps to origin when released
+                        if (stickMag > 0.15f)
+                        {
+                            float norm = RUNE_RING_RADIUS / stickMag;
+                            UpdateTrailLine(_originX + rStick.x * norm, _originY + rStick.y * norm);
+                        }
+                        else if (rtDown)
+                        {
+                            UpdateTrailLine(_originX, _originY);
+                        }
+                        else
+                        {
+                            UpdateTrailLine(Cursor_Script.CursorX, Cursor_Script.CursorY);
+                        }
                     }
                     else
                     {
-                        UpdateTrailLine(Cursor_Script.CursorX, Cursor_Script.CursorY);
+                        // Pattern complete — hide trail line
+                        if (_trailLine != null) { FreeNode(_trailLine); _trailLine = null; }
                     }
                 }
                 else if (rtReleased)
                 {
+                    Cursor_Script.CursorX = _originX;
+                    Cursor_Script.CursorY = _originY;
                     if (_pendingSpell >= 0)
                         Release();
                     else

@@ -45,33 +45,41 @@ namespace Eno
 
         public void Update()
         {
+            bool up    = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp);
+            bool down  = Input.isKeyPressed(KeyCode.S) || Input.isGamepadButtonPressed(GamepadButton.DPadDown);
+            bool left  = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft);
+            bool right = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight);
+            bool confirm = Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A);
+            bool back    = Input.isGamepadButtonPressed(GamepadButton.B);
+
             if (_menuState == MenuState.Main)
             {
-                if (Input.isKeyPressed(KeyCode.W)) SelectMain(MenuButton.Play);
-                if (Input.isKeyPressed(KeyCode.S)) SelectMain(MenuButton.Quit);
-                if (Input.isKeyPressed(KeyCode.A)) SelectMain(MenuButton.Settings);
-                if (Input.isKeyPressed(KeyCode.D)) SelectMain(MenuButton.Controls);
-                if (Input.isKeyPressed(KeyCode.E)) ConfirmMain();
+                if (up)    SelectMain(MenuButton.Play);
+                if (down)  SelectMain(MenuButton.Quit);
+                if (left)  SelectMain(MenuButton.Settings);
+                if (right) SelectMain(MenuButton.Controls);
+                if (confirm) ConfirmMain();
             }
             else if (_menuState == MenuState.QuitMenu)
             {
-                if (Input.isKeyPressed(KeyCode.A)) SelectQuit(QuitButton.Yes);
-                if (Input.isKeyPressed(KeyCode.D)) SelectQuit(QuitButton.No);
-                if (Input.isKeyPressed(KeyCode.E)) ConfirmQuit();
+                if (left)  SelectQuit(QuitButton.Yes);
+                if (right) SelectQuit(QuitButton.No);
+                if (confirm) ConfirmQuit();
+                if (back)    { _when_quit_menu_no_button_onclick(); }
             }
             else if (_menuState == MenuState.ControlsMenu)
             {
-                // Back is the only button — E goes back
-                if (Input.isKeyPressed(KeyCode.E)) _when_control_menu_back_button_onclick();
+                if (confirm || back) _when_control_menu_back_button_onclick();
             }
             else if (_menuState == MenuState.SettingsMenu)
             {
-                if (Input.isKeyPressed(KeyCode.W)) CycleSettingsRow(-1);
-                if (Input.isKeyPressed(KeyCode.S)) CycleSettingsRow(1);
-                if (Input.isKeyPressed(KeyCode.A)) AdjustFocusedSlider(-VolumeStep);
-                if (Input.isKeyPressed(KeyCode.D)) AdjustFocusedSlider(VolumeStep);
-                if (Input.isKeyPressed(KeyCode.E) && _settingsRow == SettingsRow.Back)
+                if (up)    CycleSettingsRow(-1);
+                if (down)  CycleSettingsRow(1);
+                if (left)  AdjustFocusedSlider(-VolumeStep);
+                if (right) AdjustFocusedSlider(VolumeStep);
+                if (confirm && _settingsRow == SettingsRow.Back)
                     _when_settings_menu_back_button_onclick();
+                if (back) _when_settings_menu_back_button_onclick();
             }
         }
 

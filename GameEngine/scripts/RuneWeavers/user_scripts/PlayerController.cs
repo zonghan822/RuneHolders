@@ -158,8 +158,8 @@ namespace Eno
                 dy /= mag;
             }
 
-            // E key or A button — close enemy info panel if open
-            if (_enemyInfoOpen && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)))
+            // E key or A/X button — close enemy info panel if open
+            if (_enemyInfoOpen && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A) || Input.isGamepadButtonPressed(GamepadButton.X)))
             {
                 _enemyInfoOpen = false;
                 if (_enemyInfoID      != 0) Bridge.SetVisibility(_enemyInfoID, false);
@@ -169,6 +169,13 @@ namespace Eno
                     Bridge.SetButtonActive(_enemyInfoPopupID, false);
                 }
                 if (_enemyInfoPopupBgID != 0) Bridge.SetVisibility(_enemyInfoPopupBgID, false);
+                return;
+            }
+
+            // X button — open enemy info popup
+            if (!_enemyInfoOpen && Input.isGamepadButtonPressed(GamepadButton.X))
+            {
+                _when_enemyinfopopup_onclick();
                 return;
             }
 
