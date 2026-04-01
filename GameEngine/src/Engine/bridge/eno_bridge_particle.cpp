@@ -62,6 +62,12 @@ namespace Bridge
             if (auto* e = getEmitter(sceneObjectID)) e->emissionRate = rate;
         }
 
+        ENGINE_API int __stdcall GetParticleMaxParticles(uint32_t sceneObjectID)
+        {
+            auto* e = getEmitter(sceneObjectID);
+            return e ? e->maxParticles : 0;
+        }
+
         ENGINE_API void __stdcall SetParticleMaxParticles(uint32_t sceneObjectID, int max)
         {
             if (auto* e = getEmitter(sceneObjectID)) e->maxParticles = max;

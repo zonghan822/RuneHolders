@@ -20,6 +20,8 @@
 #include "../component/components/text_component.hpp"
 #include "../component/components/camera_component.hpp"
 #include "../component/components/name.hpp"
+#include "../component/components/video_component.hpp"
+#include "../graphics/video/video_player.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -199,6 +201,23 @@ namespace UI
 					float scaledWidth  = renderInfo.width  * tc.scale.x;
 					float scaledHeight = renderInfo.height * tc.scale.y;
 					float rotation     = tc.rot.x;
+
+					// If this canvas entity has a VideoComponent, pull the current decoded
+					// frame into the render slot (same logic as graphics.cpp render loop).
+					if (entity.has<ECSComponents::VideoComponent>(entityManager))
+					{
+						auto& videoComp = entity.get<ECSComponents::VideoComponent>(entityManager);
+						if (strlen(videoComp.videoName) > 0)
+						{
+							auto player = engine.getGraphicsManager().getVideo(std::string(videoComp.videoName));
+							if (player && player->isLoaded())
+							{
+								auto videoTex = player->getTexture();
+								if (videoTex && videoTex->isValid())
+									renderInfo.texture = videoTex;
+							}
+						}
+					}
 
 					if (renderInfo.texture && renderInfo.texture->isValid()) {
 						Math::eVec2<float> topLeft = {

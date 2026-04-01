@@ -58,11 +58,12 @@ namespace Eno
 
             // E on scroll → pickup: scroll disappears, spellbook updates, door unlocks
             if (!_scrollPickedUp && Scroll_Dialouge_Script.DialogueShown[0] &&
-                Input.isKeyPressed(KeyCode.E) &&
+                (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) &&
                 _scrollID != 0 && _playerID != 0 &&
                 Bridge.IsColliding(_scrollID, _playerID))
             {
                 _scrollPickedUp = true;
+                RuneSystem.SpellUnlocked[0] = true; // Fire
                 // Press f to open spell book
                 // Swap UI_Info texture and reset its timer
                 if (_uiInfoID != 0)

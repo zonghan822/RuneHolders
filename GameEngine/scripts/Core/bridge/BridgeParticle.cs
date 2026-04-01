@@ -20,6 +20,9 @@ namespace Eno
         public static extern void SetParticleEmissionRate(uint sceneObjectID, float rate);
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int GetParticleMaxParticles(uint sceneObjectID);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetParticleMaxParticles(uint sceneObjectID, int max);
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]

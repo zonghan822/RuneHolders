@@ -46,6 +46,7 @@ namespace Eno
             {
                 Bridge.SetPosition(_cameraID, CamDestX, CamDestY);
                 _panning = false;
+                Room4_Script.StartWaves();
                 Scroll_Dialouge_Script.TriggerDialogue(1);
             }
             else

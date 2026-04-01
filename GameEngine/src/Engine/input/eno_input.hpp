@@ -228,12 +228,50 @@ namespace Input
 		*//*========================================================================================*/
 		std::pair<double, double> getScrollOffset() const;
 
+		/****************************************************
+		* Gamepad											*
+		*****************************************************/
+
+		/*============================================================================================
+		* \brief   Check if a gamepad is connected.
+		* \return  True if joystick 0 is present and has a gamepad mapping.
+		*//*========================================================================================*/
+		bool isGamepadConnected() const;
+
+		/*============================================================================================
+		* \brief   Get the value of a gamepad axis.
+		* \param[in] axis GLFW gamepad axis index (0–5).
+		* \return  Axis value in [-1, 1]. Triggers return [-1, 1] where -1 = released.
+		*//*========================================================================================*/
+		float getGamepadAxis(int axis) const;
+
+		/*============================================================================================
+		* \brief   Check if a gamepad button is currently held.
+		* \param[in] button GLFW gamepad button index (0–14).
+		* \return  True if the button is held down.
+		*//*========================================================================================*/
+		bool isGamepadButtonHeld(int button) const;
+
+		/*============================================================================================
+		* \brief   Check if a gamepad button was pressed this frame.
+		* \param[in] button GLFW gamepad button index (0–14).
+		* \return  True if the button transitioned from released to pressed this frame.
+		*//*========================================================================================*/
+		bool isGamepadButtonPressed(int button) const;
+
+		/*============================================================================================
+		* \brief   Check if a gamepad button was released this frame.
+		* \param[in] button GLFW gamepad button index (0–14).
+		* \return  True if the button transitioned from pressed to released this frame.
+		*//*========================================================================================*/
+		bool isGamepadButtonReleased(int button) const;
+
 	private:
 		Event::EnoEventBus& bus_;
 
 		Utility::EnoBiMap<
 			std::string, KeyBinding,
-			std::hash<std::string>, 
+			std::hash<std::string>,
 			std::equal_to<std::string>,
 			KeyBindingHasher,
 			std::equal_to<KeyBinding>
@@ -252,6 +290,11 @@ namespace Input
 		double mouseX_ = 0.0, mouseY_ = 0.0;
 		double prevMouseX_ = 0.0, prevMouseY_ = 0.0;
 		double scrollX_ = 0.0, scrollY_ = 0.0;
+
+		// Gamepad state tracking
+		bool            gamepadConnected_  = false;
+		GLFWgamepadstate gamepadState_     = {};
+		GLFWgamepadstate prevGamepadState_ = {};
 
 		/*============================================================================================
 		* \brief   Handle keyboard events and update key state.

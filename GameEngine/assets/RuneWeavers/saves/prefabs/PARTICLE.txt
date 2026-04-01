@@ -17,6 +17,40 @@
 			"type": "eVec2(float)"
 		}
 	},
+	"struct ECSComponents::RenderComponent": {
+		"Width": {
+			"value": "64",
+			"type": "float"
+		},
+		"Height": {
+			"value": "64",
+			"type": "float"
+		},
+		"Shape": {
+			"value": "Rectangle",
+			"type": "char32"
+		},
+		"Color": {
+			"value": "r : 1 | g : 1 | b : 1 | a : 1",
+			"type": "Color(RGBA)"
+		},
+		"Texture Path": {
+			"value": "",
+			"type": "texchar240"
+		},
+		"TexID": {
+			"value": "0",
+			"type": "int"
+		},
+		"UV Start": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"UV End": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		}
+	},
 	"struct ECSComponents::ParticleEmitterComponent": {
 		"emissionRate": {
 			"value": "50",
@@ -42,6 +76,18 @@
 			"value": "45",
 			"type": "float"
 		},
+		"shapeSize": {
+			"value": "x : 10 | y : 10",
+			"type": "eVec2(float)"
+		},
+		"velocityMin": {
+			"value": "x : -50 | y : -50",
+			"type": "eVec2(float)"
+		},
+		"velocityMax": {
+			"value": "x : 50 | y : 50",
+			"type": "eVec2(float)"
+		},
 		"lifetimeMin": {
 			"value": "1",
 			"type": "float"
@@ -58,8 +104,24 @@
 			"value": "8",
 			"type": "float"
 		},
+		"rotationMin": {
+			"value": "0",
+			"type": "float"
+		},
+		"rotationMax": {
+			"value": "360",
+			"type": "float"
+		},
 		"rotationSpeed": {
 			"value": "0",
+			"type": "float"
+		},
+		"gravity": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"drag": {
+			"value": "1",
 			"type": "float"
 		},
 		"colorStartR": {
@@ -95,10 +157,6 @@
 			"type": "float"
 		},
 		"blendMode": {
-			"value": "0",
-			"type": "int"
-		},
-		"particleShape": {
 			"value": "0",
 			"type": "int"
 		},

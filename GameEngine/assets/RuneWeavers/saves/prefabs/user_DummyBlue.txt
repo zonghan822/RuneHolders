@@ -79,7 +79,7 @@
 			"type": "Color(RGBA)"
 		},
 		"Texture Path": {
-			"value": "Dummies-Blue-Hurt",
+			"value": "Dummies-Blue",
 			"type": "texchar240"
 		},
 		"TexID": {
@@ -195,7 +195,7 @@
 			"type": "int"
 		},
 		"Current Animation": {
-			"value": "Hurt",
+			"value": "Idle",
 			"type": "char64"
 		},
 		"Anim0 Name": {
@@ -317,7 +317,7 @@
 			"type": "int"
 		},
 		"CurrentState": {
-			"value": "Hurt",
+			"value": "Idle",
 			"type": "char32"
 		},
 		"TimeInState": {

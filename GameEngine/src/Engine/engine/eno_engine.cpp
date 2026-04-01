@@ -308,6 +308,12 @@ namespace Engine
 		// Entity videos (those with a VideoComponent) follow play/pause/stop mode.
 		// Browser-preview videos are unaffected because they are not entity-owned.
 		{
+			// Detect the one-frame play→stop transition so we only reset entity videos
+			// once, not every frame while the game is stopped (which would break the
+			// asset-browser preview for videos attached to VideoComponent entities).
+			bool justStopped = prevWasPlaying_ && !isPlaying_;
+			prevWasPlaying_  = isPlaying_;
+
 			for (auto& ent : entityMng_.findEntity<ECSComponents::VideoComponent>())
 			{
 				auto& vc = ent.get<ECSComponents::VideoComponent>(entityMng_);
@@ -315,12 +321,17 @@ namespace Engine
 				auto player = graphicsMng_.getVideo(std::string(vc.videoName));
 				if (!player || !player->isLoaded()) continue;
 
-				if (!isPlaying_)
+				if (justStopped)
 				{
 					// Stopped: reset to initial serialised state (IDLE)
 					if (player->getState() != Graphics::VideoState::IDLE)
 						player->stop();
 					vc.pausedByEngine_ = false;
+				}
+				else if (!isPlaying_)
+				{
+					// Game is idle (not just-stopped) — leave the player alone so the
+					// asset browser preview can drive it independently.
 				}
 				else if (isPaused_)
 				{
@@ -336,13 +347,13 @@ namespace Engine
 					// Playing: resume engine-paused videos; auto-start on first frame
 					if (vc.pausedByEngine_ && player->getState() == Graphics::VideoState::PAUSED)
 					{
-						player->play();
+						player->play(audioMng_.getSystem());
 						vc.pausedByEngine_ = false;
 					}
 					else if (vc.autoPlay && player->getState() == Graphics::VideoState::IDLE)
 					{
 						player->setLooping(vc.loop);
-						player->play();
+						player->play(audioMng_.getSystem());
 					}
 				}
 			}
@@ -389,11 +400,6 @@ namespace Engine
 		graphicsMng_.beginFrame(Graphics::Color::Black);
 		graphicsMng_.render(*this);
 
-		// Render particles (world-space; projection matrix handles camera)
-		if (particleSys_)
-			particleSys_->Render(graphicsMng_, entityMng_, {0.f, 0.f});
-		graphicsMng_.flush();
-
 		timings_["Draw"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 	}
 
@@ -422,6 +428,9 @@ namespace Engine
 
 		// Loading fonts
 		loader_.loadFonts(loader_.getFontPath(), 48);
+
+		// Loading videos
+		loader_.loadVideos(loader_.getVideoPath(), graphicsMng_);
 
 		// Load Presets
 		prefabMng_.registerPresets();

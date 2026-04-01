@@ -24,8 +24,6 @@ namespace Eno
         private float     _hurtTimer   = 0f;
         private bool      _isAttacking = false;
         private bool      _isHurt      = false;
-        // Spell damage — written to the DamageComponent on Begin() so spells can read it via bridge
-        public float damage = 10f;
 
         private Node2D?[] _scrollNodes    = Array.Empty<Node2D?>();
         private uint      _spellbookUIID    = 0;
@@ -50,9 +48,9 @@ namespace Eno
             _player.useGravity      = false;
             _player.isKinematic     = false;
             _player.collisionGroup  = 1;
-            _player.maxHealth       = 100f;
-            _player.health      = 100f;
-            _player.damage      = damage;
+            _player.maxHealth       = 5f;
+            _player.health      = 5f;
+            _player.damage      = 1f;
 
             
             _hpBarFull = GetNode<Sprite2D>("PlayerHealthBar_Full");
@@ -103,8 +101,8 @@ namespace Eno
 
         public void Update()
         {
-            // P key toggles in-game pause
-            if (Input.isKeyPressed(KeyCode.P))
+            // P key or Start button toggles in-game pause
+            if (Input.isKeyPressed(KeyCode.P) || Input.isGamepadButtonPressed(GamepadButton.Start))
             {
                 IsGamePaused = !IsGamePaused;
                 Bridge.SetCanvasActive(_winLoseCanvasID, IsGamePaused);
@@ -124,8 +122,8 @@ namespace Eno
                 return;
             }
 
-            // F key — toggle spellbook UI
-            if (Input.isKeyPressed(KeyCode.F) && _spellbookUIID != 0)
+            // F key or Y button — toggle spellbook UI
+            if ((Input.isKeyPressed(KeyCode.F) || Input.isGamepadButtonPressed(GamepadButton.Y)) && _spellbookUIID != 0)
             {
                 _spellbookOpen = !_spellbookOpen;
                 Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
@@ -144,16 +142,24 @@ namespace Eno
             if (Input.isKeyHeld(KeyCode.A)) dx -= 1f;
             if (Input.isKeyHeld(KeyCode.D)) dx += 1f;
 
-            // Normalize diagonal movement so speed is consistent in all directions
-            if (dx != 0f && dy != 0f)
+            // Merge left analog stick input
+            Vector2 leftStick = Input.getLeftStick(0.2f);
+            if (leftStick.x != 0f || leftStick.y != 0f)
             {
-                float inv = 1f / MathF.Sqrt(dx * dx + dy * dy);
-                dx *= inv;
-                dy *= inv;
+                dx = leftStick.x;
+                dy = leftStick.y;
             }
 
-            // E key — close enemy info panel if open
-            if (_enemyInfoOpen && Input.isKeyPressed(KeyCode.E))
+            // Normalize diagonal movement so speed is consistent in all directions
+            float mag = MathF.Sqrt(dx * dx + dy * dy);
+            if (mag > 1f)
+            {
+                dx /= mag;
+                dy /= mag;
+            }
+
+            // E key or A/X button — close enemy info panel if open
+            if (_enemyInfoOpen && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A) || Input.isGamepadButtonPressed(GamepadButton.X)))
             {
                 _enemyInfoOpen = false;
                 if (_enemyInfoID      != 0) Bridge.SetVisibility(_enemyInfoID, false);
@@ -163,18 +169,26 @@ namespace Eno
                     Bridge.SetButtonActive(_enemyInfoPopupID, false);
                 }
                 if (_enemyInfoPopupBgID != 0) Bridge.SetVisibility(_enemyInfoPopupBgID, false);
+                IsGamePaused = false;
+                Bridge.SetAudioPaused(false);
+                return;
+            }
+
+            // X button — open enemy info popup
+            if (!_enemyInfoOpen && Input.isGamepadButtonPressed(GamepadButton.X))
+            {
+                _when_enemyinfopopup_onclick();
                 return;
             }
 
             // Check scroll interaction before applying movement
-            if (Input.isKeyPressed(KeyCode.E))
+            if (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A))
             {
                 for (int i = 0; i < _scrollNodes.Length; i++)
                 {
                     if (_scrollNodes[i] != null && Bridge.IsColliding(_scrollNodes[i]!.ID, _player.ID))
                     {
                         Scroll_Dialouge_Script.TriggerDialogue(i);
-                        Scroll_Dialouge_Script.TriggerNarrative(i);
                         return;
                     }
                 }
@@ -242,8 +256,12 @@ namespace Eno
 
         private bool IsMoving()
         {
-            return Input.isKeyHeld(KeyCode.W) || Input.isKeyHeld(KeyCode.S) ||
-                   Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D);
+            if (Input.isKeyHeld(KeyCode.W) || Input.isKeyHeld(KeyCode.S) ||
+                Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D))
+                return true;
+
+            Vector2 stick = Input.getLeftStick(0.2f);
+            return stick.x != 0f || stick.y != 0f;
         }
     
         public void Cast_enter()
@@ -346,6 +364,8 @@ namespace Eno
             {
                 _enemyInfoOpen = true;
                 Bridge.SetVisibility(_enemyInfoID, true);
+                IsGamePaused = true;
+                Bridge.SetAudioPaused(true);
             }
         }
     }

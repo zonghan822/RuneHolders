@@ -13,7 +13,7 @@
 			"type": "uint32_t"
 		},
 		"Visible": {
-			"value": "1",
+			"value": "0",
 			"type": "bool"
 		}
 	},

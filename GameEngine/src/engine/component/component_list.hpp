@@ -63,7 +63,7 @@
 	PRESET(ENEMY,        TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, AIComponent, VisibilityComponent, LayerComponent) \
 	/* Canvas — UI root that positions children relative to the viewport */ \
 	PRESET(CANVAS,		 TransformComponent, RenderComponent, CanvasComponent, VisibilityComponent, LayerComponent) \
-	PRESET(PARTICLE,     TransformComponent, ParticleEmitterComponent, VisibilityComponent, LayerComponent)
+	PRESET(PARTICLE,     TransformComponent, RenderComponent, ParticleEmitterComponent, VisibilityComponent, LayerComponent)
 
 // Expanding PRESET_LIST within the component namespace
 // to make use of the PRESET using macro

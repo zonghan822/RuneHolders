@@ -7,6 +7,7 @@
 
 #include "particle_system.hpp"
 #include "../component/components/transform.hpp"
+#include "../component/components/drawInfo.hpp"
 #include "../graphics/graphics.hpp"
 #include <random>
 #include <cmath>
@@ -96,69 +97,88 @@ void ParticleSystem::Update(ECS::EntityManager& entityManager, float deltaTime) 
     }
 }
 
-void ParticleSystem::Render(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager,
-                           const Math::eVec2<float>& cameraOffset) {
+void ParticleSystem::RenderEntity(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager,
+                                  uint32_t entityID) {
+    auto mapIt = entityManager.getMap().find(entityID);
+    if (mapIt == entityManager.getMap().end()) return;
 
-    auto& entityMap = entityManager.getMap();
+    auto& entityLoc = mapIt->second;
 
-    for (auto& [entityID, entityLoc] : entityMap) {
-        // Check if entity has emitter component
-        bool hasEmitter = false;
-        for (const auto& type : entityLoc.archetype->types_) {
-            if (type == std::type_index(typeid(ECSComponents::ParticleEmitterComponent))) {
-                hasEmitter = true;
-                break;
-            }
+    bool hasEmitter = false;
+    for (const auto& type : entityLoc.archetype->types_) {
+        if (type == std::type_index(typeid(ECSComponents::ParticleEmitterComponent))) {
+            hasEmitter = true;
+            break;
         }
-
-        if (!hasEmitter) continue;
-
-        auto& emitter = GetEmitter(entityLoc);
-
-        auto it = pools_.find(entityID);
-        if (it == pools_.end()) continue;
-
-        ParticlePool& pool = *it->second;
-        const auto& particles = pool.getParticles();
-
-        // Set blend mode
-        if (emitter.blendMode == Particles::BlendMode::Additive) {
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        } else {
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        }
-
-        // Render each active particle
-        for (const auto& particle : particles) {
-            if (!particle.active) continue;
-
-            Math::eVec2<float> screenPos = particle.position - cameraOffset;
-            Graphics::Color particleColor(particle.r, particle.g, particle.b, particle.a);
-
-            if (emitter.particleShape == Particles::ParticleShape::Circle)
-            {
-                graphics.drawCircle(
-                    { screenPos.x + particle.size * 0.5f, screenPos.y + particle.size * 0.5f },
-                    particle.size * 0.5f,
-                    particleColor,
-                    true
-                );
-            }
-            else
-            {
-                graphics.drawRect(
-                    screenPos,
-                    Math::eVec2<float>{particle.size, particle.size},
-                    particleColor,
-                    true,
-                    particle.rotation
-                );
-            }
-        }
-
-        // Reset blend mode to default
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
+    if (!hasEmitter) return;
+
+    auto& emitter = GetEmitter(entityLoc);
+
+    auto poolIt = pools_.find(entityID);
+    if (poolIt == pools_.end()) return;
+
+    ParticlePool& pool = *poolIt->second;
+    const auto& particles = pool.getParticles();
+
+    // Read texture and shape from RenderComponent if present
+    std::shared_ptr<Graphics::EnoTexture> tex = nullptr;
+    bool useCircle = false;
+    {
+        // Construct a temporary Entity to use the standard get<> accessor
+        ECS::Entity tmpEntity(entityID);
+        if (tmpEntity.has<ECSComponents::RenderComponent>(entityManager)) {
+            auto& renderComp = tmpEntity.get<ECSComponents::RenderComponent>(entityManager);
+            if (renderComp.texture && renderComp.texture->isValid())
+                tex = renderComp.texture;
+            if (strcmp(renderComp.shape, "Circle") == 0)
+                useCircle = true;
+        }
+    }
+
+    if (emitter.blendMode == Particles::BlendMode::Additive)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    else
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    for (const auto& particle : particles) {
+        if (!particle.active) continue;
+
+        Graphics::Color particleColor(particle.r, particle.g, particle.b, particle.a);
+        Math::eVec2<float> size{particle.size, particle.size};
+
+        if (tex)
+        {
+            graphics.drawTexturedQuad(
+                particle.position,
+                size,
+                tex,
+                particleColor,
+                particle.rotation
+            );
+        }
+        else if (useCircle)
+        {
+            graphics.drawCircle(
+                { particle.position.x + particle.size * 0.5f, particle.position.y + particle.size * 0.5f },
+                particle.size * 0.5f,
+                particleColor,
+                true
+            );
+        }
+        else
+        {
+            graphics.drawRect(
+                particle.position,
+                size,
+                particleColor,
+                true,
+                particle.rotation
+            );
+        }
+    }
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void ParticleSystem::EmitBurst(ECS::EntityManager& entityManager, uint32_t entityID, int count) {

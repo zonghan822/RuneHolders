@@ -52,6 +52,37 @@ namespace Eno
         NumLock     = 1 << 5
     }
 
+    // GLFW gamepad axis indices
+    public enum GamepadAxis : int
+    {
+        LeftX       = 0,
+        LeftY       = 1,
+        RightX      = 2,
+        RightY      = 3,
+        LeftTrigger = 4,
+        RightTrigger = 5,
+    }
+
+    // GLFW gamepad button indices
+    public enum GamepadButton : int
+    {
+        A            = 0,
+        B            = 1,
+        X            = 2,
+        Y            = 3,
+        LeftBumper   = 4,
+        RightBumper  = 5,
+        Back         = 6,
+        Start        = 7,
+        Guide        = 8,
+        LeftThumb    = 9,
+        RightThumb   = 10,
+        DPadUp       = 11,
+        DPadRight    = 12,
+        DPadDown     = 13,
+        DPadLeft     = 14,
+    }
+
     // Direct static queries for keyboard and mouse state.
     // For complex action bindings use InputAction / InputManager instead.
     public static class Input
@@ -84,6 +115,47 @@ namespace Eno
         // World-space mouse position.
         public static Vector2 mouseWorldPosition
             => new Vector2(Bridge.GetMouseWorldX(), Bridge.GetMouseWorldY());
+
+        // ── Gamepad ───────────────────────────────────────────────────────────
+
+        public static bool isGamepadConnected() => Bridge.IsGamepadConnected();
+
+        // Raw axis value in [-1, 1]. Triggers: -1 = released, 1 = fully pressed.
+        public static float getGamepadAxis(GamepadAxis axis) => Bridge.GetGamepadAxis((int)axis);
+
+        // Axis value with deadzone applied. Returns 0 if magnitude < deadzone.
+        public static float getGamepadAxis(GamepadAxis axis, float deadzone)
+        {
+            float v = Bridge.GetGamepadAxis((int)axis);
+            return MathF.Abs(v) < deadzone ? 0f : v;
+        }
+
+        // Left stick as a Vector2 with per-axis deadzone.
+        public static Vector2 getLeftStick(float deadzone = 0.2f)
+        {
+            float x = getGamepadAxis(GamepadAxis.LeftX, deadzone);
+            float y = getGamepadAxis(GamepadAxis.LeftY, deadzone);
+            return new Vector2(x, y);
+        }
+
+        // Right stick as a Vector2 with per-axis deadzone.
+        public static Vector2 getRightStick(float deadzone = 0.2f)
+        {
+            float x = getGamepadAxis(GamepadAxis.RightX, deadzone);
+            float y = getGamepadAxis(GamepadAxis.RightY, deadzone);
+            return new Vector2(x, y);
+        }
+
+        // Right trigger normalized to [0, 1] (GLFW reports [-1, 1]).
+        public static float getRightTrigger()
+        {
+            float raw = Bridge.GetGamepadAxis((int)GamepadAxis.RightTrigger);
+            return (raw + 1f) * 0.5f;  // map -1..1 to 0..1
+        }
+
+        public static bool isGamepadButtonPressed(GamepadButton button)  => Bridge.IsGamepadButtonPressed((int)button);
+        public static bool isGamepadButtonHeld(GamepadButton button)     => Bridge.IsGamepadButtonHeld((int)button);
+        public static bool isGamepadButtonReleased(GamepadButton button) => Bridge.IsGamepadButtonReleased((int)button);
     }
 
     public class InputManager

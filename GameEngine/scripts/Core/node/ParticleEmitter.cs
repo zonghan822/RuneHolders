@@ -1,15 +1,9 @@
 namespace Eno
 {
-    // Preset: PARTICLE — TransformComponent + ParticleEmitterComponent + Visibility + Layer
-    public class ParticleEmitter : Node2D
+    // Preset: PARTICLE — TransformComponent + RenderComponent + ParticleEmitterComponent + Visibility + Layer
+    public class ParticleEmitter : Sprite2D
     {
         public ParticleEmitter(uint id, NodeType type) : base(id, type) {}
-
-        public Vector2 position
-        {
-            get => new Vector2(Bridge.GetPositionX(ID), Bridge.GetPositionY(ID));
-            set => Bridge.SetPosition(ID, value.x, value.y);
-        }
 
         public void emitBurst(int count) => Bridge.ParticleEmitBurst(ID, count);
         public void startEmission() => Bridge.ParticleStartEmission(ID);
@@ -22,6 +16,7 @@ namespace Eno
 
         public int maxParticles
         {
+            get => Bridge.GetParticleMaxParticles(ID);
             set => Bridge.SetParticleMaxParticles(ID, value);
         }
 

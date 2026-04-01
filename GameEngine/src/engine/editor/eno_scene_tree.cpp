@@ -1067,6 +1067,10 @@ namespace Editor
 					updated.pos = existing.pos;
 					existing = updated;
 				}
+				else if constexpr (std::is_same_v<T, ECSComponents::VisibilityComponent>)
+				{
+					// Preserve per-instance visibility — skip prefab override
+				}
 				else
 					node->entity_.get<T>(entMng_) = std::any_cast<T>(compAny);
 			});

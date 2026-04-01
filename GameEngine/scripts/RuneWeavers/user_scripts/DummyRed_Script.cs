@@ -5,11 +5,16 @@ namespace Eno
     public class DummyRed_Script : ScriptBase
     {
         public static bool WasHit = false;
+        private static DummyRed_Script? _instance;
+
+        private const float HURT_DURATION = 0.3f;
 
         private Enemy? _self;
+        private float _timer = 0f;
 
         public void Begin()
         {
+            _instance = this;
             _self = Self<Enemy>();
             if (_self != null)
             {
@@ -28,10 +33,29 @@ namespace Eno
 
         public void Hurt_enter()
         {
-            EnemyColorRegistry.Unregister(ID);
-            FreeNode(_self!);
+            WasHit = true;
+            _timer = 0f;
+            if (_self != null)
+            {
+                _self.setAnimationLooping(false);
+                uint frames = _self.getAnimationFrameCount();
+                if (frames > 0) _self.setAnimationFrameDuration(HURT_DURATION / frames);
+            }
         }
-        public void Hurt_update() { }
+        public void Hurt_update()
+        {
+            _timer += Time.deltaTime;
+            if (_timer >= HURT_DURATION)
+                _self?.changeState("Idle");
+        }
         public void Hurt_exit() { }
+
+        public static void Cleanup()
+        {
+            if (_instance == null) return;
+            EnemyColorRegistry.Unregister(_instance.ID);
+            if (_instance._self != null) _instance.FreeNode(_instance._self);
+            _instance = null;
+        }
     }
 }

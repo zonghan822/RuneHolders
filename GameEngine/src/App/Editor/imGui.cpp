@@ -123,6 +123,11 @@ static bool g_resetEntityCounter = false;  // Flag to reset entity counter when 
 // Scene deletion error tracking
 static bool g_cannotDeleteActiveScene = false;
 
+// Scale tool state — shared between the Transform Scale slider and the DrawInfo Width/Height fields
+// so that editing Width/Height directly resets the Scale reference point.
+static std::unordered_map<uint32_t, float>                    g_entityScales;
+static std::unordered_map<uint32_t, std::pair<float, float>>  g_entityBaseSizes;
+
 // Audio browser tree
 struct AudioEntry {
 	std::string displayName;         // filename with extension, e.g. "laser.wav"
@@ -2604,17 +2609,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
 			auto& drawForScale = entity.get<ECSComponents::DrawInfoComponent>(entMng);
 
-			static std::unordered_map<uint32_t, float> entityScales;
-			static std::unordered_map<uint32_t, std::pair<float, float>> entityBaseSizes;
 			uint32_t entityID = entity.id();
 
-			if (entityBaseSizes.find(entityID) == entityBaseSizes.end()) {
-				entityBaseSizes[entityID] = { drawForScale.width, drawForScale.height };
-				entityScales[entityID] = 1.0f;
+			if (g_entityBaseSizes.find(entityID) == g_entityBaseSizes.end()) {
+				g_entityBaseSizes[entityID] = { drawForScale.width, drawForScale.height };
+				g_entityScales[entityID] = 1.0f;
 			}
 
-			float& scale = entityScales[entityID];
-			auto& baseSize = entityBaseSizes[entityID];
+			float& scale = g_entityScales[entityID];
+			auto& baseSize = g_entityBaseSizes[entityID];
 
 			if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.1f, 10.0f)) {
 				drawForScale.width  = baseSize.first  * scale;
@@ -2638,10 +2641,16 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		
 		// Allow independent width/height scaling
-		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 4000.0f);
 		trackEdit("Edit DrawInfo Width");
-		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 4000.0f);
 		trackEdit("Edit DrawInfo Height");
+
+		// Keep Scale base size in sync so the Scale slider doesn't fight Width/Height edits
+		if (draw.width != oldWidth || draw.height != oldHeight) {
+			g_entityBaseSizes[entity.id()] = { draw.width, draw.height };
+			g_entityScales[entity.id()]    = 1.0f;
+		}
 
 		// Auto-update collision when width/height changes
 		if ((draw.width != oldWidth || draw.height != oldHeight) && entity.has<ECSComponents::CollisionComponent>(entMng)) {
@@ -2687,33 +2696,21 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			}
 		}
 
-		// Color selector (White, Red or Green)
-		const char* colorTypes[] = { "White", "Green", "Red" };
-		int currentColorIndex = 0;
-		if (draw.color.r == 1.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
-			currentColorIndex = 2; // Red
-		}
-		else if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
-			currentColorIndex = 1; // Green
-		}
-		else if (draw.color.r == 1.0f && draw.color.g == 1.0f && draw.color.b == 1.0f) {
-			currentColorIndex = 0; // White
-		}
-
+		// Color selector (RGBA) — syncs to particle start color if present
+		float drawColor[4] = { draw.color.r, draw.color.g, draw.color.b, draw.color.a };
+		if (ImGui::ColorEdit4("Color", drawColor))
 		{
-			auto _before = undoManager.captureComponentsMap(entity);
-			if (ImGui::Combo("Color", &currentColorIndex, colorTypes, IM_ARRAYSIZE(colorTypes))) {
-				if (currentColorIndex == 1)       draw.color = Graphics::Color::Green;
-				else if (currentColorIndex == 2)  draw.color = Graphics::Color::Red;
-				else                              draw.color = Graphics::Color::White;
-				if (g_game) g_game->markEntitiesDirty();
-				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Change Color");
+			draw.color.r = drawColor[0]; draw.color.g = drawColor[1];
+			draw.color.b = drawColor[2]; draw.color.a = drawColor[3];
+			if (g_game) g_game->markEntitiesDirty();
+			if (entity.has<ECSComponents::ParticleEmitterComponent>(entMng))
+			{
+				auto& em = entity.get<ECSComponents::ParticleEmitterComponent>(entMng);
+				em.colorStartR = drawColor[0]; em.colorStartG = drawColor[1];
+				em.colorStartB = drawColor[2]; em.colorStartA = drawColor[3];
 			}
 		}
-
-		// Display color preview
-		ImVec4 colorVec(draw.color.r, draw.color.g, draw.color.b, draw.color.a);
-		ImGui::ColorButton("##color", colorVec, 0, ImVec2(20, 20));
+		trackEdit("Edit Color");
 
 		// Display texture info / drag-drop target
 		if (draw.texture != nullptr && draw.texture->isValid()) {
@@ -3731,19 +3728,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 		trackEdit("Edit Color End");
 
-		// Particle shape
-		const char* shapeRenderNames[] = { "Square", "Circle" };
-		int shapeRenderIdx = static_cast<int>(emitter.particleShape);
-		{
-			auto _before = undoManager.captureComponentsMap(entity);
-			if (ImGui::Combo("Particle Shape##particle", &shapeRenderIdx, shapeRenderNames, IM_ARRAYSIZE(shapeRenderNames)))
-			{
-				emitter.particleShape = static_cast<Particles::ParticleShape>(shapeRenderIdx);
-				undoManager.recordComponentChange(entity, std::move(_before),
-					undoManager.captureComponentsMap(entity), "Edit Particle Shape");
-			}
-		}
-
 		// Blend mode
 		const char* blendNames[] = { "Alpha", "Additive" };
 		int blendIdx = static_cast<int>(emitter.blendMode);
@@ -3768,7 +3752,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::Button("Emit Burst##particle"))
 		{
 			auto* ps = engine_.getParticleSystem();
-			if (ps) ps->EmitBurst(entMng, entity.id(), emitter.maxParticles / 4);
+			if (ps) ps->EmitBurst(entMng, entity.id(), emitter.maxParticles/4);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Start##particle"))
@@ -6276,7 +6260,7 @@ void displayVideoTab(Engine::EnoEngine& engine_)
 			// Playback controls
 			if (ImGui::Button("Play"))
 			{
-				player->play();
+				player->play(engine_.getAudioManager().getSystem());
 				playPreview = true;
 			}
 			ImGui::SameLine();

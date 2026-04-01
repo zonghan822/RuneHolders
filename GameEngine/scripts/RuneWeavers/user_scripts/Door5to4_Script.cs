@@ -56,7 +56,6 @@ namespace Eno
 
         public void Locked_enter()
         {
-            Bridge.SetVisibility(ID, true);
             Bridge.SetColliderActive(ID, true);
             Bridge.SetZIndex(ID, 2);
         }
@@ -74,7 +73,6 @@ namespace Eno
 
         public void Unlocked_enter()
         {
-            Bridge.SetVisibility(ID, false);
             Bridge.SetColliderActive(ID, false);
         }
         public void Unlocked_update()
@@ -95,5 +93,20 @@ namespace Eno
             _panning = true;
         }
         public void Unlocked_exit() { }
+    
+        public void Default_enter()
+        {
+            // TODO: Add enter logic for Default state
+        }
+
+        public void Default_update()
+        {
+            // TODO: Add update logic for Default state
+        }
+
+        public void Default_exit()
+        {
+            // TODO: Add exit logic for Default state
+        }
     }
 }
