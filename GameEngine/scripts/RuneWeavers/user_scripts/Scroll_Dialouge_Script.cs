@@ -309,7 +309,7 @@ namespace Eno
             if (_isNarrative[index])
             {
                 // Show narrative sprite, hide text label and dialogue box
-                //if (_narrativeSprite != null)
+                if (_narrativeSprite != null)
                 {
                     Bridge.SetTexturePath(_narrativeSprite.ID, _narrativeTextures[index]);
                     Bridge.SetVisibility(_narrativeSprite.ID, true);

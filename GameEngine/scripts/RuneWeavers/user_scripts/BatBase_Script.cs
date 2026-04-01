@@ -83,7 +83,11 @@ namespace Eno
 
         public void Update()
         {
-            if (PlayerController.IsGamePaused) return;
+            if (PlayerController.IsGamePaused)             
+            {
+                if (_self != null) _self.velocity = new Vector2(0f, 0f);
+                return;
+            }
             if (_self == null) return;
 
             // Force death if health reached zero outside of Hurt state

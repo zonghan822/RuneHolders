@@ -163,6 +163,8 @@ namespace Eno
                     Bridge.SetButtonActive(_enemyInfoPopupID, false);
                 }
                 if (_enemyInfoPopupBgID != 0) Bridge.SetVisibility(_enemyInfoPopupBgID, false);
+                IsGamePaused = false;
+                Bridge.SetAudioPaused(false);
                 return;
             }
 
@@ -346,6 +348,8 @@ namespace Eno
             {
                 _enemyInfoOpen = true;
                 Bridge.SetVisibility(_enemyInfoID, true);
+                IsGamePaused = true;
+                Bridge.SetAudioPaused(true);
             }
         }
     }
