@@ -2,17 +2,17 @@ using System;
 
 namespace Eno
 {
-    public class Door16Bto17B_Script : ScriptBase
+    public class Door13to12_Script : ScriptBase
     {
         [Port] public string PlayerName    = "Player";
         [Port] public string CameraName    = "Camera";
         [Port] public float  PanSpeed      = 800f;
         [Port] public float  TriggerRadius = 64f;
 
-        private const float PlayerDestX =  6720f;
-        private const float PlayerDestY = -8967f;
-        private const float CamDestX    =  6716f;
-        private const float CamDestY    = -9212f;
+        private const float PlayerDestX =  8640f;
+        private const float PlayerDestY = -7222f;
+        private const float CamDestX    =  8638f;
+        private const float CamDestY    = -7065f;
 
         private uint  _playerID    = 0;
         private uint  _cameraID    = 0;
@@ -95,20 +95,39 @@ namespace Eno
             _panning = true;
         }
         public void Unlocked_exit() { }
+
+        public void Default_enter()  { }
+        public void Default_update() { }
+        public void Default_exit()   { }
     
-        public void Default_enter()
+        public void Idle_enter()
         {
-            // TODO: Add enter logic for Default state
+            // TODO: Add enter logic for Idle state
         }
 
-        public void Default_update()
+        public void Idle_update()
         {
-            // TODO: Add update logic for Default state
+            // TODO: Add update logic for Idle state
         }
 
-        public void Default_exit()
+        public void Idle_exit()
         {
-            // TODO: Add exit logic for Default state
+            // TODO: Add exit logic for Idle state
+        }
+    
+        public void Hurt_enter()
+        {
+            // TODO: Add enter logic for Hurt state
+        }
+
+        public void Hurt_update()
+        {
+            // TODO: Add update logic for Hurt state
+        }
+
+        public void Hurt_exit()
+        {
+            // TODO: Add exit logic for Hurt state
         }
     }
 }
