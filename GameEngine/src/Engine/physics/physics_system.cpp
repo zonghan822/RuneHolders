@@ -236,7 +236,9 @@ namespace Physics
                     auto& otherPhysics = otherEntity.get<ECSComponents::PhysicsComponent>(entityManager);
                     bool sameGroup = physics.collisionGroup != 0 &&
                                      physics.collisionGroup == otherPhysics.collisionGroup;
-                    if (!sameGroup && !otherPhysics.isKinematic)
+                    if (sameGroup)
+                        continue; // Same group: pass through entirely
+                    if (!otherPhysics.isKinematic)
                     {
                         // Different groups, both dynamic: full push resolution
                         ResolveCollision(transform, physics, collision,
@@ -244,9 +246,8 @@ namespace Physics
                         dispX = physics.velocity.x * deltaTime;
                         break;
                     }
-                    // Same group or kinematic: block without momentum transfer (fall through)
                 }
-                // Static, kinematic, or same-group: cancel X movement
+                // Static or kinematic: cancel X movement
                 physics.velocity.x = 0.0f;
                 dispX = 0.0f;
                 blockedX = true;
@@ -280,7 +281,9 @@ namespace Physics
                     auto& otherPhysics = otherEntity.get<ECSComponents::PhysicsComponent>(entityManager);
                     bool sameGroup = physics.collisionGroup != 0 &&
                                      physics.collisionGroup == otherPhysics.collisionGroup;
-                    if (!sameGroup && !otherPhysics.isKinematic)
+                    if (sameGroup)
+                        continue; // Same group: pass through entirely
+                    if (!otherPhysics.isKinematic)
                     {
                         // Different groups, both dynamic: full push resolution
                         ResolveCollision(transform, physics, collision,
@@ -288,9 +291,8 @@ namespace Physics
                         dispY = physics.velocity.y * deltaTime;
                         break;
                     }
-                    // Same group or kinematic: block without momentum transfer (fall through)
                 }
-                // Static, kinematic, or same-group: cancel Y movement
+                // Static or kinematic: cancel Y movement
                 physics.velocity.y = 0.0f;
                 dispY = 0.0f;
                 blockedY = true;

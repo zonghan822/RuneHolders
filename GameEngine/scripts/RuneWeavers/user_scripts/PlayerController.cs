@@ -24,8 +24,6 @@ namespace Eno
         private float     _hurtTimer   = 0f;
         private bool      _isAttacking = false;
         private bool      _isHurt      = false;
-        // Spell damage — written to the DamageComponent on Begin() so spells can read it via bridge
-        public float damage = 10f;
 
         private Node2D?[] _scrollNodes    = Array.Empty<Node2D?>();
         private uint      _spellbookUIID    = 0;
@@ -50,9 +48,9 @@ namespace Eno
             _player.useGravity      = false;
             _player.isKinematic     = false;
             _player.collisionGroup  = 1;
-            _player.maxHealth       = 100f;
-            _player.health      = 100f;
-            _player.damage      = damage;
+            _player.maxHealth       = 5f;
+            _player.health      = 5f;
+            _player.damage      = 1f;
 
             
             _hpBarFull = GetNode<Sprite2D>("PlayerHealthBar_Full");

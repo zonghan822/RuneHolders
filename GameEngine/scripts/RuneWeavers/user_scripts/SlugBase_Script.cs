@@ -67,9 +67,9 @@ namespace Eno
             // Initialize Slug Values
             _self.useGravity    = false;
             _self.isKinematic   = false;
-            _self.maxHealth     = 30f;
-            _self.health        = 30f;
-            _self.damage        = 10f;
+            _self.maxHealth     = 1f;
+            _self.health        = 1f;
+            _self.damage        = 1f;
             _self.pathClearance  = 1;
             _self.collisionGroup = 1;
             EnemyColorRegistry.Register(ID, EnemyColor);
@@ -175,7 +175,7 @@ namespace Eno
             if (_walkAudio != null && _self != null)
             {
                 _walkAudio.sound = MOVE_SOUND;
-                _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
+                //_walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
             }
         }
 
@@ -255,7 +255,7 @@ namespace Eno
             if (_walkAudio != null && _self != null)
             {
                 _walkAudio.sound = MOVE_SOUND;
-                _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
+                //_walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
             }
         }
 
@@ -276,7 +276,7 @@ namespace Eno
                 int i = rng.Next(0, _hurtSounds.Count);
                 Console.WriteLine($"Sound selected: { _hurtSounds[i] }");
                 _hdAudio.sound = _hurtSounds[i];
-                _hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
+                //_hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
             }
         }
         public void Hurt_update()
@@ -305,7 +305,7 @@ namespace Eno
             {
                 int i = rng.Next(0, _deathSounds.Count);
                 _hdAudio.sound = _deathSounds[i];
-                _hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
+                //_hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
             }
         }
         public void Death_update()

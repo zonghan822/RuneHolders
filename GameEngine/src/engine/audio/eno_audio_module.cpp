@@ -12,6 +12,7 @@ namespace Audio
 	EnoAudioModule::EnoAudioModule()
 		:
 		sound_{ nullptr },
+		ch_{ nullptr },
 		loop_{ LoopMode::Disabled },
 		loopStart_{ 0.f },
 		loopEnd_{ 0.f }
@@ -27,6 +28,7 @@ namespace Audio
 		const std::string& name, const std::string& path, FMOD::Sound* sound, const std::string& group)
 		:
 		sound_{ sound },
+		ch_{ nullptr },
 		loop_ { LoopMode::Disabled },
 		loopStart_{ 0.f },
 		loopEnd_{ 0.f }

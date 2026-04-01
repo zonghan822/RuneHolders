@@ -58,9 +58,9 @@ namespace Eno
             _self.useGravity    = false;
             _self.isKinematic   = true;
             _self.velocity      = new Vector2(0f, 0f);
-            _self.maxHealth     = 20f;
-            _self.health        = 20f;
-            _self.damage        = 15f;
+            _self.maxHealth     = 1f;
+            _self.health        = 1f;
+            _self.damage        = 1f;
             _self.pathClearance  = 1;
             _self.collisionGroup = 1;
             EnemyColorRegistry.Register(ID, EnemyColor);
@@ -180,7 +180,7 @@ namespace Eno
             if (_audio != null && _self != null)
             {
                 _audio.sound = ATTACK_SOUND;
-                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+                //_audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
         }
         public void WindUp_update()

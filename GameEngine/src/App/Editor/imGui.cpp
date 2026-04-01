@@ -143,6 +143,7 @@ struct TextureEntry {
 	std::string stemName;             // filename without extension, key in textures_ map
 	std::filesystem::path buildPath;  // path in the runtime assets folder
 	std::filesystem::path rootPath;   // path in the source assets folder (for deletion)
+
 };
 struct TextureFolder {
 	std::string folderName;
@@ -333,6 +334,171 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 			}
 
 			ImGui::EndMenu();
+		}
+
+		// Drop down menu for the bsa
+		static bool bsaOpen{ false };
+		if (ImGui::BeginMenu("Build Site Analyzer"))
+		{
+			// MENU
+			if (ImGui::MenuItem("Open"))
+			{
+				bsaOpen = true;
+			}
+
+			ImGui::EndMenu();
+		}
+
+		// BSA window
+		if (bsaOpen)
+		{
+			if (ImGui::Begin("Build Site Analyzer", &bsaOpen))
+			{
+				static std::string selectedTexture;
+				static Graphics::TextureData textureData;
+				static std::filesystem::path selectedTextureBuildPath;
+				static std::filesystem::path selectedTextureRootPath;
+
+				static std::unordered_set<std::string> selectedTextures;
+
+				std::uintmax_t totalFileSize{};
+				std::uintmax_t selectedFileSize{};
+				size_t totalAssetCount{};
+
+				for (const TextureFolder& sub : g_textureTree.subfolders)
+				{
+					for (const TextureEntry& entry : sub.files)
+					{
+						std::uintmax_t fileSize = std::filesystem::file_size(entry.buildPath);
+						totalFileSize += fileSize;
+
+						++totalAssetCount;
+
+						if (selectedTextures.contains(entry.stemName))
+						{
+							selectedFileSize += fileSize;
+						}
+					}
+				}
+
+				float totalMB = totalFileSize / (1024.f * 1024.f);
+				float selectedMB = selectedFileSize / (1024.f * 1024.f);
+				ImGui::Text(
+					"Assets (%.2f MB) } Selected (%.2f MB)", 
+					totalMB,
+					selectedMB);
+
+				ImGui::Separator();
+
+				// Load texture assets
+				if (ImGui::Button("Reload Assets"))
+					LoadTextureAssets(engine_);
+
+				const auto& textures = loader.getAllTextures();
+
+				bool allSelected = (selectedTextures.size() == totalAssetCount);
+				bool selectAllUI = allSelected;
+
+				if (ImGui::Button("Export Selected Assets"))
+				{
+					// Using the directory, pick a folder/dest
+					std::filesystem::path exportPath = File_pick::OpenFolderDialog();
+
+					for (const auto& sub : g_textureTree.subfolders)
+					{
+						for (const auto& entry : sub.files)
+						{
+							if (!selectedTextures.contains(entry.stemName))
+								continue;
+									
+							// Copy files to new dest
+							std::filesystem::path dest = exportPath / entry.buildPath.filename();
+
+							std::filesystem::copy_file(
+								entry.buildPath,
+								dest,
+								std::filesystem::copy_options::overwrite_existing
+							);
+						}
+					}
+				}
+
+				// Select all assets checkbox
+				if (ImGui::Checkbox("Select All Assets", &selectAllUI))
+				{
+					if (selectAllUI)
+					{
+						// Select ALL
+						selectedTextures.clear();
+
+						for (const auto& sub : g_textureTree.subfolders)
+						{
+							for (const auto& entry : sub.files)
+							{
+								selectedTextures.insert(entry.stemName);
+							}
+						}
+					}
+					else
+					{
+						// Deselect ALL
+						selectedTextures.clear();
+					}
+				}
+
+				for (const TextureFolder& sub : g_textureTree.subfolders)
+				{
+					for (const TextureEntry& entry : sub.files)
+					{
+						auto it = textures.find(entry.stemName);
+						if (it == textures.end() || !it->second || !it->second->isValid())
+							continue;
+
+						auto& texture = it->second;
+
+						ImGui::BeginGroup();
+
+						bool isSelected = selectedTextures.contains(entry.stemName);
+
+						ImVec2 rowSize(0, 52);
+
+						if (ImGui::Selectable(("##row" + entry.stemName).c_str(),
+							isSelected, 0, rowSize))
+						{
+							// toggle selection
+							if (isSelected)
+								selectedTextures.erase(entry.stemName);
+							else
+								selectedTextures.insert(entry.stemName);
+
+							textureData.texture = texture;
+							selectedTextureBuildPath = entry.buildPath;
+							selectedTextureRootPath = entry.rootPath;
+						}
+
+						ImVec2 p0 = ImGui::GetItemRectMin();
+
+						// Write image
+						ImGui::SetCursorScreenPos(ImVec2(p0.x + 4, p0.y + 4));
+						ImGui::Image((void*)(intptr_t)texture->getID(), ImVec2(44, 44));
+
+						// Write image display name
+						ImGui::SetCursorScreenPos(ImVec2(p0.x + 60, p0.y + 6));
+						ImGui::Text("%s", entry.displayName.c_str());
+
+						// Find and write file size for each image
+						std::uintmax_t fileSize = std::filesystem::file_size(entry.buildPath);
+						float sizeKB = fileSize / 1024.0f;
+
+						ImGui::SetCursorScreenPos(ImVec2(p0.x + 60, p0.y + 24));
+						ImGui::TextDisabled("%.1f KB", sizeKB);
+
+						ImGui::EndGroup();
+					}
+				}
+			}
+
+			ImGui::End();
 		}
 
 		// Shutdown button on the right side of the menu bar
@@ -2521,33 +2687,21 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			}
 		}
 
-		// Color selector (White, Red or Green)
-		const char* colorTypes[] = { "White", "Green", "Red" };
-		int currentColorIndex = 0;
-		if (draw.color.r == 1.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
-			currentColorIndex = 2; // Red
-		}
-		else if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
-			currentColorIndex = 1; // Green
-		}
-		else if (draw.color.r == 1.0f && draw.color.g == 1.0f && draw.color.b == 1.0f) {
-			currentColorIndex = 0; // White
-		}
-
+		// Color selector (RGBA) — syncs to particle start color if present
+		float drawColor[4] = { draw.color.r, draw.color.g, draw.color.b, draw.color.a };
+		if (ImGui::ColorEdit4("Color", drawColor))
 		{
-			auto _before = undoManager.captureComponentsMap(entity);
-			if (ImGui::Combo("Color", &currentColorIndex, colorTypes, IM_ARRAYSIZE(colorTypes))) {
-				if (currentColorIndex == 1)       draw.color = Graphics::Color::Green;
-				else if (currentColorIndex == 2)  draw.color = Graphics::Color::Red;
-				else                              draw.color = Graphics::Color::White;
-				if (g_game) g_game->markEntitiesDirty();
-				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Change Color");
+			draw.color.r = drawColor[0]; draw.color.g = drawColor[1];
+			draw.color.b = drawColor[2]; draw.color.a = drawColor[3];
+			if (g_game) g_game->markEntitiesDirty();
+			if (entity.has<ECSComponents::ParticleEmitterComponent>(entMng))
+			{
+				auto& em = entity.get<ECSComponents::ParticleEmitterComponent>(entMng);
+				em.colorStartR = drawColor[0]; em.colorStartG = drawColor[1];
+				em.colorStartB = drawColor[2]; em.colorStartA = drawColor[3];
 			}
 		}
-
-		// Display color preview
-		ImVec4 colorVec(draw.color.r, draw.color.g, draw.color.b, draw.color.a);
-		ImGui::ColorButton("##color", colorVec, 0, ImVec2(20, 20));
+		trackEdit("Edit Color");
 
 		// Display texture info / drag-drop target
 		if (draw.texture != nullptr && draw.texture->isValid()) {
@@ -3473,6 +3627,135 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		else if (strlen(vid.videoName) > 0)
 		{
 			ImGui::TextDisabled("(video not loaded)");
+		}
+	}
+
+	// --- ParticleEmitterComponent ---
+	if (entity.has<ECSComponents::ParticleEmitterComponent>(entMng))
+	{
+		auto& emitter = entity.get<ECSComponents::ParticleEmitterComponent>(entMng);
+		ImGui::SeparatorText("Particle Emitter");
+
+		// Emission
+		ImGui::DragFloat("Emission Rate", &emitter.emissionRate, 1.0f, 0.0f, 10000.0f);
+		trackEdit("Edit Emission Rate");
+		ImGui::DragInt("Max Particles", &emitter.maxParticles, 1, 1, 10000);
+		trackEdit("Edit Max Particles");
+		ImGui::DragFloat("Duration", &emitter.duration, 0.1f, -1.0f, 60.0f);
+		trackEdit("Edit Duration");
+
+		// Emission shape
+		const char* shapeNames[] = { "Point", "Circle", "Cone", "Box" };
+		int shapeIdx = static_cast<int>(emitter.shape);
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("Shape##particle", &shapeIdx, shapeNames, IM_ARRAYSIZE(shapeNames)))
+			{
+				emitter.shape = static_cast<Particles::EmissionShape>(shapeIdx);
+				undoManager.recordComponentChange(entity, std::move(_before),
+					undoManager.captureComponentsMap(entity), "Edit Emission Shape");
+			}
+		}
+
+		if (emitter.shape == Particles::EmissionShape::Circle)
+		{
+			ImGui::DragFloat("Shape Radius", &emitter.shapeRadius, 1.0f, 0.0f, 1000.0f);
+			trackEdit("Edit Shape Radius");
+		}
+		else if (emitter.shape == Particles::EmissionShape::Cone)
+		{
+			ImGui::DragFloat("Shape Angle", &emitter.shapeAngle, 1.0f, 0.0f, 360.0f);
+			trackEdit("Edit Shape Angle");
+		}
+		else if (emitter.shape == Particles::EmissionShape::Box)
+		{
+			ImGui::DragFloat2("Shape Size", (float*)&emitter.shapeSize, 1.0f, 0.0f, 1000.0f);
+			trackEdit("Edit Shape Size");
+		}
+
+		// Particle properties
+		ImGui::SeparatorText("Particle Properties");
+		ImGui::DragFloat2("Velocity Min", (float*)&emitter.velocityMin, 1.0f);
+		trackEdit("Edit Velocity Min");
+		ImGui::DragFloat2("Velocity Max", (float*)&emitter.velocityMax, 1.0f);
+		trackEdit("Edit Velocity Max");
+		ImGui::DragFloat("Lifetime Min", &emitter.lifetimeMin, 0.05f, 0.01f, 30.0f);
+		trackEdit("Edit Lifetime Min");
+		ImGui::DragFloat("Lifetime Max", &emitter.lifetimeMax, 0.05f, 0.01f, 30.0f);
+		trackEdit("Edit Lifetime Max");
+		ImGui::DragFloat("Size Min", &emitter.sizeMin, 0.5f, 0.1f, 200.0f);
+		trackEdit("Edit Size Min");
+		ImGui::DragFloat("Size Max", &emitter.sizeMax, 0.5f, 0.1f, 200.0f);
+		trackEdit("Edit Size Max");
+		ImGui::DragFloat("Rotation Min", &emitter.rotationMin, 1.0f, 0.0f, 360.0f);
+		trackEdit("Edit Rotation Min");
+		ImGui::DragFloat("Rotation Max", &emitter.rotationMax, 1.0f, 0.0f, 360.0f);
+		trackEdit("Edit Rotation Max");
+		ImGui::DragFloat("Rotation Speed", &emitter.rotationSpeed, 1.0f, 0.0f, 720.0f);
+		trackEdit("Edit Rotation Speed");
+
+		// Physics
+		ImGui::SeparatorText("Particle Physics");
+		ImGui::DragFloat2("Gravity##particle", (float*)&emitter.gravity, 0.5f);
+		trackEdit("Edit Particle Gravity");
+		ImGui::DragFloat("Drag##particle", &emitter.drag, 0.01f, 0.0f, 2.0f);
+		trackEdit("Edit Particle Drag");
+
+		// Visual — start color
+		ImGui::SeparatorText("Particle Colors");
+		float colorStart[4] = { emitter.colorStartR, emitter.colorStartG, emitter.colorStartB, emitter.colorStartA };
+		if (ImGui::ColorEdit4("Color Start", colorStart))
+		{
+			emitter.colorStartR = colorStart[0]; emitter.colorStartG = colorStart[1];
+			emitter.colorStartB = colorStart[2]; emitter.colorStartA = colorStart[3];
+		}
+		trackEdit("Edit Color Start");
+
+		float colorEnd[4] = { emitter.colorEndR, emitter.colorEndG, emitter.colorEndB, emitter.colorEndA };
+		if (ImGui::ColorEdit4("Color End", colorEnd))
+		{
+			emitter.colorEndR = colorEnd[0]; emitter.colorEndG = colorEnd[1];
+			emitter.colorEndB = colorEnd[2]; emitter.colorEndA = colorEnd[3];
+		}
+		trackEdit("Edit Color End");
+
+		// Blend mode
+		const char* blendNames[] = { "Alpha", "Additive" };
+		int blendIdx = static_cast<int>(emitter.blendMode);
+		{
+			auto _before = undoManager.captureComponentsMap(entity);
+			if (ImGui::Combo("Blend Mode##particle", &blendIdx, blendNames, IM_ARRAYSIZE(blendNames)))
+			{
+				emitter.blendMode = static_cast<Particles::BlendMode>(blendIdx);
+				undoManager.recordComponentChange(entity, std::move(_before),
+					undoManager.captureComponentsMap(entity), "Edit Blend Mode");
+			}
+		}
+
+		// State
+		ImGui::SeparatorText("State");
+		ImGui::Checkbox("Is Emitting##particle", &emitter.isEmitting);
+		trackEdit("Toggle Is Emitting");
+		ImGui::Text("Active Particles: %d", emitter.activeParticleCount);
+
+		// Preview controls
+		ImGui::Separator();
+		if (ImGui::Button("Emit Burst##particle"))
+		{
+			auto* ps = engine_.getParticleSystem();
+			if (ps) ps->EmitBurst(entMng, entity.id(), emitter.maxParticles/4);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Start##particle"))
+		{
+			auto* ps = engine_.getParticleSystem();
+			if (ps) ps->StartEmission(entMng, entity.id());
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Stop##particle"))
+		{
+			auto* ps = engine_.getParticleSystem();
+			if (ps) ps->StopEmission(entMng, entity.id());
 		}
 	}
 

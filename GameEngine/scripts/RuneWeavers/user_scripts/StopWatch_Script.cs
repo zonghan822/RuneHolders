@@ -27,9 +27,14 @@ namespace Eno
         // ── Per-state timer ───────────────────────────────────────────────────
         private float _timer = 0f;
 
+        private Sprite2D? _self;
+
         public void Begin() 
         { 
-            Self<Sprite2D>()?.changeState("Idle");
+            _self = Self<Sprite2D>();
+            if (_self == null) return;
+            _self.changeState("Idle");
+            _self.visible = false;
         }
 
         public void Update() { }
@@ -38,39 +43,41 @@ namespace Eno
         public void FadeIn_enter()
         {
             _timer = 0f;
-            var self = Self<Sprite2D>();
-            if (self == null) return;
+            if (_self == null) return;
             Bridge.AudioPlay(ID);
-            self.setAnimationLooping(false);
-            uint frames = self.getAnimationFrameCount();
+            _self.setAnimationLooping(false);
+            uint frames = _self.getAnimationFrameCount();
             // Animation system uses scaled dt, so multiply by timeScale to keep real duration correct
-            if (frames > 0) self.setAnimationFrameDuration(fadeInTime * Time.timeScale / frames);
+            if (frames > 0) _self.setAnimationFrameDuration(fadeInTime * Time.timeScale / frames);
         }
 
         public void FadeIn_update()
         {
             _timer += Time.unscaledDeltaTime;
             if (_timer >= fadeInTime)
-                Bridge.ChangeState(ID, "Idle");
+                _self.changeState("Idle");
         }
 
         public void FadeIn_exit() {}
 
         // ── State: Idle ───────────────────────────────────────────────────────
         public void Idle_enter() {}
-        public void Idle_update() {}
+        public void Idle_update() 
+        {
+            if (_self == null) return;
+            _self.setAnimationLooping(true);
+        }
         public void Idle_exit() {}
 
         // ── State: FadeOut ────────────────────────────────────────────────────
         public void FadeOut_enter()
         {
             _timer = 0f;
-            var self = Self<Sprite2D>();
-            if (self == null) return;
-            self.setAnimationLooping(false);
-            uint frames = self.getAnimationFrameCount();
+            if (_self == null) return;
+            _self.setAnimationLooping(false);
+            uint frames = _self.getAnimationFrameCount();
             // timeScale is 1.0 during FadeOut (restored by EndSlowTime before this state), so this is just fadeOutTime / frames
-            if (frames > 0) self.setAnimationFrameDuration(fadeOutTime * Time.timeScale / frames);
+            if (frames > 0) _self.setAnimationFrameDuration(fadeOutTime * Time.timeScale / frames);
         }
 
         public void FadeOut_update()
@@ -78,12 +85,10 @@ namespace Eno
             _timer += Time.unscaledDeltaTime;
             if (_timer >= fadeOutTime)
             {
-                Bridge.ChangeState(ID, "Idle");
-
                 // Hide this node once the fade-out animation finishes
-                var self = Self<Sprite2D>();
-                if (self != null)
-                    self.visible = false;
+                if (_self == null) return;
+                _self.changeState("Idle");
+                _self.visible = false;
             }
         }
 

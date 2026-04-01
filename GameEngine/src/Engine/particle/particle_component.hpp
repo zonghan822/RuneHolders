@@ -24,6 +24,7 @@ namespace Particles {
         Alpha,
         Additive
     };
+
 }
 
 namespace ECSComponents {
@@ -58,6 +59,9 @@ struct ParticleEmitterComponent {
     float colorEndR = 1.0f, colorEndG = 1.0f, colorEndB = 1.0f, colorEndA = 0.0f;
     std::string texture = "";             // Empty string = solid color
     Particles::BlendMode blendMode = Particles::BlendMode::Alpha;
+    // Serialization proxies for enums (kept in sync by reflect)
+    int shapeInt = 0;           // EmissionShape
+    int blendModeInt = 0;       // BlendMode
 
     // State (internal)
     float emissionTimer = 0.0f;
@@ -77,13 +81,21 @@ struct ParticleEmitterComponent {
         v("emissionRate", emissionRate, "float");
         v("maxParticles", maxParticles, "int");
         v("duration", duration, "float");
+        v("emissionShape", shapeInt, "int");
         v("shapeRadius", shapeRadius, "float");
         v("shapeAngle", shapeAngle, "float");
+        v("shapeSize", shapeSize, "eVec2(float)");
+        v("velocityMin", velocityMin, "eVec2(float)");
+        v("velocityMax", velocityMax, "eVec2(float)");
         v("lifetimeMin", lifetimeMin, "float");
         v("lifetimeMax", lifetimeMax, "float");
         v("sizeMin", sizeMin, "float");
         v("sizeMax", sizeMax, "float");
+        v("rotationMin", rotationMin, "float");
+        v("rotationMax", rotationMax, "float");
         v("rotationSpeed", rotationSpeed, "float");
+        v("gravity", gravity, "eVec2(float)");
+        v("drag", drag, "float");
         v("colorStartR", colorStartR, "float");
         v("colorStartG", colorStartG, "float");
         v("colorStartB", colorStartB, "float");
@@ -92,21 +104,36 @@ struct ParticleEmitterComponent {
         v("colorEndG", colorEndG, "float");
         v("colorEndB", colorEndB, "float");
         v("colorEndA", colorEndA, "float");
+        v("blendMode", blendModeInt, "int");
         v("isEmitting", isEmitting, "bool");
+        // Sync enums from int proxies after deserialization
+        shape         = static_cast<Particles::EmissionShape>(shapeInt);
+        blendMode     = static_cast<Particles::BlendMode>(blendModeInt);
     }
 
     template <typename Visitor>
     void reflect(Visitor&& v) const {
+        // Sync int proxies from enums before serialization
+        const_cast<int&>(shapeInt)         = static_cast<int>(shape);
+        const_cast<int&>(blendModeInt)     = static_cast<int>(blendMode);
         v("emissionRate", emissionRate, "float");
         v("maxParticles", maxParticles, "int");
         v("duration", duration, "float");
+        v("emissionShape", shapeInt, "int");
         v("shapeRadius", shapeRadius, "float");
         v("shapeAngle", shapeAngle, "float");
+        v("shapeSize", shapeSize, "eVec2(float)");
+        v("velocityMin", velocityMin, "eVec2(float)");
+        v("velocityMax", velocityMax, "eVec2(float)");
         v("lifetimeMin", lifetimeMin, "float");
         v("lifetimeMax", lifetimeMax, "float");
         v("sizeMin", sizeMin, "float");
         v("sizeMax", sizeMax, "float");
+        v("rotationMin", rotationMin, "float");
+        v("rotationMax", rotationMax, "float");
         v("rotationSpeed", rotationSpeed, "float");
+        v("gravity", gravity, "eVec2(float)");
+        v("drag", drag, "float");
         v("colorStartR", colorStartR, "float");
         v("colorStartG", colorStartG, "float");
         v("colorStartB", colorStartB, "float");
@@ -115,6 +142,7 @@ struct ParticleEmitterComponent {
         v("colorEndG", colorEndG, "float");
         v("colorEndB", colorEndB, "float");
         v("colorEndA", colorEndA, "float");
+        v("blendMode", blendModeInt, "int");
         v("isEmitting", isEmitting, "bool");
     }
 };

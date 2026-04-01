@@ -28,9 +28,9 @@ public:
     // Main update loop - emission and physics
     void Update(ECS::EntityManager& entityManager, float deltaTime);
 
-    // Render all particles
-    void Render(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager,
-                const Math::eVec2<float>& cameraOffset);
+    // Render particles for a single entity
+    void RenderEntity(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager,
+                      uint32_t entityID);
 
     // Manual control methods
     void EmitBurst(ECS::EntityManager& entityManager, uint32_t entityID, int count);

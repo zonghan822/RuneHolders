@@ -84,6 +84,10 @@ namespace Eno
             "IceSpell",
         };
 
+        // ── Spell unlock state (set by room scripts on scroll pickup) ────────────
+        // Index 0 = Fire (Room 1), 1 = Light (Room 4), 2 = Ice (Room 8)
+        public static bool[] SpellUnlocked = new bool[3];
+
         // ── Runtime state ────────────────────────────────────────────────────────
         private bool        _active         = false;
         private float       _originX        = 0f;
@@ -97,7 +101,7 @@ namespace Eno
         private List<int>   _connected      = new();
 
         // Casting visuals
-        private Sprite2D?   _spellBase      = null;   // ring at origin
+        private KinematicBody2D? _spellBase  = null;   // ring at origin
         private Sprite2D?   _spellCasting   = null;   // charge indicator
         private int         _activePattern  = -1;     // index into Patterns[], -1 = undetermined
 
@@ -113,6 +117,12 @@ namespace Eno
         private Actor? _player        = null;
         private bool   _playerSearched = false;
 
+        // Particle blink effect — one per rune, spawned as children
+        private ParticleEmitter?[] _runeParticles = new ParticleEmitter?[RUNE_COUNT];
+
+        // Deferred spell cast — pattern index stored when complete, cast on mouse release
+        private int _pendingSpell = -1;
+
         // ── Script callbacks ─────────────────────────────────────────────────────
         public void Begin()
         {
@@ -121,6 +131,7 @@ namespace Eno
                 _runes[i]      = null;
                 _runeStates[i] = "Disabled";
             }
+
         }
 
         public void Update()
@@ -172,9 +183,10 @@ namespace Eno
             _originX       = Input.mouseWorldPosition.x;
             _originY       = Input.mouseWorldPosition.y;
             _activePattern = -1;
+            _pendingSpell  = -1;
             _connected.Clear();
 
-            _spellBase = SpawnPrefab("SpellBase", _originX, _originY) as Sprite2D;
+            _spellBase = SpawnPrefab("SpellBase", _originX, _originY) as KinematicBody2D;
 
             SpawnRunes();
             _active = true;
@@ -183,11 +195,17 @@ namespace Eno
             foreach (int runeIdx in EnemyColorRegistry.ActiveBans)
                 EnemyNullifyRune(runeIdx);
 
-            // Slow world time and freeze all enemies
+            // Slow world time and freeze enemies overlapping the spell base
             Time.timeScale = slowTimeScale;
             Bridge.SetGroupLowPass("SFX", 600f);
-            foreach (Enemy enemy in GetAllEnemies())
-                enemy.changeState("Frozen");
+            if (_spellBase != null)
+            {
+                foreach (Enemy enemy in GetAllEnemies())
+                {
+                    if (_spellBase.isColliding(enemy))
+                        enemy.changeState("Frozen");
+                }
+            }
 
             // Show the StopWatch sprite and trigger fade-in
             FindStopWatch();
@@ -221,6 +239,14 @@ namespace Eno
                 string state = nextValid.Contains(i) ? "Ready" : "Disabled";
                 _runes[i]!.changeState(state);
                 _runeStates[i] = state;
+
+                // Spawn particle emitter as child of the rune
+                _runeParticles[i] = SpawnPrefab("RuneParticles", _runeX[i], _runeY[i]) as ParticleEmitter;
+                if (_runeParticles[i] != null)
+                {
+                    _runes[i]!.AddChild(_runeParticles[i]);
+                    _runeParticles[i]!.stopEmission();
+                }
             }
         }
 
@@ -259,10 +285,13 @@ namespace Eno
                 // Advance the charge visualisation by changing state
                 _spellCasting?.changeState("Cast" + _connected.Count);
 
-                // If the full pattern is now complete, cast immediately
+                // If the full pattern is now complete, store it and emit blink on all runes
                 if (_activePattern >= 0 && PatternMatches(_connected, Patterns[_activePattern]))
                 {
-                    CastSpell(_activePattern);
+                    _pendingSpell = _activePattern;
+
+                    foreach (int c in _connected)
+                        _runeParticles[c]?.emitBurst(_runeParticles[c].maxParticles/4);
                     return;
                 }
 
@@ -292,6 +321,7 @@ namespace Eno
         private void CastSpell(int spellIndex)
         {
             _active = false;
+            _pendingSpell = -1;
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
@@ -301,6 +331,14 @@ namespace Eno
 
         private void Release()
         {
+            if (_pendingSpell >= 0)
+            {
+                int spell = _pendingSpell;
+                _pendingSpell = -1;
+                CastSpell(spell);
+                return;
+            }
+
             _active = false;
             NullifyUnconnected();
             DespawnCastingVisuals();
@@ -312,6 +350,7 @@ namespace Eno
         private void Cancel()
         {
             _active = false;
+            _pendingSpell = -1;
             NullifyUnconnected();
             DespawnCastingVisuals();
             DespawnLines();
@@ -326,7 +365,10 @@ namespace Eno
             Time.timeScale = 1.0f;
             Bridge.SetGroupLowPass("SFX", 0f);
             foreach (Enemy enemy in GetAllEnemies())
-                enemy.changeState("Idle");
+            {
+                if (enemy.currentState == "Frozen")
+                    enemy.changeState("Idle");
+            }
             _swSprite?.changeState("FadeOut");
 
             if (attack)
@@ -371,6 +413,8 @@ namespace Eno
 
             for (int s = 0; s < Patterns.Length; s++)
             {
+                if (!SpellUnlocked[s]) continue;
+
                 var pattern = Patterns[s];
                 if (depth > pattern.Length) continue;
 
@@ -398,6 +442,8 @@ namespace Eno
 
             for (int s = lo; s < hi; s++)
             {
+                if (!SpellUnlocked[s]) continue;
+
                 var pattern = Patterns[s];
                 if (depth >= pattern.Length) continue;
 
@@ -513,6 +559,8 @@ namespace Eno
         {
             for (int i = 0; i < RUNE_COUNT; i++)
             {
+                // Particle emitters are children of runes — freed with parent
+                _runeParticles[i] = null;
                 if (_runes[i] != null)
                 {
                     FreeNode(_runes[i]);

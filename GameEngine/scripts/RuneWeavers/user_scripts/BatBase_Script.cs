@@ -58,9 +58,9 @@ namespace Eno
             // Initialize Bat Values
             _self.useGravity    = false;
             _self.isKinematic   = false;
-            _self.maxHealth     = 10f;
-            _self.health        = 10f;
-            _self.damage        = 20f;
+            _self.maxHealth     = 1f;
+            _self.health        = 1f;
+            _self.damage        = 1f;
             _self.pathClearance  = 1;
             _self.collisionGroup = 1;
             EnemyColorRegistry.Register(ID, EnemyColor);
@@ -176,12 +176,14 @@ namespace Eno
             }
 
             // Stuck detection: if barely moved since last check, avoid current waypoint
+            // Skip when close to player — let the trigger radius check handle it
+            float distToPlayer = Dist(_self.position, _player.position);
             _stuckTimer += Time.deltaTime;
             if (_stuckTimer >= 0.5f)
             {
                 float sdx = _self.position.x - _lastStuckPos.x;
                 float sdy = _self.position.y - _lastStuckPos.y;
-                if (_self.hasPath && sdx * sdx + sdy * sdy < 10f * 10f)
+                if (_self.hasPath && sdx * sdx + sdy * sdy < 10f * 10f && distToPlayer > TRIGGER_RADIUS)
                     _self.computePathAvoidCurrentWaypoint(_player.position);
                 _lastStuckPos = _self.position;
                 _stuckTimer = 0f;
@@ -231,7 +233,7 @@ namespace Eno
             if (_audio != null && _self != null)
             {
                 _audio.sound = WINDUP_SOUND;
-                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+                //_audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
         }
         public void WindUp_update()
@@ -271,7 +273,7 @@ namespace Eno
             if (_audio != null && _self != null)
             {
                 _audio.sound = ATTACK_SOUND;
-                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+                //_audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
 
             if (_self != null)
@@ -298,7 +300,7 @@ namespace Eno
             _prevPos        = curPos;
 
             float expectedMove = dashSpeed * Time.deltaTime;
-            bool  hitWall      = moved < expectedMove;
+            bool  hitWall      = moved < expectedMove * 0.5f;
 
             if (_chargedPixels >= CHARGE_DISTANCE || hitWall)
             {
@@ -325,7 +327,7 @@ namespace Eno
             if (_audio != null && _self != null)
             {
                 _audio.sound = HURT_SOUND;
-                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+               //_audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
         }
         public void Hurt_update()
@@ -354,7 +356,7 @@ namespace Eno
             if (_audio != null)
             {
                 _audio.sound = DEATH_SOUND;
-                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+                //_audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
         }
         public void Death_update()
