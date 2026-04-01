@@ -212,33 +212,39 @@ namespace Editor
 		*//*========================================================================================*/
 		void playScene()
 		{
-			std::string sceneName = selectedScene_->getSceneName();
-
-			// Save the current scene so it can be restored on stop
-			tree_.save(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName);
-
-			// Record which scene was active so stopScene() can reload it
-			prePlaySceneName_ = sceneName;
-			std::cout << "[Eno_editor] current scene: " << sceneName << std::endl;
-
-			// If a start scene is designated and it differs from the current scene, switch to it
-			if (!startSceneName_.empty() && startSceneName_ != sceneName)
+			// If editor starts from stop state, save the scene
+			if (!wasPlaying)
 			{
-				auto it = std::find_if(scenes_.begin(), scenes_.end(),
-					[&](const std::unique_ptr<EnoScene>& s) { return s->getSceneName() == startSceneName_; });
-				if (it != scenes_.end())
+				std::string sceneName = selectedScene_->getSceneName();
+
+				// Save the current scene so it can be restored on stop
+				tree_.save(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName);
+
+				// Record which scene was active so stopScene() can reload it
+				prePlaySceneName_ = sceneName;
+				std::cout << "[Eno_editor] current scene: " << sceneName << std::endl;
+
+				// If a start scene is designated and it differs from the current scene, switch to it
+				if (!startSceneName_.empty() && startSceneName_ != sceneName)
 				{
-					selectedScene_ = it->get();
-					tree_.load(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + startSceneName_);
-					tree_.registerAllScripts();
-					bus_.publish(SceneCleared{});
-					std::cout << "[EnoEditor] Starting game from start scene: " << startSceneName_ << std::endl;
+					auto it = std::find_if(scenes_.begin(), scenes_.end(),
+						[&](const std::unique_ptr<EnoScene>& s) { return s->getSceneName() == startSceneName_; });
+					if (it != scenes_.end())
+					{
+						selectedScene_ = it->get();
+						tree_.load(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + startSceneName_);
+						tree_.registerAllScripts();
+						bus_.publish(SceneCleared{});
+						std::cout << "[EnoEditor] Starting game from start scene: " << startSceneName_ << std::endl;
+					}
 				}
+				// Flag to check if editor has already been played once
+				wasPlaying = true;
+
 			}
 
 			// Set editor state to playing
 			selectedScene_->play();
-			wasPlaying = true;
 
 			// Publish PlayScene event to notify systems (e.g., audio)
 			bus_.publish(PlayScene{});
