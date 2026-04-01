@@ -111,6 +111,24 @@ namespace Eno
                 SetChildButtonsActive(buttonID, IsGamePaused);
                 Bridge.SetAudioPaused(IsGamePaused);
             }
+            
+            
+            // E key or A/X button — close enemy info panel if open
+            if (IsGamePaused && _enemyInfoOpen && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A) || Input.isGamepadButtonPressed(GamepadButton.X)))
+            {
+                _enemyInfoOpen = false;
+                if (_enemyInfoID      != 0) Bridge.SetVisibility(_enemyInfoID, false);
+                if (_enemyInfoPopupID != 0)
+                {
+                    Bridge.SetVisibility(_enemyInfoPopupID, false);
+                    Bridge.SetButtonActive(_enemyInfoPopupID, false);
+                }
+                if (_enemyInfoPopupBgID != 0) Bridge.SetVisibility(_enemyInfoPopupBgID, false);
+                IsGamePaused = false;
+                Bridge.SetAudioPaused(false);
+                return;
+            }
+            
             if (IsGamePaused) return;
 
             UpdateHealthBar();
@@ -158,21 +176,6 @@ namespace Eno
                 dy /= mag;
             }
 
-            // E key or A/X button — close enemy info panel if open
-            if (_enemyInfoOpen && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A) || Input.isGamepadButtonPressed(GamepadButton.X)))
-            {
-                _enemyInfoOpen = false;
-                if (_enemyInfoID      != 0) Bridge.SetVisibility(_enemyInfoID, false);
-                if (_enemyInfoPopupID != 0)
-                {
-                    Bridge.SetVisibility(_enemyInfoPopupID, false);
-                    Bridge.SetButtonActive(_enemyInfoPopupID, false);
-                }
-                if (_enemyInfoPopupBgID != 0) Bridge.SetVisibility(_enemyInfoPopupBgID, false);
-                IsGamePaused = false;
-                Bridge.SetAudioPaused(false);
-                return;
-            }
 
             // X button — open enemy info popup
             if (!_enemyInfoOpen && Input.isGamepadButtonPressed(GamepadButton.X))
