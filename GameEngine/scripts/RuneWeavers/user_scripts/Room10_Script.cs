@@ -10,8 +10,8 @@ namespace Eno
         {
             if (_cleared) return;
 
-            // Unlock all doors after player reads the Room10 narrative scroll (index 4)
-            if (!Scroll_Dialouge_Script.DialogueShown[4]) return;
+            // Unlock all doors after player reads the Room10 narrative scroll
+            if (!Room10_Scroll_Script.Shown) return;
 
             _cleared = true;
         }

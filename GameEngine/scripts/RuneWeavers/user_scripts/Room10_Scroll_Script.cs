@@ -6,7 +6,7 @@ namespace Eno
     {
         private Canvas?   _canvas;
         private Sprite2D? _narrative;
-        private bool _shown = false;
+        public static bool Shown = false;
         private bool _open  = false;
         private bool _skipE = false;
 
@@ -15,7 +15,7 @@ namespace Eno
             try { _canvas    = GetNode<Canvas>("Dialogue Canvas"); } catch { }
             try { _narrative = GetNode<Sprite2D>("Narrative");      } catch { }
             if (_canvas != null) _canvas.active = false;
-            _shown = false;
+            Shown  = false;
             _open  = false;
             _skipE = false;
         }
@@ -34,7 +34,7 @@ namespace Eno
             bool ePressed = Input.isKeyPressed(KeyCode.E) && !_skipE;
             _skipE = false;
 
-            if (!_open && !_shown && !Scroll_Dialouge_Script.DialogueActive
+            if (!_open && !Shown && !Scroll_Dialouge_Script.DialogueActive
                 && Bridge.IsColliding(ID, playerID) && ePressed)
             {
                 Open();
@@ -47,7 +47,7 @@ namespace Eno
 
         private void Open()
         {
-            _shown = _open = true;
+            Shown = _open = true;
             _skipE = true;
             Scroll_Dialouge_Script.DialogueActive = true;
             if (_narrative != null) { _narrative.texture = "UI-Narrative-3"; _narrative.visible = true; }
