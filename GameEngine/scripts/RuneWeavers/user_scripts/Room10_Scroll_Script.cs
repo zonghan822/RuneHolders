@@ -34,7 +34,7 @@ namespace Eno
             bool ePressed = Input.isKeyPressed(KeyCode.E) && !_skipE;
             _skipE = false;
 
-            if (!_open && !Shown && !Scroll_Dialouge_Script.DialogueActive
+            if (!_open && !Scroll_Dialouge_Script.DialogueActive
                 && Bridge.IsColliding(ID, playerID) && ePressed)
             {
                 Open();

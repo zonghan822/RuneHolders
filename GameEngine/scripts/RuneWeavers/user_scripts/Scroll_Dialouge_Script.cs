@@ -278,7 +278,7 @@ namespace Eno
             DialogueActive = false;
             // Set canvas inactive
             if (_dialogueCanvas  != null) _dialogueCanvas.active = false;
-            if (_dialogueBox     != null) _dialogueBox.visible = true;
+            if (_dialogueBox     != null) _dialogueBox.visible = false;
             // Hide character display nodes
             if (_charCenter  != null) _charCenter.visible = false;
             if (_charLeft    != null) _charLeft.visible   = false;
