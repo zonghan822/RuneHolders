@@ -67,8 +67,20 @@ namespace Config {
 	void EnoConfigManager::read() {
 		if (!std::filesystem::exists(cfgFileName_))
 		{
-			std::cout << "[Config] Settings file not found, using defaults: " << cfgFileName_ << "\n";
-			return;
+			// First launch: copy config from install directory if available
+			std::string installCfg = FileSystem::GetAssetsDir().string() + "/settings/config.txt";
+			if (cfgFileName_ != installCfg && std::filesystem::exists(installCfg))
+			{
+				std::filesystem::create_directories(
+					std::filesystem::path(cfgFileName_).parent_path());
+				std::filesystem::copy_file(installCfg, cfgFileName_);
+				std::cout << "[Config] Copied config from install dir to: " << cfgFileName_ << "\n";
+			}
+			else
+			{
+				std::cout << "[Config] Settings file not found, using defaults: " << cfgFileName_ << "\n";
+				return;
+			}
 		}
 
 		std::ifstream settingsFile(cfgFileName_);
@@ -121,6 +133,8 @@ namespace Config {
 				lines.push_back(key + ": " + val);
 		}
 
+		std::filesystem::create_directories(
+			std::filesystem::path(cfgFileName_).parent_path());
 		std::ofstream out(cfgFileName_);
 		for (auto& l : lines)
 			out << l << "\n";

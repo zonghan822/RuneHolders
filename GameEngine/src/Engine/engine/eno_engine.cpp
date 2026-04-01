@@ -138,23 +138,6 @@ namespace Engine
 
 		while (!shouldClose())
 		{
-			// Script watch (beginFrame also polls events / updates time)
-			bool modified = coreHost_->areScriptsModified();
-
-			if (modified)
-			{
-				std::cout << "------------- Script has been Modified -------------" << std::endl;
-
-				// Re-register all scripts
-				for (size_t i = 0; i < editor_->getSceneTree().getAllNodes().size(); i++)
-				{
-					if (editor_->getSceneTree().getAllNodes()[i]->script_)
-					{
-						editor_->getSceneTree().getAllNodes()[i]->script_->registerInst(
-							editor_->getSceneTree().getAllNodes()[i]->sceneObjectID_);
-					}
-				}
-			}
 			beginFrame();
 			renderFrame();
 			endFrame();

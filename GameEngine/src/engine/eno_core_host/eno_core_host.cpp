@@ -559,6 +559,7 @@ namespace Core
 		// seperator
 
 		//This calls every begin that exists as of current
+		if (std::filesystem::exists(FileSystem::GetScriptsDir()))
 		for (auto& entry : std::filesystem::directory_iterator(FileSystem::GetScriptsDir())) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
@@ -571,7 +572,7 @@ namespace Core
 			if (!names || count == 0)
 				continue;
 
-			// Cast and loop over each class name using double ptr 
+			// Cast and loop over each class name using double ptr
 			wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
 
 
@@ -616,6 +617,7 @@ namespace Core
 		callDelegate(dele1.value());
 
 		//seperator
+		if (std::filesystem::exists(FileSystem::GetScriptsDir()))
 		for (auto& entry : std::filesystem::directory_iterator(FileSystem::GetScriptsDir())) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;
@@ -628,7 +630,7 @@ namespace Core
 			if (!names || count == 0)
 				continue;
 
-			// Cast and loop over each class name using double ptr 
+			// Cast and loop over each class name using double ptr
 			wchar_t** classNames = reinterpret_cast<wchar_t**>(names);
 
 
@@ -693,6 +695,10 @@ namespace Core
 	// Detect change in script
 	bool EnoCoreHost::areScriptsModified()
 	{
+		// Skip script watching if the scripts directory doesn't exist (shipped game)
+		if (!std::filesystem::exists(FileSystem::GetScriptsDir()))
+			return false;
+
 		static std::unordered_map<std::string, std::filesystem::file_time_type> lastWriteTimes;
 
 		bool modified = false;

@@ -15,23 +15,39 @@ namespace Eno
 
         public static void InitSequence(string usPath, string dllPath)
         {
-            // Hot Reloading
-            // Compile main DLL to a temporary dll
-            var path = HRManager!.CompileToTemp(usPath, dllPath);
-            if (path == null)
-            {
-                // Compilation failed
-                Console.WriteLine("Hot reload to be skipped due to failed compilation");
-                return;
-            }
+            // Detect if running as editor or shipped game
+            string exeName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "");
+            bool isEditor = exeName.Equals("Editor", StringComparison.OrdinalIgnoreCase);
 
-            // Load temporary dll
-            HRManager!.Init(dllPath);
-            HRManager!.Load(path);
+            if (isEditor)
+            {
+                // Hot Reloading — compile to a temporary dll
+                var path = HRManager!.CompileToTemp(usPath, dllPath);
+                if (path == null)
+                {
+                    Console.WriteLine("Hot reload to be skipped due to failed compilation");
+                    return;
+                }
+
+                HRManager!.Init(dllPath);
+                HRManager!.Load(path);
+            }
+            else
+            {
+                // Shipped game — load the pre-built GameScripts.dll directly
+                string mainDll = Path.Combine(Path.GetDirectoryName(dllPath)!, "GameScripts.dll");
+                HRManager!.Init(dllPath);
+                HRManager!.Load(mainDll);
+            }
         }
 
         public static void ReloadSequence(string usPath, string dllPath)
         {
+            // Hot reload is editor-only — skip entirely for the shipped game
+            string exeName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "");
+            if (!exeName.Equals("Editor", StringComparison.OrdinalIgnoreCase))
+                return;
+
              // Unload
             HRManager!.Unload();
 

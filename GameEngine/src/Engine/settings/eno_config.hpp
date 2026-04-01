@@ -32,7 +32,7 @@ namespace Config
 	class EnoConfigManager 
 	{
 	private:
-		std::string cfgFileName_ = FileSystem::GetAssetsDir().string() + "/settings/config.txt";
+		std::string cfgFileName_ = FileSystem::GetWritableDir().string() + "/settings/config.txt";
 
 		/*============================================================================================
 		 * \brief				Map for storing setting strings

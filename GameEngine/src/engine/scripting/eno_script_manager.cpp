@@ -119,6 +119,9 @@ namespace Script
 	{
 		std::vector<std::wstring> result;
 
+		if (!std::filesystem::exists(FileSystem::GetScriptsDir()))
+			return result;
+
 		for (auto& entry : std::filesystem::directory_iterator(FileSystem::GetScriptsDir())) {
 			if (!entry.is_regular_file() || entry.path().extension() != ".cs")
 				continue;

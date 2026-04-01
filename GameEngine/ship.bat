@@ -15,11 +15,15 @@ set BUILD_DIR=build
 set BUILD_OUTPUT=%BUILD_DIR%\projects\App\Release\RuneWeavers
 set SHIP_DIR=RuneWeavers
 
-REM ---------- BUILD (skip if Release exe already exists) ----------
+set LAUNCHER_OUTPUT=%BUILD_DIR%\projects\App\Release\RuneLauncher\RuneLauncher.exe
+
+REM ---------- BUILD (skip if both exes already exist) ----------
 if exist "%BUILD_OUTPUT%\RuneWeavers.exe" (
-    echo Release build found, skipping build step.
-    echo.
-    goto PACKAGE
+    if exist "%LAUNCHER_OUTPUT%" (
+        echo Release builds found, skipping build step.
+        echo.
+        goto PACKAGE
+    )
 )
 
 REM ---------- CHECK CMAKE ----------
@@ -59,7 +63,19 @@ echo Building RuneWeavers in Release mode...
 cmake --build . --config Release --target RuneWeavers
 
 if %errorlevel% neq 0 (
-    echo ERROR: Build failed!
+    echo ERROR: RuneWeavers build failed!
+    cd ..
+    pause
+    exit /b 1
+)
+
+REM ---------- BUILD RUNELAUNCHER RELEASE ----------
+echo.
+echo Building RuneLauncher in Release mode...
+cmake --build . --config Release --target RuneLauncher
+
+if %errorlevel% neq 0 (
+    echo ERROR: RuneLauncher build failed!
     cd ..
     pause
     exit /b 1
@@ -94,6 +110,13 @@ if %errorlevel% gtr 7 (
     exit /b 1
 )
 
+REM Copy RuneLauncher.exe
+echo Copying RuneLauncher...
+copy /Y "%BUILD_DIR%\projects\App\Release\RuneLauncher\RuneLauncher.exe" "%SHIP_DIR%\RuneLauncher.exe" >nul
+if %errorlevel% neq 0 (
+    echo WARNING: RuneLauncher.exe not found, skipping.
+)
+
 REM Copy assets directly from source
 echo Copying assets...
 robocopy "assets\RuneWeavers" "%SHIP_DIR%\assets" /E /NFL /NDL /NJH /NJS /nc /ns /np
@@ -103,17 +126,11 @@ if %errorlevel% gtr 7 (
     exit /b 1
 )
 
-REM Copy scripts directly from source (Core + user scripts only)
+REM Copy scripts
 echo Copying scripts...
-robocopy "scripts\Core" "%SHIP_DIR%\scripts\Core" /E /NFL /NDL /NJH /NJS /nc /ns /np
-if %errorlevel% gtr 7 (
-    echo ERROR: Failed to copy Core scripts!
-    pause
-    exit /b 1
-)
 robocopy "scripts\RuneWeavers\user_scripts" "%SHIP_DIR%\scripts\user_scripts" /E /NFL /NDL /NJH /NJS /nc /ns /np
 if %errorlevel% gtr 7 (
-    echo ERROR: Failed to copy user scripts!
+    echo ERROR: Failed to copy scripts!
     pause
     exit /b 1
 )

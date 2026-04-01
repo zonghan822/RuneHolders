@@ -16,7 +16,9 @@
 #include <ctime>
 
 void CrashLogger::logError(const std::string& message) {
-    std::string logPath = FileSystem::GetAssetsDir().string() + "/crashlogs/crash_log.txt";
+    std::string logDir = FileSystem::GetWritableDir().string() + "/crashlogs";
+    std::filesystem::create_directories(logDir);
+    std::string logPath = logDir + "/crash_log.txt";
     std::ofstream log(logPath.c_str(), std::ios::app);
 
     if (!log) {
