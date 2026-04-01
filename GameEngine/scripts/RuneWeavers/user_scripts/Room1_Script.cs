@@ -63,6 +63,7 @@ namespace Eno
                 Bridge.IsColliding(_scrollID, _playerID))
             {
                 _scrollPickedUp = true;
+                RuneSystem.SpellUnlocked[0] = true; // Fire
                 // Press f to open spell book
                 // Swap UI_Info texture and reset its timer
                 if (_uiInfoID != 0)

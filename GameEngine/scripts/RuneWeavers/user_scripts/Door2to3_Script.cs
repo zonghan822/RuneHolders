@@ -47,6 +47,7 @@ namespace Eno
             {
                 Bridge.SetPosition(_cameraID, CamDestX, CamDestY);
                 _panning = false;
+                Room2_Script.CleanupDummies();
                 Room3_Script.StartWaves();
             }
             else

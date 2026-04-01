@@ -2,6 +2,8 @@ namespace Eno
 {
     public class Room8_Script : ScriptBase
     {
+        private static Room8_Script? _instance;
+
         private uint _scrollID    = 0;
         private uint _playerID    = 0;
         private uint _spellbookID = 0;
@@ -9,27 +11,37 @@ namespace Eno
 
         private bool  _postDialogueActivated = false;
         private bool  _scrollPickedUp        = false;
+        private bool  _wavesStarted          = false;
+        private bool  _roomCleared           = false;
 
         private uint  _uiInfoID    = 0;
         private float _uiInfoTimer = 0f;
 
-        private Canvas?    _videoCanvas = null;
-        private VideoNode? _videoHolder = null;
-
         public void Begin()
         {
+            _instance = this;
             _playerID    = Bridge.GetNode("Player");
             _scrollID    = Bridge.GetNode("Room8_Scroll");
             _exitDoorID  = Bridge.GetNode("Door8to9");
             _spellbookID = Bridge.GetNode("Spellbook");
             _uiInfoID    = Bridge.GetNode("UI_Info");
 
-            try { _videoCanvas = GetNode<Canvas>("VideoCanvas");    } catch { }
-            try { _videoHolder = GetNode<VideoNode>("VideoHolder"); } catch { }
-
             _postDialogueActivated = false;
             _scrollPickedUp        = false;
+            _wavesStarted          = false;
+            _roomCleared           = false;
             _uiInfoTimer           = 0f;
+            DummyBlue_Script.WasHit = false;
+        }
+
+        public static void StartWaves()
+        {
+            _instance?.SpawnWave1();
+        }
+
+        public static void CleanupDummies()
+        {
+            DummyBlue_Script.Cleanup();
         }
 
         public void Update()
@@ -39,6 +51,14 @@ namespace Eno
                 _uiInfoTimer += Time.deltaTime;
                 if (_uiInfoTimer >= 3f)
                     Bridge.SetVisibility(_uiInfoID, false);
+            }
+
+            // Check dummy clear condition
+            if (_wavesStarted && !_roomCleared && DummyBlue_Script.WasHit)
+            {
+                _roomCleared = true;
+                UnlockDoor("Door8to7");
+                UnlockDoor("Door8to9");
             }
 
             // After dialogue ends: activate ui sprite, then hide after 3 seconds
@@ -54,6 +74,7 @@ namespace Eno
                 Bridge.IsColliding(_scrollID, _playerID))
             {
                 _scrollPickedUp = true;
+                RuneSystem.SpellUnlocked[2] = true; // Ice
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
@@ -66,11 +87,31 @@ namespace Eno
                 _uiInfoTimer = 0f;
                 // Update spellbook
                 if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-3Spells");
-                if (_exitDoorID  != 0) Bridge.ChangeState(_exitDoorID, "Unlocking");
-                // Play video
-                if (_videoCanvas != null) _videoCanvas.active = true;
-                if (_videoHolder != null) _videoHolder.play();
             }
+        }
+
+        private void SpawnWave1()
+        {
+            _wavesStarted = true;
+            LockDoor("Door8to7");
+            LockDoor("Door8to9");
+            SpawnPrefab("DummyBlue", 6570f, -4750f);
+            SpawnPrefab("DummyBlue", 6890f, -4750f);
+            SpawnPrefab("DummyBlue", 6730f, -4640f);
+        }
+
+        private void LockDoor(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Locked");
+        }
+
+        private void UnlockDoor(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocking");
         }
     }
 }

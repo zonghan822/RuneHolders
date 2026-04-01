@@ -84,6 +84,10 @@ namespace Eno
             "IceSpell",
         };
 
+        // ── Spell unlock state (set by room scripts on scroll pickup) ────────────
+        // Index 0 = Fire (Room 1), 1 = Light (Room 4), 2 = Ice (Room 8)
+        public static bool[] SpellUnlocked = new bool[3];
+
         // ── Runtime state ────────────────────────────────────────────────────────
         private bool        _active         = false;
         private float       _originX        = 0f;
@@ -409,6 +413,8 @@ namespace Eno
 
             for (int s = 0; s < Patterns.Length; s++)
             {
+                if (!SpellUnlocked[s]) continue;
+
                 var pattern = Patterns[s];
                 if (depth > pattern.Length) continue;
 
@@ -436,6 +442,8 @@ namespace Eno
 
             for (int s = lo; s < hi; s++)
             {
+                if (!SpellUnlocked[s]) continue;
+
                 var pattern = Patterns[s];
                 if (depth >= pattern.Length) continue;
 

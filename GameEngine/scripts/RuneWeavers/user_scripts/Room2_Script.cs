@@ -11,6 +11,7 @@ namespace Eno
             _instance     = this;
             _roomCleared  = false;
             _wavesStarted = false;
+            DummyRed_Script.WasHit = false;
         }
 
         public static void StartWaves()
@@ -18,10 +19,15 @@ namespace Eno
             _instance?.SpawnWave1();
         }
 
+        public static void CleanupDummies()
+        {
+            DummyRed_Script.Cleanup();
+        }
+
         public void Update()
         {
             if (!_wavesStarted || _roomCleared) return;
-            if (GetAllEnemies().Count == 0)
+            if (DummyRed_Script.WasHit)
             {
                 _roomCleared = true;
                 UnlockDoor("Door2to1");
@@ -34,7 +40,7 @@ namespace Eno
             _wavesStarted = true;
             LockDoor("Door2to1");
             LockDoor("Door2to3");
-            SpawnPrefab("DummyRed", 960f, -1720f);
+            SpawnPrefab("DummyRed", 972f, -1700f);
         }
 
         private void LockDoor(string name)
