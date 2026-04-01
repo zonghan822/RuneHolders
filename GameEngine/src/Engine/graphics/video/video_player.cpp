@@ -16,8 +16,12 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/opt.h>
 #include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
 }
+
+#include "fmod.hpp"
 
 #include <iostream>
 
@@ -50,15 +54,16 @@ namespace Graphics
             return false;
         }
 
-        // Find the first video stream
+        // Find video and audio streams
         videoStreamIndex_ = -1;
+        audioStreamIndex_ = -1;
         for (unsigned i = 0; i < formatCtx_->nb_streams; ++i)
         {
-            if (formatCtx_->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-            {
+            auto type = formatCtx_->streams[i]->codecpar->codec_type;
+            if (type == AVMEDIA_TYPE_VIDEO && videoStreamIndex_ < 0)
                 videoStreamIndex_ = static_cast<int>(i);
-                break;
-            }
+            else if (type == AVMEDIA_TYPE_AUDIO && audioStreamIndex_ < 0)
+                audioStreamIndex_ = static_cast<int>(i);
         }
 
         if (videoStreamIndex_ < 0)
@@ -122,7 +127,44 @@ namespace Graphics
             rgbaFrame_->data, rgbaFrame_->linesize,
             rgbaBuffer_, AV_PIX_FMT_RGBA, width_, height_, 1);
 
-        // Decode the first frame so getTexture() is valid immediately after load().
+        // Open audio codec if an audio stream exists
+        if (audioStreamIndex_ >= 0)
+        {
+            AVStream* aStream = formatCtx_->streams[audioStreamIndex_];
+            const AVCodec* aCodec = avcodec_find_decoder(aStream->codecpar->codec_id);
+            if (aCodec)
+            {
+                audioCodecCtx_ = avcodec_alloc_context3(aCodec);
+                avcodec_parameters_to_context(audioCodecCtx_, aStream->codecpar);
+                if (avcodec_open2(audioCodecCtx_, aCodec, nullptr) == 0)
+                {
+                    // Resample to interleaved float stereo 44100 Hz
+                    audioSampleRate_ = 44100;
+                    audioChannels_   = 2;
+
+                    // Use av_channel_layout_default to avoid C99 designated-initialiser
+                    // syntax that is not valid C++20 (nested .u.mask form).
+                    AVChannelLayout stereoLayout{};
+                    av_channel_layout_default(&stereoLayout, audioChannels_);
+
+                    swr_alloc_set_opts2(&swrCtx_,
+                        &stereoLayout,               AV_SAMPLE_FMT_FLT, audioSampleRate_,
+                        &audioCodecCtx_->ch_layout,  audioCodecCtx_->sample_fmt,
+                                                     audioCodecCtx_->sample_rate,
+                        0, nullptr);
+                    swr_init(swrCtx_);
+                    audioFrame_ = av_frame_alloc();
+
+                    decodeAllAudio();  // buffer entire audio track into audioPcm_
+                }
+                else
+                {
+                    avcodec_free_context(&audioCodecCtx_);
+                }
+            }
+        }
+
+        // Decode the first video frame so getTexture() is valid immediately after load().
         decodeNextFrame();
 
         loaded_      = true;
@@ -138,37 +180,108 @@ namespace Graphics
     // -------------------------------------------------------------------------
     void VideoPlayer::unload()
     {
-        if (rgbaBuffer_) { av_free(rgbaBuffer_);     rgbaBuffer_ = nullptr; }
-        if (packet_)     { av_packet_free(&packet_); }
-        if (frame_)      { av_frame_free(&frame_);   }
-        if (rgbaFrame_)  { av_frame_free(&rgbaFrame_); }
-        if (swsCtx_)     { sws_freeContext(swsCtx_); swsCtx_ = nullptr; }
-        if (codecCtx_)   { avcodec_free_context(&codecCtx_); }
-        if (formatCtx_)  { avformat_close_input(&formatCtx_); }
+        // Stop and release FMOD resources first
+        if (fmodChannel_) { fmodChannel_->stop(); fmodChannel_ = nullptr; }
+        if (fmodSound_)   { fmodSound_->release(); fmodSound_ = nullptr; }
 
+        if (rgbaBuffer_)   { av_free(rgbaBuffer_);          rgbaBuffer_   = nullptr; }
+        if (packet_)       { av_packet_free(&packet_); }
+        if (frame_)        { av_frame_free(&frame_);        frame_        = nullptr; }
+        if (rgbaFrame_)    { av_frame_free(&rgbaFrame_);    rgbaFrame_    = nullptr; }
+        if (audioFrame_)   { av_frame_free(&audioFrame_);   audioFrame_   = nullptr; }
+        if (swsCtx_)       { sws_freeContext(swsCtx_);      swsCtx_       = nullptr; }
+        if (swrCtx_)       { swr_free(&swrCtx_);            swrCtx_       = nullptr; }
+        if (audioCodecCtx_){ avcodec_free_context(&audioCodecCtx_); }
+        if (codecCtx_)     { avcodec_free_context(&codecCtx_); }
+        if (formatCtx_)    { avformat_close_input(&formatCtx_); }
+
+        audioPcm_.clear();
         texture_.reset();
-        loaded_           = false;
-        state_            = VideoState::IDLE;
-        currentTime_      = 0.0f;
-        nextFramePts_     = 0.0f;
-        videoStreamIndex_ = -1;
-        width_ = height_  = 0;
+        loaded_            = false;
+        state_             = VideoState::IDLE;
+        currentTime_       = 0.0f;
+        nextFramePts_      = 0.0f;
+        videoStreamIndex_  = -1;
+        audioStreamIndex_  = -1;
+        width_ = height_   = 0;
     }
 
     // -------------------------------------------------------------------------
-    void VideoPlayer::play()
+    void VideoPlayer::play(FMOD::System* fmodSystem)
     {
-        if (loaded_) state_ = VideoState::PLAYING;
+        if (!loaded_) return;
+
+        // If resuming from pause, just unpause the FMOD channel
+        if (state_ == VideoState::PAUSED && fmodChannel_)
+        {
+            fmodChannel_->setPaused(false);
+            state_ = VideoState::PLAYING;
+            return;
+        }
+
+        state_ = VideoState::PLAYING;
+
+        // Create and play FMOD sound from the pre-decoded PCM buffer
+        if (!fmodSystem)
+        {
+            std::cout << "[VideoPlayer] play() called without FMOD system — no audio\n";
+        }
+        else if (audioPcm_.empty())
+        {
+            std::cout << "[VideoPlayer] play() audioPcm_ is empty — audio decode failed or no audio stream\n";
+        }
+        else
+        {
+            // Release any previous sound
+            if (fmodChannel_) { fmodChannel_->stop(); fmodChannel_ = nullptr; }
+            if (fmodSound_)   { fmodSound_->release(); fmodSound_ = nullptr; }
+
+            FMOD_CREATESOUNDEXINFO exinfo{};
+            exinfo.cbsize            = sizeof(exinfo);
+            exinfo.length            = static_cast<unsigned int>(audioPcm_.size() * sizeof(float));
+            exinfo.numchannels       = audioChannels_;
+            exinfo.defaultfrequency  = audioSampleRate_;
+            exinfo.format            = FMOD_SOUND_FORMAT_PCMFLOAT;
+
+            FMOD_MODE mode = FMOD_OPENMEMORY | FMOD_OPENRAW | FMOD_CREATESAMPLE;
+            if (looping_) mode |= FMOD_LOOP_NORMAL;
+
+            std::cout << "[VideoPlayer] Creating FMOD sound: " << audioPcm_.size()
+                      << " floats, " << audioChannels_ << " ch, " << audioSampleRate_ << " Hz\n";
+
+            FMOD_RESULT res = fmodSystem->createSound(
+                reinterpret_cast<const char*>(audioPcm_.data()),
+                mode, &exinfo, &fmodSound_);
+
+            if (res != FMOD_OK)
+            {
+                std::cerr << "[VideoPlayer] createSound failed: " << res << "\n";
+            }
+            else
+            {
+                res = fmodSystem->playSound(fmodSound_, nullptr, false, &fmodChannel_);
+                if (res != FMOD_OK)
+                    std::cerr << "[VideoPlayer] playSound failed: " << res << "\n";
+                else
+                    std::cout << "[VideoPlayer] Audio playback started\n";
+            }
+        }
     }
 
     void VideoPlayer::pause()
     {
-        if (state_ == VideoState::PLAYING) state_ = VideoState::PAUSED;
+        if (state_ == VideoState::PLAYING)
+        {
+            state_ = VideoState::PAUSED;
+            if (fmodChannel_) fmodChannel_->setPaused(true);
+        }
     }
 
     void VideoPlayer::stop()
     {
         if (!loaded_) return;
+        if (fmodChannel_) { fmodChannel_->stop(); fmodChannel_ = nullptr; }
+        if (fmodSound_)   { fmodSound_->release(); fmodSound_ = nullptr; }
         rewind();
         state_       = VideoState::IDLE;
         currentTime_ = 0.0f;
@@ -198,6 +311,73 @@ namespace Graphics
                 break;
             }
         }
+    }
+
+    // -------------------------------------------------------------------------
+    void VideoPlayer::decodeAllAudio()
+    {
+        if (!audioCodecCtx_ || !swrCtx_ || !audioFrame_ || !formatCtx_) return;
+
+        // Seek to the beginning of the file so we can read all packets
+        av_seek_frame(formatCtx_, -1, 0, AVSEEK_FLAG_BACKWARD);
+        avcodec_flush_buffers(audioCodecCtx_);
+
+        audioPcm_.clear();
+
+        AVPacket* pkt = av_packet_alloc();
+        while (av_read_frame(formatCtx_, pkt) >= 0)
+        {
+            if (pkt->stream_index != audioStreamIndex_)
+            {
+                av_packet_unref(pkt);
+                continue;
+            }
+
+            if (avcodec_send_packet(audioCodecCtx_, pkt) == 0)
+            {
+                while (avcodec_receive_frame(audioCodecCtx_, audioFrame_) == 0)
+                {
+                    // Resample to float stereo
+                    int outSamples = static_cast<int>(
+                        av_rescale_rnd(
+                            swr_get_delay(swrCtx_, audioCodecCtx_->sample_rate) + audioFrame_->nb_samples,
+                            audioSampleRate_, audioCodecCtx_->sample_rate, AV_ROUND_UP));
+
+                    std::vector<float> tmp(static_cast<size_t>(outSamples) * audioChannels_);
+                    uint8_t* outPtr = reinterpret_cast<uint8_t*>(tmp.data());
+                    int converted = swr_convert(swrCtx_, &outPtr, outSamples,
+                        const_cast<const uint8_t**>(audioFrame_->data), audioFrame_->nb_samples);
+
+                    if (converted > 0)
+                        audioPcm_.insert(audioPcm_.end(), tmp.begin(),
+                                         tmp.begin() + converted * audioChannels_);
+
+                    av_frame_unref(audioFrame_);
+                }
+            }
+            av_packet_unref(pkt);
+        }
+        av_packet_free(&pkt);
+
+        // Flush resampler
+        int remaining = static_cast<int>(swr_get_delay(swrCtx_, audioCodecCtx_->sample_rate));
+        if (remaining > 0)
+        {
+            std::vector<float> tmp(static_cast<size_t>(remaining) * audioChannels_);
+            uint8_t* outPtr = reinterpret_cast<uint8_t*>(tmp.data());
+            int converted = swr_convert(swrCtx_, &outPtr, remaining, nullptr, 0);
+            if (converted > 0)
+                audioPcm_.insert(audioPcm_.end(), tmp.begin(),
+                                 tmp.begin() + converted * audioChannels_);
+        }
+
+        // Seek video stream back to start so decodeNextFrame() begins from frame 0
+        av_seek_frame(formatCtx_, videoStreamIndex_, 0, AVSEEK_FLAG_BACKWARD);
+        avcodec_flush_buffers(codecCtx_);
+
+        std::cout << "[VideoPlayer] Decoded " << audioPcm_.size() / audioChannels_
+                  << " audio samples (" << audioSampleRate_ << " Hz, "
+                  << audioChannels_ << " ch)\n";
     }
 
     // -------------------------------------------------------------------------

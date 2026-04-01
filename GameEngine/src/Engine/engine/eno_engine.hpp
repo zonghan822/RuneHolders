@@ -391,6 +391,7 @@ namespace Engine
 		bool isPaused_        = false;  // Editor-driven pause — blocks everything including canvas/buttons
 		bool hasBegun_        = false;  // Guards the one-shot Begin() call at the start of each play session
 		bool closeRequested_  = false;  // Set by requestClose(); checked by shouldClose() to avoid GLFW DLL boundary issues
+		bool prevWasPlaying_  = false;  // Previous frame's isPlaying_ — used to detect the play→stop transition for video cleanup
 		std::string pendingScene_;  // Non-empty when a script has requested a scene change
 		Math::eVec2<float> viewportMin_{ 0.f, 0.f };  // Screen-space game viewport bounds (set by editor/app)
 		Math::eVec2<float> viewportMax_{ 0.f, 0.f };  // Zero max = fall back to full window size

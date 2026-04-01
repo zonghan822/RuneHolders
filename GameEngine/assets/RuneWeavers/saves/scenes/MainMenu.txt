@@ -1989,6 +1989,115 @@
 		"PrefabName": {  }
 	}
 
+	[VideoTransition]
+	{
+		"ID": { 91 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 950.734 | y : -1732.32 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 64 }
+				"Height": <float> { 64 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::CanvasComponent]
+			{
+				"Viewport Width": <float> { 1920 }
+				"Viewport Height": <float> { 1080 }
+				"Canvas Layer": <uint32_t> { 3 }
+				"Follow Camera": <bool> { 1 }
+				"Follow Camera Entity": <uint32_t> { 31 }
+				"Is Active": <bool> { 0 }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { 92 }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 14 }
+		"PrefabName": {  }
+	}
+
+	[CutsceneVideo]
+	{
+		"ID": { 92 }
+		"Layer": { 1 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 950.734 | y : -1732.32 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1920 }
+				"Height": <float> { 1080 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> {  }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::VideoComponent]
+			{
+				"Video Name": <texchar240> { M6-Cutscene }
+				"Auto Play": <bool> { 0 }
+				"Loop": <bool> { 0 }
+			}
+		}
+		"Script": { }
+		"Parent": { 91 }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 12 }
+		"PrefabName": {  }
+	}
+
 }
 
 "LayerMetadata":
