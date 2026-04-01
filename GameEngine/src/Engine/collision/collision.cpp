@@ -37,10 +37,14 @@ namespace Collision {
 			return CollisionResult(); // Return default "no collision result"
 		}
 
-		// Calculate actual world positiions of the colliders
-		// World position = transform position + collider offset
-		Math::eVec2<float> posA = { transformA.pos.x + colliderA.offset.x, transformA.pos.y + colliderA.offset.y };
-		Math::eVec2<float> posB = { transformB.pos.x + colliderB.offset.x, transformB.pos.y + colliderB.offset.y };
+		// Calculate actual world positions of the colliders
+		// World position = transform position + collider offset (flipped by scale sign)
+		float signAx = transformA.scale.x < 0.0f ? -1.0f : 1.0f;
+		float signAy = transformA.scale.y < 0.0f ? -1.0f : 1.0f;
+		float signBx = transformB.scale.x < 0.0f ? -1.0f : 1.0f;
+		float signBy = transformB.scale.y < 0.0f ? -1.0f : 1.0f;
+		Math::eVec2<float> posA = { transformA.pos.x + colliderA.offset.x * signAx, transformA.pos.y + colliderA.offset.y * signAy };
+		Math::eVec2<float> posB = { transformB.pos.x + colliderB.offset.x * signBx, transformB.pos.y + colliderB.offset.y * signBy };
 
 		// Convey to the collision detection function accordingly
 		// (BASED ON the types of the 2 colliders)
@@ -48,23 +52,23 @@ namespace Collision {
 		// Scenario 1: if both colliders are circles
 		if (colliderA.type == ColliderType::CIRCLE && colliderB.type == ColliderType::CIRCLE)
 		{
-			// Scale the radii
-			float radiusA = colliderA.data.circle.radius * transformA.scale.x;
-			float radiusB = colliderB.data.circle.radius * transformB.scale.x;
+			// Scale the radii (use abs to handle flipped sprites)
+			float radiusA = colliderA.data.circle.radius * std::abs(transformA.scale.x);
+			float radiusB = colliderB.data.circle.radius * std::abs(transformB.scale.x);
 			return CheckCircleCircle(posA, radiusA, posB, radiusB);
 		}
 
 		// Scenario 2: if both colliders are rectangles
 		else if (colliderA.type == ColliderType::RECTANGLE && colliderB.type == ColliderType::RECTANGLE)
 		{
-			// Scale rectangle dimensions
+			// Scale rectangle dimensions (use abs to handle flipped sprites)
 			CollisionComponent::ColliderData::RectangleData scaledRectA = colliderA.data.rectangle;
-			scaledRectA.width *= transformA.scale.x;
-			scaledRectA.height *= transformA.scale.y;
+			scaledRectA.width *= std::abs(transformA.scale.x);
+			scaledRectA.height *= std::abs(transformA.scale.y);
 
 			CollisionComponent::ColliderData::RectangleData scaledRectB = colliderB.data.rectangle;
-			scaledRectB.width *= transformB.scale.x;
-			scaledRectB.height *= transformB.scale.y;
+			scaledRectB.width *= std::abs(transformB.scale.x);
+			scaledRectB.height *= std::abs(transformB.scale.y);
 
 			return CheckRectangleRectangleSAT(posA, scaledRectA, transformA.rot.x,
 				posB, scaledRectB, transformB.rot.x);
@@ -73,10 +77,10 @@ namespace Collision {
 		// Scenario 3: if collider A is a circle, and collider B is a rectangle
 		else if (colliderA.type == ColliderType::CIRCLE && colliderB.type == ColliderType::RECTANGLE)
 		{
-			float radiusA = colliderA.data.circle.radius * transformA.scale.x;
+			float radiusA = colliderA.data.circle.radius * std::abs(transformA.scale.x);
 			CollisionComponent::ColliderData::RectangleData scaledRectB = colliderB.data.rectangle;
-			scaledRectB.width *= transformB.scale.x;
-			scaledRectB.height *= transformB.scale.y;
+			scaledRectB.width *= std::abs(transformB.scale.x);
+			scaledRectB.height *= std::abs(transformB.scale.y);
 
 			return CheckCircleRectangle(posA, radiusA, posB, scaledRectB);
 		}
@@ -84,10 +88,10 @@ namespace Collision {
 		// Scenario 4: if collider A is a rectangle, and collider B is a circle
 		else if (colliderA.type == ColliderType::RECTANGLE && colliderB.type == ColliderType::CIRCLE)
 		{
-			float radiusB = colliderB.data.circle.radius * transformB.scale.x;
+			float radiusB = colliderB.data.circle.radius * std::abs(transformB.scale.x);
 			CollisionComponent::ColliderData::RectangleData scaledRectA = colliderA.data.rectangle;
-			scaledRectA.width *= transformA.scale.x;
-			scaledRectA.height *= transformA.scale.y;
+			scaledRectA.width *= std::abs(transformA.scale.x);
+			scaledRectA.height *= std::abs(transformA.scale.y);
 			CollisionResult result = CheckCircleRectangle(posB, radiusB, posA, scaledRectA);
 			result.penetrationVector = -result.penetrationVector;
 			return result;
@@ -122,10 +126,14 @@ namespace Collision {
 			return false; // Return "no collision result"
 		}
 
-		// Calculate actual world positiions of the colliders
-		// World position = transform position + collider offset
-		Math::eVec2<float> posA = { transformA.pos.x + colliderA.offset.x, transformA.pos.y + colliderA.offset.y };
-		Math::eVec2<float> posB = { transformB.pos.x + colliderB.offset.x, transformB.pos.y + colliderB.offset.y };
+		// Calculate actual world positions of the colliders
+		// World position = transform position + collider offset (flipped by scale sign)
+		float signAx = transformA.scale.x < 0.0f ? -1.0f : 1.0f;
+		float signAy = transformA.scale.y < 0.0f ? -1.0f : 1.0f;
+		float signBx = transformB.scale.x < 0.0f ? -1.0f : 1.0f;
+		float signBy = transformB.scale.y < 0.0f ? -1.0f : 1.0f;
+		Math::eVec2<float> posA = { transformA.pos.x + colliderA.offset.x * signAx, transformA.pos.y + colliderA.offset.y * signAy };
+		Math::eVec2<float> posB = { transformB.pos.x + colliderB.offset.x * signBx, transformB.pos.y + colliderB.offset.y * signBy };
 
 		// Convey to the collision detection function accordingly
 		// (BASED ON the types of the 2 colliders)
