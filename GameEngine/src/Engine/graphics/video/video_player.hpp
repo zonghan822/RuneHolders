@@ -12,14 +12,19 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 #include <cstdint>
 
 // Forward-declare FFmpeg structs so consumers don't need to include FFmpeg headers.
 struct AVFormatContext;
 struct AVCodecContext;
 struct SwsContext;
+struct SwrContext;
 struct AVFrame;
 struct AVPacket;
+
+// Forward-declare FMOD types so consumers don't need to include fmod.hpp.
+namespace FMOD { class System; class Sound; class Channel; }
 
 // Forward-declare EnoTexture to avoid circular include with graphics.hpp.
 namespace Graphics { class EnoTexture; }
@@ -58,7 +63,8 @@ namespace Graphics
         void unload();
 
         // Playback controls.
-        void play();
+        // Pass an FMOD::System* to enable audio playback from the video's audio stream.
+        void play(FMOD::System* fmodSystem = nullptr);
         void pause();
         void stop(); // rewinds and returns to IDLE
 
@@ -87,12 +93,15 @@ namespace Graphics
         // Returns false when the stream is exhausted.
         bool decodeNextFrame();
 
+        // Decode all audio packets from the container into audioPcm_ (called once during load).
+        void decodeAllAudio();
+
         // Seek back to the start of the stream.
         void rewind();
 
-        // FFmpeg pipeline
+        // FFmpeg video pipeline
         AVFormatContext* formatCtx_  = nullptr;
-        AVCodecContext*  codecCtx_   = nullptr;
+        AVCodecContext*  codecCtx_   = nullptr;  // video codec
         SwsContext*      swsCtx_     = nullptr;
         AVFrame*         frame_      = nullptr;
         AVFrame*         rgbaFrame_  = nullptr;
@@ -102,10 +111,25 @@ namespace Graphics
         int   videoStreamIndex_ = -1;
         int   width_            = 0;
         int   height_           = 0;
-        float duration_         = 0.0f;  // total duration in seconds
-        float currentTime_      = 0.0f;  // playback cursor in seconds
-        float timeBase_         = 0.0f;  // stream time-base in seconds/PTS-unit
-        float nextFramePts_     = 0.0f;  // PTS of the last decoded frame in seconds
+        float duration_         = 0.0f;
+        float currentTime_      = 0.0f;
+        float timeBase_         = 0.0f;
+        float nextFramePts_     = 0.0f;
+
+        // FFmpeg audio pipeline
+        AVCodecContext* audioCodecCtx_   = nullptr;
+        SwrContext*     swrCtx_          = nullptr;
+        AVFrame*        audioFrame_      = nullptr;
+        int             audioStreamIndex_ = -1;
+        int             audioSampleRate_  = 44100;
+        int             audioChannels_    = 2;
+
+        // Decoded audio PCM (interleaved float stereo, 44100 Hz) buffered at load time
+        std::vector<float> audioPcm_;
+
+        // FMOD playback
+        FMOD::Sound*   fmodSound_   = nullptr;
+        FMOD::Channel* fmodChannel_ = nullptr;
 
         bool loaded_  = false;
         bool looping_ = false;

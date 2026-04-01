@@ -2,17 +2,17 @@ using System;
 
 namespace Eno
 {
-    public class Door17Ato16A_Script : ScriptBase
+    public class Door7Ato7_Script : ScriptBase
     {
         [Port] public string PlayerName    = "Player";
         [Port] public string CameraName    = "Camera";
         [Port] public float  PanSpeed      = 800f;
         [Port] public float  TriggerRadius = 64f;
 
-        private const float PlayerDestX =  2882f;
-        private const float PlayerDestY = -7227f;
-        private const float CamDestX    =  2878f;
-        private const float CamDestY    = -7065f;
+        private const float PlayerDestX =  4798f;
+        private const float PlayerDestY = -5051f;
+        private const float CamDestX    =  4803f;
+        private const float CamDestY    = -4883f;
 
         private uint  _playerID    = 0;
         private uint  _cameraID    = 0;
@@ -95,20 +95,9 @@ namespace Eno
             _panning = true;
         }
         public void Unlocked_exit() { }
-    
-        public void Default_enter()
-        {
-            // TODO: Add enter logic for Default state
-        }
 
-        public void Default_update()
-        {
-            // TODO: Add update logic for Default state
-        }
-
-        public void Default_exit()
-        {
-            // TODO: Add exit logic for Default state
-        }
+        public void Default_enter()  { }
+        public void Default_update() { }
+        public void Default_exit()   { }
     }
 }

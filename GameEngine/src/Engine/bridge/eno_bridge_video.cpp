@@ -44,7 +44,7 @@ namespace Bridge
             if (player && player->isLoaded())
             {
                 player->setLooping(comp->loop);
-                player->play();
+                player->play(gEngine->getAudioManager().getSystem());
                 comp->pausedByEngine_ = false;
             }
         }

@@ -169,6 +169,8 @@ namespace Eno
                     Bridge.SetButtonActive(_enemyInfoPopupID, false);
                 }
                 if (_enemyInfoPopupBgID != 0) Bridge.SetVisibility(_enemyInfoPopupBgID, false);
+                IsGamePaused = false;
+                Bridge.SetAudioPaused(false);
                 return;
             }
 
@@ -187,7 +189,6 @@ namespace Eno
                     if (_scrollNodes[i] != null && Bridge.IsColliding(_scrollNodes[i]!.ID, _player.ID))
                     {
                         Scroll_Dialouge_Script.TriggerDialogue(i);
-                        Scroll_Dialouge_Script.TriggerNarrative(i);
                         return;
                     }
                 }
@@ -363,6 +364,8 @@ namespace Eno
             {
                 _enemyInfoOpen = true;
                 Bridge.SetVisibility(_enemyInfoID, true);
+                IsGamePaused = true;
+                Bridge.SetAudioPaused(true);
             }
         }
     }
