@@ -87,6 +87,8 @@ namespace Eno
             // Audio
             _walkAudio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
             _hdAudio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode; 
+            
+            _walkAudio.volume = 50f;  // 0-100, tweak accordingly.
         }
 
         public void Update()
@@ -171,7 +173,7 @@ namespace Eno
             if (_walkAudio != null && _self != null)
             {
                 _walkAudio.sound = MOVE_SOUND;
-                //_walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
+                _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
             }
         }
 
@@ -251,7 +253,7 @@ namespace Eno
             if (_walkAudio != null && _self != null)
             {
                 _walkAudio.sound = MOVE_SOUND;
-                //_walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
+                _walkAudio.spatialPlay(_walkAudio.ID, _self.position.x, _self.position.y);
             }
         }
 
@@ -264,6 +266,7 @@ namespace Eno
 
         public void Hurt_enter()
         {
+            Bridge.AudioPlay(ID);
             _hurtTimer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
 
@@ -272,7 +275,7 @@ namespace Eno
                 int i = rng.Next(0, _hurtSounds.Count);
                 Console.WriteLine($"Sound selected: { _hurtSounds[i] }");
                 _hdAudio.sound = _hurtSounds[i];
-                //_hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
+                _hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
             }
         }
         public void Hurt_update()
@@ -301,7 +304,7 @@ namespace Eno
             {
                 int i = rng.Next(0, _deathSounds.Count);
                 _hdAudio.sound = _deathSounds[i];
-                //_hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
+                _hdAudio.spatialPlay(_hdAudio.ID, _self.position.x, _self.position.y);
             }
         }
         public void Death_update()
