@@ -143,6 +143,7 @@ struct TextureEntry {
 	std::string stemName;             // filename without extension, key in textures_ map
 	std::filesystem::path buildPath;  // path in the runtime assets folder
 	std::filesystem::path rootPath;   // path in the source assets folder (for deletion)
+
 };
 struct TextureFolder {
 	std::string folderName;
@@ -333,6 +334,171 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 			}
 
 			ImGui::EndMenu();
+		}
+
+		// Drop down menu for the bsa
+		static bool bsaOpen{ false };
+		if (ImGui::BeginMenu("Build Site Analyzer"))
+		{
+			// MENU
+			if (ImGui::MenuItem("Open"))
+			{
+				bsaOpen = true;
+			}
+
+			ImGui::EndMenu();
+		}
+
+		// BSA window
+		if (bsaOpen)
+		{
+			if (ImGui::Begin("Build Site Analyzer", &bsaOpen))
+			{
+				static std::string selectedTexture;
+				static Graphics::TextureData textureData;
+				static std::filesystem::path selectedTextureBuildPath;
+				static std::filesystem::path selectedTextureRootPath;
+
+				static std::unordered_set<std::string> selectedTextures;
+
+				std::uintmax_t totalFileSize{};
+				std::uintmax_t selectedFileSize{};
+				size_t totalAssetCount{};
+
+				for (const TextureFolder& sub : g_textureTree.subfolders)
+				{
+					for (const TextureEntry& entry : sub.files)
+					{
+						std::uintmax_t fileSize = std::filesystem::file_size(entry.buildPath);
+						totalFileSize += fileSize;
+
+						++totalAssetCount;
+
+						if (selectedTextures.contains(entry.stemName))
+						{
+							selectedFileSize += fileSize;
+						}
+					}
+				}
+
+				float totalMB = totalFileSize / (1024.f * 1024.f);
+				float selectedMB = selectedFileSize / (1024.f * 1024.f);
+				ImGui::Text(
+					"Assets (%.2f MB) } Selected (%.2f MB)", 
+					totalMB,
+					selectedMB);
+
+				ImGui::Separator();
+
+				// Load texture assets
+				if (ImGui::Button("Reload Assets"))
+					LoadTextureAssets(engine_);
+
+				const auto& textures = loader.getAllTextures();
+
+				bool allSelected = (selectedTextures.size() == totalAssetCount);
+				bool selectAllUI = allSelected;
+
+				if (ImGui::Button("Export Selected Assets"))
+				{
+					// Using the directory, pick a folder/dest
+					std::filesystem::path exportPath = File_pick::OpenFolderDialog();
+
+					for (const auto& sub : g_textureTree.subfolders)
+					{
+						for (const auto& entry : sub.files)
+						{
+							if (!selectedTextures.contains(entry.stemName))
+								continue;
+									
+							// Copy files to new dest
+							std::filesystem::path dest = exportPath / entry.buildPath.filename();
+
+							std::filesystem::copy_file(
+								entry.buildPath,
+								dest,
+								std::filesystem::copy_options::overwrite_existing
+							);
+						}
+					}
+				}
+
+				// Select all assets checkbox
+				if (ImGui::Checkbox("Select All Assets", &selectAllUI))
+				{
+					if (selectAllUI)
+					{
+						// Select ALL
+						selectedTextures.clear();
+
+						for (const auto& sub : g_textureTree.subfolders)
+						{
+							for (const auto& entry : sub.files)
+							{
+								selectedTextures.insert(entry.stemName);
+							}
+						}
+					}
+					else
+					{
+						// Deselect ALL
+						selectedTextures.clear();
+					}
+				}
+
+				for (const TextureFolder& sub : g_textureTree.subfolders)
+				{
+					for (const TextureEntry& entry : sub.files)
+					{
+						auto it = textures.find(entry.stemName);
+						if (it == textures.end() || !it->second || !it->second->isValid())
+							continue;
+
+						auto& texture = it->second;
+
+						ImGui::BeginGroup();
+
+						bool isSelected = selectedTextures.contains(entry.stemName);
+
+						ImVec2 rowSize(0, 52);
+
+						if (ImGui::Selectable(("##row" + entry.stemName).c_str(),
+							isSelected, 0, rowSize))
+						{
+							// toggle selection
+							if (isSelected)
+								selectedTextures.erase(entry.stemName);
+							else
+								selectedTextures.insert(entry.stemName);
+
+							textureData.texture = texture;
+							selectedTextureBuildPath = entry.buildPath;
+							selectedTextureRootPath = entry.rootPath;
+						}
+
+						ImVec2 p0 = ImGui::GetItemRectMin();
+
+						// Write image
+						ImGui::SetCursorScreenPos(ImVec2(p0.x + 4, p0.y + 4));
+						ImGui::Image((void*)(intptr_t)texture->getID(), ImVec2(44, 44));
+
+						// Write image display name
+						ImGui::SetCursorScreenPos(ImVec2(p0.x + 60, p0.y + 6));
+						ImGui::Text("%s", entry.displayName.c_str());
+
+						// Find and write file size for each image
+						std::uintmax_t fileSize = std::filesystem::file_size(entry.buildPath);
+						float sizeKB = fileSize / 1024.0f;
+
+						ImGui::SetCursorScreenPos(ImVec2(p0.x + 60, p0.y + 24));
+						ImGui::TextDisabled("%.1f KB", sizeKB);
+
+						ImGui::EndGroup();
+					}
+				}
+			}
+
+			ImGui::End();
 		}
 
 		// Shutdown button on the right side of the menu bar

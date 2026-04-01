@@ -176,7 +176,7 @@ namespace Eno
             if (_audio != null && _self != null)
             {
                 _audio.sound = ATTACK_SOUND;
-                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+                //_audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
         }
         public void WindUp_update()
