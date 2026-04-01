@@ -411,8 +411,9 @@ namespace Audio
 		float maxDist = audioComp.maxAudibleDistance_;
 		if (maxDist <= 0.0f) maxDist = 1.0f;
 
-		// Linear volume falloff: full volume at distance 0, silent at maxAudibleDistance_
-		float distanceFactor = 1.0f - std::min(distance / maxDist, 1.0f);
+		// Linear volume falloff: full volume at distance 0, floor at maxAudibleDistance_
+		constexpr float minVolumeFactor = 0.1f; // never go below 10% of the component volume
+		float distanceFactor = 1.0f - (1.0f - minVolumeFactor) * std::min(distance / maxDist, 1.0f);
 		float finalVolume = static_cast<float>(audioComp.volume_ / 100.0) * distanceFactor;
 		finalVolume = std::max(0.0f, std::min(finalVolume, 1.0f));
 

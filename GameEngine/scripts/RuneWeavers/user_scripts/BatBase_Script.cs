@@ -227,7 +227,7 @@ namespace Eno
             if (_audio != null && _self != null)
             {
                 _audio.sound = WINDUP_SOUND;
-                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+                //_audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
         }
         public void WindUp_update()
@@ -267,7 +267,7 @@ namespace Eno
             if (_audio != null && _self != null)
             {
                 _audio.sound = ATTACK_SOUND;
-                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+                //_audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
 
             if (_self != null)
@@ -321,7 +321,7 @@ namespace Eno
             if (_audio != null && _self != null)
             {
                 _audio.sound = HURT_SOUND;
-                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+               //_audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
         }
         public void Hurt_update()
@@ -350,7 +350,7 @@ namespace Eno
             if (_audio != null)
             {
                 _audio.sound = DEATH_SOUND;
-                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+                //_audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
         }
         public void Death_update()
