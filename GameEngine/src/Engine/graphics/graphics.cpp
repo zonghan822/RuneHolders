@@ -1724,19 +1724,46 @@ namespace Graphics
         std::vector<ECS::Entity> drawableEntities = entityManager.findEntity<ECSComponents::DrawInfoComponent>();
         ECSComponents::collectObjectsByLayer(engine, drawableEntities);
 
-        // Collect all z-indices from both tile layers and entities
+        // Collect particle entities by z-index for interleaved rendering
+        std::map<int, std::vector<uint32_t>> particlesByZ;
+        auto* particleSys = engine.getParticleSystem();
+        if (particleSys)
+        {
+            auto particleEntities = entityManager.findEntity<ECSComponents::ParticleEmitterComponent>();
+            for (auto& pEntity : particleEntities)
+            {
+                if (pEntity.has<ECSComponents::VisibilityComponent>(entityManager))
+                {
+                    auto& vis = pEntity.get<ECSComponents::VisibilityComponent>(entityManager);
+                    if (!vis.visible) continue;
+                    if (!ECSComponents::isAncestorVisible(pEntity.id(),
+                            engine.getEnoEditor().getSceneTree(), entityManager))
+                        continue;
+                    particlesByZ[static_cast<int>(vis.z_index)].push_back(pEntity.id());
+                }
+                else
+                {
+                    particlesByZ[3].push_back(pEntity.id());
+                }
+            }
+        }
+
+        // Collect all z-indices from tile layers, entities, and particles
         std::set<int> allZ;
         for (auto& [z, _] : tileLayersByZ)                      allZ.insert(z);
         for (auto& [z, _] : ECSComponents::sortedObjectLayers)  allZ.insert(z);
+        for (auto& [z, _] : particlesByZ)                       allZ.insert(z);
 
-        // Draw tile layers and entities interleaved in z-index order
+        // Draw tile layers, entities, and particles interleaved in z-index order
         for (int currentZ : allZ)
         {
             drawTileLayers(currentZ);
             flush();
 
             auto entityIt = ECSComponents::sortedObjectLayers.find(currentZ);
-            if (entityIt == ECSComponents::sortedObjectLayers.end()) continue;
+            if (entityIt == ECSComponents::sortedObjectLayers.end()) {
+                // No drawable entities at this z — skip to particles
+            } else {
             for (ECS::Entity* entityPtr : entityIt->second)
             {
                 ECS::Entity& entity = *entityPtr;
@@ -1748,6 +1775,10 @@ namespace Graphics
                     // Skip entities parented under a Canvas — rendered separately by CanvasSystem::render()
                     if (UI::CanvasSystem::hasCanvasAncestor(entity.id(),
                             engine.getEnoEditor().getSceneTree(), entityManager))
+                        continue;
+
+                    // Skip particle emitters — rendered by ParticleSystem::RenderEntity()
+                    if (entity.has<ECSComponents::ParticleEmitterComponent>(entityManager))
                         continue;
 
                     auto& transform  = entity.get<ECSComponents::TransformComponent>(entityManager);
@@ -1840,18 +1871,24 @@ namespace Graphics
                     std::cerr << "[Rendering] Unknown exception for entity " << entity.id() << std::endl;
                 }
             }
+            } // end else (drawable entities)
+
+            // Render particles at this z-index
+            if (particleSys)
+            {
+                auto pIt = particlesByZ.find(currentZ);
+                if (pIt != particlesByZ.end())
+                {
+                    flush();
+                    for (uint32_t pid : pIt->second)
+                        particleSys->RenderEntity(*this, entityManager, pid);
+                    flush();
+                }
+            }
         }
 
         // Flush entity sprite batch
         flush();
-
-        // Render particles on top of entities
-        //auto* particleSys = engine.getParticleSystem();
-        //if (particleSys)
-        //    particleSys->Render(*this, entityManager, { cameraX, cameraY });
-
-        // Flush particle batch before text (drawTextScreen switches shader)
-        //flush();
 
         // Draw TextComponent entities
         auto textEntities = entityManager.findEntity<ECSComponents::TextComponent>();

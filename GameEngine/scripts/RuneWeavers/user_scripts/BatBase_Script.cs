@@ -58,9 +58,9 @@ namespace Eno
             // Initialize Bat Values
             _self.useGravity    = false;
             _self.isKinematic   = false;
-            _self.maxHealth     = 10f;
-            _self.health        = 10f;
-            _self.damage        = 20f;
+            _self.maxHealth     = 1f;
+            _self.health        = 1f;
+            _self.damage        = 1f;
             _self.pathClearance  = 1;
             _self.collisionGroup = 1;
             EnemyColorRegistry.Register(ID, EnemyColor);
@@ -296,7 +296,7 @@ namespace Eno
             _prevPos        = curPos;
 
             float expectedMove = dashSpeed * Time.deltaTime;
-            bool  hitWall      = moved < expectedMove;
+            bool  hitWall      = moved < expectedMove * 0.5f;
 
             if (_chargedPixels >= CHARGE_DISTANCE || hitWall)
             {

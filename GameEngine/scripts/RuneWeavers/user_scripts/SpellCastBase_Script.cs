@@ -5,7 +5,7 @@ namespace Eno
 {
     public class SpellCastBase_Script : ScriptBase
     {
-        private const float WINDUP_DURATION  = 1.0f;
+        private const float WINDUP_DURATION  = 0.05f;
         private const float EXPLODE_DURATION = 0.6f;
 
         // Subclasses hardcode this: 0 = Fire/Red, 1 = Light/Yellow, 2 = Ice/Blue

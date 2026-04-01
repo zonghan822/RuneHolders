@@ -271,6 +271,7 @@ namespace Bridge {
         ENGINE_API void  __stdcall ParticleStartEmission(uint32_t sceneObjectID);
         ENGINE_API void  __stdcall ParticleStopEmission(uint32_t sceneObjectID);
         ENGINE_API void  __stdcall SetParticleEmissionRate(uint32_t sceneObjectID, float rate);
+        ENGINE_API int   __stdcall GetParticleMaxParticles(uint32_t sceneObjectID);
         ENGINE_API void  __stdcall SetParticleMaxParticles(uint32_t sceneObjectID, int max);
         ENGINE_API void  __stdcall SetParticleLifetime(uint32_t sceneObjectID, float minLife, float maxLife);
         ENGINE_API void  __stdcall SetParticleSize(uint32_t sceneObjectID, float minSize, float maxSize);

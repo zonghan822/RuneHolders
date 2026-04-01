@@ -4,6 +4,8 @@ namespace Eno
 {
     public class DummyBlue_Script : ScriptBase
     {
+        public static bool WasHit = false;
+        
         private Enemy? _self;
 
         public void Begin()

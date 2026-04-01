@@ -389,11 +389,6 @@ namespace Engine
 		graphicsMng_.beginFrame(Graphics::Color::Black);
 		graphicsMng_.render(*this);
 
-		// Render particles (world-space; projection matrix handles camera)
-		if (particleSys_)
-			particleSys_->Render(graphicsMng_, entityMng_, {0.f, 0.f});
-		graphicsMng_.flush();
-
 		timings_["Draw"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 	}
 

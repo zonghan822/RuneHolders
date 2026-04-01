@@ -287,7 +287,7 @@ namespace Eno
                     _pendingSpell = _activePattern;
 
                     foreach (int c in _connected)
-                        _runeParticles[c]?.emitBurst(20);
+                        _runeParticles[c]?.emitBurst(_runeParticles[c].maxParticles/4);
                     return;
                 }
 

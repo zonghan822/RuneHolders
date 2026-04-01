@@ -2687,33 +2687,21 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 			}
 		}
 
-		// Color selector (White, Red or Green)
-		const char* colorTypes[] = { "White", "Green", "Red" };
-		int currentColorIndex = 0;
-		if (draw.color.r == 1.0f && draw.color.g == 0.0f && draw.color.b == 0.0f) {
-			currentColorIndex = 2; // Red
-		}
-		else if (draw.color.r == 0.0f && draw.color.g == 1.0f && draw.color.b == 0.0f) {
-			currentColorIndex = 1; // Green
-		}
-		else if (draw.color.r == 1.0f && draw.color.g == 1.0f && draw.color.b == 1.0f) {
-			currentColorIndex = 0; // White
-		}
-
+		// Color selector (RGBA) — syncs to particle start color if present
+		float drawColor[4] = { draw.color.r, draw.color.g, draw.color.b, draw.color.a };
+		if (ImGui::ColorEdit4("Color", drawColor))
 		{
-			auto _before = undoManager.captureComponentsMap(entity);
-			if (ImGui::Combo("Color", &currentColorIndex, colorTypes, IM_ARRAYSIZE(colorTypes))) {
-				if (currentColorIndex == 1)       draw.color = Graphics::Color::Green;
-				else if (currentColorIndex == 2)  draw.color = Graphics::Color::Red;
-				else                              draw.color = Graphics::Color::White;
-				if (g_game) g_game->markEntitiesDirty();
-				undoManager.recordComponentChange(entity, std::move(_before), undoManager.captureComponentsMap(entity), "Change Color");
+			draw.color.r = drawColor[0]; draw.color.g = drawColor[1];
+			draw.color.b = drawColor[2]; draw.color.a = drawColor[3];
+			if (g_game) g_game->markEntitiesDirty();
+			if (entity.has<ECSComponents::ParticleEmitterComponent>(entMng))
+			{
+				auto& em = entity.get<ECSComponents::ParticleEmitterComponent>(entMng);
+				em.colorStartR = drawColor[0]; em.colorStartG = drawColor[1];
+				em.colorStartB = drawColor[2]; em.colorStartA = drawColor[3];
 			}
 		}
-
-		// Display color preview
-		ImVec4 colorVec(draw.color.r, draw.color.g, draw.color.b, draw.color.a);
-		ImGui::ColorButton("##color", colorVec, 0, ImVec2(20, 20));
+		trackEdit("Edit Color");
 
 		// Display texture info / drag-drop target
 		if (draw.texture != nullptr && draw.texture->isValid()) {
@@ -3731,19 +3719,6 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		}
 		trackEdit("Edit Color End");
 
-		// Particle shape
-		const char* shapeRenderNames[] = { "Square", "Circle" };
-		int shapeRenderIdx = static_cast<int>(emitter.particleShape);
-		{
-			auto _before = undoManager.captureComponentsMap(entity);
-			if (ImGui::Combo("Particle Shape##particle", &shapeRenderIdx, shapeRenderNames, IM_ARRAYSIZE(shapeRenderNames)))
-			{
-				emitter.particleShape = static_cast<Particles::ParticleShape>(shapeRenderIdx);
-				undoManager.recordComponentChange(entity, std::move(_before),
-					undoManager.captureComponentsMap(entity), "Edit Particle Shape");
-			}
-		}
-
 		// Blend mode
 		const char* blendNames[] = { "Alpha", "Additive" };
 		int blendIdx = static_cast<int>(emitter.blendMode);
@@ -3768,7 +3743,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::Button("Emit Burst##particle"))
 		{
 			auto* ps = engine_.getParticleSystem();
-			if (ps) ps->EmitBurst(entMng, entity.id(), emitter.maxParticles);
+			if (ps) ps->EmitBurst(entMng, entity.id(), emitter.maxParticles/4);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Start##particle"))

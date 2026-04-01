@@ -67,9 +67,9 @@ namespace Eno
             // Initialize Slug Values
             _self.useGravity    = false;
             _self.isKinematic   = false;
-            _self.maxHealth     = 30f;
-            _self.health        = 30f;
-            _self.damage        = 10f;
+            _self.maxHealth     = 1f;
+            _self.health        = 1f;
+            _self.damage        = 1f;
             _self.pathClearance  = 1;
             _self.collisionGroup = 1;
             EnemyColorRegistry.Register(ID, EnemyColor);
