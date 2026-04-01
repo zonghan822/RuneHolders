@@ -2,7 +2,7 @@ namespace Eno
 {
     public class Room6_Script : ScriptBase
     {
-        private const float WaveDelay = 10f;
+        private const float WaveDelay = 3f;
 
         private static Room6_Script? _instance;
         private static bool _popupActivated = false;

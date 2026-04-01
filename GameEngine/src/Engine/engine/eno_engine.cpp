@@ -380,6 +380,9 @@ namespace Engine
 			editor_->selectScene(pendingScene_);
 			pendingScene_.clear();
 			hasBegun_ = false;  // Force Begin() to run for the new scene's scripts
+			// Re-publish PlayScene so the new scene's audio components are prepared
+			// and autoplay sounds start.  selectScene() only publishes StopScene.
+			bus_.publish(Editor::PlayScene{});
 		}
 	}
 

@@ -23,6 +23,7 @@ namespace Eno
         {
             _playerID = Bridge.GetNode(PlayerName);
             _cameraID = Bridge.GetNode(CameraName);
+            Bridge.ChangeState(ID, "Unlocked");
         }
 
         public void Update()
@@ -96,7 +97,7 @@ namespace Eno
         }
         public void Unlocked_exit() { }
 
-        public void Default_enter()  { }
+        public void Default_enter()  { Bridge.ChangeState(ID, "Unlocked"); }
         public void Default_update() { }
         public void Default_exit()   { }
     }

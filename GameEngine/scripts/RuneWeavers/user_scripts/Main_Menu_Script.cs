@@ -40,8 +40,8 @@ namespace Eno
         private float _bgmMinX;
         private float _sfxMinX;
 
-        // Video cutscene state
-        private bool _videoStarted = false;
+        // Video cutscene state — timer guards against false "ended" on frame 1
+        private float _videoTimer  = 0f;
 
         // ------------------------------------------------------------------ //
 
@@ -92,9 +92,7 @@ namespace Eno
             {
                 uint videoID = Bridge.GetNode(CutsceneVideoNodeName);
 
-                // Wait until the video actually starts, then watch for it to end
-                if (!_videoStarted && Bridge.IsVideoPlaying(videoID))
-                    _videoStarted = true;
+                _videoTimer += Time.deltaTime;
 
                 // Escape skips the cutscene
                 if (Input.isKeyPressed(KeyCode.Escape))
@@ -103,9 +101,27 @@ namespace Eno
                     return;
                 }
 
-                // Video finished naturally
-                if (_videoStarted && !Bridge.IsVideoPlaying(videoID))
-                    EndCutscene();
+                if (_videoTimer > 0.3f)
+                {
+                    float vDur      = Bridge.GetVideoDuration(videoID);
+                    float vTime     = Bridge.GetVideoTime(videoID);
+                    bool  isPlaying = Bridge.IsVideoPlaying(videoID);
+
+                    // Debug: print state every ~60 frames
+                    if ((int)(_videoTimer * 60f) % 60 == 0)
+                        Console.WriteLine($"[Video] t={_videoTimer:F1}s vTime={vTime:F1}s vDur={vDur:F1}s playing={isPlaying}");
+
+                    // Primary: video player state is no longer PLAYING
+                    bool stateEnded = !isPlaying;
+                    // Fallback: elapsed video time has reached the container duration
+                    bool timeEnded  = vDur > 1f && vTime >= vDur - 0.5f;
+
+                    if (stateEnded || timeEnded)
+                    {
+                        Console.WriteLine($"[Video] Ending cutscene: stateEnded={stateEnded} timeEnded={timeEnded}");
+                        EndCutscene();
+                    }
+                }
             }
         }
 
@@ -334,8 +350,8 @@ namespace Eno
             Bridge.SetVideoLoop(videoID, false);
             Bridge.VideoPlay(videoID);
 
-            _videoStarted = false;
-            _menuState    = MenuState.VideoTransition;
+            _videoTimer = 0f;
+            _menuState  = MenuState.VideoTransition;
         }
 
         private void EndCutscene()
