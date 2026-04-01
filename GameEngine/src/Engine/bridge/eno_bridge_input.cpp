@@ -118,5 +118,37 @@ namespace Bridge
             if (!gEngine) return 0.0f;
             return mouseToWorld().y;
         }
+
+        // ============= Gamepad =============
+
+        ENGINE_API bool __stdcall IsGamepadConnected()
+        {
+            if (!gEngine) return false;
+            return gEngine->getInputManager().isGamepadConnected();
+        }
+
+        ENGINE_API float __stdcall GetGamepadAxis(int axis)
+        {
+            if (!gEngine) return 0.0f;
+            return gEngine->getInputManager().getGamepadAxis(axis);
+        }
+
+        ENGINE_API bool __stdcall IsGamepadButtonPressed(int button)
+        {
+            if (!gEngine) return false;
+            return gEngine->getInputManager().isGamepadButtonPressed(button);
+        }
+
+        ENGINE_API bool __stdcall IsGamepadButtonHeld(int button)
+        {
+            if (!gEngine) return false;
+            return gEngine->getInputManager().isGamepadButtonHeld(button);
+        }
+
+        ENGINE_API bool __stdcall IsGamepadButtonReleased(int button)
+        {
+            if (!gEngine) return false;
+            return gEngine->getInputManager().isGamepadButtonReleased(button);
+        }
     }
 }

@@ -49,5 +49,27 @@ namespace Eno
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern float GetMouseWorldY();
+
+        // -----------------------------------------------------------------------
+        // Input — Gamepad  (implemented in eno_bridge_input.cpp)
+        // -----------------------------------------------------------------------
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool IsGamepadConnected();
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern float GetGamepadAxis(int axis);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool IsGamepadButtonPressed(int button);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool IsGamepadButtonHeld(int button);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool IsGamepadButtonReleased(int button);
     }
 }

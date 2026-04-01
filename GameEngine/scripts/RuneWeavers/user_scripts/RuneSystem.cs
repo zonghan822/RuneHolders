@@ -88,8 +88,23 @@ namespace Eno
         // Index 0 = Fire (Room 1), 1 = Light (Room 4), 2 = Ice (Room 8)
         public static bool[] SpellUnlocked = new bool[3];
 
+            // ── Controller settings ──────────────────────────────────────────────────
+        private const float RT_THRESHOLD     = 0.5f;   // trigger value (0-1) to start casting
+        private const float STICK_ACTIVATE   = 0.7f;   // right stick magnitude to activate a rune
+
+        // Precomputed rune angles (radians) for stick-based activation
+        private static readonly float[] RuneAngles = new float[RUNE_COUNT];
+        private static readonly bool _anglesInit = InitRuneAngles();
+        private static bool InitRuneAngles()
+        {
+            for (int i = 0; i < RUNE_COUNT; i++)
+                RuneAngles[i] = (-60f + i * (360f / RUNE_COUNT)) * MathF.PI / 180f;
+            return true;
+        }
+
         // ── Runtime state ────────────────────────────────────────────────────────
         private bool        _active         = false;
+        private bool        _rtWasDown      = false;    // previous frame RT state
         private float       _originX        = 0f;
         private float       _originY        = 0f;
 
@@ -123,6 +138,9 @@ namespace Eno
         // Deferred spell cast — pattern index stored when complete, cast on mouse release
         private int _pendingSpell = -1;
 
+        // Cursor prefab — spawned once, tracks mouse / right stick
+        private Sprite2D? _cursor = null;
+
         // ── Script callbacks ─────────────────────────────────────────────────────
         public void Begin()
         {
@@ -132,6 +150,7 @@ namespace Eno
                 _runeStates[i] = "Disabled";
             }
 
+            _cursor = SpawnPrefab("Cursor", 0f, 0f) as Sprite2D;
         }
 
         public void Update()
@@ -139,25 +158,70 @@ namespace Eno
             if (Scroll_Dialouge_Script.DialogueActive)
             {
                 if (_active) Cancel();
+                _rtWasDown = false;
                 return;
             }
 
+            // Controller: RT as activation trigger (0-1 range)
+            bool rtDown = Input.getRightTrigger() > RT_THRESHOLD;
+            bool rtPressed = rtDown && !_rtWasDown;
+            bool rtReleased = !rtDown && _rtWasDown;
+            _rtWasDown = rtDown;
+
             if (!_active)
             {
-                if (Input.isMousePressed(0))
+                if (Input.isMousePressed(0) || rtPressed)
                     Activate();
             }
             else
             {
-                if (Input.isMouseHeld(0))
+                if (Input.isMouseHeld(0) || rtDown)
                 {
-                    CheckConnections();
-                    UpdateTrailLine(Input.mouseWorldPosition.x, Input.mouseWorldPosition.y);
+                    if (_pendingSpell < 0)
+                    {
+                        // Right stick → angle-based activation; mouse → position-based
+                        Vector2 rStick = Input.getRightStick(0.15f);
+                        float stickMag = MathF.Sqrt(rStick.x * rStick.x + rStick.y * rStick.y);
+
+                        if (stickMag >= STICK_ACTIVATE)
+                            CheckConnectionByAngle(rStick.x, rStick.y);
+                        else
+                            CheckConnectionsAt(Cursor_Script.CursorX, Cursor_Script.CursorY);
+
+                        // Trail line follows stick direction, or snaps to origin when released
+                        if (stickMag > 0.15f)
+                        {
+                            float norm = RUNE_RING_RADIUS / stickMag;
+                            UpdateTrailLine(_originX + rStick.x * norm, _originY + rStick.y * norm);
+                        }
+                        else if (rtDown)
+                        {
+                            UpdateTrailLine(_originX, _originY);
+                        }
+                        else
+                        {
+                            UpdateTrailLine(Cursor_Script.CursorX, Cursor_Script.CursorY);
+                        }
+                    }
+                    else
+                    {
+                        // Pattern complete — hide trail line
+                        if (_trailLine != null) { FreeNode(_trailLine); _trailLine = null; }
+                    }
+                }
+                else if (rtReleased)
+                {
+                    Cursor_Script.CursorX = _originX;
+                    Cursor_Script.CursorY = _originY;
+                    if (_pendingSpell >= 0)
+                        Release();
+                    else
+                        Cancel();
                 }
                 else
                     Release();
 
-                if (Input.isMousePressed(1))
+                if (Input.isMousePressed(1) || Input.isGamepadButtonPressed(GamepadButton.B))
                     Cancel();
             }
         }
@@ -180,11 +244,13 @@ namespace Eno
 
         private void Activate()
         {
-            _originX       = Input.mouseWorldPosition.x;
-            _originY       = Input.mouseWorldPosition.y;
+            _originX       = Cursor_Script.CursorX;
+            _originY       = Cursor_Script.CursorY;
             _activePattern = -1;
             _pendingSpell  = -1;
             _connected.Clear();
+
+            if (_cursor != null) _cursor.visible = false;
 
             _spellBase = SpawnPrefab("SpellBase", _originX, _originY) as KinematicBody2D;
 
@@ -250,10 +316,8 @@ namespace Eno
             }
         }
 
-        private void CheckConnections()
+        private void CheckConnectionsAt(float mx, float my)
         {
-            float mx     = Input.mouseWorldPosition.x;
-            float my     = Input.mouseWorldPosition.y;
             float snapSq = SNAP_RADIUS * SNAP_RADIUS;
 
             for (int i = 0; i < RUNE_COUNT; i++)
@@ -299,6 +363,64 @@ namespace Eno
             }
         }
 
+        // Activate the Ready rune closest to the right stick direction.
+        private void CheckConnectionByAngle(float sx, float sy)
+        {
+            float stickAngle = MathF.Atan2(sy, sx);
+
+            // Find the Ready rune with the smallest angular distance
+            int best = -1;
+            float bestDist = float.MaxValue;
+
+            for (int i = 0; i < RUNE_COUNT; i++)
+            {
+                if (_runeStates[i] != "Ready") continue;
+
+                float diff = stickAngle - RuneAngles[i];
+                // Wrap to [-PI, PI]
+                diff = MathF.Atan2(MathF.Sin(diff), MathF.Cos(diff));
+                float absDiff = MathF.Abs(diff);
+
+                // Only match if within 30° (half the 60° sector between runes)
+                if (absDiff < bestDist && absDiff < MathF.PI / 6f)
+                {
+                    bestDist = absDiff;
+                    best = i;
+                }
+            }
+
+            if (best < 0) return;
+
+            // Activate the matched rune (same logic as CheckConnectionsAt)
+            _connected.Add(best);
+            SetRuneState(best, "Activated");
+            try { GetNode<AudioNode>("Rune-GalaxyBellPad-1")?.play(); } catch { }
+
+            if (_connected.Count > 1)
+            {
+                int prev = _connected[_connected.Count - 2];
+                SpawnConnectionLine(_runeX[prev], _runeY[prev], _runeX[best], _runeY[best]);
+            }
+
+            if (_connected.Count == 1)
+            {
+                if (_spellBase != null) { FreeNode(_spellBase); _spellBase = null; }
+                TryDeterminePattern();
+            }
+
+            _spellCasting?.changeState("Cast" + _connected.Count);
+
+            if (_activePattern >= 0 && PatternMatches(_connected, Patterns[_activePattern]))
+            {
+                _pendingSpell = _activePattern;
+                foreach (int c in _connected)
+                    _runeParticles[c]?.emitBurst(_runeParticles[c].maxParticles / 4);
+                return;
+            }
+
+            RefreshReadyStates();
+        }
+
         // Checks whether only one viable pattern remains and spawns its casting prefab.
         private void TryDeterminePattern()
         {
@@ -326,6 +448,7 @@ namespace Eno
             DespawnLines();
             DespawnRunes();
             SpawnPrefab(SpellPrefabs[spellIndex], _originX, _originY);
+            if (_cursor != null) _cursor.visible = true;
             EndSlowTime(attack: true);
         }
 
@@ -344,6 +467,7 @@ namespace Eno
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
+            if (_cursor != null) _cursor.visible = true;
             EndSlowTime();
         }
 
@@ -355,6 +479,7 @@ namespace Eno
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
+            if (_cursor != null) _cursor.visible = true;
             EndSlowTime();
         }
 
@@ -399,8 +524,12 @@ namespace Eno
 
         private static bool IsPlayerMoving()
         {
-            return Input.isKeyHeld(KeyCode.W) || Input.isKeyHeld(KeyCode.S) ||
-                   Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D);
+            if (Input.isKeyHeld(KeyCode.W) || Input.isKeyHeld(KeyCode.S) ||
+                Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D))
+                return true;
+
+            Vector2 stick = Input.getLeftStick(0.2f);
+            return stick.x != 0f || stick.y != 0f;
         }
 
         // ── Pattern helpers ──────────────────────────────────────────────────────
