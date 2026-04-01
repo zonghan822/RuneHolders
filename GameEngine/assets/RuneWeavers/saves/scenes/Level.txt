@@ -7692,7 +7692,7 @@ rumoured mansion. }
 			[struct ECSComponents::VisibilityComponent]
 			{
 				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 0 }
+				"Visible": <bool> { 1 }
 			}
 
 			[struct ECSComponents::TransformComponent]
