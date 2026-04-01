@@ -6260,7 +6260,7 @@ void displayVideoTab(Engine::EnoEngine& engine_)
 			// Playback controls
 			if (ImGui::Button("Play"))
 			{
-				player->play();
+				player->play(engine_.getAudioManager().getSystem());
 				playPreview = true;
 			}
 			ImGui::SameLine();

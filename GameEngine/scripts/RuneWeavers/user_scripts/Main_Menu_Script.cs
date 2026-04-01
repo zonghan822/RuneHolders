@@ -5,11 +5,15 @@ namespace Eno
 {
 	public class Main_Menu_Script : ScriptBase
     {
+        // Node names — set these in the inspector to match your scene
+        [Port] public string VideoTransitionCanvasName = "VideoTransition";
+        [Port] public string CutsceneVideoNodeName     = "CutsceneVideo";
+
         // ------------------------------------------------------------------ //
         // Menu state
         // ------------------------------------------------------------------ //
 
-        private enum MenuState { Main, QuitMenu, ControlsMenu, SettingsMenu }
+        private enum MenuState { Main, QuitMenu, ControlsMenu, SettingsMenu, VideoTransition }
         private MenuState _menuState = MenuState.Main;
 
         // Main menu (W=Play N, A=Settings W, D=Controls E, S=Quit S)
@@ -35,6 +39,9 @@ namespace Eno
         private float _masterMinX;
         private float _bgmMinX;
         private float _sfxMinX;
+
+        // Video cutscene state
+        private bool _videoStarted = false;
 
         // ------------------------------------------------------------------ //
 
@@ -72,6 +79,25 @@ namespace Eno
                 if (Input.isKeyPressed(KeyCode.D)) AdjustFocusedSlider(VolumeStep);
                 if (Input.isKeyPressed(KeyCode.E) && _settingsRow == SettingsRow.Back)
                     _when_settings_menu_back_button_onclick();
+            }
+            else if (_menuState == MenuState.VideoTransition)
+            {
+                uint videoID = Bridge.GetNode(CutsceneVideoNodeName);
+
+                // Wait until the video actually starts, then watch for it to end
+                if (!_videoStarted && Bridge.IsVideoPlaying(videoID))
+                    _videoStarted = true;
+
+                // Escape skips the cutscene
+                if (Input.isKeyPressed(KeyCode.Escape))
+                {
+                    EndCutscene();
+                    return;
+                }
+
+                // Video finished naturally
+                if (_videoStarted && !Bridge.IsVideoPlaying(videoID))
+                    EndCutscene();
             }
         }
 
@@ -284,6 +310,38 @@ namespace Eno
             => MathF.Max(0f, MathF.Min(100f, ((ballX - minX) / SliderRange) * 100f));
 
         // ------------------------------------------------------------------ //
+        // Video cutscene
+        // ------------------------------------------------------------------ //
+
+        private void EnterCutscene()
+        {
+            uint canvasID = Bridge.GetNode(VideoTransitionCanvasName);
+            uint videoID  = Bridge.GetNode(CutsceneVideoNodeName);
+
+            // Stop main menu BGM so it doesn't overlap the cutscene audio
+            try { Bridge.AudioStop(Bridge.GetNode("Background")); } catch (Exception) {}
+
+            Bridge.SetCanvasActive(canvasID, true);
+            Bridge.SetVisibility(videoID, true);
+            Bridge.SetVideoLoop(videoID, false);
+            Bridge.VideoPlay(videoID);
+
+            _videoStarted = false;
+            _menuState    = MenuState.VideoTransition;
+        }
+
+        private void EndCutscene()
+        {
+            uint videoID  = Bridge.GetNode(CutsceneVideoNodeName);
+            uint canvasID = Bridge.GetNode(VideoTransitionCanvasName);
+
+            Bridge.VideoStop(videoID);
+            Bridge.SetVisibility(videoID, false);
+            Bridge.SetCanvasActive(canvasID, false);
+            Bridge.ChangeScene("Level.txt");
+        }
+
+        // ------------------------------------------------------------------ //
         // Shared helper
         // ------------------------------------------------------------------ //
 
@@ -311,7 +369,7 @@ namespace Eno
             Bridge.SetTexturePath(Bridge.GetNode("Play Button"), "UI-Play");
             _selected = MenuButton.None;
             try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
-            Bridge.ChangeScene("Level.txt");
+            EnterCutscene();
         }
 
         // -------------- CONTROL BUTTON -------------------
