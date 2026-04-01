@@ -174,7 +174,6 @@ namespace Eno
                     if (_scrollNodes[i] != null && Bridge.IsColliding(_scrollNodes[i]!.ID, _player.ID))
                     {
                         Scroll_Dialouge_Script.TriggerDialogue(i);
-                        Scroll_Dialouge_Script.TriggerNarrative(i);
                         return;
                     }
                 }

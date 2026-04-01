@@ -58,22 +58,7 @@ namespace Eno
         // PlayerController uses this same array for collision checks.
         public static readonly string[] ScrollNames =
         {
-            "Room1_Scroll", "Room4_Scroll", "Room8_Scroll", "Room24_Scroll",
-            "Room10_Scroll", "Room14_Scroll", "Room17_Scroll", "Room19_Scroll"
-        };
-
-        // true = show [Narrative] image, false = run typewriter text
-        private static readonly bool[] _isNarrative =
-        {
-            false, false, false, false,
-            true,  true,  true,  true
-        };
-
-        // Texture name for narrative scrolls (unused for text scrolls)
-        private static readonly string[] _narrativeTextures =
-        {
-            "", "", "", "",
-            "UI-Narrative-1", "UI-Narrative-2", "UI-Narrative-3", "UI-Narrative-4"
+            "Room1_Scroll", "Room4_Scroll", "Room8_Scroll"
         };
 
         // Text dialogue sets
@@ -118,28 +103,6 @@ namespace Eno
                 new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.CryGrey,           "... Only a few more rooms left"),
                 new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.CryGrey,           "Come.")
             },   // Room8_Scroll
-
-            new List<DialogueLine>
-            {
-                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.SadGrey,           "We're here... my room."),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.WideEyedGrey,      "I already asked you if you want your horns gone..."),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.WideEyedGrey,      "But from what I've seen of your capabilities"),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Angry,      Emotion.WideEyedGrey,      "You don't really mean it, do you?"),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Angry,      Emotion.WideEyedGrey,      "You learn and execute the spells I left for you so fast"),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Default,    Emotion.WideEyedGrey,      "against creatures you've never seen before too."),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Angry,      Emotion.WideEyedGrey,      "Do you truly want your skill and talent to go to waste?"),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Angry,      Emotion.WideEyedGrey,      "And more importantly... your love for magic?"),
-                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.AngryGrey,         "I..."),
-                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.AngryGrey,         "No... I don't! I don't want that!"),
-                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.AngryGrey,         "But... my friends... school... the whole world...!"),
-                new DialogueLine(Speaker.CassiaMain,    Emotion.Cry,        Emotion.AngryGrey,         "NO ONE ACCEPTS ME!"),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Smile,      Emotion.WideEyedGrey,      "But I do."),
-                new DialogueLine(Speaker.CassiaMain,    Emotion.Sad,        Emotion.SmileGrey,         "Wha...?"),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Smile,      Emotion.SadGrey,           "It was nice having someone to talk to after 200 years."),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Smile,      Emotion.WideEyedGrey,      "And I want to talk more... about you, magic, the world now..."),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Smile,      Emotion.WideEyedGrey,      "So what I'm saying is... instead of ridding of your horns and magic..."),
-                new DialogueLine(Speaker.WitchMain,     Emotion.Smile,      Emotion.WideEyedGrey,      "Will you be my first friend?")
-            }
         };
 
         private const float DIALOGUE_TYPE_SPEED = 0.05f;
@@ -156,7 +119,6 @@ namespace Eno
         private Actor?    _player;
         private Canvas?   _dialogueCanvas;
         private Label?    _dialogueText;
-        private Sprite2D?   _narrativeSprite;
         private Sprite2D?   _dialogueBox;
         private Sprite2D?[] _scrollNodes = Array.Empty<Sprite2D?>();
         private AudioNode? _typingSfx;
@@ -165,10 +127,6 @@ namespace Eno
         private Sprite2D? _charCenter;        // Centre character image
         private Sprite2D? _charLeft;          // Cassia on the left
         private Sprite2D? _charRight;         // Witch on the right
-
-        // Win screen node IDs
-        private uint _winLoseCanvasID = 0;
-        private uint _victoryScreenID = 0;
 
         // ------------------- Runtime state ------------------------------
         private bool   dialogueActive      = false;
@@ -186,7 +144,6 @@ namespace Eno
             _player         = GetNode<Actor>("Player");
             _dialogueCanvas = GetNode<Canvas>("Dialogue Canvas");
             _dialogueText   = GetNode<Label>("Dialogue Text");
-            _narrativeSprite = GetNode<Sprite2D>("Narrative");
             try { _dialogueBox    = GetNode<Sprite2D>("Dialogue Box"); } catch { }
 
             _scrollNodes = new Sprite2D?[ScrollNames.Length];
@@ -200,9 +157,6 @@ namespace Eno
             try { _charCenter  = GetNode<Sprite2D>("CharacterCenter");  } catch { }
             try { _charLeft    = GetNode<Sprite2D>("ProtagonistLeft");    } catch { }
             try { _charRight   = GetNode<Sprite2D>("WitchRight");   } catch { }
-
-            try { _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas"); } catch { }
-            try { _victoryScreenID = Bridge.GetNode("WinScreen");  } catch { }
 
             // Reset static state so dialogue replays on level restart
             DialogueActive = false;
@@ -223,15 +177,6 @@ namespace Eno
         public static void TriggerDialogue(int scrollIndex)
         {
             if (_instance == null || DialogueActive || DialogueShown[scrollIndex]) return;
-            if (_isNarrative[scrollIndex]) return;
-            _instance.StartDialogueForScroll(scrollIndex);
-        }
-
-        // Called by room scripts when the player interacts with a narrative scroll.
-        public static void TriggerNarrative(int scrollIndex)
-        {
-            if (_instance == null || DialogueActive || DialogueShown[scrollIndex]) return;
-            if (!_isNarrative[scrollIndex]) return;
             _instance.StartDialogueForScroll(scrollIndex);
         }
 
@@ -247,12 +192,6 @@ namespace Eno
 
             if (Input.isKeyPressed(KeyCode.E) && !_skipEInput)
             {
-                if (_activeIndex >= 0 && _isNarrative[_activeIndex])
-                {
-                    CloseDialogue();
-                    return;
-                }
-
                 if (dialogueTyping)
                 {
                     // Skip typewriter — show full line instantly
@@ -304,38 +243,15 @@ namespace Eno
             _activeIndex   = index;
 
             if (_dialogueCanvas != null) _dialogueCanvas.active = true;
-            // Check if current scroll is for dialogue or narrative
-            if (_isNarrative[index])
+            if (_dialogueBox != null) _dialogueBox.visible = true;
+            if (_dialogueText != null)
             {
-                // Show narrative sprite, hide text label and dialogue box
-                if (_narrativeSprite != null)
-                {
-                    _narrativeSprite.texture = _narrativeTextures[index];
-                    _narrativeSprite.visible = true;
-                }
-                if (_dialogueText != null)
-                    _dialogueText.visible = false;
-                if (_dialogueBox != null)
-                    _dialogueBox.visible = false;
-
-                dialogueTyping = false;
+                _dialogueText.visible = true;
+                _dialogueText.text = "";
             }
-            else
-            {
-                // Show text label and dialogue box, hide narrative sprite
-                if (_narrativeSprite != null)
-                    _narrativeSprite.visible = false;
-                if (_dialogueBox != null)
-                    _dialogueBox.visible = true;
-                if (_dialogueText != null)
-                {
-                    _dialogueText.visible = true;
-                    _dialogueText.text = "";
-                }
 
-                dialogueIndex = 0;
-                ShowLine(_dialogueSets[index][0]);
-            }
+            dialogueIndex = 0;
+            ShowLine(_dialogueSets[index][0]);
         }
 
         private void AdvanceDialogue()
@@ -362,25 +278,13 @@ namespace Eno
             DialogueActive = false;
             // Set canvas inactive
             if (_dialogueCanvas  != null) _dialogueCanvas.active = false;
-            if (_narrativeSprite != null) _narrativeSprite.visible = false;
             if (_dialogueBox     != null) _dialogueBox.visible = true;
             // Hide character display nodes
             if (_charCenter  != null) _charCenter.visible = false;
             if (_charLeft    != null) _charLeft.visible   = false;
             if (_charRight   != null) _charRight.visible  = false;
             // To prevent dialogue from repeating
-            if (_activeIndex >= 0 && !_isNarrative[_activeIndex]) DialogueShown[_activeIndex] = true;
-
-            // Final dialogue (Room24_Scroll, index 3) — show the win screen
-            if (_activeIndex == 3 && _winLoseCanvasID != 0)
-            {
-                Bridge.SetCanvasActive(_winLoseCanvasID, true);
-                if (_victoryScreenID != 0)
-                {
-                    Bridge.SetVisibility(_victoryScreenID, true);
-                    SetChildButtonsActive(_victoryScreenID, true);
-                }
-            }
+            if (_activeIndex >= 0) DialogueShown[_activeIndex] = true;
         }
 
         // Displays one dialogue line: sets character sprites, speaker name texture, and starts typewriter.
@@ -393,7 +297,7 @@ namespace Eno
 
             // Identify speaker and current emotion
             switch (line._speaker)
-            { 
+            {
                 case Speaker.Cassia:
                     if (_charCenter != null)
                     {
@@ -514,20 +418,6 @@ namespace Eno
 
             // Using Witch
             return "Witch-Dialogue-" + emotion.ToString();
-        }
-
-
-
-        private void SetChildButtonsActive(uint parentID, bool active)
-        {
-            uint count = Bridge.GetChildCount(parentID);
-            for (uint i = 0; i < count; i++)
-            {
-                uint childID = Bridge.GetChild(parentID, i);
-                if (Bridge.GetNodeType(childID) == (uint)NodeType.BUTTON)
-                    Bridge.SetButtonActive(childID, active);
-                SetChildButtonsActive(childID, active);
-            }
         }
 
         public void Default_enter()  { }
