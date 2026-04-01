@@ -264,7 +264,7 @@ namespace Collision {
 		//	2. Circle inside rectangle
 		Math::eVec2<float> closestPoint;
 		closestPoint.x = std::max(rectPos.x - halfWidth, std::min(circlePos.x, rectPos.x + halfWidth));
-		closestPoint.y = std::max(rectPos.y - halfHeight, std::min(circlePos.y, rectPos.y + halfWidth));
+		closestPoint.y = std::max(rectPos.y - halfHeight, std::min(circlePos.y, rectPos.y + halfHeight));
 
 		// Calculate distance from circle center to closest point on rectangle
 		Math::eVec2<float> distance = closestPoint - circlePos;

@@ -32,7 +32,7 @@
 	X(CanvasComponent) \
 	X(TextComponent) \
 	X(VideoComponent) \
-//particle emitter omitted
+	X(ParticleEmitterComponent)
 
 #define PRESET(Name, ...) using Name = std::tuple<__VA_ARGS__>;
 
@@ -63,7 +63,7 @@
 	PRESET(ENEMY,        TransformComponent, RenderComponent, AnimationControllerComponent, CollisionComponent, PhysicsComponent, StateMachineComponent, HealthComponent, DamageComponent, AIComponent, VisibilityComponent, LayerComponent) \
 	/* Canvas — UI root that positions children relative to the viewport */ \
 	PRESET(CANVAS,		 TransformComponent, RenderComponent, CanvasComponent, VisibilityComponent, LayerComponent) \
-//particle emitter omitted
+	PRESET(PARTICLE,     TransformComponent, ParticleEmitterComponent, VisibilityComponent, LayerComponent)
 
 // Expanding PRESET_LIST within the component namespace
 // to make use of the PRESET using macro

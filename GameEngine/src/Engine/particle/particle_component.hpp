@@ -24,6 +24,11 @@ namespace Particles {
         Alpha,
         Additive
     };
+
+    enum class ParticleShape {
+        Square,
+        Circle
+    };
 }
 
 namespace ECSComponents {
@@ -58,6 +63,12 @@ struct ParticleEmitterComponent {
     float colorEndR = 1.0f, colorEndG = 1.0f, colorEndB = 1.0f, colorEndA = 0.0f;
     std::string texture = "";             // Empty string = solid color
     Particles::BlendMode blendMode = Particles::BlendMode::Alpha;
+    Particles::ParticleShape particleShape = Particles::ParticleShape::Square;
+
+    // Serialization proxies for enums (kept in sync by reflect)
+    int shapeInt = 0;           // EmissionShape
+    int blendModeInt = 0;       // BlendMode
+    int particleShapeInt = 0;   // ParticleShape
 
     // State (internal)
     float emissionTimer = 0.0f;
@@ -77,6 +88,7 @@ struct ParticleEmitterComponent {
         v("emissionRate", emissionRate, "float");
         v("maxParticles", maxParticles, "int");
         v("duration", duration, "float");
+        v("emissionShape", shapeInt, "int");
         v("shapeRadius", shapeRadius, "float");
         v("shapeAngle", shapeAngle, "float");
         v("lifetimeMin", lifetimeMin, "float");
@@ -92,14 +104,25 @@ struct ParticleEmitterComponent {
         v("colorEndG", colorEndG, "float");
         v("colorEndB", colorEndB, "float");
         v("colorEndA", colorEndA, "float");
+        v("blendMode", blendModeInt, "int");
+        v("particleShape", particleShapeInt, "int");
         v("isEmitting", isEmitting, "bool");
+        // Sync enums from int proxies after deserialization
+        shape         = static_cast<Particles::EmissionShape>(shapeInt);
+        blendMode     = static_cast<Particles::BlendMode>(blendModeInt);
+        particleShape = static_cast<Particles::ParticleShape>(particleShapeInt);
     }
 
     template <typename Visitor>
     void reflect(Visitor&& v) const {
+        // Sync int proxies from enums before serialization
+        const_cast<int&>(shapeInt)         = static_cast<int>(shape);
+        const_cast<int&>(blendModeInt)     = static_cast<int>(blendMode);
+        const_cast<int&>(particleShapeInt) = static_cast<int>(particleShape);
         v("emissionRate", emissionRate, "float");
         v("maxParticles", maxParticles, "int");
         v("duration", duration, "float");
+        v("emissionShape", shapeInt, "int");
         v("shapeRadius", shapeRadius, "float");
         v("shapeAngle", shapeAngle, "float");
         v("lifetimeMin", lifetimeMin, "float");
@@ -115,6 +138,8 @@ struct ParticleEmitterComponent {
         v("colorEndG", colorEndG, "float");
         v("colorEndB", colorEndB, "float");
         v("colorEndA", colorEndA, "float");
+        v("blendMode", blendModeInt, "int");
+        v("particleShape", particleShapeInt, "int");
         v("isEmitting", isEmitting, "bool");
     }
 };

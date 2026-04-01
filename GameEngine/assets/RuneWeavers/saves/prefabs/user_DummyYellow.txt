@@ -179,7 +179,7 @@
 			"type": "int"
 		},
 		"Cols": {
-			"value": "1",
+			"value": "3",
 			"type": "int"
 		},
 		"Frame Duration": {
@@ -251,7 +251,7 @@
 			"type": "int"
 		},
 		"Anim1 Cols": {
-			"value": "1",
+			"value": "3",
 			"type": "int"
 		},
 		"Anim1 Duration": {

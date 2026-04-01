@@ -53,7 +53,7 @@ namespace Engine
 		stateMachineSys_ = std::make_unique<FSM::StateMachineSystem>(bus_);
 		physicsSys_ = std::make_unique<Physics::PhysicsSystem>(bus_);
 		collisionSys_ = std::make_unique<Collision::CollisionSystem>(bus_);
-		//particleSys_ = std::make_unique<Particles::ParticleSystem>(bus_);
+		particleSys_ = std::make_unique<Particles::ParticleSystem>(bus_);
 		audioMng_.init();
 		graphicsMng_.initialize(window_);
 
@@ -228,16 +228,27 @@ namespace Engine
 			collisionSys_->Update(entityMng_);
 			timings_["Collision"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 
-			//t0 = Clock::now();
-			//particleSys_->Update(entityMng_, deltaTime);
-			//timings_["Particles"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+			t0 = Clock::now();
+			particleSys_->Update(entityMng_, deltaTime);
+			timings_["Particles"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 		}
 		else
 		{
 			timings_["State Machine"] = 0.0;
 			timings_["Physics"]       = 0.0;
 			timings_["Collision"]     = 0.0;
-			//timings_["Particles"]     = 0.0;
+
+			// Update particles in editor so the preview works
+			if (particleSys_)
+			{
+				auto t0 = Clock::now();
+				particleSys_->Update(entityMng_, deltaTime);
+				timings_["Particles"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
+			}
+			else
+			{
+				timings_["Particles"]     = 0.0;
+			}
 		}
 
 		// Canvas and buttons: blocked by editor pause, but NOT by in-game pause (UI stays interactive)
@@ -377,6 +388,12 @@ namespace Engine
 		t0 = Clock::now();
 		graphicsMng_.beginFrame(Graphics::Color::Black);
 		graphicsMng_.render(*this);
+
+		// Render particles (world-space; projection matrix handles camera)
+		if (particleSys_)
+			particleSys_->Render(graphicsMng_, entityMng_, {0.f, 0.f});
+		graphicsMng_.flush();
+
 		timings_["Draw"] = std::chrono::duration<double, std::micro>(Clock::now() - t0).count();
 	}
 

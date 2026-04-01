@@ -50,6 +50,11 @@ namespace Eno
 
         public void setUV(Vector2 start, Vector2 end) => Bridge.SetUV(ID, start.x, start.y, end.x, end.y);
 
+        public string texture
+        {
+            set => Bridge.SetTexturePath(ID, value);
+        }
+
         public string animation
         {
             get => Bridge.GetCurrentAnimation(ID);
