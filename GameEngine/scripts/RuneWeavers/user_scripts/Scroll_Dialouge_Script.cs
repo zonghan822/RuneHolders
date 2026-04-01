@@ -186,7 +186,7 @@ namespace Eno
             _player         = GetNode<Actor>("Player");
             _dialogueCanvas = GetNode<Canvas>("Dialogue Canvas");
             _dialogueText   = GetNode<Label>("Dialogue Text");
-            _narrativeSprite = GetNode<Sprite2D>("Narrative");
+            try { _narrativeSprite = GetNode<Sprite2D>("Narrative"); } catch { }
             try { _dialogueBox    = GetNode<Sprite2D>("Dialogue Box"); } catch { }
 
             _scrollNodes = new Sprite2D?[ScrollNames.Length];
@@ -239,13 +239,13 @@ namespace Eno
         {
             if (!dialogueActive) return;
 
-            if (Input.isKeyPressed(KeyCode.Escape))
+            if (Input.isKeyPressed(KeyCode.Escape) || Input.isGamepadButtonPressed(GamepadButton.B))
             {
                 CloseDialogue();
                 return;
             }
 
-            if (Input.isKeyPressed(KeyCode.E) && !_skipEInput)
+            if ((Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) && !_skipEInput)
             {
                 if (_activeIndex >= 0 && _isNarrative[_activeIndex])
                 {
@@ -308,7 +308,7 @@ namespace Eno
             if (_isNarrative[index])
             {
                 // Show narrative sprite, hide text label and dialogue box
-                //if (_narrativeSprite != null)
+                if (_narrativeSprite != null)
                 {
                     _narrativeSprite.texture = _narrativeTextures[index];
                     _narrativeSprite.visible = true;
@@ -368,8 +368,8 @@ namespace Eno
             if (_charCenter  != null) _charCenter.visible = false;
             if (_charLeft    != null) _charLeft.visible   = false;
             if (_charRight   != null) _charRight.visible  = false;
-            // To prevent dialogue from repeating
-            if (_activeIndex >= 0 && !_isNarrative[_activeIndex]) DialogueShown[_activeIndex] = true;
+            // To prevent dialogue/narrative from repeating
+            if (_activeIndex >= 0) DialogueShown[_activeIndex] = true;
 
             // Final dialogue (Room24_Scroll, index 3) — show the win screen
             if (_activeIndex == 3 && _winLoseCanvasID != 0)

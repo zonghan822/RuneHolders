@@ -44,6 +44,12 @@ namespace Input {
 		// Reset scroll for next frame
 		scrollX_ = 0.0;
 		scrollY_ = 0.0;
+
+		// Poll gamepad state
+		prevGamepadState_ = gamepadState_;
+		gamepadConnected_ = (glfwJoystickPresent(GLFW_JOYSTICK_1) &&
+		                     glfwJoystickIsGamepad(GLFW_JOYSTICK_1) &&
+		                     glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepadState_));
 	}
 
 	void EnoInputManager::clearAllKeyStates() {
@@ -196,5 +202,33 @@ namespace Input {
 	void EnoInputManager::fireInput(const int& key, const int& scancode, const int& action, const int& mods)
 	{
 		bus_.publish<InputSent>(InputSent{key, scancode, action, mods});
+	}
+
+	// ============= Gamepad =============
+
+	bool EnoInputManager::isGamepadConnected() const {
+		return gamepadConnected_;
+	}
+
+	float EnoInputManager::getGamepadAxis(int axis) const {
+		if (!gamepadConnected_ || axis < 0 || axis > 5) return 0.0f;
+		return gamepadState_.axes[axis];
+	}
+
+	bool EnoInputManager::isGamepadButtonHeld(int button) const {
+		if (!gamepadConnected_ || button < 0 || button > 14) return false;
+		return gamepadState_.buttons[button] == GLFW_PRESS;
+	}
+
+	bool EnoInputManager::isGamepadButtonPressed(int button) const {
+		if (!gamepadConnected_ || button < 0 || button > 14) return false;
+		return gamepadState_.buttons[button] == GLFW_PRESS &&
+		       prevGamepadState_.buttons[button] == GLFW_RELEASE;
+	}
+
+	bool EnoInputManager::isGamepadButtonReleased(int button) const {
+		if (!gamepadConnected_ || button < 0 || button > 14) return false;
+		return gamepadState_.buttons[button] == GLFW_RELEASE &&
+		       prevGamepadState_.buttons[button] == GLFW_PRESS;
 	}
 }

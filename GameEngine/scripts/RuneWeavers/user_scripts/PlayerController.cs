@@ -101,8 +101,8 @@ namespace Eno
 
         public void Update()
         {
-            // P key toggles in-game pause
-            if (Input.isKeyPressed(KeyCode.P))
+            // P key or Start button toggles in-game pause
+            if (Input.isKeyPressed(KeyCode.P) || Input.isGamepadButtonPressed(GamepadButton.Start))
             {
                 IsGamePaused = !IsGamePaused;
                 Bridge.SetCanvasActive(_winLoseCanvasID, IsGamePaused);
@@ -122,8 +122,8 @@ namespace Eno
                 return;
             }
 
-            // F key — toggle spellbook UI
-            if (Input.isKeyPressed(KeyCode.F) && _spellbookUIID != 0)
+            // F key or Y button — toggle spellbook UI
+            if ((Input.isKeyPressed(KeyCode.F) || Input.isGamepadButtonPressed(GamepadButton.Y)) && _spellbookUIID != 0)
             {
                 _spellbookOpen = !_spellbookOpen;
                 Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
@@ -142,16 +142,24 @@ namespace Eno
             if (Input.isKeyHeld(KeyCode.A)) dx -= 1f;
             if (Input.isKeyHeld(KeyCode.D)) dx += 1f;
 
-            // Normalize diagonal movement so speed is consistent in all directions
-            if (dx != 0f && dy != 0f)
+            // Merge left analog stick input
+            Vector2 leftStick = Input.getLeftStick(0.2f);
+            if (leftStick.x != 0f || leftStick.y != 0f)
             {
-                float inv = 1f / MathF.Sqrt(dx * dx + dy * dy);
-                dx *= inv;
-                dy *= inv;
+                dx = leftStick.x;
+                dy = leftStick.y;
             }
 
-            // E key — close enemy info panel if open
-            if (_enemyInfoOpen && Input.isKeyPressed(KeyCode.E))
+            // Normalize diagonal movement so speed is consistent in all directions
+            float mag = MathF.Sqrt(dx * dx + dy * dy);
+            if (mag > 1f)
+            {
+                dx /= mag;
+                dy /= mag;
+            }
+
+            // E key or A button — close enemy info panel if open
+            if (_enemyInfoOpen && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)))
             {
                 _enemyInfoOpen = false;
                 if (_enemyInfoID      != 0) Bridge.SetVisibility(_enemyInfoID, false);
@@ -165,7 +173,7 @@ namespace Eno
             }
 
             // Check scroll interaction before applying movement
-            if (Input.isKeyPressed(KeyCode.E))
+            if (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A))
             {
                 for (int i = 0; i < _scrollNodes.Length; i++)
                 {
@@ -240,8 +248,12 @@ namespace Eno
 
         private bool IsMoving()
         {
-            return Input.isKeyHeld(KeyCode.W) || Input.isKeyHeld(KeyCode.S) ||
-                   Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D);
+            if (Input.isKeyHeld(KeyCode.W) || Input.isKeyHeld(KeyCode.S) ||
+                Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D))
+                return true;
+
+            Vector2 stick = Input.getLeftStick(0.2f);
+            return stick.x != 0f || stick.y != 0f;
         }
     
         public void Cast_enter()

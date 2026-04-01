@@ -141,6 +141,16 @@ namespace Bridge {
         ENGINE_API float   __stdcall GetMouseWorldY();
 
         // =========================================================================
+        // Input — Gamepad
+        // Implemented in: eno_bridge_input.cpp
+        // =========================================================================
+        ENGINE_API bool    __stdcall IsGamepadConnected();
+        ENGINE_API float   __stdcall GetGamepadAxis(int axis);
+        ENGINE_API bool    __stdcall IsGamepadButtonPressed(int button);
+        ENGINE_API bool    __stdcall IsGamepadButtonHeld(int button);
+        ENGINE_API bool    __stdcall IsGamepadButtonReleased(int button);
+
+        // =========================================================================
         // Audio Component
         // Implemented in: eno_bridge_audio.cpp
         // =========================================================================

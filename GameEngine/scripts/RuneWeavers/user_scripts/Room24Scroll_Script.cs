@@ -11,7 +11,7 @@ namespace Eno
             uint playerID = Bridge.GetNode("Player");
             if (playerID == 0 || playerID == uint.MaxValue) return;
 
-            if (Bridge.IsColliding(ID, playerID) && Input.isKeyPressed(KeyCode.E))
+            if (Bridge.IsColliding(ID, playerID) && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)))
             {
                 SceneManager.changeScene("MainMenu.txt");
             }
