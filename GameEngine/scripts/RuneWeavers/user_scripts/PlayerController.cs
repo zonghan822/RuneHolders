@@ -33,6 +33,9 @@ namespace Eno
         private uint      _enemyInfoPopupID   = 0;
         private uint      _enemyInfoPopupBgID = 0;
         private bool      _enemyInfoOpen      = false;
+        private uint      _defeatScreenID     = 0;
+        private float     _deathTimer         = 0f;
+        private float     _deathDuration      = 1.0f;
 
         // In-game pause flag
         public static bool IsGamePaused = false;
@@ -65,6 +68,7 @@ namespace Eno
             _enemyInfoID        = Bridge.GetNode("EnemyInfo");
             _enemyInfoPopupID   = Bridge.GetNode("EnemyInfoPopUp");
             _enemyInfoPopupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
+            _defeatScreenID     = Bridge.GetNode("DefeatScreen");
 
             IsGamePaused = false;
         }
@@ -337,7 +341,12 @@ namespace Eno
         {
             _hurtTimer += Time.deltaTime;
             if (_hurtTimer >= hurtDuration)
-                _player.changeState(IsMoving() ? "Walk" : "Idle");
+            {
+                if (_player.health <= 0f)
+                    _player.changeState("Death");
+                else
+                    _player.changeState(IsMoving() ? "Walk" : "Idle");
+            }
         }
 
         public void Hurt_exit()
@@ -347,18 +356,34 @@ namespace Eno
     
         public void Death_enter()
         {
+            _deathTimer = 0f;
             _player.stateChangeLocked = true;
             _player.velocity = new Vector2(0f, 0f);
+            _player.setAnimationLooping(false);
+            uint frames = _player.getAnimationFrameCount();
+            if (frames > 0) _player.setAnimationFrameDuration(_deathDuration / frames);
         }
 
         public void Death_update()
         {
-            // TODO: Add update logic for Death state
+            _player.setAnimationLooping(false);
+            _deathTimer += Time.deltaTime;
+            if (_deathTimer >= _deathDuration)
+            {
+                if (_winLoseCanvasID != 0)
+                {
+                    Bridge.SetCanvasActive(_winLoseCanvasID, true);
+                    if (_defeatScreenID != 0)
+                    {
+                        Bridge.SetVisibility(_defeatScreenID, true);
+                        SetChildButtonsActive(_defeatScreenID, true);
+                    }
+                }
+            }
         }
 
         public void Death_exit()
         {
-            // TODO: Add exit logic for Death state
         }
     
 		public void _when_enemyinfopopup_onclick()

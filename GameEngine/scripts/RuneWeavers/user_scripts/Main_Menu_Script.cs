@@ -97,7 +97,7 @@ namespace Eno
                     _videoStarted = true;
 
                 // Escape skips the cutscene
-                if (Input.isKeyPressed(KeyCode.Escape))
+                if (Input.isKeyPressed(KeyCode.Escape)|| Input.isGamepadButtonPressed(GamepadButton.B))
                 {
                     EndCutscene();
                     return;

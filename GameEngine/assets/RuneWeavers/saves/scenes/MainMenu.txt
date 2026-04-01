@@ -207,7 +207,7 @@
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 3 }
+				"Z Index": <uint32_t> { 4 }
 				"Visible": <bool> { 1 }
 			}
 

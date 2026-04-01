@@ -25,13 +25,13 @@ namespace Eno
             uint playerID = Bridge.GetNode("Player");
             if (playerID == 0 || playerID == uint.MaxValue) return;
 
-            if (_open && Input.isKeyPressed(KeyCode.Escape))
+            if (_open && (Input.isKeyPressed(KeyCode.Escape) || Input.isGamepadButtonPressed(GamepadButton.B)))
             {
                 Close();
                 return;
             }
 
-            bool ePressed = Input.isKeyPressed(KeyCode.E) && !_skipE;
+            bool ePressed = (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) && !_skipE;
             _skipE = false;
 
             if (!_open && !Scroll_Dialouge_Script.DialogueActive

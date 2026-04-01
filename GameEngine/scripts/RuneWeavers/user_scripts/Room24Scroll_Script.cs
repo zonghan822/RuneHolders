@@ -91,21 +91,21 @@ namespace Eno
 
                 if (!Scroll_Dialouge_Script.DialogueActive
                     && Bridge.IsColliding(ID, playerID)
-                    && Input.isKeyPressed(KeyCode.E))
+                    && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)))
                 {
                     StartDialogue();
                 }
                 return;
             }
 
-            // Escape closes dialogue
-            if (Input.isKeyPressed(KeyCode.Escape))
+            // Escape or B button closes dialogue
+            if (Input.isKeyPressed(KeyCode.Escape) || Input.isGamepadButtonPressed(GamepadButton.B))
             {
                 CloseDialogue();
                 return;
             }
 
-            bool ePressed = Input.isKeyPressed(KeyCode.E) && !_skipE;
+            bool ePressed = (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) && !_skipE;
             _skipE = false;
 
             if (ePressed)
