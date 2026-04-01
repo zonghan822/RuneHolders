@@ -123,6 +123,11 @@ static bool g_resetEntityCounter = false;  // Flag to reset entity counter when 
 // Scene deletion error tracking
 static bool g_cannotDeleteActiveScene = false;
 
+// Scale tool state — shared between the Transform Scale slider and the DrawInfo Width/Height fields
+// so that editing Width/Height directly resets the Scale reference point.
+static std::unordered_map<uint32_t, float>                    g_entityScales;
+static std::unordered_map<uint32_t, std::pair<float, float>>  g_entityBaseSizes;
+
 // Audio browser tree
 struct AudioEntry {
 	std::string displayName;         // filename with extension, e.g. "laser.wav"
@@ -2604,17 +2609,15 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (entity.has<ECSComponents::DrawInfoComponent>(entMng)) {
 			auto& drawForScale = entity.get<ECSComponents::DrawInfoComponent>(entMng);
 
-			static std::unordered_map<uint32_t, float> entityScales;
-			static std::unordered_map<uint32_t, std::pair<float, float>> entityBaseSizes;
 			uint32_t entityID = entity.id();
 
-			if (entityBaseSizes.find(entityID) == entityBaseSizes.end()) {
-				entityBaseSizes[entityID] = { drawForScale.width, drawForScale.height };
-				entityScales[entityID] = 1.0f;
+			if (g_entityBaseSizes.find(entityID) == g_entityBaseSizes.end()) {
+				g_entityBaseSizes[entityID] = { drawForScale.width, drawForScale.height };
+				g_entityScales[entityID] = 1.0f;
 			}
 
-			float& scale = entityScales[entityID];
-			auto& baseSize = entityBaseSizes[entityID];
+			float& scale = g_entityScales[entityID];
+			auto& baseSize = g_entityBaseSizes[entityID];
 
 			if (ImGui::DragFloat("Scale", &scale, 0.01f, 0.1f, 10.0f)) {
 				drawForScale.width  = baseSize.first  * scale;
@@ -2638,10 +2641,16 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 
 		
 		// Allow independent width/height scaling
-		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 500.0f);
+		ImGui::DragFloat("Width", &draw.width, 0.5f, 1.0f, 4000.0f);
 		trackEdit("Edit DrawInfo Width");
-		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 500.0f);
+		ImGui::DragFloat("Height", &draw.height, 0.5f, 1.0f, 4000.0f);
 		trackEdit("Edit DrawInfo Height");
+
+		// Keep Scale base size in sync so the Scale slider doesn't fight Width/Height edits
+		if (draw.width != oldWidth || draw.height != oldHeight) {
+			g_entityBaseSizes[entity.id()] = { draw.width, draw.height };
+			g_entityScales[entity.id()]    = 1.0f;
+		}
 
 		// Auto-update collision when width/height changes
 		if ((draw.width != oldWidth || draw.height != oldHeight) && entity.has<ECSComponents::CollisionComponent>(entMng)) {
