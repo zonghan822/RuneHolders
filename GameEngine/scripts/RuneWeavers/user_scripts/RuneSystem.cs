@@ -113,8 +113,8 @@ namespace Eno
         private Actor? _player        = null;
         private bool   _playerSearched = false;
 
-        // Particle blink effect
-        private ParticleEmitter? _blinkEmitter = null;
+        // Particle blink effect — one per rune, spawned as children
+        private ParticleEmitter?[] _runeParticles = new ParticleEmitter?[RUNE_COUNT];
 
         // Deferred spell cast — pattern index stored when complete, cast on mouse release
         private int _pendingSpell = -1;
@@ -235,6 +235,14 @@ namespace Eno
                 string state = nextValid.Contains(i) ? "Ready" : "Disabled";
                 _runes[i]!.changeState(state);
                 _runeStates[i] = state;
+
+                // Spawn particle emitter as child of the rune
+                _runeParticles[i] = SpawnPrefab("RuneParticles", _runeX[i], _runeY[i]) as ParticleEmitter;
+                if (_runeParticles[i] != null)
+                {
+                    _runes[i]!.AddChild(_runeParticles[i]);
+                    _runeParticles[i]!.stopEmission();
+                }
             }
         }
 
@@ -273,15 +281,13 @@ namespace Eno
                 // Advance the charge visualisation by changing state
                 _spellCasting?.changeState("Cast" + _connected.Count);
 
-                // If the full pattern is now complete, store it and spawn blink particles
+                // If the full pattern is now complete, store it and emit blink on all runes
                 if (_activePattern >= 0 && PatternMatches(_connected, Patterns[_activePattern]))
                 {
                     _pendingSpell = _activePattern;
 
-                    // Spawn particle blink at origin
-                    if (_blinkEmitter != null) FreeNode(_blinkEmitter);
-                    _blinkEmitter = SpawnPrefab("BlinkParticle", _originX, _originY) as ParticleEmitter;
-                    _blinkEmitter?.emitBurst(20);
+                    foreach (int c in _connected)
+                        _runeParticles[c]?.emitBurst(20);
                     return;
                 }
 
@@ -315,7 +321,6 @@ namespace Eno
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
-            CleanupBlinkEmitter();
             SpawnPrefab(SpellPrefabs[spellIndex], _originX, _originY);
             EndSlowTime(attack: true);
         }
@@ -335,7 +340,6 @@ namespace Eno
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
-            CleanupBlinkEmitter();
             EndSlowTime();
         }
 
@@ -347,7 +351,6 @@ namespace Eno
             DespawnCastingVisuals();
             DespawnLines();
             DespawnRunes();
-            CleanupBlinkEmitter();
             EndSlowTime();
         }
 
@@ -544,19 +547,12 @@ namespace Eno
             }
         }
 
-        private void CleanupBlinkEmitter()
-        {
-            if (_blinkEmitter != null)
-            {
-                FreeNode(_blinkEmitter);
-                _blinkEmitter = null;
-            }
-        }
-
         private void DespawnRunes()
         {
             for (int i = 0; i < RUNE_COUNT; i++)
             {
+                // Particle emitters are children of runes — freed with parent
+                _runeParticles[i] = null;
                 if (_runes[i] != null)
                 {
                     FreeNode(_runes[i]);

@@ -3602,7 +3602,7 @@ void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Edi
 		if (ImGui::Button("Emit Burst##particle"))
 		{
 			auto* ps = engine_.getParticleSystem();
-			if (ps) ps->EmitBurst(entMng, entity.id(), emitter.maxParticles / 4);
+			if (ps) ps->EmitBurst(entMng, entity.id(), emitter.maxParticles);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Start##particle"))
