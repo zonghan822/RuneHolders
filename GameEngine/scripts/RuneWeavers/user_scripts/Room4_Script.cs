@@ -41,6 +41,7 @@ namespace Eno
         public static void CleanupDummies()
         {
             DummyYellow_Script.Cleanup();
+            DummyRed_Script.Cleanup();
         }
 
         public void Update()

@@ -11,7 +11,7 @@ namespace Eno
         public float deathDuration       = 1.0f;
         public float spawnDuration       = 0.5f;
         public float contactDamageCooldown = 1.0f;
-        public float dropChance = 1f;    // Probability [0-1] of dropping a HealthPotion on death
+        public float dropChance = 0.3f;    // Probability [0-1] of dropping a HealthPotion on death
 
         protected virtual int EnemyColor => 0;
 
