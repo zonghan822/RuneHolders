@@ -509,11 +509,11 @@
 	},
 	"struct ECSComponents::StateMachineComponent": {
 		"NumStates": {
-			"value": "8",
+			"value": "9",
 			"type": "int"
 		},
 		"CurrentState": {
-			"value": "Idle",
+			"value": "Prespawn",
 			"type": "char32"
 		},
 		"TimeInState": {
@@ -646,6 +646,22 @@
 		},
 		"State[7].onExit": {
 			"value": "Death_exit",
+			"type": "char64"
+		},
+		"State[8].name": {
+			"value": "Prespawn",
+			"type": "char32"
+		},
+		"State[8].onEnter": {
+			"value": "Prespawn_enter",
+			"type": "char64"
+		},
+		"State[8].onUpdate": {
+			"value": "Prespawn_update",
+			"type": "char64"
+		},
+		"State[8].onExit": {
+			"value": "Prespawn_exit",
 			"type": "char64"
 		}
 	},
