@@ -95,7 +95,7 @@ namespace Eno
             _wavesStarted = true;
             LockDoor("Door4to3");
             LockDoor("Door4to5");
-            SpawnPrefab("DummyYellow",  830f, -3700f);
+            SpawnPrefab("DummyRed",  830f, -3700f);
             SpawnPrefab("DummyYellow", 1080f, -3700f);
         }
 

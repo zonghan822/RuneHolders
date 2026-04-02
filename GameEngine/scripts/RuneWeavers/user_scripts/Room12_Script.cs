@@ -2,59 +2,99 @@ namespace Eno
 {
     public class Room12_Script : ScriptBase
     {
-        private static readonly string[] AllDoors =
+        private const float WaveDelay = 10f;
+
+        private static Room12_Script? _instance;
+
+        private int _currentWave = 0;  // 0 = none spawned yet
+        private bool _wavesStarted = false;
+        private bool _roomCleared = false;
+        private float _waveTimer = 0f;
+
+        public void Begin()
         {
-            "Door1to2",    "Door2to1",
-            "Door2to3",    "Door3to2",
-            "Door3to4",    "Door4to3",
-            "Door4to5",    "Door5to4",
-            "Door5to6",    "Door6to5",
-            "Door6to7",    "Door7to6",
-            "Door7to8",    "Door8to7",
-            "Door8to9",    "Door9to8",
-            "Door9to10",   "Door10to9",
-            "Door9to11",   "Door11to9",
-            "Door11to12",  "Door12to11",
-            "Door12to13",  "Door13to12",
-            "Door12to13A", "Door13Ato12",
-            "Door12to13B", "Door13Bto12",
-            "Door13to14",  "Door14to13",
-            "Door13Ato14A","Door14Ato13A",
-            "Door14Ato15A","Door15Ato14A",
-            "Door14Ato16A","Door16Ato14A",
-            "Door16Ato17A","Door17Ato16A",
-            "Door17Ato18A","Door18Ato17A",
-            "Door18Ato19A","Door19Ato18A",
-            "Door13Bto14B","Door14Bto13B",
-            "Door14Bto15B","Door15Bto14B",
-            "Door15Bto16B","Door16Bto15B",
-            "Door16Bto17B","Door17Bto16B",
-            "Door16Bto18B","Door18Bto16B",
-            "Door18Bto19A","Door19Ato18B",
-            "Door19Ato20A","Door20Ato19A",
-            "Door20Ato21A","Door21Ato20A",
-            "Door5to5A",   "Door5Ato5",
-            "Door7to7A",   "Door7Ato7",
-        };
+            _instance = this;
+            _currentWave = 0;
+            _wavesStarted = false;
+            _roomCleared = false;
+            _waveTimer = 0f;
+        }
 
-        private bool _cleared = false;
-
-        public void Begin() { _cleared = false; }
+        public static void StartWaves()
+        {
+            _instance?.SpawnWave(1);
+        }
 
         public void Update()
         {
-            if (_cleared) return;
-
-            // TODO: replace with real clear condition
-            if (!Input.isKeyPressed(KeyCode.Space)) return;
-
-            _cleared = true;
-            foreach (string name in AllDoors)
+            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
             {
-                uint id = Bridge.GetNode(name);
-                if (id != 0 && id != uint.MaxValue)
-                    Bridge.ChangeState(id, "Unlocking");
+                _roomCleared = true;
+                UnlockDoor("Door12to11");
+                UnlockDoor("Door12to13");
             }
+
+            if (!_wavesStarted || _roomCleared) return;
+
+            if (_currentWave < 3)
+            {
+                _waveTimer += Time.deltaTime;
+                if (_waveTimer >= WaveDelay)
+                {
+                    _waveTimer = 0f;
+                    SpawnWave(_currentWave + 1);
+                }
+                return; // don't check clear until all waves out
+            }
+
+            // All waves spawned — wait for enemies to die
+            if (GetAllEnemies().Count == 0)
+            {
+                _roomCleared = true;
+                UnlockDoor("Door12to11");
+                UnlockDoor("Door12to13");
+            }
+        }
+
+        private void SpawnWave(int wave)
+        {
+            if (!_wavesStarted)
+            {
+                _wavesStarted = true;
+                LockDoor("Door12to11");
+                LockDoor("Door12to13");
+            }
+
+            _currentWave = wave;
+
+            switch (wave)
+            {
+                case 1:
+                    SpawnPrefab("SlugYellow", 957f, -4946f);
+                    break;
+                case 2:
+                    SpawnPrefab("SlugYellow", 654f, -4872f);
+                    SpawnPrefab("SlugYellow", 1311f, -4764f);
+                    break;
+                case 3:
+                    SpawnPrefab("SlugRed", 1117f, -4937f);
+                    SpawnPrefab("SlugYellow", 790f, -4688f);
+                    break;
+            }
+        }
+
+        private void LockDoor(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Locked");
+        }
+
+        private void UnlockDoor(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocking");
         }
     }
 }
