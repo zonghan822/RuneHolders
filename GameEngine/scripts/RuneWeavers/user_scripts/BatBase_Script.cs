@@ -8,7 +8,7 @@ namespace Eno
         public float dashSpeed       = 240f;
         public float hurtDuration    = 0.3f;
         public float deathDuration   = 1.0f;
-        public float prespawnDuration = 2.0f;
+        public float prespawnDuration = 1.0f;
         public float spawnDuration   = 0.5f;
         public float pathRefreshInterval = 0.5f;
         public float contactDamageCooldown = 1.0f;

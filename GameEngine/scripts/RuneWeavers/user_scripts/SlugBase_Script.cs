@@ -9,7 +9,7 @@ namespace Eno
         public float pathRefreshInterval = 0.5f;
         public float hurtDuration        = 0.4f;
         public float deathDuration       = 1.0f;
-        public float prespawnDuration    = 2.0f;
+        public float prespawnDuration    = 1.0f;
         public float spawnDuration       = 0.5f;
         public float contactDamageCooldown = 1.0f;
         public float dropChance = 0.3f;    // Probability [0-1] of dropping a HealthPotion on death
