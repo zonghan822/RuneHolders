@@ -43,6 +43,12 @@ namespace Eno
         // Video cutscene state — timer guards against false "ended" on frame 1
         private float _videoTimer  = 0f;
 
+        // Left stick edge detection
+        private bool _stickLeft  = false;
+        private bool _stickRight = false;
+        private bool _stickUp    = false;
+        private bool _stickDown  = false;
+
         // ------------------------------------------------------------------ //
 
         public void Begin()
@@ -52,10 +58,26 @@ namespace Eno
 
         public void Update()
         {
-            bool up    = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp);
-            bool down  = Input.isKeyPressed(KeyCode.S) || Input.isGamepadButtonPressed(GamepadButton.DPadDown);
-            bool left  = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft);
-            bool right = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight);
+            // Left stick edge detection (trigger once per flick)
+            const float STICK_THRESHOLD = 0.5f;
+            Vector2 stick = Input.getLeftStick(0.2f);
+            bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
+            bool stickRightNow = stick.x >  STICK_THRESHOLD;
+            bool stickUpNow    = stick.y < -STICK_THRESHOLD;
+            bool stickDownNow  = stick.y >  STICK_THRESHOLD;
+            bool stickLeftEdge  = stickLeftNow  && !_stickLeft;
+            bool stickRightEdge = stickRightNow && !_stickRight;
+            bool stickUpEdge    = stickUpNow    && !_stickUp;
+            bool stickDownEdge  = stickDownNow  && !_stickDown;
+            _stickLeft  = stickLeftNow;
+            _stickRight = stickRightNow;
+            _stickUp    = stickUpNow;
+            _stickDown  = stickDownNow;
+
+            bool up    = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge;
+            bool down  = Input.isKeyPressed(KeyCode.S) || Input.isGamepadButtonPressed(GamepadButton.DPadDown)  || stickDownEdge;
+            bool left  = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge;
+            bool right = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge;
             bool confirm = Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A);
             bool back    = Input.isGamepadButtonPressed(GamepadButton.B);
 

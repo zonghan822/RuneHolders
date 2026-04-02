@@ -35,6 +35,9 @@ namespace Eno
         private bool     _prevPaused      = false;
         private bool     _prevWinVisible  = false;
         private bool     _prevLoseVisible = false;
+        private bool     _stickLeft       = false;
+        private bool     _stickRight      = false;
+        private bool     _stickUp         = false;
 
         public void Begin()
         {
@@ -54,9 +57,22 @@ namespace Eno
                 SelectPause(PauseNav.Resume);
             _prevPaused = paused;
 
-            bool up      = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp);
-            bool left    = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft);
-            bool right   = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight);
+            // Left stick edge detection (trigger once per flick)
+            const float STICK_THRESHOLD = 0.5f;
+            Vector2 stick = Input.getLeftStick(0.2f);
+            bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
+            bool stickRightNow = stick.x >  STICK_THRESHOLD;
+            bool stickUpNow    = stick.y < -STICK_THRESHOLD;
+            bool stickLeftEdge  = stickLeftNow  && !_stickLeft;
+            bool stickRightEdge = stickRightNow && !_stickRight;
+            bool stickUpEdge    = stickUpNow    && !_stickUp;
+            _stickLeft  = stickLeftNow;
+            _stickRight = stickRightNow;
+            _stickUp    = stickUpNow;
+
+            bool up      = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge;
+            bool left    = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge;
+            bool right   = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge;
             bool confirm = Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A);
             bool back    = Input.isGamepadButtonPressed(GamepadButton.B);
             bool areYouSureVisible = Bridge.GetVisibility(_areYouSureID);
@@ -83,9 +99,8 @@ namespace Eno
                 if (confirm) ConfirmLose();
             }
 
-            if (!paused) return;
-
-            // Quit-confirm sub-screen
+            // Quit-confirm sub-screen (must run before pause guard so it
+            // works for both pause and lose/win screens)
             if (areYouSureVisible)
             {
                 if (left)    SelectQuit(QuitNav.Yes);
@@ -94,6 +109,8 @@ namespace Eno
                 if (back)    _when_areyousurescreenno_onclick();
                 return;
             }
+
+            if (!paused) return;
 
             // Main pause screen
             if (up)      SelectPause(PauseNav.Resume);
