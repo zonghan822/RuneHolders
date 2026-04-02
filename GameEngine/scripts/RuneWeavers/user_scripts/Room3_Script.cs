@@ -115,13 +115,13 @@ namespace Eno
             LockDoor("Door3to2");
             LockDoor("Door3to4");
             LockDoor("Door4to3");
-            SpawnPrefab("SlugRed", 955f, -2826f);
+            SpawnPrefab("SlugRed", 960f, -2850f);
         }
 
         private void SpawnWave2()
         {
-            SpawnPrefab("SlugRed",  410f, -2693f);
-            SpawnPrefab("SlugRed", 1503f, -2693f);
+            SpawnPrefab("SlugRed",  500f, -2635f);
+            SpawnPrefab("SlugRed", 1418f, -2769f);
         }
 
         private void LockDoor(string name)

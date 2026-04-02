@@ -5,7 +5,6 @@ namespace Eno
         private const float WaveDelay = 3f;
 
         private static Room6_Script? _instance;
-        private static bool _popupActivated = false;
 
         private int   _currentWave  = 0;
         private bool  _wavesStarted = false;
@@ -16,7 +15,6 @@ namespace Eno
         public void Begin()
         {
             _instance       = this;
-            _popupActivated = false;
             _currentWave    = 0;
             _wavesStarted   = false;
             _roomCleared    = false;
@@ -26,24 +24,6 @@ namespace Eno
         public static void StartWaves()
         {
             if (_instance == null) return;
-
-            if (!_popupActivated)
-            {
-                _popupActivated = true;
-                uint popupID = Bridge.GetNode("EnemyInfoPopUp");
-                if (popupID != 0 && popupID != uint.MaxValue)
-                {
-                    Bridge.SetTexturePath(popupID, "Enemy-Bat-Frozen-Sheet");
-                    Bridge.SetVisibility(popupID, true);
-                    Bridge.SetButtonActive(popupID, true);
-                }
-                uint popupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
-                if (popupBgID != 0 && popupBgID != uint.MaxValue)
-                    Bridge.SetVisibility(popupBgID, true);
-                uint enemyInfoID = Bridge.GetNode("EnemyInfo");
-                if (enemyInfoID != 0 && enemyInfoID != uint.MaxValue)
-                    Bridge.SetTexturePath(enemyInfoID, "UI-EnemyPopUp-YellowBat");
-            }
 
             _instance.SpawnWave(1);
         }
@@ -62,12 +42,11 @@ namespace Eno
                 _roomCleared = true;
                 UnlockDoor("Door6to7");
                 UnlockDoor("Door6to5");
-                UnlockDoor("Door5to6");
             }
 
             if (!_wavesStarted || _roomCleared) return;
 
-            if (_currentWave < 3)
+            if (_currentWave < 2)
             {
                 _waveTimer += Time.deltaTime;
                 if (_waveTimer >= WaveDelay)
@@ -83,7 +62,6 @@ namespace Eno
                 _roomCleared = true;
                 UnlockDoor("Door6to7");
                 UnlockDoor("Door6to5");
-                UnlockDoor("Door5to6");
             }
         }
 
@@ -92,9 +70,8 @@ namespace Eno
             if (!_wavesStarted)
             {
                 _wavesStarted = true;
-                LockDoor("Door5to6");
-                LockDoor("Door6to5");
                 LockDoor("Door6to7");
+                LockDoor("Door6to5");
             }
 
             _currentWave = wave;
@@ -102,15 +79,13 @@ namespace Eno
             switch (wave)
             {
                 case 1:
-                    SpawnPrefab("BatYellow",    3207f, -4881f);
+                    SpawnPrefab("BatYellow", 2721f, -4655f);
+                    SpawnPrefab("BatYellow", 3048f, -4975f);
                     break;
                 case 2:
-                    SpawnPrefab("BatYellow", 2633f, -5008f);
-                    SpawnPrefab("BatRed",    3057f, -4700f);
-                    break;
-                case 3:
-                    SpawnPrefab("BatRed",    2623f, -4746f);
-                    SpawnPrefab("BatYellow", 3074f, -5017f);
+                    SpawnPrefab("BatYellow", 2993f, -4712f);
+                    SpawnPrefab("SlugRed", 2536f, -4860f);
+                    SpawnPrefab("SlugRed", 2898f, -4955f);
                     break;
             }
         }

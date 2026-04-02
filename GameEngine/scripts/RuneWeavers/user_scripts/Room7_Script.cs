@@ -40,7 +40,6 @@ namespace Eno
                 _roomCleared = true;
                 UnlockDoor("Door7to8");
                 UnlockDoor("Door7to6");
-                UnlockDoor("Door6to7");
                 UnlockDoor("Door7to7A");
             }
 
@@ -62,7 +61,6 @@ namespace Eno
                 _roomCleared = true;
                 UnlockDoor("Door7to8");
                 UnlockDoor("Door7to6");
-                UnlockDoor("Door6to7");
                 UnlockDoor("Door7to7A");
             }
         }
@@ -72,9 +70,9 @@ namespace Eno
             if (!_wavesStarted)
             {
                 _wavesStarted = true;
-                LockDoor("Door6to7");
                 LockDoor("Door7to6");
                 LockDoor("Door7to8");
+                LockDoor("Door7to7A");
             }
 
             _currentWave = wave;
@@ -82,12 +80,15 @@ namespace Eno
             switch (wave)
             {
                 case 1:
-                    SpawnPrefab("SlugRed", 4802f, -5017f);
-                    SpawnPrefab("BatRed",  4678f, -4737f);
+                    SpawnPrefab("SlugRed", 4687f, -4735f);
+                    SpawnPrefab("BatYellow",  4860f, -5033f);
+                    SpawnPrefab("BatYellow", 5082f, -4635f);
                     break;
                 case 2:
-                    SpawnPrefab("SlugRed",    5072f, -4689f);
-                    SpawnPrefab("SlugYellow", 4571f, -5046f);
+                    SpawnPrefab("SlugRed", 4482f, -4925f);
+                    SpawnPrefab("SlugRed", 4817f, -4666f);
+                    SpawnPrefab("BatYellow", 4519f, -4598f);
+                    SpawnPrefab("BatYellow", 5061f, -5005f);
                     break;
             }
         }

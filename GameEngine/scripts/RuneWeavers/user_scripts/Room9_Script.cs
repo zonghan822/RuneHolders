@@ -41,7 +41,6 @@ namespace Eno
                 UnlockDoor("Door9to10");
                 UnlockDoor("Door9to11");
                 UnlockDoor("Door9to8");
-                UnlockDoor("Door8to9");
             }
 
             if (!_wavesStarted || _roomCleared) return;
@@ -63,7 +62,6 @@ namespace Eno
                 UnlockDoor("Door9to10");
                 UnlockDoor("Door9to11");
                 UnlockDoor("Door9to8");
-                UnlockDoor("Door8to9");
             }
         }
 
@@ -72,10 +70,9 @@ namespace Eno
             if (!_wavesStarted)
             {
                 _wavesStarted = true;
-                LockDoor("Door8to9");
-                LockDoor("Door9to8");
                 LockDoor("Door9to10");
                 LockDoor("Door9to11");
+                LockDoor("Door9to8");
             }
 
             _currentWave = wave;
@@ -83,11 +80,13 @@ namespace Eno
             switch (wave)
             {
                 case 1:
-                    SpawnPrefab("SlugBlue", 8899f, -4686f);
+                    NullflyBlue_Script.PendingRuneIndex = 2; // ban SE
+                    SpawnPrefab("NullflyBlue", 8645f, -4831f);
                     break;
                 case 2:
-                    SpawnPrefab("SlugBlue", 8610f, -4686f);
-                    SpawnPrefab("SlugBlue", 8299f, -4686f);
+                    NullflyBlue_Script.PendingRuneIndex = 1; // ban E
+                    SpawnPrefab("NullflyBlue", 9022f, -4993f);
+                    SpawnPrefab("SlugRed", 8447f, -4735f);
                     break;
             }
         }
