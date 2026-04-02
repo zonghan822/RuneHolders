@@ -9,6 +9,7 @@ namespace Eno
         public float pathRefreshInterval = 0.5f;
         public float hurtDuration        = 0.4f;
         public float deathDuration       = 1.0f;
+        public float prespawnDuration    = 2.0f;
         public float spawnDuration       = 0.5f;
         public float contactDamageCooldown = 1.0f;
         public float dropChance = 0.3f;    // Probability [0-1] of dropping a HealthPotion on death
@@ -52,6 +53,8 @@ namespace Eno
         private const string HEALTH_POTION_PREFAB = "HealthPotion";
         
         private float  _pathTimer       = 0f;
+        private bool   _prespawnSetup   = false;
+        private bool   _spawnSetup      = false;
         private float  _hurtTimer       = 0f;
         private float  _deathTimer      = 0f;
         private float  _spawnTimer      = 0f;
@@ -140,17 +143,50 @@ namespace Eno
             }
         }
 
+        public void Prespawn_enter()
+        {
+            _spawnTimer = 0f;
+            _prespawnSetup = false;
+            if (_self != null) _self.velocity = new Vector2(0f, 0f);
+        }
+        public void Prespawn_update()
+        {
+            if (PlayerController.IsGamePaused) return;
+            if (_self != null) _self.velocity = new Vector2(0f, 0f);
+            if (!_prespawnSetup)
+            {
+                _prespawnSetup = true;
+                if (_self != null)
+                {
+                    _self.setAnimationLooping(false);
+                    uint frames = _self.getAnimationFrameCount();
+                    if (frames > 0) _self.setAnimationFrameDuration(prespawnDuration / frames);
+                }
+            }
+            _spawnTimer += Time.deltaTime;
+            if (_spawnTimer >= prespawnDuration)
+                _self?.changeState("Spawn");
+        }
+        public void Prespawn_exit() { }
+
         public void Spawn_enter()
         {
             _spawnTimer = 0f;
-            if (_self == null) return;
-            _self.setAnimationLooping(false);
-            uint frames = _self.getAnimationFrameCount();
-            if (frames > 0) _self.setAnimationFrameDuration(spawnDuration / frames);
+            _spawnSetup = false;
         }
         public void Spawn_update()
         {
             if (PlayerController.IsGamePaused) return;
+            if (!_spawnSetup)
+            {
+                _spawnSetup = true;
+                if (_self != null)
+                {
+                    _self.setAnimationLooping(false);
+                    uint frames = _self.getAnimationFrameCount();
+                    if (frames > 0) _self.setAnimationFrameDuration(spawnDuration / frames);
+                }
+            }
             _spawnTimer += Time.deltaTime;
             if (_spawnTimer >= spawnDuration)
                 _self?.changeState("Idle");
