@@ -184,13 +184,13 @@ namespace Eno
         {
             if (!dialogueActive) return;
 
-            if (Input.isKeyPressed(KeyCode.Escape))
+            if (Input.isKeyPressed(KeyCode.Escape) || Input.isGamepadButtonPressed(GamepadButton.B))
             {
                 CloseDialogue();
                 return;
             }
 
-            if (Input.isKeyPressed(KeyCode.E) && !_skipEInput)
+            if ((Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) && !_skipEInput)
             {
                 if (dialogueTyping)
                 {

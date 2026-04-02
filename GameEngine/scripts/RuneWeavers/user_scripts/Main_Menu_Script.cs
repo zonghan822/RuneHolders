@@ -95,7 +95,7 @@ namespace Eno
                 _videoTimer += Time.deltaTime;
 
                 // Escape skips the cutscene
-                if (Input.isKeyPressed(KeyCode.Escape))
+                if (Input.isKeyPressed(KeyCode.Escape)|| Input.isGamepadButtonPressed(GamepadButton.B))
                 {
                     EndCutscene();
                     return;

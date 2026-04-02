@@ -10,11 +10,13 @@
 
 #include "file_system.hpp"
 #include <windows.h>
+#include <shlobj.h>
 
 std::filesystem::path FileSystem::exeDir_;
 std::filesystem::path FileSystem::rootDir_;
 std::filesystem::path FileSystem::assetsDir_;
 std::filesystem::path FileSystem::scriptsDir_;
+std::filesystem::path FileSystem::writableDir_;
 
 void FileSystem::Initialize(const std::string& appName)
 {
@@ -30,14 +32,28 @@ void FileSystem::Initialize(const std::string& appName)
     if (std::filesystem::exists(sourceAssets))
     {
         // Development: use per-app source dirs
-        assetsDir_  = sourceAssets;
-        scriptsDir_ = rootDir_ / "scripts" / appName / "user_scripts";
+        assetsDir_   = sourceAssets;
+        scriptsDir_  = rootDir_ / "scripts" / appName / "user_scripts";
+        writableDir_ = assetsDir_;
     }
     else
     {
         // Shipped: assets/ and scripts/ sit next to the exe
         assetsDir_  = exeDir_ / "assets";
         scriptsDir_ = exeDir_ / "scripts" / "user_scripts";
+
+        // Use %APPDATA%/<appName> for writable files (config, logs, temp DLLs)
+        char appDataBuf[MAX_PATH];
+        if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, appDataBuf)))
+        {
+            writableDir_ = std::filesystem::path(appDataBuf) / appName;
+            std::filesystem::create_directories(writableDir_);
+        }
+        else
+        {
+            // Fallback to exe directory
+            writableDir_ = exeDir_;
+        }
     }
 }
 
@@ -59,4 +75,9 @@ const std::filesystem::path& FileSystem::GetAssetsDir()
 const std::filesystem::path& FileSystem::GetScriptsDir()
 {
     return scriptsDir_;
+}
+
+const std::filesystem::path& FileSystem::GetWritableDir()
+{
+    return writableDir_;
 }

@@ -72,17 +72,21 @@ namespace Engine
 	{
 		// Load project-specific assets BEFORE the editor so that textures are
 		// already in the loader when the scene loads and loadJson resolves them.
+		std::cout << "[Engine] Loading resources..." << std::endl;
 		setupResourceLoading();
 
 		// Initialize scripting if not already done by initScripting() (e.g. Editor project picker)
+		std::cout << "[Engine] Initializing scripting..." << std::endl;
 		if (!coreHost_)
 			coreHost_ = std::make_unique<Core::EnoCoreHost>(bus_);
 
 		// Initialize editor (loads saves/scenes from the current project)
+		std::cout << "[Engine] Initializing editor and loading scene..." << std::endl;
 		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_, prefabMng_, graphicsMng_);
 
 		// Bridge must be initialized before Begin() so that Bridge.* calls inside
 		// script Begin() methods resolve correctly.
+		std::cout << "[Engine] Initializing bridge..." << std::endl;
 		Bridge::Bridge_Init(this);
 
 		// Build tile colliders for the initial scene
@@ -133,28 +137,12 @@ namespace Engine
 	void EnoEngine::run()
 	{
 		// Standalone game is always in play mode
+		std::cout << "[Engine] Starting game loop..." << std::endl;
 		setIsPlaying(true);
 		bus_.publish(Editor::PlayScene{});  // prepare audio components (load sounds into FMOD)
 
 		while (!shouldClose())
 		{
-			// Script watch (beginFrame also polls events / updates time)
-			bool modified = coreHost_->areScriptsModified();
-
-			if (modified)
-			{
-				std::cout << "------------- Script has been Modified -------------" << std::endl;
-
-				// Re-register all scripts
-				for (size_t i = 0; i < editor_->getSceneTree().getAllNodes().size(); i++)
-				{
-					if (editor_->getSceneTree().getAllNodes()[i]->script_)
-					{
-						editor_->getSceneTree().getAllNodes()[i]->script_->registerInst(
-							editor_->getSceneTree().getAllNodes()[i]->sceneObjectID_);
-					}
-				}
-			}
 			beginFrame();
 			renderFrame();
 			endFrame();

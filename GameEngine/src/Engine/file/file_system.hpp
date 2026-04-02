@@ -23,9 +23,15 @@ public:
     static const std::filesystem::path& GetAssetsDir();
     static const std::filesystem::path& GetScriptsDir();
 
+    // Writable directory for runtime output (config, logs, temp DLLs).
+    // In shipped builds this points to %APPDATA%/<appName>; in dev builds
+    // it falls back to the assets directory.
+    static const std::filesystem::path& GetWritableDir();
+
 private:
     static std::filesystem::path exeDir_;
     static std::filesystem::path rootDir_;
     static std::filesystem::path assetsDir_;
     static std::filesystem::path scriptsDir_;
+    static std::filesystem::path writableDir_;
 };
