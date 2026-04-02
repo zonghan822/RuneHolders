@@ -138,6 +138,10 @@ namespace Eno
         // Deferred spell cast — pattern index stored when complete, cast on mouse release
         private int _pendingSpell = -1;
 
+        // Short rumble pulse on rune connection
+        private float _rumbleTimer    = 0f;
+        private const float RUMBLE_DURATION = 0.1f;
+
         // Cursor prefab — spawned once, tracks mouse / right stick
         private Sprite2D? _cursor = null;
 
@@ -155,6 +159,14 @@ namespace Eno
 
         public void Update()
         {
+            // Drain short rumble pulse
+            if (_rumbleTimer > 0f)
+            {
+                _rumbleTimer -= Time.deltaTime;
+                if (_rumbleTimer <= 0f)
+                    Input.setGamepadRumble(0f, 0f);
+            }
+
             if (Scroll_Dialouge_Script.DialogueActive)
             {
                 if (_active) Cancel();
@@ -332,6 +344,11 @@ namespace Eno
                 SetRuneState(i, "Activated");
                 try { GetNode<AudioNode>("Rune-GalaxyBellPad-1")?.play(); } catch { }
 
+                // Short rumble pulse — intensity increases with each connection
+                float rumble = MathF.Min(0.2f + _connected.Count * 0.15f, 0.8f);
+                Input.setGamepadRumble(rumble, rumble);
+                _rumbleTimer = RUMBLE_DURATION;
+
                 // Spawn a permanent line from the previous rune to this one (skip on first connection)
                 if (_connected.Count > 1)
                 {
@@ -353,7 +370,8 @@ namespace Eno
                 if (_activePattern >= 0 && PatternMatches(_connected, Patterns[_activePattern]))
                 {
                     _pendingSpell = _activePattern;
-
+                    Input.setGamepadRumble(1.0f, 1.0f);
+                    _rumbleTimer = RUMBLE_DURATION;
                     foreach (int c in _connected)
                         _runeParticles[c]?.emitBurst(_runeParticles[c].maxParticles/4);
                     return;
@@ -396,6 +414,11 @@ namespace Eno
             SetRuneState(best, "Activated");
             try { GetNode<AudioNode>("Rune-GalaxyBellPad-1")?.play(); } catch { }
 
+            // Short rumble pulse — intensity increases with each connection
+            float rumble = MathF.Min(_connected.Count * 0.1f, 0.5f);
+            Input.setGamepadRumble(rumble, rumble);
+            _rumbleTimer = RUMBLE_DURATION;
+
             if (_connected.Count > 1)
             {
                 int prev = _connected[_connected.Count - 2];
@@ -413,6 +436,8 @@ namespace Eno
             if (_activePattern >= 0 && PatternMatches(_connected, Patterns[_activePattern]))
             {
                 _pendingSpell = _activePattern;
+                Input.setGamepadRumble(0.5f, 0.5f);
+                _rumbleTimer = RUMBLE_DURATION;
                 foreach (int c in _connected)
                     _runeParticles[c]?.emitBurst(_runeParticles[c].maxParticles / 4);
                 return;
@@ -449,6 +474,7 @@ namespace Eno
             DespawnRunes();
             SpawnPrefab(SpellPrefabs[spellIndex], _originX, _originY);
             if (_cursor != null) _cursor.visible = true;
+            Input.setGamepadRumble(0.8f, 1.0f);
             EndSlowTime(attack: true);
         }
 
@@ -468,6 +494,7 @@ namespace Eno
             DespawnLines();
             DespawnRunes();
             if (_cursor != null) _cursor.visible = true;
+            Input.setGamepadRumble(0f, 0f);
             EndSlowTime();
         }
 
@@ -480,6 +507,7 @@ namespace Eno
             DespawnLines();
             DespawnRunes();
             if (_cursor != null) _cursor.visible = true;
+            Input.setGamepadRumble(0f, 0f);
             EndSlowTime();
         }
 

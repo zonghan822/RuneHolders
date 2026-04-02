@@ -310,7 +310,9 @@ namespace Eno
         }
         public void Death_update()
         {
-            if (_self != null) _self.setAnimationLooping(false);
+            if (_self == null) return;
+            _self.velocity = new Vector2(0f, 0f);
+            _self.setAnimationLooping(false);
             _deathTimer += Time.deltaTime;
 
             if (_deathTimer >= deathDuration)

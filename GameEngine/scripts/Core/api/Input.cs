@@ -156,6 +156,10 @@ namespace Eno
         public static bool isGamepadButtonPressed(GamepadButton button)  => Bridge.IsGamepadButtonPressed((int)button);
         public static bool isGamepadButtonHeld(GamepadButton button)     => Bridge.IsGamepadButtonHeld((int)button);
         public static bool isGamepadButtonReleased(GamepadButton button) => Bridge.IsGamepadButtonReleased((int)button);
+
+        /// Set gamepad rumble/vibration via XInput.
+        public static void setGamepadRumble(float leftMotor, float rightMotor)
+            => Bridge.SetGamepadRumble(leftMotor, rightMotor);
     }
 
     public class InputManager

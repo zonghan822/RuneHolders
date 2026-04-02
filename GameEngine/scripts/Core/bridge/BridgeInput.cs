@@ -71,5 +71,8 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool IsGamepadButtonReleased(int button);
+
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetGamepadRumble(float leftMotor, float rightMotor);
     }
 }

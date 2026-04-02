@@ -44,6 +44,7 @@ namespace Editor
 			undoManager_{ bus, entMng, graphicsMng, 30 },
 			tree_{ entMng, coreHost, tileMap, prefabMng }
 		{
+			std::cout << "[EnoEditor] Scanning scenes directory..." << std::endl;
 
 			// Get all available scenes
 			try {
@@ -63,8 +64,12 @@ namespace Editor
 				std::cout << "[EnoEditor] Scene directory not found: " << e.what() << "\n";
 			}
 
+			std::cout << "[EnoEditor] Found " << scenes_.size() << " scene(s). Loading initial scene..." << std::endl;
+
 			// Load the start scene; fall back to first available or create empty
 			loadInitialScene();
+
+			std::cout << "[EnoEditor] Scene loaded successfully." << std::endl;
 
 			// Safety net
 			if (!selectedScene_)
@@ -492,6 +497,7 @@ namespace Editor
 				std::string path = FileSystem::GetAssetsDir().string() + "/saves/scenes/StartScene.txt";
 				std::ifstream f{ path };
 				if (f) std::getline(f, startSceneName_);
+				std::cout << "[EnoEditor] StartScene.txt: " << (startSceneName_.empty() ? "(empty)" : startSceneName_) << std::endl;
 			}
 
 			// Try to load the start scene
@@ -505,8 +511,11 @@ namespace Editor
 					if (it != scenes_.end())
 					{
 						selectedScene_ = it->get();
+						std::cout << "[EnoEditor] Loading start scene: " << startSceneName_ << std::endl;
 						tree_.load(fullPath);
+						std::cout << "[EnoEditor] Scene tree loaded, registering scripts..." << std::endl;
 						tree_.registerAllScripts();
+						std::cout << "[EnoEditor] Scripts registered." << std::endl;
 						return;
 					}
 				}
@@ -520,14 +529,21 @@ namespace Editor
 			{
 				selectedScene_ = scenes_.front().get();
 				std::string fullPath = FileSystem::GetAssetsDir().string() + "/saves/scenes/" + selectedScene_->getSceneName();
+				std::cout << "[EnoEditor] Loading fallback scene: " << selectedScene_->getSceneName() << std::endl;
 				tree_.load(fullPath);
 				tree_.registerAllScripts();
 				std::cout << "[EnoEditor] No start scene set, loaded first scene: " << selectedScene_->getSceneName() << std::endl;
 				return;
 			}
 
-			// No scenes at all — create a blank one
-			createEmptyScene(FileSystem::GetAssetsDir().string() + "/saves/scenes/");
+			// No scenes at all — create a blank one (skip if directory is read-only)
+			std::cout << "[EnoEditor] No scenes found, creating empty scene..." << std::endl;
+			try {
+				createEmptyScene(FileSystem::GetAssetsDir().string() + "/saves/scenes/");
+			}
+			catch (const std::exception& e) {
+				std::cerr << "[EnoEditor] Failed to create empty scene: " << e.what() << std::endl;
+			}
 		}
 
 		// Scenes

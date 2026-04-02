@@ -103,8 +103,8 @@ namespace Eno
             // works for both pause and lose/win screens)
             if (areYouSureVisible)
             {
-                if (left)    SelectQuit(QuitNav.Yes);
-                if (right)   SelectQuit(QuitNav.No);
+                if (left)    SelectQuit(QuitNav.No);
+                if (right)   SelectQuit(QuitNav.Yes);
                 if (confirm) ConfirmQuit();
                 if (back)    _when_areyousurescreenno_onclick();
                 return;

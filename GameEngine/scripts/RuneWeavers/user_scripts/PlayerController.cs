@@ -112,6 +112,9 @@ namespace Eno
 
         public void Update()
         {
+            if (_player.health <= 0f)
+                _player.changeState("Death");
+
             // P key or Start button toggles in-game pause
             if ((Input.isKeyPressed(KeyCode.P) || Input.isGamepadButtonPressed(GamepadButton.Start)) && !IsGameCompleted)
             {
@@ -344,23 +347,21 @@ namespace Eno
             _player.setAnimationLooping(false);
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(hurtDuration / frames);
+            Input.setGamepadRumble(0.5f, 0.5f);
         }
 
         public void Hurt_update()
         {
             _hurtTimer += Time.deltaTime;
             if (_hurtTimer >= hurtDuration)
-            {
-                if (_player.health <= 0f)
-                    _player.changeState("Death");
-                else
-                    _player.changeState(IsMoving() ? "Walk" : "Idle");
-            }
+                _player.changeState(IsMoving() ? "Walk" : "Idle");
+            
         }
 
         public void Hurt_exit()
         {
             _isHurt = false;
+            Input.setGamepadRumble(0f, 0f);
         }
     
         public void Death_enter()
@@ -371,14 +372,17 @@ namespace Eno
             _player.setAnimationLooping(false);
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(_deathDuration / frames);
+            Input.setGamepadRumble(1.0f, 1.0f);
         }
 
         public void Death_update()
         {
+            _player.velocity = new Vector2(0f, 0f);
             _player.setAnimationLooping(false);
             _deathTimer += Time.deltaTime;
             if (_deathTimer >= _deathDuration)
             {
+                Input.setGamepadRumble(0f, 0f);
                 if (_winLoseCanvasID != 0)
                 {
                     Bridge.SetCanvasActive(_winLoseCanvasID, true);

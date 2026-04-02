@@ -12,6 +12,11 @@
 
 #include "eno_input.hpp"
 #include <imgui.h>
+#include <algorithm>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <xinput.h>
+#pragma comment(lib, "xinput.lib")
 
 namespace Input {
 
@@ -230,5 +235,13 @@ namespace Input {
 		if (!gamepadConnected_ || button < 0 || button > 14) return false;
 		return gamepadState_.buttons[button] == GLFW_RELEASE &&
 		       prevGamepadState_.buttons[button] == GLFW_PRESS;
+	}
+
+	void EnoInputManager::setGamepadRumble(float leftMotor, float rightMotor) {
+		if (!gamepadConnected_) return;
+		XINPUT_VIBRATION vibration{};
+		vibration.wLeftMotorSpeed  = static_cast<WORD>(std::clamp(leftMotor,  0.0f, 1.0f) * 65535.0f);
+		vibration.wRightMotorSpeed = static_cast<WORD>(std::clamp(rightMotor, 0.0f, 1.0f) * 65535.0f);
+		XInputSetState(0, &vibration);
 	}
 }

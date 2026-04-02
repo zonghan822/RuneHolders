@@ -82,7 +82,17 @@ namespace Engine
 
 		// Initialize editor (loads saves/scenes from the current project)
 		std::cout << "[Engine] Initializing editor and loading scene..." << std::endl;
-		editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_, prefabMng_, graphicsMng_);
+		try {
+			editor_ = std::make_unique<Editor::EnoEditor>(bus_, entityMng_, *coreHost_, *tilemapSystem_, prefabMng_, graphicsMng_);
+		}
+		catch (const std::exception& e) {
+			std::cerr << "[Engine] FATAL: Editor initialization failed: " << e.what() << std::endl;
+			throw;
+		}
+		catch (...) {
+			std::cerr << "[Engine] FATAL: Editor initialization failed with unknown exception!" << std::endl;
+			throw;
+		}
 
 		// Bridge must be initialized before Begin() so that Bridge.* calls inside
 		// script Begin() methods resolve correctly.

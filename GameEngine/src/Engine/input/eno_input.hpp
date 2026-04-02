@@ -266,6 +266,13 @@ namespace Input
 		*//*========================================================================================*/
 		bool isGamepadButtonReleased(int button) const;
 
+		/*============================================================================================
+		* \brief   Set gamepad rumble/vibration.
+		* \param[in] leftMotor  Left motor intensity (0.0–1.0), low-frequency rumble.
+		* \param[in] rightMotor Right motor intensity (0.0–1.0), high-frequency rumble.
+		*//*========================================================================================*/
+		void setGamepadRumble(float leftMotor, float rightMotor);
+
 	private:
 		Event::EnoEventBus& bus_;
 

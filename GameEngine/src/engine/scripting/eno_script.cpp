@@ -258,10 +258,6 @@ namespace Script
 	// ================== Signal ==================
 	std::pair<std::string, std::string> EnoScript::signalWrite(std::string nodeName, std::string signalName)
 	{
-		std::fstream file{ path_, std::ios::in | std::ios::out };
-		if (!file)
-			throw std::runtime_error("Failed to find the file to write to!");
-
 		// Lowercase all
 		Conversion::strToLower(nodeName);
 		Conversion::strToLower(signalName);
@@ -282,6 +278,32 @@ namespace Script
 			'_' +
 			signalName;
 
+		// Try to open for read+write (editor), fall back to read-only (shipped game)
+		std::fstream file{ path_, std::ios::in | std::ios::out };
+		bool readOnly = false;
+		if (!file)
+		{
+			file.open(path_, std::ios::in);
+			if (!file)
+				throw std::runtime_error("Failed to find the file to read: " + wideToUtf8(path_));
+			readOnly = true;
+		}
+
+		// Read file contents
+		std::stringstream stream{};
+		stream << file.rdbuf();
+		std::string data = stream.str();
+
+		// Get class name for signal routing
+		std::string className = classToNest(data);
+
+		// If the signal func already exists or file is read-only, just return the name
+		size_t fs = data.find(funcName);
+		if (fs != std::string::npos || readOnly)
+		{
+			return { funcName, className };
+		}
+
 		std::string funcSignature =
 			std::string{ signalKeyWords } +
 			std::string{ signalSuffix } +
@@ -290,20 +312,6 @@ namespace Script
 			"        {\n\n"
 
 			"        }\n";
-
-		// Write the signal func on the bottom of the script
-		std::stringstream stream{};
-		stream << file.rdbuf();
-		std::string data = stream.str();
-
-		// Verify that this signal func has not already been written
-		std::string className = classToNest(data);
-
-		size_t fs = data.find(funcName);
-		if (fs != std::string::npos)
-		{
-			return { funcName, className };
-		}
 
 		// Write and close file
 		writeMethod(data, funcSignature);

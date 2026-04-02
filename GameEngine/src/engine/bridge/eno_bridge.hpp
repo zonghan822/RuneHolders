@@ -149,6 +149,7 @@ namespace Bridge {
         ENGINE_API bool    __stdcall IsGamepadButtonPressed(int button);
         ENGINE_API bool    __stdcall IsGamepadButtonHeld(int button);
         ENGINE_API bool    __stdcall IsGamepadButtonReleased(int button);
+        ENGINE_API void    __stdcall SetGamepadRumble(float leftMotor, float rightMotor);
 
         // =========================================================================
         // Audio Component
