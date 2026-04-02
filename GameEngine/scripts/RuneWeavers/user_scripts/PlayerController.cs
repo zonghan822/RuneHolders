@@ -28,6 +28,7 @@ namespace Eno
         private Node2D?[] _scrollNodes    = Array.Empty<Node2D?>();
         private uint      _spellbookUIID    = 0;
         private bool      _spellbookOpen    = false;
+        private AudioNode? _spellbookAudio  = null;
         private uint      _winLoseCanvasID  = 0;
         private uint      _enemyInfoID        = 0;
         private uint      _enemyInfoPopupID   = 0;
@@ -59,6 +60,8 @@ namespace Eno
             _scrollNodes = new Node2D?[Scroll_Dialouge_Script.ScrollNames.Length];
             for (int i = 0; i < _scrollNodes.Length; i++)
                 try { _scrollNodes[i] = GetNode<Node2D>(Scroll_Dialouge_Script.ScrollNames[i]); } catch { }
+
+            _spellbookAudio  = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
 
             _spellbookUIID   = Bridge.GetNode("Spellbook");
             _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");
@@ -127,6 +130,12 @@ namespace Eno
             {
                 _spellbookOpen = !_spellbookOpen;
                 Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
+
+                if (_spellbookAudio != null)
+                {
+                    _spellbookAudio.sound = _spellbookOpen ? "Spellbook_Open_01" : "Spellbook_Close_01";
+                    _spellbookAudio.play();
+                }
             }
 
             if (_isAttacking || _isHurt) return;

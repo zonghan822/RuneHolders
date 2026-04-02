@@ -141,6 +141,36 @@ namespace Eno
         // Cursor prefab — spawned once, tracks mouse / right stick
         private Sprite2D? _cursor = null;
 
+        // ── Audio ────────────────────────────────────────────────────────────────
+        public float runeActiveVolume = 70f;   // volume for the Rune-Active loop (0-100)
+        public float spellCastVolume  = 80f;   // volume for the SpellCast one-shot (0-100)
+
+        // Rune activation audio — one node reused for all GalaxyBellPad one-shots
+        private AudioNode? _runeAudio = null;
+        private List<string> _bellPadSounds = new List<string>
+        {
+            "Rune-GalaxyBellPad-1",
+            "Rune-GalaxyBellPad-2",
+            "Rune-GalaxyBellPad-3",
+            "Rune-GalaxyBellPad-4",
+            "Rune-GalaxyBellPad-5",
+            "Rune-GalaxyBellPad-6",
+        };
+
+        // Rune-Active loop — plays while the rune circle is open
+        private AudioNode? _runeActiveAudio = null;
+
+        // SpellCast one-shot — plays on successful cast
+        private AudioNode? _spellCastAudio = null;
+        private List<string> _spellCastSounds = new List<string>
+        {
+            "SpellCast_01",
+            "SpellCast_02",
+            "SpellCast_03",
+        };
+
+        private Random rng = new Random();
+
         // ── Script callbacks ─────────────────────────────────────────────────────
         public void Begin()
         {
@@ -151,6 +181,15 @@ namespace Eno
             }
 
             _cursor = SpawnPrefab("Cursor", 0f, 0f) as Sprite2D;
+
+            _runeAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            if (_runeAudio != null) _runeAudio.volume = 80f;
+
+            _runeActiveAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            if (_runeActiveAudio != null) _runeActiveAudio.volume = runeActiveVolume;
+
+            _spellCastAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            if (_spellCastAudio != null) _spellCastAudio.volume = spellCastVolume;
         }
 
         public void Update()
@@ -224,6 +263,13 @@ namespace Eno
                 if (Input.isMousePressed(1) || Input.isGamepadButtonPressed(GamepadButton.B))
                     Cancel();
             }
+
+            // Keep Rune-Active looping while the circle is open
+            if (_active && _runeActiveAudio != null && !_runeActiveAudio.isPlaying)
+            {
+                _runeActiveAudio.sound = "Rune-Active";
+                _runeActiveAudio.play();
+            }
         }
 
         // ── Enemy API ────────────────────────────────────────────────────────────
@@ -282,6 +328,14 @@ namespace Eno
             // Set player state to Cast or CastWalk depending on movement
             FindPlayer();
             _player?.changeState(IsPlayerMoving() ? "CastWalk" : "Cast");
+
+            // Start Rune-Active loop
+            if (_runeActiveAudio != null)
+            {
+                _runeActiveAudio.volume = runeActiveVolume;
+                _runeActiveAudio.sound = "Rune-Active";
+                _runeActiveAudio.play();
+            }
         }
 
         private void SpawnRunes()
@@ -330,7 +384,7 @@ namespace Eno
 
                 _connected.Add(i);
                 SetRuneState(i, "Activated");
-                try { GetNode<AudioNode>("Rune-GalaxyBellPad-1")?.play(); } catch { }
+                PlayRandomBellPad();
 
                 // Spawn a permanent line from the previous rune to this one (skip on first connection)
                 if (_connected.Count > 1)
@@ -394,7 +448,7 @@ namespace Eno
             // Activate the matched rune (same logic as CheckConnectionsAt)
             _connected.Add(best);
             SetRuneState(best, "Activated");
-            try { GetNode<AudioNode>("Rune-GalaxyBellPad-1")?.play(); } catch { }
+            PlayRandomBellPad();
 
             if (_connected.Count > 1)
             {
@@ -450,6 +504,16 @@ namespace Eno
             SpawnPrefab(SpellPrefabs[spellIndex], _originX, _originY);
             if (_cursor != null) _cursor.visible = true;
             EndSlowTime(attack: true);
+
+            // Cut Rune-Active immediately and play a random SpellCast
+            _runeActiveAudio?.stop();
+            if (_spellCastAudio != null)
+            {
+                int i = rng.Next(0, _spellCastSounds.Count);
+                _spellCastAudio.volume = spellCastVolume;
+                _spellCastAudio.sound = _spellCastSounds[i];
+                _spellCastAudio.play();
+            }
         }
 
         private void Release()
@@ -469,6 +533,7 @@ namespace Eno
             DespawnRunes();
             if (_cursor != null) _cursor.visible = true;
             EndSlowTime();
+            _runeActiveAudio?.stop();
         }
 
         private void Cancel()
@@ -481,6 +546,7 @@ namespace Eno
             DespawnRunes();
             if (_cursor != null) _cursor.visible = true;
             EndSlowTime();
+            _runeActiveAudio?.stop();
         }
 
         // Restore normal time, unfreeze enemies, and trigger StopWatch fade-out.
@@ -698,6 +764,14 @@ namespace Eno
                 }
             }
             _connected.Clear();
+        }
+
+        private void PlayRandomBellPad()
+        {
+            if (_runeAudio == null) return;
+            int i = rng.Next(0, _bellPadSounds.Count);
+            _runeAudio.sound = _bellPadSounds[i];
+            _runeAudio.play();
         }
 
         private static bool PatternMatches(List<int> connected, int[] pattern)

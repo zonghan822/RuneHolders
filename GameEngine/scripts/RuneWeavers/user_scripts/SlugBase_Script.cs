@@ -88,7 +88,7 @@ namespace Eno
             _walkAudio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
             _hdAudio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode; 
             
-            _walkAudio.volume = 50f;  // 0-100, tweak accordingly.
+            _walkAudio.volume = 30f;  // capped at 30 — sliders/spatial can only attenuate further
         }
 
         public void Update()
