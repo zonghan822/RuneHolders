@@ -88,6 +88,21 @@ namespace Eno
         // Index 0 = Fire (Room 1), 1 = Light (Room 4), 2 = Ice (Room 8)
         public static bool[] SpellUnlocked = new bool[3];
 
+        // ── Static instance — allows enemies to push bans mid-cast ───────────────
+        private static RuneSystem? _instance;
+
+        // Called by Nullfly Channel_enter to nullify a rune even while casting is active.
+        public static void NotifyBan(int runeIndex)
+        {
+            _instance?.EnemyNullifyRune(runeIndex);
+        }
+
+        // Called by Nullfly when it cloaks (unbans) while casting is active.
+        public static void NotifyUnban(int runeIndex)
+        {
+            _instance?.EnemyRestoreRune(runeIndex);
+        }
+
             // ── Controller settings ──────────────────────────────────────────────────
         private const float RT_THRESHOLD     = 0.5f;   // trigger value (0-1) to start casting
         private const float STICK_ACTIVATE   = 0.7f;   // right stick magnitude to activate a rune
@@ -142,12 +157,17 @@ namespace Eno
         private float _rumbleTimer    = 0f;
         private const float RUMBLE_DURATION = 0.1f;
 
+        // Set when an enemy force-cancels the cast; cleared on full input release
+        private bool _castBlocked = false;
+
         // Cursor prefab — spawned once, tracks mouse / right stick
         private Sprite2D? _cursor = null;
 
         // ── Script callbacks ─────────────────────────────────────────────────────
         public void Begin()
         {
+            _instance = this;
+
             for (int i = 0; i < RUNE_COUNT; i++)
             {
                 _runes[i]      = null;
@@ -187,8 +207,16 @@ namespace Eno
 
             if (!_active)
             {
-                if (Input.isMousePressed(0) || rtPressed)
+                if (_castBlocked)
+                {
+                    // Wait for the player to fully release before allowing a new cast
+                    if (!Input.isMouseHeld(0) && !rtDown)
+                        _castBlocked = false;
+                }
+                else if (Input.isMousePressed(0) || rtPressed)
+                {
                     Activate();
+                }
             }
             else
             {
@@ -253,8 +281,28 @@ namespace Eno
             if (_runes[runeIndex] == null) return;
             if (_runeStates[runeIndex] == "Nullified") return;
 
+            // If the player already activated this rune, break the entire cast
+            if (_runeStates[runeIndex] == "Activated")
+            {
+                _castBlocked = true;
+                Cancel();
+                return;
+            }
+
             SetRuneState(runeIndex, "Nullified");
             RefreshReadyStates();
+        }
+
+        // Called when a Nullfly cloaks mid-cast — restores the rune from Nullified.
+        private void EnemyRestoreRune(int runeIndex)
+        {
+            if (!_active) return;
+            if (runeIndex < 0 || runeIndex >= RUNE_COUNT) return;
+            if (_runes[runeIndex] == null) return;
+            if (_runeStates[runeIndex] != "Nullified") return;
+
+            HashSet<int> nextValid = GetNextValidRunes();
+            SetRuneState(runeIndex, nextValid.Contains(runeIndex) ? "Ready" : "Disabled");
         }
 
         // ── Private helpers ──────────────────────────────────────────────────────

@@ -195,7 +195,7 @@
 			"type": "bool"
 		},
 		"Animation Count": {
-			"value": "8",
+			"value": "9",
 			"type": "int"
 		},
 		"Current Animation": {
@@ -456,6 +456,38 @@
 		},
 		"Anim7 Looping": {
 			"value": "1",
+			"type": "bool"
+		},
+		"Anim8 Name": {
+			"value": "Prespawn",
+			"type": "char64"
+		},
+		"Anim8 Texture": {
+			"value": "SpawnCircle-Sheet",
+			"type": "texchar240"
+		},
+		"Anim8 FrameW": {
+			"value": "128",
+			"type": "int"
+		},
+		"Anim8 FrameH": {
+			"value": "128",
+			"type": "int"
+		},
+		"Anim8 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim8 Cols": {
+			"value": "8",
+			"type": "int"
+		},
+		"Anim8 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim8 Looping": {
+			"value": "0",
 			"type": "bool"
 		}
 	},

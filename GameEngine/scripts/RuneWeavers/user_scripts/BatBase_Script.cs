@@ -148,14 +148,13 @@ namespace Eno
         {
             if (PlayerController.IsGamePaused) return;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            if (!_prespawnSetup)
+            if (!_prespawnSetup && _self != null)
             {
-                _prespawnSetup = true;
-                if (_self != null)
+                uint frames = _self.getAnimationFrameCount();
+                if (frames > 0)
                 {
-                    _self.setAnimationLooping(false);
-                    uint frames = _self.getAnimationFrameCount();
-                    if (frames > 0) _self.setAnimationFrameDuration(prespawnDuration / frames);
+                    _prespawnSetup = true;
+                    _self.setAnimationFrameDuration(prespawnDuration / frames);
                 }
             }
             _timer += Time.deltaTime;

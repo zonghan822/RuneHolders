@@ -45,6 +45,7 @@ namespace Eno
         private bool   _spawnSetup     = false;
         private float  _contactTimer  = 0f;
         private bool   _isCloaked     = false;
+        private bool   _runeBanned    = false;
 
         // ── Cloak toggle ─────────────────────────────────────────────────────────
         private void SetCloaked(bool cloaked)
@@ -52,6 +53,23 @@ namespace Eno
             if (_isCloaked == cloaked) return;
             _isCloaked = cloaked;
             if (_self != null) _self.visible = !cloaked;
+        }
+
+        // ── Rune ban helpers — flag prevents count from accumulating ─────────────
+        private void BanMyRune()
+        {
+            if (_runeBanned) return;
+            _runeBanned = true;
+            EnemyColorRegistry.BanRune(runeIndex);
+            RuneSystem.NotifyBan(runeIndex);
+        }
+
+        private void UnbanMyRune()
+        {
+            if (!_runeBanned) return;
+            _runeBanned = false;
+            EnemyColorRegistry.UnbanRune(runeIndex);
+            RuneSystem.NotifyUnban(runeIndex);
         }
 
         // ── Lifecycle ────────────────────────────────────────────────────────────
@@ -146,14 +164,13 @@ namespace Eno
         {
             if (PlayerController.IsGamePaused) return;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
-            if (!_prespawnSetup)
+            if (!_prespawnSetup && _self != null)
             {
-                _prespawnSetup = true;
-                if (_self != null)
+                uint frames = _self.getAnimationFrameCount();
+                if (frames > 0)
                 {
-                    _self.setAnimationLooping(false);
-                    uint frames = _self.getAnimationFrameCount();
-                    if (frames > 0) _self.setAnimationFrameDuration(prespawnDuration / frames);
+                    _prespawnSetup = true;
+                    _self.setAnimationFrameDuration(prespawnDuration / frames);
                 }
             }
             _timer += Time.deltaTime;
@@ -192,6 +209,7 @@ namespace Eno
         {
             _timer = 0f;
             SetCloaked(false);
+            UnbanMyRune();   // safety net: ensures ban count is clean on any path into Idle
         }
         public void Idle_update()
         {
@@ -233,7 +251,7 @@ namespace Eno
                 if (_timer >= windUpDuration)
                 {
                     SetCloaked(true);
-                    EnemyColorRegistry.UnbanRune(runeIndex);
+                    UnbanMyRune();
                 }
             }
             else
@@ -248,11 +266,14 @@ namespace Eno
         {
             // If hurt mid-windup before cloaking, rune was still banned by Channel — unban it
             if (!_isCloaked)
-                EnemyColorRegistry.UnbanRune(runeIndex);
+                UnbanMyRune();
         }
 
         // ── Channel (visible, always bans rune; player near → Shocked) ───────────
-        public void Channel_enter() { EnemyColorRegistry.BanRune(runeIndex); }
+        public void Channel_enter()
+        {
+            BanMyRune();
+        }
         public void Channel_update()
         {
             if (PlayerController.IsGamePaused) return;
@@ -298,12 +319,8 @@ namespace Eno
             {
                 _isCloaked = false;
                 if (_self != null) _self.visible = true;
-                // rune already unbanned when cloaking happened
             }
-            else
-            {
-                EnemyColorRegistry.UnbanRune(runeIndex); // may have died in Channel (banned)
-            }
+            UnbanMyRune(); // safe no-op if already unbanned
         }
         public void Death_update()
         {

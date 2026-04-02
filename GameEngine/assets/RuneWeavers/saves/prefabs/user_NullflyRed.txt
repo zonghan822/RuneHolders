@@ -4,7 +4,7 @@
 		"type": "uint32_t"
 	},
 	"Script": {
-		"value": "NullflyBlue_Script.cs",
+		"value": "NullflyRed_Script.cs",
 		"type": "string"
 	},
 	"struct ECSComponents::VisibilityComponent": {
@@ -83,7 +83,7 @@
 			"type": "Color(RGBA)"
 		},
 		"Texture Path": {
-			"value": "SpawnCircle-Sheet",
+			"value": "Enemy-NullflyRed-Spawn-Sheet",
 			"type": "texchar240"
 		},
 		"TexID": {
@@ -171,11 +171,11 @@
 	},
 	"struct ECSComponents::AnimationControllerComponent": {
 		"Frame Width": {
-			"value": "128",
+			"value": "64",
 			"type": "int"
 		},
 		"Frame Height": {
-			"value": "128",
+			"value": "64",
 			"type": "int"
 		},
 		"Rows": {
@@ -183,7 +183,7 @@
 			"type": "int"
 		},
 		"Cols": {
-			"value": "8",
+			"value": "4",
 			"type": "int"
 		},
 		"Frame Duration": {
@@ -199,7 +199,7 @@
 			"type": "int"
 		},
 		"Current Animation": {
-			"value": "Prespawn",
+			"value": "Spawn",
 			"type": "char64"
 		},
 		"Anim0 Name": {
@@ -207,7 +207,7 @@
 			"type": "char64"
 		},
 		"Anim0 Texture": {
-			"value": "Enemy-Nullfly-Spawn-Sheet",
+			"value": "Enemy-NullflyRed-Spawn-Sheet",
 			"type": "texchar240"
 		},
 		"Anim0 FrameW": {
@@ -239,7 +239,7 @@
 			"type": "char64"
 		},
 		"Anim1 Texture": {
-			"value": "Enemy-Nullfly-IdleFly-Sheet",
+			"value": "Enemy-NullflyRed-Idle-Sheet",
 			"type": "texchar240"
 		},
 		"Anim1 FrameW": {
@@ -255,7 +255,7 @@
 			"type": "int"
 		},
 		"Anim1 Cols": {
-			"value": "8",
+			"value": "7",
 			"type": "int"
 		},
 		"Anim1 Duration": {
@@ -271,7 +271,7 @@
 			"type": "char64"
 		},
 		"Anim2 Texture": {
-			"value": "Enemy-Nullfly-Shocked-Sheet",
+			"value": "Enemy-NullflyRed-Shocked-Sheet",
 			"type": "texchar240"
 		},
 		"Anim2 FrameW": {
@@ -303,7 +303,7 @@
 			"type": "char64"
 		},
 		"Anim3 Texture": {
-			"value": "Enemy-Nullfly-Windup-Sheet",
+			"value": "Enemy-NullflyRed-WindUp-Sheet",
 			"type": "texchar240"
 		},
 		"Anim3 FrameW": {
@@ -335,7 +335,7 @@
 			"type": "char64"
 		},
 		"Anim4 Texture": {
-			"value": "Enemy-Nullfly-Channel-Sheet",
+			"value": "Enemy-NullflyRed-Channel-Sheet",
 			"type": "texchar240"
 		},
 		"Anim4 FrameW": {
@@ -367,7 +367,7 @@
 			"type": "char64"
 		},
 		"Anim5 Texture": {
-			"value": "Enemy-Nullfly-Frozen-Sheet",
+			"value": "Enemy-NullflyRed-Frozen-Sheet",
 			"type": "texchar240"
 		},
 		"Anim5 FrameW": {
@@ -399,7 +399,7 @@
 			"type": "char64"
 		},
 		"Anim6 Texture": {
-			"value": "Enemy-Nullfly-Hurt-Sheet",
+			"value": "Enemy-NullflyRed-Hurt-Sheet",
 			"type": "texchar240"
 		},
 		"Anim6 FrameW": {
@@ -431,7 +431,7 @@
 			"type": "char64"
 		},
 		"Anim7 Texture": {
-			"value": "Enemy-Nullfly-Death-Sheet",
+			"value": "Enemy-NullflyRed-Death-Sheet",
 			"type": "texchar240"
 		},
 		"Anim7 FrameW": {
@@ -487,7 +487,7 @@
 			"type": "float"
 		},
 		"Anim8 Looping": {
-			"value": "1",
+			"value": "0",
 			"type": "bool"
 		}
 	},
