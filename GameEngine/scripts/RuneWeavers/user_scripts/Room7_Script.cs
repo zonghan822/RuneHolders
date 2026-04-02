@@ -87,7 +87,7 @@ namespace Eno
                 case 2:
                     SpawnPrefab("SlugRed", 4482f, -4925f);
                     SpawnPrefab("SlugRed", 4817f, -4666f);
-                    SpawnPrefab("BatYellow", 4519f, -4598f);
+                    SpawnPrefab("BatYellow", 4483f, -4683f);
                     SpawnPrefab("BatYellow", 5061f, -5005f);
                     break;
             }

@@ -38,7 +38,7 @@ namespace Eno
 
             if (!_wavesStarted || _roomCleared) return;
 
-            if (_currentWave < 3)
+            if (_currentWave < 1)
             {
                 _waveTimer += Time.deltaTime;
                 if (_waveTimer >= WaveDelay)
@@ -75,15 +75,13 @@ namespace Eno
             switch (wave)
             {
                 case 1:
-                    SpawnPrefab("SlugYellow", 957f, -4946f);
-                    break;
-                case 2:
-                    SpawnPrefab("SlugYellow", 654f, -4872f);
-                    SpawnPrefab("SlugYellow", 1311f, -4764f);
-                    break;
-                case 3:
-                    SpawnPrefab("SlugRed", 1117f, -4937f);
-                    SpawnPrefab("SlugYellow", 790f, -4688f);
+                    NullflyBlue_Script.PendingRuneIndex = 1; // ban SE
+                    SpawnPrefab("NullflyBlue", 8452f, -8306f);
+                    NullflyBlue_Script.PendingRuneIndex = 2; // ban E
+                    SpawnPrefab("NullflyBlue", 9013f, -8107f);
+                    SpawnPrefab("SlugRed", 8818f, -7925f);
+                    SpawnPrefab("SlugRed", 8351f, -8040f);
+                    SpawnPrefab("BatYellow", 8642f, -8189f);
                     break;
             }
         }
