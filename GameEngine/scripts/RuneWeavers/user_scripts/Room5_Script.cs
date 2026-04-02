@@ -10,6 +10,7 @@ namespace Eno
         private bool  _wavesStarted = false;
         private bool  _roomCleared  = false;
         private float _waveTimer    = 0f;
+        private float _lockRumbleTimer = 0f;
 
         public void Begin()
         {
@@ -27,6 +28,13 @@ namespace Eno
 
         public void Update()
         {
+            if (_lockRumbleTimer > 0f)
+            {
+                _lockRumbleTimer -= Time.deltaTime;
+                if (_lockRumbleTimer <= 0f)
+                    Input.setGamepadRumble(0f, 0f);
+            }
+
             if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
             {
                 _roomCleared = true;
@@ -93,6 +101,8 @@ namespace Eno
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
                 Bridge.ChangeState(id, "Locked");
+            Input.setGamepadRumble(0.5f, 0.5f);
+            _lockRumbleTimer = 0.2f;
         }
 
         private void UnlockDoor(string name)

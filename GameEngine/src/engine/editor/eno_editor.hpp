@@ -451,6 +451,16 @@ namespace Editor
 			return *selectedScene_;
 		}
 
+		// Returns true if a scene is loaded and currently in play/paused/next-frame state
+		bool isScenePlaying() const
+		{
+			if (!selectedScene_) return false;
+			auto state = selectedScene_->getState();
+			return state == State::Playing  ||
+			       state == State::Paused   ||
+			       state == State::NextFrame;
+		}
+
 		std::vector<std::unique_ptr<EnoScene>>& getScenes()
 		{
 			return scenes_;

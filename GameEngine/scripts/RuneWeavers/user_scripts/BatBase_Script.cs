@@ -11,6 +11,7 @@ namespace Eno
         public float spawnDuration   = 0.5f;
         public float pathRefreshInterval = 0.5f;
         public float contactDamageCooldown = 1.0f;
+        public float dropChance = 0.3f;    // Probability [0-1] of dropping a HealthPotion on death
 
         private const float TRIGGER_RADIUS      = 165f;
         private const float CHARGE_DISTANCE     = 330f;
@@ -38,7 +39,10 @@ namespace Eno
         private const string HURT_SOUND = "Bloodwing_Hurt_02";
         private const string DEATH_SOUND = "Bloodwing_Death_01";
 
-        private const string AUDIO = "DefaultAudio";
+        private const string AUDIO               = "DefaultAudio";
+        private const string HEALTH_POTION_PREFAB = "HealthPotion";
+
+        private static readonly Random _rng = new Random();
 
         private float   _timer          = 0f;
         private float   _pathTimer      = 0f;
@@ -367,6 +371,8 @@ namespace Eno
             _timer += Time.deltaTime;
             if (_timer >= deathDuration)
             {
+                if (_rng.NextDouble() < dropChance)
+                    SpawnPrefab(HEALTH_POTION_PREFAB, _self!.position.x, _self!.position.y);
                 EnemyColorRegistry.Unregister(ID);
                 FreeNode(_self!);
             }

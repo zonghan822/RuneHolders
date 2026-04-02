@@ -154,6 +154,11 @@ namespace Eno
                 _runeStates[i] = "Disabled";
             }
 
+            for (int s = 0; s < 3; s++)
+            {
+                SpellUnlocked[s] = false;
+            }
+
             _cursor = SpawnPrefab("Cursor", 0f, 0f) as Sprite2D;
         }
 

@@ -13,34 +13,50 @@ namespace Eno
 
         private Sprite2D? _self;
 
-        // Previous mouse world position — used to detect mouse movement
-        private float _prevMouseX = 0f;
-        private float _prevMouseY = 0f;
+        private float _prevScreenX = 0f;
+        private float _prevScreenY = 0f;
+        private float _prevWorldX  = 0f;
+        private float _prevWorldY  = 0f;
 
         public void Begin()
         {
             _self = Self<Sprite2D>();
             if (_self == null) return;
-            _prevMouseX = Input.mouseWorldPosition.x;
-            _prevMouseY = Input.mouseWorldPosition.y;
-            CursorX = _prevMouseX;
-            CursorY = _prevMouseY;
+            _prevScreenX = Input.mousePosition.x;
+            _prevScreenY = Input.mousePosition.y;
+            _prevWorldX  = Input.mouseWorldPosition.x;
+            _prevWorldY  = Input.mouseWorldPosition.y;
+            CursorX = _prevWorldX;
+            CursorY = _prevWorldY;
         }
 
         public void Update()
         {
             if (_self == null) return;
 
-            // Check if mouse moved this frame
-            float mx = Input.mouseWorldPosition.x;
-            float my = Input.mouseWorldPosition.y;
-            if (mx != _prevMouseX || my != _prevMouseY)
+            float sx = Input.mousePosition.x;
+            float sy = Input.mousePosition.y;
+            float wx = Input.mouseWorldPosition.x;
+            float wy = Input.mouseWorldPosition.y;
+
+            if (sx != _prevScreenX || sy != _prevScreenY)
             {
-                CursorX = mx;
-                CursorY = my;
-                _prevMouseX = mx;
-                _prevMouseY = my;
+                // Mouse physically moved — cursor follows mouse
+                CursorX = wx;
+                CursorY = wy;
             }
+            else if (wx != _prevWorldX || wy != _prevWorldY)
+            {
+                // Camera shifted (room change) — offset cursor by the same world delta
+                // so it stays at the same screen position
+                CursorX += wx - _prevWorldX;
+                CursorY += wy - _prevWorldY;
+            }
+
+            _prevScreenX = sx;
+            _prevScreenY = sy;
+            _prevWorldX  = wx;
+            _prevWorldY  = wy;
 
             // Move cursor with right stick
             Vector2 stick = Input.getRightStick(0.15f);

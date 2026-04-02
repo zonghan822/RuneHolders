@@ -11,6 +11,7 @@ namespace Eno
         public float deathDuration       = 1.0f;
         public float spawnDuration       = 0.5f;
         public float contactDamageCooldown = 1.0f;
+        public float dropChance = 1f;    // Probability [0-1] of dropping a HealthPotion on death
 
         protected virtual int EnemyColor => 0;
 
@@ -47,7 +48,8 @@ namespace Eno
           "Trailblight_Hurt_06"
         };
 
-        private const string MOVE_SOUND = "Trailblight_Move_Loop";
+        private const string MOVE_SOUND          = "Trailblight_Move_Loop";
+        private const string HEALTH_POTION_PREFAB = "HealthPotion";
         
         private float  _pathTimer       = 0f;
         private float  _hurtTimer       = 0f;
@@ -317,6 +319,8 @@ namespace Eno
 
             if (_deathTimer >= deathDuration)
             {
+                if (rng.NextDouble() < dropChance)
+                    SpawnPrefab(HEALTH_POTION_PREFAB, _self!.position.x, _self!.position.y);
                 EnemyColorRegistry.Unregister(ID);
                 FreeNode(_self!);
             }

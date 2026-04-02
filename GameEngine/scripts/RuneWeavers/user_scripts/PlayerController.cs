@@ -299,6 +299,7 @@ namespace Eno
 
         public void Cast_exit()
         {
+            _player.setAnimationLooping(true);
         }
     
         public void CastWalk_enter()
@@ -362,6 +363,7 @@ namespace Eno
         {
             _isHurt = false;
             Input.setGamepadRumble(0f, 0f);
+            _player.setAnimationLooping(true);
         }
     
         public void Death_enter()

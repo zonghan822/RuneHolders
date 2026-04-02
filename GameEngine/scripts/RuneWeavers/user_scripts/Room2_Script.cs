@@ -3,6 +3,7 @@ namespace Eno
     public class Room2_Script : ScriptBase
     {
         private static Room2_Script? _instance;
+        private float _lockRumbleTimer = 0f;
         private bool  _roomCleared  = false;
         private bool  _wavesStarted = false;
 
@@ -26,6 +27,13 @@ namespace Eno
 
         public void Update()
         {
+            if (_lockRumbleTimer > 0f)
+            {
+                _lockRumbleTimer -= Time.deltaTime;
+                if (_lockRumbleTimer <= 0f)
+                    Input.setGamepadRumble(0f, 0f);
+            }
+
             if (!_wavesStarted || _roomCleared) return;
             if (DummyRed_Script.WasHit)
             {
@@ -48,6 +56,8 @@ namespace Eno
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
                 Bridge.ChangeState(id, "Locked");
+            Input.setGamepadRumble(0.5f, 0.5f);
+            _lockRumbleTimer = 0.2f;
         }
 
         private void UnlockDoor(string name)
