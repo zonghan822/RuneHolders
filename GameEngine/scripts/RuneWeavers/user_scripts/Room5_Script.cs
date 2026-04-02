@@ -33,6 +33,7 @@ namespace Eno
                 UnlockDoor("Door5to6");
                 UnlockDoor("Door5to4");
                 UnlockDoor("Door4to5");
+                UnlockDoor("Door5to5A");
             }
 
             if (!_wavesStarted || _roomCleared) return;
@@ -55,6 +56,7 @@ namespace Eno
                 UnlockDoor("Door5to6");
                 UnlockDoor("Door5to4");
                 UnlockDoor("Door4to5");
+                UnlockDoor("Door5to5A");
             }
         }
 

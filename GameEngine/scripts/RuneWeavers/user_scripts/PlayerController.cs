@@ -129,6 +129,15 @@ namespace Eno
                 return;
             }
             
+            // F key or Y button — toggle spellbook UI (checked before pause guard so it can close while paused)
+            if ((Input.isKeyPressed(KeyCode.F) || Input.isGamepadButtonPressed(GamepadButton.Y)) && _spellbookUIID != 0)
+            {
+                _spellbookOpen = !_spellbookOpen;
+                Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
+                IsGamePaused = _spellbookOpen;
+                Bridge.SetAudioPaused(_spellbookOpen);
+            }
+
             if (IsGamePaused) return;
 
             UpdateHealthBar();
@@ -138,13 +147,6 @@ namespace Eno
             {
                 _player.velocity = new Vector2(0f, 0f);
                 return;
-            }
-
-            // F key or Y button — toggle spellbook UI
-            if ((Input.isKeyPressed(KeyCode.F) || Input.isGamepadButtonPressed(GamepadButton.Y)) && _spellbookUIID != 0)
-            {
-                _spellbookOpen = !_spellbookOpen;
-                Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
             }
 
             if (_isAttacking || _isHurt) return;

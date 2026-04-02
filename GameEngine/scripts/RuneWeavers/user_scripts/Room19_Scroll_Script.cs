@@ -52,6 +52,14 @@ namespace Eno
             Scroll_Dialouge_Script.DialogueActive = true;
             if (_narrative != null) { _narrative.texture = "UI-Narrative-2"; _narrative.visible = true; }
             if (_canvas    != null) _canvas.active = true;
+            UnlockDoor("Door7Ato7");
+        }
+
+        private void UnlockDoor(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocking");
         }
 
         private void Close()
