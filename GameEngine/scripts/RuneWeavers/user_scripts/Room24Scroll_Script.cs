@@ -40,7 +40,7 @@ namespace Eno
         private Sprite2D? _charLeft;
         private Sprite2D? _charRight;
         private AudioNode? _typingSfx;
-
+        
         // Win screen
         private uint _winLoseCanvasID = 0;
         private uint _victoryScreenID = 0;
@@ -54,6 +54,7 @@ namespace Eno
         private string _currentText = "";
         private string _targetText  = "";
         private float  _typeTimer   = 0f;
+
 
         public void Begin()
         {
@@ -187,10 +188,12 @@ namespace Eno
                 Bridge.SetCanvasActive(_winLoseCanvasID, true);
                 if (_victoryScreenID != 0)
                 {
+                    PlayerController.IsGameCompleted = true;
                     Bridge.SetVisibility(_victoryScreenID, true);
                     SetChildButtonsActive(_victoryScreenID, true);
                 }
             }
+
         }
 
         private void ShowLine(DialogueLine line)
