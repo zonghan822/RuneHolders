@@ -33,6 +33,8 @@ namespace Eno
             "Door18Bto19A","Door19Ato18B",
             "Door19Ato20A","Door20Ato19A",
             "Door20Ato21A","Door21Ato20A",
+            "Door5to5A",   "Door5Ato5",
+            "Door7to7A",   "Door7Ato7",
         };
 
         private bool _cleared = false;
