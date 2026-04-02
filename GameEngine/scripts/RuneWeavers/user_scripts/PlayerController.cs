@@ -36,14 +36,20 @@ namespace Eno
 
         // In-game pause flag
         public static bool IsGamePaused = false;
+        public static bool IsGameCompleted = false;
 
         // Canvas interface
         //private bool _UIPopUp = false;
 
+        // Player script reference
+        private static PlayerController? _instance;
+
+
         public void Begin()
         {
             _player = Self<Actor>()!;
-
+            _instance = this;
+            
             // ACTOR nodes have physics — keep gravity off for top-down movement
             _player.useGravity      = false;
             _player.isKinematic     = false;
@@ -67,6 +73,7 @@ namespace Eno
             _enemyInfoPopupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
 
             IsGamePaused = false;
+            IsGameCompleted = false;
         }
 
         private void UpdateHealthBar()
@@ -102,12 +109,12 @@ namespace Eno
         public void Update()
         {
             // P key or Start button toggles in-game pause
-            if (Input.isKeyPressed(KeyCode.P) || Input.isGamepadButtonPressed(GamepadButton.Start))
+            if ((Input.isKeyPressed(KeyCode.P) || Input.isGamepadButtonPressed(GamepadButton.Start)) && !IsGameCompleted)
             {
                 IsGamePaused = !IsGamePaused;
                 Bridge.SetCanvasActive(_winLoseCanvasID, IsGamePaused);
                 uint buttonID = Bridge.GetNode("PauseScreen");
-                Bridge.SetVisibility(buttonID, true);
+                Bridge.SetVisibility(buttonID, IsGamePaused);
                 SetChildButtonsActive(buttonID, IsGamePaused);
                 Bridge.SetAudioPaused(IsGamePaused);
             }
