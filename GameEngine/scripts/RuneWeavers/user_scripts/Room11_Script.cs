@@ -37,15 +37,6 @@ namespace Eno
                     Input.setGamepadRumble(0f, 0f);
             }
 
-            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
-            {
-                _roomCleared = true;
-                BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door11to12");
-                UnlockDoor("Door11to9");
-                UnlockDoor("Door9to11");
-            }
-
             if (!_wavesStarted || _roomCleared) return;
 
             if (_currentWave < 3)

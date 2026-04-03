@@ -39,7 +39,7 @@ namespace Eno
             }
 
             if (!_wavesStarted || _roomCleared) return;
-            if (DummyRed_Script.WasHit)
+            if (DummyRed_Script.WasHit || GetAllEnemies().Count == 0)
             {
                 _roomCleared    = true;
                 _wasEverCleared = true;

@@ -68,7 +68,7 @@ namespace Eno
             }
 
             // Check dummy clear condition
-            if (_wavesStarted && !_roomCleared && DummyBlue_Script.WasHit)
+            if (_wavesStarted && !_roomCleared && (DummyBlue_Script.WasHit || GetAllEnemies().Count == 0))
             {
                 _roomCleared    = true;
                 _wasEverCleared = true;

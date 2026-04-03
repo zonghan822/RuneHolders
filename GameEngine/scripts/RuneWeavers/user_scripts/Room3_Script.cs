@@ -74,16 +74,6 @@ namespace Eno
                     Bridge.SetVisibility(_uiInfoID, false);
             }
 
-            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
-            {
-                _roomCleared = true;
-                BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door3to4");
-                UnlockDoor("Door4to3");
-                UnlockDoor("Door3to2");
-                UnlockDoor("Door2to3");
-            }
-
             if (_popupID != 0 && _popupID != uint.MaxValue)
             {
                 string icon = Input.inputMode == InputMode.Controller

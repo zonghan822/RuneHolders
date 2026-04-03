@@ -29,13 +29,6 @@ namespace Eno
 
         public void Update()
         {
-            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
-            {
-                _roomCleared = true;
-                UnlockDoor("Door12to11");
-                UnlockDoor("Door12to13");
-            }
-
             if (!_wavesStarted || _roomCleared) return;
 
             if (_currentWave < 2)
@@ -80,7 +73,7 @@ namespace Eno
                     break;
                 case 2:
                     NullflyBlue_Script.PendingRuneIndex = 1; // ban E
-                    SpawnPrefab("NullflyBlue", 8105f, -6002f);
+                    SpawnPrefab("NullflyBlue", 8105f, -7002f);
                     NullflyBlue_Script.PendingRuneIndex = 2; // ban SE
                     SpawnPrefab("NullflyBlue", 9176f, -7218f);
                     SpawnPrefab("SlugRed", 8953f, -6821f);
