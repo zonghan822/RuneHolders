@@ -35,17 +35,11 @@ namespace Eno
 
             _waveTimer += Time.deltaTime;
 
-            if (GetAllEnemies().Count == 0 || _waveTimer >= WaveDelay)
+            if (GetAllEnemies().Count == 0)
             {
-                _waveTimer = 0f;
-                if (_currentWave < 1)
-                    SpawnWave(_currentWave + 1);
-                else
-                {
-                    _roomCleared = true;
-                    UnlockDoor("Door13to12");
-                    UnlockDoor("Door13to14");
-                }
+                _roomCleared = true;
+                UnlockDoor("Door13to12");
+                UnlockDoor("Door13to14");
             }
         }
 

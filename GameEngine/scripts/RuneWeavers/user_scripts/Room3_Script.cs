@@ -88,7 +88,7 @@ namespace Eno
 
             _waveTimer += Time.deltaTime;
 
-            if (GetAllEnemies().Count == 0 || _waveTimer >= WaveDelay)
+            if (GetAllEnemies().Count == 0)
             {
                 _waveTimer = 0f;
                 if (_currentWave < 2)
@@ -102,6 +102,11 @@ namespace Eno
                     UnlockDoor("Door3to2");
                     UnlockDoor("Door2to3");
                 }
+            }
+            else if (_waveTimer >= WaveDelay && _currentWave < 2)
+            {
+                _waveTimer = 0f;
+                SpawnWave(_currentWave + 1);
             }
         }
 

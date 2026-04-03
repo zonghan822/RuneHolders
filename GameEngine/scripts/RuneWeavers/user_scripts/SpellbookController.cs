@@ -24,14 +24,17 @@ namespace Eno
                 bool nowOpen = !PauseManager.SpellbookOpen;
                 Bridge.SetVisibility(_spellbookUIID, nowOpen);
                 SetChildButtonsActive(_spellbookUIID, nowOpen);
-                PauseManager.SetSpellbook(nowOpen);
                 if (nowOpen)
                 {
+                    // Play sound BEFORE SetSpellbook — Sync() will pause audio immediately after
                     if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Open_01"; _spellbookAudio.play(); }
                     Bridge.SetGroupPaused("SFX", true);
+                    PauseManager.SetSpellbook(true);
                 }
                 else
                 {
+                    // Unpause audio first, then play close sound
+                    PauseManager.SetSpellbook(false);
                     Bridge.SetGroupPaused("SFX", false);
                     if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Close_01"; _spellbookAudio.play(); }
                 }
@@ -43,7 +46,7 @@ namespace Eno
             Bridge.SetTexturePath(Bridge.GetNode("SpellbookBackButton"), "UI-Back");
             Bridge.SetVisibility(_spellbookUIID, false);
             SetChildButtonsActive(_spellbookUIID, false);
-            PauseManager.SetSpellbook(false);
+            PauseManager.SetSpellbook(false);  // unpauses audio via Sync()
             Bridge.SetGroupPaused("SFX", false);
             if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Close_01"; _spellbookAudio.play(); }
         }
