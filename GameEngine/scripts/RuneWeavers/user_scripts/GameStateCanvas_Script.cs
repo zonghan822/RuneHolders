@@ -355,7 +355,7 @@ namespace Eno
             switch (btn)
             {
                 case EndNav.Quit:
-                    Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenQuitGame"),
+                    Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenQuit"),
                         selected ? "UI-QuitGame-Selected" : "UI-Quit");
                     break;
                 case EndNav.MainMenu:
