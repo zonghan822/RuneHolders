@@ -9,6 +9,7 @@ namespace Eno
         private bool _shown = false;
         private bool _open  = false;
         private bool _skipE = false;
+        private AudioNode? _doorAudio = null;
 
         public void Begin()
         {
@@ -18,6 +19,7 @@ namespace Eno
             _shown = false;
             _open  = false;
             _skipE = false;
+            _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public void Update()
@@ -59,7 +61,10 @@ namespace Eno
         {
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
+            {
                 Bridge.ChangeState(id, "Unlocking");
+                if (_doorAudio != null) { _doorAudio.sound = "Door_Open_02"; _doorAudio.play(); }
+            }
         }
 
         private void Close()

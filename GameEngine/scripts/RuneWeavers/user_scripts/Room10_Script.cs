@@ -3,8 +3,13 @@ namespace Eno
     public class Room10_Script : ScriptBase
     {
         private bool _cleared = false;
+        private AudioNode? _doorAudio = null;
 
-        public void Begin() { _cleared = false; }
+        public void Begin()
+        {
+            _cleared = false;
+            _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+        }
 
         public void Update()
         {
@@ -21,7 +26,10 @@ namespace Eno
         {
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
+            {
                 Bridge.ChangeState(id, "Unlocking");
+                if (_doorAudio != null) { _doorAudio.sound = "Door_Open_02"; _doorAudio.play(); }
+            }
         }
     }
 }

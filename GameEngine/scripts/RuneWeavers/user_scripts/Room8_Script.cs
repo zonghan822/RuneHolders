@@ -17,6 +17,7 @@ namespace Eno
         private uint  _uiInfoID    = 0;
         private float _uiInfoTimer = 0f;
         private float _lockRumbleTimer = 0f;
+        private AudioNode? _doorAudio = null;
 
         public void Begin()
         {
@@ -33,6 +34,7 @@ namespace Eno
             _roomCleared           = false;
             _uiInfoTimer           = 0f;
             DummyBlue_Script.WasHit = false;
+            _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public static void StartWaves()
@@ -116,7 +118,10 @@ namespace Eno
         {
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
+            {
                 Bridge.ChangeState(id, "Locked");
+                if (_doorAudio != null) { _doorAudio.sound = "Door_Close_01"; _doorAudio.play(); }
+            }
             Input.setGamepadRumble(0.5f, 0.5f);
             _lockRumbleTimer = 0.2f;
         }
@@ -125,7 +130,10 @@ namespace Eno
         {
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
+            {
                 Bridge.ChangeState(id, "Unlocking");
+                if (_doorAudio != null) { _doorAudio.sound = "Door_Open_02"; _doorAudio.play(); }
+            }
         }
     }
 }
