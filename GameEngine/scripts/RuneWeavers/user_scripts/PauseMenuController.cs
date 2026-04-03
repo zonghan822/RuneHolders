@@ -17,7 +17,7 @@ namespace Eno
         {
             bool isController = Input.inputMode == InputMode.Controller;
 
-            if ((Input.isKeyPressed(KeyCode.P) || (isController && Input.isGamepadButtonPressed(GamepadButton.Start)))
+            if ((Input.isKeyPressed(KeyCode.Escape) || (isController && Input.isGamepadButtonPressed(GamepadButton.Start)))
                 && !PlayerController.IsGameCompleted && !PauseManager.SpellbookOpen)
             {
                 bool nowPaused = !PauseManager.PauseMenuOpen;
