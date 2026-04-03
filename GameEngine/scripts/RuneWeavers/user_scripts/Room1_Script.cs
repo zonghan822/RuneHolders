@@ -24,6 +24,14 @@ namespace Eno
             _postDialogueActivated = false;
             _scrollPickedUp        = false;
             _uiInfoTimer           = 0f;
+
+            // Room 1 has no enemies — hide the enemy popup and clear its textures
+            uint popupID   = Bridge.GetNode("EnemyInfoPopUp");
+            uint popupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
+            if (popupID   != 0 && popupID   != uint.MaxValue) Bridge.SetVisibility(popupID,   false);
+            if (popupBgID != 0 && popupBgID != uint.MaxValue) Bridge.SetVisibility(popupBgID, false);
+            PlayerController.EnemyPopupKeyboardTexture   = "";
+            PlayerController.EnemyPopupControllerTexture = "";
         }
 
         public void Update()

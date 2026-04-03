@@ -15,6 +15,7 @@ namespace Eno
         private uint  _uiInfoID    = 0;
         private float _uiInfoTimer = 0f;
         private float _lockRumbleTimer = 0f;
+        private uint  _popupID     = 0;
 
         public void Begin()
         {
@@ -45,17 +46,11 @@ namespace Eno
                 PlayerController.EnemyPopupKeyboardTexture   = "UI-EnemyPopUp-LavaSlug";
                 PlayerController.EnemyPopupControllerTexture = "UI-EnemyPopUp-Slug-Controller";
 
-                uint popupID = Bridge.GetNode("EnemyInfoPopUp");
-                if (popupID != 0 && popupID != uint.MaxValue)
+                _instance._popupID = Bridge.GetNode("EnemyInfoPopUp");
+                if (_instance._popupID != 0 && _instance._popupID != uint.MaxValue)
                 {
-                    string icon;
-                    if (Input.inputMode == InputMode.Controller)
-                        icon = "UI-EnemyIcon-Slug-Controller";
-                    else
-                        icon = "UI-EnemyIcon-Slug";
-                    Bridge.SetTexturePath(popupID, icon);
-                    Bridge.SetVisibility(popupID, true);
-                    Bridge.SetButtonActive(popupID, true);
+                    Bridge.SetVisibility(_instance._popupID, true);
+                    Bridge.SetButtonActive(_instance._popupID, true);
                 }
             }
 
@@ -86,6 +81,14 @@ namespace Eno
                 UnlockDoor("Door4to3");
                 UnlockDoor("Door3to2");
                 UnlockDoor("Door2to3");
+            }
+
+            if (_popupID != 0 && _popupID != uint.MaxValue)
+            {
+                string icon = Input.inputMode == InputMode.Controller
+                    ? "UI-EnemyIcon-Slug-Controller"
+                    : "UI-EnemyIcon-Slug";
+                Bridge.SetTexturePath(_popupID, icon);
             }
 
             if (!_wavesStarted || _roomCleared) return;
