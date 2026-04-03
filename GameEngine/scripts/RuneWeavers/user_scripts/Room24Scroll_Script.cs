@@ -35,7 +35,6 @@ namespace Eno
         private Canvas?   _canvas;
         private Label?    _dialogueText;
         private Sprite2D? _dialogueBox;
-        private Sprite2D? _narrativeSprite;
         private Sprite2D? _charCenter;
         private Sprite2D? _charLeft;
         private Sprite2D? _charRight;
@@ -60,7 +59,6 @@ namespace Eno
         {
             try { _canvas        = GetNode<Canvas>("Dialogue Canvas");  } catch { }
             try { _dialogueText  = GetNode<Label>("Dialogue Text");     } catch { }
-            try { _narrativeSprite = GetNode<Sprite2D>("Narrative");    } catch { }
             try { _dialogueBox   = GetNode<Sprite2D>("Dialogue Box");   } catch { }
             try { _charCenter    = GetNode<Sprite2D>("CharacterCenter"); } catch { }
             try { _charLeft      = GetNode<Sprite2D>("ProtagonistLeft"); } catch { }
@@ -154,7 +152,6 @@ namespace Eno
             Scroll_Dialouge_Script.DialogueActive = true;
 
             if (_canvas      != null) _canvas.active = true;
-            if (_narrativeSprite != null) _narrativeSprite.visible = false;
             if (_dialogueBox != null) _dialogueBox.visible = true;
             if (_dialogueText != null) { _dialogueText.visible = true; _dialogueText.text = ""; }
 

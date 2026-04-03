@@ -47,11 +47,21 @@ namespace Eno
 
         private void Open()
         {
+            bool firstOpen = !Shown;
             Shown = _open = true;
             _skipE = true;
             Scroll_Dialouge_Script.DialogueActive = true;
             if (_narrative != null) { _narrative.texture = "UI-Narrative-3"; _narrative.visible = true; }
             if (_canvas    != null) _canvas.active = true;
+            Bridge.SetButtonActive(Bridge.GetNode("NarrativeBackButton"), true);
+            if (firstOpen) UnlockDoor("Door10to9");
+        }
+
+        private void UnlockDoor(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocking");
         }
 
         private void Close()

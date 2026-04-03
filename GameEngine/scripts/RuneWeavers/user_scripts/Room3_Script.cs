@@ -42,19 +42,17 @@ namespace Eno
             if (!_popupActivated)
             {
                 _popupActivated = true;
+                PlayerController.EnemyPopupKeyboardTexture   = "UI-EnemyPopUp-LavaSlug";
+                PlayerController.EnemyPopupControllerTexture = "UI-EnemyPopUp-Slug-Controller";
+
                 uint popupID = Bridge.GetNode("EnemyInfoPopUp");
                 if (popupID != 0 && popupID != uint.MaxValue)
                 {
-                    Bridge.SetTexturePath(popupID, "Enemy-Slug-Frozen-Sheet");
+                    string icon = Input.isGamepadConnected() ? "UI-EnemyIcon-Slug-Controller" : "UI-EnemyIcon-Slug";
+                    Bridge.SetTexturePath(popupID, icon);
                     Bridge.SetVisibility(popupID, true);
                     Bridge.SetButtonActive(popupID, true);
                 }
-                uint popupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
-                if (popupBgID != 0 && popupBgID != uint.MaxValue)
-                    Bridge.SetVisibility(popupBgID, true);
-                uint enemyInfoID = Bridge.GetNode("EnemyInfo");
-                if (enemyInfoID != 0 && enemyInfoID != uint.MaxValue)
-                    Bridge.SetTexturePath(enemyInfoID, "UI-EnemyPopUp-LavaSlug");
             }
 
             _instance.SpawnWave1();

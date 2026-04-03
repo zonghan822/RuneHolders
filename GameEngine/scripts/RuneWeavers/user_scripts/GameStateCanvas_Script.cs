@@ -11,6 +11,7 @@ namespace Eno
         private uint _pauseScreenID   = 0;
         private uint _victoryScreenID = 0;
         private uint _areYouSureID    = 0;
+        private uint _blackBgID       = 0;
 
         public enum prevScreen
         {
@@ -46,6 +47,7 @@ namespace Eno
             _pauseScreenID   = Bridge.GetNode("PauseScreen");
             _victoryScreenID = Bridge.GetNode("WinScreen");
             _areYouSureID    = Bridge.GetNode("AreYouSureScreen");
+            _blackBgID       = Bridge.GetNode("BlackBG");
         }
 
         public void Update()
@@ -228,6 +230,7 @@ namespace Eno
             _pauseSel = PauseNav.None;
             Bridge.SetAudioPaused(false);
             Bridge.SetCanvasActive(_winLoseCanvasID, false);
+            if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, false);
             PlayerController.IsGamePaused = false;
         }
 
@@ -288,21 +291,15 @@ namespace Eno
             _quitSel = QuitNav.None;
             Bridge.SetVisibility(_areYouSureID, false);
             SetChildButtonsActive(_areYouSureID, false);
-            switch (_prevScreen)
+            if (_prevScreen == prevScreen.PauseScreen)
             {
-                case prevScreen.WinScreen:
-                    Bridge.SetVisibility(_victoryScreenID, true);
-                    SetChildButtonsActive(_victoryScreenID, true);
-                    break;
-                case prevScreen.PauseScreen:
-                    Bridge.SetVisibility(_pauseScreenID, true);
-                    SetChildButtonsActive(_pauseScreenID, true);
-                    SelectPause(PauseNav.Resume);
-                    break;
-                case prevScreen.LoseScreen:
-                    Bridge.SetVisibility(_defeatScreenID, true);
-                    SetChildButtonsActive(_defeatScreenID, true);
-                    break;
+                Bridge.SetVisibility(_pauseScreenID, true);
+                SetChildButtonsActive(_pauseScreenID, true);
+                SelectPause(PauseNav.Resume);
+            }
+            else
+            {
+                if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, false);
             }
         }
 
@@ -387,8 +384,7 @@ namespace Eno
         {
             Bridge.SetTexturePath(Bridge.GetNode("WinScreenQuit"), "UI-Quit");
             _prevScreen = prevScreen.WinScreen;
-            Bridge.SetVisibility(_victoryScreenID, false);
-            SetChildButtonsActive(_victoryScreenID, false);
+            if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, true);
             Bridge.SetVisibility(_areYouSureID, true);
             SetChildButtonsActive(_areYouSureID, true);
             SelectQuit(QuitNav.No);
@@ -418,8 +414,7 @@ namespace Eno
         {
             Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenQuitGame"), "UI-Quit");
             _prevScreen = prevScreen.LoseScreen;
-            Bridge.SetVisibility(_defeatScreenID, false);
-            SetChildButtonsActive(_defeatScreenID, false);
+            if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, true);
             Bridge.SetVisibility(_areYouSureID, true);
             SetChildButtonsActive(_areYouSureID, true);
             SelectQuit(QuitNav.No);

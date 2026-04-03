@@ -38,6 +38,10 @@ namespace Eno
         private uint      _enemyInfoPopupBgID = 0;
         private bool      _enemyInfoOpen      = false;
         private uint      _defeatScreenID     = 0;
+        private uint      _blackBgID          = 0;
+
+        public static string EnemyPopupKeyboardTexture   = "";
+        public static string EnemyPopupControllerTexture = "";
         private float     _deathTimer         = 0f;
         private float     _deathDuration      = 1.0f;
 
@@ -88,6 +92,7 @@ namespace Eno
             _enemyInfoPopupID   = Bridge.GetNode("EnemyInfoPopUp");
             _enemyInfoPopupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
             _defeatScreenID     = Bridge.GetNode("DefeatScreen");
+            _blackBgID          = Bridge.GetNode("BlackBG");
 
             IsGamePaused = false;
             IsGameCompleted = false;
@@ -136,6 +141,7 @@ namespace Eno
                 uint buttonID = Bridge.GetNode("PauseScreen");
                 Bridge.SetVisibility(buttonID, IsGamePaused);
                 SetChildButtonsActive(buttonID, IsGamePaused);
+                if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, IsGamePaused);
                 Bridge.SetAudioPaused(IsGamePaused);
             }
             
@@ -150,7 +156,6 @@ namespace Eno
                     Bridge.SetVisibility(_enemyInfoPopupID, false);
                     Bridge.SetButtonActive(_enemyInfoPopupID, false);
                 }
-                if (_enemyInfoPopupBgID != 0) Bridge.SetVisibility(_enemyInfoPopupBgID, false);
                 IsGamePaused = false;
                 Bridge.SetAudioPaused(false);
                 return;
@@ -161,11 +166,16 @@ namespace Eno
             {
                 _spellbookOpen = !_spellbookOpen;
                 Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
+                SetChildButtonsActive(_spellbookUIID, _spellbookOpen);
                 IsGamePaused = _spellbookOpen;
                 Bridge.SetAudioPaused(_spellbookOpen);
             }
 
-            if (IsGamePaused) return;
+            if (IsGamePaused)
+            {
+                _player.velocity = new Vector2(0f, 0f);
+                return;
+            }
 
             UpdateHealthBar();
 
@@ -206,10 +216,18 @@ namespace Eno
             }
 
 
-            // X button — open enemy info popup
-            if (!_enemyInfoOpen && Input.isGamepadButtonPressed(GamepadButton.X))
+            // T key or X button — open enemy info popup (only when EnemyInfoPopUp is active)
+            if (!_enemyInfoOpen && _enemyInfoPopupID != 0 && Bridge.GetVisibility(_enemyInfoPopupID) &&
+                (Input.isKeyPressed(KeyCode.T) || Input.isGamepadButtonPressed(GamepadButton.X)))
             {
-                _when_enemyinfopopup_onclick();
+                bool usedGamepad = Input.isGamepadButtonPressed(GamepadButton.X);
+                string tex = usedGamepad ? EnemyPopupControllerTexture : EnemyPopupKeyboardTexture;
+                if (_enemyInfoID != 0 && !string.IsNullOrEmpty(tex))
+                    Bridge.SetTexturePath(_enemyInfoID, tex);
+                _enemyInfoOpen = true;
+                if (_enemyInfoID != 0) Bridge.SetVisibility(_enemyInfoID, true);
+                IsGamePaused = true;
+                Bridge.SetAudioPaused(true);
                 return;
             }
 
@@ -443,15 +461,20 @@ namespace Eno
         {
         }
     
-		public void _when_enemyinfopopup_onclick()
+    
+		public void _when_spellbookbackbutton_onclick()
         {
-            if (_enemyInfoID != 0)
-            {
-                _enemyInfoOpen = true;
-                Bridge.SetVisibility(_enemyInfoID, true);
-                IsGamePaused = true;
-                Bridge.SetAudioPaused(true);
-            }
+            Bridge.SetTexturePath(Bridge.GetNode("SpellbookBackButton"), "UI-Back");
+            _spellbookOpen = false;
+            Bridge.SetVisibility(_spellbookUIID, false);
+            SetChildButtonsActive(_spellbookUIID, false);
+            IsGamePaused = false;
+            Bridge.SetAudioPaused(false);
+        }
+
+		public void _when_spellbookbackbutton_onpressed()
+        {
+            Bridge.SetTexturePath(Bridge.GetNode("SpellbookBackButton"), "UI-Back-Selected");
         }
     }
 }
