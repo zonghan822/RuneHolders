@@ -9,6 +9,7 @@ namespace Eno
         {
             _spellbookUIID  = Bridge.GetNode("Spellbook");
             _spellbookAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            if (_spellbookAudio != null) _spellbookAudio.group = "BGM";
         }
 
         public void Update()
@@ -24,6 +25,16 @@ namespace Eno
                 Bridge.SetVisibility(_spellbookUIID, nowOpen);
                 SetChildButtonsActive(_spellbookUIID, nowOpen);
                 PauseManager.SetSpellbook(nowOpen);
+                if (nowOpen)
+                {
+                    if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Open_01"; _spellbookAudio.play(); }
+                    Bridge.SetGroupPaused("SFX", true);
+                }
+                else
+                {
+                    Bridge.SetGroupPaused("SFX", false);
+                    if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Close_01"; _spellbookAudio.play(); }
+                }
             }
         }
 
@@ -33,6 +44,8 @@ namespace Eno
             Bridge.SetVisibility(_spellbookUIID, false);
             SetChildButtonsActive(_spellbookUIID, false);
             PauseManager.SetSpellbook(false);
+            Bridge.SetGroupPaused("SFX", false);
+            if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Close_01"; _spellbookAudio.play(); }
         }
 
         public void _when_spellbookbackbutton_onpressed()
