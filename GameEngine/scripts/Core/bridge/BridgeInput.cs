@@ -74,5 +74,12 @@ namespace Eno
 
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetGamepadRumble(float leftMotor, float rightMotor);
+
+        // -----------------------------------------------------------------------
+        // Input Mode  (implemented in eno_bridge_input.cpp)
+        // Returns 0 = MouseKeyboard, 1 = Controller
+        // -----------------------------------------------------------------------
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern int GetInputMode();
     }
 }
