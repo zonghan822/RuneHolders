@@ -31,10 +31,13 @@ namespace Eno
         private uint      _spellbookUIID    = 0;
         private bool      _spellbookOpen    = false;
         private AudioNode? _spellbookAudio  = null;
-        private AudioNode? _footstepAudio   = null;
+        private AudioNode? _footstepAudio    = null;
+        private AudioNode? _playerVoAudio   = null;
         private Random     _rng             = new Random();
         private float      _footstepTimer   = 0f;
-        private const float FOOTSTEP_INTERVAL = 0.375f;
+        private const float FOOTSTEP_INTERVAL  = 0.375f;
+        private const int   HURT_SOUND_COUNT   = 15;
+        private const int   DEATH_SOUND_COUNT  = 2;
         private uint      _winLoseCanvasID  = 0;
         private uint      _enemyInfoID        = 0;
         private uint      _enemyInfoPopupID   = 0;
@@ -84,6 +87,8 @@ namespace Eno
                 _footstepAudio.volume = footstepVolume;
                 _footstepAudio.spatialAudio = true;
             }
+
+            _playerVoAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
 
             _spellbookUIID   = Bridge.GetNode("Spellbook");
             _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");
@@ -399,6 +404,11 @@ namespace Eno
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(hurtDuration / frames);
             Input.setGamepadRumble(0.5f, 0.5f);
+            if (_playerVoAudio != null)
+            {
+                _playerVoAudio.sound = "Player_VO_Hurt_" + _rng.Next(1, HURT_SOUND_COUNT + 1).ToString("D2");
+                _playerVoAudio.play();
+            }
         }
 
         public void Hurt_update()
@@ -425,6 +435,11 @@ namespace Eno
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(_deathDuration / frames);
             Input.setGamepadRumble(1.0f, 1.0f);
+            if (_playerVoAudio != null)
+            {
+                _playerVoAudio.sound = "Player_Death_TEMP_" + _rng.Next(1, DEATH_SOUND_COUNT + 1).ToString("D2");
+                _playerVoAudio.play();
+            }
         }
 
         public void Death_update()

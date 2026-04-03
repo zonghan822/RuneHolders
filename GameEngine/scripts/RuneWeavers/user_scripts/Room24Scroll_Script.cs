@@ -40,7 +40,8 @@ namespace Eno
         private Sprite2D? _charLeft;
         private Sprite2D? _charRight;
         private AudioNode? _typingSfx;
-        
+        private AudioNode? _scrollAudio;
+
         // Win screen
         private uint _winLoseCanvasID = 0;
         private uint _victoryScreenID = 0;
@@ -68,6 +69,7 @@ namespace Eno
             try { _typingSfx     = GetNode<AudioNode>("Typing SFX");   } catch { }
             try { _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");   } catch { }
             try { _victoryScreenID = Bridge.GetNode("WinScreen");       } catch { }
+            _scrollAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
 
             if (_canvas != null) _canvas.active = false;
 
@@ -152,6 +154,7 @@ namespace Eno
             _active    = true;
             _skipE     = true;
             Scroll_Dialouge_Script.DialogueActive = true;
+            if (_scrollAudio != null) { _scrollAudio.sound = "Spellbook_Open_01"; _scrollAudio.play(); }
 
             if (_canvas      != null) _canvas.active = true;
             if (_narrativeSprite != null) _narrativeSprite.visible = false;

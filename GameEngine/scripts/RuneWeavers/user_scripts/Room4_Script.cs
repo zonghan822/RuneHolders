@@ -81,6 +81,7 @@ namespace Eno
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
+                if (_doorAudio != null) { _doorAudio.sound = "Spellbook_Open_01"; _doorAudio.play(); }
                 // Show F-to-open hint
                 if (_uiInfoID != 0)
                 {

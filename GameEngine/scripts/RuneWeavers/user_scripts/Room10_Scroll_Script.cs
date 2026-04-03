@@ -9,6 +9,7 @@ namespace Eno
         public static bool Shown = false;
         private bool _open  = false;
         private bool _skipE = false;
+        private AudioNode? _scrollAudio = null;
 
         public void Begin()
         {
@@ -18,6 +19,7 @@ namespace Eno
             Shown  = false;
             _open  = false;
             _skipE = false;
+            _scrollAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public void Update()
@@ -52,6 +54,7 @@ namespace Eno
             Scroll_Dialouge_Script.DialogueActive = true;
             if (_narrative != null) { _narrative.texture = "UI-Narrative-3"; _narrative.visible = true; }
             if (_canvas    != null) _canvas.active = true;
+            if (_scrollAudio != null) { _scrollAudio.sound = "Spellbook_Open_01"; _scrollAudio.play(); }
         }
 
         private void Close()
