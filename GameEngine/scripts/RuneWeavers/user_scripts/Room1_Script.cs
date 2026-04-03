@@ -12,6 +12,7 @@ namespace Eno
         private bool  _postDialogueActivated = false;
         private bool  _scrollPickedUp        = false;
         private float _uiInfoTimer           = 0f;
+        private AudioNode? _doorAudio        = null;
 
         public void Begin()
         {
@@ -24,6 +25,7 @@ namespace Eno
             _postDialogueActivated = false;
             _scrollPickedUp        = false;
             _uiInfoTimer           = 0f;
+            _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
 
             // Room 1 has no enemies — hide the enemy popup and clear its textures
             uint popupID   = Bridge.GetNode("EnemyInfoPopUp");
@@ -83,8 +85,13 @@ namespace Eno
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
+                if (_doorAudio != null) { _doorAudio.sound = "Spellbook_Open_01"; _doorAudio.play(); }
                 if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-1Spell");
-                if (_exitDoorID  != 0) Bridge.ChangeState(_exitDoorID, "Unlocking");
+                if (_exitDoorID  != 0)
+                {
+                    Bridge.ChangeState(_exitDoorID, "Unlocking");
+                    if (_doorAudio != null) { _doorAudio.sound = "Door_Open_02"; _doorAudio.play(); }
+                }
             }
         }
     }

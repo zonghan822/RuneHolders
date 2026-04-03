@@ -27,12 +27,16 @@ namespace Eno
         private float     _deathTimer   = 0f;
         private float     _deathDuration = 1.0f;
 
-        public float footstepVolume = 70f;
-
-        private Node2D?[]  _scrollNodes     = Array.Empty<Node2D?>();
-        private AudioNode? _footstepAudio   = null;
-        private uint       _winLoseCanvasID = 0;
-        private uint       _defeatScreenID  = 0;
+        public         private Node2D?[]  _scrollNodes      = Array.Empty<Node2D?>();
+        private AudioNode? _footstepAudio    = null;
+        private AudioNode? _playerVoAudio    = null;
+        private Random     _rng              = new Random();
+        private float      _footstepTimer    = 0f;
+        private const float FOOTSTEP_INTERVAL  = 0.375f;
+        private const int   HURT_SOUND_COUNT   = 15;
+        private const int   DEATH_SOUND_COUNT  = 2;
+        private uint       _winLoseCanvasID  = 0;
+        private uint       _defeatScreenID   = 0;
 
         // Forwards to PauseManager so other scripts can keep using PlayerController.IsGamePaused
         public static bool IsGamePaused => PauseManager.IsGamePaused;
@@ -65,6 +69,8 @@ namespace Eno
                 _footstepAudio.volume = footstepVolume;
                 _footstepAudio.spatialAudio = true;
             }
+
+            _playerVoAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
 
             _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");
             _defeatScreenID  = Bridge.GetNode("DefeatScreen");
@@ -178,11 +184,8 @@ namespace Eno
         public void Walk_enter()
         {
             _player.setAnimationLooping(true);
-            if (_footstepAudio != null)
-            {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
-            }
+            _footstepTimer = FOOTSTEP_INTERVAL; // fire immediately on first step
+            PlayFootstep();
         }
 
         public void Walk_update()
@@ -194,14 +197,19 @@ namespace Eno
             }
             if (!IsMoving()) { _player.changeState("Idle"); return; }
 
-            if (_footstepAudio != null && !_footstepAudio.isPlaying)
+            _footstepTimer += Time.deltaTime;
+            if (_footstepTimer >= FOOTSTEP_INTERVAL)
             {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+                _footstepTimer = 0f;
+                PlayFootstep();
             }
         }
 
-        public void Walk_exit() { _footstepAudio?.stop(); }
+        public void Walk_exit()
+        {
+            _footstepAudio?.stop();
+            _footstepTimer = 0f;
+        }
 
         public void Cast_enter()
         {
@@ -217,24 +225,31 @@ namespace Eno
         public void CastWalk_enter()
         {
             _player.setAnimationLooping(true);
-            if (_footstepAudio != null)
-            {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
-            }
+            _footstepTimer = FOOTSTEP_INTERVAL; // fire immediately on first step
+            PlayFootstep();
         }
 
         public void CastWalk_update()
         {
-            if (!IsMoving()) { _player.changeState("Cast"); return; }
-            if (_footstepAudio != null && !_footstepAudio.isPlaying)
+            if (!IsMoving())
             {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+                _player.changeState("Cast");
+                return;
+            }
+
+            _footstepTimer += Time.deltaTime;
+            if (_footstepTimer >= FOOTSTEP_INTERVAL)
+            {
+                _footstepTimer = 0f;
+                PlayFootstep();
             }
         }
 
-        public void CastWalk_exit() { _footstepAudio?.stop(); }
+        public void CastWalk_exit()
+        {
+            _footstepAudio?.stop();
+            _footstepTimer = 0f;
+        }
 
         public void Attack_enter()
         {
@@ -264,6 +279,11 @@ namespace Eno
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(hurtDuration / frames);
             Input.setGamepadRumble(0.5f, 0.5f);
+            if (_playerVoAudio != null)
+            {
+                _playerVoAudio.sound = "Player_VO_Hurt_" + _rng.Next(1, HURT_SOUND_COUNT + 1).ToString("D2");
+                _playerVoAudio.play();
+            }
         }
 
         public void Hurt_update()
@@ -289,6 +309,11 @@ namespace Eno
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(_deathDuration / frames);
             Input.setGamepadRumble(1.0f, 1.0f);
+            if (_playerVoAudio != null)
+            {
+                _playerVoAudio.sound = "Player_Death_TEMP_" + _rng.Next(1, DEATH_SOUND_COUNT + 1).ToString("D2");
+                _playerVoAudio.play();
+            }
         }
 
         public void Death_update()
@@ -299,6 +324,11 @@ namespace Eno
             if (_deathTimer >= _deathDuration)
             {
                 Input.setGamepadRumble(0f, 0f);
+                IsGameCompleted = true;
+                BGMforLevel1_Script.StopAllBGM();
+                SlugBase_Script.StopAllWalkAudio();
+                NullflyBase_Script.StopAllAudio();
+                BatBase_Script.StopAllAudio();
                 if (_winLoseCanvasID != 0)
                 {
                     Bridge.SetCanvasActive(_winLoseCanvasID, true);
@@ -325,10 +355,38 @@ namespace Eno
             }
         }
 
+        private void PlayFootstep()
+        {
+            if (_footstepAudio == null) return;
+            _footstepAudio.sound = "Footsteps-" + _rng.Next(1, 9);
+            _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+        }
+
         private bool IsMoving()
         {
             if (Input.isKeyHeld(KeyCode.W) || Input.isKeyHeld(KeyCode.S) ||
                 Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D))
+                return true;
+
+            if (Input.inputMode == InputMode.Controller)
+            {
+                Vector2 stick = Input.getLeftStick(0.2f);
+                return stick.x != 0f || stick.y != 0f;
+            }
+            return false;
+        }
+
+		public void _when_spellbookbackbutton_onclick()
+        {
+
+        }
+
+		public void _when_spellbookbackbutton_onpressed()
+        {
+
+        }
+
+         Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D))
                 return true;
 
             if (Input.inputMode == InputMode.Controller)

@@ -1,9 +1,20 @@
 using System;
+using System.Collections.Generic;
 
 namespace Eno
 {
     public class BatBase_Script : ScriptBase
     {
+        private static List<BatBase_Script> _allInstances = new List<BatBase_Script>();
+        private static bool _gameEnded = false;
+
+        public static void StopAllAudio()
+        {
+            _gameEnded = true;
+            foreach (var inst in _allInstances)
+                inst._audio?.stop();
+        }
+
         public float chaseSpeed      = 120f;
         public float dashSpeed       = 240f;
         public float hurtDuration    = 0.3f;
@@ -85,8 +96,7 @@ namespace Eno
 
             // Audio node initialization
             _audio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
-
-                
+            _allInstances.Add(this);
         }
 
         public void Update()
@@ -277,7 +287,7 @@ namespace Eno
         {
             _timer = 0f;
 
-            if (_audio != null && _self != null)
+            if (!_gameEnded && _audio != null && _self != null)
             {
                 _audio.sound = WINDUP_SOUND;
                 _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
@@ -317,7 +327,7 @@ namespace Eno
             _chargedPixels = 0f;
             _dashReady     = false;
 
-            if (_audio != null && _self != null)
+            if (!_gameEnded && _audio != null && _self != null)
             {
                 _audio.sound = ATTACK_SOUND;
                 _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
@@ -371,10 +381,10 @@ namespace Eno
             _timer = 0f;
             if (_self != null) _self.velocity = new Vector2(0f, 0f);
 
-            if (_audio != null && _self != null)
+            if (!_gameEnded && _audio != null && _self != null)
             {
                 _audio.sound = HURT_SOUND;
-               _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
+                _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
             }
         }
         public void Hurt_update()
@@ -400,7 +410,7 @@ namespace Eno
             uint frames = _self.getAnimationFrameCount();
             if (frames > 0) _self.setAnimationFrameDuration(deathDuration / frames);
 
-            if (_audio != null)
+            if (!_gameEnded && _audio != null)
             {
                 _audio.sound = DEATH_SOUND;
                 _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
@@ -416,6 +426,7 @@ namespace Eno
             {
                 if (_rng.NextDouble() < dropChance)
                     SpawnPrefab(HEALTH_POTION_PREFAB, _self!.position.x, _self!.position.y);
+                _allInstances.Remove(this);
                 EnemyColorRegistry.Unregister(ID);
                 FreeNode(_self!);
             }

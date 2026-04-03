@@ -5,6 +5,17 @@ namespace Eno
 {
     public class SlugBase_Script : ScriptBase
     {
+        private static List<SlugBase_Script> _allInstances = new List<SlugBase_Script>();
+        private static bool _gameEnded = false;
+
+        // Called when win/defeat screen appears — silences all walk loops and prevents restart
+        public static void StopAllWalkAudio()
+        {
+            _gameEnded = true;
+            foreach (var inst in _allInstances)
+                inst._walkAudio?.stop();
+        }
+
         public float chaseSpeed          = 60f;
         public float pathRefreshInterval = 0.5f;
         public float hurtDuration        = 0.4f;
@@ -69,6 +80,7 @@ namespace Eno
         {
             _self = Self<Enemy>();
             if (_self == null) return;
+            _allInstances.Add(this);
             
             // Initialize Slug Values
             _self.useGravity    = false;
@@ -227,7 +239,7 @@ namespace Eno
 
         public void Chase_update()
         {
-            if (PlayerController.IsGamePaused) return;
+            if (PlayerController.IsGamePaused || _gameEnded) return;
             FindPlayer();
             if (_self == null || _player == null) return;
 
@@ -368,6 +380,7 @@ namespace Eno
             {
                 if (rng.NextDouble() < dropChance)
                     SpawnPrefab(HEALTH_POTION_PREFAB, _self!.position.x, _self!.position.y);
+                _allInstances.Remove(this);
                 EnemyColorRegistry.Unregister(ID);
                 FreeNode(_self!);
             }

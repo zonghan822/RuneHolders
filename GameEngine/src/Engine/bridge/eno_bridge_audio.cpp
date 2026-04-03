@@ -106,6 +106,21 @@ namespace Bridge
             gEngine->getAudioManager().togglePauseAllGroups(paused);
         }
 
+        ENGINE_API void __stdcall SetGroupPaused(const char* groupName, bool paused)
+        {
+            if (!gEngine) return;
+            try { gEngine->getAudioManager().setPauseGroup(std::string(groupName), paused); }
+            catch (...) {}
+        }
+
+        ENGINE_API void __stdcall SetAudioGroup(uint32_t sceneObjectID, const char* groupName)
+        {
+            auto* a = getAudio(sceneObjectID);
+            if (!a) return;
+            std::strncpy(a->audioMod_.chGroup_, groupName, sizeof(a->audioMod_.chGroup_) - 1);
+            a->audioMod_.chGroup_[sizeof(a->audioMod_.chGroup_) - 1] = '\0';
+        }
+
         ENGINE_API void __stdcall SetGroupVolume(const char* groupName, float volume)
         {
             if (!gEngine) return;

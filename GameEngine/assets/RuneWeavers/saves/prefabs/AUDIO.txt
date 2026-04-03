@@ -9,7 +9,7 @@
 			"type": "char256"
 		},
 		"Channel Group": {
-			"value": "Master",
+			"value": "SFX",
 			"type": "char32"
 		},
 		"Loop Mode": {
