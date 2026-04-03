@@ -2,7 +2,6 @@ namespace Eno
 {
     public class Room5_Script : ScriptBase
     {
-        private const float WaveDelay = 3f;
 
         private static Room5_Script? _instance;
         private static bool _popupActivated = false;
@@ -10,6 +9,7 @@ namespace Eno
         private int   _currentWave  = 0;  // 0 = none spawned yet
         private bool  _wavesStarted = false;
         private bool  _roomCleared  = false;
+        private const float WaveDelay = 5f;
         private float _waveTimer    = 0f;
         private float _lockRumbleTimer = 0f;
         private AudioNode? _doorAudio = null;
@@ -28,11 +28,14 @@ namespace Eno
 
         public static void StartWaves()
         {
+            if (_instance == null) return;
+            if (_instance._roomCleared) return;
+
             if (!_popupActivated)
             {
                 _popupActivated = true;
-                PlayerController.EnemyPopupKeyboardTexture   = "UI-EnemyPopUp-YellowBat";
-                PlayerController.EnemyPopupControllerTexture = "UI-EnemyPopUp-YellowBat-Controller";
+                EnemyInfoController.PopupKeyboardTexture   = "UI-EnemyPopUp-YellowBat";
+                EnemyInfoController.PopupControllerTexture = "UI-EnemyPopUp-YellowBat-Controller";
 
                 _instance._popupID = Bridge.GetNode("EnemyInfoPopUp");
                 if (_instance._popupID != 0 && _instance._popupID != uint.MaxValue)
@@ -54,15 +57,6 @@ namespace Eno
                     Input.setGamepadRumble(0f, 0f);
             }
 
-            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
-            {
-                _roomCleared = true;
-                BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door5to6");
-                UnlockDoor("Door5to4");
-                UnlockDoor("Door5to5A");
-            }
-
             if (_popupID != 0 && _popupID != uint.MaxValue)
             {
                 string icon = Input.inputMode == InputMode.Controller
@@ -73,25 +67,21 @@ namespace Eno
 
             if (!_wavesStarted || _roomCleared) return;
 
-            if (_currentWave < 2)
-            {
-                _waveTimer += Time.deltaTime;
-                if (_waveTimer >= WaveDelay)
-                {
-                    _waveTimer = 0f;
-                    SpawnWave(_currentWave + 1);
-                }
-                return; // don't check clear until all waves out
-            }
+            _waveTimer += Time.deltaTime;
 
-            // All waves spawned — wait for enemies to die
-            if (GetAllEnemies().Count == 0)
+            if (GetAllEnemies().Count == 0 || _waveTimer >= WaveDelay)
             {
-                _roomCleared = true;
-                BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door5to6");
-                UnlockDoor("Door5to4");
-                UnlockDoor("Door5to5A");
+                _waveTimer = 0f;
+                if (_currentWave < 2)
+                    SpawnWave(_currentWave + 1);
+                else
+                {
+                    _roomCleared = true;
+                    BGMforLevel1_Script.SetLayer2Combat(false);
+                    UnlockDoor("Door5to6");
+                    UnlockDoor("Door5to4");
+                    UnlockDoor("Door5to5A");
+                }
             }
         }
 

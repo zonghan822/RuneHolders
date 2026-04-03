@@ -98,6 +98,7 @@ namespace Eno
             {
                 if (_damagedEnemies.Contains(enemy.ID)) continue;
                 if (!self.isColliding(enemy)) continue;
+                if (enemy.currentState == "Prespawn") continue;
 
                 if (!EnemyColorRegistry.Colors.TryGetValue(enemy.ID, out int color)) continue;
                 if (color != SpellType) continue;

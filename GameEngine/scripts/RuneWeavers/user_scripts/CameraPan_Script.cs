@@ -35,6 +35,8 @@ namespace Eno
 
         public void Update()
         {
+            if (PauseManager.IsMenuPaused) return;
+
             switch (_state)
             {
                 case State.Waiting: Waiting(); break;

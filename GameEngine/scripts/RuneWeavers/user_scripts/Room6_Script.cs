@@ -2,13 +2,13 @@ namespace Eno
 {
     public class Room6_Script : ScriptBase
     {
-        private const float WaveDelay = 3f;
 
         private static Room6_Script? _instance;
 
         private int   _currentWave  = 0;
         private bool  _wavesStarted = false;
         private bool  _roomCleared  = false;
+        private const float WaveDelay = 5f;
         private float _waveTimer    = 0f;
         private float _lockRumbleTimer = 0f;
         private AudioNode? _doorAudio = null;
@@ -26,6 +26,7 @@ namespace Eno
         public static void StartWaves()
         {
             if (_instance == null) return;
+            if (_instance._roomCleared) return;
 
             _instance.SpawnWave(1);
         }
@@ -39,33 +40,27 @@ namespace Eno
                     Input.setGamepadRumble(0f, 0f);
             }
 
-            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
-            {
-                _roomCleared = true;
-                BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door6to7");
-                UnlockDoor("Door6to5");
-            }
-
             if (!_wavesStarted || _roomCleared) return;
 
-            if (_currentWave < 2)
-            {
-                _waveTimer += Time.deltaTime;
-                if (_waveTimer >= WaveDelay)
-                {
-                    _waveTimer = 0f;
-                    SpawnWave(_currentWave + 1);
-                }
-                return;
-            }
+            _waveTimer += Time.deltaTime;
 
             if (GetAllEnemies().Count == 0)
             {
-                _roomCleared = true;
-                BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door6to7");
-                UnlockDoor("Door6to5");
+                _waveTimer = 0f;
+                if (_currentWave < 2)
+                    SpawnWave(_currentWave + 1);
+                else
+                {
+                    _roomCleared = true;
+                    BGMforLevel1_Script.SetLayer2Combat(false);
+                    UnlockDoor("Door6to7");
+                    UnlockDoor("Door6to5");
+                }
+            }
+            else if (_waveTimer >= WaveDelay && _currentWave < 2)
+            {
+                _waveTimer = 0f;
+                SpawnWave(_currentWave + 1);
             }
         }
 

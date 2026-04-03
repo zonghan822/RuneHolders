@@ -2,15 +2,15 @@ namespace Eno
 {
     public class Room3_Script : ScriptBase
     {
-        private const float Wave2Delay = 3f;
+        private const float WaveDelay = 5f;
 
         private static Room3_Script? _instance;
         private static bool _popupActivated = false;
 
+        private int   _currentWave  = 0;
         private bool  _wavesStarted = false;
-        private bool  _wave2Spawned = false;
         private bool  _roomCleared  = false;
-        private float _wave2Timer   = 0f;
+        private float _waveTimer    = 0f;
 
         private float _lockRumbleTimer = 0f;
         private AudioNode? _doorAudio = null;
@@ -20,22 +20,23 @@ namespace Eno
         {
             _instance       = this;
             _popupActivated = false;
+            _currentWave    = 0;
             _wavesStarted   = false;
-            _wave2Spawned   = false;
             _roomCleared    = false;
-            _wave2Timer     = 0f;
+            _waveTimer      = 0f;
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public static void StartWaves()
         {
             if (_instance == null) return;
+            if (_instance._roomCleared) return;
 
             if (!_popupActivated)
             {
                 _popupActivated = true;
-                PlayerController.EnemyPopupKeyboardTexture   = "UI-EnemyPopUp-LavaSlug";
-                PlayerController.EnemyPopupControllerTexture = "UI-EnemyPopUp-Slug-Controller";
+                EnemyInfoController.PopupKeyboardTexture   = "UI-EnemyPopUp-LavaSlug";
+                EnemyInfoController.PopupControllerTexture = "UI-EnemyPopUp-Slug-Controller";
 
                 _instance._popupID = Bridge.GetNode("EnemyInfoPopUp");
                 if (_instance._popupID != 0 && _instance._popupID != uint.MaxValue)
@@ -45,7 +46,7 @@ namespace Eno
                 }
             }
 
-            _instance.SpawnWave1();
+            _instance.SpawnWave(1);
         }
 
         public void Update()
@@ -55,16 +56,6 @@ namespace Eno
                 _lockRumbleTimer -= Time.deltaTime;
                 if (_lockRumbleTimer <= 0f)
                     Input.setGamepadRumble(0f, 0f);
-            }
-
-            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
-            {
-                _roomCleared = true;
-                BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door3to4");
-                UnlockDoor("Door4to3");
-                UnlockDoor("Door3to2");
-                UnlockDoor("Door2to3");
             }
 
             if (_popupID != 0 && _popupID != uint.MaxValue)
@@ -77,43 +68,54 @@ namespace Eno
 
             if (!_wavesStarted || _roomCleared) return;
 
-            if (!_wave2Spawned)
-            {
-                _wave2Timer += Time.deltaTime;
-                if (_wave2Timer >= Wave2Delay)
-                {
-                    _wave2Spawned = true;
-                    SpawnWave2();
-                }
-                return;
-            }
+            _waveTimer += Time.deltaTime;
 
             if (GetAllEnemies().Count == 0)
             {
-                _roomCleared = true;
-                BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door3to4");
-                UnlockDoor("Door4to3");
-                UnlockDoor("Door3to2");
-                UnlockDoor("Door2to3");
+                _waveTimer = 0f;
+                if (_currentWave < 2)
+                    SpawnWave(_currentWave + 1);
+                else
+                {
+                    _roomCleared = true;
+                    BGMforLevel1_Script.SetLayer2Combat(false);
+                    UnlockDoor("Door3to4");
+                    UnlockDoor("Door4to3");
+                    UnlockDoor("Door3to2");
+                    UnlockDoor("Door2to3");
+                }
+            }
+            else if (_waveTimer >= WaveDelay && _currentWave < 2)
+            {
+                _waveTimer = 0f;
+                SpawnWave(_currentWave + 1);
             }
         }
 
-        private void SpawnWave1()
+        private void SpawnWave(int wave)
         {
-            _wavesStarted = true;
-            BGMforLevel1_Script.SetLayer2Combat(true);
-            LockDoor("Door2to3");
-            LockDoor("Door3to2");
-            LockDoor("Door3to4");
-            LockDoor("Door4to3");
-            SpawnPrefab("SlugRed", 960f, -2850f);
-        }
+            if (!_wavesStarted)
+            {
+                _wavesStarted = true;
+                BGMforLevel1_Script.SetLayer2Combat(true);
+                LockDoor("Door2to3");
+                LockDoor("Door3to2");
+                LockDoor("Door3to4");
+                LockDoor("Door4to3");
+            }
 
-        private void SpawnWave2()
-        {
-            SpawnPrefab("SlugRed",  500f, -2635f);
-            SpawnPrefab("SlugRed", 1418f, -2769f);
+            _currentWave = wave;
+
+            switch (wave)
+            {
+                case 1:
+                    SpawnPrefab("SlugRed", 960f, -2850f);
+                    break;
+                case 2:
+                    SpawnPrefab("SlugRed",  500f, -2635f);
+                    SpawnPrefab("SlugRed", 1418f, -2769f);
+                    break;
+            }
         }
 
         private void LockDoor(string name)

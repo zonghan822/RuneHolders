@@ -34,6 +34,13 @@ namespace Eno
             _prevController = Input.inputMode == InputMode.Controller;
             if (_scrollPopUpID != 0) Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
 
+            // // Room 1 has no enemies — hide the enemy popup and clear its textures
+            // uint popupID   = Bridge.GetNode("EnemyInfoPopUp");
+            // uint popupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
+            // if (popupID   != 0 && popupID   != uint.MaxValue) Bridge.SetVisibility(popupID,   false);
+            // if (popupBgID != 0 && popupBgID != uint.MaxValue) Bridge.SetVisibility(popupBgID, false);
+            // EnemyInfoController.PopupKeyboardTexture   = "";
+            // EnemyInfoController.PopupControllerTexture = "";
         }
 
         public void Update()

@@ -2,14 +2,14 @@ namespace Eno
 {
     public class Room12_Script : ScriptBase
     {
-        private const float WaveDelay = 10f;
 
         private static Room12_Script? _instance;
 
-        private int _currentWave = 0;  // 0 = none spawned yet
-        private bool _wavesStarted = false;
-        private bool _roomCleared = false;
-        private float _waveTimer = 0f;
+        private const float WaveDelay  = 5f;
+        private int   _currentWave  = 0;
+        private bool  _wavesStarted = false;
+        private bool  _roomCleared  = false;
+        private float _waveTimer    = 0f;
         private AudioNode? _doorAudio = null;
 
         public void Begin()
@@ -24,37 +24,33 @@ namespace Eno
 
         public static void StartWaves()
         {
-            _instance?.SpawnWave(1);
+            if (_instance == null) return;
+            if (_instance._roomCleared) return;
+            _instance.SpawnWave(1);
         }
 
         public void Update()
         {
-            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
-            {
-                _roomCleared = true;
-                UnlockDoor("Door12to11");
-                UnlockDoor("Door12to13");
-            }
-
             if (!_wavesStarted || _roomCleared) return;
 
-            if (_currentWave < 2)
-            {
-                _waveTimer += Time.deltaTime;
-                if (_waveTimer >= WaveDelay)
-                {
-                    _waveTimer = 0f;
-                    SpawnWave(_currentWave + 1);
-                }
-                return; // don't check clear until all waves out
-            }
+            _waveTimer += Time.deltaTime;
 
-            // All waves spawned � wait for enemies to die
             if (GetAllEnemies().Count == 0)
             {
-                _roomCleared = true;
-                UnlockDoor("Door12to11");
-                UnlockDoor("Door12to13");
+                _waveTimer = 0f;
+                if (_currentWave < 2)
+                    SpawnWave(_currentWave + 1);
+                else
+                {
+                    _roomCleared = true;
+                    UnlockDoor("Door12to11");
+                    UnlockDoor("Door12to13");
+                }
+            }
+            else if (_waveTimer >= WaveDelay && _currentWave < 2)
+            {
+                _waveTimer = 0f;
+                SpawnWave(_currentWave + 1);
             }
         }
 
@@ -80,7 +76,7 @@ namespace Eno
                     break;
                 case 2:
                     NullflyBlue_Script.PendingRuneIndex = 1; // ban E
-                    SpawnPrefab("NullflyBlue", 8105f, -6002f);
+                    SpawnPrefab("NullflyBlue", 8105f, -7002f);
                     NullflyBlue_Script.PendingRuneIndex = 2; // ban SE
                     SpawnPrefab("NullflyBlue", 9176f, -7218f);
                     SpawnPrefab("SlugRed", 8953f, -6821f);

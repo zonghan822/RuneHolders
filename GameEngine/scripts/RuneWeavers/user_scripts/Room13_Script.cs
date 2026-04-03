@@ -2,14 +2,14 @@ namespace Eno
 {
     public class Room13_Script : ScriptBase
     {
-        private const float WaveDelay = 10f;
 
         private static Room13_Script? _instance;
 
-        private int _currentWave = 0;  // 0 = none spawned yet
-        private bool _wavesStarted = false;
-        private bool _roomCleared = false;
-        private float _waveTimer = 0f;
+        private const float WaveDelay  = 5f;
+        private int   _currentWave  = 0;
+        private bool  _wavesStarted = false;
+        private bool  _roomCleared  = false;
+        private float _waveTimer    = 0f;
         private AudioNode? _doorAudio = null;
 
         public void Begin()
@@ -24,41 +24,22 @@ namespace Eno
 
         public static void StartWaves()
         {
-            _instance?.SpawnWave(1);
+            if (_instance == null) return;
+            if (_instance._roomCleared) return;
+            _instance.SpawnWave(1);
         }
 
         public void Update()
         {
-            if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
-            {
-                _roomCleared = true;
-                UnlockDoor("Door5to6");
-                UnlockDoor("Door5to4");
-                UnlockDoor("Door4to5");
-                UnlockDoor("Door5to5A");
-            }
-
             if (!_wavesStarted || _roomCleared) return;
 
-            if (_currentWave < 1)
-            {
-                _waveTimer += Time.deltaTime;
-                if (_waveTimer >= WaveDelay)
-                {
-                    _waveTimer = 0f;
-                    SpawnWave(_currentWave + 1);
-                }
-                return; // don't check clear until all waves out
-            }
+            _waveTimer += Time.deltaTime;
 
-            // All waves spawned � wait for enemies to die
             if (GetAllEnemies().Count == 0)
             {
                 _roomCleared = true;
-                UnlockDoor("Door5to6");
-                UnlockDoor("Door5to4");
-                UnlockDoor("Door4to5");
-                UnlockDoor("Door5to5A");
+                UnlockDoor("Door13to12");
+                UnlockDoor("Door13to14");
             }
         }
 
@@ -67,9 +48,8 @@ namespace Eno
             if (!_wavesStarted)
             {
                 _wavesStarted = true;
-                LockDoor("Door4to5");
-                LockDoor("Door5to4");
-                LockDoor("Door5to6");
+                LockDoor("Door13to12");
+                LockDoor("Door13to14");
             }
 
             _currentWave = wave;

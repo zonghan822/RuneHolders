@@ -13,6 +13,7 @@ namespace Eno
         private bool  _scrollPickedUp        = false;
         private bool  _wavesStarted          = false;
         private bool  _roomCleared           = false;
+        private bool  _wasEverCleared        = false;
 
         private uint  _uiInfoID       = 0;
         private float _uiInfoTimer    = 0f;
@@ -39,6 +40,7 @@ namespace Eno
             _scrollPickedUp        = false;
             _wavesStarted          = false;
             _roomCleared           = false;
+            _wasEverCleared        = false;
             _uiInfoTimer           = 0f;
             DummyBlue_Script.WasHit = false;
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
@@ -46,7 +48,9 @@ namespace Eno
 
         public static void StartWaves()
         {
-            _instance?.SpawnWave1();
+            if (_instance == null) return;
+            DummyBlue_Script.WasHit = false;
+            _instance.SpawnWave1();
         }
 
         public static void CleanupDummies()
@@ -81,9 +85,10 @@ namespace Eno
             }
 
             // Check dummy clear condition
-            if (_wavesStarted && !_roomCleared && DummyBlue_Script.WasHit)
+            if (_wavesStarted && !_roomCleared && (DummyBlue_Script.WasHit || GetAllEnemies().Count == 0))
             {
-                _roomCleared = true;
+                _roomCleared    = true;
+                _wasEverCleared = true;
                 BGMforLevel1_Script.SetLayer2Combat(false);
                 UnlockDoor("Door8to7");
                 UnlockDoor("Door8to9");
@@ -122,12 +127,16 @@ namespace Eno
         private void SpawnWave1()
         {
             _wavesStarted = true;
-            BGMforLevel1_Script.SetLayer2Combat(true);
-            LockDoor("Door8to7");
-            LockDoor("Door8to9");
-            SpawnPrefab("DummyRed", 6570f, -4750f);
+            if (!_wasEverCleared)
+            {
+                BGMforLevel1_Script.SetLayer2Combat(true);
+                LockDoor("Door8to7");
+                LockDoor("Door8to9");
+            }
+            _roomCleared = false;
+            SpawnPrefab("DummyRed",    6570f, -4750f);
             SpawnPrefab("DummyYellow", 6890f, -4750f);
-            SpawnPrefab("DummyBlue", 6730f, -4640f);
+            SpawnPrefab("DummyBlue",   6730f, -4640f);
         }
 
         private void LockDoor(string name)

@@ -39,6 +39,16 @@ namespace Eno
             float wx = Input.mouseWorldPosition.x;
             float wy = Input.mouseWorldPosition.y;
 
+            if (PauseManager.PauseMenuOpen)
+            {
+                // Keep prev values in sync so there's no jump when unpausing
+                _prevScreenX = sx;
+                _prevScreenY = sy;
+                _prevWorldX  = wx;
+                _prevWorldY  = wy;
+                return;
+            }
+
             if (sx != _prevScreenX || sy != _prevScreenY)
             {
                 // Mouse physically moved — cursor follows mouse

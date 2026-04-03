@@ -9,9 +9,10 @@ namespace Eno
         private uint _spellbookID = 0;
         private uint _exitDoorID  = 0;
 
-        private bool  _scrollPickedUp = false;
-        private bool  _wavesStarted   = false;
-        private bool  _roomCleared    = false;
+        private bool  _scrollPickedUp  = false;
+        private bool  _wavesStarted    = false;
+        private bool  _roomCleared     = false;
+        private bool  _wasEverCleared  = false;
 
         private uint  _uiInfoID       = 0;
         private float _uiInfoTimer    = 0f;
@@ -38,6 +39,7 @@ namespace Eno
             _scrollPickedUp = false;
             _wavesStarted   = false;
             _roomCleared    = false;
+            _wasEverCleared  = false;
             _uiInfoTimer    = 0f;
             _tutorialStage  = 0;
             DummyYellow_Script.WasHit = false;
@@ -47,7 +49,9 @@ namespace Eno
 
         public static void StartWaves()
         {
-            _instance?.SpawnWave1();
+            if (_instance == null) return;
+            DummyYellow_Script.WasHit = false;
+            _instance.SpawnWave1();
         }
 
         public static void CleanupDummies()
@@ -76,9 +80,10 @@ namespace Eno
             UpdateTutorialUI();
 
             // Check dummy clear condition
-            if (_wavesStarted && !_roomCleared && DummyYellow_Script.WasHit)
+            if (_wavesStarted && !_roomCleared && (DummyYellow_Script.WasHit || GetAllEnemies().Count == 0))
             {
-                _roomCleared = true;
+                _roomCleared    = true;
+                _wasEverCleared = true;
                 UnlockDoor("Door4to3");
                 UnlockDoor("Door4to5");
             }
@@ -112,12 +117,12 @@ namespace Eno
             switch (_tutorialStage)
             {
                 case 1:
-                    if (PlayerController.SpellbookOpen)
+                    if (!PauseManager.SpellbookOpen)
                         _tutorialStage = 2;
                     break;
 
                 case 2:
-                    if (!PlayerController.SpellbookOpen)
+                    if (PauseManager.SpellbookOpen)
                     {
                         if (_uiInfoID != 0)
                             Bridge.SetTexturePathAndResize(_uiInfoID, "Text-SpellcastingTutorial4");
@@ -150,9 +155,13 @@ namespace Eno
         private void SpawnWave1()
         {
             _wavesStarted = true;
-            LockDoor("Door4to3");
-            LockDoor("Door4to5");
-            SpawnPrefab("DummyRed",  830f, -3700f);
+            if (!_wasEverCleared)
+            {
+                LockDoor("Door4to3");
+                LockDoor("Door4to5");
+            }
+            _roomCleared = false;
+            SpawnPrefab("DummyRed",    830f, -3700f);
             SpawnPrefab("DummyYellow", 1080f, -3700f);
         }
 
