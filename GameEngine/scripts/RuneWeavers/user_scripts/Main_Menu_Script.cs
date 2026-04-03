@@ -49,8 +49,9 @@ namespace Eno
         private bool _stickUp    = false;
         private bool _stickDown  = false;
 
-        // Hover audio
+        // Hover / click audio
         private AudioNode? _hoverAudio          = null;
+        private AudioNode? _clickAudio          = null;
         private string     _hoveredButtonName    = "";
         private string     _prevHoveredButtonName = "";
 
@@ -59,6 +60,14 @@ namespace Eno
         public void Begin()
         {
             _hoverAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            _clickAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+        }
+
+        private void PlayClickSound()
+        {
+            if (_clickAudio == null) return;
+            _clickAudio.sound = "UI_Select_Small 1";
+            _clickAudio.play();
         }
 
         public void Update()
@@ -452,9 +461,9 @@ namespace Eno
 
 		public void _when_control_button_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("Control Button"), "UI-Controls");
             _selected = MenuButton.None;
-            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             uint controlMenuID = Bridge.GetNode("Controls Menu");
             Bridge.SetCanvasActive(controlMenuID, true);
             SetChildButtonsActive(controlMenuID, true);
@@ -469,9 +478,9 @@ namespace Eno
 
 		public void _when_quit_button_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("Quit Button"), "UI-Quit");
             _selected = MenuButton.None;
-            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             uint quitMenuID = Bridge.GetNode("Quit Game Menu");
             Bridge.SetCanvasActive(quitMenuID, true);
             SetChildButtonsActive(quitMenuID, true);
@@ -489,8 +498,8 @@ namespace Eno
 
 		public void _when_control_menu_back_button_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("Control Menu Back Button"), "UI-Back");
-            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             uint controlMenuID = Bridge.GetNode("Controls Menu");
             Bridge.SetCanvasActive(controlMenuID, false);
             SetChildButtonsActive(controlMenuID, false);
@@ -507,8 +516,8 @@ namespace Eno
 
 		public void _when_quit_menu_yes_button_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("Quit Menu Yes Button"), "UI-Yes");
-            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             uint quitMenuID = Bridge.GetNode("Quit Game Menu");
             Bridge.SetCanvasActive(quitMenuID, false);
             SetChildButtonsActive(quitMenuID, false);
@@ -524,8 +533,8 @@ namespace Eno
 
 		public void _when_quit_menu_no_button_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("Quit Menu No Button"), "UI-No");
-            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             uint quitMenuID = Bridge.GetNode("Quit Game Menu");
             Bridge.SetCanvasActive(quitMenuID, false);
             SetChildButtonsActive(quitMenuID, false);
@@ -541,9 +550,9 @@ namespace Eno
 
 		public void _when_settings_button_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("Settings Button"), "UI-Settings");
             _selected = MenuButton.None;
-            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
             uint settingMenuID = Bridge.GetNode("Settings Menu");
             Bridge.SetCanvasActive(settingMenuID, true);
             SetChildButtonsActive(settingMenuID, true);
@@ -576,7 +585,7 @@ namespace Eno
 
 		public void _when_settings_menu_back_button_onclick()
         {
-            try { Bridge.AudioPlay(Bridge.GetNode("sfxSoundPressE")); } catch (Exception) {}
+            PlayClickSound();
             uint settingMenuID = Bridge.GetNode("Settings Menu");
             Bridge.SetCanvasActive(settingMenuID, false);
             SetChildButtonsActive(settingMenuID, false);
