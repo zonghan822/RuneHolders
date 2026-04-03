@@ -1588,13 +1588,13 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 96 }
-				"Frame Height": <int> { 96 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 56 }
+				"Frame Height": <int> { 56 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 1 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 1 }
+				"Animation Count": <int> { 2 }
 				"Current Animation": <char64> { Default }
 				"Anim0 Name": <char64> { Default }
 				"Anim0 Texture": <texchar240> { UI-AudioBall }
@@ -1604,6 +1604,14 @@
 				"Anim0 Cols": <int> { 0 }
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { selected }
+				"Anim1 Texture": <texchar240> { UI-AudioBall-Selected }
+				"Anim1 FrameW": <int> { 56 }
+				"Anim1 FrameH": <int> { 56 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::HealthComponent]
@@ -1627,13 +1635,17 @@
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 1 }
+				"NumStates": <int> { 2 }
 				"CurrentState": <char32> { Default }
 				"TimeInState": <float> { 0 }
 				"State[0].name": <char32> { Default }
 				"State[0].onEnter": <char64> { Default_enter }
 				"State[0].onUpdate": <char64> { Default_update }
 				"State[0].onExit": <char64> { Default_exit }
+				"State[1].name": <char32> { selected }
+				"State[1].onEnter": <char64> { selected_enter }
+				"State[1].onUpdate": <char64> { selected_update }
+				"State[1].onExit": <char64> { selected_exit }
 			}
 		}
 		"Script": { AudioSettings_Script.cs }
@@ -1710,13 +1722,13 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 96 }
-				"Frame Height": <int> { 96 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 56 }
+				"Frame Height": <int> { 56 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 1 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 1 }
+				"Animation Count": <int> { 2 }
 				"Current Animation": <char64> { Default }
 				"Anim0 Name": <char64> { Default }
 				"Anim0 Texture": <texchar240> { UI-AudioBall }
@@ -1726,6 +1738,14 @@
 				"Anim0 Cols": <int> { 0 }
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { selected }
+				"Anim1 Texture": <texchar240> { UI-AudioBall-Selected }
+				"Anim1 FrameW": <int> { 56 }
+				"Anim1 FrameH": <int> { 56 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::HealthComponent]
@@ -1749,13 +1769,17 @@
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 1 }
+				"NumStates": <int> { 2 }
 				"CurrentState": <char32> { Default }
 				"TimeInState": <float> { 0 }
 				"State[0].name": <char32> { Default }
 				"State[0].onEnter": <char64> { Default_enter }
 				"State[0].onUpdate": <char64> { Default_update }
 				"State[0].onExit": <char64> { Default_exit }
+				"State[1].name": <char32> { selected }
+				"State[1].onEnter": <char64> { selected_enter }
+				"State[1].onUpdate": <char64> { selected_update }
+				"State[1].onExit": <char64> { selected_exit }
 			}
 		}
 		"Script": { AudioSettings_Script.cs }
@@ -1832,13 +1856,13 @@
 
 			[struct ECSComponents::AnimationControllerComponent]
 			{
-				"Frame Width": <int> { 96 }
-				"Frame Height": <int> { 96 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
+				"Frame Width": <int> { 56 }
+				"Frame Height": <int> { 56 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 1 }
 				"Frame Duration": <float> { 0.1 }
 				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 1 }
+				"Animation Count": <int> { 2 }
 				"Current Animation": <char64> { Default }
 				"Anim0 Name": <char64> { Default }
 				"Anim0 Texture": <texchar240> { UI-AudioBall }
@@ -1848,6 +1872,14 @@
 				"Anim0 Cols": <int> { 0 }
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
+				"Anim1 Name": <char64> { selected }
+				"Anim1 Texture": <texchar240> { UI-AudioBall-Selected }
+				"Anim1 FrameW": <int> { 56 }
+				"Anim1 FrameH": <int> { 56 }
+				"Anim1 Rows": <int> { 1 }
+				"Anim1 Cols": <int> { 1 }
+				"Anim1 Duration": <float> { 0.1 }
+				"Anim1 Looping": <bool> { 1 }
 			}
 
 			[struct ECSComponents::HealthComponent]
@@ -1871,13 +1903,17 @@
 
 			[struct ECSComponents::StateMachineComponent]
 			{
-				"NumStates": <int> { 1 }
+				"NumStates": <int> { 2 }
 				"CurrentState": <char32> { Default }
 				"TimeInState": <float> { 0 }
 				"State[0].name": <char32> { Default }
 				"State[0].onEnter": <char64> { Default_enter }
 				"State[0].onUpdate": <char64> { Default_update }
 				"State[0].onExit": <char64> { Default_exit }
+				"State[1].name": <char32> { selected }
+				"State[1].onEnter": <char64> { selected_enter }
+				"State[1].onUpdate": <char64> { selected_update }
+				"State[1].onExit": <char64> { selected_exit }
 			}
 		}
 		"Script": { AudioSettings_Script.cs }

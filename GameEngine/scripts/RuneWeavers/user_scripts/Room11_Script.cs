@@ -94,7 +94,7 @@ namespace Eno
                     NullflyBlue_Script.PendingRuneIndex = 1; // ban E
                     SpawnPrefab("NullflyBlue", 8219f, -5995f);
                     SpawnPrefab("SlugRed", 8481f, -6128f);
-                    SpawnPrefab("SlugRed", 8863f, -6865f);
+                    SpawnPrefab("SlugRed", 8863f, -6127f);
                     SpawnPrefab("BatYellow", 8635f, -5781f);
                     break;
             }

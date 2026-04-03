@@ -98,20 +98,25 @@ namespace Eno
 
             if (Input.isMousePressed(0))
             {
-                if (IsMouseOverBall(_master, mouse))
+                Sprite2D? hit = IsMouseOverBall(_master, mouse) ? _master
+                              : IsMouseOverBall(_bgm,    mouse) ? _bgm
+                              : IsMouseOverBall(_sfx,    mouse) ? _sfx
+                              : null;
+                if (hit != null)
                 {
-                    _draggedBall = _master;
-                    _dragOffsetX = (_master?.position.x ?? 0f) - mouse.x;
-                }
-                else if (IsMouseOverBall(_bgm, mouse))
-                {
-                    _draggedBall = _bgm;
-                    _dragOffsetX = (_bgm?.position.x ?? 0f) - mouse.x;
-                }
-                else if (IsMouseOverBall(_sfx, mouse))
-                {
-                    _draggedBall = _sfx;
-                    _dragOffsetX = (_sfx?.position.x ?? 0f) - mouse.x;
+                    // Clear any keyboard-selected ball before marking the clicked one
+                    if (_master != null) Bridge.ChangeState(_master.ID, "Default");
+                    if (_bgm    != null) Bridge.ChangeState(_bgm.ID,    "Default");
+                    if (_sfx    != null) Bridge.ChangeState(_sfx.ID,    "Default");
+
+                    _draggedBall = hit;
+                    _dragOffsetX = hit.position.x - mouse.x;
+                    Bridge.ChangeState(hit.ID, "selected");
+
+                    string ballName = hit == _master ? "MasterSliderBall"
+                                    : hit == _bgm    ? "BGMSliderBall"
+                                    :                  "SFXSliderBall";
+                    Main_Menu_Script.NotifyBallGrabbed(ballName);
                 }
             }
 
@@ -134,6 +139,7 @@ namespace Eno
                     XToVolume(_bgm?.position.x    ?? 0f, _bgmMinX),
                     XToVolume(_sfx?.position.x    ?? 0f, _sfxMinX));
 
+                Bridge.ChangeState(_draggedBall.ID, "Default");
                 _draggedBall = null;
             }
         }
@@ -208,6 +214,21 @@ namespace Eno
         public void Default_exit()
         {
             // TODO: Add exit logic for Default state
+        }
+    
+        public void selected_enter()
+        {
+            // TODO: Add enter logic for selected state
+        }
+
+        public void selected_update()
+        {
+            // TODO: Add update logic for selected state
+        }
+
+        public void selected_exit()
+        {
+            // TODO: Add exit logic for selected state
         }
     }
 }
