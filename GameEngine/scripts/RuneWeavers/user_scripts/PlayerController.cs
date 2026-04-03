@@ -463,6 +463,7 @@ namespace Eno
             {
                 Input.setGamepadRumble(0f, 0f);
                 BGMforLevel1_Script.StopAllBGM();
+                SlugBase_Script.StopAllWalkAudio();
                 if (_winLoseCanvasID != 0)
                 {
                     Bridge.SetCanvasActive(_winLoseCanvasID, true);
