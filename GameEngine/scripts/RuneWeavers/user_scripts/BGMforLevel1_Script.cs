@@ -25,7 +25,7 @@ namespace Eno
             _instance = this;
 
             // Layer1 — starts audible, plays exploration loop
-            _layer1 = SpawnPrefab("DefaultBGM", 0f, 0f) as AudioNode;
+            _layer1 = SpawnPrefab("DefaultBGMLoop", 0f, 0f) as AudioNode;
             if (_layer1 != null)
             {
                 _layer1.volume = layer1Volume;
@@ -53,6 +53,15 @@ namespace Eno
             Bridge.SetAudioVolume(ID, l2);
 
             if (t >= 1f) _fading = false;
+        }
+
+        // Called when win/defeat screen appears — silences both BGM layers immediately
+        public static void StopAllBGM()
+        {
+            if (_instance == null) return;
+            if (_instance._layer1 != null) _instance._layer1.stop();
+            Bridge.AudioStop(_instance.ID);
+            _instance._fading = false;
         }
 
         // Called by room scripts: true = combat active, false = room cleared

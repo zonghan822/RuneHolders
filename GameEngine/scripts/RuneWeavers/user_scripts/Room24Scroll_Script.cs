@@ -186,6 +186,7 @@ namespace Eno
             if (_charRight   != null) _charRight.visible   = false;
 
             // Show win screen
+            BGMforLevel1_Script.StopAllBGM();
             if (_winLoseCanvasID != 0)
             {
                 Bridge.SetCanvasActive(_winLoseCanvasID, true);

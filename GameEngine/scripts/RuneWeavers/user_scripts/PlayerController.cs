@@ -462,6 +462,7 @@ namespace Eno
             if (_deathTimer >= _deathDuration)
             {
                 Input.setGamepadRumble(0f, 0f);
+                BGMforLevel1_Script.StopAllBGM();
                 if (_winLoseCanvasID != 0)
                 {
                     Bridge.SetCanvasActive(_winLoseCanvasID, true);
