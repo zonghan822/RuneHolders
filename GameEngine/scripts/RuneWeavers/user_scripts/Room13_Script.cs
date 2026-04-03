@@ -2,14 +2,14 @@ namespace Eno
 {
     public class Room13_Script : ScriptBase
     {
-        private const float WaveDelay = 3f;
 
         private static Room13_Script? _instance;
 
-        private int _currentWave = 0;  // 0 = none spawned yet
-        private bool _wavesStarted = false;
-        private bool _roomCleared = false;
-        private float _waveTimer = 0f;
+        private const float WaveDelay  = 5f;
+        private int   _currentWave  = 0;
+        private bool  _wavesStarted = false;
+        private bool  _roomCleared  = false;
+        private float _waveTimer    = 0f;
 
         public void Begin()
         {
@@ -17,7 +17,7 @@ namespace Eno
             _currentWave = 0;
             _wavesStarted = false;
             _roomCleared = false;
-            _waveTimer = 0f;
+            _waveTimer   = 0f;
         }
 
         public static void StartWaves()
@@ -31,23 +31,19 @@ namespace Eno
         {
             if (!_wavesStarted || _roomCleared) return;
 
-            if (_currentWave < 2)
-            {
-                _waveTimer += Time.deltaTime;
-                if (_waveTimer >= WaveDelay)
-                {
-                    _waveTimer = 0f;
-                    SpawnWave(_currentWave + 1);
-                }
-                return; // don't check clear until gate wave fires
-            }
+            _waveTimer += Time.deltaTime;
 
-            // All waves spawned => wait for enemies to die
-            if (GetAllEnemies().Count == 0)
+            if (GetAllEnemies().Count == 0 || _waveTimer >= WaveDelay)
             {
-                _roomCleared = true;
-                UnlockDoor("Door13to12");
-                UnlockDoor("Door13to14");
+                _waveTimer = 0f;
+                if (_currentWave < 1)
+                    SpawnWave(_currentWave + 1);
+                else
+                {
+                    _roomCleared = true;
+                    UnlockDoor("Door13to12");
+                    UnlockDoor("Door13to14");
+                }
             }
         }
 
@@ -72,9 +68,6 @@ namespace Eno
                     SpawnPrefab("SlugRed", 8818f, -7925f);
                     SpawnPrefab("SlugRed", 8351f, -8040f);
                     SpawnPrefab("BatYellow", 8642f, -8189f);
-                    break;
-                case 2:
-                    // gate wave — no new enemies, just triggers the clear check
                     break;
             }
         }

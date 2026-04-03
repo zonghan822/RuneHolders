@@ -55,6 +55,7 @@ namespace Eno
         private float  _pathTimer       = 0f;
         private bool   _prespawnSetup   = false;
         private bool   _spawnSetup      = false;
+        private bool   _isSpawning      = true;
         private float  _hurtTimer       = 0f;
         private float  _deathTimer      = 0f;
         private float  _spawnTimer      = 0f;
@@ -135,7 +136,7 @@ namespace Eno
                 _contactTimer -= Time.deltaTime;
                 return;
             }
-            if (_self.isColliding(_player))
+            if (!_isSpawning && _self.isColliding(_player))
             {
                 _self.velocity = new Vector2(0f, 0f);
                 _player.health = MathF.Max(0f, _player.health - _self.damage);
@@ -149,7 +150,12 @@ namespace Eno
         {
             _spawnTimer = 0f;
             _prespawnSetup = false;
-            if (_self != null) _self.velocity = new Vector2(0f, 0f);
+            _isSpawning = true;
+            if (_self != null)
+            {
+                _self.velocity = new Vector2(0f, 0f);
+                _self.z_index = 1;
+            }
         }
         public void Prespawn_update()
         {
@@ -174,6 +180,7 @@ namespace Eno
         {
             _spawnTimer = 0f;
             _spawnSetup = false;
+            if (_self != null) _self.z_index = 3;
         }
         public void Spawn_update()
         {
@@ -192,7 +199,7 @@ namespace Eno
             if (_spawnTimer >= spawnDuration)
                 _self?.changeState("Idle");
         }
-        public void Spawn_exit() { }
+        public void Spawn_exit() { _isSpawning = false; }
 
         public void Idle_enter()
         {

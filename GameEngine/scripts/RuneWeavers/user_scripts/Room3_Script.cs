@@ -2,15 +2,15 @@ namespace Eno
 {
     public class Room3_Script : ScriptBase
     {
-        private const float Wave2Delay = 3f;
+        private const float WaveDelay = 5f;
 
         private static Room3_Script? _instance;
         private static bool _popupActivated = false;
 
+        private int   _currentWave  = 0;
         private bool  _wavesStarted = false;
-        private bool  _wave2Spawned = false;
         private bool  _roomCleared  = false;
-        private float _wave2Timer   = 0f;
+        private float _waveTimer    = 0f;
 
         private uint  _uiInfoID    = 0;
         private float _uiInfoTimer = 0f;
@@ -21,10 +21,10 @@ namespace Eno
         {
             _instance       = this;
             _popupActivated = false;
+            _currentWave    = 0;
             _wavesStarted   = false;
-            _wave2Spawned   = false;
             _roomCleared    = false;
-            _wave2Timer     = 0f;
+            _waveTimer      = 0f;
             _uiInfoTimer    = 0f;
         }
 
@@ -55,7 +55,7 @@ namespace Eno
                 }
             }
 
-            _instance.SpawnWave1();
+            _instance.SpawnWave(1);
         }
 
         public void Update()
@@ -84,43 +84,49 @@ namespace Eno
 
             if (!_wavesStarted || _roomCleared) return;
 
-            if (!_wave2Spawned)
+            _waveTimer += Time.deltaTime;
+
+            if (GetAllEnemies().Count == 0 || _waveTimer >= WaveDelay)
             {
-                _wave2Timer += Time.deltaTime;
-                if (_wave2Timer >= Wave2Delay)
+                _waveTimer = 0f;
+                if (_currentWave < 2)
+                    SpawnWave(_currentWave + 1);
+                else
                 {
-                    _wave2Spawned = true;
-                    SpawnWave2();
+                    _roomCleared = true;
+                    BGMforLevel1_Script.SetLayer2Combat(false);
+                    UnlockDoor("Door3to4");
+                    UnlockDoor("Door4to3");
+                    UnlockDoor("Door3to2");
+                    UnlockDoor("Door2to3");
                 }
-                return;
             }
+        }
 
-            if (GetAllEnemies().Count == 0)
+        private void SpawnWave(int wave)
+        {
+            if (!_wavesStarted)
             {
-                _roomCleared = true;
-                BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door3to4");
-                UnlockDoor("Door4to3");
-                UnlockDoor("Door3to2");
-                UnlockDoor("Door2to3");
+                _wavesStarted = true;
+                BGMforLevel1_Script.SetLayer2Combat(true);
+                LockDoor("Door2to3");
+                LockDoor("Door3to2");
+                LockDoor("Door3to4");
+                LockDoor("Door4to3");
             }
-        }
 
-        private void SpawnWave1()
-        {
-            _wavesStarted = true;
-            BGMforLevel1_Script.SetLayer2Combat(true);
-            LockDoor("Door2to3");
-            LockDoor("Door3to2");
-            LockDoor("Door3to4");
-            LockDoor("Door4to3");
-            SpawnPrefab("SlugRed", 960f, -2850f);
-        }
+            _currentWave = wave;
 
-        private void SpawnWave2()
-        {
-            SpawnPrefab("SlugRed",  500f, -2635f);
-            SpawnPrefab("SlugRed", 1418f, -2769f);
+            switch (wave)
+            {
+                case 1:
+                    SpawnPrefab("SlugRed", 960f, -2850f);
+                    break;
+                case 2:
+                    SpawnPrefab("SlugRed",  500f, -2635f);
+                    SpawnPrefab("SlugRed", 1418f, -2769f);
+                    break;
+            }
         }
 
         private void LockDoor(string name)

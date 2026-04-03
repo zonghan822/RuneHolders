@@ -379,7 +379,7 @@ namespace Eno
             {
                 foreach (Enemy enemy in GetAllEnemies())
                 {
-                    if (_spellBase.isColliding(enemy))
+                    if (_spellBase.isColliding(enemy) && enemy.currentState != "Prespawn")
                         enemy.changeState("Frozen");
                 }
             }

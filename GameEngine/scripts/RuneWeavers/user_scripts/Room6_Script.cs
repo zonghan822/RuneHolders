@@ -2,13 +2,13 @@ namespace Eno
 {
     public class Room6_Script : ScriptBase
     {
-        private const float WaveDelay = 3f;
 
         private static Room6_Script? _instance;
 
         private int   _currentWave  = 0;
         private bool  _wavesStarted = false;
         private bool  _roomCleared  = false;
+        private const float WaveDelay = 5f;
         private float _waveTimer    = 0f;
         private float _lockRumbleTimer = 0f;
 
@@ -18,7 +18,6 @@ namespace Eno
             _currentWave    = 0;
             _wavesStarted   = false;
             _roomCleared    = false;
-            _waveTimer      = 0f;
         }
 
         public static void StartWaves()
@@ -40,23 +39,20 @@ namespace Eno
 
             if (!_wavesStarted || _roomCleared) return;
 
-            if (_currentWave < 2)
-            {
-                _waveTimer += Time.deltaTime;
-                if (_waveTimer >= WaveDelay)
-                {
-                    _waveTimer = 0f;
-                    SpawnWave(_currentWave + 1);
-                }
-                return;
-            }
+            _waveTimer += Time.deltaTime;
 
-            if (GetAllEnemies().Count == 0)
+            if (GetAllEnemies().Count == 0 || _waveTimer >= WaveDelay)
             {
-                _roomCleared = true;
-                BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door6to7");
-                UnlockDoor("Door6to5");
+                _waveTimer = 0f;
+                if (_currentWave < 2)
+                    SpawnWave(_currentWave + 1);
+                else
+                {
+                    _roomCleared = true;
+                    BGMforLevel1_Script.SetLayer2Combat(false);
+                    UnlockDoor("Door6to7");
+                    UnlockDoor("Door6to5");
+                }
             }
         }
 
