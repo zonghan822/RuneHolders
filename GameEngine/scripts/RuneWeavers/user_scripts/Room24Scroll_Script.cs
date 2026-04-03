@@ -187,6 +187,8 @@ namespace Eno
             // Show win screen
             BGMforLevel1_Script.StopAllBGM();
             SlugBase_Script.StopAllWalkAudio();
+            NullflyBase_Script.StopAllAudio();
+            BatBase_Script.StopAllAudio();
             if (_winLoseCanvasID != 0)
             {
                 Bridge.SetCanvasActive(_winLoseCanvasID, true);
