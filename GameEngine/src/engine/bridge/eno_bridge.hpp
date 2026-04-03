@@ -234,6 +234,7 @@ namespace Bridge {
         ENGINE_API float   __stdcall GetRenderHeight(uint32_t sceneObjectID);
         ENGINE_API void    __stdcall SetRenderSize(uint32_t sceneObjectID, float w, float h);
         ENGINE_API void    __stdcall SetTexturePath(uint32_t sceneObjectID, const char* textureName);
+        ENGINE_API void    __stdcall SetTexturePathAndResize(uint32_t sceneObjectID, const char* textureName);
         ENGINE_API float   __stdcall GetUVStartX(uint32_t sceneObjectID);
         ENGINE_API float   __stdcall GetUVStartY(uint32_t sceneObjectID);
         ENGINE_API float   __stdcall GetUVEndX(uint32_t sceneObjectID);

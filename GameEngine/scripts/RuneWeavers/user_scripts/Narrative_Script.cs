@@ -28,7 +28,7 @@ namespace Eno
 		public void _when_narrativebackbutton_onclick()
         {
             if (_backButtonID != 0) Bridge.SetTexturePath(_backButtonID, "UI-Back");
-            Scroll_Dialouge_Script.DialogueActive = false;
+            Scroll_Dialouge_Script.TriggerClose();
             if (_narrativeID  != 0) Bridge.SetVisibility(_narrativeID, false);
             if (_canvasID     != 0)
             {

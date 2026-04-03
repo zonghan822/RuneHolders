@@ -14,9 +14,11 @@ namespace Eno
         private bool  _wavesStarted          = false;
         private bool  _roomCleared           = false;
 
-        private uint  _uiInfoID    = 0;
-        private float _uiInfoTimer = 0f;
+        private uint  _uiInfoID       = 0;
+        private float _uiInfoTimer    = 0f;
         private float _lockRumbleTimer = 0f;
+        private uint  _scrollPopUpID  = 0;
+        private bool  _prevController = false;
 
         public void Begin()
         {
@@ -26,6 +28,11 @@ namespace Eno
             _exitDoorID  = Bridge.GetNode("Door8to9");
             _spellbookID = Bridge.GetNode("Spellbook");
             _uiInfoID    = Bridge.GetNode("UI_Info");
+
+            _scrollPopUpID  = Bridge.GetNode("Room8_ScrollPopUp");
+            _prevController = Input.inputMode == InputMode.Controller;
+            if (_scrollPopUpID != 0)
+                Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
 
             _postDialogueActivated = false;
             _scrollPickedUp        = false;
@@ -54,6 +61,14 @@ namespace Eno
                 _lockRumbleTimer -= Time.deltaTime;
                 if (_lockRumbleTimer <= 0f)
                     Input.setGamepadRumble(0f, 0f);
+            }
+
+            bool isController = Input.inputMode == InputMode.Controller;
+            if (isController != _prevController)
+            {
+                _prevController = isController;
+                if (_scrollPopUpID != 0)
+                    Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
             }
 
             if (_uiInfoID != 0 && _uiInfoTimer < 3f)
@@ -89,10 +104,10 @@ namespace Eno
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
-                // Show F-to-open hint
+                // Show F/Y-to-open hint
                 if (_uiInfoID != 0)
                 {
-                    Bridge.SetTexturePath(_uiInfoID, "UI-FtoOpen-Text");
+                    Bridge.SetTexturePathAndResize(_uiInfoID, Input.inputMode == InputMode.Controller ? "UI-YToSpellbook" : "UI-FtoOpen-Text");
                     Bridge.SetVisibility(_uiInfoID, true);
                 }
                 _uiInfoTimer = 0f;

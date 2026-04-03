@@ -9,6 +9,8 @@ namespace Eno
         private bool _shown = false;
         private bool _open  = false;
         private bool _skipE = false;
+        private uint _scrollPopUpID  = 0;
+        private bool _prevController = false;
 
         public void Begin()
         {
@@ -18,15 +20,27 @@ namespace Eno
             _shown = false;
             _open  = false;
             _skipE = false;
+
+            _scrollPopUpID  = Bridge.GetNode("Room17_ScrollPopUp");
+            _prevController = Input.inputMode == InputMode.Controller;
+            if (_scrollPopUpID != 0)
+                Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
         }
 
         public void Update()
         {
+            bool isController = Input.inputMode == InputMode.Controller;
+            if (isController != _prevController)
+            {
+                _prevController = isController;
+                if (_scrollPopUpID != 0)
+                    Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
+            }
+
             uint playerID = Bridge.GetNode("Player");
             if (playerID == 0 || playerID == uint.MaxValue) return;
 
-            bool isController = Input.inputMode == InputMode.Controller;
-            if (_open && (Input.isKeyPressed(KeyCode.Escape) || (isController && Input.isGamepadButtonPressed(GamepadButton.B))))
+            if (_open && (Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.B))))
             {
                 Close();
                 return;

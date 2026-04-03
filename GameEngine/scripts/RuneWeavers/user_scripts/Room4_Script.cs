@@ -13,9 +13,18 @@ namespace Eno
         private bool  _wavesStarted   = false;
         private bool  _roomCleared    = false;
 
-        private uint  _uiInfoID    = 0;
-        private float _uiInfoTimer = 0f;
+        private uint  _uiInfoID       = 0;
+        private float _uiInfoTimer    = 0f;
         private float _lockRumbleTimer = 0f;
+        private uint  _scrollPopUpID  = 0;
+        private bool  _prevController = false;
+        // 0 = scroll not yet picked up
+        // 1 = scroll picked up, waiting for spellbook open
+        // 2 = spellbook opened, waiting for close
+        // 3 = spellbook closed, waiting for either dummy hit
+        // 4 = dummy hit, 3s countdown then hide
+        // 5 = done
+        private int   _tutorialStage = 0;
 
         public void Begin()
         {
@@ -26,11 +35,18 @@ namespace Eno
             _spellbookID = Bridge.GetNode("Spellbook");
             _uiInfoID    = Bridge.GetNode("UI_Info");
 
+            _scrollPopUpID  = Bridge.GetNode("Room4_ScrollPopUp");
+            _prevController = Input.inputMode == InputMode.Controller;
+            if (_scrollPopUpID != 0)
+                Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
+
             _scrollPickedUp = false;
             _wavesStarted   = false;
             _roomCleared    = false;
             _uiInfoTimer    = 0f;
+            _tutorialStage  = 0;
             DummyYellow_Script.WasHit = false;
+            DummyRed_Script.WasHit    = false;
         }
 
         public static void StartWaves()
@@ -53,12 +69,15 @@ namespace Eno
                     Input.setGamepadRumble(0f, 0f);
             }
 
-            if (_uiInfoID != 0 && _uiInfoTimer < 3f)
+            bool isController = Input.inputMode == InputMode.Controller;
+            if (isController != _prevController)
             {
-                _uiInfoTimer += Time.deltaTime;
-                if (_uiInfoTimer >= 3f)
-                    Bridge.SetVisibility(_uiInfoID, false);
+                _prevController = isController;
+                if (_scrollPopUpID != 0)
+                    Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
             }
+
+            UpdateTutorialUI();
 
             // Check dummy clear condition
             if (_wavesStarted && !_roomCleared && DummyYellow_Script.WasHit)
@@ -68,7 +87,7 @@ namespace Eno
                 UnlockDoor("Door4to5");
             }
 
-            // E on scroll → pickup: scroll disappears, spellbook updates, door unlocks
+            // E on scroll -> pickup: scroll disappears, spellbook updates, door unlocks
             if (!_scrollPickedUp && Scroll_Dialouge_Script.DialogueShown[1] &&
                 (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) &&
                 _scrollID != 0 && _playerID != 0 &&
@@ -79,15 +98,55 @@ namespace Eno
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
-                // Show F-to-open hint
+                // Show spellcasting tutorial 3
                 if (_uiInfoID != 0)
                 {
-                    Bridge.SetTexturePath(_uiInfoID, "UI-FtoOpen-Text");
+                    Bridge.SetTexturePathAndResize(_uiInfoID, "Text-SpellcastingTutorial3");
                     Bridge.SetVisibility(_uiInfoID, true);
                 }
-                _uiInfoTimer = 0f;
+                _tutorialStage = 1;
                 // Update spellbook
                 if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-2Spells");
+            }
+        }
+
+        private void UpdateTutorialUI()
+        {
+            switch (_tutorialStage)
+            {
+                case 1:
+                    if (PlayerController.SpellbookOpen)
+                        _tutorialStage = 2;
+                    break;
+
+                case 2:
+                    if (!PlayerController.SpellbookOpen)
+                    {
+                        if (_uiInfoID != 0)
+                            Bridge.SetTexturePathAndResize(_uiInfoID, "Text-SpellcastingTutorial4");
+                        _tutorialStage = 3;
+                    }
+                    break;
+
+                case 3:
+                    if (DummyYellow_Script.WasHit || DummyRed_Script.WasHit)
+                    {
+                        if (_uiInfoID != 0)
+                            Bridge.SetTexturePathAndResize(_uiInfoID, "Text-SpellcastingTutorial4-Complete");
+                        _uiInfoTimer   = 0f;
+                        _tutorialStage = 4;
+                    }
+                    break;
+
+                case 4:
+                    _uiInfoTimer += Time.deltaTime;
+                    if (_uiInfoTimer >= 3f)
+                    {
+                        if (_uiInfoID != 0)
+                            Bridge.SetVisibility(_uiInfoID, false);
+                        _tutorialStage = 5;
+                    }
+                    break;
             }
         }
 

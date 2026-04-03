@@ -53,6 +53,7 @@ namespace Eno
         public static void Cleanup()
         {
             if (_instance == null) return;
+            WasHit = false;
             EnemyColorRegistry.Unregister(_instance.ID);
             if (_instance._self != null) _instance.FreeNode(_instance._self);
             _instance = null;

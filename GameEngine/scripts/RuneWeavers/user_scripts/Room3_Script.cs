@@ -12,8 +12,6 @@ namespace Eno
         private bool  _roomCleared  = false;
         private float _wave2Timer   = 0f;
 
-        private uint  _uiInfoID    = 0;
-        private float _uiInfoTimer = 0f;
         private float _lockRumbleTimer = 0f;
 
         public void Begin()
@@ -24,20 +22,11 @@ namespace Eno
             _wave2Spawned   = false;
             _roomCleared    = false;
             _wave2Timer     = 0f;
-            _uiInfoTimer    = 0f;
         }
 
         public static void StartWaves()
         {
             if (_instance == null) return;
-
-            _instance._uiInfoID = Bridge.GetNode("UI_Info");
-            if (_instance._uiInfoID != 0)
-            {
-                Bridge.SetTexturePath(_instance._uiInfoID, "UI-MonsterColourInstructions-Text");
-                Bridge.SetVisibility(_instance._uiInfoID, true);
-            }
-            _instance._uiInfoTimer = 0f;
 
             if (!_popupActivated)
             {
@@ -69,13 +58,6 @@ namespace Eno
                 _lockRumbleTimer -= Time.deltaTime;
                 if (_lockRumbleTimer <= 0f)
                     Input.setGamepadRumble(0f, 0f);
-            }
-
-            if (_uiInfoID != 0 && _uiInfoTimer < 3f)
-            {
-                _uiInfoTimer += Time.deltaTime;
-                if (_uiInfoTimer >= 3f)
-                    Bridge.SetVisibility(_uiInfoID, false);
             }
 
             if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))

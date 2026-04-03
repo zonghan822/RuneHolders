@@ -68,6 +68,17 @@ namespace Bridge
             if (!tex) return;
             r->setTexture(tex, textureName);
         }
+        ENGINE_API void __stdcall SetTexturePathAndResize(uint32_t sceneObjectID, const char* textureName)
+        {
+            if (!textureName) return;
+            auto* r = getRender(sceneObjectID);
+            if (!r) return;
+            auto tex = gEngine->getResourceLoader().getTexture(textureName);
+            if (!tex) return;
+            r->setTexture(tex, textureName);
+            r->width  = static_cast<float>(tex->getWidth());
+            r->height = static_cast<float>(tex->getHeight());
+        }
         // ============= UV =============
 
         ENGINE_API float __stdcall GetUVStartX(uint32_t sceneObjectID)

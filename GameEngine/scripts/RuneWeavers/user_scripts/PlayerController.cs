@@ -48,6 +48,7 @@ namespace Eno
         // In-game pause flag
         public static bool IsGamePaused = false;
         public static bool IsGameCompleted = false;
+        public static bool SpellbookOpen = false;
 
         // Canvas interface
         //private bool _UIPopUp = false;
@@ -136,7 +137,7 @@ namespace Eno
             bool isController = Input.inputMode == InputMode.Controller;
 
             // P key or Start button toggles in-game pause
-            if ((Input.isKeyPressed(KeyCode.P) || (isController && Input.isGamepadButtonPressed(GamepadButton.Start))) && !IsGameCompleted)
+            if ((Input.isKeyPressed(KeyCode.Escape) || (isController && Input.isGamepadButtonPressed(GamepadButton.Start))) && !IsGameCompleted)
             {
                 IsGamePaused = !IsGamePaused;
                 Bridge.SetCanvasActive(_winLoseCanvasID, IsGamePaused);
@@ -167,6 +168,7 @@ namespace Eno
             if ((Input.isKeyPressed(KeyCode.F) || (isController && Input.isGamepadButtonPressed(GamepadButton.Y))) && _spellbookUIID != 0)
             {
                 _spellbookOpen = !_spellbookOpen;
+                SpellbookOpen = _spellbookOpen;
                 Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
                 SetChildButtonsActive(_spellbookUIID, _spellbookOpen);
                 IsGamePaused = _spellbookOpen;
@@ -484,6 +486,7 @@ namespace Eno
         {
             Bridge.SetTexturePath(Bridge.GetNode("SpellbookBackButton"), "UI-Back");
             _spellbookOpen = false;
+            SpellbookOpen  = false;
             Bridge.SetVisibility(_spellbookUIID, false);
             SetChildButtonsActive(_spellbookUIID, false);
             IsGamePaused = false;

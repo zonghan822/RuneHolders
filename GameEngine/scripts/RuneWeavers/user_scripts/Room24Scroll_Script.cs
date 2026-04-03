@@ -44,6 +44,10 @@ namespace Eno
         private uint _winLoseCanvasID = 0;
         private uint _victoryScreenID = 0;
 
+        // Scroll popup
+        private uint _scrollPopUpID  = 0;
+        private bool _prevController = false;
+
         // Runtime state
         private bool   _triggered   = false;
         private bool   _active      = false;
@@ -69,6 +73,11 @@ namespace Eno
 
             if (_canvas != null) _canvas.active = false;
 
+            _scrollPopUpID  = Bridge.GetNode("Room24_ScrollPopUp");
+            _prevController = Input.inputMode == InputMode.Controller;
+            if (_scrollPopUpID != 0)
+                Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
+
             _triggered   = false;
             _active      = false;
             _skipE       = false;
@@ -82,6 +91,12 @@ namespace Eno
         public void Update()
         {
             bool isController = Input.inputMode == InputMode.Controller;
+            if (isController != _prevController)
+            {
+                _prevController = isController;
+                if (_scrollPopUpID != 0)
+                    Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
+            }
 
             if (!_active)
             {
@@ -100,13 +115,13 @@ namespace Eno
             }
 
             // Escape or B button closes dialogue
-            if (Input.isKeyPressed(KeyCode.Escape) || (isController && Input.isGamepadButtonPressed(GamepadButton.B)))
+            if (Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.B)))
             {
                 CloseDialogue();
                 return;
             }
 
-            bool ePressed = (Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A))) && !_skipE;
+            bool ePressed = (Input.isMousePressed(0) || (isController && Input.isGamepadButtonPressed(GamepadButton.A))) && !_skipE;
             _skipE = false;
 
             if (ePressed)

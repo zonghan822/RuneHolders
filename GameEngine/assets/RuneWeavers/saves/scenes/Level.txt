@@ -1,79 +1,23 @@
 {
 
-	[Room02_CrystalBig02]
+	[Room2]
 	{
-		"ID": { 419 }
+		"ID": { 228 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
 			[struct ECSComponents::VisibilityComponent]
 			{
-				"Z Index": <uint32_t> { 1 }
+				"Z Index": <uint32_t> { 3 }
 				"Visible": <bool> { 1 }
 			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 672 | y : -1760 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 64 }
-				"Height": <float> { 64 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
-				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 64 }
-				"Frame Height": <int> { 64 }
-				"Rows": <int> { 1 }
-				"Cols": <int> { 12 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 1 }
-				"Current Animation": <char64> { Default }
-				"Anim0 Name": <char64> { Default }
-				"Anim0 Texture": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
-				"Anim0 FrameW": <int> { 64 }
-				"Anim0 FrameH": <int> { 64 }
-				"Anim0 Rows": <int> { 1 }
-				"Anim0 Cols": <int> { 12 }
-				"Anim0 Duration": <float> { 0.1 }
-				"Anim0 Looping": <bool> { 1 }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
 		}
-		"Script": { }
+		"Script": { Room2_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }
-		"NodeType": { 3 }
+		"NodeType": { 0 }
 		"PrefabName": {  }
 	}
 
@@ -154,9 +98,155 @@
 		"PrefabName": {  }
 	}
 
-	[Room2]
+	[Room02_CrystalBig02]
 	{
-		"ID": { 228 }
+		"ID": { 419 }
+		"Layer": { 0 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 1 }
+				"Visible": <bool> { 1 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 672 | y : -1760 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 64 }
+				"Height": <float> { 64 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 64 }
+				"Frame Height": <int> { 64 }
+				"Rows": <int> { 1 }
+				"Cols": <int> { 12 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 1 }
+				"Current Animation": <char64> { Default }
+				"Anim0 Name": <char64> { Default }
+				"Anim0 Texture": <texchar240> { Tilemap-Crystals1-Idle-Sheet }
+				"Anim0 FrameW": <int> { 64 }
+				"Anim0 FrameH": <int> { 64 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 12 }
+				"Anim0 Duration": <float> { 0.1 }
+				"Anim0 Looping": <bool> { 1 }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { }
+		"Parent": { }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 3 }
+		"PrefabName": {  }
+	}
+
+	[Narrative]
+	{
+		"ID": { 286 }
+		"Layer": { 1 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 3 }
+				"Visible": <bool> { 0 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 3198.92 | y : 807.796 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 1537 }
+				"Height": <float> { 961 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-Narrative-1 }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { Narrative_Script.cs }
+		"Parent": { 259 }
+		"Children": { 580 }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 3 }
+		"PrefabName": {  }
+	}
+
+	[Room3]
+	{
+		"ID": { 229 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -166,7 +256,7 @@
 				"Visible": <bool> { 1 }
 			}
 		}
-		"Script": { Room2_Script.cs }
+		"Script": { Room3_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
@@ -252,9 +342,9 @@
 		"PrefabName": {  }
 	}
 
-	[Room3]
+	[Room4]
 	{
-		"ID": { 229 }
+		"ID": { 230 }
 		"Layer": { 0 }
 		"Entity Data"
 		{
@@ -264,81 +354,12 @@
 				"Visible": <bool> { 1 }
 			}
 		}
-		"Script": { Room3_Script.cs }
+		"Script": { Room4_Script.cs }
 		"Parent": { }
 		"Children": { }
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 0 }
-		"PrefabName": {  }
-	}
-
-	[Narrative]
-	{
-		"ID": { 286 }
-		"Layer": { 1 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 0 }
-			}
-
-			[struct ECSComponents::TransformComponent]
-			{
-				"Position": <eVec2(float)> { x : 3198.92 | y : 807.796 }
-				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
-				"Scale": <eVec2(float)> { x : 1 | y : 1 }
-				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
-			}
-
-			[struct ECSComponents::RenderComponent]
-			{
-				"Width": <float> { 1537 }
-				"Height": <float> { 961 }
-				"Shape": <char32> { Rectangle }
-				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { UI-Narrative-1 }
-				"TexID": <int> { 0 }
-				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
-				"UV End": <eVec2(float)> { x : 1 | y : 1 }
-			}
-
-			[struct ECSComponents::LayerComponent]
-			{
-				"Layer": <char32> { NULL }
-			}
-
-			[struct ECSComponents::AnimationControllerComponent]
-			{
-				"Frame Width": <int> { 0 }
-				"Frame Height": <int> { 0 }
-				"Rows": <int> { 0 }
-				"Cols": <int> { 0 }
-				"Frame Duration": <float> { 0.1 }
-				"Looping": <bool> { 1 }
-				"Animation Count": <int> { 0 }
-				"Current Animation": <char64> {  }
-			}
-
-			[struct ECSComponents::StateMachineComponent]
-			{
-				"NumStates": <int> { 1 }
-				"CurrentState": <char32> { None }
-				"TimeInState": <float> { 0 }
-				"State[0].name": <char32> { Default }
-				"State[0].onEnter": <char64> { Default_enter }
-				"State[0].onUpdate": <char64> { Default_update }
-				"State[0].onExit": <char64> { Default_exit }
-			}
-		}
-		"Script": { Narrative_Script.cs }
-		"Parent": { 259 }
-		"Children": { 580 }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 3 }
 		"PrefabName": {  }
 	}
 
@@ -416,27 +437,6 @@
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 3 }
-		"PrefabName": {  }
-	}
-
-	[Room4]
-	{
-		"ID": { 230 }
-		"Layer": { 0 }
-		"Entity Data"
-		{
-			[struct ECSComponents::VisibilityComponent]
-			{
-				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
-			}
-		}
-		"Script": { Room4_Script.cs }
-		"Parent": { }
-		"Children": { }
-		"Listeners": { }
-		"Enabled": { true }
-		"NodeType": { 0 }
 		"PrefabName": {  }
 	}
 
@@ -3197,7 +3197,7 @@
 				"Is Active": <bool> { 1 }
 				"Is Static": <bool> { 1 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 85 }
+				"Radius": <float> { 105 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -4517,7 +4517,7 @@ rumoured mansion. }
 		"PrefabName": {  }
 	}
 
-	[E_PopUp]
+	[Room1_ScrollPopUp]
 	{
 		"ID": { 264 }
 		"Layer": { 1 }
@@ -4888,7 +4888,7 @@ rumoured mansion. }
 		"PrefabName": {  }
 	}
 
-	[SPRITE 14]
+	[Room4_ScrollPopUp]
 	{
 		"ID": { 272 }
 		"Layer": { 1 }
@@ -5052,7 +5052,7 @@ rumoured mansion. }
 		"PrefabName": {  }
 	}
 
-	[SPRITE 17]
+	[Room8_ScrollPopUp]
 	{
 		"ID": { 275 }
 		"Layer": { 1 }
@@ -5216,7 +5216,7 @@ rumoured mansion. }
 		"PrefabName": {  }
 	}
 
-	[SPRITE 19]
+	[Room10_ScrollPopUp]
 	{
 		"ID": { 277 }
 		"Layer": { 1 }
@@ -5285,7 +5285,7 @@ rumoured mansion. }
 		"PrefabName": {  }
 	}
 
-	[SPRITE 23]
+	[Room17_ScrollPopUp]
 	{
 		"ID": { 281 }
 		"Layer": { 1 }
@@ -5354,7 +5354,7 @@ rumoured mansion. }
 		"PrefabName": {  }
 	}
 
-	[SPRITE 25]
+	[Room19_ScrollPopUp]
 	{
 		"ID": { 283 }
 		"Layer": { 1 }
@@ -5526,7 +5526,7 @@ rumoured mansion. }
 		"PrefabName": {  }
 	}
 
-	[SPRITE 27]
+	[Room24_ScrollPopUp]
 	{
 		"ID": { 285 }
 		"Layer": { 1 }
@@ -6610,7 +6610,7 @@ rumoured mansion. }
 			[struct ECSComponents::VisibilityComponent]
 			{
 				"Z Index": <uint32_t> { 4 }
-				"Visible": <bool> { 1 }
+				"Visible": <bool> { 0 }
 			}
 
 			[struct ECSComponents::TransformComponent]
@@ -18527,7 +18527,7 @@ rumoured mansion. }
 			[struct ECSComponents::VisibilityComponent]
 			{
 				"Z Index": <uint32_t> { 3 }
-				"Visible": <bool> { 1 }
+				"Visible": <bool> { 0 }
 			}
 
 			[struct ECSComponents::TransformComponent]

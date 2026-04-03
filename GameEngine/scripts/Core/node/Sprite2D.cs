@@ -55,6 +55,9 @@ namespace Eno
             set => Bridge.SetTexturePath(ID, value);
         }
 
+        // Sets the texture and resizes the render component to the texture's native dimensions.
+        public void setTextureAndResize(string path) => Bridge.SetTexturePathAndResize(ID, path);
+
         public string animation
         {
             get => Bridge.GetCurrentAnimation(ID);

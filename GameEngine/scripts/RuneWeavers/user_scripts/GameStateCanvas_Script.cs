@@ -82,10 +82,10 @@ namespace Eno
                 _stickLeft = _stickRight = _stickUp = false;
             }
 
-            bool up      = Input.isKeyPressed(KeyCode.W) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge));
-            bool left    = Input.isKeyPressed(KeyCode.A) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge));
-            bool right   = Input.isKeyPressed(KeyCode.D) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge));
-            bool confirm = Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A));
+            bool up      = isController && (Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge);
+            bool left    = isController && (Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge);
+            bool right   = isController && (Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge);
+            bool confirm = isController && Input.isGamepadButtonPressed(GamepadButton.A);
             bool back    = isController && Input.isGamepadButtonPressed(GamepadButton.B);
             bool areYouSureVisible = Bridge.GetVisibility(_areYouSureID);
 
@@ -240,6 +240,11 @@ namespace Eno
             _pauseSel = PauseNav.None;
             Bridge.SetAudioPaused(false);
             Bridge.SetCanvasActive(_winLoseCanvasID, false);
+            if (_pauseScreenID != 0)
+            {
+                Bridge.SetVisibility(_pauseScreenID, false);
+                SetChildButtonsActive(_pauseScreenID, false);
+            }
             if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, false);
             PlayerController.IsGamePaused = false;
         }
