@@ -226,6 +226,8 @@ namespace Eno
 
         public void Update()
         {
+            if (PlayerController.IsGameCompleted) return;
+
             // Drain short rumble pulse
             if (_rumbleTimer > 0f)
             {

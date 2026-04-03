@@ -462,6 +462,7 @@ namespace Eno
             if (_deathTimer >= _deathDuration)
             {
                 Input.setGamepadRumble(0f, 0f);
+                IsGameCompleted = true;
                 BGMforLevel1_Script.StopAllBGM();
                 SlugBase_Script.StopAllWalkAudio();
                 if (_winLoseCanvasID != 0)
