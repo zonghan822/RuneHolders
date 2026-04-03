@@ -4,6 +4,12 @@ using System.Runtime.InteropServices;
 
 namespace Eno
 {
+    public enum InputMode
+    {
+        MouseKeyboard = 0,
+        Controller    = 1,
+    }
+
     // Must follow GLFW's key values
     // Source: https://www.glfw.org/docs/3.3/group__mods.html
     public enum KeyCode : int
@@ -160,6 +166,10 @@ namespace Eno
         /// Set gamepad rumble/vibration via XInput.
         public static void setGamepadRumble(float leftMotor, float rightMotor)
             => Bridge.SetGamepadRumble(leftMotor, rightMotor);
+
+        // ── Input Mode ────────────────────────────────────────────────────────
+        // Returns the currently active input device mode.
+        public static InputMode inputMode => (InputMode)Bridge.GetInputMode();
     }
 
     public class InputManager

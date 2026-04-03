@@ -51,10 +51,43 @@ namespace Input {
 		scrollY_ = 0.0;
 
 		// Poll gamepad state
+		bool wasConnected = gamepadConnected_;
 		prevGamepadState_ = gamepadState_;
 		gamepadConnected_ = (glfwJoystickPresent(GLFW_JOYSTICK_1) &&
 		                     glfwJoystickIsGamepad(GLFW_JOYSTICK_1) &&
 		                     glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepadState_));
+
+		// Switch to controller mode when controller just connected,
+		// or back to mouse+keyboard when controller just disconnected
+		if (!wasConnected && gamepadConnected_)
+		{
+			inputMode_ = InputMode::Controller;
+		}
+		else if (wasConnected && !gamepadConnected_)
+		{
+			inputMode_ = InputMode::MouseKeyboard;
+		}
+		else if (gamepadConnected_)
+		{
+			// Any button held → controller mode
+			for (int i = 0; i <= 14; ++i)
+			{
+				if (gamepadState_.buttons[i] == GLFW_PRESS)
+				{
+					inputMode_ = InputMode::Controller;
+					break;
+				}
+			}
+			// Any axis moved from previous frame → controller mode
+			for (int i = 0; i <= 5; ++i)
+			{
+				if (std::abs(gamepadState_.axes[i] - prevGamepadState_.axes[i]) > 0.1f)
+				{
+					inputMode_ = InputMode::Controller;
+					break;
+				}
+			}
+		}
 	}
 
 	void EnoInputManager::clearAllKeyStates() {
@@ -147,6 +180,7 @@ namespace Input {
 	// Handle key inputs
 	void EnoInputManager::handleKey(int key, int scancode, int action, int mods)
 	{
+		inputMode_ = InputMode::MouseKeyboard;
 		modsState_ = mods;
 
 		// When ImGui is consuming text input (e.g. an InputText is active),
@@ -182,6 +216,7 @@ namespace Input {
 	}
 
 	void EnoInputManager::handleMouseButton(int button, int action, int mods) {
+		inputMode_ = InputMode::MouseKeyboard;
 		if (GLFW_PRESS == action) {
 			mouseButtonStates_[button] = true;
 		}
@@ -195,6 +230,7 @@ namespace Input {
 	}
 
 	void EnoInputManager::handleMouseCursor(double xpos, double ypos) {
+		inputMode_ = InputMode::MouseKeyboard;
 		mouseX_ = xpos;
 		mouseY_ = ypos;
 	}
@@ -243,5 +279,9 @@ namespace Input {
 		vibration.wLeftMotorSpeed  = static_cast<WORD>(std::clamp(leftMotor,  0.0f, 1.0f) * 65535.0f);
 		vibration.wRightMotorSpeed = static_cast<WORD>(std::clamp(rightMotor, 0.0f, 1.0f) * 65535.0f);
 		XInputSetState(0, &vibration);
+	}
+
+	InputMode EnoInputManager::getInputMode() const {
+		return inputMode_;
 	}
 }

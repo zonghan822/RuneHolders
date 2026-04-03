@@ -156,5 +156,14 @@ namespace Bridge
             if (!gEngine) return;
             gEngine->getInputManager().setGamepadRumble(leftMotor, rightMotor);
         }
+
+        // ============= Input Mode =============
+
+        // Returns 0 = MouseKeyboard, 1 = Controller
+        ENGINE_API int __stdcall GetInputMode()
+        {
+            if (!gEngine) return 0;
+            return static_cast<int>(gEngine->getInputManager().getInputMode());
+        }
     }
 }
