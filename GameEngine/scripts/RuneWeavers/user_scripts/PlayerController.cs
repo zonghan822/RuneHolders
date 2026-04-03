@@ -27,7 +27,9 @@ namespace Eno
         private float     _deathTimer   = 0f;
         private float     _deathDuration = 1.0f;
 
-        public         private Node2D?[]  _scrollNodes      = Array.Empty<Node2D?>();
+        public float footstepVolume = 70f;
+
+        private Node2D?[]  _scrollNodes      = Array.Empty<Node2D?>();
         private AudioNode? _footstepAudio    = null;
         private AudioNode? _playerVoAudio    = null;
         private Random     _rng              = new Random();
@@ -375,27 +377,6 @@ namespace Eno
             }
             return false;
         }
-
-		public void _when_spellbookbackbutton_onclick()
-        {
-
-        }
-
-		public void _when_spellbookbackbutton_onpressed()
-        {
-
-        }
-
-         Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D))
-                return true;
-
-            if (Input.inputMode == InputMode.Controller)
-            {
-                Vector2 stick = Input.getLeftStick(0.2f);
-                return stick.x != 0f || stick.y != 0f;
-            }
-            return false;
-        }
     
 		public void _when_spellbookbackbutton_onclick()
         {
@@ -405,21 +386,6 @@ namespace Eno
 		public void _when_spellbookbackbutton_onpressed()
         {
 
-        }
-    
-        public void Default_enter()
-        {
-            // TODO: Add enter logic for Default state
-        }
-
-        public void Default_update()
-        {
-            // TODO: Add update logic for Default state
-        }
-
-        public void Default_exit()
-        {
-            // TODO: Add exit logic for Default state
         }
     }
 }
