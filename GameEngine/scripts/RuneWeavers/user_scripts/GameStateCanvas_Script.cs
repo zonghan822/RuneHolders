@@ -59,24 +59,34 @@ namespace Eno
                 SelectPause(PauseNav.Resume);
             _prevPaused = paused;
 
-            // Left stick edge detection (trigger once per flick)
-            const float STICK_THRESHOLD = 0.5f;
-            Vector2 stick = Input.getLeftStick(0.2f);
-            bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
-            bool stickRightNow = stick.x >  STICK_THRESHOLD;
-            bool stickUpNow    = stick.y < -STICK_THRESHOLD;
-            bool stickLeftEdge  = stickLeftNow  && !_stickLeft;
-            bool stickRightEdge = stickRightNow && !_stickRight;
-            bool stickUpEdge    = stickUpNow    && !_stickUp;
-            _stickLeft  = stickLeftNow;
-            _stickRight = stickRightNow;
-            _stickUp    = stickUpNow;
+            bool isController = Input.inputMode == InputMode.Controller;
 
-            bool up      = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge;
-            bool left    = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge;
-            bool right   = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge;
-            bool confirm = Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A);
-            bool back    = Input.isGamepadButtonPressed(GamepadButton.B);
+            // Left stick edge detection — only when using controller
+            bool stickLeftEdge = false, stickRightEdge = false, stickUpEdge = false;
+            if (isController)
+            {
+                const float STICK_THRESHOLD = 0.5f;
+                Vector2 stick = Input.getLeftStick(0.2f);
+                bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
+                bool stickRightNow = stick.x >  STICK_THRESHOLD;
+                bool stickUpNow    = stick.y < -STICK_THRESHOLD;
+                stickLeftEdge  = stickLeftNow  && !_stickLeft;
+                stickRightEdge = stickRightNow && !_stickRight;
+                stickUpEdge    = stickUpNow    && !_stickUp;
+                _stickLeft  = stickLeftNow;
+                _stickRight = stickRightNow;
+                _stickUp    = stickUpNow;
+            }
+            else
+            {
+                _stickLeft = _stickRight = _stickUp = false;
+            }
+
+            bool up      = Input.isKeyPressed(KeyCode.W) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge));
+            bool left    = Input.isKeyPressed(KeyCode.A) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge));
+            bool right   = Input.isKeyPressed(KeyCode.D) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge));
+            bool confirm = Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A));
+            bool back    = isController && Input.isGamepadButtonPressed(GamepadButton.B);
             bool areYouSureVisible = Bridge.GetVisibility(_areYouSureID);
 
             // Win screen controller navigation
@@ -429,6 +439,28 @@ namespace Eno
         {
             Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenMainMenu"), "UI-MainMenu");
             Bridge.ChangeScene("MainMenu.txt");
+        }
+	
+		public void _when_winscreenplayagain_onpressed()
+        {
+            Bridge.SetTexturePath(Bridge.GetNode("WinScreenPlayAgain"), "UI-PlayAgain-Selected");
+        }
+
+		public void _when_winscreenplayagain_onclick()
+        {
+            Bridge.SetTexturePath(Bridge.GetNode("WinScreenPlayAgain"), "UI-PlayAgain");
+            Bridge.ChangeScene("Level.txt");
+        }
+
+		public void _when_defeatscreenplayagain_onpressed()
+        {
+            Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenPlayAgain"), "UI-PlayAgain-Selected");
+        }
+
+		public void _when_defeatscreenplayagain_onclick()
+        {
+            Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenPlayAgain"), "UI-PlayAgain");
+            Bridge.ChangeScene("Level.txt");
         }
 	}
 }

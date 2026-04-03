@@ -133,8 +133,10 @@ namespace Eno
             if (_player.health <= 0f)
                 _player.changeState("Death");
 
+            bool isController = Input.inputMode == InputMode.Controller;
+
             // P key or Start button toggles in-game pause
-            if ((Input.isKeyPressed(KeyCode.P) || Input.isGamepadButtonPressed(GamepadButton.Start)) && !IsGameCompleted)
+            if ((Input.isKeyPressed(KeyCode.P) || (isController && Input.isGamepadButtonPressed(GamepadButton.Start))) && !IsGameCompleted)
             {
                 IsGamePaused = !IsGamePaused;
                 Bridge.SetCanvasActive(_winLoseCanvasID, IsGamePaused);
@@ -147,7 +149,7 @@ namespace Eno
             
             
             // E key or A/X button — close enemy info panel if open
-            if (IsGamePaused && _enemyInfoOpen && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A) || Input.isGamepadButtonPressed(GamepadButton.X)))
+            if (IsGamePaused && _enemyInfoOpen && (Input.isKeyPressed(KeyCode.E) || (isController && (Input.isGamepadButtonPressed(GamepadButton.A) || Input.isGamepadButtonPressed(GamepadButton.X)))))
             {
                 _enemyInfoOpen = false;
                 if (_enemyInfoID      != 0) Bridge.SetVisibility(_enemyInfoID, false);
@@ -162,7 +164,7 @@ namespace Eno
             }
             
             // F key or Y button — toggle spellbook UI (checked before pause guard so it can close while paused)
-            if ((Input.isKeyPressed(KeyCode.F) || Input.isGamepadButtonPressed(GamepadButton.Y)) && _spellbookUIID != 0)
+            if ((Input.isKeyPressed(KeyCode.F) || (isController && Input.isGamepadButtonPressed(GamepadButton.Y))) && _spellbookUIID != 0)
             {
                 _spellbookOpen = !_spellbookOpen;
                 Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
@@ -199,12 +201,15 @@ namespace Eno
             if (Input.isKeyHeld(KeyCode.A)) dx -= 1f;
             if (Input.isKeyHeld(KeyCode.D)) dx += 1f;
 
-            // Merge left analog stick input
-            Vector2 leftStick = Input.getLeftStick(0.2f);
-            if (leftStick.x != 0f || leftStick.y != 0f)
+            // Merge left analog stick input — only when using controller
+            if (isController)
             {
-                dx = leftStick.x;
-                dy = leftStick.y;
+                Vector2 leftStick = Input.getLeftStick(0.2f);
+                if (leftStick.x != 0f || leftStick.y != 0f)
+                {
+                    dx = leftStick.x;
+                    dy = leftStick.y;
+                }
             }
 
             // Normalize diagonal movement so speed is consistent in all directions
@@ -218,12 +223,21 @@ namespace Eno
 
             // T key or X button — open enemy info popup (only when EnemyInfoPopUp is active)
             if (!_enemyInfoOpen && _enemyInfoPopupID != 0 && Bridge.GetVisibility(_enemyInfoPopupID) &&
-                (Input.isKeyPressed(KeyCode.T) || Input.isGamepadButtonPressed(GamepadButton.X)))
+                (Input.isKeyPressed(KeyCode.T) || (isController && Input.isGamepadButtonPressed(GamepadButton.X))))
             {
-                bool usedGamepad = Input.isGamepadButtonPressed(GamepadButton.X);
-                string tex = usedGamepad ? EnemyPopupControllerTexture : EnemyPopupKeyboardTexture;
-                if (_enemyInfoID != 0 && !string.IsNullOrEmpty(tex))
-                    Bridge.SetTexturePath(_enemyInfoID, tex);
+                if (_enemyInfoID != 0)
+                {
+                    if (Input.inputMode == InputMode.Controller)
+                    {
+                        if (!string.IsNullOrEmpty(EnemyPopupControllerTexture))
+                            Bridge.SetTexturePath(_enemyInfoID, EnemyPopupControllerTexture);
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrEmpty(EnemyPopupKeyboardTexture))
+                            Bridge.SetTexturePath(_enemyInfoID, EnemyPopupKeyboardTexture);
+                    }
+                }
                 _enemyInfoOpen = true;
                 if (_enemyInfoID != 0) Bridge.SetVisibility(_enemyInfoID, true);
                 IsGamePaused = true;
@@ -232,7 +246,7 @@ namespace Eno
             }
 
             // Check scroll interaction before applying movement
-            if (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A))
+            if (Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A)))
             {
                 for (int i = 0; i < _scrollNodes.Length; i++)
                 {
@@ -324,8 +338,12 @@ namespace Eno
                 Input.isKeyHeld(KeyCode.A) || Input.isKeyHeld(KeyCode.D))
                 return true;
 
-            Vector2 stick = Input.getLeftStick(0.2f);
-            return stick.x != 0f || stick.y != 0f;
+            if (Input.inputMode == InputMode.Controller)
+            {
+                Vector2 stick = Input.getLeftStick(0.2f);
+                return stick.x != 0f || stick.y != 0f;
+            }
+            return false;
         }
     
         public void Cast_enter()

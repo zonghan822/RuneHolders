@@ -63,28 +63,38 @@ namespace Eno
 
         public void Update()
         {
-            // Left stick edge detection (trigger once per flick)
-            const float STICK_THRESHOLD = 0.5f;
-            Vector2 stick = Input.getLeftStick(0.2f);
-            bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
-            bool stickRightNow = stick.x >  STICK_THRESHOLD;
-            bool stickUpNow    = stick.y < -STICK_THRESHOLD;
-            bool stickDownNow  = stick.y >  STICK_THRESHOLD;
-            bool stickLeftEdge  = stickLeftNow  && !_stickLeft;
-            bool stickRightEdge = stickRightNow && !_stickRight;
-            bool stickUpEdge    = stickUpNow    && !_stickUp;
-            bool stickDownEdge  = stickDownNow  && !_stickDown;
-            _stickLeft  = stickLeftNow;
-            _stickRight = stickRightNow;
-            _stickUp    = stickUpNow;
-            _stickDown  = stickDownNow;
+            bool isController = Input.inputMode == InputMode.Controller;
 
-            bool up    = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge;
-            bool down  = Input.isKeyPressed(KeyCode.S) || Input.isGamepadButtonPressed(GamepadButton.DPadDown)  || stickDownEdge;
-            bool left  = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge;
-            bool right = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge;
-            bool confirm = Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A);
-            bool back    = Input.isGamepadButtonPressed(GamepadButton.B);
+            // Left stick edge detection — only when using controller
+            bool stickLeftEdge = false, stickRightEdge = false, stickUpEdge = false, stickDownEdge = false;
+            if (isController)
+            {
+                const float STICK_THRESHOLD = 0.5f;
+                Vector2 stick = Input.getLeftStick(0.2f);
+                bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
+                bool stickRightNow = stick.x >  STICK_THRESHOLD;
+                bool stickUpNow    = stick.y < -STICK_THRESHOLD;
+                bool stickDownNow  = stick.y >  STICK_THRESHOLD;
+                stickLeftEdge  = stickLeftNow  && !_stickLeft;
+                stickRightEdge = stickRightNow && !_stickRight;
+                stickUpEdge    = stickUpNow    && !_stickUp;
+                stickDownEdge  = stickDownNow  && !_stickDown;
+                _stickLeft  = stickLeftNow;
+                _stickRight = stickRightNow;
+                _stickUp    = stickUpNow;
+                _stickDown  = stickDownNow;
+            }
+            else
+            {
+                _stickLeft = _stickRight = _stickUp = _stickDown = false;
+            }
+
+            bool up    = Input.isKeyPressed(KeyCode.W) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge));
+            bool down  = Input.isKeyPressed(KeyCode.S) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadDown)  || stickDownEdge));
+            bool left  = Input.isKeyPressed(KeyCode.A) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge));
+            bool right = Input.isKeyPressed(KeyCode.D) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge));
+            bool confirm = Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A));
+            bool back    = isController && Input.isGamepadButtonPressed(GamepadButton.B);
 
             if (_menuState == MenuState.Main)
             {
@@ -122,7 +132,7 @@ namespace Eno
                 _videoTimer += Time.deltaTime;
 
                 // Escape skips the cutscene
-                if (Input.isKeyPressed(KeyCode.Escape)|| Input.isGamepadButtonPressed(GamepadButton.B))
+                if (Input.isKeyPressed(KeyCode.Escape) || (isController && Input.isGamepadButtonPressed(GamepadButton.B)))
                 {
                     EndCutscene();
                     return;

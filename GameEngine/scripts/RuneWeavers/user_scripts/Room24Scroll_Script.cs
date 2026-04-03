@@ -81,6 +81,8 @@ namespace Eno
 
         public void Update()
         {
+            bool isController = Input.inputMode == InputMode.Controller;
+
             if (!_active)
             {
                 if (_triggered) return;
@@ -90,7 +92,7 @@ namespace Eno
 
                 if (!Scroll_Dialouge_Script.DialogueActive
                     && Bridge.IsColliding(ID, playerID)
-                    && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)))
+                    && (Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A))))
                 {
                     StartDialogue();
                 }
@@ -98,13 +100,13 @@ namespace Eno
             }
 
             // Escape or B button closes dialogue
-            if (Input.isKeyPressed(KeyCode.Escape) || Input.isGamepadButtonPressed(GamepadButton.B))
+            if (Input.isKeyPressed(KeyCode.Escape) || (isController && Input.isGamepadButtonPressed(GamepadButton.B)))
             {
                 CloseDialogue();
                 return;
             }
 
-            bool ePressed = (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) && !_skipE;
+            bool ePressed = (Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A))) && !_skipE;
             _skipE = false;
 
             if (ePressed)

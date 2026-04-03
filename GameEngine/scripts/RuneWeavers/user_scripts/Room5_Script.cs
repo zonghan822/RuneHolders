@@ -34,7 +34,11 @@ namespace Eno
                 uint popupID = Bridge.GetNode("EnemyInfoPopUp");
                 if (popupID != 0 && popupID != uint.MaxValue)
                 {
-                    string icon = Input.isGamepadConnected() ? "UI-EnemyIcon-Bat-Controller" : "UI-EnemyIcon-Bat";
+                    string icon;
+                    if (Input.inputMode == InputMode.Controller)
+                        icon = "UI-EnemyIcon-Bat-Controller";
+                    else
+                        icon = "UI-EnemyIcon-Bat";
                     Bridge.SetTexturePath(popupID, icon);
                     Bridge.SetVisibility(popupID, true);
                     Bridge.SetButtonActive(popupID, true);
