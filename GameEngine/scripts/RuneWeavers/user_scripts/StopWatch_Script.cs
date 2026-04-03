@@ -27,14 +27,17 @@ namespace Eno
         // ── Per-state timer ───────────────────────────────────────────────────
         private float _timer = 0f;
 
-        private Sprite2D? _self;
+        private Sprite2D?  _self;
+        private AudioNode? _audio;
 
-        public void Begin() 
-        { 
+        public void Begin()
+        {
             _self = Self<Sprite2D>();
             if (_self == null) return;
             _self.changeState("Idle");
             _self.visible = false;
+
+            _audio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public void Update() { }
@@ -44,7 +47,11 @@ namespace Eno
         {
             _timer = 0f;
             if (_self == null) return;
-            Bridge.AudioPlay(ID);
+            if (_audio != null)
+            {
+                _audio.sound = "TimeStop_v1";
+                _audio.play();
+            }
             _self.setAnimationLooping(false);
             uint frames = _self.getAnimationFrameCount();
             // Animation system uses scaled dt, so multiply by timeScale to keep real duration correct

@@ -30,6 +30,7 @@ namespace Eno
             if (DummyRed_Script.WasHit)
             {
                 _roomCleared = true;
+                BGMforLevel1_Script.SetLayer2Combat(false);
                 UnlockDoor("Door2to1");
                 UnlockDoor("Door2to3");
             }
@@ -38,6 +39,7 @@ namespace Eno
         private void SpawnWave1()
         {
             _wavesStarted = true;
+            BGMforLevel1_Script.SetLayer2Combat(true);
             LockDoor("Door2to1");
             LockDoor("Door2to3");
             SpawnPrefab("DummyRed", 972f, -1700f);

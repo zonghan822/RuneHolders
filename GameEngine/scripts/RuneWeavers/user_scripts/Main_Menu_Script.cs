@@ -43,11 +43,16 @@ namespace Eno
         // Video cutscene state
         private bool _videoStarted = false;
 
+        // Hover audio
+        private AudioNode? _hoverAudio          = null;
+        private string     _hoveredButtonName    = "";
+        private string     _prevHoveredButtonName = "";
+
         // ------------------------------------------------------------------ //
 
         public void Begin()
         {
-
+            _hoverAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public void Update()
@@ -107,6 +112,11 @@ namespace Eno
                 if (_videoStarted && !Bridge.IsVideoPlaying(videoID))
                     EndCutscene();
             }
+
+            // Snapshot hover state: handlers set _hoveredButtonName after Update runs,
+            // so save it now as the "last frame" reference for next frame's edge detection.
+            _prevHoveredButtonName = _hoveredButtonName;
+            _hoveredButtonName     = "";
         }
 
         // ------------------------------------------------------------------ //
@@ -326,8 +336,8 @@ namespace Eno
             uint canvasID = Bridge.GetNode(VideoTransitionCanvasName);
             uint videoID  = Bridge.GetNode(CutsceneVideoNodeName);
 
-            // Stop main menu BGM so it doesn't overlap the cutscene audio
-            try { Bridge.AudioStop(Bridge.GetNode("Background")); } catch (Exception) {}
+            // Fade out main menu BGM into the cutscene
+            MainMenu_Background_Script.StartFadeOut();
 
             Bridge.SetCanvasActive(canvasID, true);
             Bridge.SetVisibility(videoID, true);
@@ -364,6 +374,22 @@ namespace Eno
                 SetChildButtonsActive(childID, active);
             }
         }
+
+        /* -------------------------- HOVER HANDLERS ----------------------------- */
+
+        private void OnButtonHover(string name)
+        {
+            _hoveredButtonName = name;
+            if (_prevHoveredButtonName == name) return;   // still on same button — skip
+            if (_hoverAudio == null) return;
+            _hoverAudio.sound = "UI_Hover 6";
+            _hoverAudio.play();
+        }
+
+        public void _when_play_button_onhover()     => OnButtonHover("Play");
+        public void _when_control_button_onhover()  => OnButtonHover("Controls");
+        public void _when_quit_button_onhover()     => OnButtonHover("Quit");
+        public void _when_settings_button_onhover() => OnButtonHover("Settings");
 
         /* -------------------------- MAIN MENU BUTTONS ----------------------- */
         // -------------- PLAY BUTTON -------------------
@@ -545,6 +571,21 @@ namespace Eno
         }
 
 		public void _when_sfxsliderball_onpressed()
+        {
+
+        }
+	
+		public void _when_quit_menu_yes_button_onhover()
+        {
+
+        }
+	
+		public void _when_quit_menu_no_button_onhover()
+        {
+
+        }
+	
+		public void _when_settings_menu_back_button_onhover()
         {
 
         }

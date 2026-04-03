@@ -264,8 +264,8 @@ namespace Eno
                     Cancel();
             }
 
-            // Keep Rune-Active looping while the circle is open
-            if (_active && _runeActiveAudio != null && !_runeActiveAudio.isPlaying)
+            // Keep Rune-Active looping only after all 4 runes are connected and player is holding
+            if (_active && _pendingSpell >= 0 && _runeActiveAudio != null && !_runeActiveAudio.isPlaying)
             {
                 _runeActiveAudio.sound = "Rune-Active";
                 _runeActiveAudio.play();
@@ -328,14 +328,6 @@ namespace Eno
             // Set player state to Cast or CastWalk depending on movement
             FindPlayer();
             _player?.changeState(IsPlayerMoving() ? "CastWalk" : "Cast");
-
-            // Start Rune-Active loop
-            if (_runeActiveAudio != null)
-            {
-                _runeActiveAudio.volume = runeActiveVolume;
-                _runeActiveAudio.sound = "Rune-Active";
-                _runeActiveAudio.play();
-            }
         }
 
         private void SpawnRunes()
@@ -408,6 +400,13 @@ namespace Eno
                 {
                     _pendingSpell = _activePattern;
 
+                    if (_runeActiveAudio != null)
+                    {
+                        _runeActiveAudio.volume = runeActiveVolume;
+                        _runeActiveAudio.sound = "Rune-Active";
+                        _runeActiveAudio.play();
+                    }
+
                     foreach (int c in _connected)
                         _runeParticles[c]?.emitBurst(_runeParticles[c].maxParticles/4);
                     return;
@@ -467,6 +466,14 @@ namespace Eno
             if (_activePattern >= 0 && PatternMatches(_connected, Patterns[_activePattern]))
             {
                 _pendingSpell = _activePattern;
+
+                if (_runeActiveAudio != null)
+                {
+                    _runeActiveAudio.volume = runeActiveVolume;
+                    _runeActiveAudio.sound = "Rune-Active";
+                    _runeActiveAudio.play();
+                }
+
                 foreach (int c in _connected)
                     _runeParticles[c]?.emitBurst(_runeParticles[c].maxParticles / 4);
                 return;

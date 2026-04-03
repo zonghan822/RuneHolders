@@ -57,6 +57,7 @@ namespace Eno
             if (_wavesStarted && !_roomCleared && DummyBlue_Script.WasHit)
             {
                 _roomCleared = true;
+                BGMforLevel1_Script.SetLayer2Combat(false);
                 UnlockDoor("Door8to7");
                 UnlockDoor("Door8to9");
             }
@@ -93,6 +94,7 @@ namespace Eno
         private void SpawnWave1()
         {
             _wavesStarted = true;
+            BGMforLevel1_Script.SetLayer2Combat(true);
             LockDoor("Door8to7");
             LockDoor("Door8to9");
             SpawnPrefab("DummyBlue", 6570f, -4750f);

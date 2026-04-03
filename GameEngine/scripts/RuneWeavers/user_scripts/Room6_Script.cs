@@ -52,6 +52,7 @@ namespace Eno
             if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
             {
                 _roomCleared = true;
+                BGMforLevel1_Script.SetLayer2Combat(false);
                 UnlockDoor("Door6to7");
                 UnlockDoor("Door6to5");
                 UnlockDoor("Door5to6");
@@ -73,6 +74,7 @@ namespace Eno
             if (GetAllEnemies().Count == 0)
             {
                 _roomCleared = true;
+                BGMforLevel1_Script.SetLayer2Combat(false);
                 UnlockDoor("Door6to7");
                 UnlockDoor("Door6to5");
                 UnlockDoor("Door5to6");
@@ -84,6 +86,7 @@ namespace Eno
             if (!_wavesStarted)
             {
                 _wavesStarted = true;
+                BGMforLevel1_Script.SetLayer2Combat(true);
                 LockDoor("Door5to6");
                 LockDoor("Door6to5");
                 LockDoor("Door6to7");

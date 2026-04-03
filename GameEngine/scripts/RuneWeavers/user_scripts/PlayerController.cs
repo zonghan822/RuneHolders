@@ -25,10 +25,13 @@ namespace Eno
         private bool      _isAttacking = false;
         private bool      _isHurt      = false;
 
+        public float footstepVolume = 70f;
+
         private Node2D?[] _scrollNodes    = Array.Empty<Node2D?>();
         private uint      _spellbookUIID    = 0;
         private bool      _spellbookOpen    = false;
         private AudioNode? _spellbookAudio  = null;
+        private AudioNode? _footstepAudio   = null;
         private uint      _winLoseCanvasID  = 0;
         private uint      _enemyInfoID        = 0;
         private uint      _enemyInfoPopupID   = 0;
@@ -62,6 +65,13 @@ namespace Eno
                 try { _scrollNodes[i] = GetNode<Node2D>(Scroll_Dialouge_Script.ScrollNames[i]); } catch { }
 
             _spellbookAudio  = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+
+            _footstepAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            if (_footstepAudio != null)
+            {
+                _footstepAudio.volume = footstepVolume;
+                _footstepAudio.spatialAudio = true;
+            }
 
             _spellbookUIID   = Bridge.GetNode("Spellbook");
             _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");
@@ -236,19 +246,33 @@ namespace Eno
         public void Walk_enter()
         {
             _player.setAnimationLooping(true);
+            if (_footstepAudio != null)
+            {
+                _footstepAudio.sound = "Footsteps-Fade";
+                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+            }
         }
 
         // Called every frame while in the walk state
         public void Walk_update()
         {
             if (!IsMoving())
+            {
                 _player.changeState("Idle");
+                return;
+            }
+
+            if (_footstepAudio != null && !_footstepAudio.isPlaying)
+            {
+                _footstepAudio.sound = "Footsteps-Fade";
+                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+            }
         }
 
         // Called when exiting the walk state
         public void Walk_exit()
         {
-            // TODO: Add exit logic for walk state
+            _footstepAudio?.stop();
         }
 
         private void SetChildButtonsActive(uint parentID, bool active)
@@ -294,16 +318,31 @@ namespace Eno
         public void CastWalk_enter()
         {
             _player.setAnimationLooping(true);
+            if (_footstepAudio != null)
+            {
+                _footstepAudio.sound = "Footsteps-Fade";
+                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+            }
         }
 
         public void CastWalk_update()
         {
             if (!IsMoving())
+            {
                 _player.changeState("Cast");
+                return;
+            }
+
+            if (_footstepAudio != null && !_footstepAudio.isPlaying)
+            {
+                _footstepAudio.sound = "Footsteps-Fade";
+                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+            }
         }
 
         public void CastWalk_exit()
         {
+            _footstepAudio?.stop();
         }
     
         public void Attack_enter()

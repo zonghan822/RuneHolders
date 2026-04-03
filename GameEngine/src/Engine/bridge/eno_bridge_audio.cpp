@@ -68,7 +68,12 @@ namespace Bridge
         ENGINE_API void __stdcall SetAudioVolume(uint32_t sceneObjectID, float volume)
         {
             if (auto* a = getAudio(sceneObjectID))
+            {
                 a->volume_ = static_cast<double>(volume);
+                // Also update the live FMOD channel so the change takes effect immediately
+                if (a->audioMod_.ch_)
+                    a->audioMod_.ch_->setVolume(static_cast<float>(volume / 100.0));
+            }
         }
 
         ENGINE_API float __stdcall GetAudioPitch(uint32_t sceneObjectID)
