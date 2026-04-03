@@ -4,20 +4,24 @@ namespace Eno
     {
         private static Room2_Script? _instance;
         private float _lockRumbleTimer = 0f;
-        private bool  _roomCleared  = false;
-        private bool  _wavesStarted = false;
+        private bool  _roomCleared    = false;
+        private bool  _wasEverCleared = false;
+        private bool  _wavesStarted   = false;
 
         public void Begin()
         {
-            _instance     = this;
-            _roomCleared  = false;
-            _wavesStarted = false;
+            _instance      = this;
+            _roomCleared   = false;
+            _wasEverCleared = false;
+            _wavesStarted  = false;
             DummyRed_Script.WasHit = false;
         }
 
         public static void StartWaves()
         {
-            _instance?.SpawnWave1();
+            if (_instance == null) return;
+            DummyRed_Script.WasHit = false;
+            _instance.SpawnWave1();
         }
 
         public static void CleanupDummies()
@@ -37,7 +41,8 @@ namespace Eno
             if (!_wavesStarted || _roomCleared) return;
             if (DummyRed_Script.WasHit)
             {
-                _roomCleared = true;
+                _roomCleared    = true;
+                _wasEverCleared = true;
                 BGMforLevel1_Script.SetLayer2Combat(false);
                 UnlockDoor("Door2to1");
                 UnlockDoor("Door2to3");
@@ -47,9 +52,13 @@ namespace Eno
         private void SpawnWave1()
         {
             _wavesStarted = true;
-            BGMforLevel1_Script.SetLayer2Combat(true);
-            LockDoor("Door2to1");
-            LockDoor("Door2to3");
+            if (!_wasEverCleared)
+            {
+                BGMforLevel1_Script.SetLayer2Combat(true);
+                LockDoor("Door2to1");
+                LockDoor("Door2to3");
+            }
+            _roomCleared = false;
             SpawnPrefab("DummyRed", 972f, -1700f);
         }
 

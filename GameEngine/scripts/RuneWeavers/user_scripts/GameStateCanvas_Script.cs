@@ -238,10 +238,9 @@ namespace Eno
             Bridge.SetTexturePath(Bridge.GetNode("PauseScreenResumeButton"), "UI-Resume");
             SetPauseSprite(_pauseSel, false);
             _pauseSel = PauseNav.None;
-            Bridge.SetAudioPaused(false);
             Bridge.SetCanvasActive(_winLoseCanvasID, false);
             if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, false);
-            PlayerController.IsGamePaused = false;
+            PauseManager.SetPauseMenu(false);
         }
 
 		public void _when_pausescreenquit_onpressed()

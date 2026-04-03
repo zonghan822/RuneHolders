@@ -31,6 +31,7 @@ namespace Eno
         public static void StartWaves()
         {
             if (_instance == null) return;
+            if (_instance._roomCleared) return;
 
             _instance._uiInfoID = Bridge.GetNode("UI_Info");
             if (_instance._uiInfoID != 0)
@@ -43,8 +44,8 @@ namespace Eno
             if (!_popupActivated)
             {
                 _popupActivated = true;
-                PlayerController.EnemyPopupKeyboardTexture   = "UI-EnemyPopUp-LavaSlug";
-                PlayerController.EnemyPopupControllerTexture = "UI-EnemyPopUp-Slug-Controller";
+                EnemyInfoController.PopupKeyboardTexture   = "UI-EnemyPopUp-LavaSlug";
+                EnemyInfoController.PopupControllerTexture = "UI-EnemyPopUp-Slug-Controller";
 
                 _instance._popupID = Bridge.GetNode("EnemyInfoPopUp");
                 if (_instance._popupID != 0 && _instance._popupID != uint.MaxValue)

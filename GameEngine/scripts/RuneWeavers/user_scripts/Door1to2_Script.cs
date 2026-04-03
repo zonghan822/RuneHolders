@@ -27,6 +27,7 @@ namespace Eno
 
         public void Update()
         {
+            if (PauseManager.IsGamePaused) return;
             if (!_panning || _cameraID == uint.MaxValue || _cameraID == 0) return;
 
             if (_playerID != 0 && _playerID != uint.MaxValue)
@@ -46,7 +47,6 @@ namespace Eno
             {
                 Bridge.SetPosition(_cameraID, CamDestX, CamDestY);
                 _panning = false;
-                // Play video in next room
                 Room2_Script.StartWaves();
                 
             }

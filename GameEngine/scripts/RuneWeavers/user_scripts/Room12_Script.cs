@@ -22,7 +22,9 @@ namespace Eno
 
         public static void StartWaves()
         {
-            _instance?.SpawnWave(1);
+            if (_instance == null) return;
+            if (_instance._roomCleared) return;
+            _instance.SpawnWave(1);
         }
 
         public void Update()
@@ -47,7 +49,7 @@ namespace Eno
                 return; // don't check clear until all waves out
             }
 
-            // All waves spawned — wait for enemies to die
+            // All waves spawned ï¿½ wait for enemies to die
             if (GetAllEnemies().Count == 0)
             {
                 _roomCleared = true;

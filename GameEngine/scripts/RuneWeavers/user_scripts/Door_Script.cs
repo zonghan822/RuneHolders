@@ -19,6 +19,7 @@ namespace Eno
 
         public void Update()
         {
+            if (PauseManager.IsGamePaused) return;
             if (_opened) return;
 
             if (AllEnemiesDead())

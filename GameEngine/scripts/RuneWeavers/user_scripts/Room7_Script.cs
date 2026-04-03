@@ -23,7 +23,9 @@ namespace Eno
 
         public static void StartWaves()
         {
-            _instance?.SpawnWave(1);
+            if (_instance == null) return;
+            if (_instance._roomCleared) return;
+            _instance.SpawnWave(1);
         }
 
         public void Update()

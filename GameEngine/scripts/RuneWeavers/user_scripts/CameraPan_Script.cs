@@ -35,6 +35,8 @@ namespace Eno
 
         public void Update()
         {
+            if (PauseManager.IsGamePaused) return;
+
             switch (_state)
             {
                 case State.Waiting: Waiting(); break;

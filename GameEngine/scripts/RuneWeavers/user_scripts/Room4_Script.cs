@@ -9,9 +9,10 @@ namespace Eno
         private uint _spellbookID = 0;
         private uint _exitDoorID  = 0;
 
-        private bool  _scrollPickedUp = false;
-        private bool  _wavesStarted   = false;
-        private bool  _roomCleared    = false;
+        private bool  _scrollPickedUp  = false;
+        private bool  _wavesStarted    = false;
+        private bool  _roomCleared     = false;
+        private bool  _wasEverCleared  = false;
 
         private uint  _uiInfoID    = 0;
         private float _uiInfoTimer = 0f;
@@ -26,16 +27,19 @@ namespace Eno
             _spellbookID = Bridge.GetNode("Spellbook");
             _uiInfoID    = Bridge.GetNode("UI_Info");
 
-            _scrollPickedUp = false;
-            _wavesStarted   = false;
-            _roomCleared    = false;
-            _uiInfoTimer    = 0f;
+            _scrollPickedUp  = false;
+            _wavesStarted    = false;
+            _roomCleared     = false;
+            _wasEverCleared  = false;
+            _uiInfoTimer     = 0f;
             DummyYellow_Script.WasHit = false;
         }
 
         public static void StartWaves()
         {
-            _instance?.SpawnWave1();
+            if (_instance == null) return;
+            DummyYellow_Script.WasHit = false;
+            _instance.SpawnWave1();
         }
 
         public static void CleanupDummies()
@@ -63,7 +67,8 @@ namespace Eno
             // Check dummy clear condition
             if (_wavesStarted && !_roomCleared && DummyYellow_Script.WasHit)
             {
-                _roomCleared = true;
+                _roomCleared    = true;
+                _wasEverCleared = true;
                 UnlockDoor("Door4to3");
                 UnlockDoor("Door4to5");
             }
@@ -82,7 +87,7 @@ namespace Eno
                 // Show F-to-open hint
                 if (_uiInfoID != 0)
                 {
-                    Bridge.SetTexturePath(_uiInfoID, "UI-FtoOpen-Text");
+                    Bridge.SetTexturePath(_uiInfoID, "Text-FSpellbook");
                     Bridge.SetVisibility(_uiInfoID, true);
                 }
                 _uiInfoTimer = 0f;
@@ -94,9 +99,13 @@ namespace Eno
         private void SpawnWave1()
         {
             _wavesStarted = true;
-            LockDoor("Door4to3");
-            LockDoor("Door4to5");
-            SpawnPrefab("DummyRed",  830f, -3700f);
+            if (!_wasEverCleared)
+            {
+                LockDoor("Door4to3");
+                LockDoor("Door4to5");
+            }
+            _roomCleared = false;
+            SpawnPrefab("DummyRed",    830f, -3700f);
             SpawnPrefab("DummyYellow", 1080f, -3700f);
         }
 

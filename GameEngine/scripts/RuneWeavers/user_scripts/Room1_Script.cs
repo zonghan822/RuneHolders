@@ -30,8 +30,8 @@ namespace Eno
             uint popupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
             if (popupID   != 0 && popupID   != uint.MaxValue) Bridge.SetVisibility(popupID,   false);
             if (popupBgID != 0 && popupBgID != uint.MaxValue) Bridge.SetVisibility(popupBgID, false);
-            PlayerController.EnemyPopupKeyboardTexture   = "";
-            PlayerController.EnemyPopupControllerTexture = "";
+            EnemyInfoController.PopupKeyboardTexture   = "";
+            EnemyInfoController.PopupControllerTexture = "";
         }
 
         public void Update()
@@ -51,7 +51,7 @@ namespace Eno
 
                 if (_uiInfoID != 0) 
                 {
-                    Bridge.SetTexturePath(_uiInfoID, "UI-WASD-Text");
+                    Bridge.SetTexturePath(_uiInfoID, "Text-WASDToMove");
                     Bridge.SetVisibility(_uiInfoID, true);
                 }
             }
@@ -76,7 +76,7 @@ namespace Eno
                 // Swap UI_Info texture and reset its timer
                 if (_uiInfoID != 0)
                 {
-                    Bridge.SetTexturePath(_uiInfoID, "UI-FtoOpen-Text");
+                    Bridge.SetTexturePath(_uiInfoID, "Text-FSpellbook");
                     Bridge.SetVisibility(_uiInfoID, true);
                 }
                 _uiInfoTimer = 0f;
