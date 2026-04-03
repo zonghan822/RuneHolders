@@ -57,8 +57,11 @@ namespace Eno
 
         // ------------------------------------------------------------------ //
 
+        private static Main_Menu_Script? _instance;
+
         public void Begin()
         {
+            _instance   = this;
             _hoverAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
             _clickAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
@@ -70,30 +73,51 @@ namespace Eno
             _clickAudio.play();
         }
 
+        // Called by AudioSettings_Script when the player clicks a slider ball directly,
+        // so the settings highlight (e.g. Back button) updates to match.
+        public static void NotifyBallGrabbed(string ballName)
+        {
+            if (_instance == null || _instance._menuState != MenuState.SettingsMenu) return;
+            _instance._settingsRow = ballName == "MasterSliderBall" ? SettingsRow.Master
+                                   : ballName == "BGMSliderBall"    ? SettingsRow.BGM
+                                   :                                  SettingsRow.SFX;
+            _instance.UpdateSettingsHighlight();
+        }
+
         public void Update()
         {
-            // Left stick edge detection (trigger once per flick)
-            const float STICK_THRESHOLD = 0.5f;
-            Vector2 stick = Input.getLeftStick(0.2f);
-            bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
-            bool stickRightNow = stick.x >  STICK_THRESHOLD;
-            bool stickUpNow    = stick.y < -STICK_THRESHOLD;
-            bool stickDownNow  = stick.y >  STICK_THRESHOLD;
-            bool stickLeftEdge  = stickLeftNow  && !_stickLeft;
-            bool stickRightEdge = stickRightNow && !_stickRight;
-            bool stickUpEdge    = stickUpNow    && !_stickUp;
-            bool stickDownEdge  = stickDownNow  && !_stickDown;
-            _stickLeft  = stickLeftNow;
-            _stickRight = stickRightNow;
-            _stickUp    = stickUpNow;
-            _stickDown  = stickDownNow;
+            bool isController = Input.inputMode == InputMode.Controller;
 
-            bool up    = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge;
-            bool down  = Input.isKeyPressed(KeyCode.S) || Input.isGamepadButtonPressed(GamepadButton.DPadDown)  || stickDownEdge;
-            bool left  = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge;
-            bool right = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge;
-            bool confirm = Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A);
-            bool back    = Input.isGamepadButtonPressed(GamepadButton.B);
+            // Left stick edge detection — only when using controller
+            bool stickLeftEdge = false, stickRightEdge = false, stickUpEdge = false, stickDownEdge = false;
+            if (isController)
+            {
+                const float STICK_THRESHOLD = 0.5f;
+                Vector2 stick = Input.getLeftStick(0.2f);
+                bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
+                bool stickRightNow = stick.x >  STICK_THRESHOLD;
+                bool stickUpNow    = stick.y < -STICK_THRESHOLD;
+                bool stickDownNow  = stick.y >  STICK_THRESHOLD;
+                stickLeftEdge  = stickLeftNow  && !_stickLeft;
+                stickRightEdge = stickRightNow && !_stickRight;
+                stickUpEdge    = stickUpNow    && !_stickUp;
+                stickDownEdge  = stickDownNow  && !_stickDown;
+                _stickLeft  = stickLeftNow;
+                _stickRight = stickRightNow;
+                _stickUp    = stickUpNow;
+                _stickDown  = stickDownNow;
+            }
+            else
+            {
+                _stickLeft = _stickRight = _stickUp = _stickDown = false;
+            }
+
+            bool up    = Input.isKeyPressed(KeyCode.W) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge));
+            bool down  = Input.isKeyPressed(KeyCode.S) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadDown)  || stickDownEdge));
+            bool left  = Input.isKeyPressed(KeyCode.A) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge));
+            bool right = Input.isKeyPressed(KeyCode.D) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge));
+            bool confirm = Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A));
+            bool back    = isController && Input.isGamepadButtonPressed(GamepadButton.B);
 
             if (_menuState == MenuState.Main)
             {
@@ -131,7 +155,7 @@ namespace Eno
                 _videoTimer += Time.deltaTime;
 
                 // Escape skips the cutscene
-                if (Input.isKeyPressed(KeyCode.Escape)|| Input.isGamepadButtonPressed(GamepadButton.B))
+                if (Input.isKeyPressed(KeyCode.Escape) || (isController && Input.isGamepadButtonPressed(GamepadButton.B)))
                 {
                     EndCutscene();
                     return;
@@ -218,6 +242,7 @@ namespace Eno
 
         private void EnterQuitMenu()
         {
+            SetMainButtonsActive(false);
             _menuState = MenuState.QuitMenu;
             SelectQuit(QuitButton.Yes);
         }
@@ -259,6 +284,7 @@ namespace Eno
             SetQuitSprite(_quitSelected, false);
             _quitSelected = QuitButton.None;
             _menuState = MenuState.Main;
+            SetMainButtonsActive(true);
         }
 
         // ------------------------------------------------------------------ //
@@ -267,6 +293,7 @@ namespace Eno
 
         private void EnterControlsMenu()
         {
+            SetMainButtonsActive(false);
             _menuState = MenuState.ControlsMenu;
             Bridge.SetTexturePath(Bridge.GetNode("Control Menu Back Button"), "UI-Back-Selected");
         }
@@ -275,6 +302,7 @@ namespace Eno
         {
             Bridge.SetTexturePath(Bridge.GetNode("Control Menu Back Button"), "UI-Back");
             _menuState = MenuState.Main;
+            SetMainButtonsActive(true);
         }
 
         // ------------------------------------------------------------------ //
@@ -283,6 +311,7 @@ namespace Eno
 
         private void EnterSettingsMenu()
         {
+            SetMainButtonsActive(false);
             _menuState    = MenuState.SettingsMenu;
             _settingsRow  = SettingsRow.Master;
 
@@ -317,8 +346,12 @@ namespace Eno
 
             Audio.saveVolumes(masterVol, bgmVol, sfxVol);
 
-            // Reset back button sprite if it was highlighted
+            // Reset back button sprite and all slider balls
             Bridge.SetTexturePath(Bridge.GetNode("Settings Menu Back Button"), "UI-Back");
+            SetMainButtonsActive(true);
+            Bridge.ChangeState(Bridge.GetNode("MasterSliderBall"), "Default");
+            Bridge.ChangeState(Bridge.GetNode("BGMSliderBall"),    "Default");
+            Bridge.ChangeState(Bridge.GetNode("SFXSliderBall"),    "Default");
             _settingsRow = SettingsRow.Master;
             _menuState   = MenuState.Main;
         }
@@ -331,11 +364,14 @@ namespace Eno
             UpdateSettingsHighlight();
         }
 
-        // Highlights the Back button when it is focused; slider rows have no sprite change.
+        // Highlights the Back button and slider balls based on the focused row.
         private void UpdateSettingsHighlight()
         {
             Bridge.SetTexturePath(Bridge.GetNode("Settings Menu Back Button"),
                 _settingsRow == SettingsRow.Back ? "UI-Back-Selected" : "UI-Back");
+            Bridge.ChangeState(Bridge.GetNode("MasterSliderBall"), _settingsRow == SettingsRow.Master ? "selected" : "Default");
+            Bridge.ChangeState(Bridge.GetNode("BGMSliderBall"),    _settingsRow == SettingsRow.BGM    ? "selected" : "Default");
+            Bridge.ChangeState(Bridge.GetNode("SFXSliderBall"),    _settingsRow == SettingsRow.SFX    ? "selected" : "Default");
         }
 
         private void AdjustFocusedSlider(float delta)
@@ -380,6 +416,7 @@ namespace Eno
 
         private void EnterCutscene()
         {
+            SetMainButtonsActive(false);
             uint canvasID = Bridge.GetNode(VideoTransitionCanvasName);
             uint videoID  = Bridge.GetNode(CutsceneVideoNodeName);
 
@@ -410,6 +447,17 @@ namespace Eno
         // Shared helper
         // ------------------------------------------------------------------ //
 
+        private void SetMainButtonsActive(bool active)
+        {
+            string[] names = { "Play Button", "Settings Button", "Control Button", "Quit Button" };
+            foreach (string name in names)
+            {
+                uint id = Bridge.GetNode(name);
+                if (id != 0 && id != uint.MaxValue)
+                    Bridge.SetButtonActive(id, active);
+            }
+        }
+
         private void SetChildButtonsActive(uint parentID, bool active)
         {
             uint count = Bridge.GetChildCount(parentID);
@@ -428,6 +476,22 @@ namespace Eno
         {
             _hoveredButtonName = name;
             if (_prevHoveredButtonName == name) return;   // still on same button — skip
+
+            // Change sprite to selected state (mirrors WASD selection)
+            if (_menuState == MenuState.Main)
+            {
+                MenuButton btn = name switch
+                {
+                    "Play"     => MenuButton.Play,
+                    "Controls" => MenuButton.Controls,
+                    "Quit"     => MenuButton.Quit,
+                    "Settings" => MenuButton.Settings,
+                    _          => MenuButton.None
+                };
+                if (btn != MenuButton.None)
+                    SelectMain(btn);
+            }
+
             if (_hoverAudio == null) return;
             _hoverAudio.sound = "UI_Hover 6";
             _hoverAudio.play();
@@ -624,17 +688,36 @@ namespace Eno
 	
 		public void _when_quit_menu_yes_button_onhover()
         {
-
+            _hoveredButtonName = "QuitYes";
+            if (_prevHoveredButtonName == "QuitYes") return;
+            if (_menuState == MenuState.QuitMenu) SelectQuit(QuitButton.Yes);
+            if (_hoverAudio == null) return;
+            _hoverAudio.sound = "UI_Hover 6";
+            _hoverAudio.play();
         }
-	
+
 		public void _when_quit_menu_no_button_onhover()
         {
-
+            _hoveredButtonName = "QuitNo";
+            if (_prevHoveredButtonName == "QuitNo") return;
+            if (_menuState == MenuState.QuitMenu) SelectQuit(QuitButton.No);
+            if (_hoverAudio == null) return;
+            _hoverAudio.sound = "UI_Hover 6";
+            _hoverAudio.play();
         }
-	
+
 		public void _when_settings_menu_back_button_onhover()
         {
-
+            _hoveredButtonName = "SettingsBack";
+            if (_prevHoveredButtonName == "SettingsBack") return;
+            if (_menuState == MenuState.SettingsMenu)
+            {
+                _settingsRow = SettingsRow.Back;
+                UpdateSettingsHighlight();
+            }
+            if (_hoverAudio == null) return;
+            _hoverAudio.sound = "UI_Hover 6";
+            _hoverAudio.play();
         }
 	}
 }

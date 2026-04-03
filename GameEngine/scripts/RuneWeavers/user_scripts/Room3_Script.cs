@@ -16,6 +16,7 @@ namespace Eno
         private float _uiInfoTimer = 0f;
         private float _lockRumbleTimer = 0f;
         private AudioNode? _doorAudio = null;
+        private uint  _popupID     = 0;
 
         public void Begin()
         {
@@ -44,19 +45,15 @@ namespace Eno
             if (!_popupActivated)
             {
                 _popupActivated = true;
-                uint popupID = Bridge.GetNode("EnemyInfoPopUp");
-                if (popupID != 0 && popupID != uint.MaxValue)
+                PlayerController.EnemyPopupKeyboardTexture   = "UI-EnemyPopUp-LavaSlug";
+                PlayerController.EnemyPopupControllerTexture = "UI-EnemyPopUp-Slug-Controller";
+
+                _instance._popupID = Bridge.GetNode("EnemyInfoPopUp");
+                if (_instance._popupID != 0 && _instance._popupID != uint.MaxValue)
                 {
-                    Bridge.SetTexturePath(popupID, "Enemy-Slug-Frozen-Sheet");
-                    Bridge.SetVisibility(popupID, true);
-                    Bridge.SetButtonActive(popupID, true);
+                    Bridge.SetVisibility(_instance._popupID, true);
+                    Bridge.SetButtonActive(_instance._popupID, true);
                 }
-                uint popupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
-                if (popupBgID != 0 && popupBgID != uint.MaxValue)
-                    Bridge.SetVisibility(popupBgID, true);
-                uint enemyInfoID = Bridge.GetNode("EnemyInfo");
-                if (enemyInfoID != 0 && enemyInfoID != uint.MaxValue)
-                    Bridge.SetTexturePath(enemyInfoID, "UI-EnemyPopUp-LavaSlug");
             }
 
             _instance.SpawnWave1();
@@ -86,6 +83,14 @@ namespace Eno
                 UnlockDoor("Door4to3");
                 UnlockDoor("Door3to2");
                 UnlockDoor("Door2to3");
+            }
+
+            if (_popupID != 0 && _popupID != uint.MaxValue)
+            {
+                string icon = Input.inputMode == InputMode.Controller
+                    ? "UI-EnemyIcon-Slug-Controller"
+                    : "UI-EnemyIcon-Slug";
+                Bridge.SetTexturePath(_popupID, icon);
             }
 
             if (!_wavesStarted || _roomCleared) return;

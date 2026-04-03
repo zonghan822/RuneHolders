@@ -12,6 +12,7 @@ namespace Eno
         private uint _victoryScreenID = 0;
         private uint _areYouSureID    = 0;
         private AudioNode? _clickAudio = null;
+        private uint _blackBgID       = 0;
 
         public enum prevScreen
         {
@@ -48,6 +49,7 @@ namespace Eno
             _victoryScreenID = Bridge.GetNode("WinScreen");
             _areYouSureID    = Bridge.GetNode("AreYouSureScreen");
             _clickAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            _blackBgID       = Bridge.GetNode("BlackBG");
         }
 
         private void PlayClickSound()
@@ -55,6 +57,7 @@ namespace Eno
             if (_clickAudio == null) return;
             _clickAudio.sound = "UI_Select_Small 1";
             _clickAudio.play();
+
         }
 
         public void Update()
@@ -66,24 +69,34 @@ namespace Eno
                 SelectPause(PauseNav.Resume);
             _prevPaused = paused;
 
-            // Left stick edge detection (trigger once per flick)
-            const float STICK_THRESHOLD = 0.5f;
-            Vector2 stick = Input.getLeftStick(0.2f);
-            bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
-            bool stickRightNow = stick.x >  STICK_THRESHOLD;
-            bool stickUpNow    = stick.y < -STICK_THRESHOLD;
-            bool stickLeftEdge  = stickLeftNow  && !_stickLeft;
-            bool stickRightEdge = stickRightNow && !_stickRight;
-            bool stickUpEdge    = stickUpNow    && !_stickUp;
-            _stickLeft  = stickLeftNow;
-            _stickRight = stickRightNow;
-            _stickUp    = stickUpNow;
+            bool isController = Input.inputMode == InputMode.Controller;
 
-            bool up      = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge;
-            bool left    = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge;
-            bool right   = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge;
-            bool confirm = Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A);
-            bool back    = Input.isGamepadButtonPressed(GamepadButton.B);
+            // Left stick edge detection — only when using controller
+            bool stickLeftEdge = false, stickRightEdge = false, stickUpEdge = false;
+            if (isController)
+            {
+                const float STICK_THRESHOLD = 0.5f;
+                Vector2 stick = Input.getLeftStick(0.2f);
+                bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
+                bool stickRightNow = stick.x >  STICK_THRESHOLD;
+                bool stickUpNow    = stick.y < -STICK_THRESHOLD;
+                stickLeftEdge  = stickLeftNow  && !_stickLeft;
+                stickRightEdge = stickRightNow && !_stickRight;
+                stickUpEdge    = stickUpNow    && !_stickUp;
+                _stickLeft  = stickLeftNow;
+                _stickRight = stickRightNow;
+                _stickUp    = stickUpNow;
+            }
+            else
+            {
+                _stickLeft = _stickRight = _stickUp = false;
+            }
+
+            bool up      = Input.isKeyPressed(KeyCode.W) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge));
+            bool left    = Input.isKeyPressed(KeyCode.A) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge));
+            bool right   = Input.isKeyPressed(KeyCode.D) || (isController && (Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge));
+            bool confirm = Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A));
+            bool back    = isController && Input.isGamepadButtonPressed(GamepadButton.B);
             bool areYouSureVisible = Bridge.GetVisibility(_areYouSureID);
 
             // Win screen controller navigation
@@ -237,6 +250,7 @@ namespace Eno
             _pauseSel = PauseNav.None;
             Bridge.SetAudioPaused(false);
             Bridge.SetCanvasActive(_winLoseCanvasID, false);
+            if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, false);
             PlayerController.IsGamePaused = false;
         }
 
@@ -299,21 +313,15 @@ namespace Eno
             _quitSel = QuitNav.None;
             Bridge.SetVisibility(_areYouSureID, false);
             SetChildButtonsActive(_areYouSureID, false);
-            switch (_prevScreen)
+            if (_prevScreen == prevScreen.PauseScreen)
             {
-                case prevScreen.WinScreen:
-                    Bridge.SetVisibility(_victoryScreenID, true);
-                    SetChildButtonsActive(_victoryScreenID, true);
-                    break;
-                case prevScreen.PauseScreen:
-                    Bridge.SetVisibility(_pauseScreenID, true);
-                    SetChildButtonsActive(_pauseScreenID, true);
-                    SelectPause(PauseNav.Resume);
-                    break;
-                case prevScreen.LoseScreen:
-                    Bridge.SetVisibility(_defeatScreenID, true);
-                    SetChildButtonsActive(_defeatScreenID, true);
-                    break;
+                Bridge.SetVisibility(_pauseScreenID, true);
+                SetChildButtonsActive(_pauseScreenID, true);
+                SelectPause(PauseNav.Resume);
+            }
+            else
+            {
+                if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, false);
             }
         }
 
@@ -399,8 +407,7 @@ namespace Eno
             PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("WinScreenQuit"), "UI-Quit");
             _prevScreen = prevScreen.WinScreen;
-            Bridge.SetVisibility(_victoryScreenID, false);
-            SetChildButtonsActive(_victoryScreenID, false);
+            if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, true);
             Bridge.SetVisibility(_areYouSureID, true);
             SetChildButtonsActive(_areYouSureID, true);
             SelectQuit(QuitNav.No);
@@ -432,8 +439,7 @@ namespace Eno
             PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenQuitGame"), "UI-Quit");
             _prevScreen = prevScreen.LoseScreen;
-            Bridge.SetVisibility(_defeatScreenID, false);
-            SetChildButtonsActive(_defeatScreenID, false);
+            if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, true);
             Bridge.SetVisibility(_areYouSureID, true);
             SetChildButtonsActive(_areYouSureID, true);
             SelectQuit(QuitNav.No);
@@ -449,6 +455,28 @@ namespace Eno
             PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenMainMenu"), "UI-MainMenu");
             Bridge.ChangeScene("MainMenu.txt");
+        }
+	
+		public void _when_winscreenplayagain_onpressed()
+        {
+            Bridge.SetTexturePath(Bridge.GetNode("WinScreenPlayAgain"), "UI-PlayAgain-Selected");
+        }
+
+		public void _when_winscreenplayagain_onclick()
+        {
+            Bridge.SetTexturePath(Bridge.GetNode("WinScreenPlayAgain"), "UI-PlayAgain");
+            Bridge.ChangeScene("Level.txt");
+        }
+
+		public void _when_defeatscreenplayagain_onpressed()
+        {
+            Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenPlayAgain"), "UI-PlayAgain-Selected");
+        }
+
+		public void _when_defeatscreenplayagain_onclick()
+        {
+            Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenPlayAgain"), "UI-PlayAgain");
+            Bridge.ChangeScene("Level.txt");
         }
 	}
 }

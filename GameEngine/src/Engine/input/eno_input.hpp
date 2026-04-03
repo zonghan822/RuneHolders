@@ -33,6 +33,13 @@
 
 namespace Input
 {
+	enum class InputMode
+	{
+		MouseKeyboard = 0,
+		Controller    = 1,
+	};
+
+
 	/*============================================================================================
 	* \struct	KeyBinding
 	* \brief	Structure that describes a key binding with key, scancode, action, and modifier.
@@ -273,6 +280,12 @@ namespace Input
 		*//*========================================================================================*/
 		void setGamepadRumble(float leftMotor, float rightMotor);
 
+		/*============================================================================================
+		* \brief   Get the current active input mode (mouse+keyboard or controller).
+		* \return  InputMode::MouseKeyboard or InputMode::Controller.
+		*//*========================================================================================*/
+		InputMode getInputMode() const;
+
 	private:
 		Event::EnoEventBus& bus_;
 
@@ -302,6 +315,9 @@ namespace Input
 		bool            gamepadConnected_  = false;
 		GLFWgamepadstate gamepadState_     = {};
 		GLFWgamepadstate prevGamepadState_ = {};
+
+		// Input mode tracking
+		InputMode inputMode_ = InputMode::MouseKeyboard;
 
 		/*============================================================================================
 		* \brief   Handle keyboard events and update key state.

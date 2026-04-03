@@ -35,7 +35,6 @@ namespace Eno
         private Canvas?   _canvas;
         private Label?    _dialogueText;
         private Sprite2D? _dialogueBox;
-        private Sprite2D? _narrativeSprite;
         private Sprite2D? _charCenter;
         private Sprite2D? _charLeft;
         private Sprite2D? _charRight;
@@ -61,7 +60,6 @@ namespace Eno
         {
             try { _canvas        = GetNode<Canvas>("Dialogue Canvas");  } catch { }
             try { _dialogueText  = GetNode<Label>("Dialogue Text");     } catch { }
-            try { _narrativeSprite = GetNode<Sprite2D>("Narrative");    } catch { }
             try { _dialogueBox   = GetNode<Sprite2D>("Dialogue Box");   } catch { }
             try { _charCenter    = GetNode<Sprite2D>("CharacterCenter"); } catch { }
             try { _charLeft      = GetNode<Sprite2D>("ProtagonistLeft"); } catch { }
@@ -85,6 +83,8 @@ namespace Eno
 
         public void Update()
         {
+            bool isController = Input.inputMode == InputMode.Controller;
+
             if (!_active)
             {
                 if (_triggered) return;
@@ -94,7 +94,7 @@ namespace Eno
 
                 if (!Scroll_Dialouge_Script.DialogueActive
                     && Bridge.IsColliding(ID, playerID)
-                    && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)))
+                    && (Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A))))
                 {
                     StartDialogue();
                 }
@@ -102,13 +102,13 @@ namespace Eno
             }
 
             // Escape or B button closes dialogue
-            if (Input.isKeyPressed(KeyCode.Escape) || Input.isGamepadButtonPressed(GamepadButton.B))
+            if (Input.isKeyPressed(KeyCode.Escape) || (isController && Input.isGamepadButtonPressed(GamepadButton.B)))
             {
                 CloseDialogue();
                 return;
             }
 
-            bool ePressed = (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) && !_skipE;
+            bool ePressed = (Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A))) && !_skipE;
             _skipE = false;
 
             if (ePressed)
@@ -157,7 +157,6 @@ namespace Eno
             if (_scrollAudio != null) { _scrollAudio.sound = "Spellbook_Open_01"; _scrollAudio.play(); }
 
             if (_canvas      != null) _canvas.active = true;
-            if (_narrativeSprite != null) _narrativeSprite.visible = false;
             if (_dialogueBox != null) _dialogueBox.visible = true;
             if (_dialogueText != null) { _dialogueText.visible = true; _dialogueText.text = ""; }
 

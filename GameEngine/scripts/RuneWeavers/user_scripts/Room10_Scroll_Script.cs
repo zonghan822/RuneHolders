@@ -27,13 +27,14 @@ namespace Eno
             uint playerID = Bridge.GetNode("Player");
             if (playerID == 0 || playerID == uint.MaxValue) return;
 
-            if (_open && (Input.isKeyPressed(KeyCode.Escape) || Input.isGamepadButtonPressed(GamepadButton.B)))
+            bool isController = Input.inputMode == InputMode.Controller;
+            if (_open && (Input.isKeyPressed(KeyCode.Escape) || (isController && Input.isGamepadButtonPressed(GamepadButton.B))))
             {
                 Close();
                 return;
             }
 
-            bool ePressed = (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) && !_skipE;
+            bool ePressed = (Input.isKeyPressed(KeyCode.E) || (isController && Input.isGamepadButtonPressed(GamepadButton.A))) && !_skipE;
             _skipE = false;
 
             if (!_open && !Scroll_Dialouge_Script.DialogueActive
@@ -49,12 +50,22 @@ namespace Eno
 
         private void Open()
         {
+            bool firstOpen = !Shown;
             Shown = _open = true;
             _skipE = true;
             Scroll_Dialouge_Script.DialogueActive = true;
             if (_narrative != null) { _narrative.texture = "UI-Narrative-3"; _narrative.visible = true; }
             if (_canvas    != null) _canvas.active = true;
             if (_scrollAudio != null) { _scrollAudio.sound = "Spellbook_Open_01"; _scrollAudio.play(); }
+            Bridge.SetButtonActive(Bridge.GetNode("NarrativeBackButton"), true);
+            if (firstOpen) UnlockDoor("Door10to9");
+        }
+
+        private void UnlockDoor(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocking");
         }
 
         private void Close()

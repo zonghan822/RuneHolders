@@ -152,6 +152,12 @@ namespace Bridge {
         ENGINE_API void    __stdcall SetGamepadRumble(float leftMotor, float rightMotor);
 
         // =========================================================================
+        // Input — Mode
+        // Implemented in: eno_bridge_input.cpp
+        // =========================================================================
+        ENGINE_API int     __stdcall GetInputMode(); // 0 = MouseKeyboard, 1 = Controller
+
+        // =========================================================================
         // Audio Component
         // Implemented in: eno_bridge_audio.cpp
         // =========================================================================

@@ -26,6 +26,14 @@ namespace Eno
             _scrollPickedUp        = false;
             _uiInfoTimer           = 0f;
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+
+            // Room 1 has no enemies — hide the enemy popup and clear its textures
+            uint popupID   = Bridge.GetNode("EnemyInfoPopUp");
+            uint popupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
+            if (popupID   != 0 && popupID   != uint.MaxValue) Bridge.SetVisibility(popupID,   false);
+            if (popupBgID != 0 && popupBgID != uint.MaxValue) Bridge.SetVisibility(popupBgID, false);
+            PlayerController.EnemyPopupKeyboardTexture   = "";
+            PlayerController.EnemyPopupControllerTexture = "";
         }
 
         public void Update()
@@ -60,7 +68,7 @@ namespace Eno
 
             // E on scroll → pickup: scroll disappears, spellbook updates, door unlocks
             if (!_scrollPickedUp && Scroll_Dialouge_Script.DialogueShown[0] &&
-                (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) &&
+                (Input.isKeyPressed(KeyCode.E) || (Input.inputMode == InputMode.Controller && Input.isGamepadButtonPressed(GamepadButton.A))) &&
                 _scrollID != 0 && _playerID != 0 &&
                 Bridge.IsColliding(_scrollID, _playerID))
             {
