@@ -32,6 +32,9 @@ namespace Eno
         private bool      _spellbookOpen    = false;
         private AudioNode? _spellbookAudio  = null;
         private AudioNode? _footstepAudio   = null;
+        private Random     _rng             = new Random();
+        private float      _footstepTimer   = 0f;
+        private const float FOOTSTEP_INTERVAL = 0.375f;
         private uint      _winLoseCanvasID  = 0;
         private uint      _enemyInfoID        = 0;
         private uint      _enemyInfoPopupID   = 0;
@@ -259,11 +262,8 @@ namespace Eno
         public void Walk_enter()
         {
             _player.setAnimationLooping(true);
-            if (_footstepAudio != null)
-            {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
-            }
+            _footstepTimer = FOOTSTEP_INTERVAL; // fire immediately on first step
+            PlayFootstep();
         }
 
         // Called every frame while in the walk state
@@ -275,10 +275,11 @@ namespace Eno
                 return;
             }
 
-            if (_footstepAudio != null && !_footstepAudio.isPlaying)
+            _footstepTimer += Time.deltaTime;
+            if (_footstepTimer >= FOOTSTEP_INTERVAL)
             {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+                _footstepTimer = 0f;
+                PlayFootstep();
             }
         }
 
@@ -286,6 +287,7 @@ namespace Eno
         public void Walk_exit()
         {
             _footstepAudio?.stop();
+            _footstepTimer = 0f;
         }
 
         private void SetChildButtonsActive(uint parentID, bool active)
@@ -298,6 +300,13 @@ namespace Eno
                     Bridge.SetButtonActive(childID, active);
                 SetChildButtonsActive(childID, active);
             }
+        }
+
+        private void PlayFootstep()
+        {
+            if (_footstepAudio == null) return;
+            _footstepAudio.sound = "Footsteps-" + _rng.Next(1, 9);
+            _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
         }
 
         private bool IsMoving()
@@ -332,11 +341,8 @@ namespace Eno
         public void CastWalk_enter()
         {
             _player.setAnimationLooping(true);
-            if (_footstepAudio != null)
-            {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
-            }
+            _footstepTimer = FOOTSTEP_INTERVAL; // fire immediately on first step
+            PlayFootstep();
         }
 
         public void CastWalk_update()
@@ -347,16 +353,18 @@ namespace Eno
                 return;
             }
 
-            if (_footstepAudio != null && !_footstepAudio.isPlaying)
+            _footstepTimer += Time.deltaTime;
+            if (_footstepTimer >= FOOTSTEP_INTERVAL)
             {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+                _footstepTimer = 0f;
+                PlayFootstep();
             }
         }
 
         public void CastWalk_exit()
         {
             _footstepAudio?.stop();
+            _footstepTimer = 0f;
         }
     
         public void Attack_enter()

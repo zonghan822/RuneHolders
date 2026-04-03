@@ -25,7 +25,7 @@ namespace Eno
             _instance = this;
 
             // Layer1 — starts audible, plays exploration loop
-            _layer1 = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            _layer1 = SpawnPrefab("DefaultBGM", 0f, 0f) as AudioNode;
             if (_layer1 != null)
             {
                 _layer1.volume = layer1Volume;
