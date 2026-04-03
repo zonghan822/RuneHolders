@@ -80,6 +80,7 @@ namespace Eno
                 try { _scrollNodes[i] = GetNode<Node2D>(Scroll_Dialouge_Script.ScrollNames[i]); } catch { }
 
             _spellbookAudio  = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            if (_spellbookAudio != null) _spellbookAudio.group = "BGM";
 
             _footstepAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
             if (_footstepAudio != null)
@@ -170,7 +171,18 @@ namespace Eno
                 _spellbookOpen = !_spellbookOpen;
                 Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
                 IsGamePaused = _spellbookOpen;
-                Bridge.SetAudioPaused(_spellbookOpen);
+                // BGM continues playing; only SFX is paused while spellbook is open.
+                // Order matters: play sound before pausing (open) or after unpausing (close).
+                if (_spellbookOpen)
+                {
+                    if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Open_01"; _spellbookAudio.play(); }
+                    Bridge.SetGroupPaused("SFX", true);
+                }
+                else
+                {
+                    Bridge.SetGroupPaused("SFX", false);
+                    if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Close_01"; _spellbookAudio.play(); }
+                }
             }
 
             if (IsGamePaused) return;

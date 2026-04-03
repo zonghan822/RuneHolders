@@ -213,11 +213,11 @@ namespace Eno
 
             for (int i = 0; i < RUNE_COUNT; i++)
             {
-                _runeAudios[i] = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+                _runeAudios[i] = SpawnPrefab("DefaultBGM", 0f, 0f) as AudioNode;
                 if (_runeAudios[i] != null) _runeAudios[i]!.volume = 80f;
             }
 
-            _runeActiveAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            _runeActiveAudio = SpawnPrefab("DefaultBGM", 0f, 0f) as AudioNode;
             if (_runeActiveAudio != null) _runeActiveAudio.volume = runeActiveVolume;
 
             _spellCastAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;

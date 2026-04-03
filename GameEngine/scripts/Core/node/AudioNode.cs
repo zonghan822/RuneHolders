@@ -39,5 +39,11 @@ namespace Eno
         {
             set => Bridge.SetAudioMaxDistance(ID, value);
         }
+
+        // Route this node through a different channel group ("BGM" or "SFX")
+        public string group
+        {
+            set => Bridge.SetAudioGroup(ID, value);
+        }
     }
 }

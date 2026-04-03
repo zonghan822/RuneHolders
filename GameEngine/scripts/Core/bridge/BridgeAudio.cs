@@ -43,6 +43,14 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetAudioPaused([MarshalAs(UnmanagedType.I1)] bool paused);
 
+        // Pause/resume a single channel group by name ("BGM" or "SFX")
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetGroupPaused(string groupName, [MarshalAs(UnmanagedType.I1)] bool paused);
+
+        // Change the channel group an audio node routes through ("BGM" or "SFX")
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetAudioGroup(uint sceneObjectID, string groupName);
+
         // groupName: "BGM" or "SFX", volume: 0 – 100
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern void SetGroupVolume(string groupName, float volume);
