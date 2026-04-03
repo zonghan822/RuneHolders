@@ -18,13 +18,8 @@ namespace Eno
         private float _lockRumbleTimer = 0f;
         private uint  _scrollPopUpID  = 0;
         private bool  _prevController = false;
-        // 0 = scroll not yet picked up
-        // 1 = scroll picked up, waiting for spellbook open
-        // 2 = spellbook opened, waiting for close
-        // 3 = spellbook closed, waiting for either dummy hit
-        // 4 = dummy hit, 3s countdown then hide
-        // 5 = done
         private int   _tutorialStage = 0;
+        private AudioNode? _doorAudio = null;
 
         public void Begin()
         {
@@ -47,6 +42,7 @@ namespace Eno
             _tutorialStage  = 0;
             DummyYellow_Script.WasHit = false;
             DummyRed_Script.WasHit    = false;
+            _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public static void StartWaves()
@@ -94,6 +90,7 @@ namespace Eno
                 Bridge.IsColliding(_scrollID, _playerID))
             {
                 _scrollPickedUp = true;
+                if (_doorAudio != null) { _doorAudio.sound = "Spellbook_Open_01"; _doorAudio.play(); }
                 RuneSystem.SpellUnlocked[1] = true; // Light
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
@@ -163,7 +160,10 @@ namespace Eno
         {
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
+            {
                 Bridge.ChangeState(id, "Locked");
+                if (_doorAudio != null) { _doorAudio.sound = "Door_Close_01"; _doorAudio.play(); }
+            }
             Input.setGamepadRumble(0.5f, 0.5f);
             _lockRumbleTimer = 0.2f;
         }
@@ -172,7 +172,10 @@ namespace Eno
         {
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
+            {
                 Bridge.ChangeState(id, "Unlocking");
+                if (_doorAudio != null) { _doorAudio.sound = "Door_Open_02"; _doorAudio.play(); }
+            }
         }
     }
 }

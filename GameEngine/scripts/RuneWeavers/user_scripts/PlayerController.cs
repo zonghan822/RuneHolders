@@ -31,7 +31,13 @@ namespace Eno
         private uint      _spellbookUIID    = 0;
         private bool      _spellbookOpen    = false;
         private AudioNode? _spellbookAudio  = null;
-        private AudioNode? _footstepAudio   = null;
+        private AudioNode? _footstepAudio    = null;
+        private AudioNode? _playerVoAudio   = null;
+        private Random     _rng             = new Random();
+        private float      _footstepTimer   = 0f;
+        private const float FOOTSTEP_INTERVAL  = 0.375f;
+        private const int   HURT_SOUND_COUNT   = 15;
+        private const int   DEATH_SOUND_COUNT  = 2;
         private uint      _winLoseCanvasID  = 0;
         private uint      _enemyInfoID        = 0;
         private uint      _enemyInfoPopupID   = 0;
@@ -79,6 +85,7 @@ namespace Eno
                 try { _scrollNodes[i] = GetNode<Node2D>(Scroll_Dialouge_Script.ScrollNames[i]); } catch { }
 
             _spellbookAudio  = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            if (_spellbookAudio != null) _spellbookAudio.group = "BGM";
 
             _footstepAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
             if (_footstepAudio != null)
@@ -86,6 +93,8 @@ namespace Eno
                 _footstepAudio.volume = footstepVolume;
                 _footstepAudio.spatialAudio = true;
             }
+
+            _playerVoAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
 
             _spellbookUIID   = Bridge.GetNode("Spellbook");
             _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");
@@ -172,7 +181,18 @@ namespace Eno
                 Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
                 SetChildButtonsActive(_spellbookUIID, _spellbookOpen);
                 IsGamePaused = _spellbookOpen;
-                Bridge.SetAudioPaused(_spellbookOpen);
+                // BGM continues playing; only SFX is paused while spellbook is open.
+                // Order matters: play sound before pausing (open) or after unpausing (close).
+                if (_spellbookOpen)
+                {
+                    if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Open_01"; _spellbookAudio.play(); }
+                    Bridge.SetGroupPaused("SFX", true);
+                }
+                else
+                {
+                    Bridge.SetGroupPaused("SFX", false);
+                    if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Close_01"; _spellbookAudio.play(); }
+                }
             }
 
             if (IsGamePaused)
@@ -293,11 +313,8 @@ namespace Eno
         public void Walk_enter()
         {
             _player.setAnimationLooping(true);
-            if (_footstepAudio != null)
-            {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
-            }
+            _footstepTimer = FOOTSTEP_INTERVAL; // fire immediately on first step
+            PlayFootstep();
         }
 
         // Called every frame while in the walk state
@@ -309,10 +326,11 @@ namespace Eno
                 return;
             }
 
-            if (_footstepAudio != null && !_footstepAudio.isPlaying)
+            _footstepTimer += Time.deltaTime;
+            if (_footstepTimer >= FOOTSTEP_INTERVAL)
             {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+                _footstepTimer = 0f;
+                PlayFootstep();
             }
         }
 
@@ -320,6 +338,7 @@ namespace Eno
         public void Walk_exit()
         {
             _footstepAudio?.stop();
+            _footstepTimer = 0f;
         }
 
         private void SetChildButtonsActive(uint parentID, bool active)
@@ -332,6 +351,13 @@ namespace Eno
                     Bridge.SetButtonActive(childID, active);
                 SetChildButtonsActive(childID, active);
             }
+        }
+
+        private void PlayFootstep()
+        {
+            if (_footstepAudio == null) return;
+            _footstepAudio.sound = "Footsteps-" + _rng.Next(1, 9);
+            _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
         }
 
         private bool IsMoving()
@@ -370,11 +396,8 @@ namespace Eno
         public void CastWalk_enter()
         {
             _player.setAnimationLooping(true);
-            if (_footstepAudio != null)
-            {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
-            }
+            _footstepTimer = FOOTSTEP_INTERVAL; // fire immediately on first step
+            PlayFootstep();
         }
 
         public void CastWalk_update()
@@ -385,16 +408,18 @@ namespace Eno
                 return;
             }
 
-            if (_footstepAudio != null && !_footstepAudio.isPlaying)
+            _footstepTimer += Time.deltaTime;
+            if (_footstepTimer >= FOOTSTEP_INTERVAL)
             {
-                _footstepAudio.sound = "Footsteps-Fade";
-                _footstepAudio.spatialPlay(_footstepAudio.ID, _player.position.x, _player.position.y);
+                _footstepTimer = 0f;
+                PlayFootstep();
             }
         }
 
         public void CastWalk_exit()
         {
             _footstepAudio?.stop();
+            _footstepTimer = 0f;
         }
     
         public void Attack_enter()
@@ -429,6 +454,11 @@ namespace Eno
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(hurtDuration / frames);
             Input.setGamepadRumble(0.5f, 0.5f);
+            if (_playerVoAudio != null)
+            {
+                _playerVoAudio.sound = "Player_VO_Hurt_" + _rng.Next(1, HURT_SOUND_COUNT + 1).ToString("D2");
+                _playerVoAudio.play();
+            }
         }
 
         public void Hurt_update()
@@ -455,6 +485,11 @@ namespace Eno
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(_deathDuration / frames);
             Input.setGamepadRumble(1.0f, 1.0f);
+            if (_playerVoAudio != null)
+            {
+                _playerVoAudio.sound = "Player_Death_TEMP_" + _rng.Next(1, DEATH_SOUND_COUNT + 1).ToString("D2");
+                _playerVoAudio.play();
+            }
         }
 
         public void Death_update()
@@ -465,6 +500,11 @@ namespace Eno
             if (_deathTimer >= _deathDuration)
             {
                 Input.setGamepadRumble(0f, 0f);
+                IsGameCompleted = true;
+                BGMforLevel1_Script.StopAllBGM();
+                SlugBase_Script.StopAllWalkAudio();
+                NullflyBase_Script.StopAllAudio();
+                BatBase_Script.StopAllAudio();
                 if (_winLoseCanvasID != 0)
                 {
                     Bridge.SetCanvasActive(_winLoseCanvasID, true);

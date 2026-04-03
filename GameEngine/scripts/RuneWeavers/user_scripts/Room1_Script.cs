@@ -9,35 +9,31 @@ namespace Eno
         private uint _uiInfoID       = 0;
         private uint _scrollPopUpID  = 0;
         private bool _prevController = false;
-
-        private bool _dialogueTriggered = false;
-        private bool _scrollPickedUp    = false;
-
-        // 0 = idle (pre-dialogue)
-        // 1 = WASD hint      — advances after 3 s or on any WASD/stick input
-        // 2 = WASD complete  — advances after 3 s or on scroll pickup
-        // 3 = FtoOpen        — hides after 3 s
-        // 4 = done
+        private bool  _dialogueTriggered     = false;
+        //private bool  _postDialogueActivated = false;
+        private bool  _scrollPickedUp        = false;
         private int   _uiStage = 0;
-        private float _uiTimer = 0f;
+        private float _uiTimer           = 0f;
+        private AudioNode? _doorAudio        = null;
 
         public void Begin()
         {
-            _playerID    = Bridge.GetNode("Player");
-            _scrollID    = Bridge.GetNode("Room1_Scroll");
-            _exitDoorID  = Bridge.GetNode("Door1to2");
-            _uiInfoID    = Bridge.GetNode("UI_Info");
-            _spellbookID = Bridge.GetNode("Spellbook");
+            _playerID       = Bridge.GetNode("Player");
+            _scrollID       = Bridge.GetNode("Room1_Scroll");
+            _exitDoorID     = Bridge.GetNode("Door1to2");
+            _uiInfoID       = Bridge.GetNode("UI_Info");
+            _spellbookID    = Bridge.GetNode("Spellbook");
+            _dialogueTriggered     = false;
+            //_postDialogueActivated = false;
+            _scrollPickedUp        = false;
+            _uiStage           = 0;
+            _uiTimer           = 0f;
+            _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
 
             _scrollPopUpID  = Bridge.GetNode("Room1_ScrollPopUp");
             _prevController = Input.inputMode == InputMode.Controller;
-            if (_scrollPopUpID != 0)
-                Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
+            if (_scrollPopUpID != 0) Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
 
-            _dialogueTriggered = false;
-            _scrollPickedUp    = false;
-            _uiStage           = 0;
-            _uiTimer           = 0f;
         }
 
         public void Update()
@@ -98,8 +94,13 @@ namespace Eno
                 RuneSystem.SpellUnlocked[0] = true;
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
+                if (_doorAudio != null) { _doorAudio.sound = "Spellbook_Open_01"; _doorAudio.play(); }
                 if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-1Spell");
-                if (_exitDoorID  != 0) Bridge.ChangeState(_exitDoorID, "Unlocking");
+                if (_exitDoorID  != 0)
+                {
+                    Bridge.ChangeState(_exitDoorID, "Unlocking");
+                    if (_doorAudio != null) { _doorAudio.sound = "Door_Open_02"; _doorAudio.play(); }
+                }
             }
         }
 

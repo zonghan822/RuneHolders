@@ -171,8 +171,8 @@ namespace Eno
         public float runeActiveVolume = 70f;   // volume for the Rune-Active loop (0-100)
         public float spellCastVolume  = 80f;   // volume for the SpellCast one-shot (0-100)
 
-        // Rune activation audio — one node reused for all GalaxyBellPad one-shots
-        private AudioNode? _runeAudio = null;
+        // Rune activation audio — one dedicated node per rune (index matches connection order)
+        private AudioNode?[] _runeAudios = new AudioNode?[RUNE_COUNT];
         private List<string> _bellPadSounds = new List<string>
         {
             "Rune-GalaxyBellPad-1",
@@ -215,10 +215,13 @@ namespace Eno
 
             _cursor = SpawnPrefab("Cursor", 0f, 0f) as Sprite2D;
 
-            _runeAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
-            if (_runeAudio != null) _runeAudio.volume = 80f;
+            for (int i = 0; i < RUNE_COUNT; i++)
+            {
+                _runeAudios[i] = SpawnPrefab("DefaultBGM", 0f, 0f) as AudioNode;
+                if (_runeAudios[i] != null) _runeAudios[i]!.volume = 80f;
+            }
 
-            _runeActiveAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            _runeActiveAudio = SpawnPrefab("DefaultBGM", 0f, 0f) as AudioNode;
             if (_runeActiveAudio != null) _runeActiveAudio.volume = runeActiveVolume;
 
             _spellCastAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
@@ -227,6 +230,8 @@ namespace Eno
 
         public void Update()
         {
+            if (PlayerController.IsGameCompleted) return;
+
             // Drain short rumble pulse
             if (_rumbleTimer > 0f)
             {
@@ -445,7 +450,7 @@ namespace Eno
 
                 _connected.Add(i);
                 SetRuneState(i, "Activated");
-                PlayRandomBellPad();
+                PlayBellPad(i, _connected.Count);
 
                 // Short rumble pulse — intensity increases with each connection
                 float rumble = MathF.Min(0.2f + _connected.Count * 0.15f, 0.8f);
@@ -523,7 +528,7 @@ namespace Eno
             // Activate the matched rune (same logic as CheckConnectionsAt)
             _connected.Add(best);
             SetRuneState(best, "Activated");
-            PlayRandomBellPad();
+            PlayBellPad(best, _connected.Count);
 
             // Short rumble pulse — intensity increases with each connection
             float rumble = MathF.Min(_connected.Count * 0.1f, 0.5f);
@@ -860,12 +865,16 @@ namespace Eno
             _connected.Clear();
         }
 
-        private void PlayRandomBellPad()
+        // runeIndex: layout index of the rune (0-5), selects its dedicated audio node
+        // connectionCount: 1-based order of this connection, selects GalaxyBellPad-N sound
+        private void PlayBellPad(int runeIndex, int connectionCount)
         {
-            if (_runeAudio == null) return;
-            int i = rng.Next(0, _bellPadSounds.Count);
-            _runeAudio.sound = _bellPadSounds[i];
-            _runeAudio.play();
+            if (runeIndex < 0 || runeIndex >= RUNE_COUNT) return;
+            var audio = _runeAudios[runeIndex];
+            if (audio == null) return;
+            int soundIdx = Math.Min(connectionCount, _bellPadSounds.Count) - 1;
+            audio.sound = _bellPadSounds[soundIdx];
+            audio.play();
         }
 
         private static bool PatternMatches(List<int> connected, int[] pattern)

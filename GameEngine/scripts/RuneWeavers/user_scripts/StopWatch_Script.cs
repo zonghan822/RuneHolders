@@ -47,7 +47,7 @@ namespace Eno
         {
             _timer = 0f;
             if (_self == null) return;
-            if (_audio != null)
+            if (_audio != null && !PlayerController.IsGameCompleted)
             {
                 _audio.sound = "TimeStop_v1";
                 _audio.play();

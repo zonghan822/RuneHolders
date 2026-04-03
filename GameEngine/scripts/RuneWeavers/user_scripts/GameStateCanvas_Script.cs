@@ -11,6 +11,7 @@ namespace Eno
         private uint _pauseScreenID   = 0;
         private uint _victoryScreenID = 0;
         private uint _areYouSureID    = 0;
+        private AudioNode? _clickAudio = null;
         private uint _blackBgID       = 0;
 
         public enum prevScreen
@@ -47,7 +48,16 @@ namespace Eno
             _pauseScreenID   = Bridge.GetNode("PauseScreen");
             _victoryScreenID = Bridge.GetNode("WinScreen");
             _areYouSureID    = Bridge.GetNode("AreYouSureScreen");
+            _clickAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
             _blackBgID       = Bridge.GetNode("BlackBG");
+        }
+
+        private void PlayClickSound()
+        {
+            if (_clickAudio == null) return;
+            _clickAudio.sound = "UI_Select_Small 1";
+            _clickAudio.play();
+
         }
 
         public void Update()
@@ -290,6 +300,7 @@ namespace Eno
 
 		public void _when_areyousurescreenyes_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("AreYouSureScreenYes"), "UI-Yes");
             Window.requestClose();
         }
@@ -301,6 +312,7 @@ namespace Eno
 
 		public void _when_areyousurescreenno_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("AreYouSureScreenNo"), "UI-No");
             SetQuitSprite(_quitSel, false);
             _quitSel = QuitNav.None;
@@ -397,6 +409,7 @@ namespace Eno
 
 		public void _when_winscreenquit_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("WinScreenQuit"), "UI-Quit");
             _prevScreen = prevScreen.WinScreen;
             if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, true);
@@ -412,6 +425,7 @@ namespace Eno
 
 		public void _when_winscreenmainmenu_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("WinScreenMainMenu"), "UI-MainMenu");
             Bridge.ChangeScene("MainMenu.txt");
         }
@@ -427,6 +441,7 @@ namespace Eno
 
 		public void _when_defeatscreenquit_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenQuitGame"), "UI-Quit");
             _prevScreen = prevScreen.LoseScreen;
             if (_blackBgID != 0) Bridge.SetVisibility(_blackBgID, true);
@@ -442,6 +457,7 @@ namespace Eno
 
 		public void _when_defeatscreenmainmenu_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenMainMenu"), "UI-MainMenu");
             Bridge.ChangeScene("MainMenu.txt");
         }

@@ -1,9 +1,20 @@
 using System;
+using System.Collections.Generic;
 
 namespace Eno
 {
     public class NullflyBase_Script : ScriptBase
     {
+        private static List<NullflyBase_Script> _allInstances = new List<NullflyBase_Script>();
+        private static bool _gameEnded = false;
+
+        public static void StopAllAudio()
+        {
+            _gameEnded = true;
+            foreach (var inst in _allInstances)
+                inst._audio?.stop();
+        }
+
         public int   runeIndex       = 5;      // 0-5: which rune this Nullfly bans
         public float cloakRadius     = 220f;   // player closer than this → cloak
         public float uncloakRadius   = 300f;   // player farther than this → uncloak
@@ -101,7 +112,8 @@ namespace Eno
             }
 
             // Audio node instantiation
-            _audio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;                     
+            _audio = SpawnPrefab(AUDIO, _self.position.x, _self.position.y, _self) as AudioNode;
+            _allInstances.Add(this);
         }
 
         public void Update()
@@ -236,7 +248,7 @@ namespace Eno
         {
             _timer = 0f;
 
-            if (_audio != null && _self != null)
+            if (!_gameEnded && _audio != null && _self != null)
             {
                 _audio.sound = ATTACK_SOUND;
                 _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);
@@ -332,6 +344,7 @@ namespace Eno
             {
                 if (_rng.NextDouble() < dropChance)
                     SpawnPrefab(HEALTH_POTION_PREFAB, _self!.position.x, _self!.position.y);
+                _allInstances.Remove(this);
                 EnemyColorRegistry.Unregister(ID);
                 FreeNode(_self!);
             }

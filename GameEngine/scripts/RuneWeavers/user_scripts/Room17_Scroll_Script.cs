@@ -11,6 +11,8 @@ namespace Eno
         private bool _skipE = false;
         private uint _scrollPopUpID  = 0;
         private bool _prevController = false;
+        private AudioNode? _doorAudio   = null;
+        private AudioNode? _scrollAudio = null;
 
         public void Begin()
         {
@@ -25,6 +27,8 @@ namespace Eno
             _prevController = Input.inputMode == InputMode.Controller;
             if (_scrollPopUpID != 0)
                 Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
+            _doorAudio   = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            _scrollAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public void Update()
@@ -67,6 +71,7 @@ namespace Eno
             Scroll_Dialouge_Script.DialogueActive = true;
             if (_narrative != null) { _narrative.texture = "UI-Narrative-1"; _narrative.visible = true; }
             if (_canvas    != null) _canvas.active = true;
+            if (_scrollAudio != null) { _scrollAudio.sound = "Spellbook_Open_01"; _scrollAudio.play(); }
             Bridge.SetButtonActive(Bridge.GetNode("NarrativeBackButton"), true);
             UnlockDoor("Door5Ato5");
         }
@@ -75,7 +80,10 @@ namespace Eno
         {
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
+            {
                 Bridge.ChangeState(id, "Unlocking");
+                if (_doorAudio != null) { _doorAudio.sound = "Door_Open_02"; _doorAudio.play(); }
+            }
         }
 
         private void Close()
