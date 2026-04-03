@@ -96,7 +96,7 @@ namespace Eno
         }
         public void Unlocked_exit() { }
 
-        public void Default_enter()  { }
+        public void Default_enter()  { Bridge.ChangeState(ID, "Locked"); }
         public void Default_update() { }
         public void Default_exit()   { }
     }

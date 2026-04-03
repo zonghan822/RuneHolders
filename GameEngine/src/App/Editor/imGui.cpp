@@ -360,11 +360,13 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 			if (ImGui::Begin("Build Site Analyzer", &bsaOpen))
 			{
 				static std::string selectedTexture;
-				static Graphics::TextureData textureData;
-				static std::filesystem::path selectedTextureBuildPath;
-				static std::filesystem::path selectedTextureRootPath;
 
+				// Selected assets
 				static std::unordered_set<std::string> selectedTextures;
+				static std::unordered_set<std::string> selectedAudio;
+				static std::unordered_set<std::string> selectedVideos;
+
+				static std::string videoFolder = loader.getVideoPath();
 
 				std::uintmax_t totalFileSize{};
 				std::uintmax_t selectedFileSize{};
@@ -372,6 +374,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 				for (const TextureFolder& sub : g_textureTree.subfolders)
 				{
+					// Calculate asset count + file sizes
 					for (const TextureEntry& entry : sub.files)
 					{
 						std::uintmax_t fileSize = std::filesystem::file_size(entry.buildPath);
@@ -386,6 +389,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 					}
 				}
 
+				// Set in mb
 				float totalMB = totalFileSize / (1024.f * 1024.f);
 				float selectedMB = selectedFileSize / (1024.f * 1024.f);
 				ImGui::Text(
@@ -397,7 +401,11 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 				// Load texture assets
 				if (ImGui::Button("Reload Assets"))
+				{
+					LoadAudioAssets(engine_);
 					LoadTextureAssets(engine_);
+					loader.loadVideos(loader.getVideoPath(), engine_.getGraphicsManager());
+				}
 
 				const auto& textures = loader.getAllTextures();
 
@@ -409,6 +417,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 					// Using the directory, pick a folder/dest
 					std::filesystem::path exportPath = File_pick::OpenFolderDialog();
 
+					// Copy images
 					for (const auto& sub : g_textureTree.subfolders)
 					{
 						for (const auto& entry : sub.files)
@@ -425,6 +434,41 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 								std::filesystem::copy_options::overwrite_existing
 							);
 						}
+					}
+
+					// Copy audio
+					for (const auto& sub : g_audioTree.subfolders)
+					{
+						for (const auto& entry : sub.files)
+						{
+							if (!selectedAudio.contains(entry.stemName))
+								continue;
+
+							// Copy files to new dest
+							std::filesystem::path dest = exportPath / entry.buildPath.filename();
+
+							std::filesystem::copy_file(
+								entry.buildPath,
+								dest,
+								std::filesystem::copy_options::overwrite_existing
+							);
+						}
+					}
+
+					// Videos
+					for (const auto& entry : std::filesystem::directory_iterator(videoFolder))
+					{
+						if (!selectedVideos.contains(entry.path().stem().string()))
+							continue;
+
+						// Copy files to new dest
+						std::filesystem::path dest = exportPath / entry.path().filename();
+
+						std::filesystem::copy_file(
+							entry.path(),
+							dest,
+							std::filesystem::copy_options::overwrite_existing
+						);
 					}
 				}
 
@@ -443,6 +487,19 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 								selectedTextures.insert(entry.stemName);
 							}
 						}
+
+						for (const auto& sub : g_audioTree.subfolders)
+						{
+							for (const auto& entry : sub.files)
+							{
+								selectedAudio.insert(entry.stemName);
+							}
+						}
+
+						for (const auto& entry : std::filesystem::directory_iterator(videoFolder))
+						{
+							selectedVideos.insert(entry.path().stem().string());
+						}
 					}
 					else
 					{
@@ -451,6 +508,7 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 					}
 				}
 
+				// Images
 				for (const TextureFolder& sub : g_textureTree.subfolders)
 				{
 					for (const TextureEntry& entry : sub.files)
@@ -475,10 +533,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 								selectedTextures.erase(entry.stemName);
 							else
 								selectedTextures.insert(entry.stemName);
-
-							textureData.texture = texture;
-							selectedTextureBuildPath = entry.buildPath;
-							selectedTextureRootPath = entry.rootPath;
 						}
 
 						ImVec2 p0 = ImGui::GetItemRectMin();
@@ -493,6 +547,95 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 
 						// Find and write file size for each image
 						std::uintmax_t fileSize = std::filesystem::file_size(entry.buildPath);
+						float sizeKB = fileSize / 1024.0f;
+
+						ImGui::SetCursorScreenPos(ImVec2(p0.x + 60, p0.y + 24));
+						ImGui::TextDisabled("%.1f KB", sizeKB);
+
+						ImGui::EndGroup();
+					}
+				}
+				
+				// Audio
+				for (const auto& folder : g_audioTree.subfolders)
+				{
+					for (const auto& entry : folder.files)
+					{
+						ImGui::BeginGroup();
+
+						bool isSelected = selectedAudio.contains(entry.stemName);
+
+						ImVec2 rowSize(0, 52);
+
+						if (ImGui::Selectable(("##row" + entry.stemName).c_str(),
+							isSelected, 0, rowSize))
+						{
+							// toggle selection
+							if (isSelected)
+								selectedAudio.erase(entry.stemName);
+							else
+								selectedAudio.insert(entry.stemName);
+						}
+
+						ImVec2 p0 = ImGui::GetItemRectMin();
+
+						// Write audio display name
+						ImGui::SetCursorScreenPos(ImVec2(p0.x + 60, p0.y + 6));
+						ImGui::Text("%s", entry.displayName.c_str());
+
+						// Find and write file size for each audio file
+						std::uintmax_t fileSize = std::filesystem::file_size(entry.buildPath);
+						float sizeKB = fileSize / 1024.0f;
+
+						ImGui::SetCursorScreenPos(ImVec2(p0.x + 60, p0.y + 24));
+						ImGui::TextDisabled("%.1f KB", sizeKB);
+
+						ImGui::EndGroup();
+					}
+				}
+
+				// Video
+				for (const auto& entry : std::filesystem::directory_iterator(videoFolder))
+				{
+					if (!entry.is_regular_file())
+						continue;
+
+					// Get file extension
+					std::string ext = entry.path().extension().string();
+
+					// Filter
+					if (ext == ".mp4" || ext == ".avi" || ext == ".mkv" || ext == ".mov")
+					{
+						// Extract file name without extension
+						std::string displayName = entry.path().stem().string();
+
+						// Extract path
+						std::filesystem::path buildPath = entry.path();
+
+						ImGui::BeginGroup();
+
+						bool isSelected = selectedVideos.contains(displayName);
+
+						ImVec2 rowSize(0, 52);
+
+						if (ImGui::Selectable(("##row" + displayName).c_str(),
+							isSelected, 0, rowSize))
+						{
+							// toggle selection
+							if (isSelected)
+								selectedVideos.erase(displayName);
+							else
+								selectedVideos.insert(displayName);
+						}
+
+						ImVec2 p0 = ImGui::GetItemRectMin();
+
+						// Write image display name
+						ImGui::SetCursorScreenPos(ImVec2(p0.x + 60, p0.y + 6));
+						ImGui::Text("%s", displayName.c_str());
+
+						// Find and write file size for each image
+						std::uintmax_t fileSize = std::filesystem::file_size(buildPath);
 						float sizeKB = fileSize / 1024.0f;
 
 						ImGui::SetCursorScreenPos(ImVec2(p0.x + 60, p0.y + 24));
@@ -1814,6 +1957,7 @@ void displayAudioTab(Engine::EnoEngine& engine_)
 
 		// Update the UI list
 		LoadAudioAssets(engine_);
+
 
 		std::cout << "[ImGui Audio] Reloaded audio files" << std::endl;
 	}

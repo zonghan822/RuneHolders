@@ -5,7 +5,7 @@ namespace Eno
 {
     public class SpellCastBase_Script : ScriptBase
     {
-        private const float WINDUP_DURATION  = 0.05f;
+        private const float WINDUP_DURATION  = 0.1f;
         private const float EXPLODE_DURATION = 0.6f;
 
         // Subclasses hardcode this: 0 = Fire/Red, 1 = Light/Yellow, 2 = Ice/Blue
@@ -61,6 +61,7 @@ namespace Eno
         {
             _timer = 0f;
             _damagedEnemies.Clear();
+            Input.setGamepadRumble(0.8f, 0.8f);
             var self = Self<KinematicBody2D>();
             if (self != null)
             {
@@ -75,7 +76,10 @@ namespace Eno
             DamageMatchingEnemies();
             _timer += Time.deltaTime;
             if (_timer >= EXPLODE_DURATION)
+            {
+                Input.setGamepadRumble(0f, 0f);
                 FreeNode(Self<KinematicBody2D>());
+            }
         }
 
         public void Explode_exit() { }

@@ -88,6 +88,21 @@ namespace Eno
         // Index 0 = Fire (Room 1), 1 = Light (Room 4), 2 = Ice (Room 8)
         public static bool[] SpellUnlocked = new bool[3];
 
+        // ── Static instance — allows enemies to push bans mid-cast ───────────────
+        private static RuneSystem? _instance;
+
+        // Called by Nullfly Channel_enter to nullify a rune even while casting is active.
+        public static void NotifyBan(int runeIndex)
+        {
+            _instance?.EnemyNullifyRune(runeIndex);
+        }
+
+        // Called by Nullfly when it cloaks (unbans) while casting is active.
+        public static void NotifyUnban(int runeIndex)
+        {
+            _instance?.EnemyRestoreRune(runeIndex);
+        }
+
             // ── Controller settings ──────────────────────────────────────────────────
         private const float RT_THRESHOLD     = 0.5f;   // trigger value (0-1) to start casting
         private const float STICK_ACTIVATE   = 0.7f;   // right stick magnitude to activate a rune
@@ -138,6 +153,13 @@ namespace Eno
         // Deferred spell cast — pattern index stored when complete, cast on mouse release
         private int _pendingSpell = -1;
 
+        // Short rumble pulse on rune connection
+        private float _rumbleTimer    = 0f;
+        private const float RUMBLE_DURATION = 0.1f;
+
+        // Set when an enemy force-cancels the cast; cleared on full input release
+        private bool _castBlocked = false;
+
         // Cursor prefab — spawned once, tracks mouse / right stick
         private Sprite2D? _cursor = null;
 
@@ -174,10 +196,17 @@ namespace Eno
         // ── Script callbacks ─────────────────────────────────────────────────────
         public void Begin()
         {
+            _instance = this;
+
             for (int i = 0; i < RUNE_COUNT; i++)
             {
                 _runes[i]      = null;
                 _runeStates[i] = "Disabled";
+            }
+
+            for (int s = 0; s < 3; s++)
+            {
+                SpellUnlocked[s] = false;
             }
 
             _cursor = SpawnPrefab("Cursor", 0f, 0f) as Sprite2D;
@@ -194,6 +223,14 @@ namespace Eno
 
         public void Update()
         {
+            // Drain short rumble pulse
+            if (_rumbleTimer > 0f)
+            {
+                _rumbleTimer -= Time.deltaTime;
+                if (_rumbleTimer <= 0f)
+                    Input.setGamepadRumble(0f, 0f);
+            }
+
             if (Scroll_Dialouge_Script.DialogueActive)
             {
                 if (_active) Cancel();
@@ -209,8 +246,16 @@ namespace Eno
 
             if (!_active)
             {
-                if (Input.isMousePressed(0) || rtPressed)
+                if (_castBlocked)
+                {
+                    // Wait for the player to fully release before allowing a new cast
+                    if (!Input.isMouseHeld(0) && !rtDown)
+                        _castBlocked = false;
+                }
+                else if (Input.isMousePressed(0) || rtPressed)
+                {
                     Activate();
+                }
             }
             else
             {
@@ -282,8 +327,28 @@ namespace Eno
             if (_runes[runeIndex] == null) return;
             if (_runeStates[runeIndex] == "Nullified") return;
 
+            // If the player already activated this rune, break the entire cast
+            if (_runeStates[runeIndex] == "Activated")
+            {
+                _castBlocked = true;
+                Cancel();
+                return;
+            }
+
             SetRuneState(runeIndex, "Nullified");
             RefreshReadyStates();
+        }
+
+        // Called when a Nullfly cloaks mid-cast — restores the rune from Nullified.
+        private void EnemyRestoreRune(int runeIndex)
+        {
+            if (!_active) return;
+            if (runeIndex < 0 || runeIndex >= RUNE_COUNT) return;
+            if (_runes[runeIndex] == null) return;
+            if (_runeStates[runeIndex] != "Nullified") return;
+
+            HashSet<int> nextValid = GetNextValidRunes();
+            SetRuneState(runeIndex, nextValid.Contains(runeIndex) ? "Ready" : "Disabled");
         }
 
         // ── Private helpers ──────────────────────────────────────────────────────
@@ -378,6 +443,11 @@ namespace Eno
                 SetRuneState(i, "Activated");
                 PlayRandomBellPad();
 
+                // Short rumble pulse — intensity increases with each connection
+                float rumble = MathF.Min(0.2f + _connected.Count * 0.15f, 0.8f);
+                Input.setGamepadRumble(rumble, rumble);
+                _rumbleTimer = RUMBLE_DURATION;
+
                 // Spawn a permanent line from the previous rune to this one (skip on first connection)
                 if (_connected.Count > 1)
                 {
@@ -407,6 +477,8 @@ namespace Eno
                         _runeActiveAudio.play();
                     }
 
+                    Input.setGamepadRumble(1.0f, 1.0f);
+                    _rumbleTimer = RUMBLE_DURATION;
                     foreach (int c in _connected)
                         _runeParticles[c]?.emitBurst(_runeParticles[c].maxParticles/4);
                     return;
@@ -449,6 +521,11 @@ namespace Eno
             SetRuneState(best, "Activated");
             PlayRandomBellPad();
 
+            // Short rumble pulse — intensity increases with each connection
+            float rumble = MathF.Min(_connected.Count * 0.1f, 0.5f);
+            Input.setGamepadRumble(rumble, rumble);
+            _rumbleTimer = RUMBLE_DURATION;
+
             if (_connected.Count > 1)
             {
                 int prev = _connected[_connected.Count - 2];
@@ -474,6 +551,8 @@ namespace Eno
                     _runeActiveAudio.play();
                 }
 
+                Input.setGamepadRumble(0.5f, 0.5f);
+                _rumbleTimer = RUMBLE_DURATION;
                 foreach (int c in _connected)
                     _runeParticles[c]?.emitBurst(_runeParticles[c].maxParticles / 4);
                 return;
@@ -510,6 +589,7 @@ namespace Eno
             DespawnRunes();
             SpawnPrefab(SpellPrefabs[spellIndex], _originX, _originY);
             if (_cursor != null) _cursor.visible = true;
+            Input.setGamepadRumble(0.8f, 1.0f);
             EndSlowTime(attack: true);
 
             // Cut Rune-Active immediately and play a random SpellCast
@@ -539,6 +619,7 @@ namespace Eno
             DespawnLines();
             DespawnRunes();
             if (_cursor != null) _cursor.visible = true;
+            Input.setGamepadRumble(0f, 0f);
             EndSlowTime();
             _runeActiveAudio?.stop();
         }
@@ -552,6 +633,7 @@ namespace Eno
             DespawnLines();
             DespawnRunes();
             if (_cursor != null) _cursor.visible = true;
+            Input.setGamepadRumble(0f, 0f);
             EndSlowTime();
             _runeActiveAudio?.stop();
         }

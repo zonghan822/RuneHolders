@@ -18,13 +18,13 @@ public static class HotReloadCompiler
     //      - syntax trees (trees with the source code for the new compilation)
     //      - references (for new compilation)
     //      - options (compiler options)
-    public static bool Compile(string userScriptsFolder, string dllPath)
+    public static bool Compile(string userScriptsFolder, string dllPath, string? refDir = null)
     {
         Console.WriteLine($"DLLPATH: {dllPath}");
         // Retrieve names/paths of .cs files from the specified folder
         var scripts = Directory.GetFiles(userScriptsFolder, "*.cs", SearchOption.AllDirectories).ToArray();
 
-        // Retrieve parsed representation of a .cs file, 
+        // Retrieve parsed representation of a .cs file,
         // in the form of a Roslyn syntax tree
         var newST = scripts.Select(file =>
         {
@@ -46,11 +46,13 @@ public static class HotReloadCompiler
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
             .Select(a => MetadataReference.CreateFromFile(a.Location))
             .ToList();
-        
-        var mainDllPath = Path.Combine(Path.GetDirectoryName(dllPath)!, "GameScripts.dll");
+
+        // Reference DLLs live next to the original DLL, not the temp output
+        string searchDir = refDir ?? Path.GetDirectoryName(dllPath)!;
+        var mainDllPath = Path.Combine(searchDir, "GameScripts.dll");
         if (!File.Exists(mainDllPath))
             throw new FileNotFoundException("Main DLL not found", mainDllPath);
-        var coreDllPath = Path.Combine(Path.GetDirectoryName(dllPath)!, "Core.dll");
+        var coreDllPath = Path.Combine(searchDir, "Core.dll");
         if (!File.Exists(coreDllPath))
             throw new FileNotFoundException("Core DLL not found", coreDllPath);
 

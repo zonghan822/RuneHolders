@@ -44,6 +44,7 @@ namespace Editor
 			undoManager_{ bus, entMng, graphicsMng, 30 },
 			tree_{ entMng, coreHost, tileMap, prefabMng }
 		{
+			std::cout << "[EnoEditor] Scanning scenes directory..." << std::endl;
 
 			// Get all available scenes
 			try {
@@ -63,8 +64,12 @@ namespace Editor
 				std::cout << "[EnoEditor] Scene directory not found: " << e.what() << "\n";
 			}
 
+			std::cout << "[EnoEditor] Found " << scenes_.size() << " scene(s). Loading initial scene..." << std::endl;
+
 			// Load the start scene; fall back to first available or create empty
 			loadInitialScene();
+
+			std::cout << "[EnoEditor] Scene loaded successfully." << std::endl;
 
 			// Safety net
 			if (!selectedScene_)
@@ -212,33 +217,39 @@ namespace Editor
 		*//*========================================================================================*/
 		void playScene()
 		{
-			std::string sceneName = selectedScene_->getSceneName();
-
-			// Save the current scene so it can be restored on stop
-			tree_.save(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName);
-
-			// Record which scene was active so stopScene() can reload it
-			prePlaySceneName_ = sceneName;
-			std::cout << "[Eno_editor] current scene: " << sceneName << std::endl;
-
-			// If a start scene is designated and it differs from the current scene, switch to it
-			if (!startSceneName_.empty() && startSceneName_ != sceneName)
+			// If editor starts from stop state, save the scene
+			if (!wasPlaying)
 			{
-				auto it = std::find_if(scenes_.begin(), scenes_.end(),
-					[&](const std::unique_ptr<EnoScene>& s) { return s->getSceneName() == startSceneName_; });
-				if (it != scenes_.end())
+				std::string sceneName = selectedScene_->getSceneName();
+
+				// Save the current scene so it can be restored on stop
+				tree_.save(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + sceneName);
+
+				// Record which scene was active so stopScene() can reload it
+				prePlaySceneName_ = sceneName;
+				std::cout << "[Eno_editor] current scene: " << sceneName << std::endl;
+
+				// If a start scene is designated and it differs from the current scene, switch to it
+				if (!startSceneName_.empty() && startSceneName_ != sceneName)
 				{
-					selectedScene_ = it->get();
-					tree_.load(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + startSceneName_);
-					tree_.registerAllScripts();
-					bus_.publish(SceneCleared{});
-					std::cout << "[EnoEditor] Starting game from start scene: " << startSceneName_ << std::endl;
+					auto it = std::find_if(scenes_.begin(), scenes_.end(),
+						[&](const std::unique_ptr<EnoScene>& s) { return s->getSceneName() == startSceneName_; });
+					if (it != scenes_.end())
+					{
+						selectedScene_ = it->get();
+						tree_.load(FileSystem::GetAssetsDir().string() + "/saves/scenes/" + startSceneName_);
+						tree_.registerAllScripts();
+						bus_.publish(SceneCleared{});
+						std::cout << "[EnoEditor] Starting game from start scene: " << startSceneName_ << std::endl;
+					}
 				}
+				// Flag to check if editor has already been played once
+				wasPlaying = true;
+
 			}
 
 			// Set editor state to playing
 			selectedScene_->play();
-			wasPlaying = true;
 
 			// Publish PlayScene event to notify systems (e.g., audio)
 			bus_.publish(PlayScene{});
@@ -440,6 +451,16 @@ namespace Editor
 			return *selectedScene_;
 		}
 
+		// Returns true if a scene is loaded and currently in play/paused/next-frame state
+		bool isScenePlaying() const
+		{
+			if (!selectedScene_) return false;
+			auto state = selectedScene_->getState();
+			return state == State::Playing  ||
+			       state == State::Paused   ||
+			       state == State::NextFrame;
+		}
+
 		std::vector<std::unique_ptr<EnoScene>>& getScenes()
 		{
 			return scenes_;
@@ -486,6 +507,7 @@ namespace Editor
 				std::string path = FileSystem::GetAssetsDir().string() + "/saves/scenes/StartScene.txt";
 				std::ifstream f{ path };
 				if (f) std::getline(f, startSceneName_);
+				std::cout << "[EnoEditor] StartScene.txt: " << (startSceneName_.empty() ? "(empty)" : startSceneName_) << std::endl;
 			}
 
 			// Try to load the start scene
@@ -499,8 +521,11 @@ namespace Editor
 					if (it != scenes_.end())
 					{
 						selectedScene_ = it->get();
+						std::cout << "[EnoEditor] Loading start scene: " << startSceneName_ << std::endl;
 						tree_.load(fullPath);
+						std::cout << "[EnoEditor] Scene tree loaded, registering scripts..." << std::endl;
 						tree_.registerAllScripts();
+						std::cout << "[EnoEditor] Scripts registered." << std::endl;
 						return;
 					}
 				}
@@ -514,14 +539,21 @@ namespace Editor
 			{
 				selectedScene_ = scenes_.front().get();
 				std::string fullPath = FileSystem::GetAssetsDir().string() + "/saves/scenes/" + selectedScene_->getSceneName();
+				std::cout << "[EnoEditor] Loading fallback scene: " << selectedScene_->getSceneName() << std::endl;
 				tree_.load(fullPath);
 				tree_.registerAllScripts();
 				std::cout << "[EnoEditor] No start scene set, loaded first scene: " << selectedScene_->getSceneName() << std::endl;
 				return;
 			}
 
-			// No scenes at all — create a blank one
-			createEmptyScene(FileSystem::GetAssetsDir().string() + "/saves/scenes/");
+			// No scenes at all — create a blank one (skip if directory is read-only)
+			std::cout << "[EnoEditor] No scenes found, creating empty scene..." << std::endl;
+			try {
+				createEmptyScene(FileSystem::GetAssetsDir().string() + "/saves/scenes/");
+			}
+			catch (const std::exception& e) {
+				std::cerr << "[EnoEditor] Failed to create empty scene: " << e.what() << std::endl;
+			}
 		}
 
 		// Scenes

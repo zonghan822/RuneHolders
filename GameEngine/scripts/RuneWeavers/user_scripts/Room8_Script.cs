@@ -16,6 +16,7 @@ namespace Eno
 
         private uint  _uiInfoID    = 0;
         private float _uiInfoTimer = 0f;
+        private float _lockRumbleTimer = 0f;
 
         public void Begin()
         {
@@ -41,11 +42,20 @@ namespace Eno
 
         public static void CleanupDummies()
         {
+            DummyRed_Script.Cleanup();
+            DummyYellow_Script.Cleanup();
             DummyBlue_Script.Cleanup();
         }
 
         public void Update()
         {
+            if (_lockRumbleTimer > 0f)
+            {
+                _lockRumbleTimer -= Time.deltaTime;
+                if (_lockRumbleTimer <= 0f)
+                    Input.setGamepadRumble(0f, 0f);
+            }
+
             if (_uiInfoID != 0 && _uiInfoTimer < 3f)
             {
                 _uiInfoTimer += Time.deltaTime;
@@ -97,8 +107,8 @@ namespace Eno
             BGMforLevel1_Script.SetLayer2Combat(true);
             LockDoor("Door8to7");
             LockDoor("Door8to9");
-            SpawnPrefab("DummyBlue", 6570f, -4750f);
-            SpawnPrefab("DummyBlue", 6890f, -4750f);
+            SpawnPrefab("DummyRed", 6570f, -4750f);
+            SpawnPrefab("DummyYellow", 6890f, -4750f);
             SpawnPrefab("DummyBlue", 6730f, -4640f);
         }
 
@@ -107,6 +117,8 @@ namespace Eno
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
                 Bridge.ChangeState(id, "Locked");
+            Input.setGamepadRumble(0.5f, 0.5f);
+            _lockRumbleTimer = 0.2f;
         }
 
         private void UnlockDoor(string name)

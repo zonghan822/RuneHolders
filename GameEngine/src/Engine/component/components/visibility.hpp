@@ -16,6 +16,7 @@
 #include "../../event/signals.hpp"
 
 //stds
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>

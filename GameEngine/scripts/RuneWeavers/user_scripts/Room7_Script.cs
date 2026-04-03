@@ -2,7 +2,7 @@ namespace Eno
 {
     public class Room7_Script : ScriptBase
     {
-        private const float WaveDelay = 10f;
+        private const float WaveDelay = 3f;
 
         private static Room7_Script? _instance;
 
@@ -10,6 +10,7 @@ namespace Eno
         private bool  _wavesStarted = false;
         private bool  _roomCleared  = false;
         private float _waveTimer    = 0f;
+        private float _lockRumbleTimer = 0f;
 
         public void Begin()
         {
@@ -27,13 +28,20 @@ namespace Eno
 
         public void Update()
         {
+            if (_lockRumbleTimer > 0f)
+            {
+                _lockRumbleTimer -= Time.deltaTime;
+                if (_lockRumbleTimer <= 0f)
+                    Input.setGamepadRumble(0f, 0f);
+            }
+
             if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
             {
                 _roomCleared = true;
                 BGMforLevel1_Script.SetLayer2Combat(false);
                 UnlockDoor("Door7to8");
                 UnlockDoor("Door7to6");
-                UnlockDoor("Door6to7");
+                UnlockDoor("Door7to7A");
             }
 
             if (!_wavesStarted || _roomCleared) return;
@@ -55,7 +63,7 @@ namespace Eno
                 BGMforLevel1_Script.SetLayer2Combat(false);
                 UnlockDoor("Door7to8");
                 UnlockDoor("Door7to6");
-                UnlockDoor("Door6to7");
+                UnlockDoor("Door7to7A");
             }
         }
 
@@ -65,9 +73,9 @@ namespace Eno
             {
                 _wavesStarted = true;
                 BGMforLevel1_Script.SetLayer2Combat(true);
-                LockDoor("Door6to7");
                 LockDoor("Door7to6");
                 LockDoor("Door7to8");
+                LockDoor("Door7to7A");
             }
 
             _currentWave = wave;
@@ -75,12 +83,15 @@ namespace Eno
             switch (wave)
             {
                 case 1:
-                    SpawnPrefab("SlugRed", 4802f, -5017f);
-                    SpawnPrefab("BatRed",  4678f, -4737f);
+                    SpawnPrefab("SlugRed", 4687f, -4735f);
+                    SpawnPrefab("BatYellow",  4860f, -5033f);
+                    SpawnPrefab("BatYellow", 5082f, -4635f);
                     break;
                 case 2:
-                    SpawnPrefab("SlugRed",    5072f, -4689f);
-                    SpawnPrefab("SlugYellow", 4571f, -5046f);
+                    SpawnPrefab("SlugRed", 4482f, -4925f);
+                    SpawnPrefab("SlugRed", 4817f, -4666f);
+                    SpawnPrefab("BatYellow", 4483f, -4683f);
+                    SpawnPrefab("BatYellow", 5061f, -5005f);
                     break;
             }
         }
@@ -90,6 +101,8 @@ namespace Eno
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
                 Bridge.ChangeState(id, "Locked");
+            Input.setGamepadRumble(0.5f, 0.5f);
+            _lockRumbleTimer = 0.2f;
         }
 
         private void UnlockDoor(string name)

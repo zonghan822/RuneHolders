@@ -2,7 +2,7 @@ namespace Eno
 {
     public class Room11_Script : ScriptBase
     {
-        private const float WaveDelay = 10f;
+        private const float WaveDelay = 3f;
 
         private static Room11_Script? _instance;
 
@@ -10,6 +10,7 @@ namespace Eno
         private bool  _wavesStarted = false;
         private bool  _roomCleared  = false;
         private float _waveTimer    = 0f;
+        private float _lockRumbleTimer = 0f;
 
         public void Begin()
         {
@@ -27,6 +28,13 @@ namespace Eno
 
         public void Update()
         {
+            if (_lockRumbleTimer > 0f)
+            {
+                _lockRumbleTimer -= Time.deltaTime;
+                if (_lockRumbleTimer <= 0f)
+                    Input.setGamepadRumble(0f, 0f);
+            }
+
             if (!_roomCleared && Input.isKeyPressed(KeyCode.F1))
             {
                 _roomCleared = true;
@@ -38,7 +46,7 @@ namespace Eno
 
             if (!_wavesStarted || _roomCleared) return;
 
-            if (_currentWave < 2)
+            if (_currentWave < 3)
             {
                 _waveTimer += Time.deltaTime;
                 if (_waveTimer >= WaveDelay)
@@ -75,14 +83,17 @@ namespace Eno
             switch (wave)
             {
                 case 1:
-                    SpawnPrefab("SlugRed",    8963f, -6018f);
-                    SpawnPrefab("SlugYellow", 8643f, -6112f);
-                    SpawnPrefab("SlugBlue",   8288f, -6078f);
+                    NullflyBlue_Script.PendingRuneIndex = 2; // ban SE
+                    SpawnPrefab("NullflyBlue", 8645f, -6126f);
+                    SpawnPrefab("SlugRed", 8875f, -5715f);
+                    SpawnPrefab("BatYellow", 8476f, -5956f);
                     break;
                 case 2:
-                    SpawnPrefab("SlugRed",  8468f, -5945f);
-                    SpawnPrefab("SlugRed",  8828f, -5945f);
-                    SpawnPrefab("BatBlue",  8291f, -5788f);
+                    NullflyBlue_Script.PendingRuneIndex = 1; // ban E
+                    SpawnPrefab("NullflyBlue", 8219f, -5995f);
+                    SpawnPrefab("SlugRed", 8481f, -6128f);
+                    SpawnPrefab("SlugRed", 8863f, -6865f);
+                    SpawnPrefab("BatYellow", 8635f, -5781f);
                     break;
             }
         }
@@ -92,6 +103,8 @@ namespace Eno
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
                 Bridge.ChangeState(id, "Locked");
+            Input.setGamepadRumble(0.5f, 0.5f);
+            _lockRumbleTimer = 0.2f;
         }
 
         private void UnlockDoor(string name)

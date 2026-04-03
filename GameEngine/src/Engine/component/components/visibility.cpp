@@ -12,6 +12,7 @@
 #include "canvas.hpp"
 #include "../../engine/eno_engine.hpp"
 #include "../../ui/canvas_system.hpp"
+#include "transform.hpp"
 
 namespace ECSComponents {
 
@@ -104,6 +105,20 @@ namespace ECSComponents {
 					sortedObjectLayers[3].push_back(&entity);
 				}
 			}
+		}
+
+		// Y-sort each layer: entities with lower Y (top of screen) draw first (behind)
+		for (auto& [z, bucket] : sortedObjectLayers)
+		{
+			std::sort(bucket.begin(), bucket.end(),
+				[&entityMng](ECS::Entity* a, ECS::Entity* b)
+				{
+					float ay = a->has<TransformComponent>(entityMng)
+						? a->get<TransformComponent>(entityMng).pos.y : 0.f;
+					float by = b->has<TransformComponent>(entityMng)
+						? b->get<TransformComponent>(entityMng).pos.y : 0.f;
+					return ay < by;
+				});
 		}
 	}
 

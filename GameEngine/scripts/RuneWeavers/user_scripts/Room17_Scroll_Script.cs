@@ -25,16 +25,16 @@ namespace Eno
             uint playerID = Bridge.GetNode("Player");
             if (playerID == 0 || playerID == uint.MaxValue) return;
 
-            if (_open && Input.isKeyPressed(KeyCode.Escape))
+            if (_open && (Input.isKeyPressed(KeyCode.Escape) || Input.isGamepadButtonPressed(GamepadButton.B)))
             {
                 Close();
                 return;
             }
 
-            bool ePressed = Input.isKeyPressed(KeyCode.E) && !_skipE;
+            bool ePressed = (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) && !_skipE;
             _skipE = false;
 
-            if (!_open && !_shown && !Scroll_Dialouge_Script.DialogueActive
+            if (!_open && !Scroll_Dialouge_Script.DialogueActive
                 && Bridge.IsColliding(ID, playerID) && ePressed)
             {
                 Open();
@@ -52,6 +52,14 @@ namespace Eno
             Scroll_Dialouge_Script.DialogueActive = true;
             if (_narrative != null) { _narrative.texture = "UI-Narrative-1"; _narrative.visible = true; }
             if (_canvas    != null) _canvas.active = true;
+            UnlockDoor("Door5Ato5");
+        }
+
+        private void UnlockDoor(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocking");
         }
 
         private void Close()

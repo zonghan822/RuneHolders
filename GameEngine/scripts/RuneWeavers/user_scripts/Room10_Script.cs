@@ -14,6 +14,14 @@ namespace Eno
             if (!Room10_Scroll_Script.Shown) return;
 
             _cleared = true;
+            UnlockDoor("Door10to9");
+        }
+
+        private void UnlockDoor(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocking");
         }
     }
 }

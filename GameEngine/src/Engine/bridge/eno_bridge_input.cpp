@@ -150,5 +150,11 @@ namespace Bridge
             if (!gEngine) return false;
             return gEngine->getInputManager().isGamepadButtonReleased(button);
         }
+
+        ENGINE_API void __stdcall SetGamepadRumble(float leftMotor, float rightMotor)
+        {
+            if (!gEngine) return;
+            gEngine->getInputManager().setGamepadRumble(leftMotor, rightMotor);
+        }
     }
 }

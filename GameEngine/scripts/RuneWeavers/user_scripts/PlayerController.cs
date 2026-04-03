@@ -37,17 +37,26 @@ namespace Eno
         private uint      _enemyInfoPopupID   = 0;
         private uint      _enemyInfoPopupBgID = 0;
         private bool      _enemyInfoOpen      = false;
+        private uint      _defeatScreenID     = 0;
+        private float     _deathTimer         = 0f;
+        private float     _deathDuration      = 1.0f;
 
         // In-game pause flag
         public static bool IsGamePaused = false;
+        public static bool IsGameCompleted = false;
 
         // Canvas interface
         //private bool _UIPopUp = false;
 
+        // Player script reference
+        private static PlayerController? _instance;
+
+
         public void Begin()
         {
             _player = Self<Actor>()!;
-
+            _instance = this;
+            
             // ACTOR nodes have physics — keep gravity off for top-down movement
             _player.useGravity      = false;
             _player.isKinematic     = false;
@@ -78,8 +87,10 @@ namespace Eno
             _enemyInfoID        = Bridge.GetNode("EnemyInfo");
             _enemyInfoPopupID   = Bridge.GetNode("EnemyInfoPopUp");
             _enemyInfoPopupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
+            _defeatScreenID     = Bridge.GetNode("DefeatScreen");
 
             IsGamePaused = false;
+            IsGameCompleted = false;
         }
 
         private void UpdateHealthBar()
@@ -114,16 +125,46 @@ namespace Eno
 
         public void Update()
         {
+            if (_player.health <= 0f)
+                _player.changeState("Death");
+
             // P key or Start button toggles in-game pause
-            if (Input.isKeyPressed(KeyCode.P) || Input.isGamepadButtonPressed(GamepadButton.Start))
+            if ((Input.isKeyPressed(KeyCode.P) || Input.isGamepadButtonPressed(GamepadButton.Start)) && !IsGameCompleted)
             {
                 IsGamePaused = !IsGamePaused;
                 Bridge.SetCanvasActive(_winLoseCanvasID, IsGamePaused);
                 uint buttonID = Bridge.GetNode("PauseScreen");
-                Bridge.SetVisibility(buttonID, true);
+                Bridge.SetVisibility(buttonID, IsGamePaused);
                 SetChildButtonsActive(buttonID, IsGamePaused);
                 Bridge.SetAudioPaused(IsGamePaused);
             }
+            
+            
+            // E key or A/X button — close enemy info panel if open
+            if (IsGamePaused && _enemyInfoOpen && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A) || Input.isGamepadButtonPressed(GamepadButton.X)))
+            {
+                _enemyInfoOpen = false;
+                if (_enemyInfoID      != 0) Bridge.SetVisibility(_enemyInfoID, false);
+                if (_enemyInfoPopupID != 0)
+                {
+                    Bridge.SetVisibility(_enemyInfoPopupID, false);
+                    Bridge.SetButtonActive(_enemyInfoPopupID, false);
+                }
+                if (_enemyInfoPopupBgID != 0) Bridge.SetVisibility(_enemyInfoPopupBgID, false);
+                IsGamePaused = false;
+                Bridge.SetAudioPaused(false);
+                return;
+            }
+            
+            // F key or Y button — toggle spellbook UI (checked before pause guard so it can close while paused)
+            if ((Input.isKeyPressed(KeyCode.F) || Input.isGamepadButtonPressed(GamepadButton.Y)) && _spellbookUIID != 0)
+            {
+                _spellbookOpen = !_spellbookOpen;
+                Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
+                IsGamePaused = _spellbookOpen;
+                Bridge.SetAudioPaused(_spellbookOpen);
+            }
+
             if (IsGamePaused) return;
 
             UpdateHealthBar();
@@ -133,19 +174,6 @@ namespace Eno
             {
                 _player.velocity = new Vector2(0f, 0f);
                 return;
-            }
-
-            // F key or Y button — toggle spellbook UI
-            if ((Input.isKeyPressed(KeyCode.F) || Input.isGamepadButtonPressed(GamepadButton.Y)) && _spellbookUIID != 0)
-            {
-                _spellbookOpen = !_spellbookOpen;
-                Bridge.SetVisibility(_spellbookUIID, _spellbookOpen);
-
-                if (_spellbookAudio != null)
-                {
-                    _spellbookAudio.sound = _spellbookOpen ? "Spellbook_Open_01" : "Spellbook_Close_01";
-                    _spellbookAudio.play();
-                }
             }
 
             if (_isAttacking || _isHurt) return;
@@ -177,21 +205,6 @@ namespace Eno
                 dy /= mag;
             }
 
-            // E key or A/X button — close enemy info panel if open
-            if (_enemyInfoOpen && (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A) || Input.isGamepadButtonPressed(GamepadButton.X)))
-            {
-                _enemyInfoOpen = false;
-                if (_enemyInfoID      != 0) Bridge.SetVisibility(_enemyInfoID, false);
-                if (_enemyInfoPopupID != 0)
-                {
-                    Bridge.SetVisibility(_enemyInfoPopupID, false);
-                    Bridge.SetButtonActive(_enemyInfoPopupID, false);
-                }
-                if (_enemyInfoPopupBgID != 0) Bridge.SetVisibility(_enemyInfoPopupBgID, false);
-                IsGamePaused = false;
-                Bridge.SetAudioPaused(false);
-                return;
-            }
 
             // X button — open enemy info popup
             if (!_enemyInfoOpen && Input.isGamepadButtonPressed(GamepadButton.X))
@@ -313,6 +326,7 @@ namespace Eno
 
         public void Cast_exit()
         {
+            _player.setAnimationLooping(true);
         }
     
         public void CastWalk_enter()
@@ -376,6 +390,7 @@ namespace Eno
             _player.setAnimationLooping(false);
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(hurtDuration / frames);
+            Input.setGamepadRumble(0.5f, 0.5f);
         }
 
         public void Hurt_update()
@@ -383,27 +398,49 @@ namespace Eno
             _hurtTimer += Time.deltaTime;
             if (_hurtTimer >= hurtDuration)
                 _player.changeState(IsMoving() ? "Walk" : "Idle");
+            
         }
 
         public void Hurt_exit()
         {
             _isHurt = false;
+            Input.setGamepadRumble(0f, 0f);
+            _player.setAnimationLooping(true);
         }
     
         public void Death_enter()
         {
+            _deathTimer = 0f;
             _player.stateChangeLocked = true;
             _player.velocity = new Vector2(0f, 0f);
+            _player.setAnimationLooping(false);
+            uint frames = _player.getAnimationFrameCount();
+            if (frames > 0) _player.setAnimationFrameDuration(_deathDuration / frames);
+            Input.setGamepadRumble(1.0f, 1.0f);
         }
 
         public void Death_update()
         {
-            // TODO: Add update logic for Death state
+            _player.velocity = new Vector2(0f, 0f);
+            _player.setAnimationLooping(false);
+            _deathTimer += Time.deltaTime;
+            if (_deathTimer >= _deathDuration)
+            {
+                Input.setGamepadRumble(0f, 0f);
+                if (_winLoseCanvasID != 0)
+                {
+                    Bridge.SetCanvasActive(_winLoseCanvasID, true);
+                    if (_defeatScreenID != 0)
+                    {
+                        Bridge.SetVisibility(_defeatScreenID, true);
+                        SetChildButtonsActive(_defeatScreenID, true);
+                    }
+                }
+            }
         }
 
         public void Death_exit()
         {
-            // TODO: Add exit logic for Death state
         }
     
 		public void _when_enemyinfopopup_onclick()

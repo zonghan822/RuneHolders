@@ -26,10 +26,18 @@ namespace Eno
 
         private enum PauseNav  { None, Resume, Quit, MainMenu }
         private enum QuitNav   { None, Yes, No }
+        private enum EndNav    { None, Quit, MainMenu }
 
         private PauseNav _pauseSel  = PauseNav.None;
         private QuitNav  _quitSel   = QuitNav.None;
-        private bool     _prevPaused = false;   // detects the unpause→pause transition
+        private EndNav   _winSel    = EndNav.None;
+        private EndNav   _loseSel   = EndNav.None;
+        private bool     _prevPaused      = false;
+        private bool     _prevWinVisible  = false;
+        private bool     _prevLoseVisible = false;
+        private bool     _stickLeft       = false;
+        private bool     _stickRight      = false;
+        private bool     _stickUp         = false;
 
         public void Begin()
         {
@@ -49,28 +57,65 @@ namespace Eno
                 SelectPause(PauseNav.Resume);
             _prevPaused = paused;
 
-            if (!paused) return;
+            // Left stick edge detection (trigger once per flick)
+            const float STICK_THRESHOLD = 0.5f;
+            Vector2 stick = Input.getLeftStick(0.2f);
+            bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
+            bool stickRightNow = stick.x >  STICK_THRESHOLD;
+            bool stickUpNow    = stick.y < -STICK_THRESHOLD;
+            bool stickLeftEdge  = stickLeftNow  && !_stickLeft;
+            bool stickRightEdge = stickRightNow && !_stickRight;
+            bool stickUpEdge    = stickUpNow    && !_stickUp;
+            _stickLeft  = stickLeftNow;
+            _stickRight = stickRightNow;
+            _stickUp    = stickUpNow;
 
-            bool up      = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp);
-            bool left    = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft);
-            bool right   = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight);
+            bool up      = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge;
+            bool left    = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge;
+            bool right   = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge;
             bool confirm = Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A);
             bool back    = Input.isGamepadButtonPressed(GamepadButton.B);
+            bool areYouSureVisible = Bridge.GetVisibility(_areYouSureID);
 
-            // Quit-confirm sub-screen
-            if (Bridge.GetVisibility(_areYouSureID))
+            // Win screen controller navigation
+            bool winVisible = Bridge.GetVisibility(_victoryScreenID);
+            if (winVisible && !_prevWinVisible) SelectWin(EndNav.Quit);
+            _prevWinVisible = winVisible;
+            if (winVisible && !areYouSureVisible)
             {
-                if (left)    SelectQuit(QuitNav.Yes);
-                if (right)   SelectQuit(QuitNav.No);
+                if (left)    SelectWin(EndNav.Quit);
+                if (right)   SelectWin(EndNav.MainMenu);
+                if (confirm) ConfirmWin();
+            }
+
+            // Lose screen controller navigation
+            bool loseVisible = Bridge.GetVisibility(_defeatScreenID);
+            if (loseVisible && !_prevLoseVisible) SelectLose(EndNav.Quit);
+            _prevLoseVisible = loseVisible;
+            if (loseVisible && !areYouSureVisible)
+            {
+                if (left)    SelectLose(EndNav.Quit);
+                if (right)   SelectLose(EndNav.MainMenu);
+                if (confirm) ConfirmLose();
+            }
+
+            // Quit-confirm sub-screen (must run before pause guard so it
+            // works for both pause and lose/win screens)
+            if (areYouSureVisible)
+            {
+                if (left)    SelectQuit(QuitNav.No);
+                if (right)   SelectQuit(QuitNav.Yes);
                 if (confirm) ConfirmQuit();
                 if (back)    _when_areyousurescreenno_onclick();
                 return;
             }
 
+            if (!paused) return;
+
             // Main pause screen
-            if (up)    SelectPause(PauseNav.Resume);
-            if (left)  SelectPause(PauseNav.Quit);
-            if (right) SelectPause(PauseNav.MainMenu);
+            if (up)      SelectPause(PauseNav.Resume);
+            if (left)    SelectPause(PauseNav.Quit);
+            if (right)   SelectPause(PauseNav.MainMenu);
             if (confirm) ConfirmPause();
         }
 
@@ -258,6 +303,74 @@ namespace Eno
                     Bridge.SetVisibility(_defeatScreenID, true);
                     SetChildButtonsActive(_defeatScreenID, true);
                     break;
+            }
+        }
+
+        // ------------------------------------------------------------------ //
+        // Win / Lose screen navigation
+        // ------------------------------------------------------------------ //
+
+        private void SelectWin(EndNav btn)
+        {
+            if (_winSel == btn) return;
+            SetWinSprite(_winSel, false);
+            _winSel = btn;
+            SetWinSprite(_winSel, true);
+        }
+
+        private void SetWinSprite(EndNav btn, bool selected)
+        {
+            switch (btn)
+            {
+                case EndNav.Quit:
+                    Bridge.SetTexturePath(Bridge.GetNode("WinScreenQuit"),
+                        selected ? "UI-QuitGame-Selected" : "UI-Quit");
+                    break;
+                case EndNav.MainMenu:
+                    Bridge.SetTexturePath(Bridge.GetNode("WinScreenMainMenu"),
+                        selected ? "UI-MainMenu-Selected" : "UI-MainMenu");
+                    break;
+            }
+        }
+
+        private void ConfirmWin()
+        {
+            switch (_winSel)
+            {
+                case EndNav.Quit:     _when_winscreenquit_onclick();     break;
+                case EndNav.MainMenu: _when_winscreenmainmenu_onclick(); break;
+            }
+        }
+
+        private void SelectLose(EndNav btn)
+        {
+            if (_loseSel == btn) return;
+            SetLoseSprite(_loseSel, false);
+            _loseSel = btn;
+            SetLoseSprite(_loseSel, true);
+        }
+
+        private void SetLoseSprite(EndNav btn, bool selected)
+        {
+            switch (btn)
+            {
+                case EndNav.Quit:
+                    Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenQuitGame"),
+                        selected ? "UI-QuitGame-Selected" : "UI-Quit");
+                    break;
+                case EndNav.MainMenu:
+                    Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenMainMenu"),
+                        selected ? "UI-MainMenu-Selected" : "UI-MainMenu");
+                    break;
+            }
+        }
+
+        private void ConfirmLose()
+        {
+            switch (_loseSel)
+            {
+                case EndNav.Quit:     _when_defeatscreenquit_onclick();     break;
+                case EndNav.MainMenu: _when_defeatscreenmainmenu_onclick(); break;
             }
         }
 

@@ -40,8 +40,14 @@ namespace Eno
         private float _bgmMinX;
         private float _sfxMinX;
 
-        // Video cutscene state
-        private bool _videoStarted = false;
+        // Video cutscene state — timer guards against false "ended" on frame 1
+        private float _videoTimer  = 0f;
+
+        // Left stick edge detection
+        private bool _stickLeft  = false;
+        private bool _stickRight = false;
+        private bool _stickUp    = false;
+        private bool _stickDown  = false;
 
         // Hover audio
         private AudioNode? _hoverAudio          = null;
@@ -57,10 +63,26 @@ namespace Eno
 
         public void Update()
         {
-            bool up    = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp);
-            bool down  = Input.isKeyPressed(KeyCode.S) || Input.isGamepadButtonPressed(GamepadButton.DPadDown);
-            bool left  = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft);
-            bool right = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight);
+            // Left stick edge detection (trigger once per flick)
+            const float STICK_THRESHOLD = 0.5f;
+            Vector2 stick = Input.getLeftStick(0.2f);
+            bool stickLeftNow  = stick.x < -STICK_THRESHOLD;
+            bool stickRightNow = stick.x >  STICK_THRESHOLD;
+            bool stickUpNow    = stick.y < -STICK_THRESHOLD;
+            bool stickDownNow  = stick.y >  STICK_THRESHOLD;
+            bool stickLeftEdge  = stickLeftNow  && !_stickLeft;
+            bool stickRightEdge = stickRightNow && !_stickRight;
+            bool stickUpEdge    = stickUpNow    && !_stickUp;
+            bool stickDownEdge  = stickDownNow  && !_stickDown;
+            _stickLeft  = stickLeftNow;
+            _stickRight = stickRightNow;
+            _stickUp    = stickUpNow;
+            _stickDown  = stickDownNow;
+
+            bool up    = Input.isKeyPressed(KeyCode.W) || Input.isGamepadButtonPressed(GamepadButton.DPadUp)    || stickUpEdge;
+            bool down  = Input.isKeyPressed(KeyCode.S) || Input.isGamepadButtonPressed(GamepadButton.DPadDown)  || stickDownEdge;
+            bool left  = Input.isKeyPressed(KeyCode.A) || Input.isGamepadButtonPressed(GamepadButton.DPadLeft)  || stickLeftEdge;
+            bool right = Input.isKeyPressed(KeyCode.D) || Input.isGamepadButtonPressed(GamepadButton.DPadRight) || stickRightEdge;
             bool confirm = Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A);
             bool back    = Input.isGamepadButtonPressed(GamepadButton.B);
 
@@ -97,20 +119,36 @@ namespace Eno
             {
                 uint videoID = Bridge.GetNode(CutsceneVideoNodeName);
 
-                // Wait until the video actually starts, then watch for it to end
-                if (!_videoStarted && Bridge.IsVideoPlaying(videoID))
-                    _videoStarted = true;
+                _videoTimer += Time.deltaTime;
 
                 // Escape skips the cutscene
-                if (Input.isKeyPressed(KeyCode.Escape))
+                if (Input.isKeyPressed(KeyCode.Escape)|| Input.isGamepadButtonPressed(GamepadButton.B))
                 {
                     EndCutscene();
                     return;
                 }
 
-                // Video finished naturally
-                if (_videoStarted && !Bridge.IsVideoPlaying(videoID))
-                    EndCutscene();
+                if (_videoTimer > 0.3f)
+                {
+                    float vDur      = Bridge.GetVideoDuration(videoID);
+                    float vTime     = Bridge.GetVideoTime(videoID);
+                    bool  isPlaying = Bridge.IsVideoPlaying(videoID);
+
+                    // Debug: print state every ~60 frames
+                    if ((int)(_videoTimer * 60f) % 60 == 0)
+                        Console.WriteLine($"[Video] t={_videoTimer:F1}s vTime={vTime:F1}s vDur={vDur:F1}s playing={isPlaying}");
+
+                    // Primary: video player state is no longer PLAYING
+                    bool stateEnded = !isPlaying;
+                    // Fallback: elapsed video time has reached the container duration
+                    bool timeEnded  = vDur > 1f && vTime >= vDur - 0.5f;
+
+                    if (stateEnded || timeEnded)
+                    {
+                        Console.WriteLine($"[Video] Ending cutscene: stateEnded={stateEnded} timeEnded={timeEnded}");
+                        EndCutscene();
+                    }
+                }
             }
 
             // Snapshot hover state: handlers set _hoveredButtonName after Update runs,
@@ -344,8 +382,8 @@ namespace Eno
             Bridge.SetVideoLoop(videoID, false);
             Bridge.VideoPlay(videoID);
 
-            _videoStarted = false;
-            _menuState    = MenuState.VideoTransition;
+            _videoTimer = 0f;
+            _menuState  = MenuState.VideoTransition;
         }
 
         private void EndCutscene()

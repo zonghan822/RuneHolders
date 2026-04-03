@@ -125,18 +125,21 @@ namespace Eno
 
         public string? CompileToTemp(string usPath, string dllPath)
         {
-            string dir = Path.GetDirectoryName(dllPath!)!;
             if (string.IsNullOrEmpty(tempDll))
             {
-                // Create temp dll when it is not available
-                tempDll = Path.Combine(dir, "GameScripts_temp.dll");
+                // Write temp DLL to system temp folder so it works in
+                // read-only install locations like Program Files.
+                string tempDir = Path.GetTempPath();
+                tempDll = Path.Combine(tempDir, "GameScripts_temp.dll");
             }
 
             string tempPdb = Path.ChangeExtension(tempDll, ".pdb");
 
             Console.WriteLine("Currently Compiling...");
 
-            bool result = HotReloadCompiler.Compile(usPath, tempDll);
+            // Reference DLLs (GameScripts.dll, Core.dll) live next to the original dllPath
+            string refDir = Path.GetDirectoryName(dllPath)!;
+            bool result = HotReloadCompiler.Compile(usPath, tempDll, refDir);
             if (!result)
             {
                 Console.WriteLine("Compilation failed!");

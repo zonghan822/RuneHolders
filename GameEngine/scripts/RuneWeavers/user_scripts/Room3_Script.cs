@@ -2,7 +2,7 @@ namespace Eno
 {
     public class Room3_Script : ScriptBase
     {
-        private const float Wave2Delay = 10f;
+        private const float Wave2Delay = 3f;
 
         private static Room3_Script? _instance;
         private static bool _popupActivated = false;
@@ -14,6 +14,7 @@ namespace Eno
 
         private uint  _uiInfoID    = 0;
         private float _uiInfoTimer = 0f;
+        private float _lockRumbleTimer = 0f;
 
         public void Begin()
         {
@@ -61,6 +62,13 @@ namespace Eno
 
         public void Update()
         {
+            if (_lockRumbleTimer > 0f)
+            {
+                _lockRumbleTimer -= Time.deltaTime;
+                if (_lockRumbleTimer <= 0f)
+                    Input.setGamepadRumble(0f, 0f);
+            }
+
             if (_uiInfoID != 0 && _uiInfoTimer < 3f)
             {
                 _uiInfoTimer += Time.deltaTime;
@@ -110,13 +118,13 @@ namespace Eno
             LockDoor("Door3to2");
             LockDoor("Door3to4");
             LockDoor("Door4to3");
-            SpawnPrefab("SlugRed", 955f, -2826f);
+            SpawnPrefab("SlugRed", 960f, -2850f);
         }
 
         private void SpawnWave2()
         {
-            SpawnPrefab("SlugRed",  410f, -2693f);
-            SpawnPrefab("SlugRed", 1503f, -2693f);
+            SpawnPrefab("SlugRed",  500f, -2635f);
+            SpawnPrefab("SlugRed", 1418f, -2769f);
         }
 
         private void LockDoor(string name)
@@ -124,6 +132,8 @@ namespace Eno
             uint id = Bridge.GetNode(name);
             if (id != 0 && id != uint.MaxValue)
                 Bridge.ChangeState(id, "Locked");
+            Input.setGamepadRumble(0.5f, 0.5f);
+            _lockRumbleTimer = 0.2f;
         }
 
         private void UnlockDoor(string name)

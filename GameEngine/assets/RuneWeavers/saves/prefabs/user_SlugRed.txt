@@ -83,7 +83,7 @@
 			"type": "Color(RGBA)"
 		},
 		"Texture Path": {
-			"value": "Enemy-Slug-Walk-Sheet",
+			"value": "SpawnCircle-Sheet",
 			"type": "texchar240"
 		},
 		"TexID": {
@@ -171,11 +171,11 @@
 	},
 	"struct ECSComponents::AnimationControllerComponent": {
 		"Frame Width": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Frame Height": {
-			"value": "96",
+			"value": "128",
 			"type": "int"
 		},
 		"Rows": {
@@ -183,7 +183,7 @@
 			"type": "int"
 		},
 		"Cols": {
-			"value": "9",
+			"value": "8",
 			"type": "int"
 		},
 		"Frame Duration": {
@@ -195,11 +195,11 @@
 			"type": "bool"
 		},
 		"Animation Count": {
-			"value": "7",
+			"value": "8",
 			"type": "int"
 		},
 		"Current Animation": {
-			"value": "Chase",
+			"value": "Prespawn",
 			"type": "char64"
 		},
 		"Anim0 Name": {
@@ -425,6 +425,38 @@
 		"Anim6 Looping": {
 			"value": "1",
 			"type": "bool"
+		},
+		"Anim7 Name": {
+			"value": "Prespawn",
+			"type": "char64"
+		},
+		"Anim7 Texture": {
+			"value": "SpawnCircle-Sheet",
+			"type": "texchar240"
+		},
+		"Anim7 FrameW": {
+			"value": "128",
+			"type": "int"
+		},
+		"Anim7 FrameH": {
+			"value": "128",
+			"type": "int"
+		},
+		"Anim7 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim7 Cols": {
+			"value": "8",
+			"type": "int"
+		},
+		"Anim7 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim7 Looping": {
+			"value": "0",
+			"type": "bool"
 		}
 	},
 	"struct ECSComponents::HealthComponent": {
@@ -477,11 +509,11 @@
 	},
 	"struct ECSComponents::StateMachineComponent": {
 		"NumStates": {
-			"value": "6",
+			"value": "7",
 			"type": "int"
 		},
 		"CurrentState": {
-			"value": "Chase",
+			"value": "Prespawn",
 			"type": "char32"
 		},
 		"TimeInState": {
@@ -582,6 +614,22 @@
 		},
 		"State[5].onExit": {
 			"value": "Chase_exit",
+			"type": "char64"
+		},
+		"State[6].name": {
+			"value": "Prespawn",
+			"type": "char32"
+		},
+		"State[6].onEnter": {
+			"value": "Prespawn_enter",
+			"type": "char64"
+		},
+		"State[6].onUpdate": {
+			"value": "Prespawn_update",
+			"type": "char64"
+		},
+		"State[6].onExit": {
+			"value": "Prespawn_exit",
 			"type": "char64"
 		}
 	},

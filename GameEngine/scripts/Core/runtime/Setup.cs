@@ -50,72 +50,101 @@ namespace Eno
         [UnmanagedCallersOnly(EntryPoint = "Initialize")]
         public static void Initialize(IntPtr pUSPath, IntPtr pDLLPath)
         {
-            RegisterNativeResolver();
+            try
+            {
+                RegisterNativeResolver();
 
-            // Conversion to managed string
-            string? usPath = Marshal.PtrToStringUni(pUSPath);
-            string? dllPath = Marshal.PtrToStringUni(pDLLPath);
+                // Conversion to managed string
+                string? usPath = Marshal.PtrToStringUni(pUSPath);
+                string? dllPath = Marshal.PtrToStringUni(pDLLPath);
 
-            if (string.IsNullOrEmpty(usPath) || string.IsNullOrEmpty(dllPath))
-                throw new InvalidOperationException("User scripts or Assembly DLL cannot be found in Initiator Sequence!");
+                if (string.IsNullOrEmpty(usPath) || string.IsNullOrEmpty(dllPath))
+                {
+                    Console.WriteLine("[Setup] ERROR: User scripts or Assembly DLL path is null/empty!");
+                    return;
+                }
 
-            var hrManager = new HotReloadManager();
-            Initiator.SetHRManager(hrManager);
-            Initiator.InitSequence(usPath, dllPath);
+                var hrManager = new HotReloadManager();
+                Initiator.SetHRManager(hrManager);
+                Initiator.InitSequence(usPath, dllPath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Setup] Initialize failed: {ex}");
+            }
         }
 
         [UnmanagedCallersOnly(EntryPoint = "Reload")]
         public static void Reload(IntPtr pUSPath, IntPtr pDLLPath)
         {
-            // Conversion to managed string
-            string? usPath = Marshal.PtrToStringUni(pUSPath);
-            string? dllPath = Marshal.PtrToStringUni(pDLLPath);
+            try
+            {
+                // Conversion to managed string
+                string? usPath = Marshal.PtrToStringUni(pUSPath);
+                string? dllPath = Marshal.PtrToStringUni(pDLLPath);
 
-            if (string.IsNullOrEmpty(usPath) || string.IsNullOrEmpty(dllPath))
-                throw new InvalidOperationException("User scripts or Assembly DLL cannot be found in Initiator Sequence!");
+                if (string.IsNullOrEmpty(usPath) || string.IsNullOrEmpty(dllPath))
+                {
+                    Console.WriteLine("[Setup] ERROR: User scripts or Assembly DLL path is null/empty!");
+                    return;
+                }
 
-            Initiator.ReloadSequence(usPath, dllPath);
+                Initiator.ReloadSequence(usPath, dllPath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Setup] Reload failed: {ex}");
+            }
         }
 
         [UnmanagedCallersOnly(EntryPoint = "GetFileClassNames")]
         public static unsafe IntPtr GetFileClassNames(IntPtr pFilePath, int* count)
         {
-            string? filePath = Marshal.PtrToStringUni(pFilePath);
-            if (!File.Exists(filePath))
+            try
             {
+                string? filePath = Marshal.PtrToStringUni(pFilePath);
+                if (!File.Exists(filePath))
+                {
+                    *count = 0;
+                    return IntPtr.Zero;
+                }
+
+                string code = File.ReadAllText(filePath);
+                SyntaxTree tree = CSharpSyntaxTree.ParseText(code);
+                var root = tree.GetCompilationUnitRoot();
+
+                var classNames = new List<string>();
+                foreach (var classNode in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
+                {
+                    // Get full name including namespace if present
+                    string fullName = classNode.Identifier.Text;
+                    var ns = classNode.FirstAncestorOrSelf<NamespaceDeclarationSyntax>();
+                    if (ns != null)
+                        fullName = ns.Name.ToString() + "." + fullName;
+                    classNames.Add(fullName);
+                }
+
+                *count = classNames.Count;
+
+                if (*count == 0)
+                    return IntPtr.Zero;
+
+                // Allocate LPWSTR pointers
+                IntPtr arrayPtr = Marshal.AllocCoTaskMem(IntPtr.Size * *count);
+                for (int i = 0; i < *count; ++i)
+                {
+                    IntPtr pStr = Marshal.StringToCoTaskMemUni(classNames[i]);
+                    Marshal.WriteIntPtr(arrayPtr, i * IntPtr.Size, pStr);
+                }
+
+                return arrayPtr;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Setup] GetFileClassNames failed: {ex}");
                 *count = 0;
                 return IntPtr.Zero;
             }
-
-            string code = File.ReadAllText(filePath);
-            SyntaxTree tree = CSharpSyntaxTree.ParseText(code);
-            var root = tree.GetCompilationUnitRoot();
-
-            var classNames = new List<string>();
-            foreach (var classNode in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
-            {
-                // Get full name including namespace if present
-                string fullName = classNode.Identifier.Text;
-                var ns = classNode.FirstAncestorOrSelf<NamespaceDeclarationSyntax>();
-                if (ns != null)
-                    fullName = ns.Name.ToString() + "." + fullName;
-                classNames.Add(fullName);
-            }
-
-            *count = classNames.Count;
-
-            if (*count == 0)
-                return IntPtr.Zero;
-
-            // Allocate LPWSTR pointers            
-            IntPtr arrayPtr = Marshal.AllocCoTaskMem(IntPtr.Size * *count);
-            for (int i = 0; i < *count; ++i)
-            {
-                IntPtr pStr = Marshal.StringToCoTaskMemUni(classNames[i]);
-                Marshal.WriteIntPtr(arrayPtr, i * IntPtr.Size, pStr);
-            }
-
-            return arrayPtr;
         }
 
         // Retrieve class names from a cs file
@@ -140,30 +169,39 @@ namespace Eno
         [UnmanagedCallersOnly(EntryPoint = "GetScriptFields")]
         public static unsafe FieldInfoData* GetScriptFields(char* scriptNamePtr, int* count)
         {
-            // Convert ptr to string and get fields from script
-            string scriptName = new string(scriptNamePtr);
-            var fields = GetFields(scriptName);
-            *count = fields.Count;
-
-            if (*count == 0)
-                return null;
-
-            // Find the number of bytes needed to
-            // allocate a continguous block of unmanaged memory
-            int size = Marshal.SizeOf<FieldInfoData>();
-
-            // Allocate mem
-            IntPtr arrayPtr = Marshal.AllocCoTaskMem(size * *count);
-
-            // Copy each struct into new block of memory
-            for (int i = 0; i < *count; i++)
+            try
             {
-                IntPtr structPtr = arrayPtr + (i * size);
-                Marshal.StructureToPtr(fields[i], structPtr, false);
-            }
+                // Convert ptr to string and get fields from script
+                string scriptName = new string(scriptNamePtr);
+                var fields = GetFields(scriptName);
+                *count = fields.Count;
 
-            // Cast to a FieldInfoData pointer for the C++ side
-            return (FieldInfoData*)arrayPtr;
+                if (*count == 0)
+                    return null;
+
+                // Find the number of bytes needed to
+                // allocate a continguous block of unmanaged memory
+                int size = Marshal.SizeOf<FieldInfoData>();
+
+                // Allocate mem
+                IntPtr arrayPtr = Marshal.AllocCoTaskMem(size * *count);
+
+                // Copy each struct into new block of memory
+                for (int i = 0; i < *count; i++)
+                {
+                    IntPtr structPtr = arrayPtr + (i * size);
+                    Marshal.StructureToPtr(fields[i], structPtr, false);
+                }
+
+                // Cast to a FieldInfoData pointer for the C++ side
+                return (FieldInfoData*)arrayPtr;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Setup] GetScriptFields failed: {ex}");
+                *count = 0;
+                return null;
+            }
         }
 
         // Create field data based on number of fields
