@@ -6,10 +6,11 @@ namespace Eno
 
         private const float RUMBLE_DURATION = 0.2f;
 
-        private Sprite2D? _self;
-        private Actor?    _player;
-        private float     _timer          = 0f;
-        private bool      _playerSearched = false;
+        private Sprite2D?  _self;
+        private Actor?     _player;
+        private AudioNode? _healAudio;
+        private float      _timer          = 0f;
+        private bool       _playerSearched = false;
 
         public void Begin()
         {
@@ -17,6 +18,14 @@ namespace Eno
             if (_self == null) return;
 
             Input.setGamepadRumble(0.3f, 0.3f);
+
+            _healAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+            if (_healAudio != null)
+            {
+                _healAudio.sound = "Heal 2";
+                _healAudio.volume = 40f;
+                _healAudio.play();
+            }
         }
 
         public void Update()

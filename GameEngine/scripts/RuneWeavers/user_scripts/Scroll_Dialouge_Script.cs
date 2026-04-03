@@ -137,6 +137,7 @@ namespace Eno
         private string dialogueCurrentText = "";
         private string dialogueTargetText  = "";
         private float  dialogueTypeTimer   = 0f;
+        private Random _rng = new Random();
 
         public void Begin()
         {
@@ -219,10 +220,11 @@ namespace Eno
                     dialogueCurrentText += c;
                     dialogueTypeTimer   -= DIALOGUE_TYPE_SPEED;
 
-                    // Play typing sound for each non-whitespace character
+                    // Play a random typing sound for each non-whitespace character
                     if (c != ' ' && c != '\n' && _typingSfx != null)
                     {
-                        //Bridge.AudioStop(_typingSfx.ID);
+                        int idx = _rng.Next(1, 22); // Typing_01 to Typing_21
+                        _typingSfx.sound = $"Typing_{idx:D2}";
                         Bridge.AudioPlay(_typingSfx.ID);
                     }
                 }
