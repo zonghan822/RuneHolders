@@ -19,7 +19,6 @@ namespace Eno
         private float _uiInfoTimer    = 0f;
         private float _lockRumbleTimer = 0f;
         private uint  _scrollPopUpID  = 0;
-        private bool  _prevController = false;
         private int   _tutorialStage = 0;
         private AudioNode? _doorAudio = null;
 
@@ -33,9 +32,6 @@ namespace Eno
             _uiInfoID    = Bridge.GetNode("UI_Info");
 
             _scrollPopUpID  = Bridge.GetNode("Room4_ScrollPopUp");
-            _prevController = Input.inputMode == InputMode.Controller;
-            if (_scrollPopUpID != 0)
-                Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
 
             _scrollPickedUp = false;
             _wavesStarted   = false;
@@ -80,12 +76,10 @@ namespace Eno
             }
 
             bool isController = Input.inputMode == InputMode.Controller;
-            if (isController != _prevController)
-            {
-                _prevController = isController;
-                if (_scrollPopUpID != 0)
-                    Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
-            }
+            if (_scrollPopUpID != 0)
+                Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
+            if (_spellbookID != 0 && _scrollPickedUp)
+                Bridge.SetTexturePath(_spellbookID, isController ? "UI-Spellbook-2Spells-Controller" : "UI-Spellbook-2Spells");
 
             UpdateTutorialUI();
 
@@ -122,7 +116,7 @@ namespace Eno
                 }
                 _tutorialStage = 1;
                 // Update spellbook
-                if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-2Spells");
+                // Spellbook texture now updated per-frame above
             }
         }
 

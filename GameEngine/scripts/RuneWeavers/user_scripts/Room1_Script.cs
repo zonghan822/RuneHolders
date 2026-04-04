@@ -39,6 +39,10 @@ namespace Eno
             bool isController = Input.inputMode == InputMode.Controller;
             if (_scrollPopUpID != 0)
                 Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
+            if (_spellbookID != 0)
+                Bridge.SetTexturePath(_spellbookID, _scrollPickedUp
+                    ? (isController ? "UI-Spellbook-1Spell-Controller" : "UI-Spellbook-1Spell")
+                    : (isController ? "UI-Spellbook-NoSpells-Controller" : "UI-SpellBook-NoSpells"));
             if (_uiInfoID != 0 && Bridge.GetVisibility(_uiInfoID))
             {
                 if (_uiStage == 1)
@@ -91,7 +95,6 @@ namespace Eno
                 RuneSystem.SpellUnlocked[0] = true;
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
-                if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-1Spell");
                 if (_exitDoorID  != 0)
                 {
                     Bridge.ChangeState(_exitDoorID, "Unlocking");

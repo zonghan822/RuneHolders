@@ -80,6 +80,9 @@ namespace Eno
 
             PauseManager.Reset();
             IsGameCompleted = false;
+            SlugBase_Script.ResetGameEndState();
+            BatBase_Script.ResetGameEndState();
+            NullflyBase_Script.ResetGameEndState();
         }
 
         private void UpdateHealthBar()

@@ -16,6 +16,12 @@ namespace Eno
                 inst._walkAudio?.stop();
         }
 
+        public static void ResetGameEndState()
+        {
+            _gameEnded = false;
+            _allInstances.Clear();
+        }
+
         public float chaseSpeed          = 60f;
         public float pathRefreshInterval = 0.5f;
         public float hurtDuration        = 0.4f;
