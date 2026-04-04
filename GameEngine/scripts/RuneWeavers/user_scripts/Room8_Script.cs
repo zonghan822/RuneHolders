@@ -115,7 +115,7 @@ namespace Eno
                 // Show F/Y-to-open hint
                 if (_uiInfoID != 0)
                 {
-                    Bridge.SetTexturePathAndResize(_uiInfoID, Input.inputMode == InputMode.Controller ? "UI-YToSpellbook" : "UI-FtoOpen-Text");
+                    Bridge.SetTexturePathAndResize(_uiInfoID, Input.inputMode == InputMode.Controller ? "UI-YToSpellbook" : "Text-FSpellbook");
                     Bridge.SetVisibility(_uiInfoID, true);
                 }
                 _uiInfoTimer = 0f;

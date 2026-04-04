@@ -12,10 +12,13 @@ namespace Eno
         private float _waveTimer    = 0f;
         private float _lockRumbleTimer = 0f;
         private AudioNode? _doorAudio = null;
+        private uint  _popupID     = 0;
+        private static bool _popupActivated = false;
 
         public void Begin()
         {
             _instance     = this;
+            _popupActivated = false;
             _currentWave  = 0;
             _wavesStarted = false;
             _roomCleared  = false;
@@ -27,6 +30,21 @@ namespace Eno
         {
             if (_instance == null) return;
             if (_instance._roomCleared) return;
+
+            if (!_popupActivated)
+            {
+                _popupActivated = true;
+                EnemyInfoController.PopupKeyboardTexture   = "UI-EnemyPopUp-BlueNullfly";
+                EnemyInfoController.PopupControllerTexture = "UI-EnemyPopUp-Nullfly-Controller";
+
+                _instance._popupID = Bridge.GetNode("EnemyInfoPopUp");
+                if (_instance._popupID != 0 && _instance._popupID != uint.MaxValue)
+                {
+                    Bridge.SetVisibility(_instance._popupID, true);
+                    Bridge.SetButtonActive(_instance._popupID, true);
+                }
+            }
+
             _instance.SpawnWave(1);
         }
 
@@ -40,6 +58,14 @@ namespace Eno
             }
 
             if (!_wavesStarted || _roomCleared) return;
+
+            if (_popupID != 0 && _popupID != uint.MaxValue)
+            {
+                string icon = Input.inputMode == InputMode.Controller
+                    ? "UI-EnemyIcon-Nullfly-Controller"
+                    : "UI-EnemyIcon-Nullfly";
+                Bridge.SetTexturePath(_popupID, icon);
+            }
 
             _waveTimer += Time.deltaTime;
 
