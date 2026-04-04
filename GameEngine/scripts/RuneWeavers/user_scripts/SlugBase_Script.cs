@@ -22,6 +22,8 @@ namespace Eno
             _allInstances.Clear();
         }
 
+        public static void ResumeGame() { _gameEnded = false; }
+
         public float chaseSpeed          = 60f;
         public float pathRefreshInterval = 0.5f;
         public float hurtDuration        = 0.4f;

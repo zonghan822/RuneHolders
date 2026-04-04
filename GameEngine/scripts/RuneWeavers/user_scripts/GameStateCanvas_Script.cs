@@ -28,7 +28,7 @@ namespace Eno
 
         private enum PauseNav  { None, Resume, Quit, MainMenu }
         private enum QuitNav   { None, Yes, No }
-        private enum EndNav    { None, Quit, MainMenu }
+        private enum EndNav    { None, PlayAgain, Quit, MainMenu }
 
         private PauseNav _pauseSel  = PauseNav.None;
         private QuitNav  _quitSel   = QuitNav.None;
@@ -101,10 +101,11 @@ namespace Eno
 
             // Win screen controller navigation
             bool winVisible = Bridge.GetVisibility(_victoryScreenID);
-            if (winVisible && !_prevWinVisible) SelectWin(EndNav.Quit);
+            if (winVisible && !_prevWinVisible) SelectWin(EndNav.PlayAgain);
             _prevWinVisible = winVisible;
             if (winVisible && !areYouSureVisible)
             {
+                if (up)      SelectWin(EndNav.PlayAgain);
                 if (left)    SelectWin(EndNav.Quit);
                 if (right)   SelectWin(EndNav.MainMenu);
                 if (confirm) ConfirmWin();
@@ -112,10 +113,11 @@ namespace Eno
 
             // Lose screen controller navigation
             bool loseVisible = Bridge.GetVisibility(_defeatScreenID);
-            if (loseVisible && !_prevLoseVisible) SelectLose(EndNav.Quit);
+            if (loseVisible && !_prevLoseVisible) SelectLose(EndNav.PlayAgain);
             _prevLoseVisible = loseVisible;
             if (loseVisible && !areYouSureVisible)
             {
+                if (up)      SelectLose(EndNav.PlayAgain);
                 if (left)    SelectLose(EndNav.Quit);
                 if (right)   SelectLose(EndNav.MainMenu);
                 if (confirm) ConfirmLose();
@@ -345,6 +347,10 @@ namespace Eno
         {
             switch (btn)
             {
+                case EndNav.PlayAgain:
+                    Bridge.SetTexturePath(Bridge.GetNode("WinScreenPlayAgain"),
+                        selected ? "UI-PlayAgain-Selected" : "UI-PlayAgain");
+                    break;
                 case EndNav.Quit:
                     Bridge.SetTexturePath(Bridge.GetNode("WinScreenQuit"),
                         selected ? "UI-QuitGame-Selected" : "UI-Quit");
@@ -360,8 +366,9 @@ namespace Eno
         {
             switch (_winSel)
             {
-                case EndNav.Quit:     _when_winscreenquit_onclick();     break;
-                case EndNav.MainMenu: _when_winscreenmainmenu_onclick(); break;
+                case EndNav.PlayAgain: _when_winscreenplayagain_onclick();  break;
+                case EndNav.Quit:      _when_winscreenquit_onclick();      break;
+                case EndNav.MainMenu:  _when_winscreenmainmenu_onclick();  break;
             }
         }
 
@@ -377,6 +384,10 @@ namespace Eno
         {
             switch (btn)
             {
+                case EndNav.PlayAgain:
+                    Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenPlayAgain"),
+                        selected ? "UI-PlayAgain-Selected" : "UI-PlayAgain");
+                    break;
                 case EndNav.Quit:
                     Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenQuit"),
                         selected ? "UI-QuitGame-Selected" : "UI-Quit");
@@ -392,8 +403,9 @@ namespace Eno
         {
             switch (_loseSel)
             {
-                case EndNav.Quit:     _when_defeatscreenquit_onclick();     break;
-                case EndNav.MainMenu: _when_defeatscreenmainmenu_onclick(); break;
+                case EndNav.PlayAgain: _when_defeatscreenplayagain_onclick();  break;
+                case EndNav.Quit:      _when_defeatscreenquit_onclick();      break;
+                case EndNav.MainMenu:  _when_defeatscreenmainmenu_onclick();  break;
             }
         }
 
@@ -479,8 +491,19 @@ namespace Eno
 
 		public void _when_defeatscreenplayagain_onclick()
         {
+            PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenPlayAgain"), "UI-PlayAgain");
-            Bridge.ChangeScene("Level.txt");
+            SetLoseSprite(_loseSel, false);
+            _loseSel = EndNav.None;
+            // Hide defeat screen
+            if (_defeatScreenID != 0)
+            {
+                Bridge.SetVisibility(_defeatScreenID, false);
+                SetChildButtonsActive(_defeatScreenID, false);
+            }
+            Bridge.SetCanvasActive(_winLoseCanvasID, false);
+            // Respawn player in previous room
+            PlayerController.Respawn();
         }
 	}
 }

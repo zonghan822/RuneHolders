@@ -81,6 +81,22 @@ namespace Eno
             _instance._uiInfoShown = false;
         }
 
+        public static void ResetForRespawn()
+        {
+            if (_instance == null || _instance._roomCleared) return;
+            _instance._wavesStarted = false;
+            _instance._doorsLocked = false;
+            SilentUnlock("Door2to1");
+            SilentUnlock("Door2to3");
+        }
+
+        private static void SilentUnlock(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocked");
+        }
+
         public static void CleanupDummies()
         {
             DummyRed_Script.Cleanup();
@@ -120,7 +136,7 @@ namespace Eno
             {
                 case 0:
                     _uiInfoTimer += Time.deltaTime;
-                    if (RuneSystem.SpellCastOccurred || _uiInfoTimer >= 10f)
+                    if (RuneSystem.SpellCastOccurred || _uiInfoTimer >= 8f)
                     {
                         RuneSystem.SpellCastOccurred = false;
                         _uiInfo.setTextureAndResize("Text-SpellcastingTutorial2");

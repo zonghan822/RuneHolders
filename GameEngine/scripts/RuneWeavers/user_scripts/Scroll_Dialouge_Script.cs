@@ -193,6 +193,19 @@ namespace Eno
         {
             if (!dialogueActive) return;
 
+            // Update ESC/skip box and dialogue box textures for current input mode
+            bool isCtrl = Input.inputMode == InputMode.Controller;
+            if (_escBox != null)
+                _escBox.texture = isCtrl ? "UI-Skip-Controller" : "UI-DialogueBox-Skip";
+            if (_dialogueBox != null)
+            {
+                var line = _dialogueSets[_activeIndex][dialogueIndex];
+                bool isCassia = line._speaker == Speaker.Cassia || line._speaker == Speaker.CassiaMain;
+                _dialogueBox.texture = isCassia
+                    ? (isCtrl ? "UI-DialogueBox-Cassia-Controller" : "UI-DialogueBox-Cassia")
+                    : (isCtrl ? "UI-DialogueBox-Witch-Controller" : "UI-DialogueBox-Witch");
+            }
+
             if (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.B))
             {
                 CloseDialogue();
@@ -259,7 +272,11 @@ namespace Eno
                 _dialogueText.visible = true;
                 _dialogueText.text = "";
             }
-            if (_escBox != null) _escBox.visible = true;
+            if (_escBox != null)
+            {
+                _escBox.texture = Input.inputMode == InputMode.Controller ? "UI-Skip-Controller" : "UI-DialogueBox-Skip";
+                _escBox.visible = true;
+            }
 
             dialogueIndex = 0;
             ShowLine(_dialogueSets[index][0]);
@@ -309,6 +326,8 @@ namespace Eno
             if (_charRight  != null) _charRight.visible  = false;
 
             // Identify speaker and current emotion
+            bool isController = Input.inputMode == InputMode.Controller;
+
             switch (line._speaker)
             {
                 case Speaker.Cassia:
@@ -319,7 +338,7 @@ namespace Eno
                     }
                     // Change dialogue box texture
                     if (_dialogueBox != null)
-                        _dialogueBox.texture = "UI-DialogueBox-Cassia";
+                        _dialogueBox.texture = isController ? "UI-DialogueBox-Cassia-Controller" : "UI-DialogueBox-Cassia";
                     break;
 
                 case Speaker.Witch:
@@ -330,7 +349,7 @@ namespace Eno
                     }
                     // Change dialogue box texture
                     if (_dialogueBox != null)
-                        _dialogueBox.texture = "UI-DialogueBox-Witch";
+                        _dialogueBox.texture = isController ? "UI-DialogueBox-Witch-Controller" : "UI-DialogueBox-Witch";
                     break;
 
                 case Speaker.CassiaMain:
@@ -351,7 +370,7 @@ namespace Eno
                     }
                     // Change dialogue box texture
                     if (_dialogueBox != null)
-                        _dialogueBox.texture = "UI-DialogueBox-Cassia";
+                        _dialogueBox.texture = isController ? "UI-DialogueBox-Cassia-Controller" : "UI-DialogueBox-Cassia";
                     break;
 
                 case Speaker.WitchMain:
@@ -372,9 +391,13 @@ namespace Eno
                     }
                     // Change dialogue box texture
                     if (_dialogueBox != null)
-                        _dialogueBox.texture = "UI-DialogueBox-Witch";
+                        _dialogueBox.texture = isController ? "UI-DialogueBox-Witch-Controller" : "UI-DialogueBox-Witch";
                     break;
             }
+
+            // Update ESC/skip box for current input mode
+            if (_escBox != null)
+                _escBox.texture = isController ? "UI-Skip-Controller" : "UI-DialogueBox-Skip";
 
             // Show dialogue box with current speaker name
             if (_dialogueBox != null)

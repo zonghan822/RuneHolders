@@ -76,6 +76,28 @@ namespace Eno
             _instance._fading = false;
         }
 
+        // Called on respawn after death — restarts exploration BGM
+        public static void RestartBGM()
+        {
+            if (_instance == null) return;
+            if (_instance._layer1 != null)
+            {
+                _instance._layer1.volume = _instance.layer1Volume;
+                _instance._layer1.sound  = "BGM_01_Layer1_loop";
+                _instance._layer1.play();
+            }
+            Bridge.SetSound(_instance.ID, "BGM_01_Layer2_loop");
+            Bridge.AudioPlay(_instance.ID);
+            Bridge.SetAudioVolume(_instance.ID, 0f);
+            if (_instance._creak != null)
+            {
+                _instance._creak.volume = _instance.creakVolume;
+                _instance._creak.sound  = "Ambience_Creaking_Wood";
+                _instance._creak.play();
+            }
+            _instance._fading = false;
+        }
+
         // Called by room scripts: true = combat active, false = room cleared
         public static void SetLayer2Combat(bool inCombat)
         {
