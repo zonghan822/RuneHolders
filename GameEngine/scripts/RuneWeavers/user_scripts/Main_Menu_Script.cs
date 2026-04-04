@@ -136,6 +136,9 @@ namespace Eno
             }
             else if (_menuState == MenuState.ControlsMenu)
             {
+                uint controlBGID = Bridge.GetNode("ControlBG");
+                if (controlBGID != 0 && controlBGID != uint.MaxValue)
+                    Bridge.SetTexturePath(controlBGID, isController ? "UI-ControlsMenu-Controller" : "UI-ControlsMenu");
                 if (confirm || back) _when_control_menu_back_button_onclick();
             }
             else if (_menuState == MenuState.SettingsMenu)

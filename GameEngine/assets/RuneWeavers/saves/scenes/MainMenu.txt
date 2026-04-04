@@ -357,7 +357,7 @@
 		"PrefabName": {  }
 	}
 
-	[SpellbookControl]
+	[ControlBG]
 	{
 		"ID": { 52 }
 		"Layer": { 1 }
@@ -371,7 +371,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 3200 | y : -479.464 }
+				"Position": <eVec2(float)> { x : 3200 | y : -540 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
@@ -379,11 +379,11 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 1537 }
-				"Height": <float> { 961 }
+				"Width": <float> { 912 }
+				"Height": <float> { 912 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
-				"Texture Path": <texchar240> { UI-Spellbook-3Spells }
+				"Texture Path": <texchar240> { UI-ControlsMenu }
 				"TexID": <int> { 0 }
 				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
 				"UV End": <eVec2(float)> { x : 1 | y : 1 }
@@ -567,7 +567,7 @@
 
 			[struct ECSComponents::TransformComponent]
 			{
-				"Position": <eVec2(float)> { x : 2459.19 | y : -930.235 }
+				"Position": <eVec2(float)> { x : 3200 | y : -300 }
 				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
 				"Scale": <eVec2(float)> { x : 1 | y : 1 }
 				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
