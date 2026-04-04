@@ -288,6 +288,7 @@ namespace Eno
             _pauseSel = PauseNav.None;
             Bridge.SetAudioPaused(false);
             BGMforLevel1_Script.StopAllBGM();
+            EnemyColorRegistry.Reset();
             Bridge.ChangeScene("MainMenu.txt");
         }
 
@@ -440,6 +441,7 @@ namespace Eno
             PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("WinScreenMainMenu"), "UI-MainMenu");
             BGMforLevel1_Script.StopAllBGM();
+            EnemyColorRegistry.Reset();
             Bridge.ChangeScene("MainMenu.txt");
         }
 
@@ -473,6 +475,7 @@ namespace Eno
             PlayClickSound();
             Bridge.SetTexturePath(Bridge.GetNode("DefeatScreenMainMenu"), "UI-MainMenu");
             BGMforLevel1_Script.StopAllBGM();
+            EnemyColorRegistry.Reset();
             Bridge.ChangeScene("MainMenu.txt");
         }
 	

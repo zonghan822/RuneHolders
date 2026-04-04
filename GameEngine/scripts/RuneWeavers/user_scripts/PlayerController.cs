@@ -496,9 +496,10 @@ namespace Eno
             Room12_Script.ResetForRespawn();
             Room13_Script.ResetForRespawn();
 
-            // Clear all enemies
+            // Clear all enemies and reset bans
             foreach (Enemy enemy in _instance.GetAllEnemies())
                 _instance.FreeNode(enemy);
+            EnemyColorRegistry.Reset();
             SlugBase_Script.ResetGameEndState();
             BatBase_Script.ResetGameEndState();
             NullflyBase_Script.ResetGameEndState();

@@ -25,5 +25,11 @@ namespace Eno
         }
 
         public static IEnumerable<int> ActiveBans => _banCounts.Keys;
+
+        public static void Reset()
+        {
+            Colors.Clear();
+            _banCounts.Clear();
+        }
     }
 }
