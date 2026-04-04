@@ -18,9 +18,9 @@ namespace Eno
 
         private uint  _uiInfoID       = 0;
         private float _uiInfoTimer    = 0f;
+        private int   _tutorialStage  = 0;
         private float _lockRumbleTimer = 0f;
         private uint  _scrollPopUpID  = 0;
-        private bool  _prevController = false;
         private AudioNode? _doorAudio = null;
 
         public void Begin()
@@ -30,12 +30,9 @@ namespace Eno
             _scrollID    = Bridge.GetNode("Room8_Scroll");
             _exitDoorID  = Bridge.GetNode("Door8to9");
             _spellbookID = Bridge.GetNode("Spellbook");
-            _uiInfoID    = Bridge.GetNode("UI_Info");
-
             _scrollPopUpID  = Bridge.GetNode("Room8_ScrollPopUp");
-            _prevController = Input.inputMode == InputMode.Controller;
-            if (_scrollPopUpID != 0)
-                Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
+
+            _uiInfoID    = Bridge.GetNode("UI_Info");
 
             _postDialogueActivated = false;
             _scrollPickedUp        = false;
@@ -44,8 +41,25 @@ namespace Eno
             _wasEverCleared        = false;
             _doorsLocked           = false;
             _uiInfoTimer           = 0f;
+            _tutorialStage         = 0;
             DummyBlue_Script.WasHit = false;
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+        }
+
+        public static void ResetForRespawn()
+        {
+            if (_instance == null || _instance._roomCleared) return;
+            _instance._wavesStarted = false;
+            _instance._doorsLocked = false;
+            SilentUnlock("Door8to7");
+            SilentUnlock("Door8to9");
+        }
+
+        private static void SilentUnlock(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocked");
         }
 
         public static void StartWaves()
@@ -53,6 +67,14 @@ namespace Eno
             if (_instance == null) return;
             DummyBlue_Script.WasHit = false;
             _instance.SpawnWave1();
+        }
+
+        public static void StopUI()
+        {
+            if (_instance == null) return;
+            _instance._tutorialStage = 4;
+            if (_instance._uiInfoID != 0)
+                Bridge.SetVisibility(_instance._uiInfoID, false);
         }
 
         public static void CleanupDummies()
@@ -72,19 +94,12 @@ namespace Eno
             }
 
             bool isController = Input.inputMode == InputMode.Controller;
-            if (isController != _prevController)
-            {
-                _prevController = isController;
-                if (_scrollPopUpID != 0)
-                    Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
-            }
+            if (_scrollPopUpID != 0)
+                Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
+            if (_spellbookID != 0 && _scrollPickedUp)
+                Bridge.SetTexturePath(_spellbookID, isController ? "UI-Spellbook-3Spells-Controller" : "UI-Spellbook-3Spells");
 
-            if (_scrollPickedUp && _uiInfoID != 0 && _uiInfoTimer < 3f)
-            {
-                _uiInfoTimer += Time.deltaTime;
-                if (_uiInfoTimer >= 3f)
-                    Bridge.SetVisibility(_uiInfoID, false);
-            }
+            UpdateTutorialUI();
 
             // Check dummy clear condition
             if (_wavesStarted && !_roomCleared && (DummyBlue_Script.WasHit || GetAllEnemies().Count == 0))
@@ -118,9 +133,56 @@ namespace Eno
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
-                
+                // Show spellcasting tutorial 3
+                if (_uiInfoID != 0)
+                {
+                    Bridge.SetTexturePathAndResize(_uiInfoID, "Text-SpellcastingTutorial3");
+                    Bridge.SetVisibility(_uiInfoID, true);
+                }
+                _tutorialStage = 1;
                 // Update spellbook
-                if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-3Spells");
+                // Spellbook texture now updated per-frame above
+            }
+        }
+
+        private void UpdateTutorialUI()
+        {
+            switch (_tutorialStage)
+            {
+                case 1:
+                    _uiInfoTimer += Time.deltaTime;
+                    if (PauseManager.SpellbookOpen || _uiInfoTimer >= 5f)
+                    {
+                        if (_uiInfoID != 0) Bridge.SetVisibility(_uiInfoID, false);
+                        _tutorialStage++;
+                        _uiInfoTimer = 0f;
+                    }
+                    break;
+
+                case 2:
+                    if (!PauseManager.SpellbookOpen)
+                    {
+                        if (_uiInfoID != 0)
+                        {
+                            Bridge.SetTexturePathAndResize(_uiInfoID, "Text-SpellcastingTutorial4");
+                            Bridge.SetVisibility(_uiInfoID, true);
+                        }
+                        _tutorialStage++;
+                    }
+                    break;
+
+                case 3:
+                    if (DummyBlue_Script.WasHit)
+                    {
+                        _uiInfoTimer += Time.deltaTime;
+                        if (_uiInfoID != 0 && _uiInfoTimer >= 2f)
+                        {
+                            Bridge.SetVisibility(_uiInfoID, false);
+                            _tutorialStage++;
+                            _uiInfoTimer = 0f;
+                        }
+                    }
+                    break;
             }
         }
 

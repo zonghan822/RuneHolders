@@ -1396,13 +1396,10 @@ namespace Graphics
                         animComp.controllerID = animReg.createController();
                         ctrl = animReg.get(animComp.controllerID);
                     }
-                    else
+                    else if (!ctrl->animations_.empty())
                     {
-                        ctrl->animations_.clear();
-                        ctrl->textures_.clear();
-                        ctrl->currentAnimation_     = nullptr;
-                        ctrl->currentTexture_       = nullptr;
-                        ctrl->currentAnimationName_.clear();
+                        // Controller already initialized — skip to avoid resetting animations
+                        continue;
                     }
 
                     if (ctrl)

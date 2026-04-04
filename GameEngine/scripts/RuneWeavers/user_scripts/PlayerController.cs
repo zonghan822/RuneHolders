@@ -51,6 +51,15 @@ namespace Eno
         {
             _instance?._footstepAudio?.stop();
         }
+        private uint _controllerConnectID = 0;
+        private float _controllerMsgTimer = 0f;
+        private bool  _wasGamepadConnected = false;
+
+        private uint  _cameraID = 0;
+        private bool  _wasPanning = false;
+        private static float _prevPX, _prevPY, _prevCX, _prevCY;
+        private static float _currPX, _currPY, _currCX, _currCY;
+        private static bool  _hasCheckpoint = false;
 
         public void Begin()
         {
@@ -83,8 +92,29 @@ namespace Eno
             _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");
             _defeatScreenID  = Bridge.GetNode("DefeatScreen");
 
+            _controllerConnectID = Bridge.GetNode("ControllerConnect");
+            _wasGamepadConnected = Input.isGamepadConnected();
+            if (_wasGamepadConnected && _controllerConnectID != 0)
+            {
+                Bridge.SetTexturePath(_controllerConnectID, "UI-ControllerConnected-Text");
+                Bridge.SetVisibility(_controllerConnectID, true);
+                _controllerMsgTimer = 5f;
+            }
+
+            _cameraID = Bridge.GetNode("Camera");
+            _currPX = _player.position.x; _currPY = _player.position.y;
+            if (_cameraID != 0 && _cameraID != uint.MaxValue)
+            { _currCX = Bridge.GetPositionX(_cameraID); _currCY = Bridge.GetPositionY(_cameraID); }
+            _prevPX = _currPX; _prevPY = _currPY;
+            _prevCX = _currCX; _prevCY = _currCY;
+            _hasCheckpoint = true;
+            _wasPanning = false;
+
             PauseManager.Reset();
             IsGameCompleted = false;
+            SlugBase_Script.ResetGameEndState();
+            BatBase_Script.ResetGameEndState();
+            NullflyBase_Script.ResetGameEndState();
         }
 
         private void UpdateHealthBar()
@@ -116,6 +146,38 @@ namespace Eno
 
         public void Update()
         {
+            // Controller connect/disconnect notification
+            bool gamepadNow = Input.isGamepadConnected();
+            if (gamepadNow != _wasGamepadConnected)
+            {
+                _wasGamepadConnected = gamepadNow;
+                if (_controllerConnectID != 0)
+                {
+                    Bridge.SetTexturePath(_controllerConnectID,
+                        gamepadNow ? "UI-ControllerConnected-Text" : "UI-ControllerDisconnected-Text");
+                    Bridge.SetVisibility(_controllerConnectID, true);
+                }
+                _controllerMsgTimer = 5f;
+            }
+            if (_controllerMsgTimer > 0f)
+            {
+                _controllerMsgTimer -= Time.deltaTime;
+                if (_controllerMsgTimer <= 0f && _controllerConnectID != 0)
+                    Bridge.SetVisibility(_controllerConnectID, false);
+            }
+
+            // Track door transitions to save room checkpoints
+            bool panningNow = PauseManager.CameraPanning;
+            if (_wasPanning && !panningNow)
+            {
+                _prevPX = _currPX; _prevPY = _currPY;
+                _prevCX = _currCX; _prevCY = _currCY;
+                _currPX = _player.position.x; _currPY = _player.position.y;
+                if (_cameraID != 0 && _cameraID != uint.MaxValue)
+                { _currCX = Bridge.GetPositionX(_cameraID); _currCY = Bridge.GetPositionY(_cameraID); }
+            }
+            _wasPanning = panningNow;
+
             if (_player.health <= 0f)
                 _player.changeState("Death");
 
@@ -351,6 +413,51 @@ namespace Eno
         }
 
         public void Death_exit() { }
+
+        public static void Respawn()
+        {
+            if (_instance == null || !_hasCheckpoint) return;
+            var p = _instance._player;
+
+            // Reset player state
+            p.stateChangeLocked = false;
+            p.health = p.maxHealth;
+            p.velocity = new Vector2(0f, 0f);
+            p.changeState("Idle");
+            _instance._isAttacking = false;
+            _instance._isHurt = false;
+            Input.setGamepadRumble(0f, 0f);
+
+            // Teleport player and camera to previous room
+            p.position = new Vector2(_prevPX, _prevPY);
+            if (_instance._cameraID != 0 && _instance._cameraID != uint.MaxValue)
+                Bridge.SetPosition(_instance._cameraID, _prevCX, _prevCY);
+
+            // Reset non-cleared rooms so they don't falsely clear, and unlock doors
+            Room2_Script.ResetForRespawn();
+            Room3_Script.ResetForRespawn();
+            Room4_Script.ResetForRespawn();
+            Room5_Script.ResetForRespawn();
+            Room6_Script.ResetForRespawn();
+            Room7_Script.ResetForRespawn();
+            Room8_Script.ResetForRespawn();
+            Room9_Script.ResetForRespawn();
+            Room11_Script.ResetForRespawn();
+            Room12_Script.ResetForRespawn();
+            Room13_Script.ResetForRespawn();
+
+            // Clear all enemies
+            foreach (Enemy enemy in _instance.GetAllEnemies())
+                _instance.FreeNode(enemy);
+            SlugBase_Script.ResetGameEndState();
+            BatBase_Script.ResetGameEndState();
+            NullflyBase_Script.ResetGameEndState();
+
+            // Resume game systems
+            IsGameCompleted = false;
+            Bridge.SetAudioPaused(false);
+            BGMforLevel1_Script.RestartBGM();
+        }
 
         private void SetChildButtonsActive(uint parentID, bool active)
         {

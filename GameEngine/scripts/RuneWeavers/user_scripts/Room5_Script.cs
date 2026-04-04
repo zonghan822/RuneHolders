@@ -26,6 +26,34 @@ namespace Eno
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
+        public static void ResetForRespawn()
+        {
+            if (_instance == null || _instance._roomCleared) return;
+            _instance._wavesStarted = false;
+            _instance._currentWave = 0;
+            _instance._waveTimer = 0f;
+            SilentUnlock("Door5to4");
+            SilentUnlock("Door5to6");
+            SilentUnlock("Door5to5A");
+        }
+
+        private static void SilentUnlock(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocked");
+        }
+
+        public static void ShowPopup()
+        {
+            if (_instance == null || !_popupActivated) return;
+            if (_instance._popupID != 0 && _instance._popupID != uint.MaxValue)
+            {
+                Bridge.SetVisibility(_instance._popupID, true);
+                Bridge.SetButtonActive(_instance._popupID, true);
+            }
+        }
+
         public static void StartWaves()
         {
             if (_instance == null) return;
@@ -69,7 +97,7 @@ namespace Eno
 
             _waveTimer += Time.deltaTime;
 
-            if (GetAllEnemies().Count == 0 || _waveTimer >= WaveDelay)
+            if (GetAllEnemies().Count == 0)
             {
                 _waveTimer = 0f;
                 if (_currentWave < 2)
@@ -82,6 +110,11 @@ namespace Eno
                     UnlockDoor("Door5to4");
                     UnlockDoor("Door5to5A");
                 }
+            }
+            else if (_waveTimer >= WaveDelay && _currentWave < 2)
+            {
+                _waveTimer = 0f;
+                SpawnWave(_currentWave + 1);
             }
         }
 

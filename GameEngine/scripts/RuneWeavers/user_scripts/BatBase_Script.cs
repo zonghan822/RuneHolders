@@ -15,6 +15,14 @@ namespace Eno
                 inst._audio?.stop();
         }
 
+        public static void ResetGameEndState()
+        {
+            _gameEnded = false;
+            _allInstances.Clear();
+        }
+
+        public static void ResumeGame() { _gameEnded = false; }
+
         public float chaseSpeed      = 120f;
         public float dashSpeed       = 240f;
         public float hurtDuration    = 0.3f;

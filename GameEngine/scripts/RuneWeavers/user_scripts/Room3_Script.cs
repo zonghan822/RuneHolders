@@ -27,6 +27,35 @@ namespace Eno
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
+        public static void ResetForRespawn()
+        {
+            if (_instance == null || _instance._roomCleared) return;
+            _instance._wavesStarted = false;
+            _instance._currentWave = 0;
+            _instance._waveTimer = 0f;
+            SilentUnlock("Door2to3");
+            SilentUnlock("Door3to2");
+            SilentUnlock("Door3to4");
+            SilentUnlock("Door4to3");
+        }
+
+        private static void SilentUnlock(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocked");
+        }
+
+        public static void ShowPopup()
+        {
+            if (_instance == null || !_popupActivated) return;
+            if (_instance._popupID != 0 && _instance._popupID != uint.MaxValue)
+            {
+                Bridge.SetVisibility(_instance._popupID, true);
+                Bridge.SetButtonActive(_instance._popupID, true);
+            }
+        }
+
         public static void StartWaves()
         {
             if (_instance == null) return;

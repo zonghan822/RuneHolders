@@ -72,6 +72,31 @@ namespace Eno
             LockDoor("Door2to3");
         }
 
+        public static void StopUI()
+        {
+            if (_instance == null) return;
+            _instance._tutorialStage = 3;
+            if (_instance._uiInfo != null)
+                _instance._uiInfo.visible = false;
+            _instance._uiInfoShown = false;
+        }
+
+        public static void ResetForRespawn()
+        {
+            if (_instance == null || _instance._roomCleared) return;
+            _instance._wavesStarted = false;
+            _instance._doorsLocked = false;
+            SilentUnlock("Door2to1");
+            SilentUnlock("Door2to3");
+        }
+
+        private static void SilentUnlock(string name)
+        {
+            uint id = Bridge.GetNode(name);
+            if (id != 0 && id != uint.MaxValue)
+                Bridge.ChangeState(id, "Unlocked");
+        }
+
         public static void CleanupDummies()
         {
             DummyRed_Script.Cleanup();
@@ -111,7 +136,7 @@ namespace Eno
             {
                 case 0:
                     _uiInfoTimer += Time.deltaTime;
-                    if (RuneSystem.SpellCastOccurred || _uiInfoTimer >= 10f)
+                    if (RuneSystem.SpellCastOccurred || _uiInfoTimer >= 8f)
                     {
                         RuneSystem.SpellCastOccurred = false;
                         _uiInfo.setTextureAndResize("Text-SpellcastingTutorial2");
@@ -122,11 +147,10 @@ namespace Eno
 
                 case 1:
                     _uiInfoTimer += Time.deltaTime;
-                    if (_uiInfoTimer >= 3f)
+                    if (_uiInfoTimer >= 2f)
                     {
                         // Spawn target dummy after casting spell for the first time
                         _instance.SpawnWave1();
-                        _uiInfo.setTextureAndResize("Text-SpellcastingTutorial2");
                         _uiInfoTimer   = 0f;
                         _tutorialStage = 2;
                     }

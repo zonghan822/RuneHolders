@@ -49,8 +49,10 @@ namespace Eno
                 Bridge.SetPosition(_cameraID, CamDestX, CamDestY);
                 _panning = false;
                 PauseManager.SetCameraPanning(false);
+                Room2_Script.StopUI();
                 Room2_Script.CleanupDummies();
                 Room3_Script.StartWaves();
+                Room3_Script.ShowPopup();
             }
             else
             {

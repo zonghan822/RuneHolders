@@ -6,6 +6,8 @@ namespace Eno
         public static string PopupKeyboardTexture   = "";
         public static string PopupControllerTexture = "";
 
+        private static EnemyInfoController? _instance;
+
         private uint _enemyInfoID        = 0;
         private uint _enemyInfoPopupID   = 0;
         private bool _enemyInfoOpen      = false;
@@ -13,10 +15,29 @@ namespace Eno
 
         public void Begin()
         {
+            _instance           = this;
             _enemyInfoID        = Bridge.GetNode("EnemyInfo");
             _enemyInfoPopupID   = Bridge.GetNode("EnemyInfoPopUp");
             _enemyInfoOpen      = false;
             _sfxAudio           = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
+        }
+
+        public static void HidePopup()
+        {
+            if (_instance == null) return;
+            // Close info panel if open
+            if (_instance._enemyInfoOpen)
+            {
+                _instance._enemyInfoOpen = false;
+                if (_instance._enemyInfoID != 0) Bridge.SetVisibility(_instance._enemyInfoID, false);
+                PauseManager.SetEnemyInfo(false);
+            }
+            // Hide popup button
+            if (_instance._enemyInfoPopupID != 0)
+            {
+                Bridge.SetVisibility(_instance._enemyInfoPopupID, false);
+                Bridge.SetButtonActive(_instance._enemyInfoPopupID, false);
+            }
         }
 
         public void Update()
@@ -28,12 +49,7 @@ namespace Eno
                 (Input.isKeyPressed(KeyCode.E) || (isController && (Input.isGamepadButtonPressed(GamepadButton.A) || Input.isGamepadButtonPressed(GamepadButton.X)))))
             {
                 _enemyInfoOpen = false;
-                if (_enemyInfoID      != 0) Bridge.SetVisibility(_enemyInfoID, false);
-                if (_enemyInfoPopupID != 0)
-                {
-                    Bridge.SetVisibility(_enemyInfoPopupID, false);
-                    Bridge.SetButtonActive(_enemyInfoPopupID, false);
-                }
+                if (_enemyInfoID != 0) Bridge.SetVisibility(_enemyInfoID, false);
                 PauseManager.SetEnemyInfo(false);
                 if (_sfxAudio != null) { _sfxAudio.sound = "Spellbook_Close_01"; _sfxAudio.play(); }
                 return;

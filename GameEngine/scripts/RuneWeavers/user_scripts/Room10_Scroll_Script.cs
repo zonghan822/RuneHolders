@@ -10,7 +10,6 @@ namespace Eno
         private bool _open  = false;
         private bool _skipE = false;
         private uint _scrollPopUpID  = 0;
-        private bool _prevController = false;
         private AudioNode? _scrollAudio = null;
 
         public void Begin()
@@ -23,21 +22,14 @@ namespace Eno
             _skipE = false;
 
             _scrollPopUpID  = Bridge.GetNode("Room10_ScrollPopUp");
-            _prevController = Input.inputMode == InputMode.Controller;
-            if (_scrollPopUpID != 0)
-                Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
             _scrollAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public void Update()
         {
             bool isController = Input.inputMode == InputMode.Controller;
-            if (isController != _prevController)
-            {
-                _prevController = isController;
-                if (_scrollPopUpID != 0)
-                    Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
-            }
+            if (_scrollPopUpID != 0)
+                Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
 
             uint playerID = Bridge.GetNode("Player");
             if (playerID == 0 || playerID == uint.MaxValue) return;

@@ -39,7 +39,7 @@ namespace Eno
             float wx = Input.mouseWorldPosition.x;
             float wy = Input.mouseWorldPosition.y;
 
-            if (PauseManager.PauseMenuOpen)
+            if (PauseManager.IsMenuPaused)
             {
                 // Keep prev values in sync so there's no jump when unpausing
                 _prevScreenX = sx;

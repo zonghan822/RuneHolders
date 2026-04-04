@@ -15,6 +15,14 @@ namespace Eno
                 inst._audio?.stop();
         }
 
+        public static void ResetGameEndState()
+        {
+            _gameEnded = false;
+            _allInstances.Clear();
+        }
+
+        public static void ResumeGame() { _gameEnded = false; }
+
         public int   runeIndex       = 5;      // 0-5: which rune this Nullfly bans
         public float cloakRadius     = 220f;   // player closer than this → cloak
         public float uncloakRadius   = 300f;   // player farther than this → uncloak
