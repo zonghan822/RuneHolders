@@ -127,6 +127,7 @@ namespace Eno
         private Sprite2D? _charCenter;        // Centre character image
         private Sprite2D? _charLeft;          // Cassia on the left
         private Sprite2D? _charRight;         // Witch on the right
+        private Sprite2D? _escBox;            // ESC-to-skip hint
 
         // ------------------- Runtime state ------------------------------
         private bool   dialogueActive      = false;
@@ -158,6 +159,7 @@ namespace Eno
             try { _charCenter  = GetNode<Sprite2D>("CharacterCenter");  } catch { }
             try { _charLeft    = GetNode<Sprite2D>("ProtagonistLeft");    } catch { }
             try { _charRight   = GetNode<Sprite2D>("WitchRight");   } catch { }
+            try { _escBox      = GetNode<Sprite2D>("ESCBox");        } catch { }
 
             // Reset static state so dialogue replays on level restart
             DialogueActive = false;
@@ -174,6 +176,12 @@ namespace Eno
             dialogueTypeTimer   = 0f;
         }
 
+        // Called externally (e.g. back buttons) to close dialogue the same way Escape/B does.
+        public static void TriggerClose()
+        {
+            _instance?.CloseDialogue();
+        }
+
         // Called by room scripts when the player interacts with a text-based scroll.
         public static void TriggerDialogue(int scrollIndex)
         {
@@ -185,13 +193,13 @@ namespace Eno
         {
             if (!dialogueActive) return;
 
-            if (Input.isKeyPressed(KeyCode.Escape) || Input.isGamepadButtonPressed(GamepadButton.B))
+            if (Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.B))
             {
                 CloseDialogue();
                 return;
             }
 
-            if ((Input.isKeyPressed(KeyCode.E) || Input.isGamepadButtonPressed(GamepadButton.A)) && !_skipEInput)
+            if ((Input.isMousePressed(0) || Input.isGamepadButtonPressed(GamepadButton.A)) && !_skipEInput)
             {
                 if (dialogueTyping)
                 {
@@ -251,6 +259,7 @@ namespace Eno
                 _dialogueText.visible = true;
                 _dialogueText.text = "";
             }
+            if (_escBox != null) _escBox.visible = true;
 
             dialogueIndex = 0;
             ShowLine(_dialogueSets[index][0]);
@@ -286,6 +295,7 @@ namespace Eno
             if (_charCenter  != null) _charCenter.visible = false;
             if (_charLeft    != null) _charLeft.visible   = false;
             if (_charRight   != null) _charRight.visible  = false;
+            if (_escBox      != null) _escBox.visible     = false;
             // To prevent dialogue from repeating
             if (_activeIndex >= 0) DialogueShown[_activeIndex] = true;
         }

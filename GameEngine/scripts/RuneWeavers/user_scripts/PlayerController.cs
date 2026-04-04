@@ -43,6 +43,7 @@ namespace Eno
         // Forwards to PauseManager so other scripts can keep using PlayerController.IsGamePaused
         public static bool IsGamePaused => PauseManager.IsGamePaused;
         public static bool IsGameCompleted = false;
+        public static bool SpellbookOpen = false;
 
         private static PlayerController? _instance;
 

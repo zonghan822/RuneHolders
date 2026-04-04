@@ -63,6 +63,7 @@ namespace Eno
 
         public static void Cleanup()
         {
+            WasHit = false;
             foreach (var inst in _instances)
             {
                 EnemyColorRegistry.Unregister(inst.ID);

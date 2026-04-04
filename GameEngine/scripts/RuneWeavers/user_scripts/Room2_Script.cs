@@ -9,21 +9,55 @@ namespace Eno
         private bool  _wavesStarted   = false;
         private AudioNode? _doorAudio = null;
 
+        private Sprite2D? _uiInfo        = null;
+        private bool      _uiInfoShown   = false;
+        private float     _uiInfoTimer   = 0f;
+        // 0 = waiting for first spell cast
+        // 1 = "cast complete" — 2 s countdown before showing part 2
+        // 2 = waiting for dummy hit
+        // 3 = "hit complete" — 3 s countdown before hiding
+        // 4 = done
+        private int       _tutorialStage = 0;
+
         public void Begin()
         {
-            _instance      = this;
-            _roomCleared   = false;
+            _instance     = this;
+            _roomCleared  = false;
+            _wavesStarted = false;
             _wasEverCleared = false;
-            _wavesStarted  = false;
-            DummyRed_Script.WasHit = false;
+            DummyRed_Script.WasHit       = false;
+            RuneSystem.SpellCastOccurred = false;
+
+            _uiInfo        = null;
+            _uiInfoShown   = false;
+            _tutorialStage = 0;
+            _uiInfoTimer   = 0f;
+
+            try { _uiInfo = GetNode<Sprite2D>("UI_Info"); } catch { }
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public static void StartWaves()
         {
             if (_instance == null) return;
-            DummyRed_Script.WasHit = false;
-            _instance.SpawnWave1();
+            //_instance.SpawnWave1();
+            _instance.ActivateTutorialUI();
+        }
+
+        private void ActivateTutorialUI()
+        {
+            if (_uiInfo == null)
+                try { _uiInfo = GetNode<Sprite2D>("UI_Info"); } catch { }
+
+            if (_uiInfo != null)
+            {
+                _uiInfo.setTextureAndResize(Input.inputMode == InputMode.Controller
+                    ? "UI-ControllerCastingInstructions"
+                    : "Text-SpellcastingTutorial");
+                _uiInfo.visible = true;
+                _uiInfoShown    = true;
+            }
+            LockDoor("Door2to3");
         }
 
         public static void CleanupDummies()
@@ -40,6 +74,15 @@ namespace Eno
                     Input.setGamepadRumble(0f, 0f);
             }
 
+            if (_uiInfoShown && _tutorialStage < 3 && DummyRed_Script.WasHit)
+            {
+                _uiInfo?.setTextureAndResize("Text-SpellcastingTutorial2-Complete");
+                _uiInfoTimer   = 0f;
+                _tutorialStage = 3;
+            }
+
+            UpdateTutorialUI();
+
             if (!_wavesStarted || _roomCleared) return;
             if (DummyRed_Script.WasHit || GetAllEnemies().Count == 0)
             {
@@ -51,6 +94,54 @@ namespace Eno
             }
         }
 
+        private void UpdateTutorialUI()
+        {
+            if (_uiInfo == null || !_uiInfoShown) return;
+
+            switch (_tutorialStage)
+            {
+                case 0:
+                    if (RuneSystem.SpellCastOccurred)
+                    {
+                        RuneSystem.SpellCastOccurred = false;
+                        _uiInfo.setTextureAndResize("Text-SpellcastingTutorial-Complete");
+                        _uiInfoTimer   = 0f;
+                        _tutorialStage = 1;
+                    }
+                    break;
+
+                case 1:
+                    _uiInfoTimer += Time.deltaTime;
+                    if (_uiInfoTimer >= 2f)
+                    {
+                        // Spawn target dummy after casting spell for the first time
+                        _instance.SpawnWave1();
+                        _uiInfo.setTextureAndResize("Text-SpellcastingTutorial2");
+                        _uiInfoTimer   = 0f;
+                        _tutorialStage = 2;
+                    }
+                    break;
+
+                case 2:
+                    if (DummyRed_Script.WasHit)
+                    {
+                        _uiInfo.setTextureAndResize("Text-SpellcastingTutorial2-Complete");
+                        _uiInfoTimer   = 0f;
+                        _tutorialStage = 3;
+                    }
+                    break;
+
+                case 3:
+                    _uiInfoTimer += Time.deltaTime;
+                    if (_uiInfoTimer >= 3f)
+                    {
+                        _uiInfo.visible = false;
+                        _tutorialStage  = 4;
+                    }
+                    break;
+            }
+        }
+
         private void SpawnWave1()
         {
             _wavesStarted = true;
@@ -58,7 +149,7 @@ namespace Eno
             {
                 BGMforLevel1_Script.SetLayer2Combat(true);
                 LockDoor("Door2to1");
-                LockDoor("Door2to3");
+                //LockDoor("Door2to3");
             }
             _roomCleared = false;
             SpawnPrefab("DummyRed", 972f, -1700f);

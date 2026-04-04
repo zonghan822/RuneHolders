@@ -8,14 +8,12 @@ namespace Eno
 
         private uint _enemyInfoID        = 0;
         private uint _enemyInfoPopupID   = 0;
-        private uint _enemyInfoPopupBgID = 0;
         private bool _enemyInfoOpen      = false;
 
         public void Begin()
         {
             _enemyInfoID        = Bridge.GetNode("EnemyInfo");
             _enemyInfoPopupID   = Bridge.GetNode("EnemyInfoPopUp");
-            _enemyInfoPopupBgID = Bridge.GetNode("EnemyInfoPopUpBG");
             _enemyInfoOpen      = false;
         }
 

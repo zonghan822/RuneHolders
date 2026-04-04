@@ -15,9 +15,11 @@ namespace Eno
         private bool  _roomCleared           = false;
         private bool  _wasEverCleared        = false;
 
-        private uint  _uiInfoID    = 0;
-        private float _uiInfoTimer = 0f;
+        private uint  _uiInfoID       = 0;
+        private float _uiInfoTimer    = 0f;
         private float _lockRumbleTimer = 0f;
+        private uint  _scrollPopUpID  = 0;
+        private bool  _prevController = false;
         private AudioNode? _doorAudio = null;
 
         public void Begin()
@@ -28,6 +30,11 @@ namespace Eno
             _exitDoorID  = Bridge.GetNode("Door8to9");
             _spellbookID = Bridge.GetNode("Spellbook");
             _uiInfoID    = Bridge.GetNode("UI_Info");
+
+            _scrollPopUpID  = Bridge.GetNode("Room8_ScrollPopUp");
+            _prevController = Input.inputMode == InputMode.Controller;
+            if (_scrollPopUpID != 0)
+                Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
 
             _postDialogueActivated = false;
             _scrollPickedUp        = false;
@@ -62,6 +69,14 @@ namespace Eno
                     Input.setGamepadRumble(0f, 0f);
             }
 
+            bool isController = Input.inputMode == InputMode.Controller;
+            if (isController != _prevController)
+            {
+                _prevController = isController;
+                if (_scrollPopUpID != 0)
+                    Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
+            }
+
             if (_uiInfoID != 0 && _uiInfoTimer < 3f)
             {
                 _uiInfoTimer += Time.deltaTime;
@@ -92,15 +107,15 @@ namespace Eno
                 Bridge.IsColliding(_scrollID, _playerID))
             {
                 _scrollPickedUp = true;
+                if (_doorAudio != null) { _doorAudio.sound = "Spellbook_Open_01"; _doorAudio.play(); }
                 RuneSystem.SpellUnlocked[2] = true; // Ice
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
-                if (_doorAudio != null) { _doorAudio.sound = "Spellbook_Open_01"; _doorAudio.play(); }
-                // Show F-to-open hint
+                // Show F/Y-to-open hint
                 if (_uiInfoID != 0)
                 {
-                    Bridge.SetTexturePath(_uiInfoID, "Text-FSpellbook");
+                    Bridge.SetTexturePathAndResize(_uiInfoID, Input.inputMode == InputMode.Controller ? "UI-YToSpellbook" : "Text-FSpellbook");
                     Bridge.SetVisibility(_uiInfoID, true);
                 }
                 _uiInfoTimer = 0f;

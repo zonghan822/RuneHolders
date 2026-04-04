@@ -88,6 +88,10 @@ namespace Eno
         // Index 0 = Fire (Room 1), 1 = Light (Room 4), 2 = Ice (Room 8)
         public static bool[] SpellUnlocked = new bool[3];
 
+        // Set to true by CastSpell() each time the player successfully fires a spell.
+        // Consuming scripts should read this flag and reset it to false.
+        public static bool SpellCastOccurred = false;
+
         // ── Static instance — allows enemies to push bans mid-cast ───────────────
         private static RuneSystem? _instance;
 
@@ -257,7 +261,7 @@ namespace Eno
                     if (!Input.isMouseHeld(0) && !rtDown)
                         _castBlocked = false;
                 }
-                else if (Input.isMousePressed(0) || rtPressed)
+                else if ((Input.isMousePressed(0) && !Scroll_Dialouge_Script.DialogueActive) || rtPressed)
                 {
                     Activate();
                 }
@@ -587,6 +591,7 @@ namespace Eno
 
         private void CastSpell(int spellIndex)
         {
+            SpellCastOccurred = true;
             _active = false;
             _pendingSpell = -1;
             DespawnCastingVisuals();

@@ -19,6 +19,10 @@ namespace Eno
         // textureName is the filename stem of the texture, e.g. "UI-MainMenu-Selected"
         [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern void SetTexturePath(uint sceneObjectID, string textureName);
+
+        // Like SetTexturePath but also resizes the render component to match the texture's native dimensions
+        [DllImport("Engine_shared.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetTexturePathAndResize(uint sceneObjectID, string textureName);
         
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern float GetUVStartX(uint sceneObjectID);

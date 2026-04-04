@@ -12,8 +12,6 @@ namespace Eno
         private bool  _roomCleared  = false;
         private float _waveTimer    = 0f;
 
-        private uint  _uiInfoID    = 0;
-        private float _uiInfoTimer = 0f;
         private float _lockRumbleTimer = 0f;
         private AudioNode? _doorAudio = null;
         private uint  _popupID     = 0;
@@ -26,7 +24,6 @@ namespace Eno
             _wavesStarted   = false;
             _roomCleared    = false;
             _waveTimer      = 0f;
-            _uiInfoTimer    = 0f;
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
@@ -34,14 +31,6 @@ namespace Eno
         {
             if (_instance == null) return;
             if (_instance._roomCleared) return;
-
-            _instance._uiInfoID = Bridge.GetNode("UI_Info");
-            if (_instance._uiInfoID != 0)
-            {
-                Bridge.SetTexturePath(_instance._uiInfoID, "UI-MonsterColourInstructions-Text");
-                Bridge.SetVisibility(_instance._uiInfoID, true);
-            }
-            _instance._uiInfoTimer = 0f;
 
             if (!_popupActivated)
             {
@@ -67,13 +56,6 @@ namespace Eno
                 _lockRumbleTimer -= Time.deltaTime;
                 if (_lockRumbleTimer <= 0f)
                     Input.setGamepadRumble(0f, 0f);
-            }
-
-            if (_uiInfoID != 0 && _uiInfoTimer < 3f)
-            {
-                _uiInfoTimer += Time.deltaTime;
-                if (_uiInfoTimer >= 3f)
-                    Bridge.SetVisibility(_uiInfoID, false);
             }
 
             if (_popupID != 0 && _popupID != uint.MaxValue)
