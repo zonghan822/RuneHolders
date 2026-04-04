@@ -450,7 +450,7 @@ namespace Eno
 
                 _connected.Add(i);
                 SetRuneState(i, "Activated");
-                PlayBellPad(i, _connected.Count);
+                PlayBellPad(i);
 
                 // Short rumble pulse — intensity increases with each connection
                 float rumble = MathF.Min(0.2f + _connected.Count * 0.15f, 0.8f);
@@ -528,7 +528,7 @@ namespace Eno
             // Activate the matched rune (same logic as CheckConnectionsAt)
             _connected.Add(best);
             SetRuneState(best, "Activated");
-            PlayBellPad(best, _connected.Count);
+            PlayBellPad(best);
 
             // Short rumble pulse — intensity increases with each connection
             float rumble = MathF.Min(_connected.Count * 0.1f, 0.5f);
@@ -865,15 +865,13 @@ namespace Eno
             _connected.Clear();
         }
 
-        // runeIndex: layout index of the rune (0-5), selects its dedicated audio node
-        // connectionCount: 1-based order of this connection, selects GalaxyBellPad-N sound
-        private void PlayBellPad(int runeIndex, int connectionCount)
+        // runeIndex: layout index of the rune (0-5), each vertex has its own fixed sound
+        private void PlayBellPad(int runeIndex)
         {
             if (runeIndex < 0 || runeIndex >= RUNE_COUNT) return;
             var audio = _runeAudios[runeIndex];
             if (audio == null) return;
-            int soundIdx = Math.Min(connectionCount, _bellPadSounds.Count) - 1;
-            audio.sound = _bellPadSounds[soundIdx];
+            audio.sound = _bellPadSounds[runeIndex];
             audio.play();
         }
 
