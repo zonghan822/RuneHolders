@@ -13,6 +13,7 @@ namespace Eno
         private bool  _wavesStarted    = false;
         private bool  _roomCleared     = false;
         private bool  _wasEverCleared  = false;
+        private bool  _doorsLocked     = false;
 
         private uint  _uiInfoID       = 0;
         private float _uiInfoTimer    = 0f;
@@ -40,6 +41,7 @@ namespace Eno
             _wavesStarted   = false;
             _roomCleared    = false;
             _wasEverCleared  = false;
+            _doorsLocked     = false;
             _uiInfoTimer    = 0f;
             _tutorialStage  = 0;
             DummyYellow_Script.WasHit = false;
@@ -84,8 +86,12 @@ namespace Eno
             {
                 _roomCleared    = true;
                 _wasEverCleared = true;
-                UnlockDoor("Door4to3");
-                UnlockDoor("Door4to5");
+                if (_doorsLocked)
+                {
+                    _doorsLocked = false;
+                    UnlockDoor("Door4to3");
+                    UnlockDoor("Door4to5");
+                }
             }
 
             // E on scroll -> pickup: scroll disappears, spellbook updates, door unlocks
@@ -117,36 +123,35 @@ namespace Eno
             switch (_tutorialStage)
             {
                 case 1:
-                    if (!PauseManager.SpellbookOpen)
-                        _tutorialStage = 2;
+                    _uiInfoTimer += Time.deltaTime;
+                    if (PauseManager.SpellbookOpen || _uiInfoTimer >= 5f){
+                        Bridge.SetVisibility(_uiInfoID, false);
+                        _tutorialStage++;
+                        _uiInfoTimer = 0f;
+                    }  
                     break;
 
                 case 2:
-                    if (PauseManager.SpellbookOpen)
+                    if (!PauseManager.SpellbookOpen)
                     {
-                        if (_uiInfoID != 0)
+                        if (_uiInfoID != 0){
                             Bridge.SetTexturePathAndResize(_uiInfoID, "Text-SpellcastingTutorial4");
-                        _tutorialStage = 3;
+                            Bridge.SetVisibility(_uiInfoID, true);
+                        }  
+                        _tutorialStage++;
                     }
                     break;
 
                 case 3:
                     if (DummyYellow_Script.WasHit || DummyRed_Script.WasHit)
                     {
-                        if (_uiInfoID != 0)
-                            Bridge.SetTexturePathAndResize(_uiInfoID, "Text-SpellcastingTutorial4-Complete");
-                        _uiInfoTimer   = 0f;
-                        _tutorialStage = 4;
-                    }
-                    break;
-
-                case 4:
-                    _uiInfoTimer += Time.deltaTime;
-                    if (_uiInfoTimer >= 3f)
-                    {
-                        if (_uiInfoID != 0)
+                        _uiInfoTimer += Time.deltaTime;
+                        if (_uiInfoID != 0 && _uiInfoTimer >= 2f)
+                        {
                             Bridge.SetVisibility(_uiInfoID, false);
-                        _tutorialStage = 5;
+                            _tutorialStage++;
+                            _uiInfoTimer = 0f;
+                        }
                     }
                     break;
             }
@@ -157,6 +162,7 @@ namespace Eno
             _wavesStarted = true;
             if (!_wasEverCleared)
             {
+                _doorsLocked = true;
                 LockDoor("Door4to3");
                 LockDoor("Door4to5");
             }

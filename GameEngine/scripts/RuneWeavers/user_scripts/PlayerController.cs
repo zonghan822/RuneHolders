@@ -384,15 +384,5 @@ namespace Eno
             }
             return false;
         }
-    
-		public void _when_spellbookbackbutton_onclick()
-        {
-
-        }
-    
-		public void _when_spellbookbackbutton_onpressed()
-        {
-
-        }
     }
 }

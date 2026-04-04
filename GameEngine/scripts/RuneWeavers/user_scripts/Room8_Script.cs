@@ -14,6 +14,7 @@ namespace Eno
         private bool  _wavesStarted          = false;
         private bool  _roomCleared           = false;
         private bool  _wasEverCleared        = false;
+        private bool  _doorsLocked           = false;
 
         private uint  _uiInfoID       = 0;
         private float _uiInfoTimer    = 0f;
@@ -41,6 +42,7 @@ namespace Eno
             _wavesStarted          = false;
             _roomCleared           = false;
             _wasEverCleared        = false;
+            _doorsLocked           = false;
             _uiInfoTimer           = 0f;
             DummyBlue_Script.WasHit = false;
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
@@ -77,7 +79,7 @@ namespace Eno
                     Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
             }
 
-            if (_uiInfoID != 0 && _uiInfoTimer < 3f)
+            if (_scrollPickedUp && _uiInfoID != 0 && _uiInfoTimer < 3f)
             {
                 _uiInfoTimer += Time.deltaTime;
                 if (_uiInfoTimer >= 3f)
@@ -90,8 +92,12 @@ namespace Eno
                 _roomCleared    = true;
                 _wasEverCleared = true;
                 BGMforLevel1_Script.SetLayer2Combat(false);
-                UnlockDoor("Door8to7");
-                UnlockDoor("Door8to9");
+                if (_doorsLocked)
+                {
+                    _doorsLocked = false;
+                    UnlockDoor("Door8to7");
+                    UnlockDoor("Door8to9");
+                }
             }
 
             // After dialogue ends: activate ui sprite, then hide after 3 seconds
@@ -112,13 +118,7 @@ namespace Eno
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
-                // Show F/Y-to-open hint
-                if (_uiInfoID != 0)
-                {
-                    Bridge.SetTexturePathAndResize(_uiInfoID, Input.inputMode == InputMode.Controller ? "UI-YToSpellbook" : "Text-FSpellbook");
-                    Bridge.SetVisibility(_uiInfoID, true);
-                }
-                _uiInfoTimer = 0f;
+                
                 // Update spellbook
                 if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-3Spells");
             }
@@ -129,6 +129,7 @@ namespace Eno
             _wavesStarted = true;
             if (!_wasEverCleared)
             {
+                _doorsLocked = true;
                 BGMforLevel1_Script.SetLayer2Combat(true);
                 LockDoor("Door8to7");
                 LockDoor("Door8to9");
