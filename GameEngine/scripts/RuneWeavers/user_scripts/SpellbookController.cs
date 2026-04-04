@@ -3,11 +3,13 @@ namespace Eno
     public class SpellbookController : ScriptBase
     {
         private uint       _spellbookUIID  = 0;
+        private uint       _fIconID        = 0;
         private AudioNode? _spellbookAudio = null;
 
         public void Begin()
         {
             _spellbookUIID  = Bridge.GetNode("Spellbook");
+            _fIconID        = Bridge.GetNode("F_Icon");
             _spellbookAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
             if (_spellbookAudio != null) _spellbookAudio.group = "BGM";
         }
@@ -15,6 +17,9 @@ namespace Eno
         public void Update()
         {
             bool isController = Input.inputMode == InputMode.Controller;
+
+            if (_fIconID != 0)
+                Bridge.SetTexturePath(_fIconID, isController ? "UI-SpellbookIcon-Controller" : "UI-Spellbook-Icon-F");
 
             if ((Input.isKeyPressed(KeyCode.F) || (isController && Input.isGamepadButtonPressed(GamepadButton.Y)))
                 && _spellbookUIID != 0

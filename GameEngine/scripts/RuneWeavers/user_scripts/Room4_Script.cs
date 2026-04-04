@@ -56,6 +56,14 @@ namespace Eno
             _instance.SpawnWave1();
         }
 
+        public static void StopUI()
+        {
+            if (_instance == null) return;
+            _instance._tutorialStage = 4;
+            if (_instance._uiInfoID != 0)
+                Bridge.SetVisibility(_instance._uiInfoID, false);
+        }
+
         public static void CleanupDummies()
         {
             DummyYellow_Script.Cleanup();
@@ -146,7 +154,7 @@ namespace Eno
                     if (DummyYellow_Script.WasHit || DummyRed_Script.WasHit)
                     {
                         _uiInfoTimer += Time.deltaTime;
-                        if (_uiInfoID != 0 && _uiInfoTimer >= 2f)
+                        if (_uiInfoID != 0 && _uiInfoTimer >= 1f)
                         {
                             Bridge.SetVisibility(_uiInfoID, false);
                             _tutorialStage++;

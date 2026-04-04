@@ -72,6 +72,15 @@ namespace Eno
             LockDoor("Door2to3");
         }
 
+        public static void StopUI()
+        {
+            if (_instance == null) return;
+            _instance._tutorialStage = 3;
+            if (_instance._uiInfo != null)
+                _instance._uiInfo.visible = false;
+            _instance._uiInfoShown = false;
+        }
+
         public static void CleanupDummies()
         {
             DummyRed_Script.Cleanup();
@@ -122,11 +131,10 @@ namespace Eno
 
                 case 1:
                     _uiInfoTimer += Time.deltaTime;
-                    if (_uiInfoTimer >= 3f)
+                    if (_uiInfoTimer >= 2f)
                     {
                         // Spawn target dummy after casting spell for the first time
                         _instance.SpawnWave1();
-                        _uiInfo.setTextureAndResize("Text-SpellcastingTutorial2");
                         _uiInfoTimer   = 0f;
                         _tutorialStage = 2;
                     }
