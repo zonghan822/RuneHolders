@@ -443,6 +443,7 @@ namespace Eno
             Bridge.VideoStop(videoID);
             Bridge.SetVisibility(videoID, false);
             Bridge.SetCanvasActive(canvasID, false);
+            MainMenu_Background_Script.StopAudio();
             Bridge.ChangeScene("Level.txt");
         }
 

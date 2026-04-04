@@ -24,7 +24,8 @@ namespace Eno
             if ((Input.isKeyPressed(KeyCode.F) || (isController && Input.isGamepadButtonPressed(GamepadButton.Y)))
                 && _spellbookUIID != 0
                 && !Scroll_Dialouge_Script.DialogueActive
-                && !PauseManager.PauseMenuOpen)
+                && !PauseManager.PauseMenuOpen
+                && !PauseManager.CameraPanning)
             {
                 bool nowOpen = !PauseManager.SpellbookOpen;
                 Bridge.SetVisibility(_spellbookUIID, nowOpen);

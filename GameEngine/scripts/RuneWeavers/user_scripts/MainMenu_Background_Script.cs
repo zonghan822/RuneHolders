@@ -76,6 +76,14 @@ namespace Eno
             // Art slideshow
         }
 
+        // Called right before ChangeScene to kill all audio immediately
+        public static void StopAudio()
+        {
+            if (_instance == null) return;
+            Bridge.AudioStop(_instance.ID);
+            _instance._fadingOut = false;
+        }
+
         // Called by Main_Menu_Script when Play is pressed
         public static void StartFadeOut()
         {

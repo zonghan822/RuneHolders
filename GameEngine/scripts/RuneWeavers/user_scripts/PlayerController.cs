@@ -26,6 +26,15 @@ namespace Eno
         private bool      _isHurt       = false;
         private float     _deathTimer   = 0f;
         private float     _deathDuration = 1.0f;
+        private static readonly string[] BurstPrefabs = { "FireBurst", "LightBurst", "IceBurst" };
+        private ParticleEmitter?[] _bursts = new ParticleEmitter?[3];
+        private float     _burstTime = 0f;
+        private bool      _burstDone = false;
+
+        private static readonly string[] CastPrefabs = { "FireCast", "LightCast", "IceCast" };
+        private ParticleEmitter?[] _castParticles = new ParticleEmitter?[3];
+        private int  _castActiveIdx = -1;
+        private int  _castLastRunes = 0;
 
         public float footstepVolume = 70f;
 
@@ -283,20 +292,32 @@ namespace Eno
             _player.setAnimationLooping(false);
             uint frames = _player.getAnimationFrameCount();
             if (frames > 0) _player.setAnimationFrameDuration(castDuration / frames);
+            StartCastParticle();
         }
 
-        public void Cast_update()  { if (IsMoving()) _player.changeState("CastWalk"); }
-        public void Cast_exit()    { _player.setAnimationLooping(true); }
+        public void Cast_update()
+        {
+            UpdateCastParticle();
+            if (IsMoving()) _player.changeState("CastWalk");
+        }
+
+        public void Cast_exit()
+        {
+            _player.setAnimationLooping(true);
+            StopCastParticle();
+        }
 
         public void CastWalk_enter()
         {
             _player.setAnimationLooping(true);
             _footstepTimer = FOOTSTEP_INTERVAL; // fire immediately on first step
             PlayFootstep();
+            StartCastParticle();
         }
 
         public void CastWalk_update()
         {
+            UpdateCastParticle();
             if (!IsMoving())
             {
                 _player.changeState("Cast");
@@ -315,22 +336,51 @@ namespace Eno
         {
             _footstepAudio?.stop();
             _footstepTimer = 0f;
+            StopCastParticle();
         }
 
         public void Attack_enter()
         {
             _isAttacking = true;
             _attackTimer = 0f;
+            _burstDone = false;
             _player.velocity = new Vector2(0f, 0f);
             _player.animation = "Attack";
             _player.setAnimationLooping(false);
             uint frames = _player.getAnimationFrameCount();
-            if (frames > 0) _player.setAnimationFrameDuration(attackDuration / frames);
+            if (frames > 0)
+            {
+                float frameDur = attackDuration / frames;
+                _player.setAnimationFrameDuration(frameDur);
+                _burstTime = 2f * frameDur; // start of 3rd frame (index 2)
+            }
+            else
+            {
+                _burstTime = attackDuration;
+            }
         }
 
         public void Attack_update()
         {
             _attackTimer += Time.deltaTime;
+            if (!_burstDone && _attackTimer >= _burstTime)
+            {
+                int idx = RuneSystem.LastSpellIndex;
+                if (idx >= 0 && idx < BurstPrefabs.Length)
+                {
+                    float sign = _player.scale.x >= 0f ? -1f : 1f;
+                    float bx = _player.position.x + sign * 47f;
+                    float by = _player.position.y;
+                    if (_bursts[idx] == null)
+                        _bursts[idx] = SpawnPrefab(BurstPrefabs[idx], bx, by) as ParticleEmitter;
+                    if (_bursts[idx] != null)
+                    {
+                        Bridge.SetPosition(_bursts[idx]!.ID, bx, by);
+                        _bursts[idx]!.emitBurst(_bursts[idx]!.maxParticles / 4);
+                    }
+                }
+                _burstDone = true;
+            }
             if (_attackTimer >= attackDuration) _player.changeState("Idle");
         }
 
@@ -464,6 +514,71 @@ namespace Eno
                     Bridge.SetButtonActive(childID, active);
                 SetChildButtonsActive(childID, active);
             }
+        }
+
+        private void StartCastParticle()
+        {
+            _castLastRunes = RuneSystem.RuneConnections;
+            int idx = RuneSystem.ActivePattern;
+            if (idx < 0 || idx >= CastPrefabs.Length) return;
+
+            // Switch to new spell type if needed
+            if (_castActiveIdx >= 0 && _castActiveIdx != idx && _castParticles[_castActiveIdx] != null)
+                _castParticles[_castActiveIdx]!.stopEmission();
+
+            _castActiveIdx = idx;
+            float sign = _player.scale.x >= 0f ? -1f : 1f;
+            float px = _player.position.x + sign * 17f;
+            float py = _player.position.y - 18f;
+
+            if (_castParticles[idx] == null)
+                _castParticles[idx] = SpawnPrefab(CastPrefabs[idx], px, py) as ParticleEmitter;
+            if (_castParticles[idx] != null)
+            {
+                Bridge.SetPosition(_castParticles[idx]!.ID, px, py);
+                _castParticles[idx]!.emissionRate = _castLastRunes * 50f;
+                _castParticles[idx]!.startEmission();
+            }
+        }
+
+        private void UpdateCastParticle()
+        {
+            int idx = RuneSystem.ActivePattern;
+
+            // Pattern just became known, or changed — start/restart
+            if (idx >= 0 && idx != _castActiveIdx)
+            {
+                StopCastParticle();
+                StartCastParticle();
+                return;
+            }
+
+            if (_castActiveIdx < 0) return;
+
+            // Update position to follow player
+            if (_castParticles[_castActiveIdx] != null)
+            {
+                float sign = _player.scale.x >= 0f ? -1f : 1f;
+                float px = _player.position.x + sign * 17f;
+                float py = _player.position.y - 18f;
+                Bridge.SetPosition(_castParticles[_castActiveIdx]!.ID, px, py);
+            }
+
+            // Increase emission rate when new rune connected
+            int runes = RuneSystem.RuneConnections;
+            if (runes != _castLastRunes)
+            {
+                _castLastRunes = runes;
+                if (_castParticles[_castActiveIdx] != null)
+                    _castParticles[_castActiveIdx]!.emissionRate = runes * 50f;
+            }
+        }
+
+        private void StopCastParticle()
+        {
+            if (_castActiveIdx >= 0 && _castParticles[_castActiveIdx] != null)
+                _castParticles[_castActiveIdx]!.stopEmission();
+            _castActiveIdx = -1;
         }
 
         private void PlayFootstep()

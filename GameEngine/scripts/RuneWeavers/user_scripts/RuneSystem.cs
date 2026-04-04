@@ -91,6 +91,11 @@ namespace Eno
         // Set to true by CastSpell() each time the player successfully fires a spell.
         // Consuming scripts should read this flag and reset it to false.
         public static bool SpellCastOccurred = false;
+        // 0 = Fire, 1 = Light, 2 = Ice, -1 = none
+        public static int LastSpellIndex = -1;
+        // Number of runes connected in the current cast (-1 = pattern determined, exposed for particles)
+        public static int ActivePattern => _instance?._activePattern ?? -1;
+        public static int RuneConnections => _instance?._connected.Count ?? 0;
 
         // ── Static instance — allows enemies to push bans mid-cast ───────────────
         private static RuneSystem? _instance;
@@ -592,6 +597,7 @@ namespace Eno
         private void CastSpell(int spellIndex)
         {
             SpellCastOccurred = true;
+            LastSpellIndex = spellIndex;
             _active = false;
             _pendingSpell = -1;
             DespawnCastingVisuals();

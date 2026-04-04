@@ -138,6 +138,8 @@ namespace Engine
 			for (auto& ent : entityMng_.findEntity<ECSComponents::AudioComponent>())
 			{
 				auto& ac = ent.get<ECSComponents::AudioComponent>(entityMng_);
+				if (ac.audioMod_.ch_)
+					ac.audioMod_.ch_->stop();
 				ac.isPlaying_ = false;
 				ac.audioMod_.ch_ = nullptr;
 			}
