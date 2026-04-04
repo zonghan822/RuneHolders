@@ -236,7 +236,7 @@ namespace Eno
                     Input.setGamepadRumble(0f, 0f);
             }
 
-            if (Scroll_Dialouge_Script.DialogueActive)
+            if (PlayerController.IsGamePaused || Scroll_Dialouge_Script.DialogueActive)
             {
                 if (_active) Cancel();
                 _rtWasDown = false;
