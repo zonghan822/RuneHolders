@@ -32,8 +32,8 @@ namespace Eno
         private static void Sync()
         {
             // Spellbook-only pause keeps BGM playing — SpellbookController handles SFX group directly.
-            // Only pause all audio when the pause menu, enemy info, or camera pan is active.
-            Bridge.SetAudioPaused(_pauseMenu || _enemyInfo || _cameraPanning);
+            // Only pause all audio when the pause menu or camera pan is active.
+            Bridge.SetAudioPaused(_pauseMenu || _cameraPanning);
         }
     }
 }

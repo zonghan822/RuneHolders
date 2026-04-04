@@ -51,6 +51,7 @@ namespace Eno
                 Room4_Script.StopUI();
                 Room4_Script.CleanupDummies();
                 Room5_Script.StartWaves();
+                Room5_Script.ShowPopup();
             }
             else
             {

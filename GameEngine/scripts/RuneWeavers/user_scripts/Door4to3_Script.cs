@@ -50,6 +50,7 @@ namespace Eno
                 PauseManager.SetCameraPanning(false);
                 Room4_Script.StopUI();
                 Room4_Script.CleanupDummies();
+                Room3_Script.ShowPopup();
             }
             else
             {

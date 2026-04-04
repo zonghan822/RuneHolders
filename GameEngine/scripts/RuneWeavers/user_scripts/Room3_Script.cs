@@ -27,6 +27,16 @@ namespace Eno
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
+        public static void ShowPopup()
+        {
+            if (_instance == null || !_popupActivated) return;
+            if (_instance._popupID != 0 && _instance._popupID != uint.MaxValue)
+            {
+                Bridge.SetVisibility(_instance._popupID, true);
+                Bridge.SetButtonActive(_instance._popupID, true);
+            }
+        }
+
         public static void StartWaves()
         {
             if (_instance == null) return;
