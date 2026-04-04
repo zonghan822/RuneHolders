@@ -157,6 +157,10 @@ namespace Eno
 
                 _videoTimer += Time.deltaTime;
 
+                uint skipHintID = Bridge.GetNode("SkipHint");
+                if (skipHintID != 0 && skipHintID != uint.MaxValue)
+                    Bridge.SetTexturePath(skipHintID, isController ? "UI-Skip-Controller" : "UI-Video-Skip");
+
                 // Escape skips the cutscene
                 if (Input.isKeyPressed(KeyCode.Escape) || (isController && Input.isGamepadButtonPressed(GamepadButton.B)))
                 {
