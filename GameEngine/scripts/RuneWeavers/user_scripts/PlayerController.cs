@@ -56,6 +56,10 @@ namespace Eno
 
         private static PlayerController? _instance;
 
+        public static void StopFootsteps()
+        {
+            _instance?._footstepAudio?.stop();
+        }
         private uint _controllerConnectID = 0;
         private float _controllerMsgTimer = 0f;
         private bool  _wasGamepadConnected = false;
@@ -442,6 +446,7 @@ namespace Eno
                 Input.setGamepadRumble(0f, 0f);
                 IsGameCompleted = true;
                 BGMforLevel1_Script.StopAllBGM();
+                StopFootsteps();
                 SlugBase_Script.StopAllWalkAudio();
                 NullflyBase_Script.StopAllAudio();
                 BatBase_Script.StopAllAudio();

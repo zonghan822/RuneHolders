@@ -93,6 +93,14 @@ namespace Eno
             _instance._fadingOut    = true;
         }
 
+        // Called by Main_Menu_Script just before ChangeScene to guarantee silence
+        public static void StopNow()
+        {
+            if (_instance == null) return;
+            Bridge.AudioStop(_instance.ID);
+            _instance._fadingOut = false;
+        }
+
         // Called when entering the art1 state
         public void art1_enter()
         {

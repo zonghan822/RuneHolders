@@ -201,6 +201,7 @@ namespace Eno
 
             // Show win screen
             BGMforLevel1_Script.StopAllBGM();
+            PlayerController.StopFootsteps();
             SlugBase_Script.StopAllWalkAudio();
             NullflyBase_Script.StopAllAudio();
             BatBase_Script.StopAllAudio();

@@ -5,10 +5,12 @@ namespace Eno
     public class BGMforLevel1_Script : ScriptBase
     {
         // Volume ceilings (0-100)
-        public float layer1Volume   = 70f;   // BGM_01_Layer1 — exploration (always on)
-        public float combatVolume   = 70f;   // BGM_01_Layer2 — combat
-        public float creakVolume    = 70f;   // Ambience_Creaking_Wood — fades out in combat
-        public float fadeDuration   = 2.0f;  // seconds for crossfade
+        public float layer1Volume        = 70f;   // BGM_01_Layer1 — exploration (always on)
+        public float layer1CombatVolume  = 20f;   // BGM_01_Layer1 — ducked during combat
+        public float combatVolume        = 70f;   // BGM_01_Layer2 — combat
+        public float creakVolume         = 70f;   // Ambience_Creaking_Wood — fades out in combat
+        public float creakCombatVolume   = 10f;   // Ambience_Creaking_Wood — ducked during combat
+        public float fadeDuration        = 2.0f;  // seconds for crossfade
 
         private static BGMforLevel1_Script? _instance;
 
@@ -19,6 +21,7 @@ namespace Eno
         // Fade state
         private float _fadeTimer   = 0f;
         private bool  _fading      = false;
+        private float _l1FromVol, _l1ToVol;
         private float _l2FromVol, _l2ToVol;
         private float _creakFromVol, _creakToVol;
 
@@ -57,9 +60,11 @@ namespace Eno
             _fadeTimer += Bridge.GetDeltaTime();
             float t = Math.Min(_fadeTimer / fadeDuration, 1f);
 
+            float l1    = _l1FromVol    + (_l1ToVol    - _l1FromVol)    * t;
             float l2    = _l2FromVol    + (_l2ToVol    - _l2FromVol)    * t;
             float creak = _creakFromVol + (_creakToVol - _creakFromVol) * t;
 
+            if (_layer1 != null) Bridge.SetAudioVolume(_layer1.ID, l1);
             Bridge.SetAudioVolume(ID, l2);
             if (_creak != null) Bridge.SetAudioVolume(_creak.ID, creak);
 
@@ -104,12 +109,15 @@ namespace Eno
             if (_instance == null) return;
 
             // Snapshot current live volumes as fade start points
+            _instance._l1FromVol    = _instance._layer1 != null
+                ? Bridge.GetAudioVolume(_instance._layer1.ID) : 0f;
             _instance._l2FromVol    = Bridge.GetAudioVolume(_instance.ID);
             _instance._creakFromVol = _instance._creak != null
                 ? Bridge.GetAudioVolume(_instance._creak.ID) : 0f;
 
-            _instance._l2ToVol    = inCombat ? _instance.combatVolume : 0f;
-            _instance._creakToVol = inCombat ? 0f : _instance.creakVolume;
+            _instance._l1ToVol    = inCombat ? _instance.layer1CombatVolume : _instance.layer1Volume;
+            _instance._l2ToVol    = inCombat ? _instance.combatVolume       : 0f;
+            _instance._creakToVol = inCombat ? _instance.creakCombatVolume  : _instance.creakVolume;
 
             _instance._fadeTimer = 0f;
             _instance._fading    = true;

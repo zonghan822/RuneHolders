@@ -11,6 +11,7 @@ namespace Eno
         private uint _enemyInfoID        = 0;
         private uint _enemyInfoPopupID   = 0;
         private bool _enemyInfoOpen      = false;
+        private AudioNode? _sfxAudio     = null;
 
         public void Begin()
         {
@@ -18,6 +19,7 @@ namespace Eno
             _enemyInfoID        = Bridge.GetNode("EnemyInfo");
             _enemyInfoPopupID   = Bridge.GetNode("EnemyInfoPopUp");
             _enemyInfoOpen      = false;
+            _sfxAudio           = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
         public static void HidePopup()
@@ -49,6 +51,7 @@ namespace Eno
                 _enemyInfoOpen = false;
                 if (_enemyInfoID != 0) Bridge.SetVisibility(_enemyInfoID, false);
                 PauseManager.SetEnemyInfo(false);
+                if (_sfxAudio != null) { _sfxAudio.sound = "Spellbook_Close_01"; _sfxAudio.play(); }
                 return;
             }
 
@@ -66,6 +69,7 @@ namespace Eno
                 }
                 _enemyInfoOpen = true;
                 PauseManager.SetEnemyInfo(true);
+                if (_sfxAudio != null) { _sfxAudio.sound = "Spellbook_Open_01"; _sfxAudio.play(); }
             }
         }
     
