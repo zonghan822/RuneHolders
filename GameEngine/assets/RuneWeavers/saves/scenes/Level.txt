@@ -4343,7 +4343,7 @@
 		}
 		"Script": { }
 		"Parent": { }
-		"Children": { 257, 267, 269, 270, 364, 365, 366, 411, 578 }
+		"Children": { 257, 267, 269, 270, 364, 365, 366, 411, 578, 584 }
 		"Listeners": { }
 		"Enabled": { true }
 		"NodeType": { 14 }
@@ -18369,6 +18369,75 @@ rumoured mansion. }
 		"Listeners": { - 377, struct ECSComponents::ButtonComponent, onPressed `, - 377, struct ECSComponents::ButtonComponent, onClick ` }
 		"Enabled": { true }
 		"NodeType": { 8 }
+		"PrefabName": {  }
+	}
+
+	[ControllerConnect]
+	{
+		"ID": { 584 }
+		"Layer": { 1 }
+		"Entity Data"
+		{
+			[struct ECSComponents::VisibilityComponent]
+			{
+				"Z Index": <uint32_t> { 5 }
+				"Visible": <bool> { 0 }
+			}
+
+			[struct ECSComponents::TransformComponent]
+			{
+				"Position": <eVec2(float)> { x : 3977.14 | y : -954.533 }
+				"Rotation": <eVec2(float)> { x : 0 | y : 0 }
+				"Scale": <eVec2(float)> { x : 1 | y : 1 }
+				"Reset Position": <eVec2(float)> { x : 0 | y : 0 }
+			}
+
+			[struct ECSComponents::RenderComponent]
+			{
+				"Width": <float> { 675 }
+				"Height": <float> { 60 }
+				"Shape": <char32> { Rectangle }
+				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
+				"Texture Path": <texchar240> { UI-ControllerConnected-Text }
+				"TexID": <int> { 0 }
+				"UV Start": <eVec2(float)> { x : 0 | y : 0 }
+				"UV End": <eVec2(float)> { x : 1 | y : 1 }
+			}
+
+			[struct ECSComponents::LayerComponent]
+			{
+				"Layer": <char32> { NULL }
+			}
+
+			[struct ECSComponents::AnimationControllerComponent]
+			{
+				"Frame Width": <int> { 0 }
+				"Frame Height": <int> { 0 }
+				"Rows": <int> { 0 }
+				"Cols": <int> { 0 }
+				"Frame Duration": <float> { 0.1 }
+				"Looping": <bool> { 1 }
+				"Animation Count": <int> { 0 }
+				"Current Animation": <char64> {  }
+			}
+
+			[struct ECSComponents::StateMachineComponent]
+			{
+				"NumStates": <int> { 1 }
+				"CurrentState": <char32> { None }
+				"TimeInState": <float> { 0 }
+				"State[0].name": <char32> { Default }
+				"State[0].onEnter": <char64> { Default_enter }
+				"State[0].onUpdate": <char64> { Default_update }
+				"State[0].onExit": <char64> { Default_exit }
+			}
+		}
+		"Script": { }
+		"Parent": { 256 }
+		"Children": { }
+		"Listeners": { }
+		"Enabled": { true }
+		"NodeType": { 3 }
 		"PrefabName": {  }
 	}
 

@@ -47,6 +47,10 @@ namespace Eno
 
         private static PlayerController? _instance;
 
+        private uint _controllerConnectID = 0;
+        private float _controllerMsgTimer = 0f;
+        private bool  _wasGamepadConnected = false;
+
         public void Begin()
         {
             _player = Self<Actor>()!;
@@ -77,6 +81,15 @@ namespace Eno
 
             _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");
             _defeatScreenID  = Bridge.GetNode("DefeatScreen");
+
+            _controllerConnectID = Bridge.GetNode("ControllerConnect");
+            _wasGamepadConnected = Input.isGamepadConnected();
+            if (_wasGamepadConnected && _controllerConnectID != 0)
+            {
+                Bridge.SetTexturePath(_controllerConnectID, "UI-ControllerConnected-Text");
+                Bridge.SetVisibility(_controllerConnectID, true);
+                _controllerMsgTimer = 5f;
+            }
 
             PauseManager.Reset();
             IsGameCompleted = false;
@@ -114,6 +127,26 @@ namespace Eno
 
         public void Update()
         {
+            // Controller connect/disconnect notification
+            bool gamepadNow = Input.isGamepadConnected();
+            if (gamepadNow != _wasGamepadConnected)
+            {
+                _wasGamepadConnected = gamepadNow;
+                if (_controllerConnectID != 0)
+                {
+                    Bridge.SetTexturePath(_controllerConnectID,
+                        gamepadNow ? "UI-ControllerConnected-Text" : "UI-ControllerDisconnected-Text");
+                    Bridge.SetVisibility(_controllerConnectID, true);
+                }
+                _controllerMsgTimer = 5f;
+            }
+            if (_controllerMsgTimer > 0f)
+            {
+                _controllerMsgTimer -= Time.deltaTime;
+                if (_controllerMsgTimer <= 0f && _controllerConnectID != 0)
+                    Bridge.SetVisibility(_controllerConnectID, false);
+            }
+
             if (_player.health <= 0f)
                 _player.changeState("Death");
 
