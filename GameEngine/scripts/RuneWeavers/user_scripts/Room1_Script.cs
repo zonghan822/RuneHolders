@@ -2,22 +2,22 @@ namespace Eno
 {
     public class Room1_Script : ScriptBase
     {
+        private static Room1_Script? _instance;
         private uint _scrollID    = 0;
         private uint _playerID    = 0;
         private uint _spellbookID = 0;
         private uint _exitDoorID  = 0;
         private uint _uiInfoID       = 0;
         private uint _scrollPopUpID  = 0;
-        private bool _prevController = false;
         private bool  _dialogueTriggered     = false;
         //private bool  _postDialogueActivated = false;
         private bool  _scrollPickedUp        = false;
         private int   _uiStage = 0;
-        private float _uiTimer           = 0f;
         private AudioNode? _doorAudio        = null;
 
         public void Begin()
         {
+            _instance = this;
             _playerID       = Bridge.GetNode("Player");
             _scrollID       = Bridge.GetNode("Room1_Scroll");
             _exitDoorID     = Bridge.GetNode("Door1to2");
@@ -27,24 +27,26 @@ namespace Eno
             //_postDialogueActivated = false;
             _scrollPickedUp        = false;
             _uiStage           = 0;
-            _uiTimer           = 0f;
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
 
-            _scrollPopUpID  = Bridge.GetNode("Room1_ScrollPopUp");
-            _prevController = Input.inputMode == InputMode.Controller;
-            if (_scrollPopUpID != 0) Bridge.SetTexturePath(_scrollPopUpID, _prevController ? "UI-PopUp-A" : "UI-PopUp-E");
+            _scrollPopUpID  = Bridge.GetNode("E_PopUp");
 
         }
 
         public void Update()
         {
-            // Swap scroll popup texture on input mode change
+            // Update input-mode-dependent textures every frame
             bool isController = Input.inputMode == InputMode.Controller;
-            if (isController != _prevController)
+            if (_scrollPopUpID != 0)
+                Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
+            if (_uiInfoID != 0 && Bridge.GetVisibility(_uiInfoID))
             {
-                _prevController = isController;
-                if (_scrollPopUpID != 0)
-                    Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
+                if (_uiStage == 1)
+                    Bridge.SetTexturePathAndResize(_uiInfoID, isController ? "UI-LJoystickToMove-Text" : "Text-WASDToMove");
+                else if (_uiStage == 2)
+                    Bridge.SetTexturePathAndResize(_uiInfoID, isController ? "UI-AToInteract-Text" : "Text-EToInteract");
+                else if (_uiStage == 3)
+                    Bridge.SetTexturePathAndResize(_uiInfoID, isController ? "UI-YToSpellbook-Text" : "Text-FSpellbook");
             }
 
             // Trigger Room 1 dialogue — retry each frame until instance is ready
@@ -59,10 +61,7 @@ namespace Eno
             if (_uiStage == 0 && Scroll_Dialouge_Script.DialogueShown[0])
                 AdvanceUIStage();
 
-            if (_uiStage > 0 && _uiStage < 4)
-                _uiTimer += Time.deltaTime;
-
-            // Stage 1: WASD hint — advance on input or after 3 s
+            // Stage 1: WASD hint — advance on movement
             if (_uiStage == 1)
             {
                 bool moved = Input.isKeyHeld(KeyCode.W) || Input.isKeyHeld(KeyCode.A) ||
@@ -72,16 +71,14 @@ namespace Eno
                     Vector2 stick = Input.getLeftStick(0.2f);
                     moved = stick.x != 0f || stick.y != 0f;
                 }
-                if (moved || _uiTimer >= 3f)
+                if (moved)
                     AdvanceUIStage();
             }
-
-            // Stage 2: WASD complete — advance on scroll pickup or after 3 s
-            if (_uiStage == 2 && (_scrollPickedUp || _uiTimer >= 3f))
+            // Stage 2: Scroll pickup — advance when picked up
+            else if (_uiStage == 2 && _scrollPickedUp)
                 AdvanceUIStage();
-
-            // Stage 3: FtoOpen — hide after 3 s
-            if (_uiStage == 3 && _uiTimer >= 3f)
+            // Stage 3: Spellbook hint — hide on spellbook open
+            else if (_uiStage == 3 && PauseManager.SpellbookOpen)
                 AdvanceUIStage();
 
             // Scroll pickup
@@ -91,11 +88,9 @@ namespace Eno
                 Bridge.IsColliding(_scrollID, _playerID))
             {
                 _scrollPickedUp = true;
-                AdvanceUIStage();
                 RuneSystem.SpellUnlocked[0] = true;
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
-                if (_doorAudio != null) { _doorAudio.sound = "Spellbook_Open_01"; _doorAudio.play(); }
                 if (_spellbookID != 0) Bridge.SetTexturePath(_spellbookID, "UI-Spellbook-1Spell");
                 if (_exitDoorID  != 0)
                 {
@@ -105,10 +100,18 @@ namespace Eno
             }
         }
 
+        public static void StopUI()
+        {
+            if (_instance == null) return;
+            _instance._uiStage = 4;
+            if (_instance._uiInfoID != 0)
+                Bridge.SetVisibility(_instance._uiInfoID, false);
+            _instance._uiInfoID = 0;
+        }
+
         private void AdvanceUIStage()
         {
             _uiStage++;
-            _uiTimer = 0f;
 
             if (_uiInfoID == 0) return;
 
@@ -116,19 +119,20 @@ namespace Eno
             switch (_uiStage)
             {
                 case 1:
-                    Bridge.SetTexturePathAndResize(_uiInfoID, ctrl ? "UI-LJoystickToMove-Text" : "UI-WASD-Text");
+                    Bridge.SetTexturePathAndResize(_uiInfoID, ctrl ? "UI-LJoystickToMove-Text" : "Text-WASDToMove");
                     Bridge.SetVisibility(_uiInfoID, true);
                     break;
                 case 2:
-                    Bridge.SetTexturePathAndResize(_uiInfoID, "Text-WASDToMove-Complete");
+                    Bridge.SetTexturePathAndResize(_uiInfoID, ctrl ? "UI-AToInteract-Text" : "Text-EToInteract");
                     Bridge.SetVisibility(_uiInfoID, true);
                     break;
                 case 3:
-                    Bridge.SetTexturePathAndResize(_uiInfoID, ctrl ? "UI-YToSpellbook" : "Text-FSpellbook");
+                    Bridge.SetTexturePathAndResize(_uiInfoID, ctrl ? "UI-YToSpellbook-Text" : "Text-FSpellbook");
                     Bridge.SetVisibility(_uiInfoID, true);
                     break;
                 default:
                     Bridge.SetVisibility(_uiInfoID, false);
+                    _instance._uiInfoID = 0;
                     break;
             }
         }

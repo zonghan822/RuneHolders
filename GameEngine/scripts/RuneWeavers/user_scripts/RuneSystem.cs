@@ -853,8 +853,11 @@ namespace Eno
         {
             for (int i = 0; i < RUNE_COUNT; i++)
             {
-                // Particle emitters are children of runes — freed with parent
-                _runeParticles[i] = null;
+                if (_runeParticles[i] != null)
+                {
+                    FreeNode(_runeParticles[i]);
+                    _runeParticles[i] = null;
+                }
                 if (_runes[i] != null)
                 {
                     FreeNode(_runes[i]);
