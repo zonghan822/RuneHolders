@@ -55,6 +55,7 @@ namespace Eno
         private bool   _active      = false;
         private bool   _skipE       = false;
         private bool   _typing      = false;
+        private bool   _winPending  = false;
         private int    _lineIndex   = 0;
         private string _currentText = "";
         private string _targetText  = "";
@@ -86,6 +87,7 @@ namespace Eno
             _active      = false;
             _skipE       = false;
             _typing      = false;
+            _winPending  = false;
             _lineIndex   = 0;
             _currentText = "";
             _targetText  = "";
@@ -94,6 +96,22 @@ namespace Eno
 
         public void Update()
         {
+            if (_winPending)
+            {
+                _winPending = false;
+                if (_winLoseCanvasID != 0)
+                {
+                    Bridge.SetCanvasActive(_winLoseCanvasID, true);
+                    if (_victoryScreenID != 0)
+                    {
+                        PlayerController.IsGameCompleted = true;
+                        Bridge.SetVisibility(_victoryScreenID, true);
+                        SetChildButtonsActive(_victoryScreenID, true);
+                    }
+                }
+                return;
+            }
+
             bool isController = Input.inputMode == InputMode.Controller;
             if (isController != _prevController)
             {
@@ -216,22 +234,14 @@ namespace Eno
             if (_charRight   != null) _charRight.visible   = false;
             if (_escBox      != null) _escBox.visible      = false;
 
-            // Show win screen
+            // Defer win screen to next frame so the click that ended dialogue
+            // doesn't bleed through to the win screen buttons
             BGMforLevel1_Script.StopAllBGM();
             PlayerController.StopFootsteps();
             SlugBase_Script.StopAllWalkAudio();
             NullflyBase_Script.StopAllAudio();
             BatBase_Script.StopAllAudio();
-            if (_winLoseCanvasID != 0)
-            {
-                Bridge.SetCanvasActive(_winLoseCanvasID, true);
-                if (_victoryScreenID != 0)
-                {
-                    PlayerController.IsGameCompleted = true;
-                    Bridge.SetVisibility(_victoryScreenID, true);
-                    SetChildButtonsActive(_victoryScreenID, true);
-                }
-            }
+            _winPending = true;
 
         }
 
