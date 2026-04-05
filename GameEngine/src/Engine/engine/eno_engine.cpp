@@ -144,6 +144,33 @@ namespace Engine
 				ac.audioMod_.ch_ = nullptr;
 			}
 		});
+
+		// Pause the game when the window loses focus (Alt+Tab, Ctrl+Alt+Del, etc.)
+		bus_.subscribe<Window::WindowFocusEvent>([this](const Window::WindowFocusEvent& e)
+		{
+			if (!isPlaying_) return;
+
+			if (!e.focused && !focusLostPaused_)
+			{
+				// Lost focus — pause everything
+				wasFullscreen_   = window_.isFullscreen();
+				focusLostPaused_ = true;
+				isPaused_        = true;
+				audioMng_.togglePauseAllGroups(true);
+				inputMng_.clearAllKeyStates();
+				window_.minimize();
+			}
+			else if (focusLostPaused_)
+			{
+				// Regained focus — restore
+				focusLostPaused_ = false;
+				isPaused_        = false;
+				audioMng_.togglePauseAllGroups(false);
+				inputMng_.clearAllKeyStates();
+				if (wasFullscreen_ && !window_.isFullscreen())
+					window_.toggleFullscreen();
+			}
+		});
 	}
 
 	void EnoEngine::run()

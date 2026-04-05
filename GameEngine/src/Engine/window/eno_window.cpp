@@ -246,6 +246,12 @@ namespace Window
 		resolutionIndex_ = 0;
 	}
 
+	void EnoWindow::minimize()
+	{
+		if (window_)
+			glfwIconifyWindow(window_);
+	}
+
 	void EnoWindow::toggleFullscreen()
 	{
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();

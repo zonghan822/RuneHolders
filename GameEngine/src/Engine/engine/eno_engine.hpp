@@ -389,6 +389,8 @@ namespace Engine
 		// Game state
 		bool isPlaying_       = false;  // Tracks if game is in playing mode (vs editor mode)
 		bool isPaused_        = false;  // Editor-driven pause — blocks everything including canvas/buttons
+		bool focusLostPaused_ = false;  // True when paused due to window focus loss
+		bool wasFullscreen_   = false;  // Fullscreen state before focus-loss minimize
 		bool hasBegun_        = false;  // Guards the one-shot Begin() call at the start of each play session
 		bool closeRequested_  = false;  // Set by requestClose(); checked by shouldClose() to avoid GLFW DLL boundary issues
 		bool prevWasPlaying_  = false;  // Previous frame's isPlaying_ — used to detect the play→stop transition for video cleanup

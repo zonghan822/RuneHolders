@@ -13,20 +13,16 @@ namespace Eno
         public void Begin()
         {
             GodMode = false;
+            uint id = Bridge.GetNode("UIText");
+            if (id != 0 && id != uint.MaxValue)
+            {
+                _cheatLabel = NodeFactory.Create(id) as Label;
+                Bridge.SetVisibility(_cheatLabel!.ID, false);
+            }
         }
 
         private void ShowMsg(string text)
         {
-            if (_cheatLabel == null)
-            {
-                uint canvasID = Bridge.GetNode("Gameplay_UI");
-                if (canvasID != 0 && canvasID != uint.MaxValue)
-                {
-                    uint id = Bridge.SpawnPrefab("CheatText", 0f, 0f, canvasID);
-                    if (id != uint.MaxValue)
-                        _cheatLabel = NodeFactory.Create(id) as Label;
-                }
-            }
             if (_cheatLabel == null) return;
             _cheatLabel.text = text;
             Bridge.SetVisibility(_cheatLabel.ID, true);
@@ -68,6 +64,10 @@ namespace Eno
                 RuneSystem.SpellUnlocked[0] = true;
                 RuneSystem.SpellUnlocked[1] = true;
                 RuneSystem.SpellUnlocked[2] = true;
+                Room1_Script.StopUI();
+                Room2_Script.StopUI();
+                Room4_Script.StopUI();
+                Room8_Script.StopUI();
                 ShowMsg("Cheat: Skip To End");
             }
 
@@ -94,6 +94,7 @@ namespace Eno
                 RuneSystem.SpellUnlocked[2] = true;
                 ShowMsg("Cheat: All Spells Unlocked");
             }
+
         }
 
         public void Default_enter()  { }

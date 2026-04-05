@@ -348,7 +348,7 @@ namespace Eno
                 if (_self != null) _self.visible = true;
             }
             UnbanMyRune(); // safe no-op if already unbanned
-            if (!_gameEnded && _audio != null)
+            if (!_gameEnded && _audio != null && _self != null)
             {
                 _audio.sound = "Bloodwing_Death_01";
                 _audio.spatialPlay(_audio.ID, _self.position.x, _self.position.y);

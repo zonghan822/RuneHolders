@@ -62,7 +62,7 @@ namespace Eno
         {
             _timer += Time.unscaledDeltaTime;
             if (_timer >= fadeInTime)
-                _self.changeState("Idle");
+                _self?.changeState("Idle");
         }
 
         public void FadeIn_exit() {}

@@ -268,7 +268,7 @@ namespace Bridge
                     gEngine->getAudioManager().play(ac, v2, camPos);
 
                     // DEBUG: Show what pan/volume actually got applied after play()
-                    float actualVol = -1.0f, actualPan = -999.0f;
+                    float actualVol = -1.0f;
                     if (ac.audioMod_.ch_)
                     {
                         ac.audioMod_.ch_->getVolume(&actualVol);

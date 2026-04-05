@@ -26,7 +26,7 @@ namespace Eno
         }
 
         public void setLifetime(float min, float max) => Bridge.SetParticleLifetime(ID, min, max);
-        public void setSize(float min, float max) => Bridge.SetParticleSize(ID, min, max);
+        public new void setSize(float min, float max) => Bridge.SetParticleSize(ID, min, max);
         public void setVelocity(float minX, float minY, float maxX, float maxY) => Bridge.SetParticleVelocity(ID, minX, minY, maxX, maxY);
         public void setColorStart(float r, float g, float b, float a) => Bridge.SetParticleColorStart(ID, r, g, b, a);
         public void setColorEnd(float r, float g, float b, float a) => Bridge.SetParticleColorEnd(ID, r, g, b, a);

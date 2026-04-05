@@ -124,6 +124,10 @@ namespace Window
 		*//*========================================================================================*/
 		void toggleFullscreen();
 
+		bool isFullscreen() const { return isFullscreen_; }
+
+		void minimize();
+
 		void setResolution(int width, int height);
 
 		void increaseResolution();
