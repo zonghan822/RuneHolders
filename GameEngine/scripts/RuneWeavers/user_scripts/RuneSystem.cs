@@ -874,13 +874,16 @@ namespace Eno
             _connected.Clear();
         }
 
-        // runeIndex: layout index of the rune (0-5), each vertex has its own fixed sound
+        // runeIndex: layout index of the rune (used to pick the audio node)
+        // Sound played is determined by how many runes are connected so far (1st connected → sound 1, 2nd → sound 2, …)
         private void PlayBellPad(int runeIndex)
         {
             if (runeIndex < 0 || runeIndex >= RUNE_COUNT) return;
             var audio = _runeAudios[runeIndex];
             if (audio == null) return;
-            audio.sound = _bellPadSounds[runeIndex];
+            int soundIdx = _connected.Count - 1; // _connected already includes this rune
+            if (soundIdx < 0 || soundIdx >= _bellPadSounds.Count) return;
+            audio.sound = _bellPadSounds[soundIdx];
             audio.play();
         }
 
