@@ -39,7 +39,7 @@ namespace Eno
             bool isController = Input.inputMode == InputMode.Controller;
             if (_scrollPopUpID != 0)
                 Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
-            if (_spellbookID != 0)
+            if (_spellbookID != 0 && !SpellbookController.FadeActive && !SpellbookController.FadePending)
                 Bridge.SetTexturePath(_spellbookID, _scrollPickedUp
                     ? (isController ? "UI-Spellbook-1Spell-Controller" : "UI-Spellbook-1Spell")
                     : (isController ? "UI-Spellbook-NoSpells-Controller" : "UI-SpellBook-NoSpells"));
@@ -100,6 +100,7 @@ namespace Eno
                     Bridge.ChangeState(_exitDoorID, "Unlocking");
                     if (_doorAudio != null) { _doorAudio.sound = "Door_Open_02"; _doorAudio.play(); }
                 }
+                SpellbookController.QueueFadeIn("UI-Spellbook-1Spell", "UI-Spellbook-1Spell-Controller");
             }
         }
 

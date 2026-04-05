@@ -38,6 +38,7 @@ namespace Eno
         private Sprite2D? _charCenter;
         private Sprite2D? _charLeft;
         private Sprite2D? _charRight;
+        private Sprite2D? _escBox;
         private AudioNode? _typingSfx;
         private AudioNode? _scrollAudio;
 
@@ -68,6 +69,7 @@ namespace Eno
             try { _charCenter    = GetNode<Sprite2D>("CharacterCenter"); } catch { }
             try { _charLeft      = GetNode<Sprite2D>("ProtagonistLeft"); } catch { }
             try { _charRight     = GetNode<Sprite2D>("WitchRight");     } catch { }
+            try { _escBox        = GetNode<Sprite2D>("ESCBox");         } catch { }
             try { _typingSfx     = GetNode<AudioNode>("Typing SFX");   } catch { }
             try { _winLoseCanvasID = Bridge.GetNode("WinLoseCanvas");   } catch { }
             try { _victoryScreenID = Bridge.GetNode("WinScreen");       } catch { }
@@ -99,6 +101,8 @@ namespace Eno
                 if (_scrollPopUpID != 0)
                     Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
             }
+            if (_active && _escBox != null)
+                _escBox.texture = isController ? "UI-Skip-Controller" : "UI-DialogueBox-Skip";
 
             if (!_active)
             {
@@ -174,6 +178,11 @@ namespace Eno
             if (_canvas      != null) _canvas.active = true;
             if (_dialogueBox != null) _dialogueBox.visible = true;
             if (_dialogueText != null) { _dialogueText.visible = true; _dialogueText.text = ""; }
+            if (_escBox != null)
+            {
+                _escBox.texture = Input.inputMode == InputMode.Controller ? "UI-Skip-Controller" : "UI-DialogueBox-Skip";
+                _escBox.visible = true;
+            }
 
             _lineIndex = 0;
             ShowLine(_dialogue[0]);
@@ -198,6 +207,7 @@ namespace Eno
             if (_charCenter  != null) _charCenter.visible  = false;
             if (_charLeft    != null) _charLeft.visible    = false;
             if (_charRight   != null) _charRight.visible   = false;
+            if (_escBox      != null) _escBox.visible      = false;
 
             // Show win screen
             BGMforLevel1_Script.StopAllBGM();

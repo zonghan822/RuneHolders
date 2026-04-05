@@ -96,7 +96,7 @@ namespace Eno
             bool isController = Input.inputMode == InputMode.Controller;
             if (_scrollPopUpID != 0)
                 Bridge.SetTexturePath(_scrollPopUpID, isController ? "UI-PopUp-A" : "UI-PopUp-E");
-            if (_spellbookID != 0 && _scrollPickedUp)
+            if (_spellbookID != 0 && _scrollPickedUp && !SpellbookController.FadeActive && !SpellbookController.FadePending)
                 Bridge.SetTexturePath(_spellbookID, isController ? "UI-Spellbook-3Spells-Controller" : "UI-Spellbook-3Spells");
 
             UpdateTutorialUI();
@@ -140,8 +140,7 @@ namespace Eno
                     Bridge.SetVisibility(_uiInfoID, true);
                 }
                 _tutorialStage = 1;
-                // Update spellbook
-                // Spellbook texture now updated per-frame above
+                SpellbookController.QueueFadeIn("UI-Spellbook-3Spells", "UI-Spellbook-3Spells-Controller");
             }
         }
 

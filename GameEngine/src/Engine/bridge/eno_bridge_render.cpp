@@ -79,6 +79,12 @@ namespace Bridge
             r->width  = static_cast<float>(tex->getWidth());
             r->height = static_cast<float>(tex->getHeight());
         }
+        ENGINE_API void __stdcall SetColor(uint32_t sceneObjectID, float r, float g, float b, float a)
+        {
+            if (auto* rc = getRender(sceneObjectID))
+                rc->color = Graphics::Color(r, g, b, a);
+        }
+
         // ============= UV =============
 
         ENGINE_API float __stdcall GetUVStartX(uint32_t sceneObjectID)

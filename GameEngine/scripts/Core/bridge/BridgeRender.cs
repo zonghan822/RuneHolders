@@ -39,6 +39,11 @@ namespace Eno
         [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern void SetUV(uint sceneObjectID, float startX, float startY, float endX, float endY);
 
+        // Sets the RGBA color multiplier for the render component (r/g/b/a each 0.0–1.0).
+        // Use to tint or fade a sprite: white (1,1,1,1) = no change; alpha 0 = fully transparent.
+        [DllImport("Engine_shared.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void SetColor(uint sceneObjectID, float r, float g, float b, float a);
+
         // -----------------------------------------------------------------------
         // Text Component  (implemented in eno_bridge_render.cpp)
         // -----------------------------------------------------------------------
