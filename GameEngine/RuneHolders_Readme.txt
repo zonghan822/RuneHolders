@@ -22,13 +22,39 @@ The goal is to immerse the player in the fantasy of drawing spell patterns to pe
 2 Controls
 ---------------------------
 
----General---
+---Keyboard---
 
 WASD → Move player
 E → Interact
 F → Open/close spellbook
 HOLD LEFT-CLICK → Spawn Runes
 - Connect white runes together to cast a respective spell colour
+
+---XboxGamepad---
+
+Left analog stick → Move player
+A → Interact
+B → Skip cutscenese
+Y → Open/close spellbook
+HOLD RIGHT TRIGGER + LEFT ANALOG STICK → Spawn Runes & Cast spells
+
+---------------------------
+3 Cheats
+---------------------------
+
+---Keyboard---
+
+F1 → Kill all enemies
+F2 → Skip to End
+F3 → Toggle God Mode
+F4 → Unlock All Spells
+
+---XboxGamepad---
+
+LT + D-Pad Up → Kill all enemies
+LT + D-Pad Right → Skip to End
+LT + D-Pad Down → Toggle God Mode
+LT + D-Pad Left → Unlock All Spells
 
 ---------------------------
 4. How To Play
@@ -103,8 +129,8 @@ Collectibles
   - Go near an object on the ground and press E
 
 Dialogue
-  - Press E to advance dialogue
-  - Press ESC to skip dialogue
+  - Press Left Click to advance dialogue
+  - Press E to skip dialogue
 
 
 ----------------------------------------------------------
