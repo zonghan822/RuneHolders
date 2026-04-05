@@ -136,8 +136,8 @@ namespace Eno
                     if (RuneSystem.SpellCastOccurred)
                     {
                         RuneSystem.SpellCastOccurred = false;
-                        _uiInfo.setTextureAndResize("Text-SpellcastingTutorial2");
-                        _instance.SpawnWave1();
+                        _uiInfo!.setTextureAndResize("Text-SpellcastingTutorial2");
+                        _instance!.SpawnWave1();
                         _tutorialStage = 1;
                     }
                     break;

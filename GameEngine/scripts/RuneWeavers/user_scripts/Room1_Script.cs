@@ -137,7 +137,7 @@ namespace Eno
                     break;
                 default:
                     Bridge.SetVisibility(_uiInfoID, false);
-                    _instance._uiInfoID = 0;
+                    _instance!._uiInfoID = 0;
                     break;
             }
         }

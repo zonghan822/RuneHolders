@@ -34,8 +34,8 @@ namespace Eno
                 if (nodeBase == null)
                     Console.WriteLine($"Node '{ID}' could not be created.");
 
-                _self = nodeBase;
-                return _self;
+                _self = nodeBase!;
+                return _self!;
             }
         }
 
