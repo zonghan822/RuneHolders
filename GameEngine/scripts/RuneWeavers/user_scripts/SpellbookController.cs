@@ -21,6 +21,22 @@ namespace Eno
             if (_fIconID != 0)
                 Bridge.SetTexturePath(_fIconID, isController ? "UI-SpellbookIcon-Controller" : "UI-Spellbook-Icon-F");
 
+            if (_spellbookUIID != 0)
+            {
+                int spellCount = 0;
+                for (int i = 0; i < RuneSystem.SpellUnlocked.Length; i++)
+                    if (RuneSystem.SpellUnlocked[i]) spellCount++;
+
+                string tex = spellCount switch
+                {
+                    3 => isController ? "UI-Spellbook-3Spells-Controller" : "UI-Spellbook-3Spells",
+                    2 => isController ? "UI-Spellbook-2Spells-Controller" : "UI-Spellbook-2Spells",
+                    1 => isController ? "UI-Spellbook-1Spell-Controller"  : "UI-Spellbook-1Spell",
+                    _ => isController ? "UI-Spellbook-NoSpells-Controller" : "UI-SpellBook-NoSpells",
+                };
+                Bridge.SetTexturePath(_spellbookUIID, tex);
+            }
+
             if ((Input.isKeyPressed(KeyCode.F) || (isController && Input.isGamepadButtonPressed(GamepadButton.Y)))
                 && _spellbookUIID != 0
                 && !Scroll_Dialouge_Script.DialogueActive
