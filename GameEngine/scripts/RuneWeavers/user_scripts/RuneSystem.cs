@@ -568,7 +568,7 @@ namespace Eno
                 Input.setGamepadRumble(0.5f, 0.5f);
                 _rumbleTimer = RUMBLE_DURATION;
                 foreach (int c in _connected)
-                    _runeParticles[c]?.emitBurst(_runeParticles[c].maxParticles / 4);
+                    _runeParticles[c]?.emitBurst(_runeParticles[c]!.maxParticles / 4);
                 return;
             }
 
