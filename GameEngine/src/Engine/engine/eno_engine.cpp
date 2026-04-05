@@ -171,6 +171,7 @@ namespace Engine
 					window_.toggleFullscreen();
 			}
 		});
+
 	}
 
 	void EnoEngine::run()
@@ -421,6 +422,13 @@ namespace Engine
 			// Re-publish PlayScene so the new scene's audio components are prepared
 			// and autoplay sounds start.  selectScene() only publishes StopScene.
 			bus_.publish(Editor::PlayScene{});
+		}
+
+		// Flush deferred editor stop (e.g. quit from in-game menu while in editor play mode).
+		if (pendingStop_ && isEditorReady())
+		{
+			pendingStop_ = false;
+			editor_->stopScene();
 		}
 	}
 

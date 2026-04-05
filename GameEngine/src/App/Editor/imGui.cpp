@@ -207,57 +207,6 @@ void imGuiInit(GLFWwindow* window) {
 	ImGui_ImplOpenGL3_Init("#version 330");
 }
 
-// ============================================================================
-// Raycast 3D View panel
-// ============================================================================
-void displayRaycastVisualizerTab(Engine::EnoEngine& engine_)
-{
-    static Raycast::RaycastRenderer renderer;
-    static bool initialized   = false;
-    static bool syncToPlayer  = false;
-
-    if (!initialized) {
-        renderer.initialize(320, 200,
-                            engine_.getResourceLoader(),
-                            engine_.getTileMap());
-        initialized = true;
-    }
-
-    // --- Render (GPU: the fragment shader does all the ray casting) ---
-    renderer.render();
-
-    // --- Display (flip V: OpenGL y=0 is bottom, ImGui y=0 is top) ---
-    ImVec2 avail = ImGui::GetContentRegionAvail();
-    avail.y -= 80.0f;   // reserve space for controls below
-    float sx    = avail.x / (float)renderer.getWidth();
-    float sy    = avail.y / (float)renderer.getHeight();
-    float scale = std::min(sx, sy);
-    if (scale < 0.1f) scale = 0.1f;
-
-    ImVec2 displaySize((float)renderer.getWidth()  * scale,
-                       (float)renderer.getHeight() * scale);
-    ImGui::Image(
-        (ImTextureID)(intptr_t)renderer.getTextureID(), displaySize,
-        ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f)   // flip Y for correct orientation
-    );
-
-    // --- Info & settings ---
-    ImGui::Separator();
-    ImGui::Text("Pos: (%.2f, %.2f)", renderer.playerPos.x, renderer.playerPos.y);
-    ImGui::SameLine();
-    ImGui::Text("Dir: (%.2f, %.2f)", renderer.playerDir.x, renderer.playerDir.y);
-    ImGui::Checkbox("Floor & Ceiling", &renderer.enableFloorCeiling);
-    ImGui::SameLine();
-    ImGui::Checkbox("Side Shading", &renderer.enableSideShading);
-
-    // Refresh map button — press after editing the tilemap to sync the GPU SSBO
-    ImGui::SameLine();
-    if (ImGui::Button("Refresh Map"))
-        renderer.updateMap(engine_.getTileMap());
-
-    ImGui::TextDisabled("Player position / direction is set by scripts.");
-}
-
 void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, Editor::UndoManager& undoManager) {
 	// Start ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
@@ -745,12 +694,6 @@ void imGuiDisplay(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sceneTree, E
 	// Editor View (zoomed in, center - replaces old Game View behavior)
 	ImGui::Begin("Editor View", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
 	displayEditorView(engine_, sceneTree, undoManager);
-	ImGui::End();
-
-	// Raycast 3D View
-	ImGui::Begin("Raycast 3D View", nullptr,
-		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
-	displayRaycastVisualizerTab(engine_);
 	ImGui::End();
 
 	// Tilemap Editor
@@ -6254,9 +6197,8 @@ void imGuiSetupDefaultLayout() { // Change this if you wanna edit the amount of 
 	ImGui::DockBuilderDockWindow("Edit", dock_id_left);
 	ImGui::DockBuilderDockWindow("Scene", dock_id_left);
 
-	// Center - Editor View and Raycast 3D View (tabbed)
+	// Center - Editor View
 	ImGui::DockBuilderDockWindow("Editor View",    dock_main_id);
-	ImGui::DockBuilderDockWindow("Raycast 3D View", dock_main_id);
 
 	// Right side top - Assets Browser
 	ImGui::DockBuilderDockWindow("Entity Inspector", dock_id_right_top);

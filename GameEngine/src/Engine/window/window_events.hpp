@@ -77,4 +77,5 @@ namespace Window {
     struct WindowIconifyEvent {
         bool iconified; ///< true if window minimized, false if restored
     };
+
 }

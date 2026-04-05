@@ -200,6 +200,7 @@ namespace Window
 		self->bus_.publish(WindowIconifyEvent{ iconified == GLFW_TRUE });
 	}
 
+
 	void EnoWindow::buildResolutionTable() {
 		resolutionTable_.clear();
 

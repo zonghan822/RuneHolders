@@ -335,6 +335,7 @@ namespace Engine
 		* \param[in]	name - Scene filename (e.g. "Level.txt")
 		*//*========================================================================================*/
 		void requestSceneChange(const std::string& name) { pendingScene_ = name; }
+		void requestStop() { pendingStop_ = true; }
 
 		/*============================================================================================
 		* \brief		Gets the per-subsystem timing data collected during the last frame.
@@ -395,6 +396,7 @@ namespace Engine
 		bool closeRequested_  = false;  // Set by requestClose(); checked by shouldClose() to avoid GLFW DLL boundary issues
 		bool prevWasPlaying_  = false;  // Previous frame's isPlaying_ — used to detect the play→stop transition for video cleanup
 		std::string pendingScene_;  // Non-empty when a script has requested a scene change
+		bool pendingStop_ = false;  // True when a script requested stop (editor play mode quit)
 		Math::eVec2<float> viewportMin_{ 0.f, 0.f };  // Screen-space game viewport bounds (set by editor/app)
 		Math::eVec2<float> viewportMax_{ 0.f, 0.f };  // Zero max = fall back to full window size
 		int cachedWinW_ = 0;  // Window pixel width  — cached at setupEarly so the bridge DLL can read it

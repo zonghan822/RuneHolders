@@ -21,7 +21,6 @@
 #include <algorithm>
 
 #include "editor_logic.hpp"
-#include "raycast/raycast_renderer.hpp"
 #include "editor/undo/undo_manager.hpp"
 #include "stateMachine_editor/stateMachine_editor.hpp"
 
@@ -308,12 +307,5 @@ void clearSelectedEntity();
  * \return      void
 *//*========================================================================================*/
 void deleteSelectedEntity(Editor::EnoSceneTree& sceneTree, ECS::EntityManager& entityManager, Editor::UndoManager& undoManager, Graphics::EnoGraphicsManager& graphicsManager);
-
-/*============================================================================================
- * \brief       Displays the Raycast 3D View panel (Wolfenstein-style first-person renderer)
- * \param[in]   Engine::EnoEngine& engine_
- * \return      void
-*//*========================================================================================*/
-void displayRaycastVisualizerTab(Engine::EnoEngine& engine_);
 
 #include "project_picker/project_picker.hpp"
