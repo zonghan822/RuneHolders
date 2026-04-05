@@ -195,6 +195,17 @@ namespace Engine
 		updateTime(1.0);
 		window_.pollEvents();
 
+		// Ctrl+0: Toggle fullscreen | Ctrl+Plus/Minus: Change resolution
+		if (inputMng_.isKeyPressed(GLFW_KEY_LEFT_CONTROL))
+		{
+			if (inputMng_.isKeyDown(GLFW_KEY_0))
+				window_.toggleFullscreen();
+			if (inputMng_.isKeyDown(GLFW_KEY_EQUAL))   // '=' / '+' key
+				window_.increaseResolution();
+			if (inputMng_.isKeyDown(GLFW_KEY_MINUS))
+				window_.decreaseResolution();
+		}
+
 		float deltaTime = static_cast<float>(getDeltaTime());  // scaled by timeScale_
 
 		// Call Begin() once on the first frame after play starts; reset when play stops
