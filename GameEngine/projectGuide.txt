@@ -198,7 +198,7 @@ Tilemap CellSize: 64
 The Launcher writes these values before starting the game.
 
 ----------------------------------------------------------
-9. Runtime Resolution Control
+9. Runtime Controls
 ----------------------------------------------------------
 Inside the game:
 
@@ -211,9 +211,39 @@ CTRL + '-'
 CTRL + 0
 → Toggle fullscreen
 
+CTRL + 9
+→ Toggle FPS display (top-right corner)
+
 
 ----------------------------------------------------------
-10. Installer (Inno Setup)
+10. Cheat Codes (In-Game)
+----------------------------------------------------------
+Keyboard        | Controller (hold LT +)  | Action
+----------------|-------------------------|---------------------------
+F1              | LT + DPad Up            | Kill all enemies
+F2              | LT + DPad Right         | Skip to end of game
+F3              | LT + DPad Down          | Toggle god mode
+F4              | LT + DPad Left          | Unlock all spells
+
+Cheat activation text is displayed via the UIText node in the
+Gameplay_UI canvas.
+
+
+----------------------------------------------------------
+11. Focus Loss Handling
+----------------------------------------------------------
+When the game window loses focus (Alt+Tab, Ctrl+Alt+Del, etc.):
+
+- The window is minimized
+- Gameplay logic, physics, and audio are paused
+- All input states are cleared to prevent stuck keys
+- On returning to the game, the window is restored
+  (including fullscreen if it was fullscreen before)
+  and gameplay/audio resume
+
+
+----------------------------------------------------------
+12. Installer (Inno Setup)
 ----------------------------------------------------------
 The installer:
 
@@ -224,7 +254,7 @@ The installer:
 
 
 ----------------------------------------------------------
-11. Additional Notes
+13. Additional Notes
 ----------------------------------------------------------
 - The engine embeds .NET via `nethost.h` and `hostfxr.h`, loaded dynamically.
 - For local SDK builds, no global .NET installation is required.

@@ -103,6 +103,13 @@ namespace Eno
             }
             if (_active && _escBox != null)
                 _escBox.texture = isController ? "UI-Skip-Controller" : "UI-DialogueBox-Skip";
+            if (_active && _dialogueBox != null && _lineIndex < _dialogue.Count)
+            {
+                bool isCassia = _dialogue[_lineIndex]._speaker == Speaker.Cassia || _dialogue[_lineIndex]._speaker == Speaker.CassiaMain;
+                _dialogueBox.texture = isCassia
+                    ? (isController ? "UI-DialogueBox-Cassia-Controller" : "UI-DialogueBox-Cassia")
+                    : (isController ? "UI-DialogueBox-Witch-Controller" : "UI-DialogueBox-Witch");
+            }
 
             if (!_active)
             {
@@ -234,6 +241,8 @@ namespace Eno
             if (_charLeft   != null) _charLeft.visible   = false;
             if (_charRight  != null) _charRight.visible  = false;
 
+            bool isController = Input.inputMode == InputMode.Controller;
+
             switch (line._speaker)
             {
                 case Speaker.Cassia:
@@ -242,7 +251,7 @@ namespace Eno
                         _charCenter.texture = DetermineCharacterTex(line._speaker, line._emotion);
                         _charCenter.visible = true;
                     }
-                    if (_dialogueBox != null) _dialogueBox.texture = "UI-DialogueBox-Cassia";
+                    if (_dialogueBox != null) _dialogueBox.texture = isController ? "UI-DialogueBox-Cassia-Controller" : "UI-DialogueBox-Cassia";
                     break;
 
                 case Speaker.Witch:
@@ -251,7 +260,7 @@ namespace Eno
                         _charCenter.texture = DetermineCharacterTex(line._speaker, line._emotion);
                         _charCenter.visible = true;
                     }
-                    if (_dialogueBox != null) _dialogueBox.texture = "UI-DialogueBox-Witch";
+                    if (_dialogueBox != null) _dialogueBox.texture = isController ? "UI-DialogueBox-Witch-Controller" : "UI-DialogueBox-Witch";
                     break;
 
                 case Speaker.CassiaMain:
@@ -265,7 +274,7 @@ namespace Eno
                         _charRight.texture = DetermineCharacterTex(line._speaker, line._greyEmotion);
                         _charRight.visible  = true;
                     }
-                    if (_dialogueBox != null) _dialogueBox.texture = "UI-DialogueBox-Cassia";
+                    if (_dialogueBox != null) _dialogueBox.texture = isController ? "UI-DialogueBox-Cassia-Controller" : "UI-DialogueBox-Cassia";
                     break;
 
                 case Speaker.WitchMain:
@@ -279,7 +288,7 @@ namespace Eno
                         _charRight.texture = DetermineCharacterTex(line._speaker, line._emotion);
                         _charRight.visible  = true;
                     }
-                    if (_dialogueBox != null) _dialogueBox.texture = "UI-DialogueBox-Witch";
+                    if (_dialogueBox != null) _dialogueBox.texture = isController ? "UI-DialogueBox-Witch-Controller" : "UI-DialogueBox-Witch";
                     break;
             }
 
