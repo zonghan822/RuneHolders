@@ -2,11 +2,9 @@ namespace Eno
 {
     public class WaveManager_Script : ScriptBase
     {
-        private const float WaveDuration = 20f;
-
-        private int   _currentWave = 0;
-        private float _waveTimer   = 0f;
+        private int   _currentWave  = 0;
         private bool  _allWavesDone = false;
+        private bool  _waveStarted  = false;
 
         // Wave definitions: each entry is an array of (prefabName, x, y) tuples
         private static readonly (string prefab, float x, float y)[][] Waves =
@@ -27,18 +25,16 @@ namespace Eno
         public void Begin()
         {
             SpawnWave(_currentWave);
+            _waveStarted = true;
         }
 
         public void Update()
         {
             if (PlayerController.IsGamePaused) return;
-            if (_allWavesDone) return;
+            if (_allWavesDone || !_waveStarted) return;
 
-            _waveTimer += Time.deltaTime;
-
-            if (_waveTimer >= WaveDuration)
+            if (GetAllEnemies().Count == 0)
             {
-                _waveTimer = 0f;
                 _currentWave++;
 
                 if (_currentWave < Waves.Length)

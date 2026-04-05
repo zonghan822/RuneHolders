@@ -5,11 +5,9 @@ namespace Eno
 
         private static Room13_Script? _instance;
 
-        private const float WaveDelay  = 5f;
         private int   _currentWave  = 0;
         private bool  _wavesStarted = false;
         private bool  _roomCleared  = false;
-        private float _waveTimer    = 0f;
         private AudioNode? _doorAudio = null;
 
         public void Begin()
@@ -18,7 +16,6 @@ namespace Eno
             _currentWave = 0;
             _wavesStarted = false;
             _roomCleared = false;
-            _waveTimer = 0f;
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
         }
 
@@ -48,8 +45,6 @@ namespace Eno
         public void Update()
         {
             if (!_wavesStarted || _roomCleared) return;
-
-            _waveTimer += Time.deltaTime;
 
             if (GetAllEnemies().Count == 0)
             {

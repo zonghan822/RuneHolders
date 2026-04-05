@@ -1614,8 +1614,8 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 32 }
-				"Height": <float> { 32 }
+				"Width": <float> { 56 }
+				"Height": <float> { 56 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { UI-AudioBall }
@@ -1637,7 +1637,7 @@
 				"Is Active": <bool> { 1 }
 				"Is Static": <bool> { 0 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 32 }
+				"Radius": <float> { 56 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -1667,10 +1667,10 @@
 				"Current Animation": <char64> { Default }
 				"Anim0 Name": <char64> { Default }
 				"Anim0 Texture": <texchar240> { UI-AudioBall }
-				"Anim0 FrameW": <int> { 96 }
-				"Anim0 FrameH": <int> { 96 }
-				"Anim0 Rows": <int> { 0 }
-				"Anim0 Cols": <int> { 0 }
+				"Anim0 FrameW": <int> { 56 }
+				"Anim0 FrameH": <int> { 56 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 				"Anim1 Name": <char64> { selected }
@@ -1748,8 +1748,8 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 32 }
-				"Height": <float> { 32 }
+				"Width": <float> { 56 }
+				"Height": <float> { 56 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { UI-AudioBall }
@@ -1771,7 +1771,7 @@
 				"Is Active": <bool> { 1 }
 				"Is Static": <bool> { 0 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 32 }
+				"Radius": <float> { 56 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -1801,10 +1801,10 @@
 				"Current Animation": <char64> { Default }
 				"Anim0 Name": <char64> { Default }
 				"Anim0 Texture": <texchar240> { UI-AudioBall }
-				"Anim0 FrameW": <int> { 96 }
-				"Anim0 FrameH": <int> { 96 }
-				"Anim0 Rows": <int> { 0 }
-				"Anim0 Cols": <int> { 0 }
+				"Anim0 FrameW": <int> { 56 }
+				"Anim0 FrameH": <int> { 56 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 				"Anim1 Name": <char64> { selected }
@@ -1882,8 +1882,8 @@
 
 			[struct ECSComponents::RenderComponent]
 			{
-				"Width": <float> { 32 }
-				"Height": <float> { 32 }
+				"Width": <float> { 56 }
+				"Height": <float> { 56 }
 				"Shape": <char32> { Rectangle }
 				"Color": <Color(RGBA)> { r : 1 | g : 1 | b : 1 | a : 1 }
 				"Texture Path": <texchar240> { UI-AudioBall }
@@ -1905,7 +1905,7 @@
 				"Is Active": <bool> { 1 }
 				"Is Static": <bool> { 0 }
 				"Rotation": <float> { 0 }
-				"Radius": <float> { 32 }
+				"Radius": <float> { 56 }
 			}
 
 			[struct ECSComponents::PhysicsComponent]
@@ -1935,10 +1935,10 @@
 				"Current Animation": <char64> { Default }
 				"Anim0 Name": <char64> { Default }
 				"Anim0 Texture": <texchar240> { UI-AudioBall }
-				"Anim0 FrameW": <int> { 96 }
-				"Anim0 FrameH": <int> { 96 }
-				"Anim0 Rows": <int> { 0 }
-				"Anim0 Cols": <int> { 0 }
+				"Anim0 FrameW": <int> { 56 }
+				"Anim0 FrameH": <int> { 56 }
+				"Anim0 Rows": <int> { 1 }
+				"Anim0 Cols": <int> { 1 }
 				"Anim0 Duration": <float> { 0.1 }
 				"Anim0 Looping": <bool> { 1 }
 				"Anim1 Name": <char64> { selected }
