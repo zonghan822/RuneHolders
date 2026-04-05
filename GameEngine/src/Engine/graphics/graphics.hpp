@@ -375,6 +375,8 @@ namespace Graphics
         int renderTargetW_ = 0;
         int renderTargetH_ = 0;
 
+        bool showFps_ = false;
+
         // Video players: name -> player
         std::unordered_map<std::string, std::shared_ptr<VideoPlayer>> videoMap_;
         // Fallback camera used when no CameraComponent entity is present.

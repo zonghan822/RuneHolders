@@ -1971,6 +1971,29 @@ namespace Graphics
                 particleSys->RenderEntity(*this, entityManager, pid);
             flush();
         }
+
+        // Ctrl+9: Toggle FPS display
+        auto& input = engine.getInputManager();
+        if (input.isKeyPressed(GLFW_KEY_LEFT_CONTROL) &&
+            input.isKeyDown(GLFW_KEY_9))
+            showFps_ = !showFps_;
+
+        if (showFps_)
+        {
+            auto font = engine.getResourceLoader().getFont("Philosopher-Regular");
+            if (font)
+            {
+                auto [fbW, fbH] = engine.getWindowManager().getFramebufferSize();
+                float sw = static_cast<float>(fbW);
+                float sh = static_cast<float>(fbH);
+                flush();
+                std::string fpsText = "FPS: " + std::to_string(static_cast<int>(engine.getFPS()));
+                drawTextScreen(font, fpsText,
+                    { sw - 120.f, 30.f }, 0.5f, Color::White,
+                    sw, sh);
+                rebindDefaultShader();
+            }
+        }
     }
 
     // =========================================================================
