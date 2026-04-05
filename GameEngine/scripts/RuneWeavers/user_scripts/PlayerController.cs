@@ -392,6 +392,11 @@ namespace Eno
 
         public void Hurt_enter()
         {
+            if (CheatManager.GodMode)
+            {
+                _player.changeState("Idle");
+                return;
+            }
             _isHurt    = true;
             _hurtTimer = 0f;
             _player.velocity = new Vector2(0f, 0f);

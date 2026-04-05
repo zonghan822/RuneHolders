@@ -121,6 +121,7 @@ namespace Eno
                 _scrollPickedUp = true;
                 if (_doorAudio != null) { _doorAudio.sound = "Spellbook_Open_01"; _doorAudio.play(); }
                 RuneSystem.SpellUnlocked[1] = true; // Light
+                SpellbookController.SpawnOrbitParticle(1);
                 // Hide the scroll
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
