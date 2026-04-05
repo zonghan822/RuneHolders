@@ -24,6 +24,63 @@ namespace Eno
         public static bool FadeActive  => _instance?._fadeActive ?? false;
         public static bool FadePending => _instance?._pendingKBTexture != null;
 
+        // ── Spell-unlock orbit particle ──────────────────────────────────────
+        private static readonly string[] SpellParticlePrefabs = { "FireOrbit", "LightOrbit", "IceOrbit" };
+        private static readonly float[][] OrbitOffsets = {
+            new float[] { 60f,  0f },
+            new float[] { 109f, 49f },
+            new float[] { 60f,  97f },
+            new float[] { 12f,  49f },
+        };
+        private ParticleEmitter? _orbitParticle = null;
+        private int   _orbitWaypoint = 0;
+        private float _orbitSpeed    = 120f;
+
+        // Called by room scripts when a spell scroll is picked up.
+        // spellIndex: 0 = Fire, 1 = Light, 2 = Ice
+        public static void SpawnOrbitParticle(int spellIndex)
+        {
+            if (_instance == null || _instance._fIconID == 0) return;
+            if (spellIndex < 0 || spellIndex >= SpellParticlePrefabs.Length) return;
+
+            // Despawn old particle if any
+            if (_instance._orbitParticle != null)
+            {
+                _instance.FreeNode(_instance._orbitParticle);
+                _instance._orbitParticle = null;
+            }
+
+            float fx = Bridge.GetPositionX(_instance._fIconID);
+            float fy = Bridge.GetPositionY(_instance._fIconID);
+            float sx = fx + OrbitOffsets[0][0];
+            float sy = fy + OrbitOffsets[0][1];
+
+            uint canvasID = Bridge.GetNode("Gameplay_UI");
+            if (canvasID != 0 && canvasID != uint.MaxValue)
+            {
+                uint id = Bridge.SpawnPrefab(SpellParticlePrefabs[spellIndex], sx, sy, canvasID);
+                if (id != uint.MaxValue)
+                    _instance._orbitParticle = NodeFactory.Create(id) as ParticleEmitter;
+            }
+            if (_instance._orbitParticle != null)
+            {
+                _instance._orbitParticle.emissionRate = 200f;
+                uint fIconZ = Bridge.GetZIndex(_instance._fIconID);
+                Bridge.SetZIndex(_instance._orbitParticle.ID, fIconZ + 1);
+            }
+            _instance._orbitParticle?.startEmission();
+            _instance._orbitWaypoint = 1; // heading towards second waypoint
+        }
+
+        private void DespawnOrbitParticle()
+        {
+            if (_orbitParticle != null)
+            {
+                FreeNode(_orbitParticle);
+                _orbitParticle = null;
+            }
+        }
+
         // Called by room scripts when a scroll is picked up.
         // Stores the new-spell textures so the fade triggers on next spellbook open.
         public static void QueueFadeIn(string kbTexture, string ctrlTexture)
@@ -61,7 +118,32 @@ namespace Eno
             if (_fIconID != 0)
                 Bridge.SetTexturePath(_fIconID, isController ? "UI-SpellbookIcon-Controller" : "UI-Spellbook-Icon-F");
 
-            if (_spellbookUIID != 0)
+            // Move orbit particle along waypoints
+            if (_orbitParticle != null && _fIconID != 0)
+            {
+                float fx = Bridge.GetPositionX(_fIconID);
+                float fy = Bridge.GetPositionY(_fIconID);
+                float tx = fx + OrbitOffsets[_orbitWaypoint][0];
+                float ty = fy + OrbitOffsets[_orbitWaypoint][1];
+                float px = Bridge.GetPositionX(_orbitParticle.ID);
+                float py = Bridge.GetPositionY(_orbitParticle.ID);
+                float dx = tx - px;
+                float dy = ty - py;
+                float dist = MathF.Sqrt(dx * dx + dy * dy);
+                float step = _orbitSpeed * Time.deltaTime;
+                if (dist <= step)
+                {
+                    Bridge.SetPosition(_orbitParticle.ID, tx, ty);
+                    _orbitWaypoint = (_orbitWaypoint + 1) % OrbitOffsets.Length;
+                }
+                else
+                {
+                    float inv = step / dist;
+                    Bridge.SetPosition(_orbitParticle.ID, px + dx * inv, py + dy * inv);
+                }
+            }
+
+            if (_spellbookUIID != 0 && !_fadeActive && _pendingKBTexture == null)
             {
                 int spellCount = 0;
                 for (int i = 0; i < RuneSystem.SpellUnlocked.Length; i++)
@@ -88,6 +170,7 @@ namespace Eno
                 SetChildButtonsActive(_spellbookUIID, nowOpen);
                 if (nowOpen)
                 {
+                    DespawnOrbitParticle();
                     // Play sound BEFORE SetSpellbook — Sync() will pause audio immediately after
                     if (_spellbookAudio != null) { _spellbookAudio.sound = "Spellbook_Open_01"; _spellbookAudio.play(); }
                     Bridge.SetGroupPaused("SFX", true);

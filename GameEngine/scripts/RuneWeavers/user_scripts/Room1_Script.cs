@@ -93,6 +93,7 @@ namespace Eno
             {
                 _scrollPickedUp = true;
                 RuneSystem.SpellUnlocked[0] = true;
+                SpellbookController.SpawnOrbitParticle(0);
                 Bridge.SetVisibility(_scrollID, false);
                 Bridge.SetColliderActive(_scrollID, false);
                 if (_exitDoorID  != 0)

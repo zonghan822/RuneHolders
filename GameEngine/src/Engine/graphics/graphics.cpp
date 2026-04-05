@@ -1724,6 +1724,7 @@ namespace Graphics
         // Collect particle entities by z-index for interleaved rendering
         std::map<int, std::vector<uint32_t>> particlesByZ;
         auto* particleSys = engine.getParticleSystem();
+        std::vector<uint32_t> canvasParticles;  // rendered after canvas pass
         if (particleSys)
         {
             auto particleEntities = entityManager.findEntity<ECSComponents::ParticleEmitterComponent>();
@@ -1736,6 +1737,15 @@ namespace Graphics
                     if (!ECSComponents::isAncestorVisible(pEntity.id(),
                             engine.getEnoEditor().getSceneTree(), entityManager))
                         continue;
+
+                    // Canvas-parented particles render after the canvas pass
+                    if (UI::CanvasSystem::hasCanvasAncestor(pEntity.id(),
+                            engine.getEnoEditor().getSceneTree(), entityManager))
+                    {
+                        canvasParticles.push_back(pEntity.id());
+                        continue;
+                    }
+
                     particlesByZ[static_cast<int>(vis.z_index)].push_back(pEntity.id());
                 }
                 else
@@ -1952,6 +1962,15 @@ namespace Graphics
 
         // Render all Canvas UI layers on top of world content
         UI::CanvasSystem{}.render(engine, drawableEntities, { cameraX, cameraY });
+
+        // Render canvas-parented particles on top of the canvas
+        if (particleSys && !canvasParticles.empty())
+        {
+            flush();
+            for (uint32_t pid : canvasParticles)
+                particleSys->RenderEntity(*this, entityManager, pid);
+            flush();
+        }
     }
 
     // =========================================================================

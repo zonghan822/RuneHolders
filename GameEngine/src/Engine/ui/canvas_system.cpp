@@ -18,6 +18,7 @@
 #include "../component/components/visibility.hpp"
 #include "../component/components/drawInfo.hpp"
 #include "../component/components/text_component.hpp"
+#include "../particle/particle_component.hpp"
 #include "../component/components/camera_component.hpp"
 #include "../component/components/name.hpp"
 #include "../component/components/video_component.hpp"
@@ -187,6 +188,9 @@ namespace UI
 				// Check for render component
 				try {
 					if (!entity.has<ECSComponents::DrawInfoComponent>(entityManager)) continue;
+
+					// Skip particle emitters — their particles are rendered by ParticleSystem
+					if (entity.has<ECSComponents::ParticleEmitterComponent>(entityManager)) continue;
 
 					// Render entity after converting from world to screen space
 					Math::eVec2<float> worldPos = entity.get<ECSComponents::TransformComponent>(entityManager).pos;
