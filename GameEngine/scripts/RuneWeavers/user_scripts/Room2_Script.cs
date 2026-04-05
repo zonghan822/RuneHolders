@@ -12,7 +12,6 @@ namespace Eno
 
         private Sprite2D? _uiInfo        = null;
         private bool      _uiInfoShown   = false;
-        private float     _uiInfoTimer   = 0f;
         // 0 = waiting for first spell cast
         // 1 = "cast complete" — 2 s countdown before showing part 2
         // 2 = waiting for dummy hit
@@ -33,7 +32,6 @@ namespace Eno
             _uiInfo        = null;
             _uiInfoShown   = false;
             _tutorialStage = 0;
-            _uiInfoTimer   = 0f;
 
             try { _uiInfo = GetNode<Sprite2D>("UI_Info"); } catch { }
             _doorAudio = SpawnPrefab("DefaultAudio", 0f, 0f) as AudioNode;
@@ -75,7 +73,7 @@ namespace Eno
         public static void StopUI()
         {
             if (_instance == null) return;
-            _instance._tutorialStage = 3;
+            _instance._tutorialStage = 2;
             if (_instance._uiInfo != null)
                 _instance._uiInfo.visible = false;
             _instance._uiInfoShown = false;
@@ -135,32 +133,20 @@ namespace Eno
             switch (_tutorialStage)
             {
                 case 0:
-                    _uiInfoTimer += Time.deltaTime;
-                    if (RuneSystem.SpellCastOccurred || _uiInfoTimer >= 8f)
+                    if (RuneSystem.SpellCastOccurred)
                     {
                         RuneSystem.SpellCastOccurred = false;
                         _uiInfo.setTextureAndResize("Text-SpellcastingTutorial2");
-                        _uiInfoTimer   = 0f;
+                        _instance.SpawnWave1();
                         _tutorialStage = 1;
                     }
                     break;
 
                 case 1:
-                    _uiInfoTimer += Time.deltaTime;
-                    if (_uiInfoTimer >= 2f)
-                    {
-                        // Spawn target dummy after casting spell for the first time
-                        _instance.SpawnWave1();
-                        _uiInfoTimer   = 0f;
-                        _tutorialStage = 2;
-                    }
-                    break;
-
-                case 2:
                     if (DummyRed_Script.WasHit)
                     {
                         _uiInfo.visible = false;
-                        _tutorialStage  = 3; // done — prevent re-triggering
+                        _tutorialStage = 2; // done — prevent re-triggering
                     }
                     break;
             }

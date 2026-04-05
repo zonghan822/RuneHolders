@@ -184,8 +184,8 @@ namespace Eno
                 LockDoor("Door4to5");
             }
             _roomCleared = false;
-            SpawnPrefab("DummyRed",    830f, -3700f);
-            SpawnPrefab("DummyYellow", 1080f, -3700f);
+            SpawnPrefab("DummyRed",    830f, -3636f);
+            SpawnPrefab("DummyYellow", 1080f, -3636f);
         }
 
         private void LockDoor(string name)
