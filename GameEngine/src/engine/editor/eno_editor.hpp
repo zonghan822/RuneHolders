@@ -88,7 +88,7 @@ namespace Editor
 				});
 		}
 
-		// Testing the scene tree
+		/** @brief Placeholder for scene tree testing operations. */
 		void operation()
 		{
 

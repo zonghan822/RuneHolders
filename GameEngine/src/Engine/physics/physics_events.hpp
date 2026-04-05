@@ -10,6 +10,7 @@
 
 namespace Physics {
 
+    /** @brief Event fired by the physics system when two entities collide during integration. */
     struct CollideEvent {
         uint32_t entityA_ID;
         uint32_t entityB_ID;

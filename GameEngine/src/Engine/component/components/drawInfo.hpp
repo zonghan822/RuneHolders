@@ -123,7 +123,7 @@ namespace ECSComponents
 			return *this;
 		}
 
-		// Helper function to set texture with path
+		/** @brief Assign a texture and record its file path for serialization. */
 		void setTexture(std::shared_ptr<Graphics::EnoTexture> tex, const std::string& path)
 		{
 			texture = tex;
@@ -224,7 +224,7 @@ namespace ECSComponents
 		// Signals
 		std::unordered_map<std::string, Events::EnoSignal> signals_;
 
-		// Helper to add/update an animation
+		/** @brief Add or update an animation entry by name with the given spritesheet parameters. */
 		void setAnimationData(const char* name, const char* texPath, int fw, int fh, int r, int c, float dur, bool loop) {
 			// Check if animation already exists
 			int index = -1;
@@ -268,7 +268,7 @@ namespace ECSComponents
 			updateSerializationFields();
 		}
 
-		// Sync serialization fields from current animation for saving
+		/** @brief Sync legacy serialization fields from the currently active animation data. */
 		void updateSerializationFields() {
 			// Find the current animation and sync its data to the old format fields
 			for (int i = 0; i < animationCount; ++i) {

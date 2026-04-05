@@ -126,15 +126,19 @@ namespace Window
 
 		bool isFullscreen() const { return isFullscreen_; }
 
+		/** @brief Minimizes (iconifies) the window. */
 		void minimize();
 
+		/** @brief Sets the window resolution to the specified width and height. */
 		void setResolution(int width, int height);
 
+		/** @brief Steps up to the next resolution in the built-in resolution table. */
 		void increaseResolution();
 
+		/** @brief Steps down to the previous resolution in the built-in resolution table. */
 		void decreaseResolution();
 
-		//(YunQi)
+		/** @brief Returns the list of file paths dropped onto the window via drag-and-drop. */
 		static std::vector<std::string>& GetDroppedFiles();
 
 	private:
@@ -209,6 +213,7 @@ namespace Window
 		*//*========================================================================================*/
 		void setupEventCallbacks();
 
+		/** @brief Populates the resolution table from the primary monitor's supported modes. */
 		void buildResolutionTable();
 
 	private:

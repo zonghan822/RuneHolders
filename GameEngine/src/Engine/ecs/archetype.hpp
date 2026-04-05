@@ -92,6 +92,7 @@ namespace ECS
 			chunks_.clear();
 		}
 
+		/** @brief Find the index of a component type within this archetype's type list. */
 		template <typename Type>
 		size_t findComponentIndex()
 		{
@@ -100,7 +101,7 @@ namespace ECS
 			return std::distance(types_.begin(), it);
 		}
 
-		// Instantiate a new chunk
+		/** @brief Allocate and instantiate a new chunk within this archetype. */
 		Chunk* createChunk(uint32_t entCount, const std::vector<std::type_index>& types, const std::vector<size_t>& sizes)
 		{
 #if ARENA_ENABLED
@@ -127,6 +128,7 @@ namespace ECS
 		}
 	};
 
+	/** @brief Key used to uniquely identify an archetype by its sorted component types. */
 	struct ArchetypeKey
 	{
 		std::vector<std::type_index> types;
@@ -136,6 +138,7 @@ namespace ECS
 		}
 	};
 
+	/** @brief Hash functor for ArchetypeKey, combining hash codes of all component types. */
 	struct ArchetypeKeyHash
 	{
 		std::size_t operator()(const ArchetypeKey& key) const
@@ -150,14 +153,12 @@ namespace ECS
 		}
 	};
 
+	/** @brief Manages the creation, lookup, and cleanup of archetypes. */
 	class ArchetypeManager
 	{
 	public:
 
-		// Iterate through a map to discern if an archetype has been created.
-		// 
-		// If not, create a new archetype.
-		// Else retrieve this archetype and insert a new entity
+		/** @brief Retrieve an existing archetype matching the given types, or create a new one. */
 		Archetype* getOrCreateArch(
 			Memory::EnoECSArena& arena,
 			const std::vector<std::type_index>& types,
@@ -184,13 +185,13 @@ namespace ECS
 			return pArche;
 		}
 
-		// Get archetype manager map
+		/** @brief Get the map of all managed archetypes. */
 		std::unordered_map<ArchetypeKey, std::unique_ptr<Archetype>, ArchetypeKeyHash>& getArchetypes()
 		{
 			return archetypeMap_;
 		}
 
-		// Transfer data between 2 archetypes
+		/** @brief Copy shared component data from a source archetype/chunk slot to a destination, destroying orphaned components. */
 		void transferData(
 			const Archetype& src, const Archetype& dst,						// Archetypes
 			const size_t& srcECIdx, const size_t& dstECIdx,					// Entity index in chunk
@@ -247,7 +248,7 @@ namespace ECS
 			}
 		}
 
-		// View Archetype map
+		/** @brief Print all archetypes and their component types to stdout for debugging. */
 		void viewMap()
 		{
 			for (const auto& [key, archPtr] : archetypeMap_)
@@ -262,7 +263,7 @@ namespace ECS
 			}
 		}
 
-		// Remove an existing archetype
+		/** @brief Remove an archetype from the manager map and free its resources. */
 		void cleanup(Archetype* archetype)
 		{
 			ArchetypeKey key{ archetype->types_ };

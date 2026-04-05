@@ -480,6 +480,7 @@ namespace Editor
 			: description_(description)
 		{}
 
+		/** @brief Appends a sub-command to the batch. */
 		void addCommand(std::unique_ptr<ICommand> command)
 		{
 			commands_.push_back(std::move(command));
@@ -507,6 +508,7 @@ namespace Editor
 			return description_;
 		}
 
+		/** @brief Returns true if no sub-commands have been added. */
 		bool isEmpty() const
 		{
 			return commands_.empty();

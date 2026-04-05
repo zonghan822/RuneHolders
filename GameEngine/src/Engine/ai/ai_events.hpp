@@ -12,10 +12,12 @@
 
 namespace AI {
 
+    /** @brief Event requesting that the stored path for an entity be cleared. */
     struct PathClearRequest {
         uint32_t entityID;
     };
 
+    /** @brief Event requesting an A* pathfind from start to goal, returning the next waypoint. */
     struct PathfindRequest {
         uint32_t entityID;
         Math::eVec2<float> start;

@@ -187,7 +187,7 @@ namespace ECSComponents
 			return it->second.alignment_;
 		}
 
-		// Deduce component type with type index
+		/** @brief Deduce the actual component type from a type_index and invoke the given lambda with it. */
 		template <typename Lambda>
 		static void DeduceCompType(const std::type_index& typeIdx, Lambda&& f)
 		{
@@ -234,7 +234,7 @@ namespace ECSComponents
 			throw std::runtime_error("Unknown component passed to be deduced!");
 		}
 
-		// Deduce component type with type name
+		/** @brief Deduce the actual component type from a string name and invoke the given lambda with it. */
 		template <typename Lambda>
 		static void DeduceCompType(const std::string& typeName, Lambda&& f)
 		{

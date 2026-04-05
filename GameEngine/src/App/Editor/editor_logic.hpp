@@ -92,13 +92,17 @@ public:
     EditorApplication(EditorApplication&&) = delete;                 // Disable move
     EditorApplication& operator=(EditorApplication&&) = delete;      // Disable move assignment
 
-    // Main game methods
-    void initialize();  // Called once at start
-    void run();         // Starts the game loop
-    void shutdown();    // Called when application closed
+    /** @brief Initializes the engine, editor subsystems, and loads the initial scene. */
+    void initialize();
+    /** @brief Starts the main editor/game loop and runs until exit. */
+    void run();
+    /** @brief Shuts down all subsystems and releases resources. */
+    void shutdown();
 
+    /** @brief Marks all entity animation data as dirty, forcing a render cache refresh. */
     void markEntitiesDirty() { engine_.markAnimationsDirty(); }
     ECS::EntityManager& getEntityManager() { return engine_.getEntityManager(); }
+    /** @brief Opens the project picker dialog for switching projects. */
     void openProjectPicker() { setProjectPickerOpen(true); }
 
     Graphics::EnoFramebuffer* getEditorFramebuffer() { return editorFramebuffer_.get(); }
@@ -140,7 +144,7 @@ public:
     Math::eVec2<float> getEditorViewMin() const { return editorViewMin_; }
     Math::eVec2<float> getEditorViewMax() const { return editorViewMax_; }
 
-    // Camera panning for room transitions
+    /** @brief Initiates a smooth camera pan to the target Y position over the given duration. */
     void startCameraPan(float targetY, float duration = 1.0f);
     bool isCameraPanning() const { return isPanning_; }
 
@@ -152,13 +156,17 @@ public:
 
 
 private:
-    // Setup (called during initialize())
-    void setupGameEvents();     // event bus setup code
-    void setupImGui();          // setup ImGui code
+    /** @brief Registers editor event bus subscriptions during initialization. */
+    void setupGameEvents();
+    /** @brief Configures and initializes the ImGui context and style. */
+    void setupImGui();
 
-    // Update methods (called every frame)
-    void updateEditorLogic();   // ImGui rendering — called after renderFrame
-    void updateEditorCamera();  // Camera sync, panning, write-back — called before renderFrame
-    void updateEditorState();   // Hot reload, script begin() — called before beginFrame
-    void updateImGui();         // Update code for imGui
+    /** @brief Renders ImGui editor panels; called after the engine render frame. */
+    void updateEditorLogic();
+    /** @brief Synchronizes the editor camera, applies panning, and writes back to the engine. */
+    void updateEditorCamera();
+    /** @brief Handles hot-reload checks and script begin() calls before the engine frame. */
+    void updateEditorState();
+    /** @brief Processes ImGui input and prepares the next ImGui frame. */
+    void updateImGui();
 };

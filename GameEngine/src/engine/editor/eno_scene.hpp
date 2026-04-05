@@ -37,31 +37,37 @@ namespace Editor
 			defineTag("Human");
 		}
 
+		/** @brief Assigns a tag to this scene (currently unimplemented). */
 		void assignTag()
 		{
 
 		}
 
+		/** @brief Registers a new tag name by publishing it to the event bus. */
 		void defineTag(const std::string& tag)
 		{
 			bus_.publish(Tag::RecordTag{ tag });
 		}
 
+		/** @brief Sets the scene state to Playing. */
 		void play()
 		{
 			state = State::Playing;
 		}
 
+		/** @brief Sets the scene state to Paused. */
 		void pause()
 		{
 			state = State::Paused;
 		}
 
+		/** @brief Sets the scene state to Stopped. */
 		void stop()
 		{
 			state = State::Stopped;
 		}
 
+		/** @brief Advances the scene by a single frame (NextFrame state). */
 		void next()
 		{
 			state = State::NextFrame;

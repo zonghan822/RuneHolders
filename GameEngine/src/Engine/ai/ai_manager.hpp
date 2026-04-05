@@ -34,11 +34,11 @@ namespace AI {
     public:
         AIManager(Event::EnoEventBus& bus, PathfindingSystem& pathfinder, ECS::EntityManager& entMng);
 
-        // Accessors
+        /** @brief Retrieve the path agent associated with the given entity. */
         AIPathAgent& getPathAgent(ECS::Entity& entity);
         PathfindingSystem& getPathfinder() { return pathfinder_; }
 
-        // Cleanup on scene unload
+        /** @brief Remove all registered path agents and reset AI state for scene unload. */
         void clearAll();
 
     private:
@@ -48,8 +48,9 @@ namespace AI {
 
         std::unordered_map<uint32_t, std::unique_ptr<AIPathAgent>> pathAgents_;
 
-        // AI component lifecycle
+        /** @brief Create a path agent for the entity and subscribe to its AI events. */
         void registerEntity(uint32_t entityId);
+        /** @brief Destroy the path agent for the entity and clean up subscriptions. */
         void unregisterEntity(uint32_t entityId);
     };
 

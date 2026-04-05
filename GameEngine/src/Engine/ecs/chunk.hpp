@@ -91,9 +91,7 @@ namespace ECS
 			}
 		}
 
-		// Retrieve the value of an entity's component
-		// Component Index: Index of the component within the memory layout
-		// Entity Index: Index of the entity within the chunk's memory
+		/** @brief Retrieve a reference to an entity's component by component and entity indices within this chunk. */
 		template <typename T>
 		T& retrieve(const size_t& componentIndex, const size_t& entityIndex)
 		{
@@ -102,9 +100,7 @@ namespace ECS
 			return *reinterpret_cast<T*>(p);
 		}
 
-		// Default construct a component and its value(s)
-		// Component Index: Index of the component within the memory layout
-		// Entity Index: Index of the entity within the chunk's memory
+		/** @brief Default-construct a component in-place at the given component and entity indices. */
 		template <typename T>
 		void set(
 			const size_t& componentIndex,
@@ -119,10 +115,7 @@ namespace ECS
 #endif
 		}
 
-		// Set a value in a specified component
-		// Component Index: Index of the component within the memory layout
-		// Entity Index: Index of the entity within the chunk's memory
-		// Value: Value to assign to the component
+		/** @brief Construct a component in-place with the given value at the specified indices. */
 		template <typename T, typename U>
 		void setVal(
 			const size_t& componentIndex,
@@ -139,7 +132,7 @@ namespace ECS
 #endif
 		}
 
-		// Modify a value in a specified component
+		/** @brief Destroy and reconstruct a component in-place with a new value at the specified indices. */
 		template <typename T, typename U>
 		void modify(
 			const size_t& componentIndex,
@@ -159,7 +152,7 @@ namespace ECS
 #endif
 		}
 
-		// Invoke the destructor of all components within the chunk
+		/** @brief Invoke the destructor of every component for all entities stored in this chunk. */
 		void destroyComponents(std::vector<std::type_index>& types)
 		{
 			for (size_t comp = 0; comp < types.size(); comp++)
@@ -177,8 +170,7 @@ namespace ECS
 			}
 		}
 
-		// Invoke the destructor of all components belonging to the specified entity
-		// Return is the entity index
+		/** @brief Destroy an entity at the given index, swap-removing it with the last entity. Returns the moved entity's ID, or INVALID_ENTITY. */
 		uint32_t destroyEntity(size_t entityIndex, const std::vector<std::type_index>& types)
 		{
 			assert(current_ > 0 && entityIndex < current_);
@@ -224,7 +216,7 @@ namespace ECS
 			return movedEntityID;
 		}
 
-		// Identify the location of the component of a given entity
+		/** @brief Return a raw pointer to the memory location of a component for the given entity index. */
 		char* search(const size_t& componentIndex, const size_t& entityIndex)
 		{
 			std::byte* base = data_[componentIndex];

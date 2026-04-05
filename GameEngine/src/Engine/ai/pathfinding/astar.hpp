@@ -25,6 +25,7 @@
 
 namespace AI {
 
+    /** @brief Result of an A* pathfind containing the sequence of tile positions. */
     struct Path {
         std::vector<Math::eVec2<int>> nodes;
         bool completed = false;
@@ -49,9 +50,12 @@ namespace AI {
         void addExtraBlockedTile(const Math::eVec2<int>& tile) { extraBlockedTiles_.push_back(tile); }
         void clearExtraBlockedTiles() { extraBlockedTiles_.clear(); }
 
+        /** @brief Run A* search from start to goal tile and return the resulting path. */
         Path findPath(const Math::eVec2<int>& start, const Math::eVec2<int>& goal);
 
+        /** @brief Convert a world-space position to its corresponding tile coordinate. */
         Math::eVec2<int> worldToTile(const Math::eVec2<float>& pos) const;
+        /** @brief Convert a tile coordinate to the center world-space position of that tile. */
         Math::eVec2<float> tileToWorld(const Math::eVec2<int>& pos) const;
 
     private:
@@ -72,6 +76,7 @@ namespace AI {
             }
         };
 
+        /** @brief Compute the heuristic distance estimate between two tile positions. */
         int heuristic(const Math::eVec2<int>& a, const Math::eVec2<int>& b) const;
 
         inline bool isWalkable(int x, int y) const {

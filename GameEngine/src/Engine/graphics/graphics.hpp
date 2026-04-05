@@ -93,12 +93,15 @@ namespace Graphics
         EnoTexture();
         ~EnoTexture();
 
+        /** @brief Load a texture from an image file on disk. */
         bool loadFromFile(const std::string& filepath);
+        /** @brief Create a texture from raw pixel data in memory. */
         bool loadFromMemory(int width, int height, int channels, const unsigned char* data);
-        // Stream-update pixels in-place (no reallocation). Texture must already be valid.
-        // Used by VideoPlayer to upload decoded frames without creating a new GL texture.
+        /** @brief Stream-update pixels in-place without reallocating the GL texture. */
         void updatePixels(int width, int height, int channels, const unsigned char* data);
+        /** @brief Bind this texture to the given texture slot for rendering. */
         void bind(unsigned int slot = 0) const;
+        /** @brief Unbind the currently bound texture. */
         void unbind() const;
 
         int getWidth() const { return width_; }
@@ -117,9 +120,13 @@ namespace Graphics
         EnoFramebuffer();
         ~EnoFramebuffer();
 
+        /** @brief Create the framebuffer with the given dimensions. */
         bool create(int width, int height);
+        /** @brief Bind this framebuffer as the active render target. */
         void bind() const;
+        /** @brief Unbind this framebuffer, restoring the default render target. */
         void unbind() const;
+        /** @brief Resize the framebuffer and its attachments to new dimensions. */
         void resize(int width, int height);
 
         GLuint getTextureID() const { return textureID_; }
@@ -144,6 +151,7 @@ namespace Graphics
         int frameWidth = 0;
         int frameHeight = 0;
 
+        /** @brief Compute per-frame dimensions from the full texture size and grid layout. */
         void computeFrameSize() {
             if (texture && texture->getWidth() > 0 && texture->getHeight() > 0) {
                 frameWidth = texture->getWidth() / cols;
@@ -163,16 +171,25 @@ namespace Graphics
         EnoShader() : programID_(0) {}
         ~EnoShader();
 
+        /** @brief Compile and link a shader program from vertex and fragment source strings. */
         bool loadFromStrings(const std::string& vertexSource, const std::string& fragmentSource);
+        /** @brief Activate this shader program for subsequent draw calls. */
         void use() const;
+        /** @brief Deactivate the current shader program. */
         void unuse() const;
 
         // Uniform setters
+        /** @brief Set a 4x4 matrix uniform by name. */
         void setMatrix4(const std::string& name, const float* matrix) const;
+        /** @brief Set a vec2 uniform by name. */
         void setVector2(const std::string& name, float x, float y) const;
+        /** @brief Set a color uniform (vec4) by name. */
         void setColor(const std::string& name, const Color& color) const;
+        /** @brief Set a float uniform by name. */
         void setFloat(const std::string& name, float value) const;
+        /** @brief Set an integer uniform by name. */
         void setInt(const std::string& name, int value) const;
+        /** @brief Set an integer array uniform by name. */
         void setIntArray(const std::string& name, int* values, int count) const;
 
         bool isValid() const { return programID_ != 0; }
@@ -192,9 +209,13 @@ namespace Graphics
         EnoVertexBuffer();
         ~EnoVertexBuffer();
 
+        /** @brief Upload vertex data to the GPU buffer. */
         void uploadData(const std::vector<Vertex>& vertices);
+        /** @brief Bind this vertex buffer for rendering. */
         void bind() const;
+        /** @brief Unbind the vertex buffer. */
         void unbind() const;
+        /** @brief Issue a draw call using the specified primitive type. */
         void draw(GLenum primitiveType) const;
 
         size_t getVertexCount() const { return vertexCount_; }
@@ -214,18 +235,22 @@ namespace Graphics
         EnoGraphicsManager(Event::EnoEventBus& bus);
         ~EnoGraphicsManager();
 
-        // Initialize the graphics system
+        /** @brief Initialize the graphics system (shaders, buffers, textures). */
         void initialize(Window::EnoWindow& windowMng);
+        /** @brief Shut down the graphics system and release all GPU resources. */
         void shutdown();
 
-        // Frame management
+        /** @brief Begin a new frame by clearing the screen with the given color. */
         void beginFrame(const Color& clearColor = Color::Black);
+        /** @brief End the current frame and swap buffers. */
         void endFrame(Window::EnoWindow& windowMng);
+        /** @brief Flush any pending batched vertices to the GPU. */
         void flush() {
             if (!batchVertices_.empty()) {
                 flushBatch(currentBatchPrimitiveType_);
             }
         }
+        /** @brief Re-activate the default shader and upload the current projection matrix. */
         void rebindDefaultShader() {
             if (defaultShader_ && defaultShader_->isValid()) {
                 defaultShader_->use();
@@ -233,20 +258,25 @@ namespace Graphics
             }
         }
 
-        // Immediate mode drawing functions
+        /** @brief Draw a point at the given position. */
         void drawPoint(const Math::eVec2<float>& position, const Color& color = Color::White, float size = 1.0f);
+        /** @brief Draw a line between two points. */
         void drawLine(const Math::eVec2<float>& start, const Math::eVec2<float>& end, const Color& color = Color::White, float thickness = 1.0f);
+        /** @brief Draw a triangle from three vertices. */
         void drawTriangle(const Math::eVec2<float>& p1, const Math::eVec2<float>& p2, const Math::eVec2<float>& p3, const Color& color = Color::White, bool filled = true);
+        /** @brief Draw an axis-aligned rectangle with optional rotation. */
         void drawRect(const Math::eVec2<float>& position, const Math::eVec2<float>& size, const Color& color = Color::White, bool filled = true, float rotation = 0.0f);
+        /** @brief Draw a circle approximated by line segments. */
         void drawCircle(const Math::eVec2<float>& center, float radius, const Color& color = Color::White, bool filled = true, int segments = 32);
 
-        // Textured drawing functions
+        /** @brief Draw a textured quad at the given position and size. */
         void drawTexturedQuad(const Math::eVec2<float>& position,
             const Math::eVec2<float>& size,
             std::shared_ptr<EnoTexture> texture,
             const Color& tint = Color::White,
             float rotation = 0.0f);
 
+        /** @brief Draw a textured quad with explicit UV start/end coordinates. */
         void drawTexturedQuadUV(const Math::eVec2<float>& position,
             const Math::eVec2<float>& size,
             std::shared_ptr<EnoTexture> texture,
@@ -255,7 +285,7 @@ namespace Graphics
             const Color& tint = Color::White,
             float rotation = 0.0f);
 
-        // Per-corner UV variant — used for tile rotation
+        /** @brief Draw a textured quad with per-corner UV coordinates (used for tile rotation). */
         void drawTexturedQuadUVCorners(const Math::eVec2<float>& position,
             const Math::eVec2<float>& size,
             std::shared_ptr<EnoTexture> texture,
@@ -265,13 +295,14 @@ namespace Graphics
             const Math::eVec2<float>& uvBL,
             const Color& tint = Color::White);
 
-        // Text drawing function
+        /** @brief Draw text in world space using the given font. */
         void drawText(const std::shared_ptr<Font::EnoFont>& font,
             const std::string& text,
             const Math::eVec2<float>& position,
             float scale,
             const Color& color);
 
+        /** @brief Draw text in screen space (pixel coordinates). */
         void drawTextScreen(const std::shared_ptr<Font::EnoFont>& font,
             const std::string& text,
             const Math::eVec2<float>& position,
@@ -280,8 +311,9 @@ namespace Graphics
             float screenWidth,
             float screenHeight);
 
-        // Camera/projection management
+        /** @brief Recompute the orthographic projection matrix from window dimensions. */
         void setProjectionMatrix(int windowWidth, int windowHeight);
+        /** @brief Set the projection matrix from a raw 4x4 float array. */
         void setProjectionMatrix(const float* matrix);
 
         // Override the pixel dimensions used for glViewport inside updateCamera().
@@ -306,7 +338,7 @@ namespace Graphics
         bool isInitialized() const { return initialized_; }
         std::unordered_map<std::string, std::shared_ptr<EnoTexture>> texMap() const { return texMap_; }
 
-        // Map texture
+        /** @brief Register a texture in the global texture map by its path. */
         void mapTexture(const TextureMapping& e);
 
         // Restore animation controllers from serialized component data (when dirty),
@@ -396,7 +428,7 @@ namespace Graphics
         void bindTextures();
     };
 
-    // Conversion functions
+    /** @brief Convert a screen-space position to world-space coordinates using the viewport and camera offset. */
     inline Math::eVec2<float> screenToWorld(const Math::eVec2<float>& screenPos, const Math::eVec2<float>& imageMin, const Math::eVec2<float>& imageMax, float viewPortWidth, float viewPortHeight, float cameraX, float cameraY)
     {
         // Get mouse position relative to the image (0.0 to 1.0)
@@ -417,6 +449,7 @@ namespace Graphics
         return { worldX, worldY };
     }
 
+    /** @brief Convert a world-space position to screen-space coordinates using the viewport and camera offset. */
     inline Math::eVec2<float> worldToScreen(const Math::eVec2<float>& worldPos, const Math::eVec2<float>& imageMin, const Math::eVec2<float>& imageMax, float viewPortWidth, float viewPortHeight, float cameraX, float cameraY)
     {
         // Subtract camera offset to convert world space to screen space

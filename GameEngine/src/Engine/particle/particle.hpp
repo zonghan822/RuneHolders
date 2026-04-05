@@ -24,6 +24,7 @@ struct Particle {
     float r = 1.0f, g = 1.0f, b = 1.0f, a = 1.0f;  // Color components
     bool active = false;
 
+    /** @brief Advance the particle by one time step, applying gravity, drag, and rotation. */
     void update(float deltaTime, const Math::eVec2<float>& gravity, float drag);
 
     // Get interpolation factor (0.0 = just born, 1.0 = dead)
@@ -33,14 +34,15 @@ struct Particle {
     }
 };
 
+/** @brief Fixed-capacity pool that recycles inactive particles to avoid allocations. */
 class ParticlePool {
 public:
     explicit ParticlePool(size_t capacity = 200);
 
-    // Activate a new particle and return pointer to it (nullptr if pool is full)
+    /** @brief Activate the next available particle and return a pointer to it, or nullptr if full. */
     Particle* activateParticle();
 
-    // Update all active particles
+    /** @brief Update all active particles by one time step and deactivate expired ones. */
     void updateAll(float deltaTime, const Math::eVec2<float>& gravity, float drag);
 
     // Get active particle count
@@ -50,10 +52,10 @@ public:
     const std::vector<Particle>& getParticles() const { return particles_; }
     std::vector<Particle>& getParticles() { return particles_; }
 
-    // Reset all particles to inactive
+    /** @brief Deactivate all particles and reset the active count to zero. */
     void reset();
 
-    // Resize pool capacity
+    /** @brief Resize the pool to a new capacity, deactivating all existing particles. */
     void resize(size_t newCapacity);
 
 private:

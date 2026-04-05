@@ -34,9 +34,13 @@ public:
 	void setHasTilemap(bool v) { hasTilemap_ = v; if (!v) editMode_ = false; }
 	void selectLayer(int layerId) { selectedLayer_ = layerId; }
 
+	/** @brief Renders the map editor ImGui menu (layer selection, tilemap options). */
 	void displayMenu();
+	/** @brief Renders the tileset selection and preview panel. */
 	void displayTilesetMenu(Resources::EnoLoader& loader);
+	/** @brief Handles mouse input to paint tiles onto the active layer. */
 	void paint(EditorApplication* g);
+	/** @brief Draws the tilemap grid overlay onto the given ImGui draw list. */
 	void draw(EditorApplication* g, ImDrawList* drawList);
 
 

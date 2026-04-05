@@ -58,6 +58,7 @@ namespace ECSComponents
 			// of calling save() on every single preset made
 			//
 			// Expanding the PRESET_LIST macro to call savePreset => save in the Prefab class
+			/** @brief Iterate over all presets in PRESET_LIST and save each one via the given Prefab manager. */
 			template <typename Prefab>
 		static void saveAll(Prefab& prefab)
 		{
@@ -66,20 +67,14 @@ namespace ECSComponents
 #undef PRESET
 		}
 
-		// Template arguments are essentially => prefab class | preset from PRESET_LIST
-		// Using the prefab class to call the original save()
-		// 
-		// Fortunately, the type and the name of the file is exactly the same
-		// so we can pass in Name as the Preset(type), as well as being the file name
-		// through the savePreset call as savePreset<Prefab, Name>
-		// 
-		// Macro will decay the name string literal into a const char*
+		/** @brief Save a single preset by instantiating it and delegating to the Prefab manager's save(). */
 		template<typename Prefab, typename Preset>
 		static void savePreset(Prefab& p, const char* name)
 		{
 			p.save(name, Preset{}); // Instantiate the preset
 		}
 
+		/** @brief Load all presets in PRESET_LIST from disk via the given Prefab manager. */
 		template <typename Prefab>
 		static void loadAll(Prefab& prefab)
 		{
@@ -100,7 +95,7 @@ namespace ECSComponents
 			bus_{ bus }
 		{}
 
-		// Retrieving an instance of a saved prefab
+		/** @brief Retrieve a copy of a previously loaded prefab, reconstructed as a component tuple. */
 		template <typename Preset>
 		Preset retrieve()
 		{
@@ -135,7 +130,7 @@ namespace ECSComponents
 			return result;
 		}
 
-		// Register list of presets under PRESET_LIST
+		/** @brief Register all presets defined in PRESET_LIST into the name-to-type lookup map. */
 		void registerPresets()
 		{
 #define PRESET(Name, ...) presets_.emplace(#Name, std::type_index(typeid(Name)));
@@ -143,7 +138,7 @@ namespace ECSComponents
 #undef PRESET
 		}
 
-		// Save prefab data
+		/** @brief Serialize a prefab's component tuple to a text file on disk (skips if file already exists). */
 		template <typename Tuple>
 		void save(const std::string& name, Tuple&& tuple)
 		{
@@ -212,7 +207,7 @@ namespace ECSComponents
 			save << "}";
 		}
 
-		// Load prefab data
+		/** @brief Load prefab data from a text file on disk and store it in the prefab data map. */
 		void load(const std::string& name)
 		{
 			// Ensure that the name for the file to be opened
@@ -363,8 +358,7 @@ namespace ECSComponents
 			}
 		}
 
-		// Prints all prefabs 
-		// and their default values
+		/** @brief Print all loaded prefabs and their default component values to stdout. */
 		void viewPrefabs()
 		{
 			for (auto& [pType, inner] : prefabData_)
@@ -384,7 +378,7 @@ namespace ECSComponents
 			}
 		}
 
-		// View registered presets
+		/** @brief Print all registered preset names and their type info to stdout. */
 		void viewPresets()
 		{
 			for (const auto& [ptname, ptype] : presets_)
@@ -394,7 +388,7 @@ namespace ECSComponents
 			}
 		}
 
-		// Returns all loaded preset names (sorted)
+		/** @brief Return a sorted list of all registered preset names. */
 		std::vector<std::string> getPresetNames() const
 		{
 			std::vector<std::string> names;
@@ -405,9 +399,7 @@ namespace ECSComponents
 			return names;
 		}
 
-		// Returns a pointer to the component map for the named preset.
-		// Returns nullptr if the preset name is not found.
-		// Use EnoComponentRegistry::DeduceCompType to add each component to an entity.
+		/** @brief Return a read-only pointer to the component map for the named preset, or nullptr if not found. */
 		const std::unordered_map<std::type_index, std::any>* getPresetComponents(const std::string& name) const
 		{
 			auto presetIt = presets_.find(name);
@@ -421,8 +413,7 @@ namespace ECSComponents
 			return &prefabIt->second;
 		}
 
-		// Returns a mutable pointer to the component map for the named preset.
-		// Used by the prefab editor to modify default component values in-memory.
+		/** @brief Return a mutable pointer to the component map for the named preset (for editor modification). */
 		std::unordered_map<std::type_index, std::any>* getPresetComponentsMutable(const std::string& name)
 		{
 			auto presetIt = presets_.find(name);
@@ -436,7 +427,7 @@ namespace ECSComponents
 			return &prefabIt->second;
 		}
 
-		// Force-overwrites the prefab file on disk with the current in-memory data.
+		/** @brief Force-overwrite the prefab file on disk with the current in-memory component data. */
 		void saveForcedToDisk(const std::string& name)
 		{
 			auto presetIt = presets_.find(name);
@@ -496,15 +487,14 @@ namespace ECSComponents
 
 	// ===================== User Prefab API =====================
 
-		// Store or overwrite a named user prefab with the given component map, and save to disk.
-		// Call this from ImGui after building the component map from the selected entity.
+		/** @brief Store or overwrite a named user prefab with the given component map and persist it to disk. */
 		void setUserPrefab(const std::string& name, std::unordered_map<std::type_index, std::any> comps)
 		{
 			userPrefabData_[name] = std::move(comps);
 			saveUserPrefabToDisk(name);
 		}
 
-		// Write a user prefab to saves/prefabs/user_<name>.txt (same format as preset files).
+		/** @brief Write a user prefab to saves/prefabs/user_<name>.txt in the standard prefab format. */
 		void saveUserPrefabToDisk(const std::string& name)
 		{
 			auto it = userPrefabData_.find(name);
@@ -572,7 +562,7 @@ namespace ECSComponents
 			std::cout << "[UserPrefab] Saved '" << name << "' -> " << filename << "\n";
 		}
 
-		// Load one user prefab from saves/prefabs/user_<name>.txt into userPrefabData_.
+		/** @brief Load a single user prefab from saves/prefabs/user_<name>.txt into memory. */
 		void loadUserPrefab(const std::string& name)
 		{
 			std::filesystem::path filePath = FileSystem::GetAssetsDir() / "saves/prefabs" / ("user_" + name + ".txt");
@@ -697,7 +687,7 @@ namespace ECSComponents
 			}
 		}
 
-		// Scan saves/prefabs/ for user_*.txt files and load all of them.
+		/** @brief Scan saves/prefabs/ for all user_*.txt files and load them into memory. */
 		void loadAllUserPrefabs()
 		{
 			auto prefabDir = FileSystem::GetAssetsDir() / "saves/prefabs";
@@ -712,7 +702,7 @@ namespace ECSComponents
 			}
 		}
 
-		// Returns sorted names of all loaded user prefabs.
+		/** @brief Return a sorted list of all loaded user prefab names. */
 		std::vector<std::string> getUserPrefabNames() const
 		{
 			std::vector<std::string> names;
@@ -723,45 +713,47 @@ namespace ECSComponents
 			return names;
 		}
 
+		/** @brief Check whether a user prefab with the given name exists in memory. */
 		bool userPrefabExists(const std::string& name) const
 		{
 			return userPrefabData_.find(name) != userPrefabData_.end();
 		}
 
+		/** @brief Return a read-only pointer to the component map for the named user prefab, or nullptr if not found. */
 		const std::unordered_map<std::type_index, std::any>* getUserPrefabComponents(const std::string& name) const
 		{
 			auto it = userPrefabData_.find(name);
 			return it != userPrefabData_.end() ? &it->second : nullptr;
 		}
 
-		// Store the original node type (as uint32_t to avoid circular includes) for a user prefab.
+		/** @brief Store the node type for a user prefab and persist the change to disk. */
 		void setUserPrefabNodeType(const std::string& name, uint32_t nodeType)
 		{
 			userPrefabNodeTypes_[name] = nodeType;
 			saveUserPrefabToDisk(name);
 		}
 
-		// Returns the stored node type for a user prefab, or 1 (CUSTOM) if not set.
+		/** @brief Return the stored node type for a user prefab, or 1 (CUSTOM) if not set. */
 		uint32_t getUserPrefabNodeType(const std::string& name) const
 		{
 			auto it = userPrefabNodeTypes_.find(name);
 			return it != userPrefabNodeTypes_.end() ? it->second : 1u; // 1 = CUSTOM
 		}
 
-		// Store the script filename for a user prefab (call before setUserPrefab/setUserPrefabNodeType so it is included in the next disk save).
+		/** @brief Store the script filename for a user prefab (call before setUserPrefab so it is included in the next disk save). */
 		void setUserPrefabScript(const std::string& name, const std::string& scriptFilename)
 		{
 			userPrefabScripts_[name] = scriptFilename;
 		}
 
-		// Returns the saved script filename for a user prefab, or empty string if none.
+		/** @brief Return the saved script filename for a user prefab, or empty string if none. */
 		std::string getUserPrefabScript(const std::string& name) const
 		{
 			auto it = userPrefabScripts_.find(name);
 			return it != userPrefabScripts_.end() ? it->second : "";
 		}
 
-		// Remove a user prefab from memory and delete its file from disk.
+		/** @brief Remove a user prefab from memory and delete its file from disk. */
 		void deleteUserPrefab(const std::string& name)
 		{
 			userPrefabData_.erase(name);

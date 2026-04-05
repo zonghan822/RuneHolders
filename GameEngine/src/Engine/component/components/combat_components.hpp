@@ -60,7 +60,7 @@ namespace ECSComponents
         {
         }
 
-        // Take damage and return true if entity died
+        /** @brief Apply damage to this entity, returning true if the entity died. */
         bool takeDamage(float amount)
         {
             if (invulnerable || isDead) {
@@ -76,6 +76,7 @@ namespace ECSComponents
             return false;
         }
 
+        /** @brief Restore health by the given amount, clamped to maxHealth. */
         void heal(float amount)
         {
             if (isDead) return;
@@ -86,7 +87,7 @@ namespace ECSComponents
             }
         }
 
-        // Get health percentage (0.0 to 1.0)
+        /** @brief Get current health as a normalized ratio (0.0 to 1.0). */
         float getHealthPercentage() const
         {
             return maxHealth > 0.0f ? currentHealth / maxHealth : 0.0f;
@@ -168,7 +169,7 @@ namespace ECSComponents
             strcpy_s(damageType, "spell");
         }
 
-        // Get total damage after multipliers
+        /** @brief Get the effective damage after applying the damage multiplier. */
         float getTotalDamage() const
         {
             return damageAmount * damageMultiplier;

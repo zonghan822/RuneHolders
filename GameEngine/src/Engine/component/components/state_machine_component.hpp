@@ -28,7 +28,7 @@ namespace ECSComponents
             onExitMethod[0] = '\0';
         }
 
-        // Auto-generate method names based on state name
+        /** @brief Auto-generate enter/update/exit callback method names from the state name. */
         void generateMethodNames() {
             if (name[0] != '\0') {
                 // Generate: statename_enter(), statename_update(), statename_exit()
@@ -46,7 +46,7 @@ namespace ECSComponents
         char currentState[32] = "None";
         float timeInState = 0.0f;
 
-        // Add a new state and auto-generate method names
+        /** @brief Register a new state by name, auto-generating its callback method names. Returns false if full or duplicate. */
         bool addState(const char* stateName) {
             if (numStates >= MAX_STATES) {
                 return false;
@@ -68,7 +68,7 @@ namespace ECSComponents
             return true;
         }
 
-        // Remove a state by name
+        /** @brief Remove a state by name, shifting remaining states down. Resets currentState if it was removed. */
         bool removeState(const char* stateName) {
             for (int i = 0; i < numStates; ++i) {
                 if (strcmp(states[i].name, stateName) == 0) {
@@ -88,7 +88,7 @@ namespace ECSComponents
             return false;
         }
 
-        // Get state info by name
+        /** @brief Look up a state by name, returning a pointer to its StateInfo or nullptr if not found. */
         StateInfo* getState(const char* stateName) {
             for (int i = 0; i < numStates; ++i) {
                 if (strcmp(states[i].name, stateName) == 0) {

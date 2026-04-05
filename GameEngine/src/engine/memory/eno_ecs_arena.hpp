@@ -70,6 +70,7 @@ namespace Memory
 
 		const std::vector<Block>& blocks() const { return blocks_; }
 
+		/** @brief Allocate aligned memory, expanding to a new block if the current one is full. */
 		void* alloc(size_t size, size_t alignment) override
 		{
 			Block& block = blocks_.back();
@@ -93,7 +94,7 @@ namespace Memory
 			return ptr;
 		}
 
-		// Ptr arithmetic will begin from the start of the arena
+		/** @brief Reset all block offsets to zero without releasing memory. */
 		void reset() override
 		{
 			for (auto& block : blocks_)
@@ -102,7 +103,7 @@ namespace Memory
 			}
 		}
 
-		// Frees all block memory and adds a new one
+		/** @brief Free all block memory and reinitialize with a single fresh block. */
 		void free()
 		{
 			for (auto& block : blocks_)
@@ -115,7 +116,7 @@ namespace Memory
 
 		// ----------------- Statistical Functions -----------------
 
-		// Returns the total capacity shared between all blocks of memory
+		/** @brief Return the total capacity across all allocated blocks. */
 		size_t capacity() const
 		{
 			size_t sum{};
@@ -125,7 +126,7 @@ namespace Memory
 			return sum;
 		}
 
-		// Returns all available memory
+		/** @brief Return the total number of bytes currently in use. */
 		size_t used() const
 		{
 			size_t sum{};
@@ -135,13 +136,13 @@ namespace Memory
 			return sum;
 		}
 
-		// Available memory remaining
+		/** @brief Return the remaining available memory (capacity minus used). */
 		size_t freeMem() const
 		{
 			return capacity() - used();
 		}
 
-		// Amount of external fragmentation within the arena
+		/** @brief Compute the external fragmentation ratio (wasted space / total capacity). */
 		float fragmentation() const
 		{
 			size_t wasted = 0;

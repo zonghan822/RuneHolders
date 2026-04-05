@@ -17,7 +17,9 @@ namespace Memory
 	{
 		virtual ~IAlloc() = default;
 
+		/** @brief Allocate a block of memory of the given size. */
 		virtual void* alloc(size_t) = 0;
+		/** @brief Reset the arena, reclaiming all allocated memory. */
 		virtual void reset() = 0;
 	};
 
@@ -27,7 +29,9 @@ namespace Memory
 
 		virtual ~IAlignedAlloc() = default;
 
+		/** @brief Allocate a block of memory with the given size and alignment. */
 		virtual void* alloc(size_t, size_t) = 0;
+		/** @brief Reset the arena, reclaiming all allocated memory. */
 		virtual void reset() = 0;
 	};
 }

@@ -25,6 +25,7 @@ namespace AI {
         // Remove saved path
         void clear();
 
+        /** @brief Return true if the agent currently holds a valid, non-exhausted path. */
         bool hasPath() const;
 
         // Step through nodes
@@ -33,6 +34,7 @@ namespace AI {
         // Move to next tile in the path
         void advance();
 
+        /** @brief Return the final destination tile of the current path. */
         Math::eVec2<int> getGoal() const;
 
         // Full path access

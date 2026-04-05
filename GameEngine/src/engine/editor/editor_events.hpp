@@ -35,7 +35,9 @@ namespace Editor
 	*//*========================================================================================*/
 	struct DestroyGameWindow {};
 
+	/** @brief Event published when the game finishes initialization. */
 	struct GameInitialized {};
+	/** @brief Event published when the game has fully stopped. */
 	struct GameStopped {};
 
 

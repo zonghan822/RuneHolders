@@ -202,12 +202,14 @@ namespace Animation
         // controllerID -> actual controller
         std::unordered_map<uint32_t, Animation::AnimationController> controllers; //this is where the entity's controller will be stored
 
+        /** @brief Allocate a new AnimationController and return its unique ID. */
         uint32_t createController() {
             uint32_t id = nextID++;
             controllers[id] = Animation::AnimationController();
             return id;
         }
 
+        /** @brief Retrieve an AnimationController by ID, or nullptr if not found. */
         Animation::AnimationController* get(uint32_t id) {
             auto it = controllers.find(id);
             if (it != controllers.end()) return &it->second;

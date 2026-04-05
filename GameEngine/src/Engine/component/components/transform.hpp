@@ -84,7 +84,7 @@ namespace ECSComponents
 		return os;
 	}
 
-	// Moves a node to newPos and offsets all descendant positions by the same delta.
+	/** @brief Move a scene-tree node to newPos and propagate the position delta to all descendant nodes. */
 	void moveNodeWithChildren(Editor::Node* node, Math::eVec2<float> newPos, ECS::EntityManager& entityMng);
 
 }

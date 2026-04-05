@@ -139,6 +139,13 @@ void displayAllEntitiesTab(Engine::EnoEngine& engine_, Editor::EnoSceneTree& sce
 void displayEntityInspector(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager, Editor::EnoSceneTree& sceneTree);
 
 
+/*============================================================================================
+ * \brief       Displays the asset presets tab for applying prefab presets to an entity
+ * \param[in]   Engine::EnoEngine& engine_
+ * \param[in]   ECS::Entity& entity
+ * \param[in]   Editor::UndoManager& undoManager
+ * \return      void
+*//*========================================================================================*/
 void assetPresetsTab(Engine::EnoEngine& engine_, ECS::Entity& entity, Editor::UndoManager& undoManager);
 
 /*============================================================================================

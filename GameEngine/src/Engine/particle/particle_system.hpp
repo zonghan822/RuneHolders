@@ -25,16 +25,18 @@ public:
     explicit ParticleSystem(Event::EnoEventBus& bus);
     ~ParticleSystem() = default;
 
-    // Main update loop - emission and physics
+    /** @brief Tick all emitters: spawn new particles and simulate existing ones. */
     void Update(ECS::EntityManager& entityManager, float deltaTime);
 
-    // Render particles for a single entity
+    /** @brief Draw all active particles belonging to a single entity. */
     void RenderEntity(Graphics::EnoGraphicsManager& graphics, ECS::EntityManager& entityManager,
                       uint32_t entityID);
 
-    // Manual control methods
+    /** @brief Immediately emit a fixed number of particles from an entity's emitter. */
     void EmitBurst(ECS::EntityManager& entityManager, uint32_t entityID, int count);
+    /** @brief Enable continuous emission for the given entity's particle emitter. */
     void StartEmission(ECS::EntityManager& entityManager, uint32_t entityID);
+    /** @brief Disable continuous emission for the given entity's particle emitter. */
     void StopEmission(ECS::EntityManager& entityManager, uint32_t entityID);
 
 private:
@@ -47,29 +49,31 @@ private:
     ECSComponents::ParticleEmitterComponent& GetEmitter(const ECS::EntityLoc& entityLoc);
     ECSComponents::TransformComponent& GetTransform(const ECS::EntityLoc& entityLoc);
 
-    // Get or create particle pool for entity
+    /** @brief Return the pool for an entity, creating one if it does not exist yet. */
     ParticlePool* getOrCreatePool(uint32_t entityID, int maxParticles);
 
-    // Remove pool for deleted entity
+    /** @brief Destroy the particle pool associated with a deleted entity. */
     void removePool(uint32_t entityID);
 
-    // Emit a single particle from emitter
+    /** @brief Spawn a single particle using the emitter's current settings. */
     void emitParticle(ECSComponents::ParticleEmitterComponent& emitter,
                      const Math::eVec2<float>& emitterPosition,
                      ParticlePool& pool);
 
-    // Update emitter emission logic
+    /** @brief Handle rate-based emission timing and spawn particles as needed. */
     void updateEmitter(ECSComponents::ParticleEmitterComponent& emitter,
                       const Math::eVec2<float>& emitterPosition,
                       ParticlePool& pool,
                       float deltaTime);
 
-    // Update particle colors based on lifetime
+    /** @brief Interpolate each particle's color between start and end based on lifetime ratio. */
     void updateParticleColors(ECSComponents::ParticleEmitterComponent& emitter, ParticlePool& pool);
 
-    // Random helper functions
+    /** @brief Return a uniformly distributed random float in [min, max]. */
     float randomRange(float min, float max);
+    /** @brief Generate a random initial velocity vector based on the emitter's shape and range. */
     Math::eVec2<float> randomVelocity(const ECSComponents::ParticleEmitterComponent& emitter);
+    /** @brief Generate a random spawn position within the emitter's emission shape. */
     Math::eVec2<float> randomPositionInShape(const ECSComponents::ParticleEmitterComponent& emitter);
 };
 

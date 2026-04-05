@@ -404,6 +404,7 @@ namespace Editor
 			return oss.str();
 		}
 
+		/** @brief Returns true if no transform snapshots have been captured. */
 		bool isEmpty() const
 		{
 			return oldTransforms_.empty() && newTransforms_.empty();

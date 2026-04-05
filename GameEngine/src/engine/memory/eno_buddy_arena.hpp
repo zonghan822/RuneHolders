@@ -79,7 +79,7 @@ namespace Memory
 			delete[] arena_;
 		}
 
-		// Allocation of memory based on passed size
+		/** @brief Allocate memory of the given size, rounded up to the nearest power-of-two block. */
 		void* alloc(size_t size)
 		{
 			if (size == 0) return nullptr;
@@ -138,6 +138,7 @@ namespace Memory
 			return block;
 		}
 
+		/** @brief Reset the arena by restoring the entire block as a single free region. */
 		void reset() override
 		{
 			freeLists_.fill(nullptr);
@@ -145,6 +146,7 @@ namespace Memory
 			freeLists_[order_]->next_ = nullptr;
 		}
 
+		/** @brief Free a previously allocated block, coalescing with its buddy if possible. */
 		void free(void* ptr)
 		{
 			if (!ptr) return;
@@ -198,6 +200,7 @@ namespace Memory
 			freeLists_[blockOrder] = b;
 		}
 
+		/** @brief Calculate the total free memory across all free lists. */
 		size_t totalFreeMemory()
 		{
 			size_t total{};
@@ -217,7 +220,7 @@ namespace Memory
 			return total;
 		}
 
-		// Largest freeMem block
+		/** @brief Return the size of the largest contiguous free block. */
 		size_t largestFreeBlock()
 		{
 			for (size_t order = order_ + 1; order-- > 0;)
@@ -230,7 +233,7 @@ namespace Memory
 			return 0;
 		}
 
-		// Fragmentation
+		/** @brief Compute the external fragmentation ratio (0.0 = none, approaching 1.0 = severe). */
 		double fragmentation()
 		{
 			size_t total = totalFreeMemory();

@@ -263,10 +263,13 @@ namespace Engine
 		*//*========================================================================================*/
 		Collision::CollisionSystem* getCollisionSystem() { return collisionSys_.get(); }
 
+		/** @brief Gets the tile map system for tile-based level data. */
 		Map::TileMapSystem& getTileMap() { return *tilemapSystem_; }
 
+		/** @brief Gets the A* pathfinding system used by AI agents. */
 		AI::PathfindingSystem& getPathfinder() { return *pathfinder_; }
 
+		/** @brief Gets the AI manager for enemy behavior and awareness. */
 		AI::AIManager& getAIManager() { return *aiMng_; }
 
 		/*============================================================================================

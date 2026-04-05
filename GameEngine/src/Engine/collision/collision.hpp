@@ -434,6 +434,7 @@ namespace Collision
 	*//*========================================================================================*/	
 	void RunBasicCollisionTest();
 
+	/** @brief Compute the four world-space corners of a rotated rectangle. */
 	void GetRotatedRectangleCorners(
 		const Math::eVec2<float>& center,
 		float width,

@@ -80,6 +80,7 @@ namespace ECSComponents {
 			return isActive;
 		}
 
+		/** @brief Set the name of the target scene object this button is linked to. */
 		void setTargetObject(const std::string& objName)
 		{
 			size_t copy_length = Math::minValue(objName.length(), (size_t)63);
@@ -87,11 +88,13 @@ namespace ECSComponents {
 			targetObject[copy_length] = '\0';
 		}
 
+		/** @brief Get the name of the target scene object this button is linked to. */
 		std::string getTargetObject() const
 		{
 			return std::string(targetObject);
 		}
 
+		/** @brief Get a mutable reference to the map of signals owned by this button. */
 		std::unordered_map<std::string, Events::EnoSignal>& getSignalMap()
 		{
 			return signals_;
