@@ -110,11 +110,7 @@ namespace Eno
                     CompleteFade();
             }
 
-            // Keep the main spellbook texture in sync every frame (handles controller/keyboard
-            // switching and guards against canvas visibility resets).
-            // Blocked only while a fade is actively running — _activeKBTexture holds the OLD
-            // texture until CompleteFade promotes pending → active, so this never leaks the
-            // new texture prematurely.
+ 
             if (_spellbookUIID != 0 && _activeKBTexture != null && !_fadeActive)
             {
                 Bridge.SetTexturePath(_spellbookUIID, isController ? _activeCtrlTexture! : _activeKBTexture!);
