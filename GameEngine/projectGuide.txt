@@ -173,11 +173,31 @@ based on the configuration.
 ----------------------------------------------------------
 7. Assets & Scripts
 ----------------------------------------------------------
-- Assets (textures, shaders, sounds, fonts, scripts) are stored under:
-  `assets/`
+Assets are organized under `assets/` by project:
+
+  assets/
+    Editor/           Editor-specific settings
+    RuneWeavers/      Game project assets
+      art/            Textures and sprite sheets
+      crashlogs/      Runtime crash logs
+      fonts/          .ttf / .otf font files
+      saves/
+        prefabs/      Prefab definitions (.txt)
+        scenes/       Scene files (.txt)
+      settings/       Config files (config.txt)
+      shaders/        GLSL vertex/fragment shaders
+      sound/          Audio files (FMOD-compatible)
+      video/          Video files (.mp4)
+
+C# scripts are under `scripts/`:
+
+  scripts/
+    Core/             Engine scripting API (Bridge, Node types, Input, etc.)
+    RuneWeavers/      Game-specific scripts (user_scripts/)
+
 - During build, assets and scripts are copied into:
   `build/projects/Apps/$<Config>/`
-- C# scripts are built into `build/projects/Apps/$<Config>/` and loaded at runtime
+- C# scripts are compiled by .NET SDK and loaded at runtime
   through the .NET runtime host.
 
 ----------------------------------------------------------
