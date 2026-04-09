@@ -1,0 +1,266 @@
+{
+	"NodeType": {
+		"value": "3",
+		"type": "uint32_t"
+	},
+	"struct ECSComponents::VisibilityComponent": {
+		"Z Index": {
+			"value": "3",
+			"type": "uint32_t"
+		},
+		"Visible": {
+			"value": "1",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::RenderComponent": {
+		"Width": {
+			"value": "160",
+			"type": "float"
+		},
+		"Height": {
+			"value": "160",
+			"type": "float"
+		},
+		"Shape": {
+			"value": "Rectangle",
+			"type": "char32"
+		},
+		"Color": {
+			"value": "r : 1 | g : 1 | b : 1 | a : 1",
+			"type": "Color(RGBA)"
+		},
+		"Texture Path": {
+			"value": "Stopwatch-FadeOut-Sheet",
+			"type": "texchar240"
+		},
+		"TexID": {
+			"value": "0",
+			"type": "int"
+		},
+		"UV Start": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"UV End": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::TransformComponent": {
+		"Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Rotation": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Scale": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		},
+		"Reset Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::StateMachineComponent": {
+		"NumStates": {
+			"value": "3",
+			"type": "int"
+		},
+		"CurrentState": {
+			"value": "None",
+			"type": "char32"
+		},
+		"TimeInState": {
+			"value": "0",
+			"type": "float"
+		},
+		"State[0].name": {
+			"value": "FadeIn",
+			"type": "char32"
+		},
+		"State[0].onEnter": {
+			"value": "FadeIn_enter",
+			"type": "char64"
+		},
+		"State[0].onUpdate": {
+			"value": "FadeIn_update",
+			"type": "char64"
+		},
+		"State[0].onExit": {
+			"value": "FadeIn_exit",
+			"type": "char64"
+		},
+		"State[1].name": {
+			"value": "Idle",
+			"type": "char32"
+		},
+		"State[1].onEnter": {
+			"value": "Idle_enter",
+			"type": "char64"
+		},
+		"State[1].onUpdate": {
+			"value": "Idle_update",
+			"type": "char64"
+		},
+		"State[1].onExit": {
+			"value": "Idle_exit",
+			"type": "char64"
+		},
+		"State[2].name": {
+			"value": "FadeOut",
+			"type": "char32"
+		},
+		"State[2].onEnter": {
+			"value": "FadeOut_enter",
+			"type": "char64"
+		},
+		"State[2].onUpdate": {
+			"value": "FadeOut_update",
+			"type": "char64"
+		},
+		"State[2].onExit": {
+			"value": "FadeOut_exit",
+			"type": "char64"
+		}
+	},
+	"struct ECSComponents::LayerComponent": {
+		"Layer": {
+			"value": "NULL",
+			"type": "char32"
+		}
+	},
+	"struct ECSComponents::AnimationControllerComponent": {
+		"Frame Width": {
+			"value": "160",
+			"type": "int"
+		},
+		"Frame Height": {
+			"value": "160",
+			"type": "int"
+		},
+		"Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Cols": {
+			"value": "4",
+			"type": "int"
+		},
+		"Frame Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Animation Count": {
+			"value": "3",
+			"type": "int"
+		},
+		"Current Animation": {
+			"value": "FadeOut",
+			"type": "char64"
+		},
+		"Anim0 Name": {
+			"value": "FadeIn",
+			"type": "char64"
+		},
+		"Anim0 Texture": {
+			"value": "Stopwatch-FadeIn-Sheet",
+			"type": "texchar240"
+		},
+		"Anim0 FrameW": {
+			"value": "160",
+			"type": "int"
+		},
+		"Anim0 FrameH": {
+			"value": "160",
+			"type": "int"
+		},
+		"Anim0 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim0 Cols": {
+			"value": "4",
+			"type": "int"
+		},
+		"Anim0 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim0 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim1 Name": {
+			"value": "Idle",
+			"type": "char64"
+		},
+		"Anim1 Texture": {
+			"value": "Stopwatch-Idle-Sheet",
+			"type": "texchar240"
+		},
+		"Anim1 FrameW": {
+			"value": "160",
+			"type": "int"
+		},
+		"Anim1 FrameH": {
+			"value": "160",
+			"type": "int"
+		},
+		"Anim1 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim1 Cols": {
+			"value": "6",
+			"type": "int"
+		},
+		"Anim1 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim1 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim2 Name": {
+			"value": "FadeOut",
+			"type": "char64"
+		},
+		"Anim2 Texture": {
+			"value": "Stopwatch-FadeOut-Sheet",
+			"type": "texchar240"
+		},
+		"Anim2 FrameW": {
+			"value": "160",
+			"type": "int"
+		},
+		"Anim2 FrameH": {
+			"value": "160",
+			"type": "int"
+		},
+		"Anim2 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim2 Cols": {
+			"value": "4",
+			"type": "int"
+		},
+		"Anim2 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim2 Looping": {
+			"value": "1",
+			"type": "bool"
+		}
+	},
+}

@@ -1,0 +1,12 @@
+Engine Version: 0.0001a
+Window Title: RuneWeavers
+Window Width: 1920
+Window Height: 1080
+Fullscreen: true
+VSync: true
+Tilemap Width: 30
+Tilemap Height: 17
+Tilemap CellSize: 64
+Audio SFX: 41.818211
+Audio Master: 86.363609
+Audio BGM: 70.909065

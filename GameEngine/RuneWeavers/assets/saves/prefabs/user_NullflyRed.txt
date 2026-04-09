@@ -1,0 +1,700 @@
+{
+	"NodeType": {
+		"value": "13",
+		"type": "uint32_t"
+	},
+	"Script": {
+		"value": "NullflyRed_Script.cs",
+		"type": "string"
+	},
+	"struct ECSComponents::VisibilityComponent": {
+		"Z Index": {
+			"value": "3",
+			"type": "uint32_t"
+		},
+		"Visible": {
+			"value": "1",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::AIComponent": {
+		"awarenessRadius": {
+			"value": "200",
+			"type": "float"
+		},
+		"chaseSpeed": {
+			"value": "90",
+			"type": "float"
+		},
+		"allowDiagonal": {
+			"value": "1",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::CollisionComponent": {
+		"Type": {
+			"value": "Rectangle",
+			"type": "ColliderType"
+		},
+		"Offset": {
+			"value": "x : 2 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Is Trigger": {
+			"value": "0",
+			"type": "bool"
+		},
+		"Is Active": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Is Static": {
+			"value": "0",
+			"type": "bool"
+		},
+		"Rotation": {
+			"value": "0",
+			"type": "float"
+		},
+		"Width": {
+			"value": "45.5",
+			"type": "float"
+		},
+		"Height": {
+			"value": "60",
+			"type": "float"
+		}
+	},
+	"struct ECSComponents::RenderComponent": {
+		"Width": {
+			"value": "64",
+			"type": "float"
+		},
+		"Height": {
+			"value": "64",
+			"type": "float"
+		},
+		"Shape": {
+			"value": "Rectangle",
+			"type": "char32"
+		},
+		"Color": {
+			"value": "r : 1 | g : 1 | b : 1 | a : 1",
+			"type": "Color(RGBA)"
+		},
+		"Texture Path": {
+			"value": "Enemy-NullflyRed-Spawn-Sheet",
+			"type": "texchar240"
+		},
+		"TexID": {
+			"value": "0",
+			"type": "int"
+		},
+		"UV Start": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"UV End": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::TransformComponent": {
+		"Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Rotation": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Scale": {
+			"value": "x : 1 | y : 1",
+			"type": "eVec2(float)"
+		},
+		"Reset Position": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::LayerComponent": {
+		"Layer": {
+			"value": "NULL",
+			"type": "char32"
+		}
+	},
+	"struct ECSComponents::PhysicsComponent": {
+		"Velocity": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Acceleration": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Force": {
+			"value": "x : 0 | y : 0",
+			"type": "eVec2(float)"
+		},
+		"Mass": {
+			"value": "1",
+			"type": "float"
+		},
+		"Drag": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Restitution": {
+			"value": "0.5",
+			"type": "float"
+		},
+		"UseGravity": {
+			"value": "0",
+			"type": "bool"
+		},
+		"IsKinematic": {
+			"value": "0",
+			"type": "bool"
+		},
+		"FreezeRotation": {
+			"value": "1",
+			"type": "bool"
+		},
+		"VelocityMin": {
+			"value": "x : -1000 | y : -1000",
+			"type": "eVec2(float)"
+		},
+		"VelocityMax": {
+			"value": "x : 1000 | y : 1000",
+			"type": "eVec2(float)"
+		}
+	},
+	"struct ECSComponents::AnimationControllerComponent": {
+		"Frame Width": {
+			"value": "64",
+			"type": "int"
+		},
+		"Frame Height": {
+			"value": "64",
+			"type": "int"
+		},
+		"Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Cols": {
+			"value": "4",
+			"type": "int"
+		},
+		"Frame Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Animation Count": {
+			"value": "9",
+			"type": "int"
+		},
+		"Current Animation": {
+			"value": "Spawn",
+			"type": "char64"
+		},
+		"Anim0 Name": {
+			"value": "Spawn",
+			"type": "char64"
+		},
+		"Anim0 Texture": {
+			"value": "Enemy-NullflyRed-Spawn-Sheet",
+			"type": "texchar240"
+		},
+		"Anim0 FrameW": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim0 FrameH": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim0 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim0 Cols": {
+			"value": "5",
+			"type": "int"
+		},
+		"Anim0 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim0 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim1 Name": {
+			"value": "Idle",
+			"type": "char64"
+		},
+		"Anim1 Texture": {
+			"value": "Enemy-NullflyRed-Idle-Sheet",
+			"type": "texchar240"
+		},
+		"Anim1 FrameW": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim1 FrameH": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim1 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim1 Cols": {
+			"value": "7",
+			"type": "int"
+		},
+		"Anim1 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim1 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim2 Name": {
+			"value": "Shocked",
+			"type": "char64"
+		},
+		"Anim2 Texture": {
+			"value": "Enemy-NullflyRed-Shocked-Sheet",
+			"type": "texchar240"
+		},
+		"Anim2 FrameW": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim2 FrameH": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim2 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim2 Cols": {
+			"value": "3",
+			"type": "int"
+		},
+		"Anim2 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim2 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim3 Name": {
+			"value": "WindUp",
+			"type": "char64"
+		},
+		"Anim3 Texture": {
+			"value": "Enemy-NullflyRed-WindUp-Sheet",
+			"type": "texchar240"
+		},
+		"Anim3 FrameW": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim3 FrameH": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim3 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim3 Cols": {
+			"value": "3",
+			"type": "int"
+		},
+		"Anim3 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim3 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim4 Name": {
+			"value": "Channel",
+			"type": "char64"
+		},
+		"Anim4 Texture": {
+			"value": "Enemy-NullflyRed-Channel-Sheet",
+			"type": "texchar240"
+		},
+		"Anim4 FrameW": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim4 FrameH": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim4 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim4 Cols": {
+			"value": "8",
+			"type": "int"
+		},
+		"Anim4 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim4 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim5 Name": {
+			"value": "Frozen",
+			"type": "char64"
+		},
+		"Anim5 Texture": {
+			"value": "Enemy-NullflyRed-Frozen-Sheet",
+			"type": "texchar240"
+		},
+		"Anim5 FrameW": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim5 FrameH": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim5 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim5 Cols": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim5 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim5 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim6 Name": {
+			"value": "Hurt",
+			"type": "char64"
+		},
+		"Anim6 Texture": {
+			"value": "Enemy-NullflyRed-Hurt-Sheet",
+			"type": "texchar240"
+		},
+		"Anim6 FrameW": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim6 FrameH": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim6 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim6 Cols": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim6 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim6 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim7 Name": {
+			"value": "Death",
+			"type": "char64"
+		},
+		"Anim7 Texture": {
+			"value": "Enemy-NullflyRed-Death-Sheet",
+			"type": "texchar240"
+		},
+		"Anim7 FrameW": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim7 FrameH": {
+			"value": "64",
+			"type": "int"
+		},
+		"Anim7 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim7 Cols": {
+			"value": "4",
+			"type": "int"
+		},
+		"Anim7 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim7 Looping": {
+			"value": "1",
+			"type": "bool"
+		},
+		"Anim8 Name": {
+			"value": "Prespawn",
+			"type": "char64"
+		},
+		"Anim8 Texture": {
+			"value": "SpawnCircle-Sheet",
+			"type": "texchar240"
+		},
+		"Anim8 FrameW": {
+			"value": "128",
+			"type": "int"
+		},
+		"Anim8 FrameH": {
+			"value": "128",
+			"type": "int"
+		},
+		"Anim8 Rows": {
+			"value": "1",
+			"type": "int"
+		},
+		"Anim8 Cols": {
+			"value": "8",
+			"type": "int"
+		},
+		"Anim8 Duration": {
+			"value": "0.1",
+			"type": "float"
+		},
+		"Anim8 Looping": {
+			"value": "0",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::HealthComponent": {
+		"currentHealth": {
+			"value": "100",
+			"type": "float"
+		},
+		"maxHealth": {
+			"value": "100",
+			"type": "float"
+		},
+		"isDead": {
+			"value": "0",
+			"type": "bool"
+		},
+		"invulnerable": {
+			"value": "0",
+			"type": "bool"
+		},
+		"invulnerabilityTimer": {
+			"value": "0",
+			"type": "float"
+		}
+	},
+	"struct ECSComponents::DamageComponent": {
+		"damageAmount": {
+			"value": "10",
+			"type": "float"
+		},
+		"damageMultiplier": {
+			"value": "1",
+			"type": "float"
+		},
+		"destroyOnHit": {
+			"value": "0",
+			"type": "bool"
+		},
+		"damageType": {
+			"value": "physical",
+			"type": "char32"
+		},
+		"spellColor": {
+			"value": "0",
+			"type": "int"
+		},
+		"useColorMatching": {
+			"value": "0",
+			"type": "bool"
+		}
+	},
+	"struct ECSComponents::StateMachineComponent": {
+		"NumStates": {
+			"value": "9",
+			"type": "int"
+		},
+		"CurrentState": {
+			"value": "Prespawn",
+			"type": "char32"
+		},
+		"TimeInState": {
+			"value": "0",
+			"type": "float"
+		},
+		"State[0].name": {
+			"value": "Spawn",
+			"type": "char32"
+		},
+		"State[0].onEnter": {
+			"value": "Spawn_enter",
+			"type": "char64"
+		},
+		"State[0].onUpdate": {
+			"value": "Spawn_update",
+			"type": "char64"
+		},
+		"State[0].onExit": {
+			"value": "Spawn_exit",
+			"type": "char64"
+		},
+		"State[1].name": {
+			"value": "Idle",
+			"type": "char32"
+		},
+		"State[1].onEnter": {
+			"value": "Idle_enter",
+			"type": "char64"
+		},
+		"State[1].onUpdate": {
+			"value": "Idle_update",
+			"type": "char64"
+		},
+		"State[1].onExit": {
+			"value": "Idle_exit",
+			"type": "char64"
+		},
+		"State[2].name": {
+			"value": "Shocked",
+			"type": "char32"
+		},
+		"State[2].onEnter": {
+			"value": "Shocked_enter",
+			"type": "char64"
+		},
+		"State[2].onUpdate": {
+			"value": "Shocked_update",
+			"type": "char64"
+		},
+		"State[2].onExit": {
+			"value": "Shocked_exit",
+			"type": "char64"
+		},
+		"State[3].name": {
+			"value": "WindUp",
+			"type": "char32"
+		},
+		"State[3].onEnter": {
+			"value": "WindUp_enter",
+			"type": "char64"
+		},
+		"State[3].onUpdate": {
+			"value": "WindUp_update",
+			"type": "char64"
+		},
+		"State[3].onExit": {
+			"value": "WindUp_exit",
+			"type": "char64"
+		},
+		"State[4].name": {
+			"value": "Channel",
+			"type": "char32"
+		},
+		"State[4].onEnter": {
+			"value": "Channel_enter",
+			"type": "char64"
+		},
+		"State[4].onUpdate": {
+			"value": "Channel_update",
+			"type": "char64"
+		},
+		"State[4].onExit": {
+			"value": "Channel_exit",
+			"type": "char64"
+		},
+		"State[5].name": {
+			"value": "Frozen",
+			"type": "char32"
+		},
+		"State[5].onEnter": {
+			"value": "Frozen_enter",
+			"type": "char64"
+		},
+		"State[5].onUpdate": {
+			"value": "Frozen_update",
+			"type": "char64"
+		},
+		"State[5].onExit": {
+			"value": "Frozen_exit",
+			"type": "char64"
+		},
+		"State[6].name": {
+			"value": "Hurt",
+			"type": "char32"
+		},
+		"State[6].onEnter": {
+			"value": "Hurt_enter",
+			"type": "char64"
+		},
+		"State[6].onUpdate": {
+			"value": "Hurt_update",
+			"type": "char64"
+		},
+		"State[6].onExit": {
+			"value": "Hurt_exit",
+			"type": "char64"
+		},
+		"State[7].name": {
+			"value": "Death",
+			"type": "char32"
+		},
+		"State[7].onEnter": {
+			"value": "Death_enter",
+			"type": "char64"
+		},
+		"State[7].onUpdate": {
+			"value": "Death_update",
+			"type": "char64"
+		},
+		"State[7].onExit": {
+			"value": "Death_exit",
+			"type": "char64"
+		},
+		"State[8].name": {
+			"value": "Prespawn",
+			"type": "char32"
+		},
+		"State[8].onEnter": {
+			"value": "Prespawn_enter",
+			"type": "char64"
+		},
+		"State[8].onUpdate": {
+			"value": "Prespawn_update",
+			"type": "char64"
+		},
+		"State[8].onExit": {
+			"value": "Prespawn_exit",
+			"type": "char64"
+		}
+	},
+}
