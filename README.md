@@ -1,7 +1,5 @@
 # RuneWeavers
 
-![RuneWeavers title art](GameEngine/assets/RuneWeavers/art/UI-TitleScreen-M5/Title-Art-1.png)
-
 **RuneWeavers** is a top-down dungeon-crawler where you cast spells by drawing rune patterns. Connect runes on the rune wheel to form red, yellow, or blue spells, read which enemy is the biggest threat, and hit it with the element it's weak to as you fight through the Witch's mansion.
 
 It was built by team **RuneHolders** (8 people) for GAM200 at DigiPen Institute of Technology Singapore. We wrote our own C++20 engine, **EnoEngine**, with no commercial engine underneath. It comes with an ImGui level editor and C# gameplay scripting.
