@@ -6,6 +6,16 @@
 
 It was built by team **RuneHolders** (8 people) for GAM200 at DigiPen Institute of Technology Singapore. We wrote our own C++20 engine, **EnoEngine**, with no commercial engine underneath. It comes with an ImGui level editor and C# gameplay scripting.
 
+## Play & watch
+
+| | |
+|---|---|
+| 🎮 **Play it** | Download `RuneWeavers_Setup.exe` from the [latest release](https://github.com/zonghan822/RuneHolders/releases/latest) (Windows 10/11, x64) |
+| ▶️ **Gameplay video** | `RuneWeavers_Gameplay.mp4` on the [latest release](https://github.com/zonghan822/RuneHolders/releases/latest) |
+| 🛠️ **My contributions walkthrough** | `PersonalContribution_CSD2451_RuneHolders_LawZongHan.mp4` on the [latest release](https://github.com/zonghan822/RuneHolders/releases/latest) |
+| 🗺️ **Level editor showcase** | [`media/RuneHolders_LevelEditor_Showcase.mp4`](media/RuneHolders_LevelEditor_Showcase.mp4) |
+| 📑 **Final presentation** | [`media/RuneHolders_Presentation_Final.pdf`](media/RuneHolders_Presentation_Final.pdf) |
+
 ---
 
 ## My role: Zong Han Law (Graphics & Input Champion)
@@ -46,6 +56,14 @@ run.bat
 
 `run.bat` configures the project, builds it, and launches the editor. `ship.bat` packages a Release build of the game and launcher into `GameEngine/RuneWeavers/`. The full build guide is in [`GameEngine/projectGuide.txt`](GameEngine/projectGuide.txt).
 
+### Rebuilding the installer
+
+The installer is made with [Inno Setup](https://jrsoftware.org/isinfo.php) from [`Installer/InstallScript.iss`](Installer/InstallScript.iss):
+
+1. Run `GameEngine/ship.bat`, then copy the contents of `GameEngine/RuneWeavers/` into `Installer/GAMEDIRECTORY/` (next to the tracked `Icon.ico`).
+2. Put `VC_redist.x64.exe` ([Microsoft download](https://aka.ms/vs/17/release/vc_redist.x64.exe)) in `Installer/REDIST/`.
+3. Open `InstallScript.iss` in Inno Setup and compile. The output is `Installer/INSTALLER/RuneWeavers_Setup.exe`.
+
 ## Controls
 
 | Action | Keyboard / Mouse | Xbox controller |
@@ -68,6 +86,8 @@ GameEngine/
 ├── assets/          Art, audio, video, shaders, scenes, prefabs
 ├── cmake/           Dependency fetching and build helpers
 └── lib/             Prebuilt FMOD and FFmpeg
+Installer/           Inno Setup script, EULA, and icon
+media/               Level editor showcase and final presentation
 ```
 
 ## Team RuneHolders

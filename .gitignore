@@ -101,6 +101,18 @@ imgui.ini
 # Packaged game output from ship.bat / ship-Debug.bat
 /GameEngine/RuneWeavers/
 
+# Installer: only the Inno Setup script and its small support files are tracked.
+# GAMEDIRECTORY is a copy of the ship.bat output; the built setup exe and the
+# VC++ redistributable are uploaded to GitHub Releases instead.
+/Installer/GAMEDIRECTORY/*
+!/Installer/GAMEDIRECTORY/Icon.ico
+/Installer/INSTALLER/
+/Installer/REDIST/
+
+# Videos over GitHub's 100 MB file limit are hosted on GitHub Releases
+/media/RuneWeavers_Gameplay.mp4
+/media/PersonalContribution_*.mp4
+
 # Keep lib directory
 !GameEngine/lib/
 !GameEngine/lib/**
