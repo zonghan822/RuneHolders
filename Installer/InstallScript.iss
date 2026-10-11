@@ -85,12 +85,11 @@ Source: .\REDIST\VC_redist.x64.exe; DestDir: {tmp}; Flags: ignoreversion
 ;
 ; Directory Notes
 ;   {group} is the start menu location that the game will install shortcuts to.
-;   {commondesktop} is your Windows desktop directory.
+;   {autodesktop} is the all-users desktop when installing as admin, otherwise the current user's.
 [Icons]
-Name: {group}\RuneWeavers; Filename: {app}\RuneWeavers.exe; WorkingDir: {app}; IconFilename: "{app}\Icon.ico"
-Name: {group}\{cm:UninstallProgram,RuneWeavers}; Filename: {uninstallexe}
-Name: {group}\{cm:UninstallProgram,RuneWeavers}; Filename: {uninstallexe};  IconFilename: "{app}\Icon.ico"
-Name: {commondesktop}\RuneWeavers; Filename: {app}\RuneLauncher.exe; Tasks: desktopicon; WorkingDir: {app}; IconFilename: "{app}\Icon.ico"
+Name: {group}\RuneWeavers; Filename: {app}\RuneLauncher.exe; WorkingDir: {app}; IconFilename: "{app}\Icon.ico"
+Name: {group}\{cm:UninstallProgram,RuneWeavers}; Filename: {uninstallexe}; IconFilename: "{app}\Icon.ico"
+Name: {autodesktop}\RuneWeavers; Filename: {app}\RuneLauncher.exe; Tasks: desktopicon; WorkingDir: {app}; IconFilename: "{app}\Icon.ico"
 
 ; List of items to execute in the installer.
 ; Note that this will run all executables in their silent versions as required by the TCRs.
