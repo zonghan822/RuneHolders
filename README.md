@@ -58,11 +58,13 @@ run.bat
 
 ### Rebuilding the installer
 
-The installer is made with [Inno Setup](https://jrsoftware.org/isinfo.php) from [`Installer/InstallScript.iss`](Installer/InstallScript.iss):
+The installer is made with [Inno Setup 6](https://jrsoftware.org/isdl.php) from [`Installer/InstallScript.iss`](Installer/InstallScript.iss). The game files it packages are not committed, so build them from source with:
 
-1. Run `GameEngine/ship.bat`, then copy the contents of `GameEngine/RuneWeavers/` into `Installer/GAMEDIRECTORY/` (next to the tracked `Icon.ico`).
-2. Put `VC_redist.x64.exe` ([Microsoft download](https://aka.ms/vs/17/release/vc_redist.x64.exe)) in `Installer/REDIST/`.
-3. Open `InstallScript.iss` in Inno Setup and compile. The output is `Installer/INSTALLER/RuneWeavers_Setup.exe`.
+```bat
+Installer\build_installer.bat
+```
+
+The script runs `GameEngine/ship.bat`, copies the packaged game into `Installer/GAMEDIRECTORY/`, downloads the VC++ redistributable into `Installer/REDIST/`, and compiles `Installer/INSTALLER/RuneWeavers_Setup.exe`. `ship.bat` reuses an existing Release build, so run `GameEngine/clean.bat` first if you want a fresh one.
 
 ## Controls
 
