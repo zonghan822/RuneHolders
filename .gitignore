@@ -94,6 +94,13 @@ dist/
 **/obj/
 **/bin/
 
+# Runtime-generated files
+crashlogs/
+imgui.ini
+
+# Packaged game output from ship.bat / ship-Debug.bat
+/GameEngine/RuneWeavers/
+
 # Keep lib directory
 !GameEngine/lib/
 !GameEngine/lib/**
