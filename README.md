@@ -6,19 +6,21 @@ It was built by team **RuneHolders** (8 people) for GAM200 at DigiPen Institute 
 
 ## Play & watch
 
+[![RuneWeavers gameplay video](https://img.youtube.com/vi/gwptCQ2gEFQ/hqdefault.jpg)](https://youtu.be/gwptCQ2gEFQ)
+
 | | |
 |---|---|
 | 🎮 **Play it** | Download `RuneWeavers_Setup.exe` from the [latest release](https://github.com/zonghan822/RuneHolders/releases/latest) (Windows 10/11, x64) |
-| ▶️ **Gameplay video** | `RuneWeavers_Gameplay.mp4` on the [latest release](https://github.com/zonghan822/RuneHolders/releases/latest) |
-| 🛠️ **My contributions walkthrough** | `PersonalContribution_CSD2451_RuneHolders_LawZongHan.mp4` on the [latest release](https://github.com/zonghan822/RuneHolders/releases/latest) |
-| 🗺️ **Level editor showcase** | [`media/RuneHolders_LevelEditor_Showcase.mp4`](media/RuneHolders_LevelEditor_Showcase.mp4) |
+| ▶️ **Gameplay** | [Watch on YouTube](https://youtu.be/gwptCQ2gEFQ) |
+| 🗺️ **Level editor showcase** | [Watch on YouTube](https://youtu.be/Agl5dhV3qko) |
+| 🛠️ **My contributions walkthrough** | [Watch on YouTube](https://youtu.be/Acosz36TbvA) |
 | 📑 **Final presentation** | [`media/RuneHolders_Presentation_Final.pdf`](media/RuneHolders_Presentation_Final.pdf) |
 
 ---
 
 ## My role: Zong Han Law (Graphics & Input Champion)
 
-Every source file has a header listing its authors and each author's share of the work. I'm the primary author of these systems:
+Every source file has a header listing its authors and each author's share of the work. I'm the primary author of these systems, which I walk through in my [contributions video](https://youtu.be/Acosz36TbvA):
 
 | Area | What I built | Key files |
 |---|---|---|
@@ -87,7 +89,7 @@ GameEngine/
 ├── cmake/           Dependency fetching and build helpers
 └── lib/             Prebuilt FMOD and FFmpeg
 Installer/           Inno Setup script, EULA, and icon
-media/               Level editor showcase and final presentation
+media/               Final presentation
 ```
 
 ## Team RuneHolders
@@ -102,6 +104,12 @@ media/               Level editor showcase and final presentation
 | Zhe An Lee | Engine Champion |
 | Yun Ji Koe | Level Editor Champion |
 | Kimberly Charlotte Madlangbayan Ambrosio | Collision Champion |
+
+## AI declaration
+
+This project was built with the assistance of AI, specifically [Claude](https://claude.ai) by Anthropic. Claude was used as a development aid; the design, architecture, and final implementation decisions were mine, and I reviewed, tested, and integrated any AI-assisted output before it went into the project.
+
+Claude also helped prepare this repository for my portfolio: this README, cleaning up the repository, and the installer build script.
 
 ## Copyright
 

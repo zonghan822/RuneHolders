@@ -102,16 +102,15 @@ imgui.ini
 /GameEngine/RuneWeavers/
 
 # Installer: only the Inno Setup script and its small support files are tracked.
-# GAMEDIRECTORY is a copy of the ship.bat output; the built setup exe and the
-# VC++ redistributable are uploaded to GitHub Releases instead.
+# GAMEDIRECTORY is a copy of the ship.bat output and REDIST is downloaded by
+# build_installer.bat; the built setup exe is published on GitHub Releases.
 /Installer/GAMEDIRECTORY/*
 !/Installer/GAMEDIRECTORY/Icon.ico
 /Installer/INSTALLER/
 /Installer/REDIST/
 
-# Videos over GitHub's 100 MB file limit are hosted on GitHub Releases
-/media/RuneWeavers_Gameplay.mp4
-/media/PersonalContribution_*.mp4
+# Showcase videos are hosted on YouTube (links in README.md)
+/media/*.mp4
 
 # Keep lib directory
 !GameEngine/lib/
